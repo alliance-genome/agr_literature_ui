@@ -6,16 +6,22 @@ import reportWebVitals from './reportWebVitals';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import { createStore } from 'redux';
+// import { createStore } from 'redux';
+import { createStore, applyMiddleware, compose } from 'redux';
+import thunk from 'redux-thunk';
 import { Provider } from 'react-redux';
 import rootReducer from './reducers';
 
 const initialState = {};
+const middleware = [thunk];
 
 const store = createStore(
   rootReducer,
   initialState,
-  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+  compose(
+    applyMiddleware(...middleware),
+    window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+  )
 );
 
 ReactDOM.render(
