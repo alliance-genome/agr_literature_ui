@@ -21,14 +21,23 @@ export const changeField = (e) => {
   };
 };
 
+export const setLoadingQuery = (payload) => {
+  console.log('action setLoadingQuery ' + payload);
+  return {
+    type: 'SET_LOADING_QUERY',
+    payload: payload
+  };
+};
+
 export const biblioQueryReferenceCurie = (payload) => dispatch => {
   console.log('in biblioQueryReferenceCurie action');
   console.log("payload " + payload);
-  const createGet = async () => {
+  const createGetQueryReferenceCurie = async () => {
     const url = 'http://dev.alliancegenome.org:49161/reference/' + payload;
     console.log(url);
     const res = await fetch(url, {
       method: 'GET',
+      mode: 'cors',
       headers: {
         'content-type': 'application/json'
       }
@@ -46,7 +55,7 @@ export const biblioQueryReferenceCurie = (payload) => dispatch => {
       payload: response_payload
     })
   }
-  createGet()
+  createGetQueryReferenceCurie()
 };
 
 export const setReferenceCurie = (reference_curie) => {
@@ -72,11 +81,12 @@ export const queryButton = (payload) => {
 export const queryButtonCrossRefCurie = (payload) => dispatch => {
   console.log('in queryButtonCrossRefCurie action');
   console.log("payload " + payload);
-  const createGet = async () => {
+  const createGetQueryCrossRefCurie = async () => {
     const url = 'http://dev.alliancegenome.org:49161/cross-reference/' + payload;
     console.log(url);
     const res = await fetch(url, {
       method: 'GET',
+      mode: 'cors',
       headers: {
         'content-type': 'application/json'
       }
@@ -84,16 +94,18 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
     const response = await res.json();
     let response_payload = 'not found';
     if (response.reference_curie !== undefined) {
+      console.log('response not undefined');
       response_payload = response.reference_curie;
     }
 //     history.push("/Biblio");	// value hasn't been set in store yet
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
+    console.log('dispatch QUERY_BUTTON');
     dispatch({
       type: 'QUERY_BUTTON',
       payload: response_payload
     })
   }
-  createGet()
+  createGetQueryCrossRefCurie()
 //   return {
 //     type: 'QUERY_BUTTON',
 //     payload: payload

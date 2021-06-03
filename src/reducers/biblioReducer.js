@@ -2,6 +2,7 @@
 const initialState = {
   referenceCurie: '',
   referenceJson: {},
+  loadingQuery: false,
   alreadyGotJson: false
 };
 
@@ -21,6 +22,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         referenceCurie: action.payload
+      }
+    case 'SET_LOADING_QUERY':
+      console.log("reducer set loading query");
+      return {
+        ...state,
+        loadingQuery: action.payload
       }
     case 'BIBLIO_GET_REFERENCE_CURIE':
       console.log("biblio get reference curie");

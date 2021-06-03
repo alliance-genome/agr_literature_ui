@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import { resetQueryRedirect } from '../actions';
 import { setReferenceCurie } from '../actions';
+import { setLoadingQuery } from '../actions';
 import { biblioQueryReferenceCurie } from '../actions';
 
 import { useLocation } from 'react-router-dom';
@@ -23,7 +24,7 @@ const Biblio = () => {
   const dispatch = useDispatch();
 
   const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.crossRefCurieQuery.redirectToBiblio);
-  console.log(crossRefCurieQueryRedirectToBiblio);
+  console.log("crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
   // if arrived at this page from a query result redirect, remove the redirect flag so that query page can be revisited without forcing back here
 //   crossRefCurieQueryRedirectToBiblio && dispatch(resetQueryRedirect());
 
@@ -36,6 +37,7 @@ const Biblio = () => {
 
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const alreadyGotJson = useSelector(state => state.biblio.alreadyGotJson);
+  const loadingQuery = useSelector(state => state.biblio.loadingQuery);
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
@@ -45,12 +47,16 @@ const Biblio = () => {
     let paramReferenceCurie = query.get('referenceCurie');
     console.log("urlParam paramAction", paramAction);
     console.log("urlParam paramReferenceCurie", paramReferenceCurie);
+//     if (paramReferenceCurie !== null) { dispatch(setLoadingQuery(true)); }
     if (paramReferenceCurie !== null) { dispatch(setReferenceCurie(paramReferenceCurie)); }
   }
 
   if (referenceCurie !== '' && (alreadyGotJson === false)) {
+    dispatch(setLoadingQuery(true));
     dispatch(biblioQueryReferenceCurie(referenceCurie));
   }
+
+  if (alreadyGotJson === true) { dispatch(setLoadingQuery(false)); }
 
   const referenceJson = useSelector(state => state.biblio.referenceJson);
 
@@ -59,6 +65,7 @@ const Biblio = () => {
   return (
     <div>
       <h4>Biblio about this Reference</h4>
+      { loadingQuery && <div>loading</div> }
       <div align="left" className="task" >{referenceCurie}</div>
       <div align="left" className="task" >reference_id: {referenceJson.reference_id}</div>
       <div align="left" className="task" >title: {referenceJson.title}</div>
