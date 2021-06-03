@@ -1,6 +1,8 @@
 // import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter, Route } from 'react-router-dom'
+import history from "./history";
+
 import NavigationBar from './components/NavigationBar'
 import Home from './components/Home'
 import Query from './components/Query'
@@ -24,7 +26,7 @@ import About from './components/About'
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter history={history}>
     <div className="App">
       <NavigationBar />
  {/*
@@ -50,5 +52,10 @@ function App() {
     </BrowserRouter>
   );
 }
+
+// this doesn't seem true.  Using Router instead of BrowserRouter makes the <Link and <Redirect reset store
+// Warning: <BrowserRouter> ignores the history prop. To use a custom history, use `import { Router }` instead of `import { BrowserRouter as Router }`.
+//     <BrowserRouter history={history}>
+//     </BrowserRouter>
 
 export default App;
