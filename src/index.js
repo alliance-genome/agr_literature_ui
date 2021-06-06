@@ -24,14 +24,17 @@ const store = createStore(
   )
 );
 
+
 ReactDOM.render(
-  <React.StrictMode>
     <Provider store={store}>
       <App />
-    </Provider>
-  </React.StrictMode>,
+    </Provider>,
   document.getElementById('root')
 );
+
+// having this wrapped around Provider/App will call a reducer multiple times with the same arguments to test the purity of the reducer (so actions will be dispatched multiple times even though they shouldn't be, which messes with things like an async call to get data, causing it to happen multiple times)
+//   <React.StrictMode>
+//   </React.StrictMode>,
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

@@ -2,7 +2,8 @@
 const initialState = {
   referenceCurie: '',
   referenceJson: {},
-  loadingQuery: false,
+  loadingQuery: true,
+  queryFailure: false,
   alreadyGotJson: false
 };
 
@@ -18,23 +19,35 @@ export default function(state = initialState, action) {
 //         queryField: action.payload
 //       }
     case 'SET_REFERENCE_CURIE':
-      console.log("set reference curie");
+      console.log("reducer set reference curie");
       return {
         ...state,
         referenceCurie: action.payload
       }
-    case 'SET_LOADING_QUERY':
-      console.log("reducer set loading query");
-      return {
-        ...state,
-        loadingQuery: action.payload
-      }
+//     case 'SET_LOADING_QUERY':
+//       console.log("reducer set loading query");
+//       return {
+//         ...state,
+//         loadingQuery: action.payload
+//       }
     case 'BIBLIO_GET_REFERENCE_CURIE':
-      console.log("biblio get reference curie");
-      return {
-        ...state,
-        referenceJson: action.payload,
-        alreadyGotJson: true
+      console.log("reducer biblio get reference curie");
+      if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {
+        return {
+          ...state,
+          referenceCurie: action.payload.detail,
+          queryFailure: true,
+          loadingQuery: false,
+          alreadyGotJson: true
+        }
+      } else {  
+        return {
+          ...state,
+          referenceCurie: action.payload.curie,
+          referenceJson: action.payload,
+          loadingQuery: false,
+          alreadyGotJson: true
+        }
       }
 
 //     case 'QUERY_BUTTON':

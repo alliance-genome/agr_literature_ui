@@ -1,5 +1,6 @@
 // import { useState } from 'react'
-import { useState, useEffect } from 'react';
+// import { useEffect } from 'react';
+// import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useSelector, useDispatch } from 'react-redux';
@@ -7,7 +8,7 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import { resetQueryRedirect } from '../actions';
 import { setReferenceCurie } from '../actions';
-import { setLoadingQuery } from '../actions';
+// import { setLoadingQuery } from '../actions';
 import { biblioQueryReferenceCurie } from '../actions';
 
 import { useLocation } from 'react-router-dom';
@@ -24,13 +25,20 @@ const Biblio = () => {
   const dispatch = useDispatch();
 
   const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.crossRefCurieQuery.redirectToBiblio);
-  console.log("crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
+  console.log("biblio crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
   // if arrived at this page from a query result redirect, remove the redirect flag so that query page can be revisited without forcing back here
 //   crossRefCurieQueryRedirectToBiblio && dispatch(resetQueryRedirect());
 
+// this doesn't work.  try a useEffect in Query.js with a timeout ?
+//   useEffect(() => {
+//     dispatch(resetQueryRedirect());
+//   });
+
   const crossRefCurieQueryResponseField = useSelector(state => state.crossRefCurieQuery.responseField);
   if ( crossRefCurieQueryRedirectToBiblio ) {
-    console.log('blah');
+    console.log('biblio from redirect');
+// this is needed to keep the query page from redirecting here if going back to it, but changing it triggers a change there, which somehow triggers a dispatch of a bunch of stuff, including a double dispatch(biblioQueryReferenceCurie(referenceCurie)), which is wrong
+// Warning: Cannot update a component (`Biblio`) while rendering a different component (`Biblio`). To locate the bad setState() call inside `Biblio`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
     dispatch(resetQueryRedirect());
     dispatch(setReferenceCurie(crossRefCurieQueryResponseField));
   }
@@ -38,6 +46,7 @@ const Biblio = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const alreadyGotJson = useSelector(state => state.biblio.alreadyGotJson);
   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
+  const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
@@ -45,22 +54,38 @@ const Biblio = () => {
     console.log(query);
     let paramAction = query.get('action');
     let paramReferenceCurie = query.get('referenceCurie');
-    console.log("urlParam paramAction", paramAction);
-    console.log("urlParam paramReferenceCurie", paramReferenceCurie);
+    console.log("biblio urlParam paramAction", paramAction);
+    console.log("biblio urlParam paramReferenceCurie", paramReferenceCurie);
 //     if (paramReferenceCurie !== null) { dispatch(setLoadingQuery(true)); }
     if (paramReferenceCurie !== null) { dispatch(setReferenceCurie(paramReferenceCurie)); }
   }
 
   if (referenceCurie !== '' && (alreadyGotJson === false)) {
-    dispatch(setLoadingQuery(true));
+    console.log('biblio DISPATCH biblioQueryReferenceCurie ' + referenceCurie);
     dispatch(biblioQueryReferenceCurie(referenceCurie));
   }
 
-  if (alreadyGotJson === true) { dispatch(setLoadingQuery(false)); }
+//   if (alreadyGotJson === false) {
+//     console.log('biblio DISPATCH biblioQueryReferenceCurie ' + paramReferenceCurie);
+// //     dispatch(setLoadingQuery(true));
+//     dispatch(biblioQueryReferenceCurie(paramReferenceCurie));
+//   }
+
+//   if (referenceCurie !== '' && (alreadyGotJson === false)) {
+//     console.log('biblio dispatch setLoadingQuery true and biblioQueryReferenceCurie ' + referenceCurie);
+//     dispatch(setLoadingQuery(true));
+//     dispatch(biblioQueryReferenceCurie(referenceCurie));
+//   }
+
+// set in reducer when BIBLIO_GET_REFERENCE_CURIE populates referenceJson
+//   if ((setLoadingQuery === true) && (alreadyGotJson === true)) { 
+//     console.log('biblio dispatch setLoadingQuery false');
+//     dispatch(setLoadingQuery(false));
+//   }
 
   const referenceJson = useSelector(state => state.biblio.referenceJson);
 
-  let field = ['reference_id', 'title', 'volume', 'curie', 'issue_name', 'abstract'];
+//   let field = ['reference_id', 'title', 'volume', 'curie', 'issue_name', 'abstract'];
 
   return (
     <div>

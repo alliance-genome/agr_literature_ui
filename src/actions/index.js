@@ -14,24 +14,24 @@ export const decrement = () => {
 };
 
 export const changeField = (e) => {
-  console.log('change field ' + e.target.name + ' to ' + e.target.value);
+  console.log('action change field ' + e.target.name + ' to ' + e.target.value);
   return {
     type: 'CHANGE_FIELD',
     payload: e.target.value
   };
 };
 
-export const setLoadingQuery = (payload) => {
-  console.log('action setLoadingQuery ' + payload);
-  return {
-    type: 'SET_LOADING_QUERY',
-    payload: payload
-  };
-};
+// export const setLoadingQuery = (payload) => {
+//   console.log('action setLoadingQuery ' + payload);
+//   return {
+//     type: 'SET_LOADING_QUERY',
+//     payload: payload
+//   };
+// };
 
 export const biblioQueryReferenceCurie = (payload) => dispatch => {
-  console.log('in biblioQueryReferenceCurie action');
-  console.log("payload " + payload);
+  console.log('action in biblioQueryReferenceCurie action');
+  console.log("action payload " + payload);
   const createGetQueryReferenceCurie = async () => {
     const url = 'http://dev.alliancegenome.org:49161/reference/' + payload;
     console.log(url);
@@ -43,6 +43,7 @@ export const biblioQueryReferenceCurie = (payload) => dispatch => {
       }
     })
     const response = await res.json();
+    console.log("action response");
     console.log(response);
     let response_payload = 'not found';
     if (response !== undefined) {
@@ -59,6 +60,7 @@ export const biblioQueryReferenceCurie = (payload) => dispatch => {
 };
 
 export const setReferenceCurie = (reference_curie) => {
+  console.log("action setReferenceCurie");
   return {
     type: 'SET_REFERENCE_CURIE',
     payload: reference_curie
