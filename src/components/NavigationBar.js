@@ -16,7 +16,6 @@ const NavigationBar = () => {
       <Nav.Link as={Link} to="/biblio">Biblio</Nav.Link>
       <Nav.Link as={Link} to="/flags">Flags & Tags</Nav.Link>
       <Nav.Link as={Link} to="/files">Files</Nav.Link>
-      <Nav.Link as={Link} to="/login">Login</Nav.Link>
       <NavDropdown title="Mining" id="basic-nav-dropdown">
         <NavDropdown.Item as={Link} to="/mining">All Mining</NavDropdown.Item>
         <NavDropdown.Item as={Link} to="/ontomate">Ontomate</NavDropdown.Item>
@@ -24,6 +23,7 @@ const NavigationBar = () => {
       </NavDropdown>
       <Nav.Link as={Link} to="/create">Create</Nav.Link>
       <Nav.Link as={Link} to="/about">About</Nav.Link>
+      <Nav.Link as={Link} to="/login">Login</Nav.Link>
     </Nav>
   </Navbar>
   )
