@@ -14,6 +14,7 @@ import Ontomate from './components/Ontomate'
 import Textpresso from './components/Textpresso'
 import Create from './components/Create'
 import About from './components/About'
+import Login from './components/Login'
 // import ListGroup from 'react-bootstrap/ListGroup';
 // import Navbar from 'react-bootstrap/Navbar';
 // import Nav from 'react-bootstrap/Nav';
@@ -48,6 +49,7 @@ function App() {
       <Route path='/textpresso' component={Textpresso} />
       <Route path='/create' component={Create} />
       <Route path='/about' component={About} />
+      <Route path='/login' component={Login} />
     </div>
     </BrowserRouter>
   );
