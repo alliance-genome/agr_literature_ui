@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 // import { useSelector } from 'react-redux';
 
-import { resetQueryRedirect } from '../actions';
+// import { resetQueryRedirect } from '../actions';
 import { setReferenceCurie } from '../actions';
 // import { setLoadingQuery } from '../actions';
 import { biblioQueryReferenceCurie } from '../actions';
@@ -26,20 +26,13 @@ const Biblio = () => {
 
   const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.crossRefCurieQuery.redirectToBiblio);
   console.log("biblio crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
-  // if arrived at this page from a query result redirect, remove the redirect flag so that query page can be revisited without forcing back here
-//   crossRefCurieQueryRedirectToBiblio && dispatch(resetQueryRedirect());
-
-// this doesn't work.  try a useEffect in Query.js with a timeout ?
-//   useEffect(() => {
-//     dispatch(resetQueryRedirect());
-//   });
 
   const crossRefCurieQueryResponseField = useSelector(state => state.crossRefCurieQuery.responseField);
   if ( crossRefCurieQueryRedirectToBiblio ) {
     console.log('biblio from redirect');
 // this is needed to keep the query page from redirecting here if going back to it, but changing it triggers a change there, which somehow triggers a dispatch of a bunch of stuff, including a double dispatch(biblioQueryReferenceCurie(referenceCurie)), which is wrong
 // Warning: Cannot update a component (`Biblio`) while rendering a different component (`Biblio`). To locate the bad setState() call inside `Biblio`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
-    dispatch(resetQueryRedirect());
+//     dispatch(resetQueryRedirect());
     dispatch(setReferenceCurie(crossRefCurieQueryResponseField));
   }
 
