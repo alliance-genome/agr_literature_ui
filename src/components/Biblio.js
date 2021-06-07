@@ -13,6 +13,10 @@ import { biblioQueryReferenceCurie } from '../actions';
 
 import { useLocation } from 'react-router-dom';
 
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+
 // http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
 
 
@@ -25,7 +29,7 @@ const Biblio = () => {
   const dispatch = useDispatch();
 
   const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.crossRefCurieQuery.redirectToBiblio);
-  console.log("biblio crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
+//   console.log("biblio crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
 
   const crossRefCurieQueryResponseField = useSelector(state => state.crossRefCurieQuery.responseField);
   if ( crossRefCurieQueryRedirectToBiblio ) {
@@ -39,7 +43,7 @@ const Biblio = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const alreadyGotJson = useSelector(state => state.biblio.alreadyGotJson);
   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
-  const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
+//   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
@@ -78,21 +82,62 @@ const Biblio = () => {
 
   const referenceJson = useSelector(state => state.biblio.referenceJson);
 
-//   let field = ['reference_id', 'title', 'volume', 'curie', 'issue_name', 'abstract'];
+  const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified' ];
+
+//     <Row className="Row-general" xs={2} md={4} lg={6}>
+//       <Col className="Col-general">reference_id</Col>
+//       <Col className="Col-general" lg={{ span: 10 }}>{referenceJson.reference_id}</Col>
+//     </Row>
+
+//       <Row className="Row-general" xs={2} md={4} lg={6}>
+//         <Col className="Col-general">value</Col>
+//         <Col className="Col-general" lg={{ span: 10 }}>{referenceJson.value}</Col>
+//       </Row>
+
+// this works, but want to try jsx map
+//   const items = []
+//   for (const [index, value] of fieldsSimple.entries()) {
+// //     items.push(<div align="left" className="task" key={index}>{value} to {referenceJson[value]}</div>)
+//     if (referenceJson[value] !== null) {
+//     items.push(
+//       <Row className="Row-general" xs={2} md={4} lg={6}>
+//         <Col className="Col-general">{value}</Col>
+//         <Col className="Col-general" lg={{ span: 10 }}>{referenceJson[value]}</Col>
+//       </Row>);
+//     }
+//   }
+//       {items}
+
+  function BiblioDisplay() {
+    const fieldElements = fieldsSimple
+// to filter out fields without data
+//       .filter((value) => referenceJson[value] !== null)
+      .map((value, index) => (
+      <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
+        <Col className="Col-general">{value}</Col>
+        <Col className="Col-general" lg={{ span: 10 }}>{referenceJson[value]}</Col>
+      </Row>
+    ));
+//       <div key={index} align="left" className="task" >{value} to {referenceJson[value]}</div>
+    return (<Container>{fieldElements}</Container>);
+  }
 
   return (
     <div>
       <h4>Biblio about this Reference</h4>
       { loadingQuery && <div>loading</div> }
-      <div align="left" className="task" >{referenceCurie}</div>
-      <div align="left" className="task" >reference_id: {referenceJson.reference_id}</div>
-      <div align="left" className="task" >title: {referenceJson.title}</div>
-      <div align="left" className="task" >volume: {referenceJson.volume}</div>
-      <div align="left" className="task" >date_updated: {referenceJson.date_updated}</div>
-      <div align="left" className="task" >abstract: {referenceJson.abstract}</div>
+      <div align="center" className="task" >{referenceCurie}</div>
+      <BiblioDisplay />
       <Link to='/'>Go Back</Link>
     </div>
   )
+
+// manual field definition
+//       <div align="left" className="task" >reference_id: {referenceJson.reference_id}</div>
+//       <div align="left" className="task" >title: {referenceJson.title}</div>
+//       <div align="left" className="task" >volume: {referenceJson.volume}</div>
+//       <div align="left" className="task" >date_updated: {referenceJson.date_updated}</div>
+//       <div align="left" className="task" >abstract: {referenceJson.abstract}</div>
 
 
 //   const [tasks, setTasks] = useState([
