@@ -114,10 +114,12 @@ const Biblio = () => {
 //       .filter((value) => referenceJson[value] !== null)
       .map((value, index) => (
       <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-        <Col className="Col-general">{value}</Col>
-        <Col className="Col-general" lg={{ span: 10 }}>{referenceJson[value]}</Col>
+        <Col className="Col-general Col-left">{value}</Col>
+        <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[value]}</Col>
       </Row>
     ));
+//         <Col className="Col-left"><div className="Col-left-in">{value}</div></Col>
+//         <Col className="Col-right" lg={{ span: 10 }}><div className="Col-right-in">{referenceJson[value]}</div></Col>
 //       <div key={index} align="left" className="task" >{value} to {referenceJson[value]}</div>
     return (<Container>{fieldElements}</Container>);
   }

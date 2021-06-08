@@ -23,6 +23,8 @@
   margin: 5px;
   padding: 10px 20px;
   cursor: pointer;
+  border-radius: 30px 0 0 30px;
+  padding-left: 40px;
 }
 
 .task.reminder {
@@ -30,17 +32,45 @@
 }
 
 .Col-general {
-  background-color: #f4f4f4;
+  background-color: #bbeffd;
   text-align: left;
   color: #282c34;
-  border: 1px solid #bbbbbb;
+  border: 2px solid white;
+  padding: 5px 10px;
 }
+/*
+  background-color: #f4f4f4;
+  border: 1px solid #bbbbbb;
+  border: 1px solid #61dafb;
+*/
+.Col-right {
+  border-radius: 0 30px 30px 0;
+}
+.Col-left {
+  border-radius: 30px 0 0 30px;
+}
+/*
+.Col-right-in {
+  background-color: #bbeffd;
+  text-align: left;
+  color: #282c34;
+  padding: 5px 10px;
+}
+.Col-left-in {
+  background-color: #bbeffd;
+  text-align: left;
+  color: #282c34;
+  padding: 5px 10px;
+}
+*/
 
 .Row-general {
-  background-color: #bbeffd;
+  background-color: white;
   color: #282c34;
-  border: 1px solid #61dafb;
 }
+/*
+  background-color: #bbeffd;
+*/
 
 
 .App-header {
