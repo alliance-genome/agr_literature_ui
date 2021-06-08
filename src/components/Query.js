@@ -24,7 +24,7 @@ const Query = () => {
 
   return (
     <div>
-      <h4>Look up Reference by exact cross reference curie.<br/>e.g. RGD:10002756 or RGD:13542090 or WB:WBPaper00010006</h4>
+      <h4>Look up Reference by exact cross reference curie.<br/>e.g. PMID:2537252 or RGD:13542090 or WB:WBPaper00010006</h4>
       <input type="text" name="crossRefCurieQuery" value={crossRefCurieQueryField} onChange={(e) => dispatch(changeField(e))} />
       {crossRefCurieQueryRedirectToBiblio && pushHistory(crossRefCurieQueryResponseField)}
       <button type="submit" onClick={() => dispatch(queryButtonCrossRefCurie(crossRefCurieQueryField))}>Query Reference Curie</button>
