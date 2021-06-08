@@ -120,6 +120,8 @@ const Biblio = () => {
     ));
 //         <Col className="Col-left"><div className="Col-left-in">{value}</div></Col>
 //         <Col className="Col-right" lg={{ span: 10 }}><div className="Col-right-in">{referenceJson[value]}</div></Col>
+//         <Col className="Col-general Col-left">{value}</Col>
+//         <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[value]}</Col>
 //       <div key={index} align="left" className="task" >{value} to {referenceJson[value]}</div>
     return (<Container>{fieldElements}</Container>);
   }
