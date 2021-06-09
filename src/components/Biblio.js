@@ -183,9 +183,8 @@ const Biblio = () => {
         meshTermsElements.push(
           <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general Col-left">mesh_terms</Col>
-            <Col className="Col-general " lg={{ span: 2 }}>{value['mesh_detail_id']}</Col>
-            <Col className="Col-general " lg={{ span: 4 }}>{value['heading_term']}</Col>
-            <Col className="Col-general Col-right" lg={{ span: 4 }}>{value['qualifier_term']}</Col>
+            <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
+            <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
           </Row>); } }
 
     const authorsElements = []
