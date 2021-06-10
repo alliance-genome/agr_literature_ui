@@ -30,6 +30,14 @@ export default function(state = initialState, action) {
 //         ...state,
 //         loadingQuery: action.payload
 //       }
+    case 'RESET_QUERY_STATE':
+      console.log("reducer reset reference curie");
+      return {
+        ...state,
+        referenceCurie: '',
+        loadingQuery: true,
+        alreadyGotJson: false
+      }
     case 'BIBLIO_GET_REFERENCE_CURIE':
       console.log("reducer biblio get reference curie");
       if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {

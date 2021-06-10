@@ -67,6 +67,12 @@ export const setReferenceCurie = (reference_curie) => {
   };
 };
 
+export const resetQueryState = () => {
+  return {
+    type: 'RESET_QUERY_STATE'
+  };
+};
+
 export const resetQueryRedirect = () => {
   return {
     type: 'RESET_QUERY_REDIRECT'

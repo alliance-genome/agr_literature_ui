@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { changeField } from '../actions';
 import { queryButtonCrossRefCurie } from '../actions';
 import { resetQueryRedirect } from '../actions';
+import { resetQueryState } from '../actions';
 
 
 const Query = () => {
@@ -18,7 +19,8 @@ const Query = () => {
 
   function pushHistory(referenceCurie) {
     console.log('history push');
-    dispatch(resetQueryRedirect());   
+    dispatch(resetQueryRedirect());
+    dispatch(resetQueryState());
     history.push("/Biblio/?action=display&referenceCurie=" + referenceCurie);
   }
 

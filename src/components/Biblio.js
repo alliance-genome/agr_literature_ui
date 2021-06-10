@@ -189,7 +189,7 @@ const Biblio = () => {
 
     const authorsElements = []
     if ('authors' in referenceJson && referenceJson['authors'] !== null) {
-      for (const[index, value] of referenceJson['authors'].entries()) {
+      for (const[other_index, value] of referenceJson['authors'].entries()) {
         let index = value['order'] - 1;
         authorsElements[index] = 
           <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
