@@ -149,10 +149,12 @@ const Biblio = () => {
     const crossReferencesElements = []
     if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
       for (const[index, value] of referenceJson['cross_references'].entries()) {
+        let url = value['url'];
+        if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
         crossReferencesElements.push(
           <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general Col-left">cross_references</Col>
-            <Col className="Col-general Col-right" lg={{ span: 10 }}><a href={value['url']}  rel="noreferrer noopener" target="_blank">{value['curie']}</a></Col>
+            <Col className="Col-general Col-right" lg={{ span: 10 }}><a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a></Col>
           </Row>); } }
 
     const tagsElements = []
