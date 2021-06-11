@@ -190,15 +190,26 @@ const Biblio = () => {
           </Row>); } }
 
     const authorsElements = []
+    // e.g. orcid/affiliation PMID:24895670   affiliations PMID:24913562
     if ('authors' in referenceJson && referenceJson['authors'] !== null) {
-      for (const[other_index, value] of referenceJson['authors'].entries()) {
+      for (const value  of referenceJson['authors'].values()) {
         let index = value['order'] - 1;
+        let orcid_curie = '';
+        let orcid_url = '';
+        if ('orcid' in value) {
+          orcid_curie = value['orcid']['curie'] || '';
+          orcid_url = value['orcid']['url'] || ''; }
+        let affiliations = [];
+        if ('affiliation' in value) {
+          for (const index_aff in value['affiliation']) { affiliations.push(<div key={index_aff} className="affiliation">- {value['affiliation'][index_aff]}</div>); }
+        }
         authorsElements[index] = 
           <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-left">author</Col>
-            <Col className="Col-general " lg={{ span: 2 }}>{value['order']}</Col>
-            <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['name']}</Col>
+            <Col className="Col-general Col-left">author {value['order']}</Col>
+            <Col className="Col-general " lg={{ span: 10 }}><div key={index}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
           </Row>; } }
+
+//             <Col className="Col-general Col-right" lg={{ span: 4 }}><a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a></Col>
 
 //         authorElements.push(
 //           <Row key={index} className="Row-general" xs={2} md={4} lg={6}>

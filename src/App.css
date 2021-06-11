@@ -12,10 +12,15 @@
   color: white;
 }
 
-.nav-link{
+.nav-link {
   font-family: 'Roboto', sans-serif;
   color: white !important;
   margin-left: 20px;
+}
+
+.affiliation {
+  font-size: 14px;
+  color: grey;
 }
 
 .task {
