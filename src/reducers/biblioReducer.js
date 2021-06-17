@@ -12,12 +12,16 @@ const initialState = {
 export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
-//     case 'CHANGE_FIELD':
-//       // console.log(action.payload);
-//       return {
-//         ...state,
-//         queryField: action.payload
-//       }
+    case 'CHANGE_FIELD_REFERENCE_JSON':
+      // console.log(action.payload);
+      return {
+        ...state,
+        referenceJson: {
+          ...state.referenceJson,
+          [action.payload.field]: action.payload.value
+        }
+      }
+//       return state.updateIn(['biblio', 'referenceJson'], x => x.set(action.field, action.payload));	// this might work with Immutable.js
     case 'SET_REFERENCE_CURIE':
       console.log("reducer set reference curie");
       return {

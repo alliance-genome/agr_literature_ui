@@ -11,11 +11,14 @@ import { setReferenceCurie } from '../actions';
 // import { setLoadingQuery } from '../actions';
 import { biblioQueryReferenceCurie } from '../actions';
 
+import { changeFieldReferenceJson } from '../actions';
+
 import { useLocation } from 'react-router-dom';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Form from 'react-bootstrap/Form';
 
 import loading_gif from '../images/loading_cat.gif';
 
@@ -25,6 +28,32 @@ import loading_gif from '../images/loading_cat.gif';
 // if passing an object with <Redirect push to={{ pathname: "/Biblio", state: { pie: "the pie" } }} />, would access new state with
 // const Biblio = ({ appState, someAction, location }) => {
 // console.log(location.state);  }
+
+const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
+const fieldsArrayString = ['keywords', 'pubmed_type' ];
+
+
+const BiblioEditor = () => {
+  const dispatch = useDispatch();
+  const referenceJson = useSelector(state => state.biblio.referenceJson);
+  const fieldSimpleElements = []
+  for (const field of fieldsSimple.values()) {
+    let fieldType = 'input';
+    let value = referenceJson[field] || '';
+    if (field === 'abstract') { fieldType = 'textarea'; }
+//     if (referenceJson[field] !== null) {
+    fieldSimpleElements.push(
+      <Form.Group as={Row} key={field} controlId={field}>
+        <Form.Label column sm="2">{field}</Form.Label>
+        <Col sm="10">
+          <Form.Control as={fieldType} type="{field}" value={value} placeholder={field} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
+        </Col>
+      </Form.Group>);
+//     }
+  }
+
+  return (<Container><Form>{fieldSimpleElements}</Form></Container>);
+}
 
 const Biblio = () => {
 
@@ -64,18 +93,6 @@ const Biblio = () => {
     dispatch(biblioQueryReferenceCurie(referenceCurie));
   }
 
-//   if (alreadyGotJson === false) {
-//     console.log('biblio DISPATCH biblioQueryReferenceCurie ' + paramReferenceCurie);
-// //     dispatch(setLoadingQuery(true));
-//     dispatch(biblioQueryReferenceCurie(paramReferenceCurie));
-//   }
-
-//   if (referenceCurie !== '' && (alreadyGotJson === false)) {
-//     console.log('biblio dispatch setLoadingQuery true and biblioQueryReferenceCurie ' + referenceCurie);
-//     dispatch(setLoadingQuery(true));
-//     dispatch(biblioQueryReferenceCurie(referenceCurie));
-//   }
-
 // set in reducer when BIBLIO_GET_REFERENCE_CURIE populates referenceJson
 //   if ((setLoadingQuery === true) && (alreadyGotJson === true)) { 
 //     console.log('biblio dispatch setLoadingQuery false');
@@ -108,9 +125,7 @@ const Biblio = () => {
 //   }
 //       {items}
 
-  const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
-
-  const fieldsArrayString = ['keywords', 'pubmed_type' ];
+//   const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 
   function BiblioDisplay() {
     const fieldSimpleElements = fieldsSimple
@@ -217,7 +232,7 @@ const Biblio = () => {
 //             <Col className="Col-general " lg={{ span: 2 }}>{value['mesh_detail_id']}</Col>
 //             <Col className="Col-general " lg={{ span: 4 }}>{value['heading_term']}</Col>
 //             <Col className="Col-general Col-right" lg={{ span: 4 }}>{value['qualifier_term']}</Col>
-//           </Row>); } }
+//           </Row>);
 
     return (<Container>{fieldSimpleElements}{fieldArrayStringElements}{crossReferencesElements}{modReferenceTypesElements}{tagsElements}{authorsElements}{meshTermsElements}</Container>);
   }
@@ -234,6 +249,14 @@ const Biblio = () => {
       <Link to='/'>Go Back</Link>
     </div>
   )
+
+// this in return works
+//       <input type="text" name="crossRefCurieQuery" value={tempField} onChange={(e) => dispatch(changeTemp(e))} />
+
+// all of these in return lose focus if they're defined as functional components inside the Biblio functional component, but work fine if created outside
+//       <BiblioEditor />
+//       { loadingQuery ? <LoadingElement /> : <BiblioDisplay /> }
+//       { loadingQuery ? <LoadingElement /> : <BiblioEditor /> }
 
 // manual field definition
 //       <div align="left" className="task" >reference_id: {referenceJson.reference_id}</div>

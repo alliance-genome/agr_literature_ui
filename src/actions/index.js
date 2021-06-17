@@ -21,6 +21,18 @@ export const changeField = (e) => {
   };
 };
 
+export const changeFieldReferenceJson = (e) => {
+  console.log('action change field reference json' + e.target.id + ' to ' + e.target.value);
+  return {
+    type: 'CHANGE_FIELD_REFERENCE_JSON',
+    payload: {
+      field: e.target.id,
+      value: e.target.value
+    }
+  };
+};
+
+
 // export const setLoadingQuery = (payload) => {
 //   console.log('action setLoadingQuery ' + payload);
 //   return {
