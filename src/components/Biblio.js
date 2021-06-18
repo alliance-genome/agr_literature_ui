@@ -12,6 +12,8 @@ import { setReferenceCurie } from '../actions';
 import { biblioQueryReferenceCurie } from '../actions';
 
 import { changeFieldReferenceJson } from '../actions';
+import { changeFieldArrayReferenceJson } from '../actions';
+import { biblioAddNewRow } from '../actions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -52,7 +54,30 @@ const BiblioEditor = () => {
 //     }
   }
 
-  return (<Container><Form>{fieldSimpleElements}</Form></Container>);
+  const handleClick = (e) => {    console.log('this is:', e);  }
+
+  const fieldArrayStringElements = []
+  for (const [fieldIndex, field] of fieldsArrayString.entries()) {
+    if (field in referenceJson && referenceJson[field] !== null) {	// need this because referenceJson starts empty before values get added
+      let fieldType = 'input';
+      for (const [index, value] of referenceJson[field].entries()) {
+        const key = field + ' ' + index;
+        fieldArrayStringElements.push(
+          <Form.Group as={Row} key={key} controlId={key}>
+            <Form.Label column sm="2">{field}</Form.Label>
+            <Col sm="10">
+              <Form.Control as={fieldType} type="{field}" value={value} placeholder={field} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
+            </Col>
+          </Form.Group>);
+     } }
+     fieldArrayStringElements.push(
+       <Row className="form-group row" key={field} >
+         <Col className="form-label col-form-label" sm="2" >{field}</Col>
+         <Col sm="10" ><div id={field} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRow(e))} >add row</div></Col>
+       </Row>);
+  }
+
+  return (<Container><Form>{fieldSimpleElements}{fieldArrayStringElements}</Form></Container>);
 }
 
 const Biblio = () => {

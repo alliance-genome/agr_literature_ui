@@ -21,7 +21,32 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
+    case 'CHANGE_FIELD_ARRAY_REFERENCE_JSON':
+      // console.log(action.payload);
+      let stringArray = action.payload.field.split(" ");
+      let field = stringArray[0];
+      let index = stringArray[1];
+      let newArrayChange = state.referenceJson[field];
+      newArrayChange[index] = action.payload.value;
+      return {
+        ...state,
+        referenceJson: {
+          ...state.referenceJson,
+          [field]: newArrayChange
+        }
+      }
 //       return state.updateIn(['biblio', 'referenceJson'], x => x.set(action.field, action.payload));	// this might work with Immutable.js
+    case 'BIBLIO_ADD_NEW_ROW':
+      // console.log(action.payload);
+      let newArrayPush = state.referenceJson[action.payload.field];
+      newArrayPush.push('');
+      return {
+        ...state,
+        referenceJson: {
+          ...state.referenceJson,
+          [action.payload.field]: newArrayPush
+        }
+      }
     case 'SET_REFERENCE_CURIE':
       console.log("reducer set reference curie");
       return {

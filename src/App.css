@@ -23,6 +23,24 @@
   color: grey;
 }
 
+.biblio-button {
+  text-align: left;
+  background-color: #ced4da !important;
+}
+/*
+  display: block;
+  width: 100%;
+  padding-left: .75rem;
+  padding-right: .75rem;
+  color: #282c34;
+  line-height: 1.5;
+  border: 1px solid #2598c5;
+  border-radius: .25rem;
+  height: calc(1.5em + .75rem + 2px);
+  padding-top: .375rem;
+  padding-bottom: .375rem;
+*/
+
 .task {
   background: #f4f4f4;
   margin: 5px;

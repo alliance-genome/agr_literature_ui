@@ -32,6 +32,28 @@ export const changeFieldReferenceJson = (e) => {
   };
 };
 
+export const changeFieldArrayReferenceJson = (e) => {
+  console.log('action change field array reference json' + e.target.id + ' to ' + e.target.value);
+//   console.log(e);
+  return {
+    type: 'CHANGE_FIELD_ARRAY_REFERENCE_JSON',
+    payload: {
+      field: e.target.id,
+      value: e.target.value
+    }
+  };
+};
+
+export const biblioAddNewRow = (e) => {
+  return {
+    type: 'BIBLIO_ADD_NEW_ROW',
+    payload: {
+      field: e.target.id,
+      value: e.target.value
+    }
+  };
+};
+
 
 // export const setLoadingQuery = (payload) => {
 //   console.log('action setLoadingQuery ' + payload);
