@@ -236,7 +236,7 @@ const Biblio = () => {
         let index = value['order'] - 1;
         let orcid_curie = '';
         let orcid_url = '';
-        if ('orcid' in value) {
+        if ('orcid' in value && value['orcid'] !== null) {
           orcid_curie = value['orcid']['curie'] || '';
           orcid_url = value['orcid']['url'] || ''; }
         let affiliations = [];

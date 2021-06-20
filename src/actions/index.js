@@ -68,6 +68,7 @@ export const biblioQueryReferenceCurie = (payload) => dispatch => {
   console.log("action payload " + payload);
   const createGetQueryReferenceCurie = async () => {
     const url = 'http://dev.alliancegenome.org:49161/reference/' + payload;
+//     const url = 'http://localhost:49161/reference/' + payload;
     console.log(url);
     const res = await fetch(url, {
       method: 'GET',
