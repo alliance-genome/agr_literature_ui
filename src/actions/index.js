@@ -94,6 +94,24 @@ export const biblioQueryReferenceCurie = (payload) => dispatch => {
   createGetQueryReferenceCurie()
 };
 
+export const changeBiblioActionToggler = (e) => {
+  console.log('action change biblio action toggler radio ' + e.target.id + ' to ' + e.target.value);
+  let biblioActionTogglerSelected = 'display';
+  if (e.target.id === 'biblio-toggler-editor') { biblioActionTogglerSelected = 'editor'; }
+  return {
+    type: 'CHANGE_BIBLIO_ACTION_TOGGLER',
+    payload: biblioActionTogglerSelected
+  };
+};
+
+export const setBiblioAction = (biblioAction) => {
+  console.log("action setBiblioAction");
+  return {
+    type: 'SET_BIBLIO_ACTION',
+    payload: biblioAction
+  };
+};
+
 export const setReferenceCurie = (reference_curie) => {
   console.log("action setReferenceCurie");
   return {

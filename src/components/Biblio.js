@@ -8,11 +8,13 @@ import { useSelector, useDispatch } from 'react-redux';
 
 // import { resetQueryRedirect } from '../actions';
 import { setReferenceCurie } from '../actions';
+import { setBiblioAction } from '../actions';
 // import { setLoadingQuery } from '../actions';
 import { biblioQueryReferenceCurie } from '../actions';
 
 import { changeFieldReferenceJson } from '../actions';
 import { changeFieldArrayReferenceJson } from '../actions';
+import { changeBiblioActionToggler } from '../actions';
 import { biblioAddNewRow } from '../actions';
 
 import { useLocation } from 'react-router-dom';
@@ -35,6 +37,160 @@ const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
 
 
+const BiblioActionToggler = () => { 
+  const dispatch = useDispatch();
+  const biblioAction = useSelector(state => state.biblio.biblioAction);
+  let displayChecked = ''; 
+  let editorChecked = ''; 
+  if (biblioAction === 'editor') { editorChecked = 'checked'; }
+    else { displayChecked = 'checked'; }
+  return (
+    <Form>
+    <div key={`default-radio`} className="mb-3">
+      <Form.Check 
+        inline
+        checked={displayChecked}
+        type='radio'
+        label='display'
+        id='biblio-toggler-display'
+        onChange={(e) => dispatch(changeBiblioActionToggler(e))}
+      />
+      <Form.Check
+        inline
+        checked={editorChecked}
+        type='radio'
+        label='editor'
+        id='biblio-toggler-editor'
+        onChange={(e) => dispatch(changeBiblioActionToggler(e))}
+      />
+    </div>
+    </Form>);
+}
+
+const BiblioActionRouter = () => {
+  const biblioAction = useSelector(state => state.biblio.biblioAction);
+
+  switch (biblioAction) {
+    case 'display':
+      return (<Container><BiblioActionToggler /><BiblioDisplay /></Container>);
+    case 'editor':
+      return (<Container><BiblioActionToggler /><BiblioEditor /></Container>);
+    default:
+      return (<BiblioDisplay />);
+  }
+}
+
+const BiblioDisplay = () => {
+  const referenceJson = useSelector(state => state.biblio.referenceJson);
+  const fieldSimpleElements = fieldsSimple
+// to filter out fields without data
+//       .filter((value) => referenceJson[value] !== null)
+    .map((value, index) => (
+    <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
+      <Col className="Col-general Col-left">{value}</Col>
+      <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[value]}</Col>
+    </Row>
+  ));
+//         <Col className="Col-left"><div className="Col-left-in">{value}</div></Col>
+//         <Col className="Col-right" lg={{ span: 10 }}><div className="Col-right-in">{referenceJson[value]}</div></Col>
+//         <Col className="Col-general Col-left">{value}</Col>
+//         <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[value]}</Col>
+//       <div key={index} align="left" className="task" >{value} to {referenceJson[value]}</div>
+
+  const fieldArrayStringElements = []
+  for (const [fieldIndex, fieldValue] of fieldsArrayString.entries()) {
+    if (fieldValue in referenceJson && referenceJson[fieldValue] !== null) {	// need this because referenceJson starts empty before values get added
+      if (referenceJson[fieldValue].length === 0) {
+        fieldArrayStringElements.push(
+            <Row key={fieldValue} className="Row-general" xs={2} md={4} lg={6}>
+              <Col className="Col-general Col-left">{fieldValue}</Col>
+              <Col className="Col-general Col-right" lg={{ span: 10 }}></Col>
+            </Row>); }
+      else {
+        for (const [index, value] of referenceJson[fieldValue].entries()) {
+          const key = fieldIndex + ' ' + index;
+          fieldArrayStringElements.push(
+            <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
+              <Col className="Col-general Col-left">{fieldValue}</Col>
+              <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
+            </Row>); } } } }
+
+  const crossReferencesElements = []
+  if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
+    for (const[index, value] of referenceJson['cross_references'].entries()) {
+      let url = value['url'];
+      if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
+      crossReferencesElements.push(
+        <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">cross_references</Col>
+          <Col className="Col-general Col-right" lg={{ span: 10 }}><a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a></Col>
+        </Row>); } }
+
+  const tagsElements = []
+  if ('tags' in referenceJson && referenceJson['tags'] !== null) {
+    for (const[index, value] of referenceJson['tags'].entries()) {
+      tagsElements.push(
+        <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">tags</Col>
+          <Col className="Col-general " lg={{ span: 2 }}>{value['tag_source']}</Col>
+          <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['tag_name']}</Col>
+        </Row>); } }
+
+  const modReferenceTypesElements = []
+  if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
+    for (const[index, value] of referenceJson['mod_reference_types'].entries()) {
+      let source = value['source'];
+      let ref_type = value['reference_type'];
+      modReferenceTypesElements.push(
+        <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">mod_reference_types</Col>
+          <Col className="Col-general " lg={{ span: 2 }}>{source}</Col>
+          <Col className="Col-general Col-right" lg={{ span: 8 }}>{ref_type}</Col>
+        </Row>); } }
+
+  const meshTermsElements = []
+  if ('mesh_terms' in referenceJson && referenceJson['mesh_terms'] !== null) {
+    for (const[index, value] of referenceJson['mesh_terms'].entries()) {
+      meshTermsElements.push(
+        <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">mesh_terms</Col>
+          <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
+          <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
+        </Row>); } }
+
+  const authorsElements = []
+  // e.g. orcid/affiliation PMID:24895670   affiliations PMID:24913562
+  if ('authors' in referenceJson && referenceJson['authors'] !== null) {
+    for (const value  of referenceJson['authors'].values()) {
+      let index = value['order'] - 1;
+      let orcid_curie = '';
+      let orcid_url = '';
+      if ('orcid' in value && value['orcid'] !== null) {
+        orcid_curie = value['orcid']['curie'] || '';
+        orcid_url = value['orcid']['url'] || ''; }
+      let affiliations = [];
+      if ('affiliation' in value) {
+        for (const index_aff in value['affiliation']) { affiliations.push(<div key={index_aff} className="affiliation">- {value['affiliation'][index_aff]}</div>); }
+      }
+      authorsElements[index] = 
+        <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">author {value['order']}</Col>
+          <Col className="Col-general " lg={{ span: 10 }}><div key={index}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
+        </Row>; } }
+
+//             <Col className="Col-general Col-right" lg={{ span: 4 }}><a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a></Col>
+
+//         authorElements.push(
+//           <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
+//             <Col className="Col-general Col-left">author</Col>
+//             <Col className="Col-general " lg={{ span: 2 }}>{value['mesh_detail_id']}</Col>
+//             <Col className="Col-general " lg={{ span: 4 }}>{value['heading_term']}</Col>
+//             <Col className="Col-general Col-right" lg={{ span: 4 }}>{value['qualifier_term']}</Col>
+//           </Row>);
+
+  return (<Container>{fieldSimpleElements}{fieldArrayStringElements}{crossReferencesElements}{modReferenceTypesElements}{tagsElements}{authorsElements}{meshTermsElements}</Container>);
+}
+
 const BiblioEditor = () => {
   const dispatch = useDispatch();
   const referenceJson = useSelector(state => state.biblio.referenceJson);
@@ -54,10 +210,11 @@ const BiblioEditor = () => {
 //     }
   }
 
-  const handleClick = (e) => {    console.log('this is:', e);  }
+//   const handleClick = (e) => {    console.log('this is:', e);  }
 
   const fieldArrayStringElements = []
-  for (const [fieldIndex, field] of fieldsArrayString.entries()) {
+//   for (const [fieldIndex, field] of fieldsArrayString.entries()) { }
+  for (const field  of fieldsArrayString.values()) {
     if (field in referenceJson && referenceJson[field] !== null) {	// need this because referenceJson starts empty before values get added
       let fieldType = 'input';
       for (const [index, value] of referenceJson[field].entries()) {
@@ -96,6 +253,7 @@ const Biblio = () => {
     dispatch(setReferenceCurie(crossRefCurieQueryResponseField));
   }
 
+  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const alreadyGotJson = useSelector(state => state.biblio.alreadyGotJson);
   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
@@ -103,7 +261,7 @@ const Biblio = () => {
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
-  if (referenceCurie === '') {
+  if (referenceCurie === '' || biblioAction === '') {
     console.log(query);
     let paramAction = query.get('action');
     let paramReferenceCurie = query.get('referenceCurie');
@@ -111,6 +269,7 @@ const Biblio = () => {
     console.log("biblio urlParam paramReferenceCurie", paramReferenceCurie);
 //     if (paramReferenceCurie !== null) { dispatch(setLoadingQuery(true)); }
     if (paramReferenceCurie !== null) { dispatch(setReferenceCurie(paramReferenceCurie)); }
+    if (paramAction !== null) { dispatch(setBiblioAction(paramAction)); }
   }
 
   if (referenceCurie !== '' && (alreadyGotJson === false)) {
@@ -124,7 +283,7 @@ const Biblio = () => {
 //     dispatch(setLoadingQuery(false));
 //   }
 
-  const referenceJson = useSelector(state => state.biblio.referenceJson);
+//   const referenceJson = useSelector(state => state.biblio.referenceJson);
 
 //     <Row className="Row-general" xs={2} md={4} lg={6}>
 //       <Col className="Col-general">reference_id</Col>
@@ -152,115 +311,6 @@ const Biblio = () => {
 
 //   const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 
-  function BiblioDisplay() {
-    const fieldSimpleElements = fieldsSimple
-// to filter out fields without data
-//       .filter((value) => referenceJson[value] !== null)
-      .map((value, index) => (
-      <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-        <Col className="Col-general Col-left">{value}</Col>
-        <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[value]}</Col>
-      </Row>
-    ));
-//         <Col className="Col-left"><div className="Col-left-in">{value}</div></Col>
-//         <Col className="Col-right" lg={{ span: 10 }}><div className="Col-right-in">{referenceJson[value]}</div></Col>
-//         <Col className="Col-general Col-left">{value}</Col>
-//         <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[value]}</Col>
-//       <div key={index} align="left" className="task" >{value} to {referenceJson[value]}</div>
-
-    const fieldArrayStringElements = []
-    for (const [fieldIndex, fieldValue] of fieldsArrayString.entries()) {
-      if (fieldValue in referenceJson && referenceJson[fieldValue] !== null) {	// need this because referenceJson starts empty before values get added
-        if (referenceJson[fieldValue].length === 0) {
-          fieldArrayStringElements.push(
-              <Row key={fieldValue} className="Row-general" xs={2} md={4} lg={6}>
-                <Col className="Col-general Col-left">{fieldValue}</Col>
-                <Col className="Col-general Col-right" lg={{ span: 10 }}></Col>
-              </Row>); }
-        else {
-          for (const [index, value] of referenceJson[fieldValue].entries()) {
-            const key = fieldIndex + ' ' + index;
-            fieldArrayStringElements.push(
-              <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
-                <Col className="Col-general Col-left">{fieldValue}</Col>
-                <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
-              </Row>); } } } }
-
-    const crossReferencesElements = []
-    if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
-      for (const[index, value] of referenceJson['cross_references'].entries()) {
-        let url = value['url'];
-        if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
-        crossReferencesElements.push(
-          <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-left">cross_references</Col>
-            <Col className="Col-general Col-right" lg={{ span: 10 }}><a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a></Col>
-          </Row>); } }
-
-    const tagsElements = []
-    if ('tags' in referenceJson && referenceJson['tags'] !== null) {
-      for (const[index, value] of referenceJson['tags'].entries()) {
-        tagsElements.push(
-          <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-left">tags</Col>
-            <Col className="Col-general " lg={{ span: 2 }}>{value['tag_source']}</Col>
-            <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['tag_name']}</Col>
-          </Row>); } }
-
-    const modReferenceTypesElements = []
-    if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
-      for (const[index, value] of referenceJson['mod_reference_types'].entries()) {
-        let source = value['source'];
-        let ref_type = value['reference_type'];
-        modReferenceTypesElements.push(
-          <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-left">mod_reference_types</Col>
-            <Col className="Col-general " lg={{ span: 2 }}>{source}</Col>
-            <Col className="Col-general Col-right" lg={{ span: 8 }}>{ref_type}</Col>
-          </Row>); } }
-
-    const meshTermsElements = []
-    if ('mesh_terms' in referenceJson && referenceJson['mesh_terms'] !== null) {
-      for (const[index, value] of referenceJson['mesh_terms'].entries()) {
-        meshTermsElements.push(
-          <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-left">mesh_terms</Col>
-            <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
-            <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
-          </Row>); } }
-
-    const authorsElements = []
-    // e.g. orcid/affiliation PMID:24895670   affiliations PMID:24913562
-    if ('authors' in referenceJson && referenceJson['authors'] !== null) {
-      for (const value  of referenceJson['authors'].values()) {
-        let index = value['order'] - 1;
-        let orcid_curie = '';
-        let orcid_url = '';
-        if ('orcid' in value && value['orcid'] !== null) {
-          orcid_curie = value['orcid']['curie'] || '';
-          orcid_url = value['orcid']['url'] || ''; }
-        let affiliations = [];
-        if ('affiliation' in value) {
-          for (const index_aff in value['affiliation']) { affiliations.push(<div key={index_aff} className="affiliation">- {value['affiliation'][index_aff]}</div>); }
-        }
-        authorsElements[index] = 
-          <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-left">author {value['order']}</Col>
-            <Col className="Col-general " lg={{ span: 10 }}><div key={index}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
-          </Row>; } }
-
-//             <Col className="Col-general Col-right" lg={{ span: 4 }}><a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a></Col>
-
-//         authorElements.push(
-//           <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-//             <Col className="Col-general Col-left">author</Col>
-//             <Col className="Col-general " lg={{ span: 2 }}>{value['mesh_detail_id']}</Col>
-//             <Col className="Col-general " lg={{ span: 4 }}>{value['heading_term']}</Col>
-//             <Col className="Col-general Col-right" lg={{ span: 4 }}>{value['qualifier_term']}</Col>
-//           </Row>);
-
-    return (<Container>{fieldSimpleElements}{fieldArrayStringElements}{crossReferencesElements}{modReferenceTypesElements}{tagsElements}{authorsElements}{meshTermsElements}</Container>);
-  }
 
   function LoadingElement() {
     return (<Container><img src={loading_gif} className="loading_gif" alt="loading" /></Container>);
@@ -270,7 +320,7 @@ const Biblio = () => {
     <div>
       <h4>Biblio about this Reference</h4>
       <div align="center" className="task" >{referenceCurie}</div>
-      { loadingQuery ? <LoadingElement /> : <BiblioDisplay /> }
+      { loadingQuery ? <LoadingElement /> : <BiblioActionRouter /> }
       <Link to='/'>Go Back</Link>
     </div>
   )

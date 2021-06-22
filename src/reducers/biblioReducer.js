@@ -1,5 +1,6 @@
 
 const initialState = {
+  biblioAction: '',
   referenceCurie: '',
   referenceJson: {},
   loadingQuery: true,
@@ -46,6 +47,18 @@ export default function(state = initialState, action) {
           ...state.referenceJson,
           [action.payload.field]: newArrayPush
         }
+      }
+    case 'CHANGE_BIBLIO_ACTION_TOGGLER':
+      // console.log(action.payload);
+      return {
+        ...state,
+        biblioAction: action.payload
+      }
+    case 'SET_BIBLIO_ACTION':
+      console.log("reducer set biblio action");
+      return {
+        ...state,
+        biblioAction: action.payload
       }
     case 'SET_REFERENCE_CURIE':
       console.log("reducer set reference curie");
