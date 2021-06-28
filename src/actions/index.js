@@ -67,7 +67,8 @@ export const biblioQueryReferenceCurie = (payload) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   console.log("action payload " + payload);
   const createGetQueryReferenceCurie = async () => {
-    const url = 'http://dev.alliancegenome.org:49161/reference/' + payload;
+    const url = 'http://dev.alliancegenome.org:11223/reference/' + payload;
+//     const url = 'http://dev.alliancegenome.org:49161/reference/' + payload;
 //     const url = 'http://localhost:49161/reference/' + payload;
     console.log(url);
     const res = await fetch(url, {
@@ -143,7 +144,8 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
   console.log('in queryButtonCrossRefCurie action');
   console.log("payload " + payload);
   const createGetQueryCrossRefCurie = async () => {
-    const url = 'http://dev.alliancegenome.org:49161/cross-reference/' + payload;
+//     const url = 'http://dev.alliancegenome.org:49161/cross-reference/' + payload;
+    const url = 'http://dev.alliancegenome.org:11223/cross-reference/' + payload;
     console.log(url);
     const res = await fetch(url, {
       method: 'GET',
