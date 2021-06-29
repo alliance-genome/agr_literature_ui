@@ -20,7 +20,6 @@ import { biblioAddNewRow } from '../actions';
 import { updateButtonBiblio } from '../actions';
 
 import { useLocation } from 'react-router-dom';
-import { useHistory } from "react-router-dom";
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -227,7 +226,7 @@ const BiblioSubmitUpdating = () => {
   return (
        <Row className="form-group row" >
          <Col className="form-label col-form-label" sm="2" ></Col>
-         <Col sm="10" ><div className="form-control biblio-button" >updating Biblio data</div></Col>
+         <Col sm="10" ><div className="form-control biblio-updating" >updating Biblio data</div></Col>
        </Row>
   );
 }

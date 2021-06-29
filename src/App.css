@@ -23,11 +23,19 @@
   color: grey;
 }
 
-.biblio-button {
-  text-align: left;
+.biblio-updating {
+  text-align: center;
   background-color: #ced4da !important;
+  border-color: #2598c5 !important;
+}
+
+.biblio-button {
+  text-align: center;
+  background-color: #ffffba !important;
+  border-color: #2598c5 !important;
 }
 /*
+  background-color: #ced4da !important;
   display: block;
   width: 100%;
   padding-left: .75rem;
