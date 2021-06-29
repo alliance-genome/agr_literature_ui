@@ -1,6 +1,7 @@
 
 const initialState = {
   biblioAction: '',
+  biblioUpdating: false,
   referenceCurie: '',
   referenceJson: {},
   loadingQuery: true,
@@ -22,6 +23,25 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
+    case 'UPDATE_BUTTON_BIBLIO':
+      // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload);
+      if (action.payload === "update success") {
+        console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload);
+        alert('Update success');
+      } else {
+        alert('Update failure ' + action.payload);
+      }
+      return {
+        ...state,
+        biblioUpdating: false
+      }
+    case 'SET_BIBLIO_UPDATING':
+      console.log('SET_BIBLIO_UPDATING reducer ' + action.payload);
+      return {
+        ...state,
+        biblioUpdating: action.payload
+      }
+
     case 'CHANGE_FIELD_ARRAY_REFERENCE_JSON':
       // console.log(action.payload);
       let stringArray = action.payload.field.split(" ");

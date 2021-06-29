@@ -1,5 +1,9 @@
 // import history from "../history";
 
+import notGithubVariables from './notGithubVariables';
+
+const port = 11223;
+
 export const increment = (number_multiply) => {
   return {
     type: 'INCREMENT',
@@ -66,8 +70,8 @@ export const biblioAddNewRow = (e) => {
 export const biblioQueryReferenceCurie = (payload) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   console.log("action payload " + payload);
-  const createGetQueryReferenceCurie = async () => {
-    const url = 'http://dev.alliancegenome.org:11223/reference/' + payload;
+  const createBiblioQueryReferenceCurie = async () => {
+    const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + payload;
 //     const url = 'http://dev.alliancegenome.org:49161/reference/' + payload;
 //     const url = 'http://localhost:49161/reference/' + payload;
     console.log(url);
@@ -92,7 +96,7 @@ export const biblioQueryReferenceCurie = (payload) => dispatch => {
       payload: response_payload
     })
   }
-  createGetQueryReferenceCurie()
+  createBiblioQueryReferenceCurie()
 };
 
 export const changeBiblioActionToggler = (e) => {
@@ -110,6 +114,47 @@ export const setBiblioAction = (biblioAction) => {
   return {
     type: 'SET_BIBLIO_ACTION',
     payload: biblioAction
+  };
+};
+
+export const updateButtonBiblio = (curie, payload) => dispatch => {
+//   console.log('in updateButtonBiblio action');
+//   console.log("payload " + payload);
+  const createUpdateButtonBiblio = async () => {
+    const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
+    console.log(url);
+    // console.log(notGithubVariables.authToken);
+    const res = await fetch(url, {
+      method: 'PATCH',
+      mode: 'cors',
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + notGithubVariables.authToken
+      },
+      body: JSON.stringify( payload )
+    })
+
+    const response = await res.json();
+    let response_payload = 'update success';
+    if (response !== 'updated') {
+      console.log('updateButtonBiblio action response not updated');
+      response_payload = response;
+    }
+    // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
+    console.log('dispatch UPDATE_BUTTON_BIBLIO');
+    dispatch({
+      type: 'UPDATE_BUTTON_BIBLIO',
+      payload: response_payload
+    })
+  }
+  createUpdateButtonBiblio()
+};
+
+
+export const setBiblioUpdating = (payload) => {
+  return {
+    type: 'SET_BIBLIO_UPDATING',
+    payload: payload
   };
 };
 
@@ -145,7 +190,7 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
   console.log("payload " + payload);
   const createGetQueryCrossRefCurie = async () => {
 //     const url = 'http://dev.alliancegenome.org:49161/cross-reference/' + payload;
-    const url = 'http://dev.alliancegenome.org:11223/cross-reference/' + payload;
+    const url = 'http://dev.alliancegenome.org:' + port + '/cross-reference/' + payload;
     console.log(url);
     const res = await fetch(url, {
       method: 'GET',

@@ -11,13 +11,16 @@ import { setReferenceCurie } from '../actions';
 import { setBiblioAction } from '../actions';
 // import { setLoadingQuery } from '../actions';
 import { biblioQueryReferenceCurie } from '../actions';
+import { setBiblioUpdating } from '../actions';
 
 import { changeFieldReferenceJson } from '../actions';
 import { changeFieldArrayReferenceJson } from '../actions';
 import { changeBiblioActionToggler } from '../actions';
 import { biblioAddNewRow } from '../actions';
+import { updateButtonBiblio } from '../actions';
 
 import { useLocation } from 'react-router-dom';
+import { useHistory } from "react-router-dom";
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -44,6 +47,22 @@ const BiblioActionToggler = () => {
   let editorChecked = ''; 
   if (biblioAction === 'editor') { editorChecked = 'checked'; }
     else { displayChecked = 'checked'; }
+
+// calling below
+//         onChange={(e) => dispatch(toggleBiblioAction(e))}
+// doesn't work because
+//         Error: Actions must be plain objects. Use custom middleware for async actions.
+// still need a way to change history (url)
+//   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+//   const history = useHistory();
+//   function toggleBiblioAction(e) {
+//     let biblioActionTogglerSelected = 'display';
+//     if (e.target.id === 'biblio-toggler-editor') { biblioActionTogglerSelected = 'editor'; }
+//     // console.log(biblioActionTogglerSelected)
+//     dispatch(changeBiblioActionToggler(e))
+//     history.push("/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie);
+//   }
+
   return (
     <Form>
     <div key={`default-radio`} className="mb-3">
@@ -189,7 +208,56 @@ const BiblioDisplay = () => {
 //           </Row>);
 
   return (<Container>{fieldSimpleElements}{fieldArrayStringElements}{crossReferencesElements}{modReferenceTypesElements}{tagsElements}{authorsElements}{meshTermsElements}</Container>);
+} // const BiblioDisplay
+
+const BiblioSubmitUpdateRouter = () => {
+  const biblioUpdating = useSelector(state => state.biblio.biblioUpdating);
+
+  switch (biblioUpdating) {
+    case false:
+      return (<BiblioSubmitUpdateButton />);
+    case true:
+      return (<BiblioSubmitUpdating />);
+    default:
+      return (<BiblioSubmitUpdateButton />);
+  }
+} // const BiblioSubmitUpdateRouter
+
+const BiblioSubmitUpdating = () => {
+  return (
+       <Row className="form-group row" >
+         <Col className="form-label col-form-label" sm="2" ></Col>
+         <Col sm="10" ><div className="form-control biblio-button" >updating Biblio data</div></Col>
+       </Row>
+  );
 }
+
+const BiblioSubmitUpdateButton = () => {
+  const dispatch = useDispatch();
+  const referenceJson = useSelector(state => state.biblio.referenceJson);
+  let updateJson = {}
+  const fieldsSimpleNotPatch = ['curie', 'resource_curie', 'resource_title' ];
+  for (const field of fieldsSimple.values()) {
+    if ((field in referenceJson) && !(fieldsSimpleNotPatch.includes(field))) {
+      updateJson[field] = referenceJson[field] } }
+  for (const field of fieldsArrayString.values()) {
+    if (field in referenceJson) {
+      updateJson[field] = referenceJson[field] } }
+
+  function updateBiblio(curie, updateJson) {
+    // console.log('updateBiblio')
+    dispatch(setBiblioUpdating(true))
+    dispatch(updateButtonBiblio(curie, updateJson))
+    // console.log('end updateBiblio')
+  }
+
+  return (
+       <Row className="form-group row" >
+         <Col className="form-label col-form-label" sm="2" ></Col>
+         <Col sm="10" ><div className="form-control biblio-button" type="submit" onClick={() => updateBiblio(referenceJson.curie, updateJson)}>update Biblio data</div></Col>
+       </Row>
+  );
+} // const BiblioSubmitUpdateButton
 
 const BiblioEditor = () => {
   const dispatch = useDispatch();
@@ -214,7 +282,7 @@ const BiblioEditor = () => {
 
   const fieldArrayStringElements = []
 //   for (const [fieldIndex, field] of fieldsArrayString.entries()) { }
-  for (const field  of fieldsArrayString.values()) {
+  for (const field of fieldsArrayString.values()) {
     if (field in referenceJson && referenceJson[field] !== null) {	// need this because referenceJson starts empty before values get added
       let fieldType = 'input';
       for (const [index, value] of referenceJson[field].entries()) {
@@ -234,7 +302,7 @@ const BiblioEditor = () => {
        </Row>);
   }
 
-  return (<Container><Form>{fieldSimpleElements}{fieldArrayStringElements}</Form></Container>);
+  return (<Container><Form><BiblioSubmitUpdateRouter />{fieldSimpleElements}{fieldArrayStringElements}</Form></Container>);
 }
 
 const Biblio = () => {
