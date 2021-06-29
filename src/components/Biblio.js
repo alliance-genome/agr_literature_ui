@@ -297,7 +297,7 @@ const BiblioEditor = () => {
      fieldArrayStringElements.push(
        <Row className="form-group row" key={field} >
          <Col className="form-label col-form-label" sm="2" >{field}</Col>
-         <Col sm="10" ><div id={field} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRow(e))} >add row</div></Col>
+         <Col sm="10" ><div id={field} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRow(e))} >add {field}</div></Col>
        </Row>);
   }
 
