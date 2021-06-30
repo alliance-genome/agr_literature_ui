@@ -280,7 +280,7 @@ const BiblioSubmitUpdateButton = () => {
   return (
        <Row className="form-group row" >
          <Col className="form-label col-form-label" sm="2" ></Col>
-         <Col sm="10" ><div className="form-control biblio-button" type="submit" onClick={() => updateBiblio(referenceJson.curie, updateJson)}>update Biblio data</div></Col>
+         <Col sm="10" ><div className="form-control biblio-button" type="submit" onClick={() => updateBiblio(referenceJson.curie, updateJson)}>Update Biblio Data</div></Col>
        </Row>
   );
 } // const BiblioSubmitUpdateButton
