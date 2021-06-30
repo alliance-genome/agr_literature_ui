@@ -99,6 +99,13 @@ export const biblioQueryReferenceCurie = (payload) => dispatch => {
   createBiblioQueryReferenceCurie()
 };
 
+export const closeUpdateAlert = () => {
+  console.log("action closeUpdateAlert");
+  return {
+    type: 'CLOSE_UPDATE_ALERT'
+  };
+};
+
 export const changeBiblioActionToggler = (e) => {
   console.log('action change biblio action toggler radio ' + e.target.id + ' to ' + e.target.value);
   let biblioActionTogglerSelected = 'display';

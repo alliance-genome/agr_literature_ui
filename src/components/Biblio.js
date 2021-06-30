@@ -18,6 +18,7 @@ import { changeFieldArrayReferenceJson } from '../actions';
 import { changeBiblioActionToggler } from '../actions';
 import { biblioAddNewRow } from '../actions';
 import { updateButtonBiblio } from '../actions';
+import { closeUpdateAlert } from '../actions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -25,6 +26,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert'
 
 import loading_gif from '../images/loading_cat.gif';
 
@@ -214,13 +216,38 @@ const BiblioSubmitUpdateRouter = () => {
 
   switch (biblioUpdating) {
     case false:
-      return (<BiblioSubmitUpdateButton />);
+      return (<><AlertDismissibleExample /><BiblioSubmitUpdateButton /></>);
     case true:
       return (<BiblioSubmitUpdating />);
     default:
-      return (<BiblioSubmitUpdateButton />);
+      return (<><AlertDismissibleExample /><BiblioSubmitUpdateButton /></>);
   }
 } // const BiblioSubmitUpdateRouter
+
+const AlertDismissibleExample = () => {
+  const dispatch = useDispatch();
+  const updateAlert = useSelector(state => state.biblio.updateAlert);
+  let variant = 'danger';
+  let header = 'Update Failure';
+  let message = '';
+  if (updateAlert === 'update success') { 
+    header = 'Update Success';
+    message = '';
+    variant = 'success'; }
+  else { 
+    header = 'Update Failure';
+    message = updateAlert;
+    variant = 'danger'; }
+  if (updateAlert) {
+    return (
+      <Alert variant={variant} onClose={() => dispatch(closeUpdateAlert())} dismissible>
+        <Alert.Heading>{header}</Alert.Heading>
+        {message}
+      </Alert>
+    );
+  } else { return null; }
+}
+
 
 const BiblioSubmitUpdating = () => {
   return (
@@ -235,7 +262,7 @@ const BiblioSubmitUpdateButton = () => {
   const dispatch = useDispatch();
   const referenceJson = useSelector(state => state.biblio.referenceJson);
   let updateJson = {}
-  const fieldsSimpleNotPatch = ['curie', 'resource_curie', 'resource_title' ];
+  const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title' ];
   for (const field of fieldsSimple.values()) {
     if ((field in referenceJson) && !(fieldsSimpleNotPatch.includes(field))) {
       updateJson[field] = referenceJson[field] } }
@@ -302,7 +329,7 @@ const BiblioEditor = () => {
   }
 
   return (<Container><Form><BiblioSubmitUpdateRouter />{fieldSimpleElements}{fieldArrayStringElements}</Form></Container>);
-}
+} // const BiblioEditor
 
 const Biblio = () => {
 

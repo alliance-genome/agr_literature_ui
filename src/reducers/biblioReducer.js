@@ -6,7 +6,8 @@ const initialState = {
   referenceJson: {},
   loadingQuery: true,
   queryFailure: false,
-  alreadyGotJson: false
+  alreadyGotJson: false,
+  updateAlert: ''
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -25,14 +26,18 @@ export default function(state = initialState, action) {
       }
     case 'UPDATE_BUTTON_BIBLIO':
       // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload);
+      let newUpdateAlert = '';
       if (action.payload === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload);
-        alert('Update success');
+        newUpdateAlert = action.payload;
+        // alert('Update success');
       } else {
-        alert('Update failure ' + action.payload);
+        newUpdateAlert = action.payload.detail;
+        // alert('Update failure ' + action.payload.detail);
       }
       return {
         ...state,
+        updateAlert: newUpdateAlert,
         biblioUpdating: false
       }
     case 'SET_BIBLIO_UPDATING':
@@ -40,6 +45,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         biblioUpdating: action.payload
+      }
+    case 'CLOSE_UPDATE_ALERT':
+      console.log('CLOSE_UPDATE_ALERT reducer');
+      return {
+        ...state,
+        updateAlert: ''
       }
 
     case 'CHANGE_FIELD_ARRAY_REFERENCE_JSON':
