@@ -87,16 +87,20 @@ const BiblioActionToggler = () => {
     </Form>);
 }
 
+const RowDivider = () => {
+  return (<Row><Col>&nbsp;</Col></Row>);
+}
+
 const BiblioActionRouter = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
 
   switch (biblioAction) {
     case 'display':
-      return (<Container><BiblioActionToggler /><BiblioDisplay /></Container>);
+      return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
     case 'editor':
-      return (<Container><BiblioActionToggler /><BiblioEditor /></Container>);
+      return (<Container><BiblioActionToggler /><RowDivider /><BiblioEditor /></Container>);
     default:
-      return (<BiblioDisplay />);
+      return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
   }
 }
 
