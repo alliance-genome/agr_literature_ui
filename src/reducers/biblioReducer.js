@@ -32,7 +32,7 @@ export default function(state = initialState, action) {
         newUpdateAlert = action.payload;
         // alert('Update success');
       } else {
-        newUpdateAlert = action.payload.detail;
+        newUpdateAlert = action.payload;
         // alert('Update failure ' + action.payload.detail);
       }
       return {

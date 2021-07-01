@@ -142,10 +142,16 @@ export const updateButtonBiblio = (curie, payload) => dispatch => {
     })
 
     const response = await res.json();
+    // console.log(res.status);
     let response_payload = 'update success';
-    if (response !== 'updated') {
+    if (res.status !== 202) {
       console.log('updateButtonBiblio action response not updated');
-      response_payload = response;
+      if (typeof(response) !== 'object') {
+          response_payload = response; }
+        else if (typeof(response.detail[0].msg) !== 'object') {
+          response_payload = response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
+        else {
+          response_payload = 'error: API status code ' + res.status; }
     }
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
     console.log('dispatch UPDATE_BUTTON_BIBLIO');
