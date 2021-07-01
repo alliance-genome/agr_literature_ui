@@ -12,7 +12,7 @@ const initialState = {
 export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
-    case 'CHANGE_FIELD':
+    case 'QUERY_CHANGE_QUERY_FIELD':
       // console.log(action.payload);
       return {
         ...state,

@@ -6,19 +6,19 @@ import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 // import { useSelector } from 'react-redux';
 
-// import { resetQueryRedirect } from '../actions';
-import { setReferenceCurie } from '../actions';
-import { setBiblioAction } from '../actions';
-// import { setLoadingQuery } from '../actions';
-import { biblioQueryReferenceCurie } from '../actions';
-import { setBiblioUpdating } from '../actions';
+// import { resetQueryRedirect } from '../actions/biblioActions';
+import { setReferenceCurie } from '../actions/biblioActions';
+import { setBiblioAction } from '../actions/biblioActions';
+// import { setLoadingQuery } from '../actions/biblioActions';
+import { biblioQueryReferenceCurie } from '../actions/biblioActions';
+import { setBiblioUpdating } from '../actions/biblioActions';
 
-import { changeFieldReferenceJson } from '../actions';
-import { changeFieldArrayReferenceJson } from '../actions';
-import { changeBiblioActionToggler } from '../actions';
-import { biblioAddNewRow } from '../actions';
-import { updateButtonBiblio } from '../actions';
-import { closeUpdateAlert } from '../actions';
+import { changeFieldReferenceJson } from '../actions/biblioActions';
+import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
+import { changeBiblioActionToggler } from '../actions/biblioActions';
+import { biblioAddNewRow } from '../actions/biblioActions';
+import { updateButtonBiblio } from '../actions/biblioActions';
+import { closeUpdateAlert } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -339,10 +339,10 @@ const Biblio = () => {
 
   const dispatch = useDispatch();
 
-  const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.crossRefCurieQuery.redirectToBiblio);
+  const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.query.redirectToBiblio);
 //   console.log("biblio crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
 
-  const crossRefCurieQueryResponseField = useSelector(state => state.crossRefCurieQuery.responseField);
+  const crossRefCurieQueryResponseField = useSelector(state => state.query.responseField);
   if ( crossRefCurieQueryRedirectToBiblio ) {
     console.log('biblio from redirect');
 // this is needed to keep the query page from redirecting here if going back to it, but changing it triggers a change there, which somehow triggers a dispatch of a bunch of stuff, including a double dispatch(biblioQueryReferenceCurie(referenceCurie)), which is wrong
