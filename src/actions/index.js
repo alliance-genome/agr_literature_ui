@@ -146,8 +146,8 @@ export const updateButtonBiblio = (curie, payload) => dispatch => {
     let response_payload = 'update success';
     if (res.status !== 202) {
       console.log('updateButtonBiblio action response not updated');
-      if (typeof(response) !== 'object') {
-          response_payload = response; }
+      if (typeof(response.detail) !== 'object') {
+          response_payload = response.detail; }
         else if (typeof(response.detail[0].msg) !== 'object') {
           response_payload = response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
         else {
