@@ -115,15 +115,12 @@ const BiblioActionToggler = () => {
       />
     </div>
     </Form>);
-}
+} // const BiblioActionToggler
 
-const RowDivider = () => {
-  return (<Row><Col>&nbsp;</Col></Row>);
-}
+const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
 const BiblioActionRouter = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
-
   switch (biblioAction) {
     case 'display':
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
@@ -141,201 +138,115 @@ const RowDisplaySimple = ({fieldName, value}) => {
               <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
             </Row>); }
 
+const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson}) => {
+  if (fieldName in referenceJson && referenceJson[fieldName] !== null) {	// need this because referenceJson starts empty before values get added
+    const rowArrayStringElements = []
+    if (referenceJson[fieldName].length === 0) {
+      rowArrayStringElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value="" />); }
+    else {
+      for (const [index, value] of referenceJson[fieldName].entries()) {
+        rowArrayStringElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={value} />); } }
+    return (<>{rowArrayStringElements}</>); }
+  else { return null; } }
+
+const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJson}) => {
+  if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
+    const rowCrossReferenceElements = []
+    for (const[index, value] of referenceJson['cross_references'].entries()) {
+      let url = value['url'];
+      if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
+      const xrefValue = (<a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a>);
+      rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} />); }
+    return (<>{rowCrossReferenceElements}</>); }
+  else { return null; } }
+
+const RowDisplayTags = ({fieldIndex, fieldName, referenceJson}) => {
+  if ('tags' in referenceJson && referenceJson['tags'] !== null) {
+    const rowTagElements = []
+    for (const[index, value] of referenceJson['tags'].entries()) {
+      rowTagElements.push(
+        <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">tags</Col>
+          <Col className="Col-general " lg={{ span: 2 }}>{value['tag_source']}</Col>
+          <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['tag_name']}</Col>
+        </Row>); }
+    return (<>{rowTagElements}</>); }
+  else { return null; } }
+
+const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
+  if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
+    const rowModReferenceTypesElements = []
+    for (const[index, value] of referenceJson['mod_reference_types'].entries()) {
+      rowModReferenceTypesElements.push(
+        <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">mod_reference_types</Col>
+          <Col className="Col-general " lg={{ span: 2 }}>{value['source']}</Col>
+          <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
+        </Row>); }
+    return (<>{rowModReferenceTypesElements}</>); }
+  else { return null; } }
+
+const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson}) => {
+  if ('mesh_terms' in referenceJson && referenceJson['mesh_terms'] !== null) {
+    const rowMeshTermsElements = []
+    for (const[index, value] of referenceJson['mesh_terms'].entries()) {
+      rowMeshTermsElements.push(
+        <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">mesh_terms</Col>
+          <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
+          <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
+        </Row>); }
+    return (<>{rowMeshTermsElements}</>); }
+  else { return null; } }
+
+const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
+  // e.g. orcid/affiliation PMID:24895670   affiliations PMID:24913562   out of order PMID:33766856
+  if ('authors' in referenceJson && referenceJson['authors'] !== null) {
+    const rowAuthorElements = [];
+    const orderedAuthors = [];
+    for (const value  of referenceJson['authors'].values()) {
+      let index = value['order'] - 1;
+      orderedAuthors[index] = value; }
+    for (const [index, value]  of orderedAuthors.entries()) {
+      let orcid_curie = '';
+      let orcid_url = '';
+      if ('orcid' in value && value['orcid'] !== null) {
+        orcid_curie = value['orcid']['curie'] || '';
+        orcid_url = value['orcid']['url'] || ''; }
+      let affiliations = [];
+      if ('affiliation' in value) {
+        for (const index_aff in value['affiliation']) {
+          affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliation'][index_aff]}</div>); } }
+      rowAuthorElements.push(
+        <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">author {value['order']}</Col>
+          <Col className="Col-general " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
+        </Row>); }
+    return (<>{rowAuthorElements}</>); }
+  else { return null; }
+} // const RowDisplayAuthors
 
 const BiblioDisplay = () => {
-// const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
-// const fieldsArrayString = ['keywords', 'pubmed_type' ];
-// const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
-
   const referenceJson = useSelector(state => state.biblio.referenceJson);
-
   const rowOrderedElements = []
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
         rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
     else if (fieldsSimple.includes(fieldName)) {
         rowOrderedElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value={referenceJson[fieldName]} />); }
-
     else if (fieldsArrayString.includes(fieldName)) {
-      if (fieldName in referenceJson && referenceJson[fieldName] !== null) {	// need this because referenceJson starts empty before values get added
-        if (referenceJson[fieldName].length === 0) {
-          rowOrderedElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value="" />); }
-        else {
-          for (const [index, value] of referenceJson[fieldName].entries()) {
-            rowOrderedElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={value} />); } } } }
-
+      rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'cross_references') {
-      if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
-        for (const[index, value] of referenceJson['cross_references'].entries()) {
-          let url = value['url'];
-          if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
-          const key = fieldIndex + ' ' + index;
-          rowOrderedElements.push(
-            <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-left">cross_references</Col>
-              <Col className="Col-general Col-right" lg={{ span: 10 }}><a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a></Col>
-            </Row>); } } }
-
+      rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'tags') {
-      if ('tags' in referenceJson && referenceJson['tags'] !== null) {
-        for (const[index, value] of referenceJson['tags'].entries()) {
-          const key = fieldIndex + ' ' + index;
-          rowOrderedElements.push(
-            <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-left">tags</Col>
-              <Col className="Col-general " lg={{ span: 2 }}>{value['tag_source']}</Col>
-              <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['tag_name']}</Col>
-            </Row>); } } }
-
+      rowOrderedElements.push(<RowDisplayTags key="RowDisplayTags" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'mod_reference_types') {
-      if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
-        for (const[index, value] of referenceJson['mod_reference_types'].entries()) {
-          let source = value['source'];
-          let ref_type = value['reference_type'];
-          const key = fieldIndex + ' ' + index;
-          rowOrderedElements.push(
-            <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-left">mod_reference_types</Col>
-              <Col className="Col-general " lg={{ span: 2 }}>{source}</Col>
-              <Col className="Col-general Col-right" lg={{ span: 8 }}>{ref_type}</Col>
-            </Row>); } } }
-
+      rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'mesh_terms') {
-      if ('mesh_terms' in referenceJson && referenceJson['mesh_terms'] !== null) {
-        for (const[index, value] of referenceJson['mesh_terms'].entries()) {
-          const key = fieldIndex + ' ' + index;
-          rowOrderedElements.push(
-            <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-left">mesh_terms</Col>
-              <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
-              <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
-            </Row>); } } }
-
+      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'authors') {
-      // e.g. orcid/affiliation PMID:24895670   affiliations PMID:24913562   out of order PMID:33766856
-      if ('authors' in referenceJson && referenceJson['authors'] !== null) {
-        const orderedAuthors = []
-        for (const value  of referenceJson['authors'].values()) {
-          let index = value['order'] - 1;
-          orderedAuthors[index] = value; }
-        for (const [index, value]  of orderedAuthors.entries()) {
-          let orcid_curie = '';
-          let orcid_url = '';
-          if ('orcid' in value && value['orcid'] !== null) {
-            orcid_curie = value['orcid']['curie'] || '';
-            orcid_url = value['orcid']['url'] || ''; }
-          let affiliations = [];
-          if ('affiliation' in value) {
-            for (const index_aff in value['affiliation']) {
-              let key = 'index_aff_' + index_aff;
-              affiliations.push(<div key={key} className="affiliation">- {value['affiliation'][index_aff]}</div>); }
-          }
-          let key = 'author_' + index;
-          rowOrderedElements.push(
-            <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-left">author {value['order']}</Col>
-              <Col className="Col-general " lg={{ span: 10 }}><div key={key}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
-            </Row>); } } }
+      rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
-
-
-//   const fieldSimpleElements = fieldsSimple
-// // to filter out fields without data
-// //       .filter((value) => referenceJson[value] !== null)
-//     .map((value, index) => (
-//     <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-//       <Col className="Col-general Col-left">{value}</Col>
-//       <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[value]}</Col>
-//     </Row>
-//   ));
-// //         <Col className="Col-left"><div className="Col-left-in">{value}</div></Col>
-// //         <Col className="Col-right" lg={{ span: 10 }}><div className="Col-right-in">{referenceJson[value]}</div></Col>
-// //         <Col className="Col-general Col-left">{value}</Col>
-// //         <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[value]}</Col>
-// //       <div key={index} align="left" className="task" >{value} to {referenceJson[value]}</div>
-// 
-//   const fieldArrayStringElements = []
-//   for (const [fieldIndex, fieldValue] of fieldsArrayString.entries()) {
-//     if (fieldValue in referenceJson && referenceJson[fieldValue] !== null) {	// need this because referenceJson starts empty before values get added
-//       if (referenceJson[fieldValue].length === 0) {
-//         fieldArrayStringElements.push(
-//             <Row key={fieldValue} className="Row-general" xs={2} md={4} lg={6}>
-//               <Col className="Col-general Col-left">{fieldValue}</Col>
-//               <Col className="Col-general Col-right" lg={{ span: 10 }}></Col>
-//             </Row>); }
-//       else {
-//         for (const [index, value] of referenceJson[fieldValue].entries()) {
-//           const key = fieldIndex + ' ' + index;
-//           fieldArrayStringElements.push(
-//             <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
-//               <Col className="Col-general Col-left">{fieldValue}</Col>
-//               <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
-//             </Row>); } } } }
-// 
-//   const crossReferencesElements = []
-//   if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
-//     for (const[index, value] of referenceJson['cross_references'].entries()) {
-//       let url = value['url'];
-//       if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
-//       crossReferencesElements.push(
-//         <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className="Col-general Col-left">cross_references</Col>
-//           <Col className="Col-general Col-right" lg={{ span: 10 }}><a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a></Col>
-//         </Row>); } }
-// 
-//   const tagsElements = []
-//   if ('tags' in referenceJson && referenceJson['tags'] !== null) {
-//     for (const[index, value] of referenceJson['tags'].entries()) {
-//       tagsElements.push(
-//         <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className="Col-general Col-left">tags</Col>
-//           <Col className="Col-general " lg={{ span: 2 }}>{value['tag_source']}</Col>
-//           <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['tag_name']}</Col>
-//         </Row>); } }
-// 
-//   const modReferenceTypesElements = []
-//   if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
-//     for (const[index, value] of referenceJson['mod_reference_types'].entries()) {
-//       let source = value['source'];
-//       let ref_type = value['reference_type'];
-//       modReferenceTypesElements.push(
-//         <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className="Col-general Col-left">mod_reference_types</Col>
-//           <Col className="Col-general " lg={{ span: 2 }}>{source}</Col>
-//           <Col className="Col-general Col-right" lg={{ span: 8 }}>{ref_type}</Col>
-//         </Row>); } }
-// 
-//   const meshTermsElements = []
-//   if ('mesh_terms' in referenceJson && referenceJson['mesh_terms'] !== null) {
-//     for (const[index, value] of referenceJson['mesh_terms'].entries()) {
-//       meshTermsElements.push(
-//         <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className="Col-general Col-left">mesh_terms</Col>
-//           <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
-//           <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
-//         </Row>); } }
-// 
-//   const authorsElements = []
-//   // e.g. orcid/affiliation PMID:24895670   affiliations PMID:24913562
-//   if ('authors' in referenceJson && referenceJson['authors'] !== null) {
-//     for (const value  of referenceJson['authors'].values()) {
-//       let index = value['order'] - 1;
-//       let orcid_curie = '';
-//       let orcid_url = '';
-//       if ('orcid' in value && value['orcid'] !== null) {
-//         orcid_curie = value['orcid']['curie'] || '';
-//         orcid_url = value['orcid']['url'] || ''; }
-//       let affiliations = [];
-//       if ('affiliation' in value) {
-//         for (const index_aff in value['affiliation']) { affiliations.push(<div key={index_aff} className="affiliation">- {value['affiliation'][index_aff]}</div>); }
-//       }
-//       authorsElements[index] = 
-//         <Row key={index} className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className="Col-general Col-left">author {value['order']}</Col>
-//           <Col className="Col-general " lg={{ span: 10 }}><div key={index}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
-//         </Row>; } }
-//
-//   return (<Container>{rowOrderedElements}{fieldSimpleElements}{fieldArrayStringElements}{crossReferencesElements}{modReferenceTypesElements}{tagsElements}{authorsElements}{meshTermsElements}</Container>);
 
   return (<Container>{rowOrderedElements}</Container>);
 } // const BiblioDisplay
@@ -345,15 +256,15 @@ const BiblioSubmitUpdateRouter = () => {
 
   switch (biblioUpdating) {
     case false:
-      return (<><AlertDismissibleExample /><BiblioSubmitUpdateButton /></>);
+      return (<><AlertDismissibleBiblioUpdate /><BiblioSubmitUpdateButton /></>);
     case true:
       return (<BiblioSubmitUpdating />);
     default:
-      return (<><AlertDismissibleExample /><BiblioSubmitUpdateButton /></>);
+      return (<><AlertDismissibleBiblioUpdate /><BiblioSubmitUpdateButton /></>);
   }
 } // const BiblioSubmitUpdateRouter
 
-const AlertDismissibleExample = () => {
+const AlertDismissibleBiblioUpdate = () => {
   const dispatch = useDispatch();
   const updateAlert = useSelector(state => state.biblio.updateAlert);
   let variant = 'danger';
