@@ -117,8 +117,8 @@ const BiblioActionToggler = () => {
     </Form>);
 }
 
-const RowDivider = ({fieldIndex}) => {
-  return (<Row key={fieldIndex}><Col>&nbsp;</Col></Row>);
+const RowDivider = () => {
+  return (<Row><Col>&nbsp;</Col></Row>);
 }
 
 const BiblioActionRouter = () => {
@@ -134,6 +134,14 @@ const BiblioActionRouter = () => {
   }
 }
 
+const RowDisplaySimple = ({fieldName, value}) => {
+  return (
+            <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
+              <Col className="Col-general Col-left">{fieldName}</Col>
+              <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
+            </Row>); }
+
+
 const BiblioDisplay = () => {
 // const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 // const fieldsArrayString = ['keywords', 'pubmed_type' ];
@@ -144,31 +152,17 @@ const BiblioDisplay = () => {
   const rowOrderedElements = []
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
-        rowOrderedElements.push(<Row key={fieldIndex}><Col>&nbsp;</Col></Row>); }
-
+        rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
     else if (fieldsSimple.includes(fieldName)) {
-        rowOrderedElements.push(
-            <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-left">{fieldName}</Col>
-              <Col className="Col-general Col-right" lg={{ span: 10 }}>{referenceJson[fieldName]}</Col>
-            </Row>); }
+        rowOrderedElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value={referenceJson[fieldName]} />); }
 
     else if (fieldsArrayString.includes(fieldName)) {
       if (fieldName in referenceJson && referenceJson[fieldName] !== null) {	// need this because referenceJson starts empty before values get added
         if (referenceJson[fieldName].length === 0) {
-          rowOrderedElements.push(
-              <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-                <Col className="Col-general Col-left">{fieldName}</Col>
-                <Col className="Col-general Col-right" lg={{ span: 10 }}></Col>
-              </Row>); }
+          rowOrderedElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value="" />); }
         else {
           for (const [index, value] of referenceJson[fieldName].entries()) {
-            const key = fieldIndex + ' ' + index;
-            rowOrderedElements.push(
-              <Row key={key} className="Row-general" xs={2} md={4} lg={6}>
-                <Col className="Col-general Col-left">{fieldName}</Col>
-                <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
-              </Row>); } } } }
+            rowOrderedElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={value} />); } } } }
 
     else if (fieldName === 'cross_references') {
       if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
