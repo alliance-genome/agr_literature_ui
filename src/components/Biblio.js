@@ -19,6 +19,8 @@ import { changeBiblioActionToggler } from '../actions/biblioActions';
 import { biblioAddNewRow } from '../actions/biblioActions';
 import { updateButtonBiblio } from '../actions/biblioActions';
 import { closeUpdateAlert } from '../actions/biblioActions';
+import { changeBiblioMeshExpandToggler } from '../actions/biblioActions';
+import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -40,6 +42,7 @@ import loading_gif from '../images/loading_cat.gif';
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
 const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+// const fieldsOrdered = [ 'title', 'authors' ];
 
 // title
 // cross_references (doi, pmid, modID)
@@ -187,44 +190,152 @@ const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => 
   else { return null; } }
 
 const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson}) => {
+  const meshExpand = useSelector(state => state.biblio.meshExpand);
   if ('mesh_terms' in referenceJson && referenceJson['mesh_terms'] !== null) {
     const rowMeshTermsElements = []
-    for (const[index, value] of referenceJson['mesh_terms'].entries()) {
+    rowMeshTermsElements.push(<MeshExpandToggler key="meshExpandTogglerComponent" />);
+    if (meshExpand === 'detailed') {
+      for (const[index, value] of referenceJson['mesh_terms'].entries()) {
+        rowMeshTermsElements.push(
+          <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+            <Col className="Col-general Col-left">mesh_terms</Col>
+            <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
+            <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
+          </Row>); } }
+    else {
+      const meshTextArray = []
+      for (const[index, value] of referenceJson['mesh_terms'].entries()) {
+        let term = value['heading_term'];
+        if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
+        meshTextArray.push(term); }
+//       const meshText = meshTextArray.join('<span className="affiliation">; </span>');	// renders markup
+      const meshText = meshTextArray.join('; ');
       rowMeshTermsElements.push(
-        <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+        <Row key="meshTermsText" className="Row-general" xs={2} md={4} lg={6}>
           <Col className="Col-general Col-left">mesh_terms</Col>
-          <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
-          <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
-        </Row>); }
+          <Col className="Col-general Col-right" lg={{ span: 10 }}>{meshText}</Col>
+        </Row>);
+    }
     return (<>{rowMeshTermsElements}</>); }
   else { return null; } }
 
+const MeshExpandToggler = () => {
+  const dispatch = useDispatch();
+  const meshExpand = useSelector(state => state.biblio.meshExpand);
+  let shortChecked = ''; 
+  let detailedChecked = ''; 
+  if (meshExpand === 'short') { shortChecked = 'checked'; }
+    else { detailedChecked = 'checked'; }
+  return (
+    <Row key="meshExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
+      <Col className="Col-general Col-left">mesh_terms</Col>
+      <Col className="Col-general Col-right" lg={{ span: 10 }}>
+        <Form.Check 
+          inline
+          checked={shortChecked}
+          type='radio'
+          label='short'
+          id='biblio-mesh-expand-toggler-short'
+          onChange={(e) => dispatch(changeBiblioMeshExpandToggler(e))}
+        />
+        <Form.Check
+          inline
+          checked={detailedChecked}
+          type='radio'
+          label='detailed'
+          id='biblio-mesh-expand-toggler-detailed'
+          onChange={(e) => dispatch(changeBiblioMeshExpandToggler(e))}
+        />
+      </Col>
+    </Row>);
+} // const MeshExpandToggler
+
 const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
   // e.g. orcid/affiliation PMID:24895670   affiliations PMID:24913562   out of order PMID:33766856
+  const authorExpand = useSelector(state => state.biblio.authorExpand);
   if ('authors' in referenceJson && referenceJson['authors'] !== null) {
     const rowAuthorElements = [];
+    rowAuthorElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" />);
     const orderedAuthors = [];
     for (const value  of referenceJson['authors'].values()) {
       let index = value['order'] - 1;
       orderedAuthors[index] = value; }
-    for (const [index, value]  of orderedAuthors.entries()) {
-      let orcid_curie = '';
-      let orcid_url = '';
-      if ('orcid' in value && value['orcid'] !== null) {
-        orcid_curie = value['orcid']['curie'] || '';
-        orcid_url = value['orcid']['url'] || ''; }
-      let affiliations = [];
-      if ('affiliation' in value) {
-        for (const index_aff in value['affiliation']) {
-          affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliation'][index_aff]}</div>); } }
+
+    if (authorExpand === 'first') {
       rowAuthorElements.push(
-        <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-left">author {value['order']}</Col>
-          <Col className="Col-general " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
+        <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">first author</Col>
+          <Col className="Col-general " lg={{ span: 10 }}><div>{orderedAuthors[0]['name']}</div></Col>
         </Row>); }
+    else if (authorExpand === 'list') {
+      let authorNames = orderedAuthors.map((dict, index) => ( dict['name'] )).join('; ');
+      rowAuthorElements.push(
+        <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-left">all authors</Col>
+          <Col className="Col-general Col-right" lg={{ span: 10 }}><div>{authorNames}</div></Col>
+        </Row>); }
+    else if (authorExpand === 'detailed') {
+      for (const [index, value]  of orderedAuthors.entries()) {
+        let orcid_curie = '';
+        let orcid_url = '';
+        if ('orcid' in value && value['orcid'] !== null) {
+          orcid_curie = value['orcid']['curie'] || '';
+          orcid_url = value['orcid']['url'] || ''; }
+        let affiliations = [];
+        if ('affiliation' in value) {
+          for (const index_aff in value['affiliation']) {
+            affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliation'][index_aff]}</div>); } }
+        rowAuthorElements.push(
+          <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+            <Col className="Col-general Col-left">author {value['order']}</Col>
+            <Col className="Col-general " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
+          </Row>); } }
     return (<>{rowAuthorElements}</>); }
   else { return null; }
 } // const RowDisplayAuthors
+
+const AuthorExpandToggler = () => {
+  const dispatch = useDispatch();
+  const authorExpand = useSelector(state => state.biblio.authorExpand);
+  let firstChecked = ''; 
+  let listChecked = ''; 
+  let detailedChecked = ''; 
+  if (authorExpand === 'first') { firstChecked = 'checked'; }
+    else if (authorExpand === 'list') { listChecked = 'checked'; }
+    else { detailedChecked = 'checked'; }
+  return (
+    <Row key="authorExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
+      <Col className="Col-general Col-left">authors</Col>
+      <Col className="Col-general Col-right" lg={{ span: 10 }}>
+        <Form.Check 
+          inline
+          checked={firstChecked}
+          type='radio'
+          label='first'
+          id='biblio-author-expand-toggler-first'
+          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+        />
+        <Form.Check 
+          inline
+          checked={listChecked}
+          type='radio'
+          label='list'
+          id='biblio-author-expand-toggler-list'
+          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+        />
+        <Form.Check
+          inline
+          checked={detailedChecked}
+          type='radio'
+          label='detailed'
+          id='biblio-author-expand-toggler-detailed'
+          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+        />
+      </Col>
+    </Row>);
+} // const AuthorExpandToggler
+
+
 
 const BiblioDisplay = () => {
   const referenceJson = useSelector(state => state.biblio.referenceJson);

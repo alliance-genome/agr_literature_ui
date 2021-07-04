@@ -7,6 +7,8 @@ const initialState = {
   loadingQuery: true,
   queryFailure: false,
   alreadyGotJson: false,
+  meshExpand: 'short',
+  authorExpand: 'first',
   updateAlert: ''
 };
 
@@ -78,6 +80,18 @@ export default function(state = initialState, action) {
           ...state.referenceJson,
           [action.payload.field]: newArrayPush
         }
+      }
+    case 'CHANGE_BIBLIO_MESH_EXPAND_TOGGLER':
+      // console.log(action.payload);
+      return {
+        ...state,
+        meshExpand: action.payload
+      }
+    case 'CHANGE_BIBLIO_AUTHOR_EXPAND_TOGGLER':
+      // console.log(action.payload);
+      return {
+        ...state,
+        authorExpand: action.payload
       }
     case 'CHANGE_BIBLIO_ACTION_TOGGLER':
       // console.log(action.payload);

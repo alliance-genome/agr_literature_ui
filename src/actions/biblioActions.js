@@ -76,6 +76,27 @@ export const closeUpdateAlert = () => {
   };
 };
 
+export const changeBiblioMeshExpandToggler = (e) => {
+  console.log('action change biblio mesh expand toggler radio ' + e.target.id + ' to ' + e.target.value);
+  let biblioMeshExpandTogglerSelected = 'short';
+  if (e.target.id === 'biblio-mesh-expand-toggler-detailed') { biblioMeshExpandTogglerSelected = 'detailed'; }
+  return {
+    type: 'CHANGE_BIBLIO_MESH_EXPAND_TOGGLER',
+    payload: biblioMeshExpandTogglerSelected
+  };
+};
+
+export const changeBiblioAuthorExpandToggler = (e) => {
+  console.log('action change biblio author expand toggler radio ' + e.target.id + ' to ' + e.target.value);
+  let biblioAuthorExpandTogglerSelected = 'first';
+  if (e.target.id === 'biblio-author-expand-toggler-list') { biblioAuthorExpandTogglerSelected = 'list'; }
+    else if (e.target.id === 'biblio-author-expand-toggler-detailed') { biblioAuthorExpandTogglerSelected = 'detailed'; }
+  return {
+    type: 'CHANGE_BIBLIO_AUTHOR_EXPAND_TOGGLER',
+    payload: biblioAuthorExpandTogglerSelected
+  };
+};
+
 export const changeBiblioActionToggler = (e) => {
   console.log('action change biblio action toggler radio ' + e.target.id + ' to ' + e.target.value);
   let biblioActionTogglerSelected = 'display';
