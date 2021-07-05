@@ -204,7 +204,7 @@ const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson}) => {
           </Row>); } }
     else {
       const meshTextArray = []
-      for (const[index, value] of referenceJson['mesh_terms'].entries()) {
+      for (const value of referenceJson['mesh_terms']) {
         let term = value['heading_term'];
         if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
         meshTextArray.push(term); }
@@ -259,6 +259,7 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
     const orderedAuthors = [];
     for (const value  of referenceJson['authors'].values()) {
       let index = value['order'] - 1;
+      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
       orderedAuthors[index] = value; }
 
     if (authorExpand === 'first') {
@@ -436,50 +437,76 @@ const BiblioSubmitUpdateButton = () => {
   );
 } // const BiblioSubmitUpdateButton
 
-const BiblioEditor = () => {
+//   const rowOrderedElements = []
+//   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
+//     if (fieldName === 'DIVIDER') {
+//         rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
+//     else if (fieldsSimple.includes(fieldName)) {
+//         rowOrderedElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value={referenceJson[fieldName]} />); }
+//     else if (fieldsArrayString.includes(fieldName)) {
+//       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+//     else if (fieldName === 'cross_references') {
+//       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+//     else if (fieldName === 'tags') {
+//       rowOrderedElements.push(<RowDisplayTags key="RowDisplayTags" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+//     else if (fieldName === 'mod_reference_types') {
+//       rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+//     else if (fieldName === 'mesh_terms') {
+//       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+//     else if (fieldName === 'authors') {
+//       rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+//   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
+// 
+//   return (<Container>{rowOrderedElements}</Container>);
+
+const RowEditorSimple = ({fieldName, value}) => {
   const dispatch = useDispatch();
-  const referenceJson = useSelector(state => state.biblio.referenceJson);
-  const fieldSimpleElements = []
-  for (const field of fieldsSimple.values()) {
-    let fieldType = 'input';
-    let value = referenceJson[field] || '';
-    if (field === 'abstract') { fieldType = 'textarea'; }
-//     if (referenceJson[field] !== null) {
-    fieldSimpleElements.push(
-      <Form.Group as={Row} key={field} controlId={field}>
-        <Form.Label column sm="2">{field}</Form.Label>
-        <Col sm="10">
-          <Form.Control as={fieldType} type="{field}" value={value} placeholder={field} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
-        </Col>
-      </Form.Group>);
-//     }
-  }
+  value = value || '';
+  let fieldType = 'input';
+  if (fieldName === 'abstract') { fieldType = 'textarea'; }
+  return (
+           <Form.Group as={Row} key={fieldName} controlId={fieldName}>
+             <Form.Label column sm="2">{fieldName}</Form.Label>
+             <Col sm="10">
+               <Form.Control as={fieldType} type="{fieldName}" value={value} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
+             </Col>
+           </Form.Group>); }
 
-//   const handleClick = (e) => {    console.log('this is:', e);  }
-
-  const fieldArrayStringElements = []
-//   for (const [fieldIndex, field] of fieldsArrayString.entries()) { }
-  for (const field of fieldsArrayString.values()) {
-    if (field in referenceJson && referenceJson[field] !== null) {	// need this because referenceJson starts empty before values get added
+const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
+  const dispatch = useDispatch();
+  const rowArrayStringElements = []
+  if (fieldName in referenceJson && referenceJson[fieldName] !== null) {	// need this because referenceJson starts empty before values get added
       let fieldType = 'input';
-      for (const [index, value] of referenceJson[field].entries()) {
-        const key = field + ' ' + index;
-        fieldArrayStringElements.push(
-          <Form.Group as={Row} key={key} controlId={key}>
-            <Form.Label column sm="2">{field}</Form.Label>
+      for (const [index, value] of referenceJson[fieldName].entries()) {
+//         const key = field + ' ' + index;
+        rowArrayStringElements.push(
+          <Form.Group as={Row} key={`${fieldName} ${index}`} controlId={`${fieldName} ${index}`}>
+            <Form.Label column sm="2">{fieldName}</Form.Label>
             <Col sm="10">
-              <Form.Control as={fieldType} type="{field}" value={value} placeholder={field} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
+              <Form.Control as={fieldType} type="{fieldName}" value={value} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
             </Col>
-          </Form.Group>);
-     } }
-     fieldArrayStringElements.push(
-       <Row className="form-group row" key={field} >
-         <Col className="form-label col-form-label" sm="2" >{field}</Col>
-         <Col sm="10" ><div id={field} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRow(e))} >add {field}</div></Col>
-       </Row>);
-  }
+          </Form.Group>); } }
+  rowArrayStringElements.push(
+    <Row className="form-group row" key={fieldName} >
+      <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
+      <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRow(e))} >add {fieldName}</div></Col>
+    </Row>);
+  return (<>{rowArrayStringElements}</>); }
 
-  return (<Container><Form><BiblioSubmitUpdateRouter />{fieldSimpleElements}{fieldArrayStringElements}</Form></Container>);
+
+const BiblioEditor = () => {
+  const referenceJson = useSelector(state => state.biblio.referenceJson);
+  const rowOrderedElements = []
+  for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
+    if (fieldName === 'DIVIDER') {
+        rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
+    else if (fieldsSimple.includes(fieldName)) {
+        rowOrderedElements.push(<RowEditorSimple key={fieldName} fieldName={fieldName} value={referenceJson[fieldName]} />); }
+    else if (fieldsArrayString.includes(fieldName)) {
+      rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+  } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
+
+  return (<Container><Form><BiblioSubmitUpdateRouter />{rowOrderedElements}</Form></Container>);
 } // const BiblioEditor
 
 const Biblio = () => {

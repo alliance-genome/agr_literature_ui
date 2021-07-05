@@ -72,7 +72,7 @@ export default function(state = initialState, action) {
 //       return state.updateIn(['biblio', 'referenceJson'], x => x.set(action.field, action.payload));	// this might work with Immutable.js
     case 'BIBLIO_ADD_NEW_ROW':
       // console.log(action.payload);
-      let newArrayPush = state.referenceJson[action.payload.field];
+      let newArrayPush = state.referenceJson[action.payload.field] || [];
       newArrayPush.push('');
       return {
         ...state,
