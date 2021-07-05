@@ -44,6 +44,13 @@ const fieldsArrayString = ['keywords', 'pubmed_type' ];
 const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'authors' ];
 
+const fieldTypeDict = {}
+fieldTypeDict['abstract'] = 'textarea'
+fieldTypeDict['category'] = 'select'
+
+const enumDict = {}
+enumDict['category'] = ['research_article', 'review_article', 'thesis', 'book', 'other', 'preprint', 'conference_publication', 'personal_communication', 'direct_data_submission', 'internal_process_reference', 'unknown', 'retraction']
+
 // title
 // cross_references (doi, pmid, modID)
 // authors (collapsed [in a list, or only first author])
@@ -463,14 +470,31 @@ const RowEditorSimple = ({fieldName, value}) => {
   const dispatch = useDispatch();
   value = value || '';
   let fieldType = 'input';
-  if (fieldName === 'abstract') { fieldType = 'textarea'; }
-  return (
-           <Form.Group as={Row} key={fieldName} controlId={fieldName}>
-             <Form.Label column sm="2">{fieldName}</Form.Label>
-             <Col sm="10">
-               <Form.Control as={fieldType} type="{fieldName}" value={value} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
-             </Col>
-           </Form.Group>); }
+  if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
+//   if (fieldType === 'enum') { return null; }
+// fieldTypeDict['abstract'] = 'textarea'
+// fieldTypeDict['category'] = 'enum'
+//   if (fieldName === 'abstract') { fieldType = 'textarea'; }
+  let selectOptions = []
+  if (fieldName in enumDict) { 
+    return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
+               <Form.Label column sm="2">{fieldName}</Form.Label>
+               <Col sm="10">
+                 <Form.Control as={fieldType} type="{fieldName}" value={value} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
+                   {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
+                     <option key={`${fieldName} ${optionValue}`}>{optionValue}</option>
+                   ))}
+                 </Form.Control>
+               </Col>
+             </Form.Group>); }
+  else {
+    return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
+               <Form.Label column sm="2">{fieldName}</Form.Label>
+               <Col sm="10">
+                 <Form.Control as={fieldType} type="{fieldName}" value={value} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
+               </Col>
+             </Form.Group>); }
+} // const RowEditorSimple
 
 const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
   const dispatch = useDispatch();
