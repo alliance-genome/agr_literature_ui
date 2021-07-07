@@ -9,8 +9,19 @@ const initialState = {
   alreadyGotJson: false,
   meshExpand: 'short',
   authorExpand: 'first',
+  hasPmid: false,
   updateAlert: ''
 };
+
+const checkHasPmid = (referenceJson) => {
+  // console.log('called checkHasPmid ' + referenceJson.curie);
+  let checkingHasPmid = false;
+  for (const xref of referenceJson.cross_references) {
+    if (xref.curie.match(/^PMID:/)) {
+      // console.log('checkHasPmid ' + xref.curie);
+      checkingHasPmid = true; } }
+  return checkingHasPmid;
+}
 
 // to ignore a warning about Unexpected default export of anonymous function
 // eslint-disable-next-line
@@ -136,11 +147,13 @@ export default function(state = initialState, action) {
           alreadyGotJson: true
         }
       } else {  
+        const pmidBool = checkHasPmid(action.payload)
         return {
           ...state,
           referenceCurie: action.payload.curie,
           referenceJson: action.payload,
           loadingQuery: false,
+          hasPmid: pmidBool,
           alreadyGotJson: true
         }
       }

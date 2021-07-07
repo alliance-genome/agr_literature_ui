@@ -42,6 +42,8 @@ import loading_gif from '../images/loading_cat.gif';
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
 const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms' ];
+
 // const fieldsOrdered = [ 'title', 'authors' ];
 
 const fieldTypeDict = {}
@@ -468,6 +470,9 @@ const BiblioSubmitUpdateButton = () => {
 
 const RowEditorSimple = ({fieldName, value}) => {
   const dispatch = useDispatch();
+  const hasPmid = useSelector(state => state.biblio.hasPmid);
+  let disabled = ''
+  if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   value = value || '';
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
@@ -480,7 +485,7 @@ const RowEditorSimple = ({fieldName, value}) => {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
                <Form.Label column sm="2">{fieldName}</Form.Label>
                <Col sm="10">
-                 <Form.Control as={fieldType} type="{fieldName}" value={value} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
+                 <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
                    {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
                      <option key={`${fieldName} ${optionValue}`}>{optionValue}</option>
                    ))}
@@ -491,13 +496,16 @@ const RowEditorSimple = ({fieldName, value}) => {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
                <Form.Label column sm="2">{fieldName}</Form.Label>
                <Col sm="10">
-                 <Form.Control as={fieldType} type="{fieldName}" value={value} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
+                 <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
                </Col>
              </Form.Group>); }
 } // const RowEditorSimple
 
 const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
   const dispatch = useDispatch();
+  const hasPmid = useSelector(state => state.biblio.hasPmid);
+  let disabled = ''
+  if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   const rowArrayStringElements = []
   if (fieldName in referenceJson && referenceJson[fieldName] !== null) {	// need this because referenceJson starts empty before values get added
       let fieldType = 'input';
@@ -507,7 +515,7 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
           <Form.Group as={Row} key={`${fieldName} ${index}`} controlId={`${fieldName} ${index}`}>
             <Form.Label column sm="2">{fieldName}</Form.Label>
             <Col sm="10">
-              <Form.Control as={fieldType} type="{fieldName}" value={value} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
+              <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
             </Col>
           </Form.Group>); } }
   rowArrayStringElements.push(
