@@ -43,6 +43,7 @@ const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
 const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms' ];
+const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms' ];
 
 // const fieldsOrdered = [ 'title', 'authors' ];
 
@@ -473,6 +474,7 @@ const RowEditorSimple = ({fieldName, value}) => {
   const hasPmid = useSelector(state => state.biblio.hasPmid);
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
+  if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   value = value || '';
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
@@ -481,7 +483,7 @@ const RowEditorSimple = ({fieldName, value}) => {
 // fieldTypeDict['category'] = 'enum'
 //   if (fieldName === 'abstract') { fieldType = 'textarea'; }
   let selectOptions = []
-  if (fieldName in enumDict) { 
+  if (fieldName in enumDict) {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
                <Form.Label column sm="2">{fieldName}</Form.Label>
                <Col sm="10">
@@ -501,11 +503,19 @@ const RowEditorSimple = ({fieldName, value}) => {
              </Form.Group>); }
 } // const RowEditorSimple
 
+// const RowDisplaySimple = ({fieldName, value}) => {
+//   return (
+//             <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
+//               <Col className="Col-general Col-left">{fieldName}</Col>
+//               <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
+//             </Row>); }
+
 const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
+  if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowArrayStringElements = []
   if (fieldName in referenceJson && referenceJson[fieldName] !== null) {	// need this because referenceJson starts empty before values get added
       let fieldType = 'input';
@@ -518,11 +528,13 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
               <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
             </Col>
           </Form.Group>); } }
-  rowArrayStringElements.push(
-    <Row className="form-group row" key={fieldName} >
-      <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
-      <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRow(e))} >add {fieldName}</div></Col>
-    </Row>);
+  if (disabled === '') {
+    rowArrayStringElements.push(
+      <Row className="form-group row" key={fieldName} >
+        <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
+        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRow(e))} >add {fieldName}</div></Col>
+      </Row>);
+  }
   return (<>{rowArrayStringElements}</>); }
 
 
