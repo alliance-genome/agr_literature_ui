@@ -69,22 +69,41 @@ export default function(state = initialState, action) {
     case 'CHANGE_FIELD_ARRAY_REFERENCE_JSON':
       // console.log(action.payload);
       let stringArray = action.payload.field.split(" ");
-      let field = stringArray[0];
-      let index = stringArray[1];
-      let newArrayChange = state.referenceJson[field];
-      newArrayChange[index] = action.payload.value;
+      let fieldStringArray = stringArray[0];
+      let indexStringArray = stringArray[1];
+      let newArrayChange = state.referenceJson[fieldStringArray];
+      newArrayChange[indexStringArray] = action.payload.value;
       return {
         ...state,
         referenceJson: {
           ...state.referenceJson,
-          [field]: newArrayChange
+          [fieldStringArray]: newArrayChange
         }
       }
 //       return state.updateIn(['biblio', 'referenceJson'], x => x.set(action.field, action.payload));	// this might work with Immutable.js
+
+    case 'CHANGE_FIELD_MOD_REFERENCE_REFERENCE_JSON':
+      console.log(action.payload);
+      let modReferenceArray = action.payload.field.split(" ");
+      let fieldModReference = modReferenceArray[0];
+      let subfieldModReference = modReferenceArray[1];
+      let indexModReference = modReferenceArray[2];
+      let newModReferenceChange = state.referenceJson[fieldModReference];
+      newModReferenceChange[indexModReference][subfieldModReference] = action.payload.value;
+      newModReferenceChange[indexModReference]['needsChange'] = true;
+      return {
+        ...state,
+        referenceJson: {
+          ...state.referenceJson,
+          [fieldModReference]: newModReferenceChange
+        }
+      }
     case 'BIBLIO_ADD_NEW_ROW':
       // console.log(action.payload);
       let newArrayPush = state.referenceJson[action.payload.field] || [];
-      newArrayPush.push('');
+      if (action.payload.type === 'string') { newArrayPush.push(''); }
+      else if (action.payload.type === 'dict') { 
+        newArrayPush.push({[action.payload.field]: 'new'}); }
       return {
         ...state,
         referenceJson: {

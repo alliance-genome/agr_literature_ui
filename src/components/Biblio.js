@@ -15,8 +15,10 @@ import { setBiblioUpdating } from '../actions/biblioActions';
 
 import { changeFieldReferenceJson } from '../actions/biblioActions';
 import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
+import { changeFieldModReferenceReferenceJson } from '../actions/biblioActions';
 import { changeBiblioActionToggler } from '../actions/biblioActions';
-import { biblioAddNewRow } from '../actions/biblioActions';
+import { biblioAddNewRowString } from '../actions/biblioActions';
+import { biblioAddNewRowDict } from '../actions/biblioActions';
 import { updateButtonBiblio } from '../actions/biblioActions';
 import { closeUpdateAlert } from '../actions/biblioActions';
 import { changeBiblioMeshExpandToggler } from '../actions/biblioActions';
@@ -42,10 +44,11 @@ import loading_gif from '../images/loading_cat.gif';
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
 const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+// const fieldsOrdered = [ 'title', 'mod_reference_types' ];
+
 const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms' ];
 const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms' ];
 
-// const fieldsOrdered = [ 'title', 'authors' ];
 
 const fieldTypeDict = {}
 fieldTypeDict['abstract'] = 'textarea'
@@ -432,6 +435,7 @@ const BiblioSubmitUpdateButton = () => {
     if (field in referenceJson) {
       updateJson[field] = referenceJson[field] } }
 
+// TO DO something here to post/patch mod_reference_type  possibly making extra dispatches.  depending on whether creating a mod_reference_type attaches to the reference curie or not, do it before or after the main update to the curie
   function updateBiblio(curie, updateJson) {
     // console.log('updateBiblio')
     dispatch(setBiblioUpdating(true))
@@ -532,11 +536,53 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
     rowArrayStringElements.push(
       <Row className="form-group row" key={fieldName} >
         <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
-        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRow(e))} >add {fieldName}</div></Col>
+        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowString(e))} >add {fieldName}</div></Col>
       </Row>);
   }
   return (<>{rowArrayStringElements}</>); }
 
+const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
+  const dispatch = useDispatch();
+  const hasPmid = useSelector(state => state.biblio.hasPmid);
+  let disabled = ''
+  if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
+  if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
+  const rowModReferenceTypesElements = []
+  if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
+    let fieldType = 'input';
+//     if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
+    for (const[index, modRefDict] of referenceJson['mod_reference_types'].entries()) {
+      rowModReferenceTypesElements.push(
+        <Form.Group as={Row} key={`${fieldName} ${index}`}>
+          <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
+          <Col sm="5">
+              <Form.Control as={fieldType} id={`${fieldName} source ${index}`} type="{fieldName}" value={modRefDict['source']} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+          </Col>
+          <Col sm="5">
+              <Form.Control as={fieldType} id={`${fieldName} reference_type ${index}`} type="{fieldName}" value={modRefDict['reference_type']} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+          </Col>
+        </Form.Group>); } }
+  if (disabled === '') {
+    rowModReferenceTypesElements.push(
+      <Row className="form-group row" key={fieldName} >
+        <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
+        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e))} >add {fieldName}</div></Col>
+      </Row>);
+  }
+  return (<>{rowModReferenceTypesElements}</>); }
+
+//         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+//         </Row>); }
+
+//                  <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
+//                    {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
+//                      <option key={`${fieldName} ${optionValue}`}>{optionValue}</option>
+//                    ))}
+//                  </Form.Control>
+
+//           <Col className="Col-general Col-left">mod_reference_types</Col>
+//           <Col className="Col-general " lg={{ span: 2 }}>{value['source']}</Col>
+//           <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
 
 const BiblioEditor = () => {
   const referenceJson = useSelector(state => state.biblio.referenceJson);
@@ -548,6 +594,8 @@ const BiblioEditor = () => {
         rowOrderedElements.push(<RowEditorSimple key={fieldName} fieldName={fieldName} value={referenceJson[fieldName]} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+    else if (fieldName === 'mod_reference_types') {
+      rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container><Form><BiblioSubmitUpdateRouter />{rowOrderedElements}</Form></Container>);

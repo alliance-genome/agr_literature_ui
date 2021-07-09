@@ -6,7 +6,7 @@ const port = 11223;
 // const port = 49161;
 
 export const changeFieldReferenceJson = (e) => {
-  console.log('action change field reference json' + e.target.id + ' to ' + e.target.value);
+  console.log('action change field reference json ' + e.target.id + ' to ' + e.target.value);
   return {
     type: 'CHANGE_FIELD_REFERENCE_JSON',
     payload: {
@@ -17,7 +17,7 @@ export const changeFieldReferenceJson = (e) => {
 };
 
 export const changeFieldArrayReferenceJson = (e) => {
-  console.log('action change field array reference json' + e.target.id + ' to ' + e.target.value);
+  console.log('action change field array reference json ' + e.target.id + ' to ' + e.target.value);
 //   console.log(e);
   return {
     type: 'CHANGE_FIELD_ARRAY_REFERENCE_JSON',
@@ -28,11 +28,35 @@ export const changeFieldArrayReferenceJson = (e) => {
   };
 };
 
-export const biblioAddNewRow = (e) => {
+export const changeFieldModReferenceReferenceJson = (e) => {
+  console.log('action change field array reference json ' + e.target.id + ' to ' + e.target.value);
+//   console.log(e);
+  return {
+    type: 'CHANGE_FIELD_MOD_REFERENCE_REFERENCE_JSON',
+    payload: {
+      field: e.target.id,
+      value: e.target.value
+    }
+  };
+};
+
+export const biblioAddNewRowString = (e) => {
   return {
     type: 'BIBLIO_ADD_NEW_ROW',
     payload: {
       field: e.target.id,
+      type: 'string',
+      value: e.target.value
+    }
+  };
+};
+export const biblioAddNewRowDict = (e) => {
+  console.log('action biblio add new row dict ' + e.target.id + ' to ' + e.target.value);
+  return {
+    type: 'BIBLIO_ADD_NEW_ROW',
+    payload: {
+      field: e.target.id,
+      type: 'dict',
       value: e.target.value
     }
   };
