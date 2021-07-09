@@ -29,12 +29,12 @@
 }
 
 .biblio-button:hover {
-  background-color: #dddddd !important;
+  background-color: #b5eaff !important;
   filter: drop-shadow(2px 2px 1px #aaaaaa);
 }
 .biblio-button {
   text-align: center;
-  background-color: #eeeeee !important;
+  background-color: #d9f4ff !important;
   border-radius: 5px !important;
   filter: drop-shadow(3px 3px 1px #aaaaaa);
 }
@@ -80,7 +80,7 @@
 }
 
 .Col-editor-disabled {
-  background-color: #e8e8e8;
+  background-color: #e9ecef;
 }
 
 .Col-general {
