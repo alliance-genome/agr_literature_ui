@@ -150,8 +150,8 @@ const BiblioActionRouter = () => {
 const RowDisplaySimple = ({fieldName, value}) => {
   return (
             <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-left">{fieldName}</Col>
-              <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
+              <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
+              <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>{value}</Col>
             </Row>); }
 
 const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson}) => {
@@ -182,9 +182,9 @@ const RowDisplayTags = ({fieldIndex, fieldName, referenceJson}) => {
     for (const[index, value] of referenceJson['tags'].entries()) {
       rowTagElements.push(
         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-left">tags</Col>
-          <Col className="Col-general " lg={{ span: 2 }}>{value['tag_source']}</Col>
-          <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['tag_name']}</Col>
+          <Col className="Col-general Col-display Col-display-left">tags</Col>
+          <Col className="Col-general Col-display " lg={{ span: 2 }}>{value['tag_source']}</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['tag_name']}</Col>
         </Row>); }
     return (<>{rowTagElements}</>); }
   else { return null; } }
@@ -195,25 +195,32 @@ const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => 
     for (const[index, value] of referenceJson['mod_reference_types'].entries()) {
       rowModReferenceTypesElements.push(
         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-left">mod_reference_types</Col>
-          <Col className="Col-general " lg={{ span: 2 }}>{value['source']}</Col>
-          <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
+          <Col className="Col-general Col-display Col-display-left">mod_reference_types</Col>
+          <Col className="Col-general Col-display " lg={{ span: 2 }}>{value['source']}</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
         </Row>); }
     return (<>{rowModReferenceTypesElements}</>); }
   else { return null; } }
 
-const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson}) => {
+const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson, displayOrEditor}) => {
   const meshExpand = useSelector(state => state.biblio.meshExpand);
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplay = 'Col-display';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') { 
+    cssDisplay = 'Col-editor-disabled';
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
   if ('mesh_terms' in referenceJson && referenceJson['mesh_terms'] !== null) {
     const rowMeshTermsElements = []
-    rowMeshTermsElements.push(<MeshExpandToggler key="meshExpandTogglerComponent" />);
+    rowMeshTermsElements.push(<MeshExpandToggler key="meshExpandTogglerComponent" displayOrEditor={displayOrEditor} />);
     if (meshExpand === 'detailed') {
       for (const[index, value] of referenceJson['mesh_terms'].entries()) {
         rowMeshTermsElements.push(
           <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-left">mesh_terms</Col>
-            <Col className="Col-general " lg={{ span: 5 }}>{value['heading_term']}</Col>
-            <Col className="Col-general Col-right" lg={{ span: 5 }}>{value['qualifier_term']}</Col>
+            <Col className={`Col-general ${cssDisplayLeft} `}>mesh_terms</Col>
+            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 5 }}>{value['heading_term']}</Col>
+            <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 5 }}>{value['qualifier_term']}</Col>
           </Row>); } }
     else {
       const meshTextArray = []
@@ -225,24 +232,31 @@ const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson}) => {
       const meshText = meshTextArray.join('; ');
       rowMeshTermsElements.push(
         <Row key="meshTermsText" className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-left">mesh_terms</Col>
-          <Col className="Col-general Col-right" lg={{ span: 10 }}>{meshText}</Col>
+          <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
+          <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>{meshText}</Col>
         </Row>);
     }
     return (<>{rowMeshTermsElements}</>); }
   else { return null; } }
 
-const MeshExpandToggler = () => {
+const MeshExpandToggler = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const meshExpand = useSelector(state => state.biblio.meshExpand);
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplay = 'Col-display';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') { 
+    cssDisplay = 'Col-editor-disabled';
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
   let shortChecked = ''; 
   let detailedChecked = ''; 
   if (meshExpand === 'short') { shortChecked = 'checked'; }
     else { detailedChecked = 'checked'; }
   return (
     <Row key="meshExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
-      <Col className="Col-general Col-left">mesh_terms</Col>
-      <Col className="Col-general Col-right" lg={{ span: 10 }}>
+      <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
+      <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>
         <Form.Check 
           inline
           checked={shortChecked}
@@ -278,15 +292,15 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
     if (authorExpand === 'first') {
       rowAuthorElements.push(
         <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-left">first author</Col>
-          <Col className="Col-general " lg={{ span: 10 }}><div>{orderedAuthors[0]['name']}</div></Col>
+          <Col className="Col-general Col-display Col-display-left">first author</Col>
+          <Col className="Col-general Col-display " lg={{ span: 10 }}><div>{orderedAuthors[0]['name']}</div></Col>
         </Row>); }
     else if (authorExpand === 'list') {
       let authorNames = orderedAuthors.map((dict, index) => ( dict['name'] )).join('; ');
       rowAuthorElements.push(
         <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-left">all authors</Col>
-          <Col className="Col-general Col-right" lg={{ span: 10 }}><div>{authorNames}</div></Col>
+          <Col className="Col-general Col-display Col-display-left">all authors</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{authorNames}</div></Col>
         </Row>); }
     else if (authorExpand === 'detailed') {
       for (const [index, value]  of orderedAuthors.entries()) {
@@ -301,8 +315,8 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
             affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliation'][index_aff]}</div>); } }
         rowAuthorElements.push(
           <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-left">author {value['order']}</Col>
-            <Col className="Col-general " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
+            <Col className="Col-general Col-display Col-display-left">author {value['order']}</Col>
+            <Col className="Col-general Col-display " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
           </Row>); } }
     return (<>{rowAuthorElements}</>); }
   else { return null; }
@@ -319,8 +333,8 @@ const AuthorExpandToggler = () => {
     else { detailedChecked = 'checked'; }
   return (
     <Row key="authorExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
-      <Col className="Col-general Col-left">authors</Col>
-      <Col className="Col-general Col-right" lg={{ span: 10 }}>
+      <Col className="Col-general Col-display Col-display-left">authors</Col>
+      <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
         <Form.Check 
           inline
           checked={firstChecked}
@@ -368,7 +382,7 @@ const BiblioDisplay = () => {
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'mesh_terms') {
-      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} displayOrEditor="display" />); }
     else if (fieldName === 'authors') {
       rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
@@ -489,7 +503,7 @@ const RowEditorSimple = ({fieldName, value}) => {
   let selectOptions = []
   if (fieldName in enumDict) {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
-               <Form.Label column sm="2">{fieldName}</Form.Label>
+               <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
                <Col sm="10">
                  <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
                    {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
@@ -500,7 +514,7 @@ const RowEditorSimple = ({fieldName, value}) => {
              </Form.Group>); }
   else {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
-               <Form.Label column sm="2">{fieldName}</Form.Label>
+               <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
                <Col sm="10">
                  <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
                </Col>
@@ -510,8 +524,8 @@ const RowEditorSimple = ({fieldName, value}) => {
 // const RowDisplaySimple = ({fieldName, value}) => {
 //   return (
 //             <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-//               <Col className="Col-general Col-left">{fieldName}</Col>
-//               <Col className="Col-general Col-right" lg={{ span: 10 }}>{value}</Col>
+//               <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
+//               <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>{value}</Col>
 //             </Row>); }
 
 const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
@@ -527,7 +541,7 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
 //         const key = field + ' ' + index;
         rowArrayStringElements.push(
           <Form.Group as={Row} key={`${fieldName} ${index}`} controlId={`${fieldName} ${index}`}>
-            <Form.Label column sm="2">{fieldName}</Form.Label>
+            <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
             <Col sm="10">
               <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
             </Col>
@@ -535,7 +549,7 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
   if (disabled === '') {
     rowArrayStringElements.push(
       <Row className="form-group row" key={fieldName} >
-        <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
+        <Col className="form-label col-form-label Col-general" sm="2" >{fieldName}</Col>
         <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowString(e))} >add {fieldName}</div></Col>
       </Row>);
   }
@@ -580,9 +594,9 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
 //                    ))}
 //                  </Form.Control>
 
-//           <Col className="Col-general Col-left">mod_reference_types</Col>
-//           <Col className="Col-general " lg={{ span: 2 }}>{value['source']}</Col>
-//           <Col className="Col-general Col-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
+//           <Col className="Col-general Col-display Col-display-left">mod_reference_types</Col>
+//           <Col className="Col-general Col-display " lg={{ span: 2 }}>{value['source']}</Col>
+//           <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
 
 const BiblioEditor = () => {
   const referenceJson = useSelector(state => state.biblio.referenceJson);
@@ -596,6 +610,8 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+    else if (fieldName === 'mesh_terms') {
+      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} displayOrEditor="editor" />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container><Form><BiblioSubmitUpdateRouter />{rowOrderedElements}</Form></Container>);
@@ -650,13 +666,13 @@ const Biblio = () => {
 //   const referenceJson = useSelector(state => state.biblio.referenceJson);
 
 //     <Row className="Row-general" xs={2} md={4} lg={6}>
-//       <Col className="Col-general">reference_id</Col>
-//       <Col className="Col-general" lg={{ span: 10 }}>{referenceJson.reference_id}</Col>
+//       <Col className="Col-general Col-display">reference_id</Col>
+//       <Col className="Col-general Col-display" lg={{ span: 10 }}>{referenceJson.reference_id}</Col>
 //     </Row>
 
 //       <Row className="Row-general" xs={2} md={4} lg={6}>
-//         <Col className="Col-general">value</Col>
-//         <Col className="Col-general" lg={{ span: 10 }}>{referenceJson.value}</Col>
+//         <Col className="Col-general Col-display">value</Col>
+//         <Col className="Col-general Col-display" lg={{ span: 10 }}>{referenceJson.value}</Col>
 //       </Row>
 
 // this works, but want to try jsx map
@@ -666,8 +682,8 @@ const Biblio = () => {
 //     if (referenceJson[value] !== null) {
 //     items.push(
 //       <Row className="Row-general" xs={2} md={4} lg={6}>
-//         <Col className="Col-general">{value}</Col>
-//         <Col className="Col-general" lg={{ span: 10 }}>{referenceJson[value]}</Col>
+//         <Col className="Col-general Col-display">{value}</Col>
+//         <Col className="Col-general Col-display" lg={{ span: 10 }}>{referenceJson[value]}</Col>
 //       </Row>);
 //     }
 //   }

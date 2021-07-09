@@ -75,8 +75,15 @@
   border-left: 5px solid green;
 }
 
-.Col-general {
+.Col-display {
   background-color: #bbeffd;
+}
+
+.Col-editor-disabled {
+  background-color: #e8e8e8;
+}
+
+.Col-general {
   text-align: left;
   display: flex;
   align-items : center;
@@ -89,10 +96,10 @@
   border: 1px solid #bbbbbb;
   border: 1px solid #61dafb;
 */
-.Col-right {
+.Col-display-right {
   border-radius: 0 30px 30px 0;
 }
-.Col-left {
+.Col-display-left {
   border-radius: 30px 0 0 30px;
 }
 /*
