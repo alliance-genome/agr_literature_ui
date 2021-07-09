@@ -101,8 +101,9 @@ export default function(state = initialState, action) {
     case 'BIBLIO_ADD_NEW_ROW':
       // console.log(action.payload);
       let newArrayPush = state.referenceJson[action.payload.field] || [];
-      if (action.payload.type === 'string') { newArrayPush.push(''); }
-      else if (action.payload.type === 'dict') { 
+      if (action.payload.type === 'string') {
+        newArrayPush.push(''); }
+      else if (action.payload.type === 'dict') {
         newArrayPush.push({[action.payload.field]: 'new'}); }
       return {
         ...state,
