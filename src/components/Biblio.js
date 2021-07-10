@@ -444,11 +444,11 @@ const BiblioSubmitUpdateButton = () => {
 // change setBiblioUpdating to the count of things that need an update
 // when UPDATE_BUTTON_BIBLIO reducer gets back value add message to updateAlert and decrement biblioUpdating, which shows result when it equals zero
 // TODO post for new mod_reference_types
-  function updateBiblio(curie, referenceJson) {
+  function updateBiblio(referenceCurie, referenceJson) {
     // console.log('updateBiblio')
 
     const patchDict = {}
-//     const postDict = {}
+    const postDict = {}
 //     dispatch(setBiblioUpdating(true))
 
     let updateJson = {}
@@ -459,29 +459,43 @@ const BiblioSubmitUpdateButton = () => {
     for (const field of fieldsArrayString.values()) {
       if (field in referenceJson) {
         updateJson[field] = referenceJson[field] } }
-    let subPath = 'reference/' + curie;
+    let subPath = 'reference/' + referenceCurie;
     patchDict[subPath] = updateJson;
 
     if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
       const modRefFields = [ 'reference_type', 'source' ];
       for (const[index, modRefDict] of referenceJson['mod_reference_types'].entries()) {
         if (('needsChange' in modRefDict) && ('mod_reference_type_id' in modRefDict)) {
-          let updateJson = { 'reference_curie': curie }
+          let updateJson = { 'reference_curie': referenceCurie }
           for (const field of modRefFields.values()) {
             if (field in modRefDict) {
               updateJson[field] = modRefDict[field] } }
-          let subPath = 'reference/mod_reference_type/' + modRefDict['mod_reference_type_id'];
-          patchDict[subPath] = updateJson; } } }
+          if (modRefDict['mod_reference_type_id'] === 'new') {
+            let subPath = 'reference/mod_reference_type/';
+            postDict[subPath] = updateJson; }
+          else {
+            let subPath = 'reference/mod_reference_type/' + modRefDict['mod_reference_type_id'];
+            patchDict[subPath] = updateJson; }
+    } } }
 
     // console.log('end updateBiblio')
-    let dispatchCount = Object.keys(patchDict).length;
+    let dispatchCount = Object.keys(patchDict).length + Object.keys(postDict).length;
+
     console.log('dispatchCount ' + dispatchCount)
     dispatch(setBiblioUpdating(dispatchCount))
 
     for (const subPath in patchDict) {
-      dispatch(updateButtonBiblio(subPath, patchDict[subPath]))
+      dispatch(updateButtonBiblio(subPath, patchDict[subPath], 'PATCH'))
     }
-  } // function updateBiblio(curie, referenceJson)
+    for (const subPath in postDict) {
+      dispatch(updateButtonBiblio(subPath, postDict[subPath], 'POST'))
+    }
+
+// TODO  this happens when    need to reference json when an alert of updating comes back
+//   if (referenceCurie !== '' && (alreadyGotJson === false)) {
+//     console.log('biblio DISPATCH biblioQueryReferenceCurie ' + referenceCurie);
+//     dispatch(biblioQueryReferenceCurie(referenceCurie));
+  } // function updateBiblio(referenceCurie, referenceJson)
 
   return (
        <Row className="form-group row" >
@@ -586,6 +600,8 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
 const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
+//   const dictFields = ['source', 'reference_type']
+  const initializeDict = {'source': '', 'reference_type': '', 'mod_reference_type_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
@@ -598,17 +614,17 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
           <Col sm="5">
-              <Form.Control as={fieldType} id={`${fieldName} source ${index}`} type="{fieldName}" value={modRefDict['source']} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+              <Form.Control as={fieldType} id={`${fieldName} source ${index}`} type="{fieldName}" value={modRefDict['source']} disabled={disabled} placeholder="source" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
           </Col>
           <Col sm="5">
-              <Form.Control as={fieldType} id={`${fieldName} reference_type ${index}`} type="{fieldName}" value={modRefDict['reference_type']} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+              <Form.Control as={fieldType} id={`${fieldName} reference_type ${index}`} type="{fieldName}" value={modRefDict['reference_type']} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
           </Col>
         </Form.Group>); } }
   if (disabled === '') {
     rowModReferenceTypesElements.push(
       <Row className="form-group row" key={fieldName} >
         <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
-        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e))} >add {fieldName}</div></Col>
+        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
       </Row>);
   }
   return (<>{rowModReferenceTypesElements}</>); }

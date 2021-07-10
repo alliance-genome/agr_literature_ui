@@ -111,7 +111,7 @@ export default function(state = initialState, action) {
       if (action.payload.type === 'string') {
         newArrayPush.push(''); }
       else if (action.payload.type === 'dict') {
-        newArrayPush.push({[action.payload.field]: 'new'}); }
+        newArrayPush.push(action.payload.initializeDict); }
       return {
         ...state,
         referenceJson: {

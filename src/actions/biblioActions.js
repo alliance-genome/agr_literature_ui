@@ -50,12 +50,14 @@ export const biblioAddNewRowString = (e) => {
     }
   };
 };
-export const biblioAddNewRowDict = (e) => {
+export const biblioAddNewRowDict = (e, initializeDict) => {
   console.log('action biblio add new row dict ' + e.target.id + ' to ' + e.target.value);
+  console.log('action initializeDict ' + initializeDict);
   return {
     type: 'BIBLIO_ADD_NEW_ROW',
     payload: {
       field: e.target.id,
+      initializeDict: initializeDict,
       type: 'dict',
       value: e.target.value
     }
@@ -140,7 +142,7 @@ export const setBiblioAction = (biblioAction) => {
   };
 };
 
-export const updateButtonBiblio = (subPath, payload) => dispatch => {
+export const updateButtonBiblio = (subPath, payload, method) => dispatch => {
 //   console.log('in updateButtonBiblio action');
 //   console.log("payload " + payload);
   console.log("subPath " + subPath);
@@ -150,7 +152,7 @@ export const updateButtonBiblio = (subPath, payload) => dispatch => {
     console.log(url);
     // console.log(notGithubVariables.authToken);
     const res = await fetch(url, {
-      method: 'PATCH',
+      method: method,
       mode: 'cors',
       headers: {
         'content-type': 'application/json',
@@ -162,7 +164,7 @@ export const updateButtonBiblio = (subPath, payload) => dispatch => {
     const response = await res.json();
     // console.log(res.status);
     let response_payload = 'update success';
-    if (res.status !== 202) {
+    if ( ((method === 'PATCH') && (res.status !== 202)) || ((method === 'POST') && (res.status !== 201)) ) {
       console.log('updateButtonBiblio action response not updated');
       if (typeof(response.detail) !== 'object') {
           response_payload = response.detail; }
