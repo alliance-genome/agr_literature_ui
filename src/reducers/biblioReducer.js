@@ -40,21 +40,22 @@ export default function(state = initialState, action) {
         }
       }
     case 'UPDATE_BUTTON_BIBLIO':
-      // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload);
+      // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
       let newUpdateFailure = 0;
       let newArrayUpdateMessages = state.updateMessages;
-      if (action.payload === "update success") {
-        console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload);
-        // newUpdateMessage = action.payload;
-        // alert('Update success');
+      if (action.payload.responseMessage === "update success") {
+        console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
       } else {
-        // newUpdateMessage = action.payload;
-        newArrayUpdateMessages.push(action.payload);
+        newArrayUpdateMessages.push(action.payload.responseMessage);
         newUpdateFailure = 1;
-        // alert('Update failure ' + action.payload.detail);
+        // console.log('Update failure ' + action.payload.responseMessage);
       }
+      let referenceJson = state.referenceJson;
+      if (action.payload.field !== null) {	// POST to a field, assign its db id to redux store
+        referenceJson[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
       return {
         ...state,
+        referenceJson: referenceJson,
         updateAlert: state.updateAlert + 1,
         updateFailure: state.updateFailure + newUpdateFailure,
         updateMessages: newArrayUpdateMessages,

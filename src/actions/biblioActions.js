@@ -142,10 +142,13 @@ export const setBiblioAction = (biblioAction) => {
   };
 };
 
-export const updateButtonBiblio = (subPath, payload, method) => dispatch => {
+// export const updateButtonBiblio = (subPath, payload, method) => dispatch => 
+export const updateButtonBiblio = (updateArrayData) => dispatch => {
 //   console.log('in updateButtonBiblio action');
+  const [subPath, payload, method, index, field, subField] = updateArrayData;
 //   console.log("payload " + payload);
-  console.log("subPath " + subPath);
+  let newId = null;
+//   console.log("subPath " + subPath);
   const createUpdateButtonBiblio = async () => {
 //     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
     const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
@@ -161,23 +164,32 @@ export const updateButtonBiblio = (subPath, payload, method) => dispatch => {
       body: JSON.stringify( payload )
     })
 
-    const response = await res.json();
-    // console.log(res.status);
-    let response_payload = 'update success';
+    // const response = await res.json();
+    const response_text = await res.text();
+    const response = JSON.parse(response_text);
+    let response_message = 'update success';
     if ( ((method === 'PATCH') && (res.status !== 202)) || ((method === 'POST') && (res.status !== 201)) ) {
       console.log('updateButtonBiblio action response not updated');
       if (typeof(response.detail) !== 'object') {
-          response_payload = response.detail; }
+          response_message = response.detail; }
         else if (typeof(response.detail[0].msg) !== 'object') {
-          response_payload = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
+          response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
         else {
-          response_payload = 'error: ' + subPath + ' : API status code ' + res.status; }
+          response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
     }
+    if ((method === 'POST') && (res.status === 201)) {
+      newId = parseInt(response_text); }
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
     console.log('dispatch UPDATE_BUTTON_BIBLIO');
     dispatch({
       type: 'UPDATE_BUTTON_BIBLIO',
-      payload: response_payload
+      payload: {
+        responseMessage: response_message,
+        index: index,
+        value: newId,
+        field: field,
+        subField: subField
+      }
     })
   }
   createUpdateButtonBiblio()

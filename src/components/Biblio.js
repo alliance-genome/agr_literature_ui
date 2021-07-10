@@ -438,19 +438,9 @@ const BiblioSubmitUpdateButton = () => {
   const dispatch = useDispatch();
   const referenceJson = useSelector(state => state.biblio.referenceJson);
 
-// DONE something here to post/patch mod_reference_type  possibly making extra dispatches.  depending on whether creating a mod_reference_type attaches to the reference curie or not, do it before or after the main update to the curie
-// maybe pass subpath of  reference/curie  to primary updateButtonBiblio instead of curie, 
-// then pass each separate thing that needs updating as a separate dispatch
-// change setBiblioUpdating to the count of things that need an update
-// when UPDATE_BUTTON_BIBLIO reducer gets back value add message to updateAlert and decrement biblioUpdating, which shows result when it equals zero
-// TODO post for new mod_reference_types
   function updateBiblio(referenceCurie, referenceJson) {
     // console.log('updateBiblio')
-
-    const patchDict = {}
-    const postDict = {}
-//     dispatch(setBiblioUpdating(true))
-
+    const forApiArray = []
     let updateJson = {}
     const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title' ];
     for (const field of fieldsSimple.values()) {
@@ -460,7 +450,8 @@ const BiblioSubmitUpdateButton = () => {
       if (field in referenceJson) {
         updateJson[field] = referenceJson[field] } }
     let subPath = 'reference/' + referenceCurie;
-    patchDict[subPath] = updateJson;
+    let array = [ subPath, updateJson, 'PATCH', 0, null, null]
+    forApiArray.push( array );
 
     if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
       const modRefFields = [ 'reference_type', 'source' ];
@@ -470,31 +461,28 @@ const BiblioSubmitUpdateButton = () => {
           for (const field of modRefFields.values()) {
             if (field in modRefDict) {
               updateJson[field] = modRefDict[field] } }
-          if (modRefDict['mod_reference_type_id'] === 'new') {
-            let subPath = 'reference/mod_reference_type/';
-            postDict[subPath] = updateJson; }
-          else {
-            let subPath = 'reference/mod_reference_type/' + modRefDict['mod_reference_type_id'];
-            patchDict[subPath] = updateJson; }
+          let subPath = 'reference/mod_reference_type/';
+          let method = 'POST';
+          let field = 'mod_reference_types';
+          let subField = 'mod_reference_type_id';
+          if (modRefDict['mod_reference_type_id'] !== 'new') {
+            subPath = 'reference/mod_reference_type/' + modRefDict['mod_reference_type_id'];
+            field = null;
+            subField = null;
+            method = 'PATCH' }
+          let array = [ subPath, updateJson, method, index, field, subField ]
+          forApiArray.push( array );
     } } }
 
-    // console.log('end updateBiblio')
-    let dispatchCount = Object.keys(patchDict).length + Object.keys(postDict).length;
+    let dispatchCount = forApiArray.length;
 
-    console.log('dispatchCount ' + dispatchCount)
+    // console.log('dispatchCount ' + dispatchCount)
     dispatch(setBiblioUpdating(dispatchCount))
 
-    for (const subPath in patchDict) {
-      dispatch(updateButtonBiblio(subPath, patchDict[subPath], 'PATCH'))
+    for (const arrayData of forApiArray.values()) {
+      dispatch(updateButtonBiblio(arrayData))
     }
-    for (const subPath in postDict) {
-      dispatch(updateButtonBiblio(subPath, postDict[subPath], 'POST'))
-    }
-
-// TODO  this happens when    need to reference json when an alert of updating comes back
-//   if (referenceCurie !== '' && (alreadyGotJson === false)) {
-//     console.log('biblio DISPATCH biblioQueryReferenceCurie ' + referenceCurie);
-//     dispatch(biblioQueryReferenceCurie(referenceCurie));
+    // console.log('end updateBiblio')
   } // function updateBiblio(referenceCurie, referenceJson)
 
   return (
