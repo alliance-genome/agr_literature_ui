@@ -140,11 +140,13 @@ export const setBiblioAction = (biblioAction) => {
   };
 };
 
-export const updateButtonBiblio = (curie, payload) => dispatch => {
+export const updateButtonBiblio = (subPath, payload) => dispatch => {
 //   console.log('in updateButtonBiblio action');
 //   console.log("payload " + payload);
+  console.log("subPath " + subPath);
   const createUpdateButtonBiblio = async () => {
-    const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
+//     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
+    const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
     console.log(url);
     // console.log(notGithubVariables.authToken);
     const res = await fetch(url, {
@@ -165,9 +167,9 @@ export const updateButtonBiblio = (curie, payload) => dispatch => {
       if (typeof(response.detail) !== 'object') {
           response_payload = response.detail; }
         else if (typeof(response.detail[0].msg) !== 'object') {
-          response_payload = response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
+          response_payload = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
         else {
-          response_payload = 'error: API status code ' + res.status; }
+          response_payload = 'error: ' + subPath + ' : API status code ' + res.status; }
     }
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
     console.log('dispatch UPDATE_BUTTON_BIBLIO');

@@ -1,7 +1,7 @@
 
 const initialState = {
   biblioAction: '',
-  biblioUpdating: false,
+  biblioUpdating: 0,
   referenceCurie: '',
   referenceJson: {},
   loadingQuery: true,
@@ -10,7 +10,9 @@ const initialState = {
   meshExpand: 'short',
   authorExpand: 'first',
   hasPmid: false,
-  updateAlert: ''
+  updateAlert: 0,
+  updateFailure: 0,
+  updateMessages: []
 };
 
 const checkHasPmid = (referenceJson) => {
@@ -39,19 +41,24 @@ export default function(state = initialState, action) {
       }
     case 'UPDATE_BUTTON_BIBLIO':
       // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload);
-      let newUpdateAlert = '';
+      let newUpdateFailure = 0;
+      let newArrayUpdateMessages = state.updateMessages;
       if (action.payload === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload);
-        newUpdateAlert = action.payload;
+        // newUpdateMessage = action.payload;
         // alert('Update success');
       } else {
-        newUpdateAlert = action.payload;
+        // newUpdateMessage = action.payload;
+        newArrayUpdateMessages.push(action.payload);
+        newUpdateFailure = 1;
         // alert('Update failure ' + action.payload.detail);
       }
       return {
         ...state,
-        updateAlert: newUpdateAlert,
-        biblioUpdating: false
+        updateAlert: state.updateAlert + 1,
+        updateFailure: state.updateFailure + newUpdateFailure,
+        updateMessages: newArrayUpdateMessages,
+        biblioUpdating: state.biblioUpdating - 1
       }
     case 'SET_BIBLIO_UPDATING':
       console.log('SET_BIBLIO_UPDATING reducer ' + action.payload);
@@ -63,7 +70,7 @@ export default function(state = initialState, action) {
       console.log('CLOSE_UPDATE_ALERT reducer');
       return {
         ...state,
-        updateAlert: ''
+        updateAlert: 0
       }
 
     case 'CHANGE_FIELD_ARRAY_REFERENCE_JSON':

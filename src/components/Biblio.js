@@ -243,10 +243,10 @@ const MeshExpandToggler = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const meshExpand = useSelector(state => state.biblio.meshExpand);
   let cssDisplayLeft = 'Col-display Col-display-left';
-  let cssDisplay = 'Col-display';
+//   let cssDisplay = 'Col-display';
   let cssDisplayRight = 'Col-display Col-display-right';
   if (displayOrEditor === 'editor') { 
-    cssDisplay = 'Col-editor-disabled';
+//     cssDisplay = 'Col-editor-disabled';
     cssDisplayRight = 'Col-editor-disabled';
     cssDisplayLeft = ''; }
   let shortChecked = ''; 
@@ -393,35 +393,32 @@ const BiblioDisplay = () => {
 const BiblioSubmitUpdateRouter = () => {
   const biblioUpdating = useSelector(state => state.biblio.biblioUpdating);
 
-  switch (biblioUpdating) {
-    case false:
-      return (<><AlertDismissibleBiblioUpdate /><BiblioSubmitUpdateButton /></>);
-    case true:
-      return (<BiblioSubmitUpdating />);
-    default:
-      return (<><AlertDismissibleBiblioUpdate /><BiblioSubmitUpdateButton /></>);
-  }
+  if (biblioUpdating > 0) {
+    return (<BiblioSubmitUpdating />); }
+  else {
+    return (<><AlertDismissibleBiblioUpdate /><BiblioSubmitUpdateButton /></>); }
 } // const BiblioSubmitUpdateRouter
 
 const AlertDismissibleBiblioUpdate = () => {
   const dispatch = useDispatch();
   const updateAlert = useSelector(state => state.biblio.updateAlert);
+  const updateFailure = useSelector(state => state.biblio.updateFailure);
+  const updateMessages = useSelector(state => state.biblio.updateMessages);
   let variant = 'danger';
   let header = 'Update Failure';
-  let message = '';
-  if (updateAlert === 'update success') { 
+  if (updateFailure === 0) { 
     header = 'Update Success';
-    message = '';
     variant = 'success'; }
   else { 
     header = 'Update Failure';
-    message = updateAlert;
     variant = 'danger'; }
   if (updateAlert) {
     return (
       <Alert variant={variant} onClose={() => dispatch(closeUpdateAlert())} dismissible>
         <Alert.Heading>{header}</Alert.Heading>
-        {message}
+        {updateMessages.map((message, index) => (
+          <div key={`${message} ${index}`}>{message}</div>
+        ))}
       </Alert>
     );
   } else { return null; }
@@ -440,30 +437,61 @@ const BiblioSubmitUpdating = () => {
 const BiblioSubmitUpdateButton = () => {
   const dispatch = useDispatch();
   const referenceJson = useSelector(state => state.biblio.referenceJson);
-  let updateJson = {}
-  const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title' ];
-  for (const field of fieldsSimple.values()) {
-    if ((field in referenceJson) && !(fieldsSimpleNotPatch.includes(field))) {
-      updateJson[field] = referenceJson[field] } }
-  for (const field of fieldsArrayString.values()) {
-    if (field in referenceJson) {
-      updateJson[field] = referenceJson[field] } }
 
-// TO DO something here to post/patch mod_reference_type  possibly making extra dispatches.  depending on whether creating a mod_reference_type attaches to the reference curie or not, do it before or after the main update to the curie
-  function updateBiblio(curie, updateJson) {
+// DONE something here to post/patch mod_reference_type  possibly making extra dispatches.  depending on whether creating a mod_reference_type attaches to the reference curie or not, do it before or after the main update to the curie
+// maybe pass subpath of  reference/curie  to primary updateButtonBiblio instead of curie, 
+// then pass each separate thing that needs updating as a separate dispatch
+// change setBiblioUpdating to the count of things that need an update
+// when UPDATE_BUTTON_BIBLIO reducer gets back value add message to updateAlert and decrement biblioUpdating, which shows result when it equals zero
+// TODO post for new mod_reference_types
+  function updateBiblio(curie, referenceJson) {
     // console.log('updateBiblio')
-    dispatch(setBiblioUpdating(true))
-    dispatch(updateButtonBiblio(curie, updateJson))
+
+    const patchDict = {}
+//     const postDict = {}
+//     dispatch(setBiblioUpdating(true))
+
+    let updateJson = {}
+    const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title' ];
+    for (const field of fieldsSimple.values()) {
+      if ((field in referenceJson) && !(fieldsSimpleNotPatch.includes(field))) {
+        updateJson[field] = referenceJson[field] } }
+    for (const field of fieldsArrayString.values()) {
+      if (field in referenceJson) {
+        updateJson[field] = referenceJson[field] } }
+    let subPath = 'reference/' + curie;
+    patchDict[subPath] = updateJson;
+
+    if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
+      const modRefFields = [ 'reference_type', 'source' ];
+      for (const[index, modRefDict] of referenceJson['mod_reference_types'].entries()) {
+        if (('needsChange' in modRefDict) && ('mod_reference_type_id' in modRefDict)) {
+          let updateJson = { 'reference_curie': curie }
+          for (const field of modRefFields.values()) {
+            if (field in modRefDict) {
+              updateJson[field] = modRefDict[field] } }
+          let subPath = 'reference/mod_reference_type/' + modRefDict['mod_reference_type_id'];
+          patchDict[subPath] = updateJson; } } }
+
     // console.log('end updateBiblio')
-  }
+    let dispatchCount = Object.keys(patchDict).length;
+    console.log('dispatchCount ' + dispatchCount)
+    dispatch(setBiblioUpdating(dispatchCount))
+
+    for (const subPath in patchDict) {
+      dispatch(updateButtonBiblio(subPath, patchDict[subPath]))
+    }
+  } // function updateBiblio(curie, referenceJson)
 
   return (
        <Row className="form-group row" >
          <Col className="form-label col-form-label" sm="2" ></Col>
-         <Col sm="10" ><div className="form-control biblio-button" type="submit" onClick={() => updateBiblio(referenceJson.curie, updateJson)}>Update Biblio Data</div></Col>
+         <Col sm="10" ><div className="form-control biblio-button" type="submit" onClick={() => updateBiblio(referenceJson.curie, referenceJson)}>Update Biblio Data</div></Col>
        </Row>
   );
 } // const BiblioSubmitUpdateButton
+
+//          <Col sm="10" ><div className="form-control biblio-button" type="submit" onClick={() => updateBiblio(referenceJson.curie, updateJson)}>Update Biblio Data</div></Col>
 
 //   const rowOrderedElements = []
 //   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
@@ -500,7 +528,7 @@ const RowEditorSimple = ({fieldName, value}) => {
 // fieldTypeDict['abstract'] = 'textarea'
 // fieldTypeDict['category'] = 'enum'
 //   if (fieldName === 'abstract') { fieldType = 'textarea'; }
-  let selectOptions = []
+//   let selectOptions = []
   if (fieldName in enumDict) {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
                <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
