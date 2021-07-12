@@ -76,7 +76,11 @@
 }
 
 .Col-display {
-  background-color: #bbeffd;
+  background-color: #d9f4ff;
+}
+
+.updated {
+  background-color: #e6deff !important;
 }
 
 .Col-editor-disabled {

@@ -366,7 +366,7 @@ const AuthorExpandToggler = () => {
 
 
 const BiblioDisplay = () => {
-  const referenceJson = useSelector(state => state.biblio.referenceJson);
+  const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
   const rowOrderedElements = []
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
@@ -436,7 +436,7 @@ const BiblioSubmitUpdating = () => {
 
 const BiblioSubmitUpdateButton = () => {
   const dispatch = useDispatch();
-  const referenceJson = useSelector(state => state.biblio.referenceJson);
+  const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
 
   function updateBiblio(referenceCurie, referenceJson) {
     // console.log('updateBiblio')
@@ -517,13 +517,17 @@ const BiblioSubmitUpdateButton = () => {
 // 
 //   return (<Container>{rowOrderedElements}</Container>);
 
-const RowEditorSimple = ({fieldName, value}) => {
+const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
-  value = value || '';
+  let valueLive = ''; let valueDb = ''; let updatedFlag = '';
+  if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
+  if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
+  if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+//   value = value || '';
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
 //   if (fieldType === 'enum') { return null; }
@@ -533,9 +537,9 @@ const RowEditorSimple = ({fieldName, value}) => {
 //   let selectOptions = []
   if (fieldName in enumDict) {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
-               <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
+               <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
                <Col sm="10">
-                 <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
+                 <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
                    {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
                      <option key={`${fieldName} ${optionValue}`}>{optionValue}</option>
                    ))}
@@ -544,9 +548,9 @@ const RowEditorSimple = ({fieldName, value}) => {
              </Form.Group>); }
   else {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
-               <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
+               <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
                <Col sm="10">
-                 <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
+                 <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
                </Col>
              </Form.Group>); }
 } // const RowEditorSimple
@@ -558,22 +562,25 @@ const RowEditorSimple = ({fieldName, value}) => {
 //               <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>{value}</Col>
 //             </Row>); }
 
-const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
+const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowArrayStringElements = []
-  if (fieldName in referenceJson && referenceJson[fieldName] !== null) {	// need this because referenceJson starts empty before values get added
+  if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {	// need this because referenceJsonLive starts empty before values get added
       let fieldType = 'input';
-      for (const [index, value] of referenceJson[fieldName].entries()) {
+      for (const [index, valueLive] of referenceJsonLive[fieldName].entries()) {
 //         const key = field + ' ' + index;
+        let valueDb = ''; let updatedFlag = '';
+        if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
+        if (valueLive !== valueDb) { updatedFlag = 'updated'; }
         rowArrayStringElements.push(
           <Form.Group as={Row} key={`${fieldName} ${index}`} controlId={`${fieldName} ${index}`}>
             <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
             <Col sm="10">
-              <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
+              <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
             </Col>
           </Form.Group>); } }
   if (disabled === '') {
@@ -585,7 +592,7 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJson}) => {
   }
   return (<>{rowArrayStringElements}</>); }
 
-const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
+const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const dictFields = ['source', 'reference_type']
@@ -594,18 +601,24 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowModReferenceTypesElements = []
-  if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
+  if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
     let fieldType = 'input';
 //     if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
-    for (const[index, modRefDict] of referenceJson['mod_reference_types'].entries()) {
+    for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
+      let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
+      let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
+      if (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') { valueDbSource = referenceJsonDb[fieldName][index]['source'] }
+      if (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') { valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
+      if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
+      if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
       rowModReferenceTypesElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
           <Col sm="5">
-              <Form.Control as={fieldType} id={`${fieldName} source ${index}`} type="{fieldName}" value={modRefDict['source']} disabled={disabled} placeholder="source" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+              <Form.Control as={fieldType} id={`${fieldName} source ${index}`} type="{fieldName}" value={valueLiveSource} className={`form-control ${updatedFlagSource}`} disabled={disabled} placeholder="source" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
           </Col>
           <Col sm="5">
-              <Form.Control as={fieldType} id={`${fieldName} reference_type ${index}`} type="{fieldName}" value={modRefDict['reference_type']} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+              <Form.Control as={fieldType} id={`${fieldName} reference_type ${index}`} type="{fieldName}" value={valueLiveReferenceType} className={`form-control ${updatedFlagReferenceType}`} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
           </Col>
         </Form.Group>); } }
   if (disabled === '') {
@@ -631,17 +644,24 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
 //           <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
 
 const BiblioEditor = () => {
-  const referenceJson = useSelector(state => state.biblio.referenceJson);
+  const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const rowOrderedElements = []
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
         rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
     else if (fieldsSimple.includes(fieldName)) {
-        rowOrderedElements.push(<RowEditorSimple key={fieldName} fieldName={fieldName} value={referenceJson[fieldName]} />); }
+        rowOrderedElements.push(<RowEditorSimple key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
-      rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+      rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+//     else if (fieldName === 'cross_references') {
+// TODO  like RowEditorArrayString  but has is_obsolete boolean and curie (as well as url and pages, which might be ignorable)
+//       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />);
+// //       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />);
+//     }
     else if (fieldName === 'mod_reference_types') {
-      rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+      rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} displayOrEditor="editor" />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())

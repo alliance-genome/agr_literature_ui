@@ -3,7 +3,8 @@ const initialState = {
   biblioAction: '',
   biblioUpdating: 0,
   referenceCurie: '',
-  referenceJson: {},
+  referenceJsonLive: {},
+  referenceJsonDb: {},
   loadingQuery: true,
   queryFailure: false,
   alreadyGotJson: false,
@@ -15,10 +16,10 @@ const initialState = {
   updateMessages: []
 };
 
-const checkHasPmid = (referenceJson) => {
-  // console.log('called checkHasPmid ' + referenceJson.curie);
+const checkHasPmid = (referenceJsonLive) => {
+  // console.log('called checkHasPmid ' + referenceJsonLive.curie);
   let checkingHasPmid = false;
-  for (const xref of referenceJson.cross_references) {
+  for (const xref of referenceJsonLive.cross_references) {
     if (xref.curie.match(/^PMID:/)) {
       // console.log('checkHasPmid ' + xref.curie);
       checkingHasPmid = true; } }
@@ -34,8 +35,8 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       return {
         ...state,
-        referenceJson: {
-          ...state.referenceJson,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
           [action.payload.field]: action.payload.value
         }
       }
@@ -50,12 +51,12 @@ export default function(state = initialState, action) {
         newUpdateFailure = 1;
         // console.log('Update failure ' + action.payload.responseMessage);
       }
-      let referenceJson = state.referenceJson;
+      let referenceJsonLive = state.referenceJsonLive;
       if (action.payload.field !== null) {	// POST to a field, assign its db id to redux store
-        referenceJson[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
+        referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
       return {
         ...state,
-        referenceJson: referenceJson,
+        referenceJsonLive: referenceJsonLive,
         updateAlert: state.updateAlert + 1,
         updateFailure: state.updateFailure + newUpdateFailure,
         updateMessages: newArrayUpdateMessages,
@@ -75,20 +76,20 @@ export default function(state = initialState, action) {
       }
 
     case 'CHANGE_FIELD_ARRAY_REFERENCE_JSON':
-      // console.log(action.payload);
+      // console.log('reducer CHANGE_FIELD_ARRAY_REFERENCE_JSON ' + action.payload);
       let stringArray = action.payload.field.split(" ");
       let fieldStringArray = stringArray[0];
       let indexStringArray = stringArray[1];
-      let newArrayChange = state.referenceJson[fieldStringArray];
+      let newArrayChange = state.referenceJsonLive[fieldStringArray];
       newArrayChange[indexStringArray] = action.payload.value;
       return {
         ...state,
-        referenceJson: {
-          ...state.referenceJson,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
           [fieldStringArray]: newArrayChange
         }
       }
-//       return state.updateIn(['biblio', 'referenceJson'], x => x.set(action.field, action.payload));	// this might work with Immutable.js
+//       return state.updateIn(['biblio', 'referenceJsonLive'], x => x.set(action.field, action.payload));	// this might work with Immutable.js
 
     case 'CHANGE_FIELD_MOD_REFERENCE_REFERENCE_JSON':
       console.log(action.payload);
@@ -96,27 +97,27 @@ export default function(state = initialState, action) {
       let fieldModReference = modReferenceArray[0];
       let subfieldModReference = modReferenceArray[1];
       let indexModReference = modReferenceArray[2];
-      let newModReferenceChange = state.referenceJson[fieldModReference];
+      let newModReferenceChange = state.referenceJsonLive[fieldModReference];
       newModReferenceChange[indexModReference][subfieldModReference] = action.payload.value;
       newModReferenceChange[indexModReference]['needsChange'] = true;
       return {
         ...state,
-        referenceJson: {
-          ...state.referenceJson,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
           [fieldModReference]: newModReferenceChange
         }
       }
     case 'BIBLIO_ADD_NEW_ROW':
       // console.log(action.payload);
-      let newArrayPush = state.referenceJson[action.payload.field] || [];
+      let newArrayPush = state.referenceJsonLive[action.payload.field] || [];
       if (action.payload.type === 'string') {
         newArrayPush.push(''); }
       else if (action.payload.type === 'dict') {
         newArrayPush.push(action.payload.initializeDict); }
       return {
         ...state,
-        referenceJson: {
-          ...state.referenceJson,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
           [action.payload.field]: newArrayPush
         }
       }
@@ -176,10 +177,13 @@ export default function(state = initialState, action) {
         }
       } else {  
         const pmidBool = checkHasPmid(action.payload)
+        // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
+        const dbCopy = JSON.parse(JSON.stringify(action.payload))
         return {
           ...state,
           referenceCurie: action.payload.curie,
-          referenceJson: action.payload,
+          referenceJsonLive: action.payload,
+          referenceJsonDb: dbCopy,
           loadingQuery: false,
           hasPmid: pmidBool,
           alreadyGotJson: true
