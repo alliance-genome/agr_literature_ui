@@ -5,6 +5,7 @@ const initialState = {
   referenceCurie: '',
   referenceJsonLive: {},
   referenceJsonDb: {},
+  referenceJsonHasChange: {},
   loadingQuery: true,
   queryFailure: false,
   alreadyGotJson: false,
@@ -33,8 +34,16 @@ export default function(state = initialState, action) {
   switch (action.type) {
     case 'CHANGE_FIELD_REFERENCE_JSON':
       // console.log(action.payload);
+      let prevValue = state.referenceJsonDb[action.payload.field]
+      let hasChangeField = state.referenceJsonHasChange
+      if (state.referenceJsonDb[action.payload.field] === action.payload.value) {
+        if (action.payload.field in hasChangeField) {
+          delete hasChangeField[action.payload.field] } }
+      else {
+        hasChangeField[action.payload.field] = 'diff' }
       return {
         ...state,
+        referenceJsonHasChange: hasChangeField,
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [action.payload.field]: action.payload.value
@@ -82,8 +91,15 @@ export default function(state = initialState, action) {
       let indexStringArray = stringArray[1];
       let newArrayChange = state.referenceJsonLive[fieldStringArray];
       newArrayChange[indexStringArray] = action.payload.value;
+      let hasChangeArrayField = state.referenceJsonHasChange
+      if (state.referenceJsonDb[fieldStringArray][indexStringArray] === action.payload.value) {
+        if (action.payload.field in hasChangeArrayField) {
+          delete hasChangeArrayField[action.payload.field] } }
+      else {
+        hasChangeArrayField[action.payload.field] = 'diff' }
       return {
         ...state,
+        referenceJsonHasChange: hasChangeArrayField,
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldStringArray]: newArrayChange
@@ -100,8 +116,15 @@ export default function(state = initialState, action) {
       let newModReferenceChange = state.referenceJsonLive[fieldModReference];
       newModReferenceChange[indexModReference][subfieldModReference] = action.payload.value;
       newModReferenceChange[indexModReference]['needsChange'] = true;
+      let hasChangeModReferenceField = state.referenceJsonHasChange
+      if (state.referenceJsonDb[fieldModReference][indexModReference][subfieldModReference] === action.payload.value) {
+        if (action.payload.field in hasChangeModReferenceField) {
+          delete hasChangeModReferenceField[action.payload.field] } }
+      else {
+        hasChangeModReferenceField[action.payload.field] = 'diff' }
       return {
         ...state,
+        referenceJsonHasChange: hasChangeModReferenceField,
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldModReference]: newModReferenceChange
@@ -114,8 +137,14 @@ export default function(state = initialState, action) {
         newArrayPush.push(''); }
       else if (action.payload.type === 'dict') {
         newArrayPush.push(action.payload.initializeDict); }
+      // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
+      const dbCopyAddNewRow = JSON.parse(JSON.stringify(newArrayPush))
       return {
         ...state,
+        referenceJsonDb: {
+          ...state.referenceJsonDb,
+          [action.payload.field]: dbCopyAddNewRow
+        },
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [action.payload.field]: newArrayPush
@@ -178,12 +207,12 @@ export default function(state = initialState, action) {
       } else {  
         const pmidBool = checkHasPmid(action.payload)
         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
-        const dbCopy = JSON.parse(JSON.stringify(action.payload))
+        const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
         return {
           ...state,
           referenceCurie: action.payload.curie,
           referenceJsonLive: action.payload,
-          referenceJsonDb: dbCopy,
+          referenceJsonDb: dbCopyGetReferenceCurie,
           loadingQuery: false,
           hasPmid: pmidBool,
           alreadyGotJson: true

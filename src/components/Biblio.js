@@ -458,6 +458,9 @@ const BiblioSubmitUpdating = () => {
 const BiblioSubmitUpdateButton = () => {
   const dispatch = useDispatch();
   const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
+  let updatedFlag = '';
+  if (Object.keys(referenceJsonHasChange).length > 0) { updatedFlag = 'updated'; }
 
   function updateBiblio(referenceCurie, referenceJson) {
     // console.log('updateBiblio')
@@ -509,7 +512,7 @@ const BiblioSubmitUpdateButton = () => {
   return (
        <Row className="form-group row" >
          <Col className="form-label col-form-label" sm="2" ></Col>
-         <Col sm="10" ><div className="form-control biblio-button" type="submit" onClick={() => updateBiblio(referenceJson.curie, referenceJson)}>Update Biblio Data</div></Col>
+         <Col sm="10" ><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => updateBiblio(referenceJson.curie, referenceJson)}>Update Biblio Data</div></Col>
        </Row>
   );
 } // const BiblioSubmitUpdateButton
@@ -604,8 +607,12 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
     for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
       let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
       let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
-      if (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') { valueDbSource = referenceJsonDb[fieldName][index]['source'] }
-      if (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') { valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') && 
+           (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') ) { 
+             valueDbSource = referenceJsonDb[fieldName][index]['source'] }
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') ) {
+             valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
       if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
       if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
       rowModReferenceTypesElements.push(
