@@ -527,7 +527,7 @@ const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
   if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
   if (valueLive !== valueDb) { updatedFlag = 'updated'; }
-//   value = value || '';
+  valueLive = valueLive || '';
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
 //   if (fieldType === 'enum') { return null; }
@@ -691,7 +691,7 @@ const Biblio = () => {
 
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  const alreadyGotJson = useSelector(state => state.biblio.alreadyGotJson);
+  const getReferenceCurieFlag = useSelector(state => state.biblio.getReferenceCurieFlag);
   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
 //   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
 
@@ -708,13 +708,13 @@ const Biblio = () => {
     if (paramAction !== null) { dispatch(setBiblioAction(paramAction)); }
   }
 
-  if (referenceCurie !== '' && (alreadyGotJson === false)) {
+  if (referenceCurie !== '' && (getReferenceCurieFlag === true)) {
     console.log('biblio DISPATCH biblioQueryReferenceCurie ' + referenceCurie);
     dispatch(biblioQueryReferenceCurie(referenceCurie));
   }
 
 // set in reducer when BIBLIO_GET_REFERENCE_CURIE populates referenceJson
-//   if ((setLoadingQuery === true) && (alreadyGotJson === true)) { 
+//   if ((setLoadingQuery === true) && (getReferenceCurieFlag === false)) { 
 //     console.log('biblio dispatch setLoadingQuery false');
 //     dispatch(setLoadingQuery(false));
 //   }

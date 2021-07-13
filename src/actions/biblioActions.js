@@ -64,13 +64,13 @@ export const biblioAddNewRowDict = (e, initializeDict) => {
   };
 };
 
-export const biblioQueryReferenceCurie = (payload) => dispatch => {
+export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
-  console.log("action payload " + payload);
+  console.log("action referenceCurie " + referenceCurie);
   const createBiblioQueryReferenceCurie = async () => {
-    const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + payload;
-//     const url = 'http://dev.alliancegenome.org:49161/reference/' + payload;
-//     const url = 'http://localhost:49161/reference/' + payload;
+    const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + referenceCurie;
+//     const url = 'http://dev.alliancegenome.org:49161/reference/' + referenceCurie;
+//     const url = 'http://localhost:49161/reference/' + referenceCurie;
     console.log(url);
     const res = await fetch(url, {
       method: 'GET',

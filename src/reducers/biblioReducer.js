@@ -8,7 +8,7 @@ const initialState = {
   referenceJsonHasChange: {},
   loadingQuery: true,
   queryFailure: false,
-  alreadyGotJson: false,
+  getReferenceCurieFlag: true,
   meshExpand: 'short',
   authorExpand: 'first',
   hasPmid: false,
@@ -53,8 +53,12 @@ export default function(state = initialState, action) {
       // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
       let newUpdateFailure = 0;
       let newArrayUpdateMessages = state.updateMessages;
+      let getReferenceCurieFlagUpdateButton = false;
+      let hasChangeUpdateButton = state.referenceJsonHasChange;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
+        getReferenceCurieFlagUpdateButton = true;
+        hasChangeUpdateButton = {};
       } else {
         newArrayUpdateMessages.push(action.payload.responseMessage);
         newUpdateFailure = 1;
@@ -69,6 +73,8 @@ export default function(state = initialState, action) {
         updateAlert: state.updateAlert + 1,
         updateFailure: state.updateFailure + newUpdateFailure,
         updateMessages: newArrayUpdateMessages,
+        getReferenceCurieFlag: getReferenceCurieFlagUpdateButton,
+        referenceJsonHasChange: hasChangeUpdateButton,
         biblioUpdating: state.biblioUpdating - 1
       }
     case 'SET_BIBLIO_UPDATING':
@@ -191,8 +197,8 @@ export default function(state = initialState, action) {
       return {
         ...state,
         referenceCurie: '',
-        loadingQuery: true,
-        alreadyGotJson: false
+        getReferenceCurieFlag: true,
+        loadingQuery: true
       }
     case 'BIBLIO_GET_REFERENCE_CURIE':
       console.log("reducer biblio get reference curie");
@@ -201,8 +207,8 @@ export default function(state = initialState, action) {
           ...state,
           referenceCurie: action.payload.detail,
           queryFailure: true,
-          loadingQuery: false,
-          alreadyGotJson: true
+          getReferenceCurieFlag: false,
+          loadingQuery: false
         }
       } else {  
         const pmidBool = checkHasPmid(action.payload)
@@ -213,9 +219,9 @@ export default function(state = initialState, action) {
           referenceCurie: action.payload.curie,
           referenceJsonLive: action.payload,
           referenceJsonDb: dbCopyGetReferenceCurie,
-          loadingQuery: false,
           hasPmid: pmidBool,
-          alreadyGotJson: true
+          getReferenceCurieFlag: false,
+          loadingQuery: false
         }
       }
 
