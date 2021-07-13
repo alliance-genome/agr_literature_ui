@@ -147,32 +147,45 @@ const BiblioActionRouter = () => {
   }
 }
 
-const RowDisplaySimple = ({fieldName, value}) => {
-  return (
-            <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
+
+const RowDisplaySimple = ({fieldName, value, updatedFlag}) => {
+  return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
               <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
-              <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>{value}</Col>
+              <Col className={`Col-general Col-display Col-display-right ${updatedFlag}`} lg={{ span: 10 }}>{value}</Col>
             </Row>); }
 
-const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson}) => {
-  if (fieldName in referenceJson && referenceJson[fieldName] !== null) {	// need this because referenceJson starts empty before values get added
+const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+  let valueLive = ''; let valueDb = ''; let updatedFlag = '';
+  if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
+  if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
+  if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+  return (
+        <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueLive} updatedFlag={updatedFlag} />); }
+
+const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
+  if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {	// need this because referenceJsonLive starts empty before values get added
     const rowArrayStringElements = []
-    if (referenceJson[fieldName].length === 0) {
-      rowArrayStringElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value="" />); }
+    if (referenceJsonLive[fieldName].length === 0) {
+      rowArrayStringElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value="" updatedFlag="" />); }
     else {
-      for (const [index, value] of referenceJson[fieldName].entries()) {
-        rowArrayStringElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={value} />); } }
+      for (const [index, valueLive] of referenceJsonLive[fieldName].entries()) {
+        let valueDb = ''; let updatedFlag = '';
+        if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
+        if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+        rowArrayStringElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={valueLive} updatedFlag={updatedFlag} />); } }
     return (<>{rowArrayStringElements}</>); }
   else { return null; } }
 
-const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJson}) => {
+// FIX THIS when cross references become editable
+const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
   if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
     const rowCrossReferenceElements = []
     for (const[index, value] of referenceJson['cross_references'].entries()) {
       let url = value['url'];
+        let valueDb = ''; let updatedFlag = '';	// FIX THIS
       if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
       const xrefValue = (<a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a>);
-      rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} />); }
+      rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
     return (<>{rowCrossReferenceElements}</>); }
   else { return null; } }
 
@@ -189,15 +202,21 @@ const RowDisplayTags = ({fieldIndex, fieldName, referenceJson}) => {
     return (<>{rowTagElements}</>); }
   else { return null; } }
 
-const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJson}) => {
-  if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
+const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
     const rowModReferenceTypesElements = []
-    for (const[index, value] of referenceJson['mod_reference_types'].entries()) {
+    for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
+      let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
+      let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
+      if (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') { valueDbSource = referenceJsonDb[fieldName][index]['source'] }
+      if (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') { valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
+      if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
+      if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
       rowModReferenceTypesElements.push(
         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
           <Col className="Col-general Col-display Col-display-left">mod_reference_types</Col>
-          <Col className="Col-general Col-display " lg={{ span: 2 }}>{value['source']}</Col>
-          <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
+          <Col className={`Col-general Col-display ${updatedFlagSource} `} lg={{ span: 2 }}>{valueLiveSource}</Col>
+          <Col className={`Col-general Col-display Col-display-right ${updatedFlagReferenceType} `} lg={{ span: 8 }}>{valueLiveReferenceType}</Col>
         </Row>); }
     return (<>{rowModReferenceTypesElements}</>); }
   else { return null; } }
@@ -367,27 +386,29 @@ const AuthorExpandToggler = () => {
 
 const BiblioDisplay = () => {
   const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const rowOrderedElements = []
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
         rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
     else if (fieldsSimple.includes(fieldName)) {
-        rowOrderedElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value={referenceJson[fieldName]} />); }
+        rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
-      rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+      rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
-      rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+      rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
     else if (fieldName === 'tags') {
       rowOrderedElements.push(<RowDisplayTags key="RowDisplayTags" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'mod_reference_types') {
-      rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+      rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} displayOrEditor="display" />); }
     else if (fieldName === 'authors') {
       rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
-  return (<Container>{rowOrderedElements}</Container>);
+  return (<Container><BiblioSubmitUpdateRouter />{rowOrderedElements}</Container>);
 } // const BiblioDisplay
 
 const BiblioSubmitUpdateRouter = () => {
@@ -492,30 +513,6 @@ const BiblioSubmitUpdateButton = () => {
        </Row>
   );
 } // const BiblioSubmitUpdateButton
-
-//          <Col sm="10" ><div className="form-control biblio-button" type="submit" onClick={() => updateBiblio(referenceJson.curie, updateJson)}>Update Biblio Data</div></Col>
-
-//   const rowOrderedElements = []
-//   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
-//     if (fieldName === 'DIVIDER') {
-//         rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
-//     else if (fieldsSimple.includes(fieldName)) {
-//         rowOrderedElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value={referenceJson[fieldName]} />); }
-//     else if (fieldsArrayString.includes(fieldName)) {
-//       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
-//     else if (fieldName === 'cross_references') {
-//       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
-//     else if (fieldName === 'tags') {
-//       rowOrderedElements.push(<RowDisplayTags key="RowDisplayTags" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
-//     else if (fieldName === 'mod_reference_types') {
-//       rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
-//     else if (fieldName === 'mesh_terms') {
-//       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
-//     else if (fieldName === 'authors') {
-//       rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
-//   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
-// 
-//   return (<Container>{rowOrderedElements}</Container>);
 
 const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
