@@ -79,6 +79,12 @@
   background-color: #d9f4ff;
 }
 
+.updated-biblio-button:hover {
+  background-color: #d5d1ff !important;
+}
+.updated-biblio-button {
+  background-color: #e6deff !important;
+}
 .updated {
   background-color: #e6deff !important;
 }

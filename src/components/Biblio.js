@@ -460,7 +460,7 @@ const BiblioSubmitUpdateButton = () => {
   const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
   let updatedFlag = '';
-  if (Object.keys(referenceJsonHasChange).length > 0) { updatedFlag = 'updated'; }
+  if (Object.keys(referenceJsonHasChange).length > 0) { updatedFlag = 'updated-biblio-button'; }
 
   function updateBiblio(referenceCurie, referenceJson) {
     // console.log('updateBiblio')
