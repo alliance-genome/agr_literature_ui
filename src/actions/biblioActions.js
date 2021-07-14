@@ -40,6 +40,26 @@ export const changeFieldModReferenceReferenceJson = (e) => {
   };
 };
 
+export const biblioRevertField = (e) => {
+  return {
+    type: 'BIBLIO_REVERT',
+    payload: {
+      field: e.target.id,
+      type: 'string'
+    }
+  };
+};
+export const biblioRevertFieldArray = (e) => {
+  return {
+    type: 'BIBLIO_REVERT',
+    payload: {
+      field: e.target.id,
+      type: 'array',
+      value: e.target.value
+    }
+  };
+};
+
 export const biblioAddNewRowString = (e) => {
   return {
     type: 'BIBLIO_ADD_NEW_ROW',

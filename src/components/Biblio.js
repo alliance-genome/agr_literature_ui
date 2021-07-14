@@ -23,6 +23,8 @@ import { updateButtonBiblio } from '../actions/biblioActions';
 import { closeUpdateAlert } from '../actions/biblioActions';
 import { changeBiblioMeshExpandToggler } from '../actions/biblioActions';
 import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';
+import { biblioRevertField } from '../actions/biblioActions';
+import { biblioRevertFieldArray } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -31,6 +33,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert'
+import Button from 'react-bootstrap/Button'
 
 import loading_gif from '../images/loading_cat.gif';
 
@@ -182,7 +185,8 @@ const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJson, refere
     const rowCrossReferenceElements = []
     for (const[index, value] of referenceJson['cross_references'].entries()) {
       let url = value['url'];
-        let valueDb = ''; let updatedFlag = '';	// FIX THIS
+        let updatedFlag = '';	// FIX THIS
+//         let valueDb = '';	// FIX THIS
       if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
       const xrefValue = (<a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a>);
       rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
@@ -530,37 +534,31 @@ const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   valueLive = valueLive || '';
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
-//   if (fieldType === 'enum') { return null; }
-// fieldTypeDict['abstract'] = 'textarea'
-// fieldTypeDict['category'] = 'enum'
-//   if (fieldName === 'abstract') { fieldType = 'textarea'; }
-//   let selectOptions = []
+  let otherColSize = 9;
+  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >Revert</Button>{' '}</Col>);
+  if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
   if (fieldName in enumDict) {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
                <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
-               <Col sm="10">
+               <Col sm={otherColSize}>
                  <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
                    {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
                      <option key={`${fieldName} ${optionValue}`}>{optionValue}</option>
                    ))}
                  </Form.Control>
                </Col>
+               {revertElement}
              </Form.Group>); }
   else {
     return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
                <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
-               <Col sm="10">
+               <Col sm={otherColSize}>
                  <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
                </Col>
+               {revertElement}
              </Form.Group>); }
 } // const RowEditorSimple
-
-// const RowDisplaySimple = ({fieldName, value}) => {
-//   return (
-//             <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-//               <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
-//               <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>{value}</Col>
-//             </Row>); }
+//                  <Button variant="outline-secondary"><span style={{fontSize:'1em'}}>&#9100;</span></Button>{' '}
 
 const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
@@ -572,16 +570,19 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {	// need this because referenceJsonLive starts empty before values get added
       let fieldType = 'input';
       for (const [index, valueLive] of referenceJsonLive[fieldName].entries()) {
-//         const key = field + ' ' + index;
+        let otherColSize = 9;
+        let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} >Revert</Button>{' '}</Col>);
+        if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
         let valueDb = ''; let updatedFlag = '';
         if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
         if (valueLive !== valueDb) { updatedFlag = 'updated'; }
         rowArrayStringElements.push(
           <Form.Group as={Row} key={`${fieldName} ${index}`} controlId={`${fieldName} ${index}`}>
             <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
-            <Col sm="10">
+            <Col sm={otherColSize}>
               <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
             </Col>
+            {revertElement}
           </Form.Group>); } }
   if (disabled === '') {
     rowArrayStringElements.push(
@@ -596,6 +597,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const dictFields = ['source', 'reference_type']
+  const dictFields = 'source, reference_type'
   const initializeDict = {'source': '', 'reference_type': '', 'mod_reference_type_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
@@ -605,6 +607,9 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
     let fieldType = 'input';
 //     if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
     for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
+      let otherColSize = 5;
+      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={dictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} >Revert</Button>{' '}</Col>);
+      if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 6; }
       let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
       let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') && 
@@ -618,12 +623,13 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
       rowModReferenceTypesElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
-          <Col sm="5">
-              <Form.Control as={fieldType} id={`${fieldName} source ${index}`} type="{fieldName}" value={valueLiveSource} className={`form-control ${updatedFlagSource}`} disabled={disabled} placeholder="source" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+          <Col sm="4">
+              <Form.Control as={fieldType} id={`${fieldName} ${index} source`} type="{fieldName}" value={valueLiveSource} className={`form-control ${updatedFlagSource}`} disabled={disabled} placeholder="source" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
           </Col>
-          <Col sm="5">
-              <Form.Control as={fieldType} id={`${fieldName} reference_type ${index}`} type="{fieldName}" value={valueLiveReferenceType} className={`form-control ${updatedFlagReferenceType}`} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+          <Col sm={otherColSize}>
+              <Form.Control as={fieldType} id={`${fieldName} ${index} reference_type`} type="{fieldName}" value={valueLiveReferenceType} className={`form-control ${updatedFlagReferenceType}`} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
           </Col>
+          {revertElement}
         </Form.Group>); } }
   if (disabled === '') {
     rowModReferenceTypesElements.push(

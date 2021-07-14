@@ -34,7 +34,6 @@ export default function(state = initialState, action) {
   switch (action.type) {
     case 'CHANGE_FIELD_REFERENCE_JSON':
       // console.log(action.payload);
-      let prevValue = state.referenceJsonDb[action.payload.field]
       let hasChangeField = state.referenceJsonHasChange
       if (state.referenceJsonDb[action.payload.field] === action.payload.value) {
         if (action.payload.field in hasChangeField) {
@@ -117,8 +116,8 @@ export default function(state = initialState, action) {
       console.log(action.payload);
       let modReferenceArray = action.payload.field.split(" ");
       let fieldModReference = modReferenceArray[0];
-      let subfieldModReference = modReferenceArray[1];
-      let indexModReference = modReferenceArray[2];
+      let indexModReference = modReferenceArray[1];
+      let subfieldModReference = modReferenceArray[2];
       let newModReferenceChange = state.referenceJsonLive[fieldModReference];
       newModReferenceChange[indexModReference][subfieldModReference] = action.payload.value;
       newModReferenceChange[indexModReference]['needsChange'] = true;
@@ -134,6 +133,34 @@ export default function(state = initialState, action) {
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldModReference]: newModReferenceChange
+        }
+      }
+    case 'BIBLIO_REVERT':
+      // console.log('BIBLIO_REVERT'); console.log(action.payload);
+      let fieldIdRevert = action.payload.field.replace(/^revert /, '');
+      let stringArrayRevert = fieldIdRevert.split(" ");
+      let fieldStringArrayRevert = stringArrayRevert[0];
+      let revertValue = state.referenceJsonLive[fieldStringArrayRevert]
+      if (action.payload.type === 'string') {
+        revertValue = state.referenceJsonDb[fieldStringArrayRevert] }
+      else if (action.payload.type === 'array') {
+        let indexStringArrayRevert = stringArrayRevert[1];
+        revertValue[indexStringArrayRevert] = JSON.parse(JSON.stringify(state.referenceJsonDb[fieldStringArrayRevert][indexStringArrayRevert])) }
+      let hasChangeFieldRevert = state.referenceJsonHasChange
+      if (fieldIdRevert in hasChangeFieldRevert) {
+        delete hasChangeFieldRevert[fieldIdRevert] }
+      if (action.payload.value !== undefined) {
+        const subFieldDictArrayRevert = action.payload.value.split(", ");
+        for (const subField of subFieldDictArrayRevert) {
+          let keySubFieldIdRevert = fieldIdRevert + ' ' + subField
+          if (keySubFieldIdRevert in hasChangeFieldRevert) {
+            delete hasChangeFieldRevert[keySubFieldIdRevert] } } }
+      return {
+        ...state,
+        referenceJsonHasChange: hasChangeFieldRevert,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          [fieldStringArrayRevert]: revertValue
         }
       }
     case 'BIBLIO_ADD_NEW_ROW':
