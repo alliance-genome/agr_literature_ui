@@ -523,17 +523,17 @@ const BiblioSubmitUpdateButton = () => {
 } // const BiblioSubmitUpdateButton
 
 
-const ColEditorSimple = ({fieldType, fieldName, value, colSize, updatedFlag, disabled}) => {
+const ColEditorSimple = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, dispatchAction}) => {
   const dispatch = useDispatch();
   return (  <Col sm={colSize}>
-              <Form.Control as={fieldType} id={fieldName} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
+              <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} />
             </Col>); }
 
-const ColEditorSelect = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, dispatchAction, fieldKey, enumType}) => {
+const ColEditorSelect = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, dispatchAction, enumType}) => {
   const dispatch = useDispatch();
 //               <Form.Control as={fieldType} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
   return (  <Col sm={colSize}>
-              <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(dispatchAction(e))} >
+              <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} >
                 {enumType in enumDict && enumDict[enumType].map((optionValue, index) => (
                   <option key={`${fieldKey} ${optionValue}`}>{optionValue}</option>
                 ))}
@@ -556,10 +556,9 @@ const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   let otherColSize = 9;
   let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >Revert</Button>{' '}</Col>);
   if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
-  let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} disabled={disabled} />)
+  let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
   if (fieldType === 'select') {
-//     colEditorElement = (<ColEditorSelect key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} disabled={disabled} fieldKey={fieldName} enumType={fieldName} />)
-    colEditorElement = (<ColEditorSelect key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} disabled={disabled} fieldKey={fieldName} enumType={fieldName} dispatchAction={changeFieldReferenceJson} />) }
+    colEditorElement = (<ColEditorSelect key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} enumType={fieldName} />) }
   return ( <Form.Group as={Row} key={fieldName} >
              <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
              {colEditorElement}
@@ -586,12 +585,11 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
         let valueDb = ''; let updatedFlag = '';
         if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
         if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+//           <Form.Group as={Row} key={`${fieldName} ${index}`} controlId={`${fieldName} ${index}`}>
         rowArrayStringElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index}`} controlId={`${fieldName} ${index}`}>
+          <Form.Group as={Row} key={`${fieldName} ${index}`} >
             <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
-            <Col sm={otherColSize}>
-              <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldArrayReferenceJson(e))} />
-            </Col>
+            <ColEditorSimple key={`colElement ${fieldName} ${index}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled={disabled} fieldKey={`${fieldName} ${index}`} dispatchAction={changeFieldArrayReferenceJson} />
             {revertElement}
           </Form.Group>); } }
   if (disabled === '') {
@@ -614,7 +612,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowModReferenceTypesElements = []
   if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
-    let fieldType = 'input';
+//     let fieldType = 'input';
 //     if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
     for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
       let otherColSize = 5;
@@ -630,18 +628,11 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
              valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
       if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
       if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
-      let colEditorSourceElement = (<ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />)
-//       let colEditorSourceElement = (<>< />)
-//           <Col sm="4">
-//               <Form.Control as={fieldType} id={`${fieldName} ${index} source`} type="{fieldName}" value={valueLiveSource} className={`form-control ${updatedFlagSource}`} disabled={disabled} placeholder="source" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
-//           </Col>
       rowModReferenceTypesElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
-          {colEditorSourceElement}
-          <Col sm={otherColSize}>
-              <Form.Control as={fieldType} id={`${fieldName} ${index} reference_type`} type="{fieldName}" value={valueLiveReferenceType} className={`form-control ${updatedFlagReferenceType}`} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
-          </Col>
+          <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
+          <ColEditorSimple key={`colElement ${fieldName} ${index} reference_type`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveReferenceType} updatedFlag={updatedFlagReferenceType} placeholder="reference_type" disabled={disabled} fieldKey={`${fieldName} ${index} reference_type`} dispatchAction={changeFieldModReferenceReferenceJson} />
           {revertElement}
         </Form.Group>); } }
   if (disabled === '') {
@@ -652,6 +643,10 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
       </Row>);
   }
   return (<>{rowModReferenceTypesElements}</>); }
+
+//           <Col sm={otherColSize}>
+//               <Form.Control as={fieldType} id={`${fieldName} ${index} reference_type`} type="{fieldName}" value={valueLiveReferenceType} className={`form-control ${updatedFlagReferenceType}`} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
+//           </Col>
 
 //         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
 //         </Row>); }
