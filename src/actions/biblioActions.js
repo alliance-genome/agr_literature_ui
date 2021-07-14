@@ -29,7 +29,7 @@ export const changeFieldArrayReferenceJson = (e) => {
 };
 
 export const changeFieldModReferenceReferenceJson = (e) => {
-  console.log('action change field array reference json ' + e.target.id + ' to ' + e.target.value);
+  console.log('action change field mod reference json ' + e.target.id + ' to ' + e.target.value);
 //   console.log(e);
   return {
     type: 'CHANGE_FIELD_MOD_REFERENCE_REFERENCE_JSON',
