@@ -50,7 +50,7 @@ const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abs
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
 const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms' ];
-const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms' ];
+const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms' ];
 
 
 const fieldTypeDict = {}
@@ -521,6 +521,23 @@ const BiblioSubmitUpdateButton = () => {
   );
 } // const BiblioSubmitUpdateButton
 
+
+const ColEditorSimple = ({fieldType, fieldName, value, colSize, updatedFlag, disabled}) => {
+  const dispatch = useDispatch();
+  return (  <Col sm={colSize}>
+              <Form.Control as={fieldType} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
+            </Col>); }
+
+const ColEditorSelect = ({fieldType, fieldName, value, colSize, updatedFlag, disabled}) => {
+  const dispatch = useDispatch();
+  return (  <Col sm={colSize}>
+              <Form.Control as={fieldType} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
+                {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
+                  <option key={`${fieldName} ${optionValue}`}>{optionValue}</option>
+                ))}
+              </Form.Control>
+            </Col>); }
+
 const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
@@ -537,27 +554,17 @@ const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   let otherColSize = 9;
   let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >Revert</Button>{' '}</Col>);
   if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
-  if (fieldName in enumDict) {
-    return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
-               <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
-               <Col sm={otherColSize}>
-                 <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
-                   {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
-                     <option key={`${fieldName} ${optionValue}`}>{optionValue}</option>
-                   ))}
-                 </Form.Control>
-               </Col>
-               {revertElement}
-             </Form.Group>); }
-  else {
-    return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
-               <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
-               <Col sm={otherColSize}>
-                 <Form.Control as={fieldType} type="{fieldName}" value={valueLive} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} />
-               </Col>
-               {revertElement}
-             </Form.Group>); }
+  let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} disabled={disabled} />)
+  if (fieldType === 'select') {
+    colEditorElement = (<ColEditorSelect key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} disabled={disabled} />) }
+  return ( <Form.Group as={Row} key={fieldName} controlId={fieldName}>
+             <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
+             {colEditorElement}
+             {revertElement}
+           </Form.Group>);
 } // const RowEditorSimple
+
+// TODO resource_curie should update differently (like a xref ?)
 //                  <Button variant="outline-secondary"><span style={{fontSize:'1em'}}>&#9100;</span></Button>{' '}
 
 const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
