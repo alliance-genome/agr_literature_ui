@@ -478,29 +478,30 @@ const BiblioSubmitUpdating = () => {
 
 const BiblioSubmitUpdateButton = () => {
   const dispatch = useDispatch();
-  const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
   let updatedFlag = '';
   if (Object.keys(referenceJsonHasChange).length > 0) { updatedFlag = 'updated-biblio-button'; }
 
-  function updateBiblio(referenceCurie, referenceJson) {
+  function updateBiblio(referenceCurie, referenceJsonLive) {
     // console.log('updateBiblio')
     const forApiArray = []
     let updateJson = {}
     const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title' ];
     for (const field of fieldsSimple.values()) {
-      if ((field in referenceJson) && !(fieldsSimpleNotPatch.includes(field))) {
-        updateJson[field] = referenceJson[field] } }
+      if ((field in referenceJsonLive) && !(fieldsSimpleNotPatch.includes(field))) {
+        updateJson[field] = referenceJsonLive[field] } }
     for (const field of fieldsArrayString.values()) {
-      if (field in referenceJson) {
-        updateJson[field] = referenceJson[field] } }
+      if (field in referenceJsonLive) {
+        updateJson[field] = referenceJsonLive[field] } }
     let subPath = 'reference/' + referenceCurie;
     let array = [ subPath, updateJson, 'PATCH', 0, null, null]
     forApiArray.push( array );
 
-    if ('mod_reference_types' in referenceJson && referenceJson['mod_reference_types'] !== null) {
+    if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
       const modRefFields = [ 'reference_type', 'source' ];
-      for (const[index, modRefDict] of referenceJson['mod_reference_types'].entries()) {
+      for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
         if (('needsChange' in modRefDict) && ('mod_reference_type_id' in modRefDict)) {
           let updateJson = { 'reference_curie': referenceCurie }
           for (const field of modRefFields.values()) {
@@ -519,6 +520,18 @@ const BiblioSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
+    if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
+      const crossRefFields = [ 'curie', 'is_obsolete' ];
+      let field = 'cross_references';
+      for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+        if ('needsChange' in crossRefDict) {
+          if (!('cross_reference_id' in crossRefDict)) {	// pre-existing entries need delete
+            if (('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
+              let subPath = 'cross-reference/' + referenceJsonDb[field][index]['curie']
+              let array = [ subPath, null, 'DELETE', index, field, null ]
+              forApiArray.push( array ); } }
+    } } }
+
     let dispatchCount = forApiArray.length;
 
     // console.log('dispatchCount ' + dispatchCount)
@@ -528,12 +541,12 @@ const BiblioSubmitUpdateButton = () => {
       dispatch(updateButtonBiblio(arrayData))
     }
     // console.log('end updateBiblio')
-  } // function updateBiblio(referenceCurie, referenceJson)
+  } // function updateBiblio(referenceCurie, referenceJsonLive)
 
   return (
        <Row className="form-group row" >
          <Col className="form-label col-form-label" sm="2" ></Col>
-         <Col sm="10" ><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => updateBiblio(referenceJson.curie, referenceJson)}>Update Biblio Data</div></Col>
+         <Col sm="10" ><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => updateBiblio(referenceJsonLive.curie, referenceJsonLive)}>Update Biblio Data</div></Col>
        </Row>
   );
 } // const BiblioSubmitUpdateButton
