@@ -672,7 +672,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
   const revertDictFields = 'curie prefix, curie id, is_obsolete'
-  const initializeDict = {'curie': '', 'url': '', 'is_obsolete': false, 'cross_reference_id': 'new'}
+  const initializeDict = {'curie': '', 'url': null, 'is_obsolete': false, 'cross_reference_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
