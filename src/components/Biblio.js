@@ -182,16 +182,30 @@ const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJ
     return (<>{rowArrayStringElements}</>); }
   else { return null; } }
 
-// FIX THIS when cross references become editable
 const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
   if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
     const rowCrossReferenceElements = []
-    for (const[index, value] of referenceJson['cross_references'].entries()) {
-      let url = value['url'];
-        let updatedFlag = '';	// FIX THIS
-//         let valueDb = '';	// FIX THIS
-      if ('pages' in value && value['pages'] !== null) { url = value['pages'][0]['url']; }
-      const xrefValue = (<a href={url}  rel="noreferrer noopener" target="_blank">{value['curie']}</a>);
+    for (const[index, crossRefDict] of referenceJson['cross_references'].entries()) {
+      let url = crossRefDict['url'];
+      let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = ''; 
+      let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') && 
+           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) { 
+             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+             valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
+      if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+      if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
+      let isObsolete = ''; 
+      if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') && 
+           (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+             if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
+             else { isObsolete = ''; } }
+      let updatedFlag = '';
+      if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated' }
+      if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
+      const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
       rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
     return (<>{rowCrossReferenceElements}</>); }
   else { return null; } }
