@@ -135,6 +135,50 @@ export default function(state = initialState, action) {
           [fieldModReference]: newModReferenceChange
         }
       }
+    case 'CHANGE_FIELD_CROSS_REFERENCES_REFERENCE_JSON':
+      console.log(action.payload);
+      let crossReferencesArray = action.payload.field.split(" ");
+      let fieldCrossReferences = crossReferencesArray[0];
+      let indexCrossReferences = crossReferencesArray[1];
+      let subfieldCrossReferences = crossReferencesArray[2];
+      let prefixOrIdCrossReferences = crossReferencesArray[3];
+      let crossReferencesNewValue = action.payload.value;
+
+      if (subfieldCrossReferences === 'curie') {
+        let crossReferenceLiveCurie = state.referenceJsonLive[fieldCrossReferences][indexCrossReferences][subfieldCrossReferences]
+        let crossReferenceLiveCuriePrefix = ''; let crossReferenceLiveCurieId = '';
+        if ( crossReferenceLiveCurie.match(/^([^:]*):(.*)$/) ) {
+          let crossReferenceLiveCurieArray = crossReferenceLiveCurie.match(/^([^:]*):(.*)$/)
+          crossReferenceLiveCuriePrefix = crossReferenceLiveCurieArray[1] || ''
+          crossReferenceLiveCurieId = crossReferenceLiveCurieArray[2] || ''
+        }
+        if (prefixOrIdCrossReferences === 'prefix') {
+          crossReferencesNewValue = action.payload.value + ':' + crossReferenceLiveCurieId }
+        else if (prefixOrIdCrossReferences === 'id') {
+          crossReferencesNewValue = crossReferenceLiveCuriePrefix + ':' + action.payload.value }
+        if (crossReferencesNewValue === ':') { crossReferencesNewValue = ''} }
+      else if (subfieldCrossReferences === 'is_obsolete') {
+        crossReferencesNewValue = action.payload.checked || false }
+
+      let newCrossReferencesChange = state.referenceJsonLive[fieldCrossReferences];
+      newCrossReferencesChange[indexCrossReferences]['needsChange'] = true;
+      newCrossReferencesChange[indexCrossReferences][subfieldCrossReferences] = crossReferencesNewValue
+
+      let hasChangeCrossReferencesField = state.referenceJsonHasChange
+      if (state.referenceJsonDb[fieldCrossReferences][indexCrossReferences][subfieldCrossReferences] === crossReferencesNewValue) {
+        if (action.payload.field in hasChangeCrossReferencesField) {
+          delete hasChangeCrossReferencesField[action.payload.field] } }
+      else {
+        hasChangeCrossReferencesField[action.payload.field] = 'diff' }
+      return {
+        ...state,
+        referenceJsonHasChange: hasChangeCrossReferencesField,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          [fieldCrossReferences]: newCrossReferencesChange
+        }
+      }
+
     case 'BIBLIO_REVERT':
       // console.log('BIBLIO_REVERT'); console.log(action.payload);
       let fieldIdRevert = action.payload.field.replace(/^revert /, '');

@@ -40,6 +40,19 @@ export const changeFieldModReferenceReferenceJson = (e) => {
   };
 };
 
+export const changeFieldCrossReferencesReferenceJson = (e) => {
+  console.log('action change field cross references json ' + e.target.id + ' to ' + e.target.value + ' checked ' + e.target.checked);
+//   console.log(e);
+  return {
+    type: 'CHANGE_FIELD_CROSS_REFERENCES_REFERENCE_JSON',
+    payload: {
+      field: e.target.id,
+      checked: e.target.checked,
+      value: e.target.value
+    }
+  };
+};
+
 export const biblioRevertField = (e) => {
   return {
     type: 'BIBLIO_REVERT',

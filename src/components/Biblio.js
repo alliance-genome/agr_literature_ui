@@ -16,6 +16,7 @@ import { setBiblioUpdating } from '../actions/biblioActions';
 import { changeFieldReferenceJson } from '../actions/biblioActions';
 import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
 import { changeFieldModReferenceReferenceJson } from '../actions/biblioActions';
+import { changeFieldCrossReferencesReferenceJson } from '../actions/biblioActions';
 import { changeBiblioActionToggler } from '../actions/biblioActions';
 import { biblioAddNewRowString } from '../actions/biblioActions';
 import { biblioAddNewRowDict } from '../actions/biblioActions';
@@ -60,6 +61,7 @@ fieldTypeDict['category'] = 'select'
 const enumDict = {}
 enumDict['category'] = ['research_article', 'review_article', 'thesis', 'book', 'other', 'preprint', 'conference_publication', 'personal_communication', 'direct_data_submission', 'internal_process_reference', 'unknown', 'retraction']
 enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
+enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 
 // title
 // cross_references (doi, pmid, modID)
@@ -540,6 +542,20 @@ const ColEditorSelect = ({fieldType, fieldName, value, colSize, updatedFlag, dis
               </Form.Control>
             </Col>); }
 
+// TODO ColEditorCheckbox move it to bottom, works if not wrapped in Col.  has too many variables passed in
+const ColEditorCheckbox = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, checked, dispatchAction}) => {
+  const dispatch = useDispatch();
+  return (  <Col sm={colSize}>
+              <Form.Check 
+                inline
+                checked={checked}
+                type='checkbox'
+                label='obsolete'
+                id={fieldKey}
+                onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))}
+              />
+            </Col>); }
+
 const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
@@ -595,7 +611,7 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
   if (disabled === '') {
     rowArrayStringElements.push(
       <Row className="form-group row" key={fieldName} >
-        <Col className="form-label col-form-label Col-general" sm="2" >{fieldName}</Col>
+        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
         <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowString(e))} >add {fieldName}</div></Col>
       </Row>);
   }
@@ -630,7 +646,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
       if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
       rowModReferenceTypesElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
-          <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
+          <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
           <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
           <ColEditorSimple key={`colElement ${fieldName} ${index} reference_type`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveReferenceType} updatedFlag={updatedFlagReferenceType} placeholder="reference_type" disabled={disabled} fieldKey={`${fieldName} ${index} reference_type`} dispatchAction={changeFieldModReferenceReferenceJson} />
           {revertElement}
@@ -638,7 +654,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
   if (disabled === '') {
     rowModReferenceTypesElements.push(
       <Row className="form-group row" key={fieldName} >
-        <Col className="form-label col-form-label" sm="2" >{fieldName}</Col>
+        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
         <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
       </Row>);
   }
@@ -661,6 +677,72 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
 //           <Col className="Col-general Col-display " lg={{ span: 2 }}>{value['source']}</Col>
 //           <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
 
+const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  const dispatch = useDispatch();
+  const hasPmid = useSelector(state => state.biblio.hasPmid);
+  const dictFields = 'curie, is_obsolete'
+  const initializeDict = {'curie': '', 'url': '', 'is_obsolete': false, 'cross_reference_id': 'new'}
+  let disabled = ''
+  if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
+  if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
+  const rowCrossReferencesElements = []
+
+  if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
+    for (const[index, modRefDict] of referenceJsonLive['cross_references'].entries()) {
+      let otherColSize = 6;
+      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={dictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} >Revert</Button>{' '}</Col>);
+      if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 7; }
+      let valueLiveCurie = modRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
+      let valueLiveCuriePrefix = ''; let valueLiveCurieId = '';
+      if ( valueLiveCurie.match(/^([^:]*):(.*)$/) ) {
+        let valueLiveCurieArray = valueLiveCurie.match(/^([^:]*):(.*)$/)
+        // console.log(valueLiveCurieArray)
+        valueLiveCuriePrefix = valueLiveCurieArray[1] || ''
+        valueLiveCurieId = valueLiveCurieArray[2] || '' }
+      let valueLiveReferenceType = modRefDict['is_obsolete']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') && 
+           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) { 
+             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+             valueDbReferenceType = referenceJsonDb[fieldName][index]['is_obsolete'] }
+      if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+      if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
+
+      let obsoleteChecked = ''; 
+      if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') && 
+           (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+             if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { obsoleteChecked = 'checked'; }
+             else { obsoleteChecked = ''; } }
+
+// TODO revert not working for xref index curie subparts, referenceJsonHasChange keeps the subvalues
+      rowCrossReferencesElements.push(
+        <Form.Group as={Row} key={`${fieldName} ${index}`}>
+          <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
+          <ColEditorSelect key={`colElement ${fieldName} ${index} curiePrefix`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveCuriePrefix} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie prefix`} enumType="referenceXrefPrefix" dispatchAction={changeFieldCrossReferencesReferenceJson} />
+          <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurieId} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie id`} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+          <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} fieldType="input" fieldName={fieldName} colSize="1" value={valueLiveCurieId} updatedFlag={updatedFlagCurie} placeholder="is_obsolete" disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+          {revertElement}
+        </Form.Group>); } }
+  if (disabled === '') {
+    rowCrossReferencesElements.push(
+      <Row className="form-group row" key={fieldName} >
+        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
+        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
+      </Row>);
+  }
+  return (<>{rowCrossReferencesElements}</>); }
+//       <Form.Check 
+//         inline
+//         checked={obsoleteChecked}
+//         type='checkbox'
+//         label='obsolete'
+//         id={`${fieldName} ${index} is_obsolete`}
+//         onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))}
+//       />
+//           <ColEditorSimple key={`colElement ${fieldName} ${index} is_obsolete`} fieldType="input" fieldName={fieldName} colSize="2" value={valueLiveReferenceType} updatedFlag={updatedFlagReferenceType} placeholder="is_obsolete" disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+//           <ColEditorSelect key={`colElement ${fieldName} ${index} curie`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveCurie} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
+
 const BiblioEditor = () => {
   const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
@@ -673,11 +755,9 @@ const BiblioEditor = () => {
         rowOrderedElements.push(<RowEditorSimple key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//     else if (fieldName === 'cross_references') {
+    else if (fieldName === 'cross_references') {
 // TODO  like RowEditorArrayString  but has is_obsolete boolean and curie (as well as url and pages, which might be ignorable)
-//       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />);
-// //       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />);
-//     }
+      rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
