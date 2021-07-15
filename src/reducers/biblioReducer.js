@@ -217,22 +217,25 @@ export default function(state = initialState, action) {
       }
     case 'BIBLIO_ADD_NEW_ROW':
       // console.log(action.payload);
-      let newArrayPush = state.referenceJsonLive[action.payload.field] || [];
+      let newArrayPushDb = state.referenceJsonDb[action.payload.field] || [];
+      let newArrayPushLive = state.referenceJsonLive[action.payload.field] || [];
       if (action.payload.type === 'string') {
-        newArrayPush.push(''); }
+        newArrayPushDb.push('');
+        newArrayPushLive.push(''); }
       else if (action.payload.type === 'dict') {
-        newArrayPush.push(action.payload.initializeDict); }
-      // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
-      const dbCopyAddNewRow = JSON.parse(JSON.stringify(newArrayPush))
+        // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
+        const dbCopyAddNewRow = JSON.parse(JSON.stringify(action.payload.initializeDict))
+        newArrayPushDb.push(dbCopyAddNewRow);
+        newArrayPushLive.push(action.payload.initializeDict); }
       return {
         ...state,
         referenceJsonDb: {
           ...state.referenceJsonDb,
-          [action.payload.field]: dbCopyAddNewRow
+          [action.payload.field]: newArrayPushDb
         },
         referenceJsonLive: {
           ...state.referenceJsonLive,
-          [action.payload.field]: newArrayPush
+          [action.payload.field]: newArrayPushLive
         }
       }
     case 'CHANGE_BIBLIO_MESH_EXPAND_TOGGLER':
