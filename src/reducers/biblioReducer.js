@@ -21,11 +21,18 @@ const checkHasPmid = (referenceJsonLive) => {
   // console.log('called checkHasPmid ' + referenceJsonLive.curie);
   let checkingHasPmid = false;
   for (const xref of referenceJsonLive.cross_references) {
-    if (xref.curie.match(/^PMID:/)) {
-      // console.log('checkHasPmid ' + xref.curie);
+    if ( (xref.curie.match(/^PMID:/)) && (xref.is_obsolete === false) ) {
       checkingHasPmid = true; } }
   return checkingHasPmid;
 }
+
+const splitCurie = (curie) => {
+  let curiePrefix = ''; let curieId = '';
+  if ( curie.match(/^([^:]*):(.*)$/) ) {
+    [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }
+  return [ curiePrefix, curieId ]
+}
+
 
 // to ignore a warning about Unexpected default export of anonymous function
 // eslint-disable-next-line
@@ -146,12 +153,7 @@ export default function(state = initialState, action) {
 
       if (subfieldCrossReferences === 'curie') {
         let crossReferenceLiveCurie = state.referenceJsonLive[fieldCrossReferences][indexCrossReferences][subfieldCrossReferences]
-        let crossReferenceLiveCuriePrefix = ''; let crossReferenceLiveCurieId = '';
-        if ( crossReferenceLiveCurie.match(/^([^:]*):(.*)$/) ) {
-          let crossReferenceLiveCurieArray = crossReferenceLiveCurie.match(/^([^:]*):(.*)$/)
-          crossReferenceLiveCuriePrefix = crossReferenceLiveCurieArray[1] || ''
-          crossReferenceLiveCurieId = crossReferenceLiveCurieArray[2] || ''
-        }
+        let [ crossReferenceLiveCuriePrefix, crossReferenceLiveCurieId ] = splitCurie(crossReferenceLiveCurie)
         if (prefixOrIdCrossReferences === 'prefix') {
           crossReferencesNewValue = action.payload.value + ':' + crossReferenceLiveCurieId }
         else if (prefixOrIdCrossReferences === 'id') {
@@ -164,15 +166,19 @@ export default function(state = initialState, action) {
       newCrossReferencesChange[indexCrossReferences]['needsChange'] = true;
       newCrossReferencesChange[indexCrossReferences][subfieldCrossReferences] = crossReferencesNewValue
 
+      const pmidBoolCrossReference = checkHasPmid(state.referenceJsonLive)
+
       let hasChangeCrossReferencesField = state.referenceJsonHasChange
       if (state.referenceJsonDb[fieldCrossReferences][indexCrossReferences][subfieldCrossReferences] === crossReferencesNewValue) {
         if (action.payload.field in hasChangeCrossReferencesField) {
           delete hasChangeCrossReferencesField[action.payload.field] } }
       else {
         hasChangeCrossReferencesField[action.payload.field] = 'diff' }
+
       return {
         ...state,
         referenceJsonHasChange: hasChangeCrossReferencesField,
+        hasPmid: pmidBoolCrossReference,
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldCrossReferences]: newCrossReferencesChange
@@ -199,9 +205,11 @@ export default function(state = initialState, action) {
           let keySubFieldIdRevert = fieldIdRevert + ' ' + subField
           if (keySubFieldIdRevert in hasChangeFieldRevert) {
             delete hasChangeFieldRevert[keySubFieldIdRevert] } } }
+      const pmidBoolRevert = checkHasPmid(state.referenceJsonLive)
       return {
         ...state,
         referenceJsonHasChange: hasChangeFieldRevert,
+        hasPmid: pmidBoolRevert,
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldStringArrayRevert]: revertValue

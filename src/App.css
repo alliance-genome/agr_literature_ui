@@ -93,6 +93,12 @@
   background-color: #e9ecef;
 }
 
+.Col-checkbox {
+  display: flex;
+  align-items : center;
+  padding: 0 !important;
+}
+
 .Col-general {
   text-align: left;
   display: flex;
