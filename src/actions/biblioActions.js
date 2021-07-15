@@ -200,7 +200,7 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
     let response_message = 'update success';
     if ((method === 'DELETE') && (res.status === 204)) { }	// success of delete has no res.text so can't process like others
     else {
-      // const response = await res.json();
+      // const response = await res.json();	// successful POST to related table (e.g. mod_reference_types) returns an id that is not in json format
       const response_text = await res.text();
       const response = JSON.parse(response_text);
       if ( ((method === 'PATCH') && (res.status !== 202)) || 
