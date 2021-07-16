@@ -71,7 +71,8 @@ export default function(state = initialState, action) {
         // console.log('Update failure ' + action.payload.responseMessage);
       }
       let referenceJsonLive = state.referenceJsonLive;
-      if (action.payload.field !== null) {	// POST to a field, assign its db id to redux store
+      if ((action.payload.field !== null) && 		// POST to a field, assign its db id to redux store
+          (action.payload.subField !== null)) {		// but only for related tables that create a dbid, not for cross_references
         referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
       return {
         ...state,

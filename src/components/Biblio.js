@@ -533,7 +533,7 @@ const BiblioSubmitUpdateButton = () => {
       for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
         if ('needsChange' in crossRefDict) {
           if (!('cross_reference_id' in crossRefDict)) {	// pre-existing entries need delete
-            if (('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
+            if ('curie' in crossRefDict) {
               let subPath = 'cross-reference/' + referenceJsonDb[field][index]['curie']
               let array = [ subPath, null, 'DELETE', index, field, null ]
 // UNDO PUT THIS BACK
@@ -551,8 +551,8 @@ const BiblioSubmitUpdateButton = () => {
             let subPath = 'cross-reference/'
             let array = [ subPath, updateJson, 'POST', index, field, null ]
 // UNDO put this back and test it when API for post is working
-//             forApiArray.push( array ); 
-}
+//             forApiArray.push( array );
+ }
     } } }
 
     let dispatchCount = forApiArray.length;
