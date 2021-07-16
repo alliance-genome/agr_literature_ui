@@ -491,6 +491,18 @@ const BiblioSubmitUpdateButton = () => {
   let updatedFlag = '';
   if (Object.keys(referenceJsonHasChange).length > 0) { updatedFlag = 'updated-biblio-button'; }
 
+  function generateCrossReferenceUpdateJson(crossRefDict, referenceCurie) {
+    let crossRefCurie = crossRefDict['curie']
+    let hasPages = false
+    let updateJson = { 'reference_curie': referenceCurie }
+    if (('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
+      let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(crossRefCurie);
+      hasPages = (enumDict['mods'].includes(valueLiveCuriePrefix)) ? true : false; }
+    if (hasPages) { updateJson['pages'] = [ 'reference' ] }
+    if (('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] !== '')) {
+      updateJson['is_obsolete'] = crossRefDict['is_obsolete'] }
+    return updateJson }
+
   function updateBiblio(referenceCurie, referenceJsonLive) {
     // console.log('updateBiblio')
     const forApiArray = []
@@ -532,27 +544,30 @@ const BiblioSubmitUpdateButton = () => {
       let field = 'cross_references';
       for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
         if ('needsChange' in crossRefDict) {
-          if (!('cross_reference_id' in crossRefDict)) {	// pre-existing entries need delete
-            if ('curie' in crossRefDict) {
-              let subPath = 'cross-reference/' + referenceJsonDb[field][index]['curie']
+          let needsCreate = false
+          if (('cross_reference_id' in crossRefDict)) {		// whole new entries needs create
+            needsCreate = true }
+          else if ('curie' in crossRefDict) {			// pre-existing entries need delete or update
+            let crossRefCurieDb = referenceJsonDb[field][index]['curie']
+            let crossRefCurieLive = crossRefDict['curie']
+            let subPath = 'cross-reference/' + referenceJsonDb[field][index]['curie']
+            if ( crossRefCurieLive !== crossRefCurieDb ) {	// xref curie has changed, delete+create
+              needsCreate = true
               let array = [ subPath, null, 'DELETE', index, field, null ]
-// UNDO PUT THIS BACK
-//               forApiArray.push( array );
- } }
-          if (('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
-            let crossRefCurie = crossRefDict['curie']
-            let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(crossRefCurie);
-            let updateJson = { 'reference_curie': referenceCurie, 'curie': crossRefCurie }
-            let hasPages = (enumDict['mods'].includes(valueLiveCuriePrefix)) ? true : false;
-            if (hasPages) { updateJson['pages'] = [ { 'name': 'reference' } ] }
-            if (('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] !== '')) {
-              updateJson['is_obsolete'] = crossRefDict['is_obsolete'] }
-            // console.log(updateJson)
+              forApiArray.push( array ); }
+            else {	// xref curie same, update (delete+create async would cause create failure before delete
+              let updateJson = generateCrossReferenceUpdateJson(crossRefDict, referenceCurie)
+              // console.log(updateJson)
+              let array = [ subPath, updateJson, 'PATCH', index, field, null ]
+              forApiArray.push( array ); } }
+          if ((needsCreate === true) && ('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
+            let createJson = generateCrossReferenceUpdateJson(crossRefDict, referenceCurie)
+            createJson['curie'] = crossRefDict['curie']		// createJson is same as updateJson + crossRef curie
+            // console.log(createJson)
             let subPath = 'cross-reference/'
-            let array = [ subPath, updateJson, 'POST', index, field, null ]
+            let array = [ subPath, createJson, 'POST', index, field, null ]
 // UNDO put this back and test it when API for post is working
-//             forApiArray.push( array );
- }
+            forApiArray.push( array ); }
     } } }
 
     let dispatchCount = forApiArray.length;
