@@ -93,6 +93,13 @@ enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'FB', 'MG
 // mesh_terms
 
 
+function splitCurie(curie) {
+  let curiePrefix = ''; let curieId = '';
+  if ( curie.match(/^([^:]*):(.*)$/) ) {
+    [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }
+  return [ curiePrefix, curieId ] }
+
+
 const BiblioActionToggler = () => { 
   const dispatch = useDispatch();
   const biblioAction = useSelector(state => state.biblio.biblioAction);
@@ -529,7 +536,23 @@ const BiblioSubmitUpdateButton = () => {
             if (('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
               let subPath = 'cross-reference/' + referenceJsonDb[field][index]['curie']
               let array = [ subPath, null, 'DELETE', index, field, null ]
-              forApiArray.push( array ); } }
+// UNDO PUT THIS BACK
+//               forApiArray.push( array );
+ } }
+          if (('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
+            let crossRefCurie = crossRefDict['curie']
+            let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(crossRefCurie);
+            let updateJson = { 'reference_curie': referenceCurie, 'curie': crossRefCurie }
+            let hasPages = (enumDict['mods'].includes(valueLiveCuriePrefix)) ? true : false;
+            if (hasPages) { updateJson['pages'] = [ { 'name': 'reference' } ] }
+            if (('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] !== '')) {
+              updateJson['is_obsolete'] = crossRefDict['is_obsolete'] }
+            // console.log(updateJson)
+            let subPath = 'cross-reference/'
+            let array = [ subPath, updateJson, 'POST', index, field, null ]
+// UNDO put this back and test it when API for post is working
+//             forApiArray.push( array ); 
+}
     } } }
 
     let dispatchCount = forApiArray.length;
@@ -704,12 +727,6 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowCrossReferencesElements = []
-
-  function splitCurie(curie) {
-    let curiePrefix = ''; let curieId = '';
-    if ( curie.match(/^([^:]*):(.*)$/) ) {
-      [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }
-    return [ curiePrefix, curieId ] }
 
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
