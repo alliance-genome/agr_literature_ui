@@ -53,6 +53,17 @@ export const changeFieldCrossReferencesReferenceJson = (e) => {
   };
 };
 
+export const changeFieldAuthorsReferenceJson = (e) => {
+  console.log('action change field authors json ' + e.target.id + ' to ' + e.target.value);
+  return {
+    type: 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON',
+    payload: {
+      field: e.target.id,
+      value: e.target.value
+    }
+  };
+};
+
 export const biblioRevertField = (e) => {
   return {
     type: 'BIBLIO_REVERT',
