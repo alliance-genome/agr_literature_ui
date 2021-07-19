@@ -121,8 +121,15 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
 };
 
 
-export const signIn = () => {
+export const signIn = (userId, accessToken) => {
   return {
-    type: 'SIGN_IN'
+    type: 'SIGN_IN',
+    payload:{userId: userId, accessToken:accessToken}
+  };
+};
+
+export const signOut = () => {
+  return {
+    type: 'SIGN_OUT',
   };
 };
