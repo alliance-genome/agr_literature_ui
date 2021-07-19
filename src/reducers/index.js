@@ -4,9 +4,12 @@ import loggedReducer from './isLoggedReducer';
 import queryReducer from './queryReducer';
 import biblioReducer from './biblioReducer';
 
+
 export default combineReducers({
   counter: counterReducer,
   isLogged: loggedReducer,
+  //login: isLoggedReducer
   query: queryReducer,
   biblio: biblioReducer
+
 });
