@@ -4,7 +4,7 @@ import { Redirect } from 'react-router-dom';
 import OktaSignInWidget from './OktaSignInWidget';
 import { useOktaAuth } from '@okta/okta-react';
 import  { useState, useEffect } from 'react';
-import {signIn, signOut} from "../actions/login";
+import {signIn, signOut} from "../actions/loginActions";
 import { useSelector, useDispatch } from 'react-redux';
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
