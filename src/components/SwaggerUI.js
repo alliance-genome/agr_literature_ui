@@ -8,6 +8,7 @@ import {useOktaAuth} from "@okta/okta-react";
 import {signIn, signOut} from "../actions";
 import {isAccessToken} from "@okta/okta-auth-js";
 // tslint:able
+import { swaggerUI } from '../config';
 
 const SwaggerComp = params => {
     const { authState, oktaAuth } = useOktaAuth();
@@ -42,7 +43,7 @@ const SwaggerComp = params => {
     return (
         <div className={styles.wrapper}>
             <SwaggerUI
-                url="http://dev.alliancegenome.org:49141/openapi.json"
+                url={swaggerUI.url}
                 requestInterceptor={requestInterceptor}
             />
         </div>

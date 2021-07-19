@@ -3,20 +3,15 @@ const oktaAuthConfig = {
     // instead of the Authorization Code with Proof of Code Key Exchange (PKCE)
     // you will need to add `pkce: false`
     issuer: 'https://alliancegenome.okta.com/oauth2/default',
-    //clientId: '0oatzysrlMv0TSzDl5d6',
     clientId: '0oa125a1rulKhwkiJ5d7',
-    //clientSecret: "SSSbCoKo2MdxDaNXk52y9Fhs0yvO-pLVNtSm0l4s",
     redirectUri: window.location.origin + '/login/callback',
-    //responseType: 'code',
     pkce: true
 };
 
 
 const oktaSignInConfig = {
     baseUrl: 'https://alliancegenome.okta.com',
-    //clientId: '0oatzysrlMv0TSzDl5d6',
     clientId: '0oa125a1rulKhwkiJ5d7',
-    //clientSecret: "SSSbCoKo2MdxDaNXk52y9Fhs0yvO-pLVNtSm0l4s",
     redirectUri: window.location.origin + '/login/callback',
     authParams: {
         pkce: true,
@@ -31,4 +26,8 @@ const oktaSignInConfig = {
 
 };
 
-export { oktaAuthConfig, oktaSignInConfig };
+const swaggerUI = {
+    url:"http://dev.alliancegenome.org:11223/openapi.json"
+}
+
+export { oktaAuthConfig, oktaSignInConfig, swaggerUI };
