@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import OktaSignIn from '@okta/okta-signin-widget';
 import '@okta/okta-signin-widget/dist/css/okta-sign-in.min.css';
-import { ReactDOM } from 'react-dom';
+
 
 
 const OktaSignInWidget = ({ config, onSuccess, onError }) => {
@@ -21,7 +21,6 @@ const OktaSignInWidget = ({ config, onSuccess, onError }) => {
     }, [config, onSuccess, onError]);
 
     return (<div ref={widgetRef}  /> );
-    //return ReactDOM.createPortal(<div ref={widgetRef}  /> , document.body)
 };
 export default OktaSignInWidget;
 

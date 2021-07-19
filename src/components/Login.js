@@ -84,16 +84,7 @@ const Login = ({config}) => {
     return(<div>
         {renderAuthButton()}
     </div>)
-    //return authState.isAuthenticated ?
-    //    <Redirect to={{ pathname: '/' }}/> :
-    //    <OktaSignInWidget
-    //        config={config}
-    //        onSuccess={onSuccess}
-    //        onError={onError}/>;
+
 };
 
-//const mapStateToProps = (state) => {
-//  return {isSignedIn:state.isSignedIn}
-//}
-//export default connect(mapStateToProps, {signIn, signOut}) (Login);
 export default Login

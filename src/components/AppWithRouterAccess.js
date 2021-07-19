@@ -77,39 +77,3 @@ const AppWithRouterAccess = () => {
 };
 export default AppWithRouterAccess;
 
-//<Route path='/login/callback' component={LoginCallback} />
-
-//<Route render={() => <Login config={oktaSignInConfig} />} />
-
-// this doesn't seem true.  Using Router instead of BrowserRouter makes the <Link and <Redirect reset store
-// Warning: <BrowserRouter> ignores the history prop. To use a custom history, use `import { Router }` instead of `import { BrowserRouter as Router }`.
-//     <BrowserRouter history={history}>
-//     </BrowserRouter>
-
-
-/*
-var oktaSignIn = new OktaSignIn({
-  baseUrl: orgUrl,
-  clientId: 'smBXcoabniBOUsja0A6b7', // here
-  redirectUri: 'http://localhost:3000',
-  authParams: {
-    issuer: 'default',
-    responseType: 'id_token',
-    scopes: ['openid', 'whatever'],
-  },
-  idps:[
-    { type: 'google', id: '0oadrrh812O9sbabE0h7' },
-    { type: 'facebook', id: '0oadtgaq74qR0qdD20h7'}
-  ],
-  idpDisplay: "PRIMARY",
-  i18n: {
-    en: {
-      'password.forgot.email.or.username.placeholder': 'Email',
-      'password.forgot.email.or.username.tooltip': 'Email',
-      'errors.E0000095': 'Unable to reset password.  Did you put in a valid email?'
-    }
-  }
-});
- */
-
-//<SecureRoute path='/' component= {Logout}/>

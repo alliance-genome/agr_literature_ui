@@ -1,19 +1,19 @@
 import { Link } from 'react-router-dom'
 import { useHistory } from "react-router-dom";
-
 import { useSelector, useDispatch } from 'react-redux';
-import { changeField } from '../actions';
-import { queryButtonCrossRefCurie } from '../actions';
-import { resetQueryRedirect } from '../actions';
-import { resetQueryState } from '../actions';
+
+import { changeQueryField } from '../actions/queryActions';
+import { queryButtonCrossRefCurie } from '../actions/queryActions';
+import { resetQueryRedirect } from '../actions/queryActions';
+import { resetQueryState } from '../actions/queryActions';
 
 
 const Query = () => {
-  const crossRefCurieQueryField = useSelector(state => state.crossRefCurieQuery.queryField);
-  const crossRefCurieQueryResponseField = useSelector(state => state.crossRefCurieQuery.responseField);
-  const crossRefCurieQueryResponseColor = useSelector(state => state.crossRefCurieQuery.responseColor);
-  const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.crossRefCurieQuery.redirectToBiblio);
-  const crossRefCurieQueryQuerySuccess = useSelector(state => state.crossRefCurieQuery.querySuccess);
+  const queryField = useSelector(state => state.query.queryField);
+  const queryResponseField = useSelector(state => state.query.responseField);
+  const queryResponseColor = useSelector(state => state.query.responseColor);
+  const queryRedirectToBiblio = useSelector(state => state.query.redirectToBiblio);
+  const queryQuerySuccess = useSelector(state => state.query.querySuccess);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -27,10 +27,10 @@ const Query = () => {
   return (
     <div>
       <h4>Look up Reference by exact cross reference curie.<br/>e.g. PMID:24895670 or RGD:13542090 or WB:WBPaper00010006</h4>
-      <input type="text" name="crossRefCurieQuery" value={crossRefCurieQueryField} onChange={(e) => dispatch(changeField(e))} />
-      {crossRefCurieQueryRedirectToBiblio && pushHistory(crossRefCurieQueryResponseField)}
-      <button type="submit" onClick={() => dispatch(queryButtonCrossRefCurie(crossRefCurieQueryField))}>Query Reference Curie</button>
-      <div>{crossRefCurieQueryQuerySuccess ? <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + crossRefCurieQueryResponseField}}><span style={{color: crossRefCurieQueryResponseColor}}>{crossRefCurieQueryResponseField}</span></Link> : <span style={{color: crossRefCurieQueryResponseColor}}>{crossRefCurieQueryResponseField}</span>}</div>
+      <input type="text" name="crossRefCurieQuery" value={queryField} onChange={(e) => dispatch(changeQueryField(e))} />
+      {queryRedirectToBiblio && pushHistory(queryResponseField)}
+      <button type="submit" onClick={() => dispatch(queryButtonCrossRefCurie(queryField))}>Query Reference Curie</button>
+      <div>{queryQuerySuccess ? <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + queryResponseField}}><span style={{color: queryResponseColor}}>{queryResponseField}</span></Link> : <span style={{color: queryResponseColor}}>{queryResponseField}</span>}</div>
       <hr/>
       <Link to='/'>Go Back</Link>
     </div>
