@@ -29,7 +29,7 @@ import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
 import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
 
 import { oktaAuthConfig, oktaSignInConfig } from '../config';
-
+const CALLBACK_PATH = '/login/callback';
 const oktaAuth = new OktaAuth(oktaAuthConfig);
 
 console.log(oktaAuth)
@@ -67,7 +67,7 @@ const AppWithRouterAccess = () => {
                     <SecureRoute path='/create' component={Create} />
                     <Route path='/about' component={About} />
                     <Route path = '/swaggerUI' component={SwaggerComp} />
-
+                    <Route path={CALLBACK_PATH} component={LoginCallback} />
 
 
                 </div>
