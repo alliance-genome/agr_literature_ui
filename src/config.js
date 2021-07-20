@@ -5,7 +5,7 @@ const oktaAuthConfig = {
     issuer: 'https://alliancegenome.okta.com/oauth2/default',
     clientId: '0oa125a1rulKhwkiJ5d7',
     redirectUri: window.location.origin + '/login/callback',
-    pkce: true
+    pkce: false
 };
 
 
@@ -14,7 +14,7 @@ const oktaSignInConfig = {
     clientId: '0oa125a1rulKhwkiJ5d7',
     redirectUri: window.location.origin + '/login/callback',
     authParams: {
-        pkce: true,
+        pkce: false
 
     },
     // Additional documentation on config options can be found at https://github.com/okta/okta-signin-widget#basic-config-options
