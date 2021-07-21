@@ -919,8 +919,8 @@ const BiblioEditor = () => {
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} displayOrEditor="editor" />); }
 // PUT THIS BACK
-//     else if (fieldName === 'authors') {
-//       rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'authors') {
+      rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container><Form><BiblioSubmitUpdateRouter />{rowOrderedElements}</Form></Container>);

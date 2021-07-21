@@ -1,11 +1,13 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import { Redirect } from 'react-router-dom';
+// import ReactDOM from 'react-dom';
+// import { Redirect } from 'react-router-dom';
 import OktaSignInWidget from './OktaSignInWidget';
 import { useOktaAuth } from '@okta/okta-react';
-import  { useState, useEffect } from 'react';
+// import  { useState, useEffect } from 'react';
+import  { useEffect } from 'react';
 import {signIn, signOut} from "../actions/loginActions";
-import { useSelector, useDispatch } from 'react-redux';
+// import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
@@ -39,14 +41,12 @@ const Login = ({config}) => {
         return null;}
 
 
-   const onSignInClick = () =>{
-
-       return ( <Popup><OktaSignInWidget
-           config={config}
-           onSuccess={onSuccess}
-           onError={onError}/></Popup>)
-
-   }
+//    const onSignInClick = () =>{
+//        return ( <Popup><OktaSignInWidget
+//            config={config}
+//            onSuccess={onSuccess}
+//            onError={onError}/></Popup>)
+//    }
 
     const onSignOutClick = async () => {
         // Will redirect to Okta to end the session then redirect back to the configured `postLogoutRedirectUri`

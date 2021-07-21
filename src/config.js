@@ -27,7 +27,8 @@ const oktaSignInConfig = {
 };
 
 const swaggerUI = {
-    url:"http://dev.alliancegenome.org:11223/openapi.json"
+    url:"https://stage-literature-rest.alliancegenome.org/openapi.json"
 }
+//     url:"http://dev.alliancegenome.org:11223/openapi.json"
 
 export { oktaAuthConfig, oktaSignInConfig, swaggerUI };

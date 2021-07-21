@@ -2,7 +2,8 @@
 
 import notGithubVariables from './notGithubVariables';
 
-const port = 11223;
+const restUrl = 'stage-literature-rest.alliancegenome.org';
+// const port = 11223;
 // const port = 49161;
 
 export const changeFieldReferenceJson = (e) => {
@@ -112,7 +113,8 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   console.log("action referenceCurie " + referenceCurie);
   const createBiblioQueryReferenceCurie = async () => {
-    const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + referenceCurie;
+    const url = 'https://' + restUrl + '/reference/' + referenceCurie;
+//     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + referenceCurie;
 //     const url = 'http://dev.alliancegenome.org:49161/reference/' + referenceCurie;
 //     const url = 'http://localhost:49161/reference/' + referenceCurie;
     console.log(url);
@@ -195,7 +197,8 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
 //   console.log("subPath " + subPath);
   const createUpdateButtonBiblio = async () => {
 //     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
-    const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
+//     const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
+    const url = 'https://' + restUrl + '/' + subPath;
     console.log(url);
     // console.log(notGithubVariables.authToken);
     const res = await fetch(url, {
