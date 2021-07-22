@@ -1,6 +1,6 @@
 // import history from "../history";
 
-import notGithubVariables from './notGithubVariables';
+// import notGithubVariables from './notGithubVariables';
 
 const restUrl = 'stage-literature-rest.alliancegenome.org';
 // const port = 11223;
@@ -191,7 +191,7 @@ export const setBiblioAction = (biblioAction) => {
 // export const updateButtonBiblio = (subPath, payload, method) => dispatch => 
 export const updateButtonBiblio = (updateArrayData) => dispatch => {
 //   console.log('in updateButtonBiblio action');
-  const [subPath, payload, method, index, field, subField] = updateArrayData;
+  const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
 //   console.log("payload " + payload);
   let newId = null;
 //   console.log("subPath " + subPath);
@@ -206,10 +206,11 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
       mode: 'cors',
       headers: {
         'content-type': 'application/json',
-        'authorization': 'Bearer ' + notGithubVariables.authToken
+        'authorization': 'Bearer ' + accessToken
       },
       body: JSON.stringify( payload )
     })
+//         'authorization': 'Bearer ' + notGithubVariables.authToken
 
     let response_message = 'update success';
     if ((method === 'DELETE') && (res.status === 204)) { }	// success of delete has no res.text so can't process like others

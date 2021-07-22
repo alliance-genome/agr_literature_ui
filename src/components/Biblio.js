@@ -486,6 +486,7 @@ const BiblioSubmitUpdating = () => {
 
 const BiblioSubmitUpdateButton = () => {
   const dispatch = useDispatch();
+  const accessToken = useSelector(state => state.isLogged.accessToken);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
@@ -577,6 +578,7 @@ const BiblioSubmitUpdateButton = () => {
     dispatch(setBiblioUpdating(dispatchCount))
 
     for (const arrayData of forApiArray.values()) {
+      arrayData.unshift(accessToken)
       dispatch(updateButtonBiblio(arrayData))
     }
     // console.log('end updateBiblio')
