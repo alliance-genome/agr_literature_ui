@@ -5,31 +5,27 @@ import React, {useEffect} from 'react';
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
 import {useOktaAuth} from "@okta/okta-react";
-import {signIn, signOut} from "../actions";
-import {isAccessToken} from "@okta/okta-auth-js";
+//import {signIn, signOut} from "../actions";
+//import {isAccessToken} from "@okta/okta-auth-js";
 // tslint:able
 import { swaggerUI } from '../config';
 
 const SwaggerComp = params => {
     const { authState, oktaAuth } = useOktaAuth();
-    console.log(authState)
+    let accessToken = null
 
     //const accessToken = authState.accessToken.accessToken
-    let accessToken = null
+
     useEffect(() => {
+
         if (!authState.isAuthenticated) {
             // When user isn't authenticated, forget any user info
-            accessToken = null
+            accessToken = null;
         } else {
             accessToken = authState.accessToken.accessToken
 
         }
     }, [authState, oktaAuth]);
-
-
-
-
-
 
     const requestInterceptor = (req) => (
         {
@@ -39,7 +35,7 @@ const SwaggerComp = params => {
             }
         }
     );
-    console.log(requestInterceptor)
+
     return (
         <div className={styles.wrapper}>
             <SwaggerUI

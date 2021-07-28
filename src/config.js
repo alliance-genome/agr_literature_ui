@@ -1,25 +1,33 @@
+
+const oktaDomain = process.env.REACT_APP_OKTADOMAIN;
+const clientId = process.env.REACT_APP_CLIENTID;
+const issuer = 'https://' + oktaDomain +'/oauth2/default';
+const baseUrl = 'https://' + oktaDomain;
+const swaggerUrl = process.env.REACT_APP_SWAGGERUI;
+const googleId = process.env.REACT_APP_GOOGLEID;
+
 const oktaAuthConfig = {
     // Note: If your app is configured to use the Implicit flow
     // instead of the Authorization Code with Proof of Code Key Exchange (PKCE)
     // you will need to add `pkce: false`
-    issuer: 'https://alliancegenome.okta.com/oauth2/default',
-    clientId: '0oa125a1rulKhwkiJ5d7',
+    issuer: issuer,
+    clientId: clientId,
     redirectUri: window.location.origin + '/login/callback',
-    pkce: false
+    pkce: true,
 };
 
 
 const oktaSignInConfig = {
-    baseUrl: 'https://alliancegenome.okta.com',
-    clientId: '0oa125a1rulKhwkiJ5d7',
+    baseUrl: baseUrl,
+    clientId: clientId,
     redirectUri: window.location.origin + '/login/callback',
     authParams: {
-        pkce: false
+        pkce: true
 
     },
     // Additional documentation on config options can be found at https://github.com/okta/okta-signin-widget#basic-config-options
     idps:[
-        {type: 'google', id: '0oa125kyaxyYZP0c35d7'},
+        {type: 'google', id: googleId},
         //{type: 'github', id:'0oa12b3n62hG7ZunB5d7', text: "Sign in with GitHub", className:'../GitHub-Mark.png'}
     ],
     idpDisplay: "SCONDARY"
@@ -27,7 +35,10 @@ const oktaSignInConfig = {
 };
 
 const swaggerUI = {
-    url:"http://dev.alliancegenome.org:11223/openapi.json"
+    url:swaggerUrl
 }
 
 export { oktaAuthConfig, oktaSignInConfig, swaggerUI };
+
+
+

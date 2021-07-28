@@ -2,7 +2,7 @@
 
 //import { BrowserRouter, Route } from 'react-router-dom'
 //import history from "../history";
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import { Route} from 'react-router-dom';
 import NavigationBar from './NavigationBar'
 import Home from './Home'
 import Query from './Query'
@@ -14,7 +14,6 @@ import Ontomate from './Ontomate'
 import Textpresso from './Textpresso'
 import Create from './Create'
 import About from './About'
-import Login from './Login'
 import SwaggerComp from './SwaggerUI'
 //import Logout from "./Logout";
 // import ListGroup from 'react-bootstrap/ListGroup';
@@ -24,27 +23,26 @@ import SwaggerComp from './SwaggerUI'
 // import NavDropdown from 'react-bootstrap/NavDropdown';
 // import Glyphicon from 'react-bootstrap/Glyphicon';
 import React from 'react';
-import { useHistory, Switch } from 'react-router-dom';
-import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
+import { useHistory } from 'react-router-dom';
+import { Security, SecureRoute } from '@okta/okta-react';
 import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
 
-import { oktaAuthConfig, oktaSignInConfig } from '../config';
-const CALLBACK_PATH = '/login/callback';
+import { oktaAuthConfig } from '../config';
+
 const oktaAuth = new OktaAuth(oktaAuthConfig);
 
-console.log(oktaAuth)
 
 const AppWithRouterAccess = () => {
     const history = useHistory();
 
     const customAuthHandler = () => {
-        history.push('/');
+        history.push("/");
     };
 
     const restoreOriginalUri = async (_oktaAuth, originalUri) => {
         history.replace(toRelativeUrl(originalUri, window.location.origin));
     };
-
+    console.log(restoreOriginalUri())
     return (
 
             <Security
@@ -67,7 +65,7 @@ const AppWithRouterAccess = () => {
                     <SecureRoute path='/create' component={Create} />
                     <Route path='/about' component={About} />
                     <Route path = '/swaggerUI' component={SwaggerComp} />
-                    <Route path={CALLBACK_PATH} component={LoginCallback} />
+
 
 
                 </div>
@@ -77,3 +75,4 @@ const AppWithRouterAccess = () => {
 };
 export default AppWithRouterAccess;
 
+//<Route path={CALLBACK_PATH} component={LoginCallback} />

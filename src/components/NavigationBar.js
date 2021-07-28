@@ -31,7 +31,7 @@ const NavigationBar = () => {
 
     </Nav>
 
-    <Nav pullRight>
+    <Nav>
       <Login config={oktaSignInConfig}/>
     </Nav>
 
