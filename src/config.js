@@ -35,9 +35,9 @@ const oktaSignInConfig = {
 };
 
 const swaggerUI = {
+
     url:swaggerUrl
 }
-
 export { oktaAuthConfig, oktaSignInConfig, swaggerUI };
 
 

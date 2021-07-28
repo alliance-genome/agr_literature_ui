@@ -25,13 +25,12 @@ const NavigationBar = () => {
       </NavDropdown>
       <Nav.Link as={Link} to="/create">Create</Nav.Link>
       <Nav.Link as={Link} to="/about">About</Nav.Link>
-      <Nav.Link as={Link} to="/swaggerUI">swagger</Nav.Link>
-
-
-
+      <Nav.Link as={Link} to="/swaggerUI">Swagger</Nav.Link>
     </Nav>
 
+
     <Nav>
+
       <Login config={oktaSignInConfig}/>
     </Nav>
 

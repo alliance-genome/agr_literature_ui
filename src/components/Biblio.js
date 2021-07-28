@@ -486,6 +486,7 @@ const BiblioSubmitUpdating = () => {
 
 const BiblioSubmitUpdateButton = () => {
   const dispatch = useDispatch();
+  const accessToken = useSelector(state => state.isLogged.accessToken);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
@@ -577,6 +578,7 @@ const BiblioSubmitUpdateButton = () => {
     dispatch(setBiblioUpdating(dispatchCount))
 
     for (const arrayData of forApiArray.values()) {
+      arrayData.unshift(accessToken)
       dispatch(updateButtonBiblio(arrayData))
     }
     // console.log('end updateBiblio')
@@ -881,6 +883,14 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
               {revertElement}
             </Form.Group>);
       } }
+      if (disabled === '') {
+        rowAuthorsElements.push(
+          <Row className="form-group row" key={`${fieldName} ${index} affiliation`} >
+            <Col className="Col-general form-label col-form-label" sm="2" >auth {index + 1} add affiliation</Col>
+            <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add affiliation</div></Col>
+          </Row>);
+      }
+
   } }
   if (disabled === '') {
     rowAuthorsElements.push(
@@ -910,6 +920,7 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} displayOrEditor="editor" />); }
+// PUT THIS BACK
     else if (fieldName === 'authors') {
       rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())

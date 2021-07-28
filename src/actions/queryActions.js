@@ -2,7 +2,8 @@
 
 // import notGithubVariables from './notGithubVariables';
 
-const port = 11223;
+const restUrl = 'stage-literature-rest.alliancegenome.org';
+// const port = 11223;
 // const port = 49161;
 
 export const changeQueryField = (e) => {
@@ -30,7 +31,8 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
   console.log("payload " + payload);
   const createGetQueryCrossRefCurie = async () => {
 //     const url = 'http://dev.alliancegenome.org:49161/cross-reference/' + payload;
-    const url = 'http://dev.alliancegenome.org:' + port + '/cross-reference/' + payload;
+//     const url = 'http://dev.alliancegenome.org:' + port + '/cross-reference/' + payload;
+    const url = 'https://' + restUrl + '/cross-reference/' + payload;
     console.log(url);
     const res = await fetch(url, {
       method: 'GET',

@@ -24,6 +24,12 @@ const store = createStore(
   )
 );
 
+// without redux dev-tools
+//     applyMiddleware(...middleware)
+
+// with redux dev-tools
+//     applyMiddleware(...middleware),
+//     window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
 
 ReactDOM.render(
     <Provider store={store}>

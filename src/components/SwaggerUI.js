@@ -5,8 +5,6 @@ import React, {useEffect} from 'react';
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
 import {useOktaAuth} from "@okta/okta-react";
-//import {signIn, signOut} from "../actions";
-//import {isAccessToken} from "@okta/okta-auth-js";
 // tslint:able
 import { swaggerUI } from '../config';
 

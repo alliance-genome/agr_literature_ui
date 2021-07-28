@@ -1,8 +1,9 @@
 // import history from "../history";
 
-import notGithubVariables from './notGithubVariables';
+// import notGithubVariables from './notGithubVariables';
 
-const port = 11223;
+const restUrl = 'stage-literature-rest.alliancegenome.org';
+// const port = 11223;
 // const port = 49161;
 
 export const changeFieldReferenceJson = (e) => {
@@ -112,7 +113,8 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   console.log("action referenceCurie " + referenceCurie);
   const createBiblioQueryReferenceCurie = async () => {
-    const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + referenceCurie;
+    const url = 'https://' + restUrl + '/reference/' + referenceCurie;
+//     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + referenceCurie;
 //     const url = 'http://dev.alliancegenome.org:49161/reference/' + referenceCurie;
 //     const url = 'http://localhost:49161/reference/' + referenceCurie;
     console.log(url);
@@ -189,13 +191,14 @@ export const setBiblioAction = (biblioAction) => {
 // export const updateButtonBiblio = (subPath, payload, method) => dispatch => 
 export const updateButtonBiblio = (updateArrayData) => dispatch => {
 //   console.log('in updateButtonBiblio action');
-  const [subPath, payload, method, index, field, subField] = updateArrayData;
+  const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
 //   console.log("payload " + payload);
   let newId = null;
 //   console.log("subPath " + subPath);
   const createUpdateButtonBiblio = async () => {
 //     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
-    const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
+//     const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
+    const url = 'https://' + restUrl + '/' + subPath;
     console.log(url);
     // console.log(notGithubVariables.authToken);
     const res = await fetch(url, {
@@ -203,10 +206,11 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
       mode: 'cors',
       headers: {
         'content-type': 'application/json',
-        'authorization': 'Bearer ' + notGithubVariables.authToken
+        'authorization': 'Bearer ' + accessToken
       },
       body: JSON.stringify( payload )
     })
+//         'authorization': 'Bearer ' + notGithubVariables.authToken
 
     let response_message = 'update success';
     if ((method === 'DELETE') && (res.status === 204)) { }	// success of delete has no res.text so can't process like others
