@@ -1,5 +1,6 @@
-// import React, {useEffect, useRef, useState} from 'react';
-import React, { useEffect, useRef } from 'react';
+
+import React, {useEffect, useRef} from 'react';
+
 import OktaSignIn from '@okta/okta-signin-widget';
 import '@okta/okta-signin-widget/dist/css/okta-sign-in.min.css';
 

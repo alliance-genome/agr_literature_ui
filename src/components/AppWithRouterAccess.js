@@ -52,33 +52,32 @@ const AppWithRouterAccess = () => {
 
     return (
 
-            <Security
-                oktaAuth={oktaAuth}
-                onAuthRequired={customAuthHandler}
-                restoreOriginalUri={restoreOriginalUri}
+        <Security
+            oktaAuth={oktaAuth}
+            onAuthRequired={customAuthHandler}
+            restoreOriginalUri={restoreOriginalUri}
 
-            >
-                <div className="App">
-                    <NavigationBar />
-                    <br />
-                    <Route path='/' exact={true} component={Home}/>
-                    <Route path='/query' component={Query} />
-                    <Route path='/biblio' component={Biblio} />
-                    <Route path='/flags' component={Flags} />
-                    <Route path='/files' component={Files} />
-                    <Route path='/mining' component={Mining} />
-                    <Route path='/ontomate' component={Ontomate} />
-                    <Route path='/textpresso' component={Textpresso} />
-                    <SecureRoute path='/create' component={Create} />
-                    <Route path='/about' component={About} />
-                    <Route path = '/swaggerUI' component={SwaggerComp} />
+        >
+            <div className="App">
+                <NavigationBar />
+                <br />
+                <Route path='/' exact={true} component={Home}/>
+                <Route path='/query' component={Query} />
+                <Route path='/biblio' component={Biblio} />
+                <Route path='/flags' component={Flags} />
+                <Route path='/files' component={Files} />
+                <Route path='/mining' component={Mining} />
+                <Route path='/ontomate' component={Ontomate} />
+                <Route path='/textpresso' component={Textpresso} />
+                <SecureRoute path='/create' component={Create} />
+                <Route path='/about' component={About} />
+                <Route path = '/swaggerUI' component={SwaggerComp} />
 
 
 
-                </div>
-            </Security>
+            </div>
+        </Security>
 
     );
 };
 export default AppWithRouterAccess;
-

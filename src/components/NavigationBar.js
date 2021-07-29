@@ -28,7 +28,9 @@ const NavigationBar = () => {
       <Nav.Link as={Link} to="/swaggerUI">Swagger</Nav.Link>
     </Nav>
 
-    <Nav className="pull-right">
+
+    <Nav>
+
       <Login config={oktaSignInConfig}/>
     </Nav>
 

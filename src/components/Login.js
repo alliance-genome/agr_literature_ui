@@ -1,24 +1,27 @@
 import React from 'react';
-// import ReactDOM from 'react-dom';
-// import { Redirect } from 'react-router-dom';
+
+import { useLocation } from 'react-router-dom';
 import OktaSignInWidget from './OktaSignInWidget';
 import { useOktaAuth } from '@okta/okta-react';
-// import  { useState, useEffect } from 'react';
-import  { useEffect } from 'react';
+import  {  useEffect } from 'react';
 import {signIn, signOut} from "../actions/loginActions";
-// import { useSelector, useDispatch } from 'react-redux';
-import { useDispatch } from 'react-redux';
+import {  useDispatch } from 'react-redux';
+
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
 
+
+
 const Login = ({config}) => {
+
     //const { oktaAuth, authState,authService  } = useOktaAuth();
     const { authState, oktaAuth } = useOktaAuth();
     //const [isSignedIn, setIsSignedIn] = useState(authState.isAuthenticated? true:false);
     //const [userId, setUserId] = useState('');
     const dispatch = useDispatch();
     useEffect(() => {
+
         if (!authState.isAuthenticated) {
             // When user isn't authenticated, forget any user info
             dispatch(signOut())
@@ -27,8 +30,9 @@ const Login = ({config}) => {
 
         }
     }, [dispatch,authState, oktaAuth]);
-
+    const location = useLocation();
     const onSuccess = (token) => {
+        oktaAuth.setOriginalUri(location.pathname)
         oktaAuth.handleLoginRedirect(token);
     };
 
@@ -41,15 +45,12 @@ const Login = ({config}) => {
         return null;}
 
 
-//    const onSignInClick = () =>{
-//        return ( <Popup><OktaSignInWidget
-//            config={config}
-//            onSuccess={onSuccess}
-//            onError={onError}/></Popup>)
-//    }
+
 
     const onSignOutClick = async () => {
+
         // Will redirect to Okta to end the session then redirect back to the configured `postLogoutRedirectUri`
+        //await oktaAuth.signOut({postLogoutRedirectUri:location.pathname});
         await oktaAuth.signOut();
         //setIsSignedIn(false)
 
