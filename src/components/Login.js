@@ -30,9 +30,10 @@ const Login = ({config}) => {
 
         }
     }, [dispatch,authState, oktaAuth]);
-    const location = useLocation();
+    // const location = useLocation();
+    const location_fullpath = useLocation().pathname + '?' + (new URLSearchParams(useLocation().search)).toString()
     const onSuccess = (token) => {
-        oktaAuth.setOriginalUri(location.pathname)
+        oktaAuth.setOriginalUri(location_fullpath)
         oktaAuth.handleLoginRedirect(token);
     };
 
@@ -50,7 +51,7 @@ const Login = ({config}) => {
     const onSignOutClick = async () => {
 
         // Will redirect to Okta to end the session then redirect back to the configured `postLogoutRedirectUri`
-        //await oktaAuth.signOut({postLogoutRedirectUri:location.pathname});
+        //await oktaAuth.signOut({postLogoutRedirectUri:location_fullpath});
         await oktaAuth.signOut();
         //setIsSignedIn(false)
 
