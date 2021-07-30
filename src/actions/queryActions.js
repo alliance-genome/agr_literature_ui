@@ -2,7 +2,8 @@
 
 // import notGithubVariables from './notGithubVariables';
 
-const restUrl = 'stage-literature-rest.alliancegenome.org';
+const restUrl = process.env.REACT_APP_RESTAPI;
+// const restUrl = 'stage-literature-rest.alliancegenome.org';
 // const port = 11223;
 // const port = 49161;
 
@@ -32,8 +33,9 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
   const createGetQueryCrossRefCurie = async () => {
 //     const url = 'http://dev.alliancegenome.org:49161/cross-reference/' + payload;
 //     const url = 'http://dev.alliancegenome.org:' + port + '/cross-reference/' + payload;
-    const url = 'https://' + restUrl + '/cross-reference/' + payload;
-    console.log(url);
+//     const url = 'https://' + restUrl + '/cross-reference/' + payload;
+    const url = restUrl + '/cross-reference/' + payload;
+    // console.log(url);
     const res = await fetch(url, {
       method: 'GET',
       mode: 'cors',
