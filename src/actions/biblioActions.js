@@ -61,6 +61,7 @@ export const changeFieldAuthorsReferenceJson = (e) => {
     type: 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON',
     payload: {
       field: e.target.id,
+      checked: e.target.checked,
       value: e.target.value
     }
   };

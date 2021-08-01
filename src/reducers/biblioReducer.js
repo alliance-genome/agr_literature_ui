@@ -143,6 +143,55 @@ export default function(state = initialState, action) {
           [fieldModReference]: newModReferenceChange
         }
       }
+
+    case 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON':
+      console.log(action.payload);
+      let authorInfoArray = action.payload.field.split(" ");
+      let fieldAuthorInfo = authorInfoArray[0];
+      let indexAuthorInfo = authorInfoArray[1];
+      let subfieldAuthorInfo = authorInfoArray[2];
+      let authorInfoNewValue = action.payload.value;
+      if ( (subfieldAuthorInfo === 'first_author') || (subfieldAuthorInfo === 'corresponding_author') ) {
+        authorInfoNewValue = action.payload.checked || false }
+
+//         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
+//         const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
+// TODO  revert button only on one author line
+// revert button disabled if any order changes, otherwise the author order reverts only on that author, might want a revert all order button
+
+      let newAuthorInfoChange = state.referenceJsonLive[fieldAuthorInfo];
+      if (subfieldAuthorInfo === 'orcid') {
+        newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = {}
+        newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['url'] = null;
+        newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['curie'] = authorInfoNewValue; }
+      else if (subfieldAuthorInfo === 'order') {
+        let oldAuthorOrder = parseInt(indexAuthorInfo) + 1
+        let newAuthorOrder = parseInt(authorInfoNewValue)
+        console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
+        // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
+        for (let authorReorderDict of newAuthorInfoChange) {
+          if (newAuthorOrder < oldAuthorOrder) {
+            if (authorReorderDict['order'] === oldAuthorOrder) {
+              authorReorderDict['order'] = newAuthorOrder }
+            else if ( (authorReorderDict['order'] >= newAuthorOrder) && (authorReorderDict['order'] < oldAuthorOrder) ) {
+              authorReorderDict['order'] += 1 } }
+          else if (newAuthorOrder > oldAuthorOrder) {
+            if (authorReorderDict['order'] === oldAuthorOrder) {
+              authorReorderDict['order'] = newAuthorOrder }
+            else if ( (authorReorderDict['order'] <= newAuthorOrder) && (authorReorderDict['order'] > oldAuthorOrder) ) {
+              authorReorderDict['order'] -= 1 } } } }
+      else {
+        newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = authorInfoNewValue; }
+      // console.log(newAuthorInfoChange)
+      newAuthorInfoChange[indexAuthorInfo]['needsChange'] = true;
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          [fieldAuthorInfo]: newAuthorInfoChange
+        }
+      }
+
     case 'CHANGE_FIELD_CROSS_REFERENCES_REFERENCE_JSON':
       console.log(action.payload);
       let crossReferencesArray = action.payload.field.split(" ");
