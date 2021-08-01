@@ -812,7 +812,6 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 // change author background color based on alternating numbers
 // add and edit affiliations
 // order should trigger action on unfocus instead of onchange ?
-// change from author store array index to order value ?
 
     const orderedAuthors = [];
     for (const value  of referenceJsonLive['authors'].values()) {

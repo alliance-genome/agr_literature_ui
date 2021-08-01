@@ -148,7 +148,8 @@ export default function(state = initialState, action) {
       console.log(action.payload);
       let authorInfoArray = action.payload.field.split(" ");
       let fieldAuthorInfo = authorInfoArray[0];
-      let indexAuthorInfo = authorInfoArray[1];
+//       let indexAuthorInfo = authorInfoArray[1];
+      let indexDomAuthorInfo = parseInt(authorInfoArray[1]);
       let subfieldAuthorInfo = authorInfoArray[2];
       let authorInfoNewValue = action.payload.value;
       if ( (subfieldAuthorInfo === 'first_author') || (subfieldAuthorInfo === 'corresponding_author') ) {
@@ -156,16 +157,23 @@ export default function(state = initialState, action) {
 
 //         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
 //         const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
-// TODO  revert button only on one author line
-// revert button disabled if any order changes, otherwise the author order reverts only on that author, might want a revert all order button
+// TODO  revert button disabled if any order changes, otherwise the author order reverts only on that author, might want a revert all order button
 
       let newAuthorInfoChange = state.referenceJsonLive[fieldAuthorInfo];
+
+      // indexDomAuthorInfo is the index of the author info in the DOM
+      // indexAuthorInfo is the index of the author info in the redux store, for updating non-order info
+      let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']	// replace placeholder with index from store order value matches dom
+      for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
+        if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) { 
+          indexAuthorInfo = authorReorderIndexDictIndex } }
+
       if (subfieldAuthorInfo === 'orcid') {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = {}
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['url'] = null;
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['curie'] = authorInfoNewValue; }
       else if (subfieldAuthorInfo === 'order') {
-        let oldAuthorOrder = parseInt(indexAuthorInfo) + 1
+        let oldAuthorOrder = indexDomAuthorInfo + 1
         let newAuthorOrder = parseInt(authorInfoNewValue)
         console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
         // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
