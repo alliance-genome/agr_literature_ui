@@ -831,7 +831,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       orderedAuthors[index] = value; }
 //     for (const[index, authorDict] of referenceJsonLive['authors'].entries()) { }
     for (const[index, authorDict] of orderedAuthors.entries()) {
-      let rowEvenness = (index % 2 == 0) ? 'row-even' : 'row-odd'
+      let rowEvenness = (index % 2 === 0) ? 'row-even' : 'row-odd'
       let affiliationLength = 0
       if ('affiliation' in authorDict && authorDict['affiliation'] !== null) {
         affiliationLength = authorDict['affiliation'].length }
@@ -929,7 +929,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       } }
       if (disabled === '') {
         rowAuthorsElements.push(
-          <Row className="form-group row" key={`${fieldName} ${index} affiliation`} className={`${rowEvenness}`} >
+          <Row key={`${fieldName} ${index} affiliation`} className={`form-group row ${rowEvenness}`} >
             <Col className="Col-general form-label col-form-label" sm="2" >auth {index + 1} add affiliation</Col>
             <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add affiliation</div></Col>
           </Row>);
@@ -937,9 +937,9 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 
   } }
   if (disabled === '') {
-    let rowEvenness = (orderedAuthors.length % 2 == 0) ? 'row-even' : 'row-odd'
+    let rowEvennessLast = (orderedAuthors.length % 2 === 0) ? 'row-even' : 'row-odd'
     rowAuthorsElements.push(
-      <Row className="form-group row" key={fieldName} className={`${rowEvenness}`} >
+      <Row key={fieldName} className={`form-group row ${rowEvennessLast}`} >
         <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
         <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
       </Row>);
