@@ -807,13 +807,22 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
+
+  function getStoreAuthorIndexFromDomIndex(indexDomAuthorInfo, newAuthorInfoChange) {
+    let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']        // replace placeholder with index from store order value matches dom
+    for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
+      if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) {
+        indexAuthorInfo = authorReorderIndexDictIndex
+        break } }
+    return indexAuthorInfo }
+
   const rowAuthorsElements = []
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
 
-// TODO revert button disabled if any order changes, otherwise the author order reverts only on that author, might want a revert all order button
+// TODO 
 // change author background color based on alternating numbers
 // add and edit affiliations
-// order should trigger action on unfocus instead of onchange ?
+// order should trigger action on unfocus instead of onchange ?  or use select dropdown
 
     const orderedAuthors = [];
     for (const value  of referenceJsonLive['authors'].values()) {
@@ -846,6 +855,14 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       if ('orcid' in authorDict && authorDict['orcid'] !== null && 'curie' in authorDict['orcid'] && authorDict['orcid']['curie'] !== null) {
         orcidValue = authorDict['orcid']['curie'] }
 
+      // map author dom index to live store index to author id to db store index, to compare live values to store values
+      let indexStoreAuthorLive = getStoreAuthorIndexFromDomIndex(index, referenceJsonLive[fieldName])
+      let authorId = referenceJsonLive[fieldName][indexStoreAuthorLive]['author_id']
+      let indexStoreAuthorDb = indexStoreAuthorLive
+      for (const dbStoreIndex in referenceJsonDb[fieldName]) {
+        if (referenceJsonDb[fieldName][dbStoreIndex]['author_id'] === authorId) {
+          indexStoreAuthorDb = dbStoreIndex } }
+
       let updatedDict = {}
       for (const updatableField of updatableFields.values()) {
         if (updatableField === 'affiliation') {
@@ -856,15 +873,15 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
           let valueDb = ''; let updatedFlag = ''; let valueLive = authorDict[updatableField];
           if (updatableField === 'orcid') {
             valueLive = orcidValue;
-            if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-                 (typeof referenceJsonDb[fieldName][index][updatableField] !== 'undefined') &&
-                 (referenceJsonDb[fieldName][index][updatableField] !== null) &&
-                 (typeof referenceJsonDb[fieldName][index][updatableField]['curie'] !== 'undefined') ) {
-                   valueDb = referenceJsonDb[fieldName][index][updatableField]['curie'] } }
+            if ( (typeof referenceJsonDb[fieldName][indexStoreAuthorDb] !== 'undefined') &&
+                 (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') &&
+                 (referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== null) &&
+                 (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'] !== 'undefined') ) {
+                   valueDb = referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'] } }
           else {
-            if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-                 (typeof referenceJsonDb[fieldName][index][updatableField] !== 'undefined') ) {
-                   valueDb = referenceJsonDb[fieldName][index][updatableField] } }
+            if ( (typeof referenceJsonDb[fieldName][indexStoreAuthorDb] !== 'undefined') &&
+                 (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') ) {
+                   valueDb = referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] } }
           if (valueLive !== valueDb) { updatedFlag = 'updated'; }
           updatedDict[updatableField] = updatedFlag
 } }
