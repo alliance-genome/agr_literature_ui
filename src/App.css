@@ -23,6 +23,17 @@
   color: grey;
 }
 
+.row-even {
+  padding-bottom: 1rem;
+  margin-bottom: 0 !important;
+  background-color: #ffffcc !important;
+}
+.row-odd {
+  padding-bottom: 1rem;
+  margin-bottom: 0 !important;
+  background-color: white !important;
+}
+
 .biblio-updating {
   text-align: center;
   background-color: #ced4da !important;

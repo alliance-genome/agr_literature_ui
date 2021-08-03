@@ -817,20 +817,21 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
     return indexAuthorInfo }
 
   const rowAuthorsElements = []
+  const orderedAuthors = [];
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
 
 // TODO 
-// change author background color based on alternating numbers
 // add and edit affiliations
 // order should trigger action on unfocus instead of onchange ?  or use select dropdown
+// name should be composite of first and last
 
-    const orderedAuthors = [];
     for (const value  of referenceJsonLive['authors'].values()) {
       let index = value['order'] - 1;
       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
       orderedAuthors[index] = value; }
 //     for (const[index, authorDict] of referenceJsonLive['authors'].entries()) { }
     for (const[index, authorDict] of orderedAuthors.entries()) {
+      let rowEvenness = (index % 2 == 0) ? 'row-even' : 'row-odd'
       let affiliationLength = 0
       if ('affiliation' in authorDict && authorDict['affiliation'] !== null) {
         affiliationLength = authorDict['affiliation'].length }
@@ -898,7 +899,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
              else { correspondingChecked = ''; } }
 
       rowAuthorsElements.push(
-        <Form.Group as={Row} key={`${fieldName} ${index} name`}>
+        <Form.Group as={Row} key={`${fieldName} ${index} name`} className={`${rowEvenness}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
           <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabled} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
           <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
@@ -906,13 +907,13 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
           {revertElement}
         </Form.Group>);
       rowAuthorsElements.push(
-        <Form.Group as={Row} key={`${fieldName} ${index} first last`}>
+        <Form.Group as={Row} key={`${fieldName} ${index} first last`} className={`${rowEvenness}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >first last </Col>
           <ColEditorSimple key={`colElement ${fieldName} ${index} first_name`} fieldType="input" fieldName={fieldName} colSize="5" value={authorDict['first_name']} updatedFlag={updatedDict['first_name']} placeholder="first name" disabled={disabled} fieldKey={`${fieldName} ${index} first_name`} dispatchAction={changeFieldAuthorsReferenceJson} />
           <ColEditorSimple key={`colElement ${fieldName} ${index} last_name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeNames} value={authorDict['last_name']} updatedFlag={updatedDict['last_name']} placeholder="last name" disabled={disabled} fieldKey={`${fieldName} ${index} last_name`} dispatchAction={changeFieldAuthorsReferenceJson} />
         </Form.Group>);
       rowAuthorsElements.push(
-        <Form.Group as={Row} key={`${fieldName} ${index} orcid`}>
+        <Form.Group as={Row} key={`${fieldName} ${index} orcid`} className={`${rowEvenness}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >orcid </Col>
           <ColEditorSimple key={`colElement ${fieldName} ${index} orcid`} fieldType="input" fieldName={fieldName} colSize="5"  value={orcidValue} updatedFlag={updatedDict['orcid']} placeholder="orcid" disabled={disabled} fieldKey={`${fieldName} ${index} orcid`} dispatchAction={changeFieldAuthorsReferenceJson} />
           <ColEditorCheckbox key={`colElement ${fieldName} ${index} corresponding_author`} colSize="2" label="corresponding" updatedFlag={updatedDict['corresponding_author']} disabled={disabled} fieldKey={`${fieldName} ${index} corresponding_author`} checked={correspondingChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
@@ -921,14 +922,14 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       if ('affiliation' in authorDict && authorDict['affiliation'] !== null) {
         for (const[indexAff, affiliationValue] of authorDict['affiliation'].entries()) {
           rowAuthorsElements.push(
-            <Form.Group as={Row} key={`${fieldName} ${index} affiliation ${indexAff}`}>
+            <Form.Group as={Row} key={`${fieldName} ${index} affiliation ${indexAff}`} className={`${rowEvenness}`}>
               <Col className="Col-general form-label col-form-label" sm="2" >affiliation {index + 1} {indexAff + 1}</Col>
               <ColEditorSimple key={`colElement ${fieldName} ${index} affiliation ${indexAff}`} fieldType="input" fieldName={fieldName} colSize={otherColSizeAffiliation}  value={affiliationValue} updatedFlag={updatedDict['affiliation'][indexAff]} placeholder="affiliation" disabled={disabled} fieldKey={`${fieldName} ${index} affiliation ${indexAff}`} dispatchAction={changeFieldAuthorsReferenceJson} />
             </Form.Group>);
       } }
       if (disabled === '') {
         rowAuthorsElements.push(
-          <Row className="form-group row" key={`${fieldName} ${index} affiliation`} >
+          <Row className="form-group row" key={`${fieldName} ${index} affiliation`} className={`${rowEvenness}`} >
             <Col className="Col-general form-label col-form-label" sm="2" >auth {index + 1} add affiliation</Col>
             <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add affiliation</div></Col>
           </Row>);
@@ -936,8 +937,9 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 
   } }
   if (disabled === '') {
+    let rowEvenness = (orderedAuthors.length % 2 == 0) ? 'row-even' : 'row-odd'
     rowAuthorsElements.push(
-      <Row className="form-group row" key={fieldName} >
+      <Row className="form-group row" key={fieldName} className={`${rowEvenness}`} >
         <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
         <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
       </Row>);
