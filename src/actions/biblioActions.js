@@ -86,6 +86,17 @@ export const biblioRevertFieldArray = (e) => {
     }
   };
 };
+export const biblioRevertAuthorArray = (e, initializeDict) => {
+  return {
+    type: 'BIBLIO_REVERT',
+    payload: {
+      field: e.target.id,
+      initializeDict: initializeDict,
+      type: 'author_array',
+      value: e.target.value
+    }
+  };
+};
 
 export const biblioAddNewRowString = (e) => {
   return {

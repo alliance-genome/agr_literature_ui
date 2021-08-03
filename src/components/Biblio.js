@@ -27,6 +27,7 @@ import { changeBiblioMeshExpandToggler } from '../actions/biblioActions';
 import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';
 import { biblioRevertField } from '../actions/biblioActions';
 import { biblioRevertFieldArray } from '../actions/biblioActions';
+import { biblioRevertAuthorArray } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -796,12 +797,13 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   return (<>{rowCrossReferencesElements}</>); }
 
 const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  // author editing is complicated.  There's the author order of the array in the browser dom.  The author order of the array in the redux store.  The order field in the author store entry (should be 1 more than the order in the dom).  The author_id field in the author store entry, used for comparing what was in the db.  The copy of author values in the store that reflect the db value (with its array order, order field, and author_id field).
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const revertDictFields = ['source', 'reference_type']
   const revertDictFields = 'order, name, first_name, last_name, orcid, first_author, corresponding_author, affiliation'
   const updatableFields = ['order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliation']
-  const initializeDict = {'order': 99, 'name': '', 'first_name': '', 'last_name': '', orcid: '', first_author: false, corresponding_author: false, affiliation: [], 'author_id': 'new'}
+  const initializeDict = {'order': referenceJsonLive['authors'].length + 1, 'name': '', 'first_name': '', 'last_name': '', orcid: null, first_author: false, corresponding_author: false, affiliation: [], 'author_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
@@ -826,7 +828,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 
 //       let otherColSizeName = 7; let otherColSizeNames = 4; let otherColSizeOrcid = 2; let otherColSizeAffiliation = 9;
       let otherColSizeName = 7; let otherColSizeNames = 5; let otherColSizeOrcid = 3; let otherColSizeAffiliation = 10;
-      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} >Revert</Button>{' '}</Col>);
+      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} >Revert</Button>{' '}</Col>);
       if (disabled === 'disabled') { revertElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
 
 //       let valueLiveSource = authorDict['source']; let valueDbSource = ''; let updatedFlagSource = '';

@@ -33,6 +33,19 @@ const splitCurie = (curie) => {
   return [ curiePrefix, curieId ]
 }
 
+const getStoreAuthorIndexFromDomIndex = (indexDomAuthorInfo, newAuthorInfoChange) => {
+  // indexDomAuthorInfo is the index of the author info in the DOM
+  // indexAuthorInfo is the index of the author info in the redux store, for updating non-order info
+  let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']	// replace placeholder with index from store order value matches dom
+  for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
+// console.log('loop index ' + authorReorderIndexDictIndex + ' for ' + indexDomAuthorInfo);
+    if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) { 
+// console.log('loop index match ' + authorReorderIndexDictIndex + ' to ' + indexDomAuthorInfo);
+      indexAuthorInfo = authorReorderIndexDictIndex
+      break } }
+  return indexAuthorInfo
+}
+
 
 // to ignore a warning about Unexpected default export of anonymous function
 // eslint-disable-next-line
@@ -155,18 +168,14 @@ export default function(state = initialState, action) {
       if ( (subfieldAuthorInfo === 'first_author') || (subfieldAuthorInfo === 'corresponding_author') ) {
         authorInfoNewValue = action.payload.checked || false }
 
-//         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
-//         const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
-// TODO  revert button disabled if any order changes, otherwise the author order reverts only on that author, might want a revert all order button
-
       let newAuthorInfoChange = state.referenceJsonLive[fieldAuthorInfo];
-
-      // indexDomAuthorInfo is the index of the author info in the DOM
-      // indexAuthorInfo is the index of the author info in the redux store, for updating non-order info
-      let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']	// replace placeholder with index from store order value matches dom
-      for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
-        if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) { 
-          indexAuthorInfo = authorReorderIndexDictIndex } }
+//       // indexDomAuthorInfo is the index of the author info in the DOM
+//       // indexAuthorInfo is the index of the author info in the redux store, for updating non-order info
+//       let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']	// replace placeholder with index from store order value matches dom
+//       for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
+//         if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) { 
+//           indexAuthorInfo = authorReorderIndexDictIndex } }
+      let indexAuthorInfo = getStoreAuthorIndexFromDomIndex(indexDomAuthorInfo, newAuthorInfoChange)
 
       if (subfieldAuthorInfo === 'orcid') {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = {}
@@ -254,6 +263,31 @@ export default function(state = initialState, action) {
       else if (action.payload.type === 'array') {
         let indexStringArrayRevert = stringArrayRevert[1];
         revertValue[indexStringArrayRevert] = JSON.parse(JSON.stringify(state.referenceJsonDb[fieldStringArrayRevert][indexStringArrayRevert])) }
+      else if (action.payload.type === 'author_array') {
+        let indexDomAuthorRevert = parseInt(stringArrayRevert[1]);
+        let indexStoreAuthorRevert = getStoreAuthorIndexFromDomIndex(indexDomAuthorRevert, state.referenceJsonLive[fieldStringArrayRevert])
+//         console.log('author revert indexDomAuthorRevert ' + indexDomAuthorRevert + ' indexStoreAuthorRevert ' + indexStoreAuthorRevert )
+        let revertAuthorId = state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['author_id']
+//         console.log('author revert indexDomAuthorRevert ' + indexDomAuthorRevert + ' indexStoreAuthorRevert ' + indexStoreAuthorRevert + ' raid ' + revertAuthorId)
+        if (revertAuthorId === 'new') {
+//           console.log('reset to initialize dict indexDomAuthorRevert ' + indexDomAuthorRevert)
+          const revertNewAuthorDict = JSON.parse(JSON.stringify(action.payload.initializeDict))
+          revertNewAuthorDict['order'] = state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order']
+//           console.log('reset to initialize dict set order to ' + state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order'])
+console.log(revertNewAuthorDict)
+          revertValue[indexStoreAuthorRevert] = revertNewAuthorDict }
+        else {
+//           console.log('reset to initialize dict revertAuthorId ' + revertAuthorId)
+          for (const dbRevertAuthorDict of state.referenceJsonDb[fieldStringArrayRevert]) {
+// console.log('loop ' + dbRevertAuthorDict['author_id'] + ' for ' + revertAuthorId);
+            if (dbRevertAuthorDict['author_id'] === revertAuthorId) {
+// console.log('loop match ' + dbRevertAuthorDict['author_id'] + ' to ' + revertAuthorId);
+              const revertNewAuthorDict = JSON.parse(JSON.stringify(dbRevertAuthorDict))
+              revertNewAuthorDict['order'] = state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order']
+//               console.log('reset to initialize dict set order to ' + state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order'])
+// console.log(revertNewAuthorDict)
+              revertValue[indexStoreAuthorRevert] = revertNewAuthorDict
+              break } } } }
       let hasChangeFieldRevert = state.referenceJsonHasChange
       if (fieldIdRevert in hasChangeFieldRevert) {
         delete hasChangeFieldRevert[fieldIdRevert] }
