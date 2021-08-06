@@ -615,6 +615,17 @@ const ColEditorSelect = ({fieldType, fieldName, value, colSize, updatedFlag, dis
               </Form.Control>
             </Col>); }
 
+const ColEditorSelectNumeric = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, dispatchAction, minNumber, maxNumber}) => {
+  const dispatch = useDispatch();
+  const numericOptionElements = []
+  for (let i = minNumber; i <= maxNumber; i++) {
+    numericOptionElements.push(<option key={`${fieldKey} ${i}`}>{i}</option>) }
+  return (  <Col sm={colSize}>
+              <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} >
+              {numericOptionElements}
+              </Form.Control>
+            </Col>); }
+
 const ColEditorCheckbox = ({colSize, label, updatedFlag, disabled, fieldKey, checked, dispatchAction}) => {
   const dispatch = useDispatch();
   return (  <Col sm={colSize} className={`Col-checkbox ${updatedFlag}`} >
@@ -822,8 +833,6 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
 
 // TODO 
-// add new authors
-// order should trigger action on unfocus instead of onchange ?  or use select dropdown
 // name should be composite of first and last
 
 
@@ -910,9 +919,11 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
           <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
           <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabled} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
           <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
-          <ColEditorSimple key={`colElement ${fieldName} ${index} order`} fieldType="input" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} dispatchAction={changeFieldAuthorsReferenceJson} />
+          <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} minNumber="1" maxNumber={`${referenceJsonLive['authors'].length}`} dispatchAction={changeFieldAuthorsReferenceJson} />
           {revertElement}
         </Form.Group>);
+//           <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
+//           <ColEditorSimple key={`colElement ${fieldName} ${index} order`} fieldType="input" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} dispatchAction={changeFieldAuthorsReferenceJson} />
       rowAuthorsElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index} first last`} className={`${rowEvenness}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >first last </Col>
