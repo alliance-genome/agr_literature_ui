@@ -158,7 +158,7 @@ export default function(state = initialState, action) {
       }
 
     case 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON':
-      console.log(action.payload);
+      // console.log(action.payload);
       let authorInfoArray = action.payload.field.split(" ");
       let fieldAuthorInfo = authorInfoArray[0];
 //       let indexAuthorInfo = authorInfoArray[1];
@@ -181,10 +181,13 @@ export default function(state = initialState, action) {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = {}
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['url'] = null;
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['curie'] = authorInfoNewValue; }
+      else if (subfieldAuthorInfo === 'affiliation') {
+        let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
+        newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] = authorInfoNewValue; }
       else if (subfieldAuthorInfo === 'order') {
         let oldAuthorOrder = indexDomAuthorInfo + 1
         let newAuthorOrder = parseInt(authorInfoNewValue)
-        console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
+        // console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
         // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
         for (let authorReorderDict of newAuthorInfoChange) {
           if (newAuthorOrder < oldAuthorOrder) {
@@ -328,6 +331,35 @@ console.log(revertNewAuthorDict)
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [action.payload.field]: newArrayPushLive
+        }
+      }
+    case 'BIBLIO_ADD_NEW_AUTHOR_AFFILIATION':
+      // adding to author dict requires deriving the author store index, so it's simpler in its own action and reducer
+      // console.log(action.payload);
+      let authorInfoNewAffArray = action.payload.field.split(" ");
+      let fieldAuthorInfoNewAff = authorInfoNewAffArray[0];
+      let indexDomAuthorInfoNewAff = parseInt(authorInfoNewAffArray[1]);
+      let subfieldAuthorInfoNewAff = authorInfoNewAffArray[2];
+      let authorInfoNewAffDb = state.referenceJsonDb[fieldAuthorInfoNewAff] || [];
+      let authorInfoNewAffLive = state.referenceJsonLive[fieldAuthorInfoNewAff] || [];
+      let indexAuthorInfoNewAff = getStoreAuthorIndexFromDomIndex(indexDomAuthorInfoNewAff, authorInfoNewAffLive)
+      let newAuthorAffiliationDb = state.referenceJsonDb[fieldAuthorInfoNewAff][indexAuthorInfoNewAff][subfieldAuthorInfoNewAff] || [];
+      let newAuthorAffiliationLive = state.referenceJsonLive[fieldAuthorInfoNewAff][indexAuthorInfoNewAff][subfieldAuthorInfoNewAff] || [];
+      if (action.payload.type === 'string') {
+        newAuthorAffiliationDb.push('')
+        authorInfoNewAffDb[indexAuthorInfoNewAff][subfieldAuthorInfoNewAff] = newAuthorAffiliationDb
+        newAuthorAffiliationLive.push('')
+        authorInfoNewAffLive[indexAuthorInfoNewAff][subfieldAuthorInfoNewAff] = newAuthorAffiliationLive
+      }
+      return {
+        ...state,
+        referenceJsonDb: {
+          ...state.referenceJsonDb,
+          [authorInfoNewAffArray]: newAuthorAffiliationDb
+        },
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          [authorInfoNewAffArray]: newAuthorAffiliationLive
         }
       }
     case 'CHANGE_BIBLIO_MESH_EXPAND_TOGGLER':

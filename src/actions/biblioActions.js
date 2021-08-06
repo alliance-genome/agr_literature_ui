@@ -108,6 +108,16 @@ export const biblioAddNewRowString = (e) => {
     }
   };
 };
+export const biblioAddNewAuthorAffiliation = (e) => {
+  return {
+    type: 'BIBLIO_ADD_NEW_AUTHOR_AFFILIATION',
+    payload: {
+      field: e.target.id,
+      type: 'string',
+      value: e.target.value
+    }
+  };
+};
 export const biblioAddNewRowDict = (e, initializeDict) => {
   console.log('action biblio add new row dict ' + e.target.id + ' to ' + e.target.value);
   console.log('action initializeDict ' + initializeDict);

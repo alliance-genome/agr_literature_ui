@@ -20,6 +20,7 @@ import { changeFieldCrossReferencesReferenceJson } from '../actions/biblioAction
 import { changeFieldAuthorsReferenceJson } from '../actions/biblioActions';
 import { changeBiblioActionToggler } from '../actions/biblioActions';
 import { biblioAddNewRowString } from '../actions/biblioActions';
+import { biblioAddNewAuthorAffiliation } from '../actions/biblioActions';
 import { biblioAddNewRowDict } from '../actions/biblioActions';
 import { updateButtonBiblio } from '../actions/biblioActions';
 import { closeUpdateAlert } from '../actions/biblioActions';
@@ -821,9 +822,10 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
 
 // TODO 
-// add and edit affiliations
+// add new authors
 // order should trigger action on unfocus instead of onchange ?  or use select dropdown
 // name should be composite of first and last
+
 
     for (const value  of referenceJsonLive['authors'].values()) {
       let index = value['order'] - 1;
@@ -869,7 +871,13 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         if (updatableField === 'affiliation') {
           updatedDict[updatableField] = []
           for (let i = 0; i < affiliationLength; i++) {
-            updatedDict[updatableField][i] = '' } }
+            let valueDb = ''; let updatedFlag = ''; let valueLive = authorDict[updatableField][i];
+            if ( (typeof referenceJsonDb[fieldName][indexStoreAuthorDb] !== 'undefined') &&
+                 (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') &&
+                 (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField][i] !== 'undefined') ) {
+                   valueDb = referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField][i] }
+            if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+            updatedDict[updatableField][i] = updatedFlag } }
         else { 
           let valueDb = ''; let updatedFlag = ''; let valueLive = authorDict[updatableField];
           if (updatableField === 'orcid') {
@@ -884,8 +892,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
                  (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') ) {
                    valueDb = referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] } }
           if (valueLive !== valueDb) { updatedFlag = 'updated'; }
-          updatedDict[updatableField] = updatedFlag
-} }
+          updatedDict[updatableField] = updatedFlag } }
 
       let firstAuthorChecked = '';
       if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
@@ -931,7 +938,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         rowAuthorsElements.push(
           <Row key={`${fieldName} ${index} affiliation`} className={`form-group row ${rowEvenness}`} >
             <Col className="Col-general form-label col-form-label" sm="2" >auth {index + 1} add affiliation</Col>
-            <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add affiliation</div></Col>
+            <Col sm="10" ><div id={`${fieldName} ${index} affiliation`} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewAuthorAffiliation(e))} >add affiliation</div></Col>
           </Row>);
       }
 
