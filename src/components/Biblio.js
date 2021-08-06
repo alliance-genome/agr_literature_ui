@@ -547,6 +547,28 @@ const BiblioSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
+// TODO  add this when the author API is working, currently POST and PATCH give 500 errors
+    if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
+      const authorFields = [ 'reference_type', 'source' ];
+      for (const[index, authorDict] of referenceJsonLive['authors'].entries()) {
+        if (('needsChange' in authorDict) && ('authors' in authorDict)) {
+          let updateJson = { 'reference_curie': referenceCurie }
+          for (const field of authorFields.values()) {
+            if (field in authorDict) {
+              updateJson[field] = authorDict[field] } }
+//           let subPath = 'reference/mod_reference_type/';
+//           let method = 'POST';
+//           let field = 'mod_reference_types';
+//           let subField = 'mod_reference_type_id';
+//           if (authorDict['mod_reference_type_id'] !== 'new') {
+//             subPath = 'reference/mod_reference_type/' + authorDict['mod_reference_type_id'];
+//             field = null;
+//             subField = null;
+//             method = 'PATCH' }
+//           let array = [ subPath, updateJson, method, index, field, subField ]
+//           forApiArray.push( array );
+    } } }
+
     if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
       // const crossRefFields = [ 'curie', 'is_obsolete' ];
       let field = 'cross_references';
@@ -831,11 +853,6 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   const rowAuthorsElements = []
   const orderedAuthors = [];
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-
-// TODO 
-// name should be composite of first and last
-
-
     for (const value  of referenceJsonLive['authors'].values()) {
       let index = value['order'] - 1;
       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
@@ -851,6 +868,16 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       let otherColSizeName = 7; let otherColSizeNames = 5; let otherColSizeOrcid = 3; let otherColSizeAffiliation = 10;
       let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} >Revert</Button>{' '}</Col>);
       if (disabled === 'disabled') { revertElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
+      let disabledName = disabled
+      // if first or last name, make name be concatenation of both and disable editing name
+      if ( (authorDict['first_name'] !== '') || (authorDict['last_name'] !== '') ) {
+        disabledName = 'disabled'
+        if ( (authorDict['first_name'] !== '') && (authorDict['last_name'] !== '') ) {
+          authorDict['name'] = authorDict['first_name'] + ' ' + authorDict['last_name'] }
+        else if (authorDict['first_name'] !== '') {
+          authorDict['name'] = authorDict['first_name'] }
+        else if (authorDict['last_name'] !== '') {
+          authorDict['name'] = authorDict['last_name'] } }
 
 //       let valueLiveSource = authorDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
 //       let valueLiveReferenceType = authorDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
@@ -917,7 +944,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       rowAuthorsElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index} name`} className={`${rowEvenness}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
-          <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabled} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
+          <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabledName} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
           <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
           <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} minNumber="1" maxNumber={`${referenceJsonLive['authors'].length}`} dispatchAction={changeFieldAuthorsReferenceJson} />
           {revertElement}
