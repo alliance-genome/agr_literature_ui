@@ -2,6 +2,7 @@
 // import { useEffect } from 'react';
 // import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+// import { useHistory } from "react-router-dom";
 
 import { useSelector, useDispatch } from 'react-redux';
 // import { useSelector } from 'react-redux';
@@ -96,11 +97,14 @@ enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'FB', 'MG
 // mesh_terms
 
 
-function splitCurie(curie) {
+function splitCurie(curie, toReturn) {
   let curiePrefix = ''; let curieId = '';
   if ( curie.match(/^([^:]*):(.*)$/) ) {
     [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }
-  return [ curiePrefix, curieId ] }
+  if (toReturn === undefined) { return [ curiePrefix, curieId ] }
+  else if (toReturn === 'id') { return curieId }
+  else if (toReturn === 'prefix') { return curiePrefix }
+  else { return [ curiePrefix, curieId ] } }
 
 
 const BiblioActionToggler = () => {
@@ -108,8 +112,12 @@ const BiblioActionToggler = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   let displayChecked = '';
   let editorChecked = '';
-  if (biblioAction === 'editor') { editorChecked = 'checked'; }
+  let biblioActionTogglerSelected = 'display';
+  if (biblioAction === 'editor') { editorChecked = 'checked'; biblioActionTogglerSelected = 'editor'; }
     else { displayChecked = 'checked'; }
+  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie
+  window.history.replaceState({}, null, newUrl)
 
 // calling below
 //         onChange={(e) => dispatch(toggleBiblioAction(e))}
@@ -504,7 +512,8 @@ const BiblioSubmitUpdateButton = () => {
     let hasPages = false
     let updateJson = { 'reference_curie': referenceCurie }
     if (('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
-      let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(crossRefCurie);
+      // let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(crossRefCurie);
+      let valueLiveCuriePrefix = splitCurie(crossRefCurie, 'prefix');
       hasPages = (enumDict['mods'].includes(valueLiveCuriePrefix)) ? true : false; }
     if (hasPages) { updateJson['pages'] = [ 'reference' ] }
     if (('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] !== '')) {
@@ -551,6 +560,7 @@ const BiblioSubmitUpdateButton = () => {
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
       const authorFields = [ 'reference_type', 'source' ];
       for (const[index, authorDict] of referenceJsonLive['authors'].entries()) {
+        console.log(index)	// TODO remove this
         if (('needsChange' in authorDict) && ('authors' in authorDict)) {
           let updateJson = { 'reference_curie': referenceCurie }
           for (const field of authorFields.values()) {
@@ -587,13 +597,13 @@ const BiblioSubmitUpdateButton = () => {
               forApiArray.push( array ); }
             else {	// xref curie same, update (delete+create async would cause create failure before delete
               let updateJson = generateCrossReferenceUpdateJson(crossRefDict, referenceCurie)
-              // console.log(updateJson)
+              // console.log('updateJson'); console.log(updateJson)
               let array = [ subPath, updateJson, 'PATCH', index, field, null ]
               forApiArray.push( array ); } }
           if ((needsCreate === true) && ('curie' in crossRefDict) && (crossRefDict['curie'] !== '')) {
             let createJson = generateCrossReferenceUpdateJson(crossRefDict, referenceCurie)
             createJson['curie'] = crossRefDict['curie']		// createJson is same as updateJson + crossRef curie
-            // console.log(createJson)
+            // console.log('createJson'); console.log(createJson)
             let subPath = 'cross-reference/'
             let array = [ subPath, createJson, 'POST', index, field, null ]
 // UNDO put this back and test it when API for post is working
