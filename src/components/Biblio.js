@@ -108,6 +108,28 @@ function splitCurie(curie, toReturn) {
   else if (toReturn === 'prefix') { return curiePrefix }
   else { return [ curiePrefix, curieId ] } }
 
+function aggregateCitation(referenceJson) {
+  // Authors, (year) title.   Journal  volume (issue): pages
+  let year = ''
+  if ( ('date_published' in referenceJson) && (referenceJson['date_published'].match(/(\d{4})/)) ) {
+    let match = referenceJson['date_published'].match(/(\d{4})/)
+    if (match[1] !== undefined) { year = match[1] } }
+  let title = referenceJson['title'] || ''
+  if (!(title.match(/\.$/))) { title = title + '.' }
+  let authorNames = ''
+  if ('authors' in referenceJson && referenceJson['authors'] !== null) {
+    const orderedAuthors = [];
+    for (const value  of referenceJson['authors'].values()) {
+      let index = value['order'] - 1;
+      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
+      orderedAuthors[index] = value; }
+    authorNames = orderedAuthors.map((dict, index) => ( dict['name'] )).join('; '); }
+  const journal = referenceJson['resource_title'] || ''
+  const volume = referenceJson['volume'] || ''
+  const issue = referenceJson['issue_name'] || ''
+  const pages = referenceJson['pages'] || ''
+  const citation = `${authorNames}, (${year}) ${title}  ${journal} ${volume} (${issue}): ${pages}`
+  return citation }
 
 const BiblioActionToggler = () => {
   const dispatch = useDispatch();
@@ -667,7 +689,7 @@ const ColEditorCheckbox = ({colSize, label, updatedFlag, disabled, fieldKey, che
               <Form.Check inline checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} />
             </Col>); }
 
-const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
   let disabled = ''
@@ -676,6 +698,9 @@ const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   let valueLive = ''; let valueDb = ''; let updatedFlag = '';
   if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
   if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
+  if (fieldName === 'citation') {
+    valueDb = aggregateCitation(referenceJsonDb)
+    valueLive = aggregateCitation(referenceJsonLive) }
   if (valueLive !== valueDb) { updatedFlag = 'updated'; }
   valueLive = valueLive || '';
   let fieldType = 'input';
@@ -691,7 +716,7 @@ const RowEditorSimple = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
              {colEditorElement}
              {revertElement}
            </Form.Group>);
-} // const RowEditorSimple
+} // const RowEditorString
 
 // TODO resource_curie should update differently (like a xref ?)
 //                  <Button variant="outline-secondary"><span style={{fontSize:'1em'}}>&#9100;</span></Button>{' '}
@@ -1016,7 +1041,7 @@ const BiblioEditor = () => {
     if (fieldName === 'DIVIDER') {
         rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
     else if (fieldsSimple.includes(fieldName)) {
-        rowOrderedElements.push(<RowEditorSimple key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+        rowOrderedElements.push(<RowEditorString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
