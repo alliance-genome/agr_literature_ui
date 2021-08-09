@@ -277,7 +277,7 @@ export default function(state = initialState, action) {
           const revertNewAuthorDict = JSON.parse(JSON.stringify(action.payload.initializeDict))
           revertNewAuthorDict['order'] = state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order']
 //           console.log('reset to initialize dict set order to ' + state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order'])
-console.log(revertNewAuthorDict)
+// console.log(revertNewAuthorDict)
           revertValue[indexStoreAuthorRevert] = revertNewAuthorDict }
         else {
 //           console.log('reset to initialize dict revertAuthorId ' + revertAuthorId)

@@ -49,17 +49,19 @@ import loading_gif from '../images/loading_cat.gif';
 // const Biblio = ({ appState, someAction, location }) => {
 // console.log(location.state);  }
 
-const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
+const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
-const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'cross_references', 'authors', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
-const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms' ];
-const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms' ];
+const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 
 const fieldTypeDict = {}
 fieldTypeDict['abstract'] = 'textarea'
+fieldTypeDict['citation'] = 'textarea'
+fieldTypeDict['plain_language_abstract'] = 'textarea'
 fieldTypeDict['category'] = 'select'
 
 const enumDict = {}
@@ -526,7 +528,7 @@ const BiblioSubmitUpdateButton = () => {
     let updateJson = {}
     const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title' ];
     for (const field of fieldsSimple.values()) {
-      if ((field in referenceJsonLive) && !(fieldsSimpleNotPatch.includes(field))) {
+      if ((field in referenceJsonLive) && !(fieldsSimpleNotPatch.includes(field)) && !(fieldsDisplayOnly.includes(field))) {
         updateJson[field] = referenceJsonLive[field] } }
     for (const field of fieldsArrayString.values()) {
       if (field in referenceJsonLive) {
@@ -633,6 +635,7 @@ const BiblioSubmitUpdateButton = () => {
 
 const ColEditorSimple = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, dispatchAction}) => {
   const dispatch = useDispatch();
+  if (value === null) { value = '' }
   return (  <Col sm={colSize}>
               <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} />
             </Col>); }
@@ -880,13 +883,15 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       if (disabled === 'disabled') { revertElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
       let disabledName = disabled
       // if first or last name, make name be concatenation of both and disable editing name
-      if ( (authorDict['first_name'] !== '') || (authorDict['last_name'] !== '') ) {
+      if ( ( (authorDict['first_name'] !== null) && (authorDict['first_name'] !== '') ) ||
+           ( (authorDict['last_name'] !== null) && (authorDict['last_name'] !== '') ) ) {
         disabledName = 'disabled'
-        if ( (authorDict['first_name'] !== '') && (authorDict['last_name'] !== '') ) {
+        if ( ( (authorDict['first_name'] !== null) && (authorDict['first_name'] !== '') ) &&
+             ( (authorDict['last_name'] !== null) && (authorDict['last_name'] !== '') ) ) {
           authorDict['name'] = authorDict['first_name'] + ' ' + authorDict['last_name'] }
-        else if (authorDict['first_name'] !== '') {
+        else if ( (authorDict['first_name'] !== null) && (authorDict['first_name'] !== '') ) {
           authorDict['name'] = authorDict['first_name'] }
-        else if (authorDict['last_name'] !== '') {
+        else if ( (authorDict['last_name'] !== null) && (authorDict['last_name'] !== '') ) {
           authorDict['name'] = authorDict['last_name'] } }
 
 //       let valueLiveSource = authorDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
