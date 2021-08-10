@@ -1140,14 +1140,17 @@ const Biblio = () => {
     return (<Container><img src={loading_gif} className="loading_gif" alt="loading" /></Container>);
   }
 
-  return (
-    <div>
-      <h4>Biblio about this Reference</h4>
-      <div align="center" className="task" >{referenceCurie}</div>
-      { loadingQuery ? <LoadingElement /> : <BiblioActionRouter /> }
-      <Link to='/'>Go Back</Link>
-    </div>
-  )
+  if (referenceCurie === '') { 
+    return (<div><h4>Select a reference curie through <Link to='/Query'>Query</Link> or something else first</h4></div>) }
+  else {
+    return (
+      <div>
+        <h4>Biblio about this Reference</h4>
+        <div align="center" className="task" >{referenceCurie}</div>
+        { loadingQuery ? <LoadingElement /> : <BiblioActionRouter /> }
+        <Link to='/'>Go Back</Link>
+      </div>
+    ) }
 
 // this in return works
 //       <input type="text" name="crossRefCurieQuery" value={tempField} onChange={(e) => dispatch(changeTemp(e))} />
