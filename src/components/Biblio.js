@@ -42,6 +42,9 @@ import Button from 'react-bootstrap/Button'
 
 import loading_gif from '../images/loading_cat.gif';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faUndo } from '@fortawesome/free-solid-svg-icons'
+
 // http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
 
 
@@ -709,7 +712,7 @@ const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
   let otherColSize = 9;
-  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >Revert</Button>{' '}</Col>);
+  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
   if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
   let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
   if (fieldType === 'select') {
@@ -735,7 +738,7 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
       let fieldType = 'input';
       for (const [index, valueLive] of referenceJsonLive[fieldName].entries()) {
         let otherColSize = 9;
-        let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} >Revert</Button>{' '}</Col>);
+        let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
         if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
         let valueDb = ''; let updatedFlag = '';
         if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
@@ -771,7 +774,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
 //     if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
     for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
       let otherColSize = 5;
-      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} >Revert</Button>{' '}</Col>);
+      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
       if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 6; }
       let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
       let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
@@ -829,7 +832,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
       let otherColSize = 6;
-      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} >Revert</Button>{' '}</Col>);
+      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
       if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 7; }
 
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
@@ -907,7 +910,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 
 //       let otherColSizeName = 7; let otherColSizeNames = 4; let otherColSizeOrcid = 2; let otherColSizeAffiliation = 9;
       let otherColSizeName = 7; let otherColSizeNames = 5; let otherColSizeOrcid = 3; let otherColSizeAffiliation = 10;
-      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} >Revert</Button>{' '}</Col>);
+      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
       if (disabled === 'disabled') { revertElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
       let disabledName = disabled
       // if first or last name, make name be concatenation of both and disable editing name
