@@ -67,33 +67,41 @@ export const changeFieldAuthorsReferenceJson = (e) => {
   };
 };
 
+const getRevertButtonFromFontAwesomeElement = (activeElement) => {
+  if (activeElement.nodeName === 'BUTTON') { return activeElement; }
+  else if (activeElement.nodeName === 'svg') { return activeElement.parentNode; }
+  else if (activeElement.nodeName === 'path') { return activeElement.parentNode.parentNode; }
+  else { return activeElement; } }	// will probably error
 export const biblioRevertField = (e) => {
+  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
   return {
     type: 'BIBLIO_REVERT',
     payload: {
-      field: e.target.id,
+      field: activeElement.id,
       type: 'string'
     }
   };
 };
 export const biblioRevertFieldArray = (e) => {
+  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
   return {
     type: 'BIBLIO_REVERT',
     payload: {
-      field: e.target.id,
+      field: activeElement.id,
       type: 'array',
-      value: e.target.value
+      value: activeElement.value
     }
   };
 };
 export const biblioRevertAuthorArray = (e, initializeDict) => {
+  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
   return {
     type: 'BIBLIO_REVERT',
     payload: {
-      field: e.target.id,
+      field: activeElement.id,
       initializeDict: initializeDict,
       type: 'author_array',
-      value: e.target.value
+      value: activeElement.value
     }
   };
 };
