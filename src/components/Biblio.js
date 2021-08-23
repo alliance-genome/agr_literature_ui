@@ -689,7 +689,7 @@ const ColEditorSelectNumeric = ({fieldType, fieldName, value, colSize, updatedFl
 const ColEditorCheckbox = ({colSize, label, updatedFlag, disabled, fieldKey, checked, dispatchAction}) => {
   const dispatch = useDispatch();
   return (  <Col sm={colSize} className={`Col-checkbox ${updatedFlag}`} >
-              <Form.Check inline checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} />
+              <Form.Check inline className={`ColEditorCheckbox`} checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} />
             </Col>); }
 
 const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {

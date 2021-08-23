@@ -110,6 +110,11 @@
   padding: 0 !important;
 }
 
+.ColEditorCheckbox input {
+  height: 20px;
+  width: 20px;
+}
+
 .Col-general {
   text-align: left;
   display: flex;
