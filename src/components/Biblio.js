@@ -114,7 +114,7 @@ function splitCurie(curie, toReturn) {
 function aggregateCitation(referenceJson) {
   // Authors, (year) title.   Journal  volume (issue): pages
   let year = ''
-  if ( ('date_published' in referenceJson) && (referenceJson['date_published'].match(/(\d{4})/)) ) {
+  if ( ('date_published' in referenceJson) && referenceJson['date_published'] !== null && (referenceJson['date_published'].match(/(\d{4})/)) ) {
     let match = referenceJson['date_published'].match(/(\d{4})/)
     if (match[1] !== undefined) { year = match[1] } }
   let title = referenceJson['title'] || ''

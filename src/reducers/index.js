@@ -3,6 +3,7 @@ import counterReducer from './counterReducer';
 import loggedReducer from './isLoggedReducer';
 import queryReducer from './queryReducer';
 import biblioReducer from './biblioReducer';
+import createReducer from './createReducer';
 
 
 export default combineReducers({
@@ -10,6 +11,6 @@ export default combineReducers({
   isLogged: loggedReducer,
   //login: isLoggedReducer
   query: queryReducer,
-  biblio: biblioReducer
-
+  biblio: biblioReducer,
+  create: createReducer
 });
