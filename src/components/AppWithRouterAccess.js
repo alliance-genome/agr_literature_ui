@@ -16,6 +16,7 @@ import Textpresso from './Textpresso'
 import Create from './Create'
 import About from './About'
 // import Login from './Login'
+import LoginRequired from './LoginRequired'
 import SwaggerComp from './SwaggerUI'
 //import Logout from "./Logout";
 // import ListGroup from 'react-bootstrap/ListGroup';
@@ -43,7 +44,7 @@ const AppWithRouterAccess = () => {
     const history = useHistory();
 
     const customAuthHandler = () => {
-        history.push('/');
+        history.replace('/loginRequired');
     };
 
     const restoreOriginalUri = async (_oktaAuth, originalUri) => {
@@ -51,12 +52,10 @@ const AppWithRouterAccess = () => {
     };
 
     return (
-
         <Security
             oktaAuth={oktaAuth}
             onAuthRequired={customAuthHandler}
             restoreOriginalUri={restoreOriginalUri}
-
         >
             <div className="App">
                 <NavigationBar />
@@ -72,12 +71,9 @@ const AppWithRouterAccess = () => {
                 <SecureRoute path='/create' component={Create} />
                 <Route path='/about' component={About} />
                 <Route path = '/swaggerUI' component={SwaggerComp} />
-
-
-
+                <Route path = '/loginRequired' component={LoginRequired} />
             </div>
         </Security>
-
     );
 };
 export default AppWithRouterAccess;
