@@ -379,11 +379,12 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
       orderedAuthors[index] = value; }
 
     if (authorExpand === 'first') {
-      rowAuthorElements.push(
-        <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-display Col-display-left">first author</Col>
-          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{orderedAuthors[0]['name']}</div></Col>
-        </Row>); }
+      if ((orderedAuthors.length > 0) && ('name' in orderedAuthors[0])) {
+        rowAuthorElements.push(
+          <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
+            <Col className="Col-general Col-display Col-display-left">first author</Col>
+            <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{orderedAuthors[0]['name']}</div></Col>
+          </Row>); } }
     else if (authorExpand === 'list') {
       let authorNames = orderedAuthors.map((dict, index) => ( dict['name'] )).join('; ');
       rowAuthorElements.push(
