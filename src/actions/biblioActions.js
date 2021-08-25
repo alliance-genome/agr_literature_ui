@@ -295,3 +295,11 @@ export const setReferenceCurie = (reference_curie) => {
     payload: reference_curie
   };
 };
+
+export const setGetReferenceCurieFlag = (true_false) => {
+  console.log("action setReferenceCurie");
+  return {
+    type: 'SET_GET_REFERENCE_CURIE_FLAG',
+    payload: true_false
+  };
+};

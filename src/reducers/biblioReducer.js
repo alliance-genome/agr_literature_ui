@@ -398,6 +398,12 @@ export default function(state = initialState, action) {
 //         ...state,
 //         loadingQuery: action.payload
 //       }
+    case 'SET_GET_REFERENCE_CURIE_FLAG':
+      console.log("biblio reducer set get reference curie flag");
+      return {
+        ...state,
+        getReferenceCurieFlag: action.payload
+      }
     case 'RESET_QUERY_STATE':
       console.log("reducer reset reference curie");
       return {

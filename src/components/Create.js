@@ -6,6 +6,9 @@ import { changeCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
 
+import { setReferenceCurie } from '../actions/biblioActions';
+import { setGetReferenceCurieFlag } from '../actions/biblioActions';
+
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -94,6 +97,10 @@ const Create = () => {
   function pushHistory(referenceCurie) {
     console.log('history push');
     dispatch(resetCreateRedirect());
+    // dispatching these 2 actions and their reducers to alter the state from a different component creates a warning, but it's needed for Biblio to set the correct referenceCurie and query the db for its data.
+    // Warning: Cannot update during an existing state transition (such as within `render`). Render methods should be a pure function of props and state.
+    dispatch(setGetReferenceCurieFlag(true));
+    dispatch(setReferenceCurie(referenceCurie));
     history.push("/Biblio/?action=editor&referenceCurie=" + referenceCurie);
   }
   return (
