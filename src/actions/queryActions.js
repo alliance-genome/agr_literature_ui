@@ -31,10 +31,10 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
   console.log('in queryButtonCrossRefCurie action');
   console.log("payload " + payload);
   const createGetQueryCrossRefCurie = async () => {
-//     const url = 'http://dev.alliancegenome.org:49161/cross-reference/' + payload;
-//     const url = 'http://dev.alliancegenome.org:' + port + '/cross-reference/' + payload;
-//     const url = 'https://' + restUrl + '/cross-reference/' + payload;
-    const url = restUrl + '/cross-reference/' + payload;
+//     const url = 'http://dev.alliancegenome.org:49161/cross_reference/' + payload;
+//     const url = 'http://dev.alliancegenome.org:' + port + '/cross_reference/' + payload;
+//     const url = 'https://' + restUrl + '/cross_reference/' + payload;
+    const url = restUrl + '/cross_reference/' + payload;
     // console.log(url);
     const res = await fetch(url, {
       method: 'GET',

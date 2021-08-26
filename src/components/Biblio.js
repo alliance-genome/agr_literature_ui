@@ -621,7 +621,7 @@ const BiblioSubmitUpdateButton = () => {
           else if ('curie' in crossRefDict) {			// pre-existing entries need delete or update
             let crossRefCurieDb = referenceJsonDb[field][index]['curie']
             let crossRefCurieLive = crossRefDict['curie']
-            let subPath = 'cross-reference/' + referenceJsonDb[field][index]['curie']
+            let subPath = 'cross_reference/' + referenceJsonDb[field][index]['curie']
             if ( crossRefCurieLive !== crossRefCurieDb ) {	// xref curie has changed, delete+create
               needsCreate = true
               let array = [ subPath, null, 'DELETE', index, field, null ]
@@ -635,7 +635,7 @@ const BiblioSubmitUpdateButton = () => {
             let createJson = generateCrossReferenceUpdateJson(crossRefDict, referenceCurie)
             createJson['curie'] = crossRefDict['curie']		// createJson is same as updateJson + crossRef curie
             // console.log('createJson'); console.log(createJson)
-            let subPath = 'cross-reference/'
+            let subPath = 'cross_reference/'
             let array = [ subPath, createJson, 'POST', index, field, null ]
 // UNDO put this back and test it when API for post is working
             forApiArray.push( array ); }
