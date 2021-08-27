@@ -24,6 +24,14 @@ export const changeCreateField = (e) => {
     }
   };
 };
+export const changeCreatePmidField = (e) => {
+  return {
+    type: 'CREATE_CHANGE_PMID_FIELD',
+    payload: {
+      value: e.target.value
+    }
+  };
+};
 
 export const createQueryPubmed = (pmid) => dispatch => {
   console.log("action createQueryPubmed " + pmid);

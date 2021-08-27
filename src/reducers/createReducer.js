@@ -37,6 +37,13 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       return {
         ...state,
+        [action.payload.field]: action.payload.value
+      }
+    case 'CREATE_CHANGE_PMID_FIELD':
+      // console.log(action.payload);
+      return {
+        ...state,
+        pmidTitle: '',
         pmid: action.payload.value
       }
     case 'SET_CREATE_ACTION':

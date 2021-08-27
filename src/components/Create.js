@@ -9,6 +9,7 @@ import { changeCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
 import { changeCreateField } from '../actions/createActions';
+import { changeCreatePmidField } from '../actions/createActions';
 import { createQueryPubmed } from '../actions/createActions';
 
 import Container from 'react-bootstrap/Container';
@@ -37,7 +38,7 @@ const CreatePubmed = () => {
     <Form.Group as={Row} key="Pmid" >
       <Form.Label column sm="2" className={`${generalClassName}`} >PMID</Form.Label>
       <Col sm="6" className={`${generalClassName}`}>
-        <Form.Control as="input" name="pmid" id="pmid" type="input" value={pmid} className={`form-control`} placeholder="12345678" onChange={(e) => dispatch(changeCreateField(e))} />
+        <Form.Control as="input" name="pmid" id="pmid" type="input" value={pmid} className={`form-control`} placeholder="12345678" onChange={(e) => dispatch(changeCreatePmidField(e))} />
       </Col>
       <Col sm="4" className={`${generalClassName}`}>
         <Button id={`button query pubmed`} variant="outline-secondary" onClick={() => dispatch(createQueryPubmed(pmid))} >Query PubMed ID</Button>
