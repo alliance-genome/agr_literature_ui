@@ -18,14 +18,14 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 
 
-
 const CreatePubmed = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const pmid = useSelector(state => state.create.pmid);
   const pmidTitle = useSelector(state => state.create.pmidTitle);
   const generalClassName = 'Col-general';
-  function createPubmedReference() {
+
+  function createPubmedReference(pmid) {
     alert('In Progress.  Waiting for API to make python calls');
 //     const subPath = 'reference/'
 //     let updateJson = { 'title': 'placeholder title', 'category': 'other' }
@@ -49,9 +49,10 @@ const CreatePubmed = () => {
         <Form.Control as="input" name="pmidTitle" id="pmidTitle" type="input" value={pmidTitle} disabled="disabled" className={`form-control`} placeholder="no PubMed reference found for that id" />
       </Col>
     </Form.Group>
-    {pmidTitle && (<Button id={`button create pubmed`} variant="outline-secondary" onClick={() => dispatch(createPubmedReference(pmid))} >Create a PubMed reference</Button>)}
+    {pmidTitle && (<Button id={`button create pubmed`} variant="outline-secondary" onClick={() => createPubmedReference(pmid)} >Create a PubMed reference</Button>)}
     </Container>);
 } // const CreatePubmed
+//     {pmidTitle && (<Button id={`button create pubmed`} variant="outline-secondary" onClick={() => dispatch(createPubmedReference(pmid))} >Create a PubMed reference</Button>)}
 
 const CreateAlliance = () => {
   const dispatch = useDispatch();
