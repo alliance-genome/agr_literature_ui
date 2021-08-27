@@ -14,6 +14,9 @@ const initialState = {
 //   meshExpand: 'short',
 //   authorExpand: 'first',
 //   hasPmid: false,
+  pmid: '',
+  pmidTitle: '',
+  pmidXml: '',
   updateAlert: 0,
   updateFailure: 0,
   updateMessages: []
@@ -30,6 +33,12 @@ export default function(state = initialState, action) {
         ...state,
         createAction: action.payload
       }
+    case 'CREATE_CHANGE_FIELD':
+      // console.log(action.payload);
+      return {
+        ...state,
+        pmid: action.payload.value
+      }
     case 'SET_CREATE_ACTION':
       console.log("reducer set create action");
       return {
@@ -42,6 +51,12 @@ export default function(state = initialState, action) {
         ...state,
         redirectCurie: 'unknown reference',
         redirectToBiblio: false
+      }
+    case 'CREATE_QUERY_PUBMED':
+      console.log("reducer create query pubmed");
+      return {
+        ...state,
+        pmidTitle: action.payload
       }
     case 'UPDATE_BUTTON_CREATE':
       console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);

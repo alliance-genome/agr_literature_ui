@@ -2,12 +2,14 @@
 import { useHistory } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 
+import { setReferenceCurie } from '../actions/biblioActions';
+import { setGetReferenceCurieFlag } from '../actions/biblioActions';
+
 import { changeCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
-
-import { setReferenceCurie } from '../actions/biblioActions';
-import { setGetReferenceCurieFlag } from '../actions/biblioActions';
+import { changeCreateField } from '../actions/createActions';
+import { createQueryPubmed } from '../actions/createActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -19,7 +21,36 @@ import Button from 'react-bootstrap/Button'
 
 const CreatePubmed = () => {
   const dispatch = useDispatch();
-  return (<Container>In Progress<Button id={`button create pubmed`} variant="outline-secondary" onClick={(e) => dispatch(changeCreateActionToggler(e))} >Create a PubMed reference</Button></Container>);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const pmid = useSelector(state => state.create.pmid);
+  const pmidTitle = useSelector(state => state.create.pmidTitle);
+  const generalClassName = 'Col-general';
+  function createPubmedReference() {
+    alert('In Progress.  Waiting for API to make python calls');
+//     const subPath = 'reference/'
+//     let updateJson = { 'title': 'placeholder title', 'category': 'other' }
+//     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
+//     dispatch(updateButtonCreate(arrayData))
+  }
+  return (
+    <Container>
+    <Form.Group as={Row} key="Pmid" >
+      <Form.Label column sm="2" className={`${generalClassName}`} >PMID</Form.Label>
+      <Col sm="6" className={`${generalClassName}`}>
+        <Form.Control as="input" name="pmid" id="pmid" type="input" value={pmid} className={`form-control`} placeholder="12345678" onChange={(e) => dispatch(changeCreateField(e))} />
+      </Col>
+      <Col sm="4" className={`${generalClassName}`}>
+        <Button id={`button query pubmed`} variant="outline-secondary" onClick={() => dispatch(createQueryPubmed(pmid))} >Query PubMed ID</Button>
+      </Col>
+    </Form.Group>
+    <Form.Group as={Row} key="PmidTitle" >
+      <Form.Label column sm="2" className={`${generalClassName}`} >PubMed Title</Form.Label>
+      <Col sm="10" className={`${generalClassName}`}>
+        <Form.Control as="input" name="pmidTitle" id="pmidTitle" type="input" value={pmidTitle} disabled="disabled" className={`form-control`} placeholder="no PubMed reference found for that id" />
+      </Col>
+    </Form.Group>
+    {pmidTitle && (<Button id={`button create pubmed`} variant="outline-secondary" onClick={() => dispatch(createPubmedReference(pmid))} >Create a PubMed reference</Button>)}
+    </Container>);
 } // const CreatePubmed
 
 const CreateAlliance = () => {
