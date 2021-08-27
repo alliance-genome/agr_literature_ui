@@ -85,6 +85,8 @@ export default function(state = initialState, action) {
       }
       let referenceJsonLive = state.referenceJsonLive;
       if ((action.payload.field !== null) && 		// POST to a field, assign its db id to redux store
+          (action.payload.index !== null) &&
+          (action.payload.value !== null) &&
           (action.payload.subField !== null)) {		// but only for related tables that create a dbid, not for cross_references
         referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
       return {
