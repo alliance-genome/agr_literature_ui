@@ -34,37 +34,58 @@ export const changeCreatePmidField = (e) => {
 };
 
 export const createQueryPubmed = (pmid) => dispatch => {
+  pmid = pmid.replace(/[^\d.]/g, '');
   console.log("action createQueryPubmed " + pmid);
-  const createQueryPubmedPmid = async () => {
-    const url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=' + pmid;
-    console.log(url);
-    const res = await fetch(url, {
+  const createQueryPmid = async () => {
+    const urlApi = restUrl + '/cross_reference/PMID:' + pmid;
+    console.log(urlApi);
+    const res = await fetch(urlApi, {
       method: 'GET',
       mode: 'cors',
       headers: {
-        'content-type': 'text/plain'
+        'content-type': 'application/json'
       }
     })
-    const response_text = await res.text();
-    // console.log(response_text);
-    let title = '';
-    if ( response_text.match(/<ArticleTitle[^>]*?>(.+?)<\/ArticleTitle>/) ) {
-      const matches = response_text.match(/<ArticleTitle[^>]*?>(.+?)<\/ArticleTitle>/);
-      title = matches[1]; }
-    else if ( response_text.match(/<BookTitle[^>]*?>(.+?)<\/BookTitle>/) ) {
-      const matches = response_text.match(/<BookTitle[^>]*?>(.+?)<\/BookTitle>/);
-      title = matches[1]; }
-    else if ( response_text.match(/<VernacularTitle[^>]*?>(.+?)<\/VernacularTitle>/) ) {
-      const matches = response_text.match(/<VernacularTitle[^>]*?>(.+?)<\/VernacularTitle>/);
-      title = matches[1]; }
-    console.log(title);
-    // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-    dispatch({
-      type: 'CREATE_QUERY_PUBMED',
-      payload: title
-    })
+    const response = await res.json();
+    let response_payload = 'not found';
+    if (response.reference_curie !== undefined) {
+      console.log('response not undefined');
+      response_payload = response.reference_curie;
+      dispatch({
+        type: 'CREATE_QUERY_PMID_XREF',
+        payload: response_payload
+      })}
+    else {
+      const url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=' + pmid;
+      console.log(url);
+      const res = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'content-type': 'text/plain'
+        }
+      })
+      const response_text = await res.text();
+      // console.log(response_text);
+      let title = '';
+      if ( response_text.match(/<ArticleTitle[^>]*?>(.+?)<\/ArticleTitle>/) ) {
+        const matches = response_text.match(/<ArticleTitle[^>]*?>(.+?)<\/ArticleTitle>/);
+        title = matches[1]; }
+      else if ( response_text.match(/<BookTitle[^>]*?>(.+?)<\/BookTitle>/) ) {
+        const matches = response_text.match(/<BookTitle[^>]*?>(.+?)<\/BookTitle>/);
+        title = matches[1]; }
+      else if ( response_text.match(/<VernacularTitle[^>]*?>(.+?)<\/VernacularTitle>/) ) {
+        const matches = response_text.match(/<VernacularTitle[^>]*?>(.+?)<\/VernacularTitle>/);
+        title = matches[1]; }
+      console.log(title);
+      // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
+      dispatch({
+        type: 'CREATE_QUERY_PMID_PUBMED',
+        payload: title
+      })
+    }
   }
-  createQueryPubmedPmid();
+  createQueryPmid();
 };
 
 export const setCreateAction = (createAction) => {

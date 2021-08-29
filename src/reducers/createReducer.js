@@ -59,11 +59,18 @@ export default function(state = initialState, action) {
         redirectCurie: 'unknown reference',
         redirectToBiblio: false
       }
-    case 'CREATE_QUERY_PUBMED':
-      console.log("reducer create query pubmed");
+    case 'CREATE_QUERY_PMID_PUBMED':
+      console.log("reducer create query pmid pubmed");
       return {
         ...state,
         pmidTitle: action.payload
+      }
+    case 'CREATE_QUERY_PMID_XREF':
+      console.log("reducer create query pmid xref");
+      return {
+        ...state,
+        redirectCurie: action.payload,
+        redirectToBiblio: true
       }
     case 'UPDATE_BUTTON_CREATE':
       console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
