@@ -5,6 +5,7 @@ const issuer = 'https://' + oktaDomain +'/oauth2/default';
 const baseUrl = 'https://' + oktaDomain;
 const swaggerUrl = process.env.REACT_APP_SWAGGERUI;
 const googleId = process.env.REACT_APP_GOOGLEID;
+const microsoftId = process.env.REACT_APP_MICROSOFTID;
 
 const oktaAuthConfig = {
     // Note: If your app is configured to use the Implicit flow
@@ -28,7 +29,7 @@ const oktaSignInConfig = {
     // Additional documentation on config options can be found at https://github.com/okta/okta-signin-widget#basic-config-options
     idps:[
         {type: 'google', id: googleId},
-        //{type: 'github', id:'0oa12b3n62hG7ZunB5d7', text: "Sign in with GitHub", className:'../GitHub-Mark.png'}
+        {type: 'microsoft', id:microsoftId}
     ],
     idpDisplay: "SCONDARY"
 
