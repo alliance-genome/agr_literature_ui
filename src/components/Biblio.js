@@ -379,7 +379,7 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
       orderedAuthors[index] = value; }
 
     if (authorExpand === 'first') {
-      if ((orderedAuthors.length > 0) && ('name' in orderedAuthors[0])) {
+      if ((orderedAuthors.length > 0) && (typeof orderedAuthors[0] !== 'undefined') && ('name' in orderedAuthors[0])) {
         rowAuthorElements.push(
           <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general Col-display Col-display-left">first author</Col>
@@ -394,6 +394,7 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
         </Row>); }
     else if (authorExpand === 'detailed') {
       for (const [index, value]  of orderedAuthors.entries()) {
+        if (typeof value === 'undefined') { continue; }
         let orcid_curie = '';
         let orcid_url = '';
         if ('orcid' in value && value['orcid'] !== null) {
@@ -904,6 +905,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       orderedAuthors[index] = value; }
 //     for (const[index, authorDict] of referenceJsonLive['authors'].entries()) { }
     for (const[index, authorDict] of orderedAuthors.entries()) {
+      if (typeof authorDict === 'undefined') { continue; }
       let rowEvenness = (index % 2 === 0) ? 'row-even' : 'row-odd'
       let affiliationLength = 0
       if ('affiliation' in authorDict && authorDict['affiliation'] !== null) {
