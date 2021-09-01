@@ -603,27 +603,32 @@ const BiblioSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
-// TODO  add this when the author API is working, currently POST and PATCH give 500 errors
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-      const authorFields = [ 'reference_type', 'source' ];
+      const authorFields = [ 'order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliation' ];
       for (const[index, authorDict] of referenceJsonLive['authors'].entries()) {
         console.log(index)	// TODO remove this
-        if (('needsChange' in authorDict) && ('authors' in authorDict)) {
+        if (('needsChange' in authorDict) && ('author_id' in authorDict)) {
           let updateJson = { 'reference_curie': referenceCurie }
           for (const field of authorFields.values()) {
             if (field in authorDict) {
-              updateJson[field] = authorDict[field] } }
-//           let subPath = 'reference/mod_reference_type/';
-//           let method = 'POST';
-//           let field = 'mod_reference_types';
-//           let subField = 'mod_reference_type_id';
-//           if (authorDict['mod_reference_type_id'] !== 'new') {
-//             subPath = 'reference/mod_reference_type/' + authorDict['mod_reference_type_id'];
-//             field = null;
-//             subField = null;
-//             method = 'PATCH' }
-//           let array = [ subPath, updateJson, method, index, field, subField ]
-//           forApiArray.push( array );
+              updateJson[field] = authorDict[field]
+              if (field === 'orcid') {		// orcids just pass the orcid string, not the whole dict
+                let orcidValue = null;
+                if ( (authorDict['orcid'] !== null) && ('curie' in authorDict['orcid']) && 
+                     (authorDict['orcid']['curie'] !== null) && (authorDict['orcid']['curie'] !== '') ) {
+                  orcidValue = authorDict['orcid']['curie']; }
+                updateJson['orcid'] = orcidValue; } } }
+          let subPath = 'author/';
+          let method = 'POST';
+          let field = 'authors';
+          let subField = 'author_id';
+          if (authorDict['author_id'] !== 'new') {
+            subPath = 'author/' + authorDict['author_id'];
+            field = null;
+            subField = null;
+            method = 'PATCH' }
+          let array = [ subPath, updateJson, method, index, field, subField ]
+          forApiArray.push( array );
     } } }
 
     if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
@@ -653,7 +658,6 @@ const BiblioSubmitUpdateButton = () => {
             // console.log('createJson'); console.log(createJson)
             let subPath = 'cross_reference/'
             let array = [ subPath, createJson, 'POST', index, field, null ]
-// UNDO put this back and test it when API for post is working
             forApiArray.push( array ); }
     } } }
 

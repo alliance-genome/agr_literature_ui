@@ -195,13 +195,17 @@ export default function(state = initialState, action) {
         for (let authorReorderDict of newAuthorInfoChange) {
           if (newAuthorOrder < oldAuthorOrder) {
             if (authorReorderDict['order'] === oldAuthorOrder) {
+              authorReorderDict['needsChange'] = true;
               authorReorderDict['order'] = newAuthorOrder }
             else if ( (authorReorderDict['order'] >= newAuthorOrder) && (authorReorderDict['order'] < oldAuthorOrder) ) {
+              authorReorderDict['needsChange'] = true;
               authorReorderDict['order'] += 1 } }
           else if (newAuthorOrder > oldAuthorOrder) {
             if (authorReorderDict['order'] === oldAuthorOrder) {
+              authorReorderDict['needsChange'] = true;
               authorReorderDict['order'] = newAuthorOrder }
             else if ( (authorReorderDict['order'] <= newAuthorOrder) && (authorReorderDict['order'] > oldAuthorOrder) ) {
+              authorReorderDict['needsChange'] = true;
               authorReorderDict['order'] -= 1 } } } }
       else {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = authorInfoNewValue; }
