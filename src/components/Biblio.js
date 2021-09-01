@@ -139,9 +139,16 @@ const BiblioActionToggler = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   let displayChecked = '';
   let editorChecked = '';
+  let radioFormEditorClassname = 'radio-form';
+  let radioFormDisplayClassname = 'radio-form';
   let biblioActionTogglerSelected = 'display';
-  if (biblioAction === 'editor') { editorChecked = 'checked'; biblioActionTogglerSelected = 'editor'; }
-    else { displayChecked = 'checked'; }
+  if (biblioAction === 'editor') { 
+      radioFormEditorClassname += ' underlined';
+      editorChecked = 'checked';
+      biblioActionTogglerSelected = 'editor'; }
+    else {
+      radioFormDisplayClassname += ' underlined';
+      displayChecked = 'checked'; }
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie
   window.history.replaceState({}, null, newUrl)
@@ -161,25 +168,33 @@ const BiblioActionToggler = () => {
 //     history.push("/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie);
 //   }
 
+//   let selected
+
   return (
     <Form>
     <div key={`default-radio`} className="mb-3">
-      <Form.Check
-        inline
-        checked={displayChecked}
-        type='radio'
-        label='display'
-        id='biblio-toggler-display'
-        onChange={(e) => dispatch(changeBiblioActionToggler(e))}
-      />
-      <Form.Check
-        inline
-        checked={editorChecked}
-        type='radio'
-        label='editor'
-        id='biblio-toggler-editor'
-        onChange={(e) => dispatch(changeBiblioActionToggler(e))}
-      />
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormDisplayClassname}
+          checked={displayChecked}
+          type='radio'
+          label='display'
+          id='biblio-toggler-display'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e))}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormEditorClassname}
+          checked={editorChecked}
+          type='radio'
+          label='editor'
+          id='biblio-toggler-editor'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e))}
+        />
+      </div>
     </div>
     </Form>);
 } // const BiblioActionToggler

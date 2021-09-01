@@ -74,35 +74,48 @@ const CreateActionToggler = () => {
   const createAction = useSelector(state => state.create.createAction);
   let pubmedChecked = '';
   let allianceChecked = '';
+  let radioFormPubmedClassname = 'radio-form';
+  let radioFormAllianceClassname = 'radio-form';
 // to default pubmed
 //   let createActionTogglerSelected = 'pubmed';
 //   if (createAction === 'alliance') { allianceChecked = 'checked'; createActionTogglerSelected = 'alliance'; }
 //     else { pubmedChecked = 'checked'; }
   let createActionTogglerSelected = 'alliance';
-  if (createAction === 'pubmed') { pubmedChecked = 'checked'; createActionTogglerSelected = 'pubmed'; }
-    else { allianceChecked = 'checked'; }
+  if (createAction === 'pubmed') { 
+      radioFormPubmedClassname += ' underlined';
+      pubmedChecked = 'checked';
+      createActionTogglerSelected = 'pubmed'; }
+    else {
+      radioFormAllianceClassname += ' underlined';
+      allianceChecked = 'checked'; }
   let newUrl = "/Create/?action=" + createActionTogglerSelected
   window.history.replaceState({}, null, newUrl)
 
   return (
     <Form>
     <div key={`default-radio`} className="mb-3">
-      <Form.Check
-        inline
-        checked={pubmedChecked}
-        type='radio'
-        label='PubMed'
-        id='create-toggler-pubmed'
-        onChange={(e) => dispatch(changeCreateActionToggler(e))}
-      />
-      <Form.Check
-        inline
-        checked={allianceChecked}
-        type='radio'
-        label='Alliance'
-        id='create-toggler-alliance'
-        onChange={(e) => dispatch(changeCreateActionToggler(e))}
-      />
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormPubmedClassname}
+          checked={pubmedChecked}
+          type='radio'
+          label='PubMed'
+          id='create-toggler-pubmed'
+          onChange={(e) => dispatch(changeCreateActionToggler(e))}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormAllianceClassname}
+          checked={allianceChecked}
+          type='radio'
+          label='Alliance'
+          id='create-toggler-alliance'
+          onChange={(e) => dispatch(changeCreateActionToggler(e))}
+        />
+      </div>
     </div>
     </Form>);
 } // const CreateActionToggler
