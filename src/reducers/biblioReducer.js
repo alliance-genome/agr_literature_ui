@@ -161,12 +161,15 @@ export default function(state = initialState, action) {
       }
 
     case 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON':
-      // console.log(action.payload);
+      // console.log('action.payload'); console.log(action.payload);
       let authorInfoArray = action.payload.field.split(" ");
       let fieldAuthorInfo = authorInfoArray[0];
 //       let indexAuthorInfo = authorInfoArray[1];
       let indexDomAuthorInfo = parseInt(authorInfoArray[1]);
       let subfieldAuthorInfo = authorInfoArray[2];
+      let subindexDomAuthorInfo = null;
+      if (subfieldAuthorInfo === 'affiliation') {
+        subindexDomAuthorInfo = parseInt(authorInfoArray[3]) }
       let authorInfoNewValue = action.payload.value;
       if ( (subfieldAuthorInfo === 'first_author') || (subfieldAuthorInfo === 'corresponding_author') ) {
         authorInfoNewValue = action.payload.checked || false }
@@ -180,12 +183,20 @@ export default function(state = initialState, action) {
 //           indexAuthorInfo = authorReorderIndexDictIndex } }
       let indexAuthorInfo = getStoreAuthorIndexFromDomIndex(indexDomAuthorInfo, newAuthorInfoChange)
 
+      let hasChangeAuthorField = state.referenceJsonHasChange
+      if ( (state.referenceJsonDb[fieldAuthorInfo][indexAuthorInfo][subfieldAuthorInfo] === action.payload.value) ||
+           ( (subindexDomAuthorInfo !== null) && 
+             (state.referenceJsonDb[fieldAuthorInfo][indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] === action.payload.value) ) ) {
+        if (action.payload.field in hasChangeAuthorField) {
+          delete hasChangeAuthorField[action.payload.field] } }
+      else {
+        hasChangeAuthorField[action.payload.field] = 'diff' }
       if (subfieldAuthorInfo === 'orcid') {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = {}
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['url'] = null;
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['curie'] = authorInfoNewValue; }
       else if (subfieldAuthorInfo === 'affiliation') {
-        let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
+//         let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] = authorInfoNewValue; }
       else if (subfieldAuthorInfo === 'order') {
         let oldAuthorOrder = indexDomAuthorInfo + 1
@@ -213,6 +224,7 @@ export default function(state = initialState, action) {
       newAuthorInfoChange[indexAuthorInfo]['needsChange'] = true;
       return {
         ...state,
+        referenceJsonHasChange: hasChangeAuthorField,
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldAuthorInfo]: newAuthorInfoChange
@@ -220,7 +232,7 @@ export default function(state = initialState, action) {
       }
 
     case 'CHANGE_FIELD_CROSS_REFERENCES_REFERENCE_JSON':
-      console.log(action.payload);
+      // console.log(action.payload);
       let crossReferencesArray = action.payload.field.split(" ");
       let fieldCrossReferences = crossReferencesArray[0];
       let indexCrossReferences = crossReferencesArray[1];
@@ -299,14 +311,9 @@ export default function(state = initialState, action) {
               revertValue[indexStoreAuthorRevert] = revertNewAuthorDict
               break } } } }
       let hasChangeFieldRevert = state.referenceJsonHasChange
-      if (fieldIdRevert in hasChangeFieldRevert) {
-        delete hasChangeFieldRevert[fieldIdRevert] }
-      if (action.payload.value !== undefined) {
-        const subFieldDictArrayRevert = action.payload.value.split(", ");
-        for (const subField of subFieldDictArrayRevert) {
-          let keySubFieldIdRevert = fieldIdRevert + ' ' + subField
-          if (keySubFieldIdRevert in hasChangeFieldRevert) {
-            delete hasChangeFieldRevert[keySubFieldIdRevert] } } }
+      for (const fieldRevertEntry in hasChangeFieldRevert) {
+        if (fieldRevertEntry.startsWith(fieldIdRevert)) {
+          delete hasChangeFieldRevert[fieldRevertEntry] } }
       const pmidBoolRevert = checkHasPmid(state.referenceJsonLive)
       return {
         ...state,

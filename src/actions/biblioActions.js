@@ -88,8 +88,7 @@ export const biblioRevertFieldArray = (e) => {
     type: 'BIBLIO_REVERT',
     payload: {
       field: activeElement.id,
-      type: 'array',
-      value: activeElement.value
+      type: 'array'
     }
   };
 };
@@ -100,8 +99,7 @@ export const biblioRevertAuthorArray = (e, initializeDict) => {
     payload: {
       field: activeElement.id,
       initializeDict: initializeDict,
-      type: 'author_array',
-      value: activeElement.value
+      type: 'author_array'
     }
   };
 };
