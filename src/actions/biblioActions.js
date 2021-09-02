@@ -218,13 +218,12 @@ export const setBiblioAction = (biblioAction) => {
   };
 };
 
-// export const updateButtonBiblio = (subPath, payload, method) => dispatch => 
 export const updateButtonBiblio = (updateArrayData) => dispatch => {
-//   console.log('in updateButtonBiblio action');
+  // console.log('in updateButtonBiblio action');
   const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
-//   console.log("payload " + payload);
+  // console.log("payload " + payload);
+  // console.log("payload "); console.log(updateArrayData);
   let newId = null;
-//   console.log("subPath " + subPath);
   const createUpdateButtonBiblio = async () => {
 //     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
 //     const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
@@ -265,16 +264,18 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
       // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
       console.log('dispatch UPDATE_BUTTON_BIBLIO');
     }
-    dispatch({
-      type: 'UPDATE_BUTTON_BIBLIO',
-      payload: {
-        responseMessage: response_message,
-        index: index,
-        value: newId,
-        field: field,
-        subField: subField
-      }
-    })
+    setTimeout(() => {
+      dispatch({
+        type: 'UPDATE_BUTTON_BIBLIO',
+        payload: {
+          responseMessage: response_message,
+          index: index,
+          value: newId,
+          field: field,
+          subField: subField
+        }
+      })
+    }, 500);
   }
   createUpdateButtonBiblio()
 };

@@ -70,6 +70,7 @@ export default function(state = initialState, action) {
       }
     case 'UPDATE_BUTTON_BIBLIO':
       // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
+      // console.log('action.payload'); console.log(action.payload);
       let newUpdateFailure = 0;
       let newArrayUpdateMessages = state.updateMessages;
       let getReferenceCurieFlagUpdateButton = false;
@@ -87,6 +88,7 @@ export default function(state = initialState, action) {
       if ((action.payload.field !== null) && 		// POST to a field, assign its db id to redux store
           (action.payload.index !== null) &&
           (action.payload.index in referenceJsonLive[action.payload.field]) &&
+          ('subField' in action.payload) &&
           (action.payload.subField !== null) &&		// but only for related tables that create a dbid, not for cross_references
           (action.payload.subField in referenceJsonLive[action.payload.field][action.payload.index])) {
         referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
