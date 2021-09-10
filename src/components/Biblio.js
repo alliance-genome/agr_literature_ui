@@ -478,6 +478,10 @@ const BiblioDisplay = () => {
   const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+  if (!('date_created' in referenceJsonLive)) { 
+    let message = 'No AGR Reference Curie found';
+    if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
+    return(<>{message}</>); }
   const rowOrderedElements = []
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
@@ -1065,6 +1069,10 @@ const BiblioEditor = () => {
   const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+  if (!('date_created' in referenceJsonLive)) { 
+    let message = 'No AGR Reference Curie found';
+    if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
+    return(<>{message}</>); }
   const rowOrderedElements = []
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {

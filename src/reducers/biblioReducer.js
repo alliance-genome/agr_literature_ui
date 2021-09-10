@@ -20,9 +20,10 @@ const initialState = {
 const checkHasPmid = (referenceJsonLive) => {
   // console.log('called checkHasPmid ' + referenceJsonLive.curie);
   let checkingHasPmid = false;
-  for (const xref of referenceJsonLive.cross_references) {
-    if ( (xref.curie.match(/^PMID:/)) && (xref.is_obsolete === false) ) {
-      checkingHasPmid = true; } }
+  if ('cross_references' in referenceJsonLive) {
+    for (const xref of referenceJsonLive.cross_references) {
+      if ( (xref.curie.match(/^PMID:/)) && (xref.is_obsolete === false) ) {
+        checkingHasPmid = true; } } }
   return checkingHasPmid;
 }
 
