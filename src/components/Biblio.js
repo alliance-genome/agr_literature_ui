@@ -58,9 +58,7 @@ const fieldsArrayString = ['keywords', 'pubmed_type' ];
 const fieldsOrdered = [ 'title', 'cross_references', 'corrections', 'authors', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
-const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
-// TODO PUT THIS BACK
-// const fieldsPubmed = [ 'title', 'comment_and_corrections', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 
@@ -680,7 +678,6 @@ const BiblioSubmitUpdateButton = () => {
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
       const authorFields = [ 'order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliation' ];
       for (const[index, authorDict] of referenceJsonLive['authors'].entries()) {
-        console.log(index)	// TODO remove this
         if (('needsChange' in authorDict) && ('author_id' in authorDict)) {
           let updateJson = { 'reference_curie': referenceCurie }
           for (const field of authorFields.values()) {
@@ -851,9 +848,6 @@ const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
              {revertElement}
            </Form.Group>);
 } // const RowEditorString
-
-// TODO resource_curie should update differently (like a xref ?)
-//                  <Button variant="outline-secondary"><span style={{fontSize:'1em'}}>&#9100;</span></Button>{' '}
 
 const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
