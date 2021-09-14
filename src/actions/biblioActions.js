@@ -55,6 +55,18 @@ export const changeFieldCrossReferencesReferenceJson = (e) => {
   };
 };
 
+export const changeFieldCommentsCorrectionsReferenceJson = (e) => {
+  console.log('action change field comments corrections json ' + e.target.id + ' to ' + e.target.value);
+//   console.log(e);
+  return {
+    type: 'CHANGE_FIELD_COMMENTS_CORRECTIONS_REFERENCE_JSON',
+    payload: {
+      field: e.target.id,
+      value: e.target.value
+    }
+  };
+};
+
 export const changeFieldAuthorsReferenceJson = (e) => {
   console.log('action change field authors json ' + e.target.id + ' to ' + e.target.value);
   return {
@@ -160,9 +172,36 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
     console.log(response);
     let response_payload = 'not found';
     if (response !== undefined) {
-      response_payload = response;
+      const referenceJson = response;
+      if ('comment_and_corrections' in referenceJson && referenceJson['comment_and_corrections'] !== null) {
+        let comcorMapping = {}
+        comcorMapping['CommentOn'] = 'HasComment'
+        comcorMapping['ErratumFor'] = 'HasErratum'
+        comcorMapping['ExpressionOfConcernFor'] = 'HasExpressionOfConcernFor'
+        comcorMapping['ReprintOf'] = 'HasReprint'
+        comcorMapping['RepublishedFrom'] = 'RepublishedIn'
+        comcorMapping['RetractionOf'] = 'HasRetraction'
+        comcorMapping['UpdateOf'] = 'HasUpdate'
+        const comcorDirections = ['to_references', 'from_references']
+        referenceJson['comcor_processed'] = []
+        for (const direction of comcorDirections) {
+          for (const[index, comcorDict] of referenceJson['comment_and_corrections'][direction].entries()) {
+            let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
+            let curie = comcorDict[curieFieldInDict]
+            let dbid = comcorDict['reference_comment_and_correction_id']
+            let type = comcorDict['reference_comment_and_correction_type']
+            if (direction === 'from_references') {
+              if (type in comcorMapping) { type = comcorMapping[type] } }
+            let newComcorDict = {}
+            newComcorDict['reference_comment_and_correction_id'] = dbid
+            newComcorDict['type'] = type
+            newComcorDict['curie'] = curie
+            referenceJson['comcor_processed'].push(newComcorDict)
+      } } }
+      response_payload = referenceJson;
     }
 //     history.push("/Biblio");	// value hasn't been set in store yet
+
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
     dispatch({
       type: 'BIBLIO_GET_REFERENCE_CURIE',

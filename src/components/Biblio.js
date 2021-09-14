@@ -18,6 +18,7 @@ import { changeFieldReferenceJson } from '../actions/biblioActions';
 import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
 import { changeFieldModReferenceReferenceJson } from '../actions/biblioActions';
 import { changeFieldCrossReferencesReferenceJson } from '../actions/biblioActions';
+import { changeFieldCommentsCorrectionsReferenceJson } from '../actions/biblioActions';
 import { changeFieldAuthorsReferenceJson } from '../actions/biblioActions';
 import { changeBiblioActionToggler } from '../actions/biblioActions';
 import { biblioAddNewRowString } from '../actions/biblioActions';
@@ -54,10 +55,12 @@ import { faUndo } from '@fortawesome/free-solid-svg-icons'
 
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
-const fieldsOrdered = [ 'title', 'cross_references', 'comment_and_corrections', 'authors', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'cross_references', 'comcor_processed', 'authors', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
 const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+// TODO PUT THIS BACK
+// const fieldsPubmed = [ 'title', 'comment_and_corrections', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 
@@ -71,6 +74,7 @@ const enumDict = {}
 enumDict['category'] = ['research_article', 'review_article', 'thesis', 'book', 'other', 'preprint', 'conference_publication', 'personal_communication', 'direct_data_submission', 'internal_process_reference', 'unknown', 'retraction']
 enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
+enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor']
 
 // title
 // cross_references (doi, pmid, modID)
@@ -287,32 +291,55 @@ const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJson, refere
   else { return null; } }
 
 const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
-  if ('comment_and_corrections' in referenceJson && referenceJson['comment_and_corrections'] !== null) {
+  if (fieldName in referenceJson && referenceJson[fieldName] !== null) {
     const rowCommentsCorrectionsElements = []
-    const comcorDirections = ['to_references', 'from_references']
-    for (const direction of comcorDirections) {
-      for (const[index, comcorDict] of referenceJson['comment_and_corrections'][direction].entries()) {
-        let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
-        let valueLiveCurie = comcorDict[curieFieldInDict]; let valueDbCurie = ''; let updatedFlagCurie = '';
-        const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
-        let valueLiveType = comcorDict['reference_comment_and_correction_type']; let valueDbType = ''; let updatedFlagType = '';
-        if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
-             (typeof referenceJsonDb[fieldName][direction][index][curieFieldInDict] !== 'undefined') ) {
-               valueDbCurie = referenceJsonDb[fieldName][direction][index][curieFieldInDict] }
-        if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
-             (typeof referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] !== 'undefined') ) {
-               valueDbType = referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] }
-        if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
-        if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
-        if (direction === 'from_references') {
-          valueLiveType = convertCommentCorrectionType(valueLiveType)
-          valueDbType = convertCommentCorrectionType(valueDbType) }
-        let updatedFlag = '';
-        if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
-        const comcorValue = (<div>{valueLiveType} <a href={url} rel="noreferrer noopener">{valueLiveCurie}</a></div>);
-        rowCommentsCorrectionsElements.push(<RowDisplaySimple key={`${fieldIndex} ${direction} ${index}`} fieldName={fieldName} value={comcorValue} updatedFlag={updatedFlag} />); } }
+    for (const[index, comcorDict] of referenceJson[fieldName].entries()) {
+      let valueLiveCurie = comcorDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
+      const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
+      let valueLiveType = comcorDict['type']; let valueDbType = ''; let updatedFlagType = '';
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
+             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['type'] !== 'undefined') ) {
+             valueDbType = referenceJsonDb[fieldName][index]['type'] }
+      if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+      if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
+      let updatedFlag = '';
+      if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
+      const comcorValue = (<div>{valueLiveType} <a href={url} rel="noreferrer noopener">{valueLiveCurie}</a></div>);
+      rowCommentsCorrectionsElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={comcorValue} updatedFlag={updatedFlag} />); }
     return (<>{rowCommentsCorrectionsElements}</>); }
   else { return null; } }
+
+// processing directly from database 'comment_and_corrections' field, but data format does't work for RowEditor
+// const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
+//   if ('comment_and_corrections' in referenceJson && referenceJson['comment_and_corrections'] !== null) {
+//     const rowCommentsCorrectionsElements = []
+//     const comcorDirections = ['to_references', 'from_references']
+//     for (const direction of comcorDirections) {
+//       for (const[index, comcorDict] of referenceJson['comment_and_corrections'][direction].entries()) {
+//         let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
+//         let valueLiveCurie = comcorDict[curieFieldInDict]; let valueDbCurie = ''; let updatedFlagCurie = '';
+//         const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
+//         let valueLiveType = comcorDict['reference_comment_and_correction_type']; let valueDbType = ''; let updatedFlagType = '';
+//         if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
+//              (typeof referenceJsonDb[fieldName][direction][index][curieFieldInDict] !== 'undefined') ) {
+//                valueDbCurie = referenceJsonDb[fieldName][direction][index][curieFieldInDict] }
+//         if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
+//              (typeof referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] !== 'undefined') ) {
+//                valueDbType = referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] }
+//         if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+//         if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
+//         if (direction === 'from_references') {
+//           valueLiveType = convertCommentCorrectionType(valueLiveType)
+//           valueDbType = convertCommentCorrectionType(valueDbType) }
+//         let updatedFlag = '';
+//         if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
+//         const comcorValue = (<div>{valueLiveType} <a href={url} rel="noreferrer noopener">{valueLiveCurie}</a></div>);
+//         rowCommentsCorrectionsElements.push(<RowDisplaySimple key={`${fieldIndex} ${direction} ${index}`} fieldName={fieldName} value={comcorValue} updatedFlag={updatedFlag} />); } }
+//     return (<>{rowCommentsCorrectionsElements}</>); }
+//   else { return null; } }
 
 const RowDisplayTags = ({fieldIndex, fieldName, referenceJson}) => {
   if ('tags' in referenceJson && referenceJson['tags'] !== null) {
@@ -532,7 +559,7 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
-    else if (fieldName === 'comment_and_corrections') {
+    else if (fieldName === 'comcor_processed') {
       rowOrderedElements.push(<RowDisplayCommentsCorrections key="RowDisplayCommentsCorrections" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
     else if (fieldName === 'tags') {
       rowOrderedElements.push(<RowDisplayTags key="RowDisplayTags" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
@@ -942,6 +969,58 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   }
   return (<>{rowCrossReferencesElements}</>); }
 
+const RowEditorCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  const dispatch = useDispatch();
+  const hasPmid = useSelector(state => state.biblio.hasPmid);
+//   const revertDictFields = 'curie prefix, curie id, is_obsolete'
+  const initializeDict = {'curie': '', 'type': '', 'reference_comment_and_correction_id': 'new'}
+  let disabled = ''
+  if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
+  if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
+  const rowCommentsCorrectionsElements = []
+
+// needs work
+//   if ('comment_and_corrections' in referenceJsonLive && referenceJsonLive['comment_and_corrections'] !== null) {
+//     const comcorDirections = ['to_references', 'from_references']
+//     for (const direction of comcorDirections) {
+//       for (const[index, comcorDict] of referenceJsonLive['comment_and_corrections'][direction].entries()) {
+//         let otherColSize = 6;
+//         let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+//         if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 7; }
+// 
+//         let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
+//         let valueLiveCurie = comcorDict[curieFieldInDict]; let valueDbCurie = ''; let updatedFlagCurie = '';
+//         const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
+//         let valueLiveType = comcorDict['reference_comment_and_correction_type']; let valueDbType = ''; let updatedFlagType = '';
+//         if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
+//              (typeof referenceJsonDb[fieldName][direction][index][curieFieldInDict] !== 'undefined') ) {
+//                valueDbCurie = referenceJsonDb[fieldName][direction][index][curieFieldInDict] }
+//         if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
+//              (typeof referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] !== 'undefined') ) {
+//                valueDbType = referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] }
+//         if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+//         if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
+//         if (direction === 'from_references') {
+//           valueLiveType = convertCommentCorrectionType(valueLiveType)
+//           valueDbType = convertCommentCorrectionType(valueDbType) }
+//         let updatedFlag = '';
+//         if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
+//         rowCommentsCorrectionsElements.push(
+//           <Form.Group as={Row} key={`${fieldName} ${direction} ${index}`}>
+//             <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
+//             <ColEditorSelect key={`colElement ${fieldName} ${direction} ${index} comcorType`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveType} updatedFlag={updatedFlagType} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${direction} ${index} type`} enumType="referenceComcorType" dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
+//             <ColEditorSimple key={`colElement ${fieldName} ${direction} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurie} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${direction} ${index} curie`} dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
+//             {revertElement}
+//           </Form.Group>); } } }
+  if (disabled === '') {
+    rowCommentsCorrectionsElements.push(
+      <Row className="form-group row" key={fieldName} >
+        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
+        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
+      </Row>);
+  }
+  return (<>{rowCommentsCorrectionsElements}</>); }
+
 const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   // author editing is complicated.  There's the author order of the array in the browser dom.  The author order of the array in the redux store.  The order field in the author store entry (should be 1 more than the order in the dom).  The author_id field in the author store entry, used for comparing what was in the db.  The copy of author values in the store that reflect the db value (with its array order, order field, and author_id field).
   const dispatch = useDispatch();
@@ -1125,6 +1204,8 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'comment_and_corrections') {
+      rowOrderedElements.push(<RowEditorCommentsCorrections key={`RowEditorCommentsCorrections ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {

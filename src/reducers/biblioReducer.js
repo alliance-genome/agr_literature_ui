@@ -234,6 +234,18 @@ export default function(state = initialState, action) {
         }
       }
 
+    case 'CHANGE_FIELD_COMMENTS_CORRECTIONS_REFERENCE_JSON':
+      console.log(action.payload);
+      let commentsCorrectionsArray = action.payload.field.split(" ");
+      console.log(commentsCorrectionsArray);
+      let fieldCommentsCorrections = commentsCorrectionsArray[0];
+      let directionCommentsCorrections = commentsCorrectionsArray[1];
+      let indexCommentsCorrections = commentsCorrectionsArray[2];
+      let typeOrCurieCommentsCorrections = commentsCorrectionsArray[3];
+      let commentsCorrectionsNewValue = action.payload.value;
+
+      return state;
+
     case 'CHANGE_FIELD_CROSS_REFERENCES_REFERENCE_JSON':
       // console.log(action.payload);
       let crossReferencesArray = action.payload.field.split(" ");
