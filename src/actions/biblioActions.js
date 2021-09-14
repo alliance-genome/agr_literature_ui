@@ -183,7 +183,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
         comcorMapping['RetractionOf'] = 'HasRetraction'
         comcorMapping['UpdateOf'] = 'HasUpdate'
         const comcorDirections = ['to_references', 'from_references']
-        referenceJson['comcor_processed'] = []
+        referenceJson['corrections'] = []
         for (const direction of comcorDirections) {
           for (const[index, comcorDict] of referenceJson['comment_and_corrections'][direction].entries()) {
             let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
@@ -196,7 +196,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
             newComcorDict['reference_comment_and_correction_id'] = dbid
             newComcorDict['type'] = type
             newComcorDict['curie'] = curie
-            referenceJson['comcor_processed'].push(newComcorDict)
+            referenceJson['corrections'].push(newComcorDict)
       } } }
       response_payload = referenceJson;
     }

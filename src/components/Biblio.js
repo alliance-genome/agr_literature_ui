@@ -55,7 +55,7 @@ import { faUndo } from '@fortawesome/free-solid-svg-icons'
 
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
-const fieldsOrdered = [ 'title', 'cross_references', 'comcor_processed', 'authors', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'cross_references', 'corrections', 'authors', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
 const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
@@ -559,7 +559,7 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
-    else if (fieldName === 'comcor_processed') {
+    else if (fieldName === 'corrections') {
       rowOrderedElements.push(<RowDisplayCommentsCorrections key="RowDisplayCommentsCorrections" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
     else if (fieldName === 'tags') {
       rowOrderedElements.push(<RowDisplayTags key="RowDisplayTags" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
@@ -703,6 +703,10 @@ const BiblioSubmitUpdateButton = () => {
           let array = [ subPath, updateJson, method, index, field, subField ]
           forApiArray.push( array );
     } } }
+
+    if ('corrections' in referenceJsonLive && referenceJsonLive['corrections'] !== null) {
+// TODO  update commentsCorrections here, needs to set directionality, map types to valid types
+    }
 
     if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
       // const crossRefFields = [ 'curie', 'is_obsolete' ];
@@ -978,40 +982,31 @@ const RowEditorCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive,
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowCommentsCorrectionsElements = []
-
-// needs work
-//   if ('comment_and_corrections' in referenceJsonLive && referenceJsonLive['comment_and_corrections'] !== null) {
-//     const comcorDirections = ['to_references', 'from_references']
-//     for (const direction of comcorDirections) {
-//       for (const[index, comcorDict] of referenceJsonLive['comment_and_corrections'][direction].entries()) {
-//         let otherColSize = 6;
-//         let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-//         if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 7; }
-// 
-//         let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
-//         let valueLiveCurie = comcorDict[curieFieldInDict]; let valueDbCurie = ''; let updatedFlagCurie = '';
-//         const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
-//         let valueLiveType = comcorDict['reference_comment_and_correction_type']; let valueDbType = ''; let updatedFlagType = '';
-//         if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][direction][index][curieFieldInDict] !== 'undefined') ) {
-//                valueDbCurie = referenceJsonDb[fieldName][direction][index][curieFieldInDict] }
-//         if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] !== 'undefined') ) {
-//                valueDbType = referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] }
-//         if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
-//         if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
-//         if (direction === 'from_references') {
-//           valueLiveType = convertCommentCorrectionType(valueLiveType)
-//           valueDbType = convertCommentCorrectionType(valueDbType) }
-//         let updatedFlag = '';
-//         if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
-//         rowCommentsCorrectionsElements.push(
-//           <Form.Group as={Row} key={`${fieldName} ${direction} ${index}`}>
-//             <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
-//             <ColEditorSelect key={`colElement ${fieldName} ${direction} ${index} comcorType`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveType} updatedFlag={updatedFlagType} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${direction} ${index} type`} enumType="referenceComcorType" dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
-//             <ColEditorSimple key={`colElement ${fieldName} ${direction} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurie} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${direction} ${index} curie`} dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
-//             {revertElement}
-//           </Form.Group>); } } }
+  if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
+    for (const[index, comcorDict] of referenceJsonLive[fieldName].entries()) {
+      let otherColSize = 6;
+      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 7; }
+      let valueLiveCurie = comcorDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
+      // const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
+      let valueLiveType = comcorDict['type']; let valueDbType = ''; let updatedFlagType = '';
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
+             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['type'] !== 'undefined') ) {
+             valueDbType = referenceJsonDb[fieldName][index]['type'] }
+      if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+      if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
+      let updatedFlag = '';
+      if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
+      rowCommentsCorrectionsElements.push(
+        <Form.Group as={Row} key={`${fieldName} ${index}`}>
+          <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
+          <ColEditorSelect key={`colElement ${fieldName} ${index} comcorType`} fieldType="select" fieldName={fieldName} colSize="3" value={valueLiveType} updatedFlag={updatedFlagType} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} type`} enumType="referenceComcorType" dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
+          <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurie} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie`} dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
+          {revertElement}
+        </Form.Group>); } }
   if (disabled === '') {
     rowCommentsCorrectionsElements.push(
       <Row className="form-group row" key={fieldName} >
@@ -1204,7 +1199,7 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-    else if (fieldName === 'comment_and_corrections') {
+    else if (fieldName === 'corrections') {
       rowOrderedElements.push(<RowEditorCommentsCorrections key={`RowEditorCommentsCorrections ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }

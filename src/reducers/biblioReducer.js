@@ -239,12 +239,29 @@ export default function(state = initialState, action) {
       let commentsCorrectionsArray = action.payload.field.split(" ");
       console.log(commentsCorrectionsArray);
       let fieldCommentsCorrections = commentsCorrectionsArray[0];
-      let directionCommentsCorrections = commentsCorrectionsArray[1];
-      let indexCommentsCorrections = commentsCorrectionsArray[2];
-      let typeOrCurieCommentsCorrections = commentsCorrectionsArray[3];
+      let indexCommentsCorrections = commentsCorrectionsArray[1];
+      let typeOrCurieCommentsCorrections = commentsCorrectionsArray[2];
       let commentsCorrectionsNewValue = action.payload.value;
 
-      return state;
+      let newCommentsCorrectionsChange = state.referenceJsonLive[fieldCommentsCorrections];
+      newCommentsCorrectionsChange[indexCommentsCorrections]['needsChange'] = true;
+      newCommentsCorrectionsChange[indexCommentsCorrections][typeOrCurieCommentsCorrections] = commentsCorrectionsNewValue;
+
+      let hasChangeCommentsCorrectionsField = state.referenceJsonHasChange
+      if (state.referenceJsonDb[fieldCommentsCorrections][indexCommentsCorrections][typeOrCurieCommentsCorrections] === commentsCorrectionsNewValue) {
+        if (action.payload.field in hasChangeCommentsCorrectionsField) {
+          delete hasChangeCommentsCorrectionsField[action.payload.field] } }
+      else {
+        hasChangeCommentsCorrectionsField[action.payload.field] = 'diff' }
+
+      return {
+        ...state,
+        referenceJsonHasChange: hasChangeCommentsCorrectionsField,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          [fieldCommentsCorrections]: newCommentsCorrectionsChange
+        }
+      }
 
     case 'CHANGE_FIELD_CROSS_REFERENCES_REFERENCE_JSON':
       // console.log(action.payload);
