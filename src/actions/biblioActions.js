@@ -185,7 +185,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
         const comcorDirections = ['to_references', 'from_references']
         referenceJson['corrections'] = []
         for (const direction of comcorDirections) {
-          for (const[index, comcorDict] of referenceJson['comment_and_corrections'][direction].entries()) {
+          for (const comcorDict of referenceJson['comment_and_corrections'][direction].values()) {
             let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
             let curie = comcorDict[curieFieldInDict]
             let dbid = comcorDict['reference_comment_and_correction_id']

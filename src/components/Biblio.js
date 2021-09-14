@@ -138,17 +138,18 @@ function aggregateCitation(referenceJson) {
   const citation = `${authorNames}, (${year}) ${title}  ${journal} ${volume} (${issue}): ${pages}`
   return citation }
 
-function convertCommentCorrectionType(type) {
-  let comcorMapping = {}
-  comcorMapping['CommentOn'] = 'HasComment'
-  comcorMapping['ErratumFor'] = 'HasErratum'
-  comcorMapping['ExpressionOfConcernFor'] = 'HasExpressionOfConcernFor'
-  comcorMapping['ReprintOf'] = 'HasReprint'
-  comcorMapping['RepublishedFrom'] = 'RepublishedIn'
-  comcorMapping['RetractionOf'] = 'HasRetraction'
-  comcorMapping['UpdateOf'] = 'HasUpdate'
-  if (type in comcorMapping) { return comcorMapping[type]; }
-    else { return type } }
+// helper function for processing directly from database 'comment_and_corrections' field, but data format does't work for RowEditor
+// function convertCommentCorrectionType(type) {
+//   let comcorMapping = {}
+//   comcorMapping['CommentOn'] = 'HasComment'
+//   comcorMapping['ErratumFor'] = 'HasErratum'
+//   comcorMapping['ExpressionOfConcernFor'] = 'HasExpressionOfConcernFor'
+//   comcorMapping['ReprintOf'] = 'HasReprint'
+//   comcorMapping['RepublishedFrom'] = 'RepublishedIn'
+//   comcorMapping['RetractionOf'] = 'HasRetraction'
+//   comcorMapping['UpdateOf'] = 'HasUpdate'
+//   if (type in comcorMapping) { return comcorMapping[type]; }
+//     else { return type } }
 
 const BiblioActionToggler = () => {
   const dispatch = useDispatch();
@@ -705,8 +706,37 @@ const BiblioSubmitUpdateButton = () => {
     } } }
 
     if ('corrections' in referenceJsonLive && referenceJsonLive['corrections'] !== null) {
-// TODO  update commentsCorrections here, needs to set directionality, map types to valid types
-    }
+      let field = 'corrections';
+      let comcorMapping = {}
+      comcorMapping['HasComment'] = 'CommentOn'
+      comcorMapping['HasErratum'] = 'ErratumFor'
+      comcorMapping['HasExpressionOfConcernFor'] = 'ExpressionOfConcernFor'
+      comcorMapping['HasReprint'] = 'ReprintOf'
+      comcorMapping['RepublishedIn'] = 'RepublishedFrom'
+      comcorMapping['HasRetraction'] = 'RetractionOf'
+      comcorMapping['HasUpdate'] = 'UpdateOf'
+      for (const[index, comcorDict] of referenceJsonLive['corrections'].entries()) {
+        if ('needsChange' in comcorDict) {
+          let fromCurie = referenceCurie
+          let toCurie = comcorDict['curie']
+          let comcorType = comcorDict['type']
+          if (comcorType in comcorMapping) {
+            toCurie = referenceCurie
+            fromCurie = comcorDict['curie']
+            comcorType = comcorMapping[comcorType] }
+          let apiJson = {'reference_curie_from': fromCurie, 'reference_curie_to': toCurie, 'reference_comment_and_correction_type': comcorType}
+          let method = 'POST'
+          let subPath = 'reference_comment_and_correction/'
+          if (('reference_comment_and_correction_id' in comcorDict) && 
+              (comcorDict['reference_comment_and_correction_id'] !== 'new')) {	// whole new entries needs create
+            method = 'PATCH'
+            subPath = 'reference_comment_and_correction/' + comcorDict['reference_comment_and_correction_id'] }
+          if (comcorType === '') {
+            method = 'DELETE'
+            apiJson = null }
+          let array = [ subPath, apiJson, method, index, field, null ]
+          forApiArray.push( array );
+    } } }
 
     if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
       // const crossRefFields = [ 'curie', 'is_obsolete' ];
@@ -714,7 +744,7 @@ const BiblioSubmitUpdateButton = () => {
       for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
         if ('needsChange' in crossRefDict) {
           let needsCreate = false
-          if (('cross_reference_id' in crossRefDict)) {		// whole new entries needs create
+          if ('cross_reference_id' in crossRefDict) {		// whole new entries needs create
             needsCreate = true }
           else if ('curie' in crossRefDict) {			// pre-existing entries need delete or update
             let crossRefCurieDb = referenceJsonDb[field][index]['curie']
@@ -998,8 +1028,6 @@ const RowEditorCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive,
              valueDbType = referenceJsonDb[fieldName][index]['type'] }
       if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
       if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
-      let updatedFlag = '';
-      if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
       rowCommentsCorrectionsElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
