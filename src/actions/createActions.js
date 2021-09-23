@@ -102,7 +102,7 @@ export const resetCreateRedirect = () => {
   };
 };
 
-export const updateButtonCreate = (updateArrayData) => dispatch => {
+export const updateButtonCreate = (updateArrayData, pmidOrAlliance) => dispatch => {
   console.log('in updateButtonCreate action');
   const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
   console.log("payload "); console.log(payload);
@@ -127,7 +127,14 @@ export const updateButtonCreate = (updateArrayData) => dispatch => {
     else {
       // const response = await res.json();	// successful POST to related table (e.g. mod_reference_types) returns an id that is not in json format
       const response_text = await res.text();
-      const response = JSON.parse(response_text);
+      // console.log('response_text');
+      // console.log(response_text);
+      let response = JSON.parse(response_text);
+      if (pmidOrAlliance === 'pmid') {		// for pmid, API returns an escaped JSON that has to be converted again
+        if (typeof(response) === 'string') {
+          response = JSON.parse(response); } }
+      // console.log(response);
+      // console.log(typeof response);
       if ( ((method === 'PATCH') && (res.status !== 202)) || 
            ((method === 'DELETE') && (res.status !== 204)) || 
            ((method === 'POST') && (res.status !== 201)) ) {
@@ -140,7 +147,9 @@ export const updateButtonCreate = (updateArrayData) => dispatch => {
             response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
       }
       if ((method === 'POST') && (res.status === 201)) {
-        newId = response_text.replace(/^"|"$/g, ''); }
+        newId = response_text.replace(/^"|"$/g, '');		// posting a new Alliance reference gives back text
+        if ( (pmidOrAlliance === 'pmid') && (response.hasOwnProperty("text")) ) { newId = response["text"]; }
+      }
       // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
       console.log('dispatch UPDATE_BUTTON_CREATE');
     }

@@ -27,11 +27,11 @@ const CreatePubmed = () => {
   const generalClassName = 'Col-general';
 
   function createPubmedReference(pmid) {
-    alert('In Progress.  Waiting for API to make python calls');
-//     const subPath = 'reference/'
-//     let updateJson = { 'title': 'placeholder title', 'category': 'other' }
-//     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
-//     dispatch(updateButtonCreate(arrayData))
+    // alert('In Progress.  Waiting for API to make python calls');
+    pmid = pmid.replace( /[^\d.]/g, '' );
+    const subPath = 'reference/add/' + pmid
+    let arrayData = [ accessToken, subPath, null, 'POST', 0, null, null]
+    dispatch(updateButtonCreate(arrayData, 'pmid'))
   }
   return (
     <Container>
@@ -62,7 +62,7 @@ const CreateAlliance = () => {
     const subPath = 'reference/'
     let updateJson = { 'title': 'placeholder title', 'category': 'other' }
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
-    dispatch(updateButtonCreate(arrayData))
+    dispatch(updateButtonCreate(arrayData, 'alliance'))
   }
 //   let revertElement = (<Button id={`button create alliance`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} ></Button>);
 //   return (<Container><Button id={`button create alliance`} variant="outline-secondary" onClick={(e) => dispatch(changeCreateActionToggler(e))} >Create an Alliance reference</Button></Container>);
