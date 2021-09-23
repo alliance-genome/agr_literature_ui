@@ -8,7 +8,7 @@ import { setGetReferenceCurieFlag } from '../actions/biblioActions';
 import { changeCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
-import { changeCreateField } from '../actions/createActions';
+// import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
 import { createQueryPubmed } from '../actions/createActions';
 

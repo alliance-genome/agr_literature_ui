@@ -14,16 +14,16 @@ export const changeCreateActionToggler = (e) => {
   };
 };
 
-export const changeCreateField = (e) => {
-  console.log('action change field ' + e.target.name + ' to ' + e.target.value);
-  return {
-    type: 'CREATE_CHANGE_FIELD',
-    payload: {
-      field: e.target.name,
-      value: e.target.value
-    }
-  };
-};
+// export const changeCreateField = (e) => {
+//   console.log('action change field ' + e.target.name + ' to ' + e.target.value);
+//   return {
+//     type: 'CREATE_CHANGE_FIELD',
+//     payload: {
+//       field: e.target.name,
+//       value: e.target.value
+//     }
+//   };
+// };
 export const changeCreatePmidField = (e) => {
   return {
     type: 'CREATE_CHANGE_PMID_FIELD',
