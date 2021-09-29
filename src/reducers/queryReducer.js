@@ -28,10 +28,11 @@ export default function(state = initialState, action) {
     case 'QUERY_BUTTON':
       console.log("query button reducer set " + action.payload);
       let responseField = action.payload;
+      let responseFound = action.responseFound;
       let responseColor = 'blue';
       let redirectToBiblio = false;
       let querySuccess = false;
-      if (responseField === 'not found') { responseColor = 'red'; }
+      if (responseFound === 'not found') { responseColor = 'red'; }
         else { redirectToBiblio = true; querySuccess = true; }
       return {
         ...state,

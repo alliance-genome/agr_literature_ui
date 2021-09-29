@@ -44,9 +44,11 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
       }
     })
     const response = await res.json();
-    let response_payload = 'not found';
+    let response_payload = payload + ' not found';
+    let response_found = 'not found';
     if (response.reference_curie !== undefined) {
       console.log('response not undefined');
+      response_found = 'found';
       response_payload = response.reference_curie;
     }
 //     history.push("/Biblio");	// value hasn't been set in store yet
@@ -54,7 +56,8 @@ export const queryButtonCrossRefCurie = (payload) => dispatch => {
     console.log('dispatch QUERY_BUTTON');
     dispatch({
       type: 'QUERY_BUTTON',
-      payload: response_payload
+      payload: response_payload,
+      responseFound: response_found
     })
   }
   createGetQueryCrossRefCurie()
