@@ -319,6 +319,19 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
   createUpdateButtonBiblio()
 };
 
+export const resetBiblioIsLoading = () => {
+  return {
+    type: 'RESET_BIBLIO_IS_LOADING'
+  };
+};
+
+// replaced by setReferenceCurie + setGetReferenceCurieFlag
+// export const resetBiblioReferenceCurie = () => {
+//   return {
+//     type: 'RESET_BIBLIO_REFERENCE_CURIE'
+//   };
+// };
+
 export const setBiblioUpdating = (payload) => {
   return {
     type: 'SET_BIBLIO_UPDATING',

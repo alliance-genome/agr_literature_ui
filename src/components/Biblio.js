@@ -1254,7 +1254,8 @@ const Biblio = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const getReferenceCurieFlag = useSelector(state => state.biblio.getReferenceCurieFlag);
-  const loadingQuery = useSelector(state => state.biblio.loadingQuery);
+//   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
+  const isLoading = useSelector(state => state.biblio.isLoading);
 //   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
@@ -1321,7 +1322,7 @@ const Biblio = () => {
       <div>
         <h4>Biblio about this Reference</h4>
         <div align="center" className="task" >{referenceCurie}</div>
-        { loadingQuery ? <LoadingElement /> : <BiblioActionRouter /> }
+        { isLoading ? <LoadingElement /> : <BiblioActionRouter /> }
         <Link to='/'>Go Back</Link>
       </div>
     ) }

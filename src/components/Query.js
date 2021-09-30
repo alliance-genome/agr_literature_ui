@@ -5,7 +5,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { changeQueryField } from '../actions/queryActions';
 import { queryButtonCrossRefCurie } from '../actions/queryActions';
 import { resetQueryRedirect } from '../actions/queryActions';
-import { resetQueryState } from '../actions/queryActions';
+// import { resetQueryState } from '../actions/queryActions';	// replaced by resetBiblioIsLoading
+
+import { resetBiblioIsLoading } from '../actions/biblioActions';
+// import { resetBiblioReferenceCurie } from '../actions/biblioActions';	// replaced by setReferenceCurie + setGetReferenceCurieFlag
+import { setReferenceCurie } from '../actions/biblioActions';
+import { setGetReferenceCurieFlag } from '../actions/biblioActions';
 
 
 const Query = () => {
@@ -20,7 +25,11 @@ const Query = () => {
   function pushHistory(referenceCurie) {
     console.log('history push');
     dispatch(resetQueryRedirect());
-    dispatch(resetQueryState());
+    // dispatch(resetQueryState());	// replaced by resetBiblioIsLoading
+    dispatch(resetBiblioIsLoading());
+    // dispatch(resetBiblioReferenceCurie());	// replaced by setReferenceCurie + setGetReferenceCurieFlag
+    dispatch(setGetReferenceCurieFlag(true));
+    dispatch(setReferenceCurie(referenceCurie));
     history.push("/Biblio/?action=display&referenceCurie=" + referenceCurie);
   }
 

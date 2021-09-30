@@ -15,11 +15,12 @@ export const changeQueryField = (e) => {
   };
 };
 
-export const resetQueryState = () => {
-  return {
-    type: 'RESET_QUERY_STATE'
-  };
-};
+// replaced by biblioActions : setReferenceCurie + setGetReferenceCurieFlag
+// export const resetQueryState = () => {
+//   return {
+//     type: 'RESET_QUERY_STATE'
+//   };
+// };
 
 export const resetQueryRedirect = () => {
   return {
