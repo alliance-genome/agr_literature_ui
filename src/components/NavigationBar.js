@@ -24,6 +24,7 @@ const NavigationBar = () => {
         <NavDropdown.Item as={Link} to="/textpresso">Textpresso</NavDropdown.Item>
       </NavDropdown>
       <Nav.Link as={Link} to="/create">Create</Nav.Link>
+      <Nav.Link as={Link} to="/merge">Merge</Nav.Link>
       <Nav.Link as={Link} to="/about">About</Nav.Link>
       <Nav.Link as={Link} to="/swaggerUI">Swagger</Nav.Link>
     </Nav>

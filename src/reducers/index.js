@@ -4,6 +4,7 @@ import loggedReducer from './isLoggedReducer';
 import queryReducer from './queryReducer';
 import biblioReducer from './biblioReducer';
 import createReducer from './createReducer';
+import mergeReducer from './mergeReducer';
 
 
 export default combineReducers({
@@ -12,5 +13,6 @@ export default combineReducers({
   //login: isLoggedReducer
   query: queryReducer,
   biblio: biblioReducer,
-  create: createReducer
+  create: createReducer,
+  merge: mergeReducer
 });
