@@ -68,7 +68,7 @@ export const changeFieldCommentsCorrectionsReferenceJson = (e) => {
 };
 
 export const changeFieldAuthorsReferenceJson = (e) => {
-  console.log('action change field authors json ' + e.target.id + ' to ' + e.target.value);
+  console.log('action change field authors json ' + e.target.id + ' to ' + e.target.value + ' checked ' + e.target.checked);
   return {
     type: 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON',
     payload: {

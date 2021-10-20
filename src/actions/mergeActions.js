@@ -53,6 +53,12 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
     if (value1 === value2) {
       value2 = value2 + ' is the same as the reference curie to keep';
       success2 = false; }
+// TODO  make queryRef
+//     if (success1 && success2) {
+//       const promiseRef1 = queryRef(value1);
+//       const promiseRef2 = queryRef(value2);
+//       let valuesRef = await Promise.allSettled([promiseRef1, promiseRef2]);
+//     }
     dispatch({
       type: 'MERGE_QUERY_REFERENCES',
       payload: {
