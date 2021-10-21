@@ -17,7 +17,7 @@ import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
 // import { faLongArrowAltLeft } from '@fortawesome/free-solid-svg-icons'
 
 
-// const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
+const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
 const MergeSelectionSection = () => {
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
@@ -50,6 +50,18 @@ const MergeSelectionSection = () => {
             return (<Button variant='primary' onClick={(e) => dispatch(mergeQueryReferences(referenceMeta1.input, referenceMeta2.input))} >Query for these references</Button>);
           })()}
         </Col>
+      </Row>
+
+      <RowDivider />
+      <Row>
+        <Col sm="2" >Title</Col>
+        <Col sm="5" >{referenceMeta1.referenceJson.title}</Col>
+        <Col sm="5" >{referenceMeta2.referenceJson.title}</Col>
+      </Row>
+      <Row>
+        <Col sm="2" >Category</Col>
+        <Col sm="5" >{referenceMeta1.referenceJson.category}</Col>
+        <Col sm="5" >{referenceMeta2.referenceJson.category}</Col>
       </Row>
     </Container>
   );

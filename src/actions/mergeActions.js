@@ -42,31 +42,95 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
     return [response_curie, response_success]
   }
 
+  const queryRef = async (referenceCurie) => {
+    const url = restUrl + '/reference/' + referenceCurie;
+    console.log(url);
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
+    const response = await res.json();
+    console.log(response);
+    let response_payload = referenceCurie + ' not found';
+    let response_success = false;
+    if (response.curie !== undefined) {
+      console.log('response not undefined');
+      response_success = true;
+      response_payload = response; }
+    return [response_payload, response_success]
+  }
+
+  const resolveReferenceCurie = async (referenceInput) => {
+    let curieValue = '';
+    let curieFound = false;
+    let successXref = false;
+    const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
+    console.log('regexMatch');
+    console.log( regexMatch);
+    if (regexMatch !== null) {
+      curieFound = true;
+      const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
+      curieValue = regexMatch[0].replace('agr:agr-reference', 'AGR:AGR-Reference'); }
+    else {
+      const promiseXref = queryXref(referenceInput);
+      let valuesXref = await Promise.allSettled([promiseXref]);
+      curieValue = valuesXref[0]['value'][0];
+      curieFound = valuesXref[0]['value'][1]; }
+    return [curieValue, curieFound];
+  }
+
   const queryBothXrefs = async (referenceInput1, referenceInput2) => {
-    const promise1 = queryXref(referenceInput1);
-    const promise2 = queryXref(referenceInput2);
-    let values = await Promise.allSettled([promise1, promise2]);
-    const value1 = values[0]['value'][0];
-    const success1 = values[0]['value'][1];
-    let value2 = values[1]['value'][0];
-    let success2 = values[1]['value'][1];
-    if (value1 === value2) {
-      value2 = value2 + ' is the same as the reference curie to keep';
-      success2 = false; }
-// TODO  make queryRef
-//     if (success1 && success2) {
-//       const promiseRef1 = queryRef(value1);
-//       const promiseRef2 = queryRef(value2);
-//       let valuesRef = await Promise.allSettled([promiseRef1, promiseRef2]);
-//     }
+    let promiseXref1 = resolveReferenceCurie(referenceInput1);
+    let promiseXref2 = resolveReferenceCurie(referenceInput2);
+    let valuesXref = await Promise.allSettled([promiseXref1, promiseXref2]);
+    let curieValue1 = valuesXref[0]['value'][0];
+    let curieFound1 = valuesXref[0]['value'][1];
+    let curieValue2 = valuesXref[1]['value'][0];
+    let curieFound2 = valuesXref[1]['value'][1];
+
+    // console.log('curieValue1 ' + curieValue1);
+    // console.log('curieFound1 ' + curieFound1);
+    // console.log('curieValue2 ' + curieValue2);
+    // console.log('curieFound2 ' + curieFound2);
+
+    if (curieValue1 === curieValue2) {
+      curieValue2 = curieValue2 + ' is the same as the reference curie to keep';
+      curieFound2 = false; }
+
+    let referenceJson1 = '';
+    let referenceFound1 = false
+    let referenceJson2 = '';
+    let referenceFound2 = false
+    if (curieFound1 && curieFound2) {
+      const promiseRef1 = queryRef(curieValue1);
+      const promiseRef2 = queryRef(curieValue2);
+      let valuesRef = await Promise.allSettled([promiseRef1, promiseRef2]);
+      referenceJson1 = valuesRef[0]['value'][0];
+      referenceFound1 = valuesRef[0]['value'][1];
+      if (!referenceFound1) {
+        curieValue1 = curieValue1 + ' not found'; }
+      console.log(referenceJson1);
+      console.log(referenceFound1);
+      referenceJson2 = valuesRef[1]['value'][0];
+      referenceFound2 = valuesRef[1]['value'][1];
+      if (!referenceFound2) { 
+        curieValue2 = curieValue2 + ' not found'; } }
+
     dispatch({
       type: 'MERGE_QUERY_REFERENCES',
       payload: {
-        curieValue1: value1,
-        curieSuccess1: success1,
-        curieValue2: value2,
-        curieSuccess2: success2,
+        curieValue1: curieValue1,
+        referenceJson1: referenceJson1,
+        referenceFound1: referenceFound1,
+        curieValue2: curieValue2,
+        referenceJson2: referenceJson2,
+        referenceFound2: referenceFound2,
         blah: 'blah'
-      }})}
+    }})
+  }
+
   queryBothXrefs(referenceInput1, referenceInput2);
 }

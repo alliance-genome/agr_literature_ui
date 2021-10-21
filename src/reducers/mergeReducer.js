@@ -4,7 +4,8 @@ const initialState = {
   referenceMetaDefault: {
     input: '',
     curie: '',
-    querySuccess: '',
+    referenceJson: '',
+    queryRefSuccess: '',
     message: 'Enter a cross reference curie',
     messageColor: 'black',
     disableInput: '',
@@ -13,7 +14,8 @@ const initialState = {
   referenceMeta1: {
     input: 'PMID:1',
     curie: '',
-    querySuccess: '',
+    referenceJson: '',
+    queryRefSuccess: '',
     message: 'Enter a cross reference curie',
     messageColor: 'black',
     disableInput: '',
@@ -23,7 +25,8 @@ const initialState = {
   referenceMeta2: {
     input: 'PMID:10',
     curie: '',
-    querySuccess: '',
+    referenceJson: '',
+    queryRefSuccess: '',
     message: 'Enter a cross reference curie',
     messageColor: 'black',
     disableInput: '',
@@ -33,7 +36,7 @@ const initialState = {
   referenceQuerySuccess1: '',
   referenceQuerySuccess2: '',
   queryColorDefault: 'blue',
-  queryColorSuccess: 'green',
+  queryColorSuccess: '#188753',
   queryColorFailure: 'red',
   referenceMessageDefault: 'Enter a Reference Agr ID or cross reference curie',
   referenceMessage1: 'Enter a Reference Agr ID or cross reference curie',
@@ -65,21 +68,25 @@ export default function(state = initialState, action) {
         blah: 'blah'
       }
     case 'MERGE_QUERY_REFERENCES':
+      console.log('reducer MERGE_QUERY_REFERENCES');
       console.log(action.payload);
+
       const referenceMeta1Copy = JSON.parse(JSON.stringify(state.referenceMeta1));
-      referenceMeta1Copy.curie = (action.payload.curieSuccess1) ? action.payload.curieValue1 : '';
+      referenceMeta1Copy.curie = (action.payload.referenceFound1) ? action.payload.curieValue1 : '';
       referenceMeta1Copy.message = action.payload.curieValue1;
-      referenceMeta1Copy.querySuccess = action.payload.curieSuccess1;
-      referenceMeta1Copy.messageColor = (action.payload.curieSuccess1) ? state.queryColorSuccess : state.queryColorFailure;
+      referenceMeta1Copy.queryRefSuccess = action.payload.referenceFound1;
+      referenceMeta1Copy.messageColor = (action.payload.referenceFound1) ? state.queryColorSuccess : state.queryColorFailure;
+      referenceMeta1Copy.referenceJson = (action.payload.referenceFound1) ? action.payload.referenceJson1 : '';
 
       const referenceMeta2Copy = JSON.parse(JSON.stringify(state.referenceMeta2));
-      referenceMeta2Copy.curie = (action.payload.curieSuccess2) ? action.payload.curieValue2 : '';
+      referenceMeta2Copy.curie = (action.payload.referenceFound2) ? action.payload.curieValue2 : '';
       referenceMeta2Copy.message = action.payload.curieValue2;
-      referenceMeta2Copy.querySuccess = action.payload.curieSuccess2;
-      referenceMeta2Copy.messageColor = (action.payload.curieSuccess2) ? state.queryColorSuccess : state.queryColorFailure;
+      referenceMeta2Copy.queryRefSuccess = action.payload.referenceFound2;
+      referenceMeta2Copy.messageColor = (action.payload.referenceFound2) ? state.queryColorSuccess : state.queryColorFailure;
+      referenceMeta2Copy.referenceJson = (action.payload.referenceFound2) ? action.payload.referenceJson2 : '';
 
       let queryDoubleSuccess = false;
-      if (action.payload.curieSuccess1 && action.payload.curieSuccess2) {
+      if (action.payload.referenceFound1 && action.payload.referenceFound2) {
         queryDoubleSuccess = true;
         referenceMeta1Copy.disableInput = 'disabled'; referenceMeta2Copy.disableInput = 'disabled'; }
       else {
