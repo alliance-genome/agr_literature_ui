@@ -495,6 +495,40 @@ export default function(state = initialState, action) {
         }
       }
 
+    // TODO to make live, rename this case to appropriate name, remove action that assigns prepopulated corpus and source
+    case 'BIBLIOMOCK1_GET_REFERENCE_CURIE':
+      console.log("reducer biblio mock1 get reference curie");
+      if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {
+        return {
+          ...state,
+          referenceCurie: action.payload.detail,
+          queryFailure: true,
+          getReferenceCurieFlag: false,
+          isLoading: false
+          // loadingQuery: false
+        }
+      } else {  
+        const pmidBool = checkHasPmid(action.payload)
+        console.log(action.payload.cross_references)
+        action.payload.mod_association = JSON.parse(JSON.stringify(action.payload.cross_references))
+        for (let modAssociationIndex in action.payload.mod_association) {	// prepopulate the corpus and source with static data
+          action.payload.mod_association[modAssociationIndex]['corpus'] = 'inside_corpus';
+          action.payload.mod_association[modAssociationIndex]['source'] = 'dqm_files'; }
+
+        // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
+        const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
+        return {
+          ...state,
+          referenceCurie: action.payload.curie,
+          referenceJsonLive: action.payload,
+          referenceJsonDb: dbCopyGetReferenceCurie,
+          hasPmid: pmidBool,
+          getReferenceCurieFlag: false,
+          isLoading: false
+          // loadingQuery: false
+        }
+      }
+
 //     case 'QUERY_BUTTON':
 //       console.log("query button reducer set " + action.payload);
 //       let responseField = action.payload;
