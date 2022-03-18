@@ -8,12 +8,15 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 import Login from './Login'
 import {oktaSignInConfig} from "../config";
 
+const devOrProd = process.env.REACT_APP_DEV_OR_PROD;
+var navClass = (devOrProd === 'dev') ? "Navbar-dev" : "Navbar";
+var homeLabel = (devOrProd === 'dev') ? "Dev" : "Prod";
 
 const NavigationBar = () => {
   return (
-  <Navbar className="Navbar" >
+  <Navbar className={navClass} >
     <Nav className="justify-content-center"  style={{ flex: 1}}>
-      <Nav.Link as={Link} to="/">Home</Nav.Link>
+      <Nav.Link as={Link} to="/">{homeLabel}</Nav.Link>
       <Nav.Link as={Link} to="/query">Query</Nav.Link>
       <Nav.Link as={Link} to="/biblio">Biblio</Nav.Link>
       <Nav.Link as={Link} to="/sort">Sort</Nav.Link>
@@ -25,6 +28,7 @@ const NavigationBar = () => {
         <NavDropdown.Item as={Link} to="/textpresso">Textpresso</NavDropdown.Item>
       </NavDropdown>
       <Nav.Link as={Link} to="/create">Create</Nav.Link>
+      <Nav.Link as={Link} to="/merge">Merge</Nav.Link>
       <Nav.Link as={Link} to="/about">About</Nav.Link>
       <Nav.Link as={Link} to="/swaggerUI">Swagger</Nav.Link>
     </Nav>

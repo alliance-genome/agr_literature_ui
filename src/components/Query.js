@@ -27,6 +27,8 @@ const Query = () => {
   const queryQuerySuccess = useSelector(state => state.query.querySuccess);
   const titleField = useSelector(state => state.query.titleField);
   const titleSearchInput = useSelector(state => state.query.titleSearchInput);
+  const titleQuerySuccess = useSelector(state => state.query.titleQuerySuccess);
+  const titleQueryResponseColor = useSelector(state => state.query.titleQueryResponseColor);
   const referencesReturned = useSelector(state => state.query.referencesReturned);
   const dispatch = useDispatch();
   const history = useHistory();
@@ -54,21 +56,27 @@ const Query = () => {
       <input type="text" id="titleField" name="titleField" value={titleField} onChange={(e) => dispatch(changeQueryField(e))} />
       <button type="submit" onClick={() => dispatch(queryButtonTitle(titleField))}>Query Titles</button>
       { 
-        referencesReturned.length > 0 ? 
+        titleSearchInput &&
         <Container>
         <Row><Col>&nbsp;</Col></Row>
-        <Row key="reference header"><Col>'{titleSearchInput}' returned</Col></Row>
-        <Row>
-          <Col lg={3} className="Col-general Col-display Col-display-left" >Curie</Col>
-          <Col lg={9} className="Col-general Col-display Col-display-right" >Title</Col>
-        </Row>
-        { referencesReturned.map((reference, index) => (
-          <Row key={`reference ${index}`}>
-            <Col lg={3} className="Col-general Col-display Col-display-left" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></Col>
-            <Col lg={9} className="Col-general Col-display Col-display-right" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.title}</Link></Col>
-          </Row>
-        )) }
-        </Container> : null
+        { referencesReturned.length > 0 ?
+          <>
+            <Row key="reference header"><Col><span style={{color: titleQueryResponseColor}}>{titleSearchInput}</span> returned</Col></Row>
+            <Row>
+              <Col lg={3} className="Col-general Col-display Col-display-left" >Curie</Col>
+              <Col lg={9} className="Col-general Col-display Col-display-right" >Title</Col>
+            </Row>
+            { referencesReturned.map((reference, index) => (
+              <Row key={`reference ${index}`}>
+                <Col lg={3} className="Col-general Col-display Col-display-left" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></Col>
+                <Col lg={9} className="Col-general Col-display Col-display-right" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.title}</Link></Col>
+              </Row>
+            )) }
+          </>
+        :
+          <Row key="reference header"><Col><span style={{color: titleQueryResponseColor}}>{titleSearchInput}</span> returned <span style={{color: titleQueryResponseColor}}>no match</span></Col></Row>
+        }
+        </Container>
       }
       <hr/>
       <Link to='/'>Go Back</Link>

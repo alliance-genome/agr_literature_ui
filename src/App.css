@@ -10,6 +10,7 @@
   --light-blue: #d9f4ff;
   --light-blue-hover: #bbeffd;
   --nav-blue: #2598c5;
+  --nav-green: #50C878;
   --font-black: #282c34;
   --updated-purple: #e6deff;
   --updated-purple-hover: #d5d1ff;
@@ -28,6 +29,11 @@
 
 .Navbar {
   background-color: var(--nav-blue);
+  color: white;
+}
+
+.Navbar-dev {
+  background-color: var(--nav-green);
   color: white;
 }
 
