@@ -2,7 +2,6 @@
 const initialState = {
   titleField: '',
   titleSearchInput: '',
-  titleQuerySuccess: false,
   titleQueryResponseColor: 'black',
   referencesReturned: [],
   xrefcurieField: '',
@@ -33,13 +32,10 @@ export default function(state = initialState, action) {
     case 'QUERY_BUTTON_TITLE':
       console.log("query button title reducer set "); console.log(action.payload);
       //   referencesReturned: [{'title': 'title one', 'curie': 'curie_one'}, {'title': 'title two', 'curie': 'curie_two'}]
-      let titleQuerySuccess = false;
       let titleQueryResponseColor = 'blue';
       if (action.responseFound === 'not found') { titleQueryResponseColor = 'red'; } 
-        else { titleQuerySuccess = true; }
       return {
         ...state,
-        titleQuerySuccess: titleQuerySuccess,
         titleQueryResponseColor: titleQueryResponseColor,
         referencesReturned: action.payload,
         titleSearchInput: action.searchInput

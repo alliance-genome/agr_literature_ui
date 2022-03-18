@@ -27,7 +27,6 @@ const Query = () => {
   const queryQuerySuccess = useSelector(state => state.query.querySuccess);
   const titleField = useSelector(state => state.query.titleField);
   const titleSearchInput = useSelector(state => state.query.titleSearchInput);
-  const titleQuerySuccess = useSelector(state => state.query.titleQuerySuccess);
   const titleQueryResponseColor = useSelector(state => state.query.titleQueryResponseColor);
   const referencesReturned = useSelector(state => state.query.referencesReturned);
   const dispatch = useDispatch();
