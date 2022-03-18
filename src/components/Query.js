@@ -6,19 +6,28 @@ import { changeQueryField } from '../actions/queryActions';
 import { queryButtonCrossRefCurie } from '../actions/queryActions';
 import { resetQueryRedirect } from '../actions/queryActions';
 // import { resetQueryState } from '../actions/queryActions';	// replaced by resetBiblioIsLoading
+import { queryButtonTitle } from '../actions/queryActions';
 
 import { resetBiblioIsLoading } from '../actions/biblioActions';
 // import { resetBiblioReferenceCurie } from '../actions/biblioActions';	// replaced by setReferenceCurie + setGetReferenceCurieFlag
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
 
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+
+
 
 const Query = () => {
-  const queryField = useSelector(state => state.query.queryField);
+  const xrefcurieField = useSelector(state => state.query.xrefcurieField);
   const queryResponseField = useSelector(state => state.query.responseField);
   const queryResponseColor = useSelector(state => state.query.responseColor);
   const queryRedirectToBiblio = useSelector(state => state.query.redirectToBiblio);
   const queryQuerySuccess = useSelector(state => state.query.querySuccess);
+  const titleField = useSelector(state => state.query.titleField);
+  const titleSearchInput = useSelector(state => state.query.titleSearchInput);
+  const referencesReturned = useSelector(state => state.query.referencesReturned);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -36,15 +45,34 @@ const Query = () => {
   return (
     <div>
       <h4>Look up Reference by exact cross reference curie.<br/>e.g. PMID:24895670 or RGD:13542090 or WB:WBPaper00010006</h4>
-      <input type="text" name="crossRefCurieQuery" value={queryField} onChange={(e) => dispatch(changeQueryField(e))} />
+      <input type="text" id="xrefcurieField" name="xrefcurieField" value={xrefcurieField} onChange={(e) => dispatch(changeQueryField(e))} />
       {queryRedirectToBiblio && pushHistory(queryResponseField)}
-      <button type="submit" onClick={() => dispatch(queryButtonCrossRefCurie(queryField))}>Query Reference Curie</button>
+      <button type="submit" onClick={() => dispatch(queryButtonCrossRefCurie(xrefcurieField))}>Query External Identifier Curie</button>
       <div>{queryQuerySuccess ? <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + queryResponseField}}><span style={{color: queryResponseColor}}>{queryResponseField}</span></Link> : <span style={{color: queryResponseColor}}>{queryResponseField}</span>}</div>
+      <hr/>
+      <h4>Look up References by title.<br/></h4>
+      <input type="text" id="titleField" name="titleField" value={titleField} onChange={(e) => dispatch(changeQueryField(e))} />
+      <button type="submit" onClick={() => dispatch(queryButtonTitle(titleField))}>Query Titles</button>
+      { 
+        referencesReturned.length > 0 ? 
+        <Container>
+        <Row><Col>&nbsp;</Col></Row>
+        <Row key="reference header"><Col>'{titleSearchInput}' returned</Col></Row>
+        <Row><Col lg={3}>Curie</Col><Col lg={9}>Title</Col></Row>
+        { referencesReturned.map((reference, index) => (
+          <Row key={`reference ${index}`}>
+            <Col lg={3}><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></Col>
+            <Col lg={9}><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.title}</Link></Col>
+          </Row>
+        )) }
+        </Container> : null
+      }
       <hr/>
       <Link to='/'>Go Back</Link>
     </div>
   )
 }
+
 
 export default Query
 

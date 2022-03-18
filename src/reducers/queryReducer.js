@@ -1,7 +1,10 @@
 
 const initialState = {
-  queryField: '',
+  xrefcurieField: '',
   querySuccess: false,
+  titleField: '',
+  titleSearchInput: '',
+  referencesReturned: [],
   responseColor: 'black',
   responseField: 'unknown reference',
   redirectToBiblio: false
@@ -13,10 +16,10 @@ export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
     case 'QUERY_CHANGE_QUERY_FIELD':
-      // console.log(action.payload);
+      console.log(action.payload);
       return {
         ...state,
-        queryField: action.payload
+        [action.payload.field]: action.payload.value
       }
     case 'RESET_QUERY_REDIRECT':
       console.log("reset query redirect");
@@ -25,8 +28,17 @@ export default function(state = initialState, action) {
         redirectToBiblio: false
       }
 
-    case 'QUERY_BUTTON':
-      console.log("query button reducer set " + action.payload);
+    case 'QUERY_BUTTON_TITLE':
+      console.log("query button title reducer set "); console.log(action.payload);
+      //   referencesReturned: [{'title': 'title one', 'curie': 'curie_one'}, {'title': 'title two', 'curie': 'curie_two'}]
+      return {
+        ...state,
+        referencesReturned: action.payload,
+        titleSearchInput: action.searchInput
+      }
+
+    case 'QUERY_BUTTON_XREF_CURIE':
+      console.log("query button xref curie reducer set " + action.payload);
       let responseField = action.payload;
       let responseFound = action.responseFound;
       let responseColor = 'blue';
