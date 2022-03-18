@@ -70,6 +70,7 @@ const Sort = () => {
               <Button variant="outline-primary" as="input" type="button" value="All Outside Corpus" />{' '}
             </Col>
           </Row>
+          <RowDivider />
           {/* <Row>
             <Col lg={6} >Reference</Col>
             <Col lg={2} >Review </Col>
@@ -79,10 +80,9 @@ const Sort = () => {
           <RowDivider /> */}
           {referencesToSort.map((reference, index) => (
             <div key={`reference div ${index}`} >
-            <RowDivider />
             <Row key={`reference ${index}`} >
-              <Col lg={6} >{reference}</Col>
-              <Col lg={2} >
+              <Col lg={6} className="Col-general Col-display Col-display-left" >{reference}</Col>
+              <Col lg={2} className="Col-general Col-display" >
                 <Form.Check
                   inline
                   checked='checked'
@@ -92,7 +92,7 @@ const Sort = () => {
                   onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
                 />
               </Col>
-              <Col lg={2} >
+              <Col lg={2} className="Col-general Col-display" >
                 <Form.Check
                   inline
                   type='radio'
@@ -101,7 +101,7 @@ const Sort = () => {
                   onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
                 />
               </Col>
-              <Col lg={2} >
+              <Col lg={2} className="Col-general Col-display Col-display-right" >
                 <Form.Check
                   inline
                   type='radio'

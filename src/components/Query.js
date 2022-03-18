@@ -58,11 +58,14 @@ const Query = () => {
         <Container>
         <Row><Col>&nbsp;</Col></Row>
         <Row key="reference header"><Col>'{titleSearchInput}' returned</Col></Row>
-        <Row><Col lg={3}>Curie</Col><Col lg={9}>Title</Col></Row>
+        <Row>
+          <Col lg={3} className="Col-general Col-display Col-display-left" >Curie</Col>
+          <Col lg={9} className="Col-general Col-display Col-display-right" >Title</Col>
+        </Row>
         { referencesReturned.map((reference, index) => (
           <Row key={`reference ${index}`}>
-            <Col lg={3}><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></Col>
-            <Col lg={9}><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.title}</Link></Col>
+            <Col lg={3} className="Col-general Col-display Col-display-left" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></Col>
+            <Col lg={9} className="Col-general Col-display Col-display-right" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.title}</Link></Col>
           </Row>
         )) }
         </Container> : null
