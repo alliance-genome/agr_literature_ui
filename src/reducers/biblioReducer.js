@@ -510,10 +510,10 @@ export default function(state = initialState, action) {
       } else {  
         const pmidBool = checkHasPmid(action.payload)
         console.log(action.payload.cross_references)
-        action.payload.mod_association = JSON.parse(JSON.stringify(action.payload.cross_references))
-        for (let modAssociationIndex in action.payload.mod_association) {	// prepopulate the corpus and source with static data
-          action.payload.mod_association[modAssociationIndex]['corpus'] = 'inside_corpus';
-          action.payload.mod_association[modAssociationIndex]['source'] = 'dqm_files'; }
+        action.payload.mod_corpus_association = JSON.parse(JSON.stringify(action.payload.cross_references))
+        for (let modAssociationIndex in action.payload.mod_corpus_association) {	// prepopulate the corpus and source with static data
+          action.payload.mod_corpus_association[modAssociationIndex]['corpus'] = 'inside_corpus';
+          action.payload.mod_corpus_association[modAssociationIndex]['source'] = 'dqm_files'; }
 
         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
         const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))

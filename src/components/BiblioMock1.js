@@ -56,7 +56,7 @@ import { faUndo } from '@fortawesome/free-solid-svg-icons'
 
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
-const fieldsOrdered = [ 'title', 'mod_association', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'mod_corpus_association', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
 const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
@@ -75,7 +75,7 @@ enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor']
 enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
-enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_curator_pmid_creation', 'manual_curator_assignment_to_other_mod']
+enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'assigned_for_review']
 
 // title
 // cross_references (doi, pmid, modID)
@@ -263,12 +263,12 @@ const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJ
     return (<>{rowArrayStringElements}</>); }
   else { return null; } }
 
-// TODO to make live, copy RowDisplayModAssociation  RowEditorModAssociation  to Biblio.js   replace values of BiblioMock1 with Biblio  add (fieldName === 'mod_association')  in BiblioDisplay and BiblioEditor   add mod_association to fields_ordered
+// TODO to make live, copy RowDisplayModAssociation  RowEditorModAssociation  to Biblio.js   replace values of BiblioMock1 with Biblio  add (fieldName === 'mod_corpus_association')  in BiblioDisplay and BiblioEditor   add mod_corpus_association to fields_ordered
 const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
-//   fieldName = 'mod_association';
-  if ('mod_association' in referenceJson && referenceJson['mod_association'] !== null) {
+//   fieldName = 'mod_corpus_association';
+  if ('mod_corpus_association' in referenceJson && referenceJson['mod_corpus_association'] !== null) {
     const rowModAssociationElements = []
-    for (const[index, modAssociationDict] of referenceJson['mod_association'].entries()) {
+    for (const[index, modAssociationDict] of referenceJson['mod_corpus_association'].entries()) {
 //       let url = modAssociationDict['url'];
       let valueLiveCurie = modAssociationDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
 //       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
@@ -308,7 +308,7 @@ const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJson, referen
 //         rowModAssociationElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={modAssociationValue} updatedFlag={updatedFlag} />);
         rowModAssociationElements.push(
           <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-display Col-display-left">mod_reference_types</Col>
+            <Col className="Col-general Col-display Col-display-left">mod_corpus_association</Col>
             <Col className={`Col-general Col-display ${updatedFlagCurie} `} lg={{ span: 2 }}>{valueLiveCuriePrefix}</Col>
             <Col className={`Col-general Col-display ${updatedFlagCorpus} `} lg={{ span: 4 }}>{valueLiveCorpus}</Col>
             <Col className={`Col-general Col-display Col-display-right ${updatedFlagSource} `} lg={{ span: 4 }}>{valueLiveSource}</Col>
@@ -619,7 +619,7 @@ const BiblioDisplay = () => {
         rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-    else if (fieldName === 'mod_association') {
+    else if (fieldName === 'mod_corpus_association') {
       rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
@@ -1008,7 +1008,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
 
 const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
 //   const xrefFieldName = fieldName;
-//   fieldName = 'mod_association';
+//   fieldName = 'mod_corpus_association';
   const dispatch = useDispatch();
 //   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const revertDictFields = 'curie prefix, curie id, is_obsolete'
@@ -1018,8 +1018,8 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 //   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowCrossReferencesElements = []
 
-  if ('mod_association' in referenceJsonLive && referenceJsonLive['mod_association'] !== null) {
-    for (const[index, crossRefDict] of referenceJsonLive['mod_association'].entries()) {
+  if ('mod_corpus_association' in referenceJsonLive && referenceJsonLive['mod_corpus_association'] !== null) {
+    for (const[index, crossRefDict] of referenceJsonLive['mod_corpus_association'].entries()) {
       let otherColSize = 3;
       let otherColSizeB = 4;
 //       let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
@@ -1378,7 +1378,7 @@ const BiblioEditor = () => {
         rowOrderedElements.push(<RowEditorString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-    else if (fieldName === 'mod_association') {
+    else if (fieldName === 'mod_corpus_association') {
       rowOrderedElements.push(<RowEditorModAssociation key={`RowEditorModAssociation ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
