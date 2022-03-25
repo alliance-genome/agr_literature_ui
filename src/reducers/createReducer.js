@@ -83,6 +83,7 @@ export default function(state = initialState, action) {
 //       let hasChangeUpdateButton = state.referenceJsonHasChange;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
+        newArrayUpdateMessages = [];
         redirectToBiblio = true;
         redirectCurie = action.payload.value;
 //         getReferenceCurieFlagUpdateButton = true;
