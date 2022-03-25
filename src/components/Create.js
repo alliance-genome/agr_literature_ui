@@ -138,6 +138,8 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const Create = () => {
   const createRedirectToBiblio = useSelector(state => state.create.redirectToBiblio);
   const createRedirectCurie = useSelector(state => state.create.redirectCurie);
+  const updateMessages = useSelector(state => state.create.updateMessages);
+  const updateFailure = useSelector(state => state.create.updateFailure);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -155,6 +157,10 @@ const Create = () => {
     <div>
       <h4>Create a new Reference</h4>
       <p>Create a new reference from PubMed PMID or manually</p>
+      { updateFailure > 0 && 
+        updateMessages.map((message, index) => (
+          <div key={`message ${index}`}><span style={{color:'red'}}>{message}</span></div> ))
+      }
       {createRedirectToBiblio && pushHistory(createRedirectCurie)}
       <CreateActionRouter />
     </div>

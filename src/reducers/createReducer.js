@@ -78,17 +78,19 @@ export default function(state = initialState, action) {
       let newUpdateFailure = 0;
       let newArrayUpdateMessages = state.updateMessages;
       let redirectCurie = state.redirectCurie;
+      let redirectToBiblio = false;
 //       let getReferenceCurieFlagUpdateButton = false;
 //       let hasChangeUpdateButton = state.referenceJsonHasChange;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
+        redirectToBiblio = true;
         redirectCurie = action.payload.value;
 //         getReferenceCurieFlagUpdateButton = true;
 //         hasChangeUpdateButton = {};
       } else {
         newArrayUpdateMessages.push(action.payload.responseMessage);
         newUpdateFailure = 1;
-        // console.log('Update failure ' + action.payload.responseMessage);
+        console.log('Update failure ' + action.payload.responseMessage);
       }
 //       let referenceJsonLive = state.referenceJsonLive;
 //       if ((action.payload.field !== null) && 		// POST to a field, assign its db id to redux store
@@ -98,7 +100,7 @@ export default function(state = initialState, action) {
         ...state,
 //         referenceJsonLive: referenceJsonLive,
         redirectCurie: redirectCurie,
-        redirectToBiblio: true,
+        redirectToBiblio: redirectToBiblio,
         updateAlert: state.updateAlert + 1,
         updateFailure: state.updateFailure + newUpdateFailure,
         updateMessages: newArrayUpdateMessages

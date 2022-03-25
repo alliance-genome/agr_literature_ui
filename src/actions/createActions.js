@@ -129,10 +129,15 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance) => dispatch 
       const response_text = await res.text();
       // console.log('response_text');
       // console.log(response_text);
+      // console.log('res_status');
+      // console.log(res.status);
       let response = JSON.parse(response_text);
       if (pmidOrAlliance === 'pmid') {		// for pmid, API returns an escaped JSON that has to be converted again
+        // console.log(typeof(response));
         if (typeof(response) === 'string') {
-          response = JSON.parse(response); } }
+          // console.log(response);
+          if (response === '') { response_message = 'error: ' + subPath + ' : returned an empty string'; }
+          else { response = JSON.parse(response); } } }
       // console.log(response);
       // console.log(typeof response);
       if ( ((method === 'PATCH') && (res.status !== 202)) || 
