@@ -1012,7 +1012,7 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
   const dispatch = useDispatch();
 //   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const revertDictFields = 'curie prefix, curie id, is_obsolete'
-  const initializeDict = {'curie': '', 'mod': '', 'corpus': 'needs_review', 'source': ''}
+  const initializeDict = {'curie': '', 'mod': '', 'corpus': 'needs_review', 'source': 'assigned_for_review'}
   let disabled = ''
 //   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
 //   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }

@@ -55,19 +55,19 @@ const Sort = () => {
         </Row>
       </Container>
       { referencesToSort.length > 0 && 
-        <Container>
+        <Container fluid>
           <RowDivider />
           <RowDivider />
           <Row>
-            <Col lg={6}></Col>
-            <Col lg={2}>
-              <Button variant="outline-primary" as="input" type="button" value="All Needs Review" />{' '}
+            <Col lg={9}></Col>
+            <Col lg={1}>
+              <Button variant="outline-primary" as="input" type="button" value="Review" />{' '}
             </Col>
-            <Col lg={2}>
-              <Button variant="outline-primary" as="input" type="button" value="All Inside Corpus" />{' '}
+            <Col lg={1}>
+              <Button variant="outline-primary" as="input" type="button" value="Inside" />{' '}
             </Col>
-            <Col lg={2}>
-              <Button variant="outline-primary" as="input" type="button" value="All Outside Corpus" />{' '}
+            <Col lg={1}>
+              <Button variant="outline-primary" as="input" type="button" value="Outside" />{' '}
             </Col>
           </Row>
           <RowDivider />
@@ -81,31 +81,32 @@ const Sort = () => {
           {referencesToSort.map((reference, index) => (
             <div key={`reference div ${index}`} >
             <Row key={`reference ${index}`} >
-              <Col lg={6} className="Col-general Col-display Col-display-left" >{reference}</Col>
-              <Col lg={2} className="Col-general Col-display" >
+              <Col lg={4} className="Col-general Col-display" >{reference['title']}</Col>
+              <Col lg={5} className="Col-general Col-display" >{reference['abstract']}</Col>
+              <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
                   inline
                   checked='checked'
                   type='radio'
-                  label='needs review'
+                  label='review'
                   id='biblio-author-expand-toggler-null'
                   onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
                 />
               </Col>
-              <Col lg={2} className="Col-general Col-display" >
+              <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
                   inline
                   type='radio'
-                  label='inside corpus'
+                  label='inside'
                   id='biblio-author-expand-toggler-true'
                   onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
                 />
               </Col>
-              <Col lg={2} className="Col-general Col-display Col-display-right" >
+              <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
                   inline
                   type='radio'
-                  label='outside corpus'
+                  label='outside'
                   id='biblio-author-expand-toggler-false'
                   onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
                 />
