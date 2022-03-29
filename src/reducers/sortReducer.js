@@ -30,7 +30,7 @@ export default function(state = initialState, action) {
       // TODO process results once there's an API
       return {
         ...state,
-        referencesToSort: ["A conserved serine residue regulates the stability of Drosophila Salvador and human WW domain-containing adaptor 45 through proteasomal degradation.", "Phylogenetic-based propagation of functional annotations within the Gene Ontology consortium."]
+        referencesToSort: [{'title': "A conserved serine residue regulates the stability of Drosophila Salvador and human WW domain-containing adaptor 45 through proteasomal degradation.", 'abstract': "The abstract one goes here" }, {'title': "Phylogenetic-based propagation of functional annotations within the Gene Ontology consortium.", 'abstract': "The abstract two goes here" }]
       }
 
 
