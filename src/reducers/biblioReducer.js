@@ -537,10 +537,7 @@ export default function(state = initialState, action) {
 
     // TODO to make live, rename this case to appropriate name, remove action that assigns prepopulated corpus and source
     case 'BIBLIO_GET_REFERENCE_CURIE':
-      console.log("WHAT reducer biblio get reference curie");
-      console.log(action);
-      console.log(action.payload);
-      console.log("AGAIN reducer biblio get reference curie");
+      console.log("reducer biblio get reference curie");
       if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {
         return {
           ...state,
@@ -552,12 +549,7 @@ export default function(state = initialState, action) {
         }
       } else {  
         const pmidBool = checkHasPmid(action.payload)
-//         console.log(action.payload.cross_references)
-//         action.payload.mod_corpus_association = JSON.parse(JSON.stringify(action.payload.cross_references))
-//         for (let modAssociationIndex in action.payload.mod_corpus_association) {	// prepopulate the corpus and source with static data
-//           action.payload.mod_corpus_association[modAssociationIndex]['corpus'] = 'inside_corpus';
-//           action.payload.mod_corpus_association[modAssociationIndex]['source'] = 'dqm_files'; }
-        for (let modAssociationIndex in action.payload.mod_corpus_associations) {	// prepopulate the corpus and source with static data
+        for (let modAssociationIndex in action.payload.mod_corpus_associations) {	// change boolean into displayable value
           if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === null) {
                    action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'needs_review'; }
           else if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === true) {

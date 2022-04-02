@@ -802,6 +802,38 @@ const BiblioSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
+    if ('mod_corpus_associations' in referenceJsonLive && referenceJsonLive['mod_corpus_associations'] !== null) {
+      const modAssociationFields = [ 'mod_abbreviation', 'corpus', 'mod_corpus_sort_source' ];
+      for (const[index, modAssociationDict] of referenceJsonLive['mod_corpus_associations'].entries()) {
+//         if ('needsChange' in modAssociationDict) { console.log('needsChange') }
+//         if ('mod_corpus_association_id' in modAssociationDict) { console.log('mod_corpus_association_id') }
+        if (('needsChange' in modAssociationDict) && ('mod_corpus_association_id' in modAssociationDict)) {
+//           console.log('both')
+          let updateJson = { 'reference_curie': referenceCurie }
+          for (const field of modAssociationFields.values()) {
+            if (field in modAssociationDict) {
+              let fieldValue = modAssociationDict[field]
+              if (field === 'corpus') {
+                if      (fieldValue === 'needs_review')   { fieldValue = null; }
+                else if (fieldValue === 'inside_corpus')  { fieldValue = true; }
+                else if (fieldValue === 'outside_corpus') { fieldValue = false; } }
+              updateJson[field] = fieldValue } }
+          let subPath = 'reference/mod_corpus_association/';
+          let method = 'POST';
+          let field = 'mod_corpus_associations';
+          let subField = 'mod_corpus_association_id';
+          if (modAssociationDict['mod_corpus_association_id'] !== 'new') {
+            subPath = 'reference/mod_corpus_association/' + modAssociationDict['mod_corpus_association_id'];
+            field = null;
+            subField = null;
+            method = 'PATCH' }
+          let array = [ subPath, updateJson, method, index, field, subField ]
+// comment these out when the endpoint allows null corpus to mean needs_review
+          console.log(updateJson)
+          console.log(array)
+          forApiArray.push( array );
+    } } }
+
     if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
       // const crossRefFields = [ 'curie', 'is_obsolete' ];
       let field = 'cross_references';
@@ -1014,7 +1046,7 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
   const dispatch = useDispatch();
 //   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const revertDictFields = 'curie prefix, curie id, is_obsolete'
-  const initializeDict = {'mod_abbreviation': '', 'corpus': 'needs_review', 'mod_corpus_sort_source': 'assigned_for_review'}
+  const initializeDict = {'mod_abbreviation': '', 'corpus': 'needs_review', 'mod_corpus_sort_source': 'assigned_for_review', 'mod_corpus_association_id': 'new'}
   let disabled = ''
 //   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
 //   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
