@@ -264,6 +264,46 @@ export default function(state = initialState, action) {
         }
       }
 
+    case 'CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON':
+      console.log(action.payload);
+      let modAssociationArray = action.payload.field.split(" ");
+      let fieldModAssociation = modAssociationArray[0];
+      let indexModAssociation = modAssociationArray[1];
+      let subfieldModAssociation = modAssociationArray[2];
+      let prefixOrIdModAssociation = modAssociationArray[3];
+      let modAssociationNewValue = action.payload.value;
+
+//       if (subfieldModAssociation === 'curie') {
+//         let crossReferenceLiveCurie = state.referenceJsonLive[fieldModAssociation][indexModAssociation][subfieldModAssociation]
+//         let [ crossReferenceLiveCuriePrefix, crossReferenceLiveCurieId ] = splitCurie(crossReferenceLiveCurie)
+//         if (prefixOrIdModAssociation === 'prefix') {
+//           modAssociationNewValue = action.payload.value + ':' + crossReferenceLiveCurieId }
+//         else if (prefixOrIdModAssociation === 'id') {
+//           modAssociationNewValue = crossReferenceLiveCuriePrefix + ':' + action.payload.value }
+//         if (modAssociationNewValue === ':') { modAssociationNewValue = ''} }
+//       else if (subfieldModAssociation === 'is_obsolete') {
+//         modAssociationNewValue = action.payload.checked || false }
+
+      let newModAssociationChange = state.referenceJsonLive[fieldModAssociation];
+      newModAssociationChange[indexModAssociation]['needsChange'] = true;
+      newModAssociationChange[indexModAssociation][subfieldModAssociation] = modAssociationNewValue
+
+      let hasChangeModAssociationField = state.referenceJsonHasChange
+//       if (state.referenceJsonDb[fieldModAssociation][indexModAssociation][subfieldModAssociation] === modAssociationNewValue) {
+//         if (action.payload.field in hasChangeModAssociationField) {
+//           delete hasChangeModAssociationField[action.payload.field] } }
+//       else {
+//         hasChangeModAssociationField[action.payload.field] = 'diff' }
+
+      return {
+        ...state,
+        referenceJsonHasChange: hasChangeModAssociationField,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          [fieldModAssociation]: newModAssociationChange
+        }
+      }
+
     case 'CHANGE_FIELD_CROSS_REFERENCES_REFERENCE_JSON':
       // console.log(action.payload);
       let crossReferencesArray = action.payload.field.split(" ");
@@ -468,36 +508,40 @@ export default function(state = initialState, action) {
 //         // isLoading: true
 //         // loadingQuery: true
 //       }
-    case 'BIBLIO_GET_REFERENCE_CURIE':
-      console.log("reducer biblio get reference curie");
-      if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {
-        return {
-          ...state,
-          referenceCurie: action.payload.detail,
-          queryFailure: true,
-          getReferenceCurieFlag: false,
-          isLoading: false
-          // loadingQuery: false
-        }
-      } else {  
-        const pmidBool = checkHasPmid(action.payload)
-        // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
-        const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
-        return {
-          ...state,
-          referenceCurie: action.payload.curie,
-          referenceJsonLive: action.payload,
-          referenceJsonDb: dbCopyGetReferenceCurie,
-          hasPmid: pmidBool,
-          getReferenceCurieFlag: false,
-          isLoading: false
-          // loadingQuery: false
-        }
-      }
+
+//     case 'BIBLIO_GET_REFERENCE_CURIE':
+//       console.log("reducer biblio get reference curie");
+//       if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {
+//         return {
+//           ...state,
+//           referenceCurie: action.payload.detail,
+//           queryFailure: true,
+//           getReferenceCurieFlag: false,
+//           isLoading: false
+//           // loadingQuery: false
+//         }
+//       } else {  
+//         const pmidBool = checkHasPmid(action.payload)
+//         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
+//         const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
+//         return {
+//           ...state,
+//           referenceCurie: action.payload.curie,
+//           referenceJsonLive: action.payload,
+//           referenceJsonDb: dbCopyGetReferenceCurie,
+//           hasPmid: pmidBool,
+//           getReferenceCurieFlag: false,
+//           isLoading: false
+//           // loadingQuery: false
+//         }
+//       }
 
     // TODO to make live, rename this case to appropriate name, remove action that assigns prepopulated corpus and source
-    case 'BIBLIOMOCK1_GET_REFERENCE_CURIE':
-      console.log("reducer biblio mock1 get reference curie");
+    case 'BIBLIO_GET_REFERENCE_CURIE':
+      console.log("WHAT reducer biblio get reference curie");
+      console.log(action);
+      console.log(action.payload);
+      console.log("AGAIN reducer biblio get reference curie");
       if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {
         return {
           ...state,
@@ -509,11 +553,19 @@ export default function(state = initialState, action) {
         }
       } else {  
         const pmidBool = checkHasPmid(action.payload)
-        console.log(action.payload.cross_references)
-        action.payload.mod_corpus_association = JSON.parse(JSON.stringify(action.payload.cross_references))
-        for (let modAssociationIndex in action.payload.mod_corpus_association) {	// prepopulate the corpus and source with static data
-          action.payload.mod_corpus_association[modAssociationIndex]['corpus'] = 'inside_corpus';
-          action.payload.mod_corpus_association[modAssociationIndex]['source'] = 'dqm_files'; }
+//         console.log(action.payload.cross_references)
+//         action.payload.mod_corpus_association = JSON.parse(JSON.stringify(action.payload.cross_references))
+//         for (let modAssociationIndex in action.payload.mod_corpus_association) {	// prepopulate the corpus and source with static data
+//           action.payload.mod_corpus_association[modAssociationIndex]['corpus'] = 'inside_corpus';
+//           action.payload.mod_corpus_association[modAssociationIndex]['source'] = 'dqm_files'; }
+        for (let modAssociationIndex in action.payload.mod_corpus_associations) {	// prepopulate the corpus and source with static data
+          if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === null) {
+                   action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'needs_review'; }
+          else if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === true) {
+                   action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'inside_corpus'; }
+          else if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === false) {
+                   action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'outside_corpus'; }
+        }
 
         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
         const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))

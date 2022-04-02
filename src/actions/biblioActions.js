@@ -55,6 +55,21 @@ export const changeFieldCrossReferencesReferenceJson = (e) => {
   };
 };
 
+// TODO to make live, add this to biblioActions.js  rename MOCK1_CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON    create reducer action for it
+export const changeFieldModAssociationReferenceJson = (e) => {
+  console.log('action change field mod association json ' + e.target.id + ' to ' + e.target.value + ' checked ' + e.target.checked);
+//   console.log(e);
+  return {
+    type: 'CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON',	// this doesn't do anything yet
+    payload: {
+      field: e.target.id,
+      checked: e.target.checked,
+      value: e.target.value
+    }
+  };
+};
+
+
 export const changeFieldCommentsCorrectionsReferenceJson = (e) => {
   console.log('action change field comments corrections json ' + e.target.id + ' to ' + e.target.value);
 //   console.log(e);
@@ -138,7 +153,8 @@ export const biblioAddNewAuthorAffiliation = (e) => {
 };
 export const biblioAddNewRowDict = (e, initializeDict) => {
   console.log('action biblio add new row dict ' + e.target.id + ' to ' + e.target.value);
-  console.log('action initializeDict ' + initializeDict);
+  console.log('action initializeDict ');
+  console.log(initializeDict);
   return {
     type: 'BIBLIO_ADD_NEW_ROW',
     payload: {

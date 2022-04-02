@@ -55,21 +55,6 @@ export const changeFieldCrossReferencesReferenceJson = (e) => {
   };
 };
 
-// TODO to make live, add this to biblioActions.js  rename MOCK1_CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON    create reducer action for it
-export const changeFieldModAssociationReferenceJson = (e) => {
-  console.log('action change field mod association json ' + e.target.id + ' to ' + e.target.value + ' checked ' + e.target.checked);
-//   console.log(e);
-  return {
-    type: 'MOCK1_CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON',	// this doesn't do anything yet
-    payload: {
-      field: e.target.id,
-      checked: e.target.checked,
-      value: e.target.value
-    }
-  };
-};
-
-
 export const changeFieldCommentsCorrectionsReferenceJson = (e) => {
   console.log('action change field comments corrections json ' + e.target.id + ' to ' + e.target.value);
 //   console.log(e);
@@ -165,7 +150,7 @@ export const biblioAddNewRowDict = (e, initializeDict) => {
   };
 };
 
-export const biblioMock1QueryReferenceCurie = (referenceCurie) => dispatch => {
+export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   console.log("action referenceCurie " + referenceCurie);
   const createBiblioQueryReferenceCurie = async () => {
@@ -219,7 +204,7 @@ export const biblioMock1QueryReferenceCurie = (referenceCurie) => dispatch => {
 
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
     dispatch({
-      type: 'BIBLIOMOCK1_GET_REFERENCE_CURIE',
+      type: 'BIBLIO_GET_REFERENCE_CURIE',
       payload: response_payload
     })
   }

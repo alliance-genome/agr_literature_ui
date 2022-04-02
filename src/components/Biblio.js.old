@@ -11,8 +11,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
 // import { setLoadingQuery } from '../actions/biblioActions';
-// import { biblioQueryReferenceCurie } from '../actions/biblioActions';
-import { biblioMock1QueryReferenceCurie } from '../actions/biblioMock1Actions';
+import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 import { setBiblioUpdating } from '../actions/biblioActions';
 
 import { changeFieldReferenceJson } from '../actions/biblioActions';
@@ -56,7 +55,7 @@ import { faUndo } from '@fortawesome/free-solid-svg-icons'
 
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_type' ];
-const fieldsOrdered = [ 'title', 'mod_corpus_association', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
 const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
@@ -74,8 +73,6 @@ enumDict['category'] = ['research_article', 'review_article', 'thesis', 'book', 
 enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor']
-enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
-enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'assigned_for_review']
 
 // title
 // cross_references (doi, pmid, modID)
@@ -168,7 +165,7 @@ const BiblioActionToggler = () => {
       radioFormDisplayClassname += ' underlined';
       displayChecked = 'checked'; }
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  let newUrl = "/BiblioMock1/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie
+  let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie
   window.history.replaceState({}, null, newUrl)
 
 // calling below
@@ -263,61 +260,6 @@ const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJ
     return (<>{rowArrayStringElements}</>); }
   else { return null; } }
 
-// TODO to make live, copy RowDisplayModAssociation  RowEditorModAssociation  to Biblio.js   replace values of BiblioMock1 with Biblio  add (fieldName === 'mod_corpus_association')  in BiblioDisplay and BiblioEditor   add mod_corpus_association to fields_ordered
-const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
-//   fieldName = 'mod_corpus_association';
-  if ('mod_corpus_association' in referenceJson && referenceJson['mod_corpus_association'] !== null) {
-    const rowModAssociationElements = []
-    for (const[index, modAssociationDict] of referenceJson['mod_corpus_association'].entries()) {
-//       let url = modAssociationDict['url'];
-      let valueLiveCurie = modAssociationDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
-//       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
-      let valueLiveCuriePrefix = splitCurie(valueLiveCurie, 'prefix');
-      let valueLiveCorpus = modAssociationDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
-      let valueLiveSource = modAssociationDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
-
-      if (enumDict['mods'].includes(valueLiveCuriePrefix)) {
-//         let valueLiveIsObsolete = modAssociationDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
-        if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-             (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-               valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-        if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-             (typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') ) {
-               valueDbCorpus = referenceJsonDb[fieldName][index]['corpus'] }
-        if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-             (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') ) {
-               valueDbSource = referenceJsonDb[fieldName][index]['source'] }
-//         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//                valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
-        if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
-//         if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
-        if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
-        if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
-
-//         let isObsolete = '';
-//         if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//                if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
-//                else { isObsolete = ''; } }
-//         let updatedFlag = '';
-//         if ( (updatedFlagCurie === 'updated') || (updatedFlagCorpus === 'updated') || (updatedFlagSource === 'updated') ) { updatedFlag = 'updated' }
-//         if ('pages' in modAssociationDict && modAssociationDict['pages'] !== null) { url = modAssociationDict['pages'][0]['url']; }
-//         const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
-//         const modAssociationValue = (<div>{valueLiveCuriePrefix} {valueLiveCorpus} {valueLiveSource}</div>);
-//         rowModAssociationElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={modAssociationValue} updatedFlag={updatedFlag} />);
-        rowModAssociationElements.push(
-          <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-display Col-display-left">mod_corpus_association</Col>
-            <Col className={`Col-general Col-display ${updatedFlagCurie} `} lg={{ span: 2 }}>{valueLiveCuriePrefix}</Col>
-            <Col className={`Col-general Col-display ${updatedFlagCorpus} `} lg={{ span: 4 }}>{valueLiveCorpus}</Col>
-            <Col className={`Col-general Col-display Col-display-right ${updatedFlagSource} `} lg={{ span: 4 }}>{valueLiveSource}</Col>
-          </Row>); 
-        }
-      } // if (enumDict['mods'].includes(valueLiveCuriePrefix))
-    return (<>{rowModAssociationElements}</>); }
-  else { return null; } }
-
 const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
   if ('cross_references' in referenceJson && referenceJson['cross_references'] !== null) {
     const rowCrossReferenceElements = []
@@ -352,7 +294,7 @@ const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJson, re
     const rowCommentsCorrectionsElements = []
     for (const[index, comcorDict] of referenceJson[fieldName].entries()) {
       let valueLiveCurie = comcorDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
-      const url = '/BiblioMock1/?action=display&referenceCurie=' + valueLiveCurie
+      const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
       let valueLiveType = comcorDict['type']; let valueDbType = ''; let updatedFlagType = '';
       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
@@ -619,8 +561,6 @@ const BiblioDisplay = () => {
         rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-    else if (fieldName === 'mod_corpus_association') {
-      rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
     else if (fieldName === 'corrections') {
@@ -1006,79 +946,6 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
 //           <Col className="Col-general Col-display " lg={{ span: 2 }}>{value['source']}</Col>
 //           <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
 
-const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
-//   const xrefFieldName = fieldName;
-//   fieldName = 'mod_corpus_association';
-  const dispatch = useDispatch();
-//   const hasPmid = useSelector(state => state.biblio.hasPmid);
-//   const revertDictFields = 'curie prefix, curie id, is_obsolete'
-  const initializeDict = {'curie': '', 'mod': '', 'corpus': 'needs_review', 'source': 'assigned_for_review'}
-  let disabled = ''
-//   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
-//   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
-  const rowCrossReferencesElements = []
-
-  if ('mod_corpus_association' in referenceJsonLive && referenceJsonLive['mod_corpus_association'] !== null) {
-    for (const[index, crossRefDict] of referenceJsonLive['mod_corpus_association'].entries()) {
-      let otherColSize = 3;
-      let otherColSizeB = 4;
-//       let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 8; }
-
-// In This Mock, a bunch of variables are not used, clean them up
-      let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
-      let updatedFlagCuriePrefix = ''; // let updatedFlagCurieId = '';
-//       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
-      let valueLiveCuriePrefix = splitCurie(valueLiveCurie, 'prefix');
-//       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
-      let valueLiveCorpus = crossRefDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
-      let valueLiveSource = crossRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
-
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') ) {
-             valueDbCorpus = referenceJsonDb[fieldName][index]['corpus'] }
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') ) {
-             valueDbSource = referenceJsonDb[fieldName][index]['source'] }
-//       let [valueDbCuriePrefix, valueDbCurieId] = splitCurie(valueDbCurie);
-      let valueDbCuriePrefix = splitCurie(valueDbCurie, 'prefix');
-      if (valueLiveCuriePrefix !== valueDbCuriePrefix) { updatedFlagCuriePrefix = 'updated'; }
-//       if (valueLiveCurieId !== valueDbCurieId) { updatedFlagCurieId = 'updated'; }
-      if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
-      if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
-
-//       let obsoleteChecked = '';
-//       if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//              if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { obsoleteChecked = 'checked'; }
-//              else { obsoleteChecked = ''; } }
-
-      if (enumDict['mods'].includes(valueLiveCuriePrefix)) {
-//         console.log("YES valueLiveCuriePrefix " + valueLiveCuriePrefix);
-        rowCrossReferencesElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-            <ColEditorSelect key={`colElement ${fieldName} ${index} mod`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveCuriePrefix} updatedFlag={updatedFlagCuriePrefix} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie prefix`} enumType="mods" dispatchAction={changeFieldCrossReferencesReferenceJson} />
-            <ColEditorSelect key={`colElement ${fieldName} ${index} corpus`} fieldType="select" fieldName={fieldName} colSize={otherColSize} value={valueLiveCorpus} updatedFlag={updatedFlagCorpus} placeholder="corpus" disabled={disabled} fieldKey={`${fieldName} ${index} corpus`} enumType="modAssociationCorpus" dispatchAction={changeFieldCrossReferencesReferenceJson} />
-            <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize={otherColSizeB} value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="modAssociationSource" dispatchAction={changeFieldCrossReferencesReferenceJson} />
-            {revertElement}
-          </Form.Group>); } } }
-//             <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurieId} updatedFlag={updatedFlagCurieId} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie id`} dispatchAction={changeFieldCrossReferencesReferenceJson} />
-//             <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
-  if (disabled === '') {
-    rowCrossReferencesElements.push(
-      <Row className="form-group row" key={fieldName} >
-        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
-        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
-      </Row>);
-  }
-  return (<>{rowCrossReferencesElements}</>); }
-
-
 const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
@@ -1120,7 +987,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
 
       rowCrossReferencesElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
-          <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+          <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
           <ColEditorSelect key={`colElement ${fieldName} ${index} curiePrefix`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveCuriePrefix} updatedFlag={updatedFlagCuriePrefix} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie prefix`} enumType="referenceXrefPrefix" dispatchAction={changeFieldCrossReferencesReferenceJson} />
           <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurieId} updatedFlag={updatedFlagCurieId} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie id`} dispatchAction={changeFieldCrossReferencesReferenceJson} />
           <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
@@ -1378,8 +1245,6 @@ const BiblioEditor = () => {
         rowOrderedElements.push(<RowEditorString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-    else if (fieldName === 'mod_corpus_association') {
-      rowOrderedElements.push(<RowEditorModAssociation key={`RowEditorModAssociation ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'corrections') {
@@ -1396,7 +1261,7 @@ const BiblioEditor = () => {
   return (<Container><Form><BiblioSubmitUpdateRouter />{rowOrderedElements}</Form></Container>);
 } // const BiblioEditor
 
-const BiblioMock1 = () => {
+const Biblio = () => {
 
   const dispatch = useDispatch();
 
@@ -1433,8 +1298,8 @@ const BiblioMock1 = () => {
   }
 
   if (referenceCurie !== '' && (getReferenceCurieFlag === true)) {
-    console.log('biblio DISPATCH biblioMock1QueryReferenceCurie ' + referenceCurie);
-    dispatch(biblioMock1QueryReferenceCurie(referenceCurie));
+    console.log('biblio DISPATCH biblioQueryReferenceCurie ' + referenceCurie);
+    dispatch(biblioQueryReferenceCurie(referenceCurie));
   }
 
 // set in reducer when BIBLIO_GET_REFERENCE_CURIE populates referenceJson
@@ -1571,4 +1436,4 @@ const BiblioMock1 = () => {
 //         </>
 //       ))}
 
-export default BiblioMock1
+export default Biblio

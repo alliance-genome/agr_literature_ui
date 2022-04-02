@@ -8,7 +8,6 @@ import NavigationBar from './NavigationBar'
 import Home from './Home'
 import Query from './Query'
 import Biblio from './Biblio'
-import BiblioMock1 from './BiblioMock1'
 import Sort from './Sort'
 import Flags from './Flags'
 import Files from './Files'
@@ -66,7 +65,6 @@ const AppWithRouterAccess = () => {
                 <Route path='/' exact={true} component={Home}/>
                 <Route path='/query' component={Query} />
                 <Route path='/biblio' component={Biblio} />
-                <Route path='/biblioMock1' component={BiblioMock1} />
                 <Route path='/sort' component={Sort} />
                 <Route path='/flags' component={Flags} />
                 <Route path='/files' component={Files} />
