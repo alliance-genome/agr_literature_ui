@@ -270,7 +270,6 @@ export default function(state = initialState, action) {
       let fieldModAssociation = modAssociationArray[0];
       let indexModAssociation = modAssociationArray[1];
       let subfieldModAssociation = modAssociationArray[2];
-      let prefixOrIdModAssociation = modAssociationArray[3];
       let modAssociationNewValue = action.payload.value;
 
 //       if (subfieldModAssociation === 'curie') {
