@@ -12,7 +12,8 @@ import Button from 'react-bootstrap/Button';
 import { changeFieldSortMods } from '../actions/sortActions';
 import { sortButtonModsQuery } from '../actions/sortActions';
 
-import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';	// TODO use sort action
+import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';	// TODO get rid of this
+import { changeSortCorpusToggler } from '../actions/sortActions';
 
 // TODO
 // Find Papers to Sort will need to query data once there's an API
@@ -27,7 +28,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
 const Sort = () => {
   const modsField = useSelector(state => state.sort.modsField);
-  const referencesToSort = useSelector(state => state.sort.referencesToSort);
+  const referencesToSortLive = useSelector(state => state.sort.referencesToSortLive);
   const dispatch = useDispatch();
 
   let buttonDisabled = 'disabled'
@@ -59,7 +60,7 @@ const Sort = () => {
           <Col lg={5} ></Col>
         </Row>
       </Container>
-      { referencesToSort.length > 0 && 
+      { referencesToSortLive.length > 0 && 
         <Container fluid>
           <RowDivider />
           <RowDivider />
@@ -83,45 +84,49 @@ const Sort = () => {
             <Col lg={2} >Outside </Col>
           </Row>
           <RowDivider /> */}
-          {referencesToSort.map((reference, index) => (
+          {referencesToSortLive.map((reference, index) => (
             <div key={`reference div ${index}`} >
             <Row key={`reference ${index}`} >
               <Col lg={4} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
-                 {reference['title']}
+                 {reference['title']} 
+                 {reference['mod_corpus_association_id']} 
+                 {reference['corpus']}
                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
                    style={{alignSelf: 'flex-start'}} >{reference['curie']}</Link>
                  {reference['cross_references'].map((xref, index2) => (
                    <div key={`xref ${index} ${index2}`} style={{alignSelf: 'flex-start'}} >
-                     <a href={xref['url']} target='_blank' rel="noopener" >{xref['curie']}</a></div>
+                     <a href={xref['url']} target='_blank' rel="noreferrer" >{xref['curie']}</a></div>
                  ))}
               </Col>
               <Col lg={5} className="Col-general Col-display" >{reference['abstract']}</Col>
               <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
                   inline
-                  checked='checked'
+                  checked={ (reference['corpus'] === 'needs_review') ? 'checked' : '' }
                   type='radio'
                   label='review'
-                  id='biblio-author-expand-toggler-null'
-                  onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+                  id={`needs_review_toggle ${index}`}
+                  onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                 />
               </Col>
               <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
                   inline
+                  checked={ (reference['corpus'] === 'inside_corpus') ? 'checked' : '' }
                   type='radio'
                   label='inside'
-                  id='biblio-author-expand-toggler-true'
-                  onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+                  id={`inside_corpus_toggle ${index}`}
+                  onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                 />
               </Col>
               <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
                   inline
+                  checked={ (reference['corpus'] === 'outside_corpus') ? 'checked' : '' }
                   type='radio'
                   label='outside'
-                  id='biblio-author-expand-toggler-false'
-                  onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+                  id={`outside_corpus_toggle ${index}`}
+                  onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                 />
               </Col>
             </Row>

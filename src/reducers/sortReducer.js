@@ -1,7 +1,8 @@
 
 const initialState = {
   modsField: '',
-  referencesToSort: []
+  referencesToSortLive: [],
+  referencesToSortDb: []
 };
 
 // const initialState = {
@@ -27,13 +28,31 @@ export default function(state = initialState, action) {
 
     case 'SORT_BUTTON_MODS_QUERY':
       console.log(action.payload);
-      // TODO process results once there's an API
+      // The endpoint only returns values that are 'needs_review', so inject those values to the objects
+      for (let reference of action.payload) {
+        reference['corpus'] = 'needs_review'
+      }
+      // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
+      const referencesToSortDb = JSON.parse(JSON.stringify(action.payload))
       return {
         ...state,
-        referencesToSort: action.payload
+        referencesToSortLive: action.payload,
+        referencesToSortDb: referencesToSortDb
       }
 //         referencesToSort: [{'title': "A conserved serine residue regulates the stability of Drosophila Salvador and human WW domain-containing adaptor 45 through proteasomal degradation.", 'abstract': "The abstract one goes here" }, {'title': "Phylogenetic-based propagation of functional annotations within the Gene Ontology consortium.", 'abstract': "The abstract two goes here" }]
 
+    case 'CHANGE_SORT_CORPUS_TOGGLER':
+      console.log('reducer SORT_BUTTON_MODS_QUERY');
+      console.log(action.payload);
+      let corpusArray = action.payload.split(" ");
+      let fieldCorpusValue = corpusArray[0].replace(/_toggle$/, '');
+      let indexReferenceCorpus = corpusArray[1];
+      let sortToggleCorpusReferencesToSortLive = JSON.parse(JSON.stringify(state.referencesToSortLive))
+      sortToggleCorpusReferencesToSortLive[indexReferenceCorpus]['corpus'] = fieldCorpusValue;
+      return {
+        ...state,
+        referencesToSortLive: sortToggleCorpusReferencesToSortLive
+      }
 
 //       let modReferenceArray = action.payload.field.split(" ");
 //       let fieldModReference = modReferenceArray[0];

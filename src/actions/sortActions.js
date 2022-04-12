@@ -52,6 +52,14 @@ export const sortButtonModsQuery = (payload) => dispatch => {
   sortGetModsQuery()
 };
 
+export const changeSortCorpusToggler = (e) => {
+  console.log('action change sort corpus toggler radio ' + e.target.id + ' to ' + e.target.value);
+  return {
+    type: 'CHANGE_SORT_CORPUS_TOGGLER',
+    payload: e.target.id
+  };
+};
+
 // // replaced by biblioActions : setReferenceCurie + setGetReferenceCurieFlag
 // // export const resetQueryState = () => {
 // //   return {
