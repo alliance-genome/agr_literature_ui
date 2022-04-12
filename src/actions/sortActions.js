@@ -2,7 +2,7 @@
 
 // import notGithubVariables from './notGithubVariables';
 
-// const restUrl = process.env.REACT_APP_RESTAPI;
+const restUrl = process.env.REACT_APP_RESTAPI;
 // const restUrl = 'stage-literature-rest.alliancegenome.org';
 // const port = 11223;
 // const port = 49161;
@@ -18,17 +18,38 @@ export const changeFieldSortMods = (e) => {
   };
 };
 
-export const sortButtonModsQuery = (payload) => {
+export const sortButtonModsQuery = (payload) => dispatch => {
   console.log('in sortButtonModsQuery action');
-  console.log("payload " + payload);
-  // TODO make a query when there's an API
-  return {
-    type: 'SORT_BUTTON_MODS_QUERY',
-    payload: {
-      field: 'blah',
-      value: 'blue'
+  // console.log("payload " + payload);
+  // https://dev4004-literature-rest.alliancegenome.org/search/need_review?mod_abbreviation=RGD&count=2
+  const sortGetModsQuery = async () => {
+    const url = restUrl + '/search/need_review?count=5&mod_abbreviation=' + payload;
+    // console.log(url);
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
+    const response = await res.json();
+    // console.log(response);
+    let response_payload = payload + ' not found';
+    let response_found = 'not found';
+    if (response !== undefined) {
+      // console.log('response not undefined');
+      response_found = 'found';
+      response_payload = response;
     }
-  };
+    // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
+    console.log('dispatch QUERY_BUTTON');
+    dispatch({
+      type: 'SORT_BUTTON_MODS_QUERY',
+      payload: response_payload,
+      responseFound: response_found
+    })
+  }
+  sortGetModsQuery()
 };
 
 // // replaced by biblioActions : setReferenceCurie + setGetReferenceCurieFlag

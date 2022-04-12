@@ -35,6 +35,11 @@ const Sort = () => {
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 
+//                  <div>{reference['title']}</div><br/>
+//                  {reference['cross_references'].map((xref, index2) => (
+//                    <div key={`xref ${index} ${index2}`}> {xref['curie']}<br/></div>
+//                  ))}
+
   return (
     <div>
       <h4>Select a MOD to find papers to sort for inside / outside corpus</h4>
@@ -81,7 +86,15 @@ const Sort = () => {
           {referencesToSort.map((reference, index) => (
             <div key={`reference div ${index}`} >
             <Row key={`reference ${index}`} >
-              <Col lg={4} className="Col-general Col-display" >{reference['title']}</Col>
+              <Col lg={4} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
+                 {reference['title']}
+                 <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
+                   style={{alignSelf: 'flex-start'}} >{reference['curie']}</Link>
+                 {reference['cross_references'].map((xref, index2) => (
+                   <div key={`xref ${index} ${index2}`} style={{alignSelf: 'flex-start'}} >
+                     <a href={xref['url']} target='_blank' rel="noopener" >{xref['curie']}</a></div>
+                 ))}
+              </Col>
               <Col lg={5} className="Col-general Col-display" >{reference['abstract']}</Col>
               <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
