@@ -141,8 +141,6 @@ const Sort = () => {
                    <div key={`xref ${index} ${index2}`} style={{alignSelf: 'flex-start'}} >
                      <a href={xref['url']} target='_blank' rel="noreferrer" >{xref['curie']}</a></div>
                  ))}
-                 {reference['mod_corpus_association_id']} 
-                 {reference['corpus']}
               </Col>
               <Col lg={5} className="Col-general Col-display" >{reference['abstract']}</Col>
               <Col lg={1} className="Col-general Col-display" >
