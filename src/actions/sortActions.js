@@ -60,6 +60,79 @@ export const changeSortCorpusToggler = (e) => {
   };
 };
 
+export const updateButtonSort = (updateArrayData) => dispatch => {
+  // console.log('in updateButtonSort action');
+  const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
+  // console.log("payload "); console.log(updateArrayData);
+  let newId = null;
+  const createUpdateButtonSort = async () => {
+    const url = restUrl + '/' + subPath;
+    console.log(url);
+    // console.log(notGithubVariables.authToken);
+    const res = await fetch(url, {
+      method: method,
+      mode: 'cors',
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + accessToken
+      },
+      body: JSON.stringify( payload )
+    })
+  // to test without updating through api, remove body line and change method to GET
+//       method: 'GET',
+
+    let response_message = 'update success';
+    if ((method === 'DELETE') && (res.status === 204)) { }      // success of delete has no res.text so can't process like others
+    else {
+      // const response = await res.json();     // successful POST to related table (e.g. mod_reference_types) returns an id that is not in json format
+      const response_text = await res.text();
+      const response = JSON.parse(response_text);
+      if ( ((method === 'PATCH') && (res.status !== 202)) ||
+           ((method === 'DELETE') && (res.status !== 204)) ||
+           ((method === 'POST') && (res.status !== 201)) ) {
+        console.log('updateButtonSort action response not updated');
+        if (typeof(response.detail) !== 'object') {
+            response_message = response.detail; }
+          else if (typeof(response.detail[0].msg) !== 'object') {
+            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
+          else {
+            response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
+      }
+      if ((method === 'POST') && (res.status === 201)) {
+        newId = parseInt(response_text); }
+      // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
+      console.log('dispatch UPDATE_BUTTON_SORT');
+    }
+    setTimeout(() => {
+      dispatch({
+        type: 'UPDATE_BUTTON_SORT',
+        payload: {
+          responseMessage: response_message,
+          index: index,
+          value: newId,
+          field: field,
+          subField: subField
+        }
+      })
+    }, 500);
+  }
+  createUpdateButtonSort()
+};
+
+export const closeSortUpdateAlert = () => {
+  console.log("action closeSortUpdateAlert");
+  return {
+    type: 'CLOSE_SORT_UPDATE_ALERT'
+  };
+};
+
+export const setSortUpdating = (payload) => {
+  return {
+    type: 'SET_SORT_UPDATING',
+    payload: payload
+  };
+};
+
 // // replaced by biblioActions : setReferenceCurie + setGetReferenceCurieFlag
 // // export const resetQueryState = () => {
 // //   return {

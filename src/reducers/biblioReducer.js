@@ -110,8 +110,8 @@ export default function(state = initialState, action) {
         ...state,
         biblioUpdating: action.payload
       }
-    case 'CLOSE_UPDATE_ALERT':
-      console.log('CLOSE_UPDATE_ALERT reducer');
+    case 'CLOSE_BIBLIO_UPDATE_ALERT':
+      console.log('CLOSE_BIBLIO_UPDATE_ALERT reducer');
       return {
         ...state,
         updateAlert: 0
@@ -179,6 +179,7 @@ export default function(state = initialState, action) {
         authorInfoNewValue = action.payload.checked || false }
 
       let newAuthorInfoChange = state.referenceJsonLive[fieldAuthorInfo];
+
 //       // indexDomAuthorInfo is the index of the author info in the DOM
 //       // indexAuthorInfo is the index of the author info in the redux store, for updating non-order info
 //       let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']	// replace placeholder with index from store order value matches dom

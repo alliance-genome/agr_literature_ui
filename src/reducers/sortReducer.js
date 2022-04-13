@@ -2,7 +2,12 @@
 const initialState = {
   modsField: '',
   referencesToSortLive: [],
-  referencesToSortDb: []
+  referencesToSortDb: [],
+  getPapersToSortFlag: false,
+  sortUpdating: 0,
+  updateAlert: 0,
+  updateFailure: 0,
+  updateMessages: []
 };
 
 // const initialState = {
@@ -26,6 +31,20 @@ export default function(state = initialState, action) {
         modsField: action.payload.value
       }
 
+    case 'CLOSE_SORT_UPDATE_ALERT':
+      console.log('CLOSE_SORT_UPDATE_ALERT reducer');
+      return {
+        ...state,
+        updateAlert: 0
+      }
+
+    case 'SET_SORT_UPDATING':
+      console.log('SET_SORT_UPDATING reducer ' + action.payload);
+      return {
+        ...state,
+        sortUpdating: action.payload
+      }
+
     case 'SORT_BUTTON_MODS_QUERY':
       console.log(action.payload);
       // The endpoint only returns values that are 'needs_review', so inject those values to the objects
@@ -36,6 +55,7 @@ export default function(state = initialState, action) {
       const referencesToSortDb = JSON.parse(JSON.stringify(action.payload))
       return {
         ...state,
+        getPapersToSortFlag: false,
         referencesToSortLive: action.payload,
         referencesToSortDb: referencesToSortDb
       }
@@ -54,56 +74,41 @@ export default function(state = initialState, action) {
         referencesToSortLive: sortToggleCorpusReferencesToSortLive
       }
 
-//       let modReferenceArray = action.payload.field.split(" ");
-//       let fieldModReference = modReferenceArray[0];
-//       let indexModReference = modReferenceArray[1];
-//       let subfieldModReference = modReferenceArray[2];
-//       let newModReferenceChange = state.referenceJsonLive[fieldModReference];
-//       newModReferenceChange[indexModReference][subfieldModReference] = action.payload.value;
-//       newModReferenceChange[indexModReference]['needsChange'] = true;
-//       let hasChangeModReferenceField = state.referenceJsonHasChange
-//       if (state.referenceJsonDb[fieldModReference][indexModReference][subfieldModReference] === action.payload.value) {
-//         if (action.payload.field in hasChangeModReferenceField) {
-//           delete hasChangeModReferenceField[action.payload.field] } }
-//       else {
-//         hasChangeModReferenceField[action.payload.field] = 'diff' }
-//       return {
-//         ...state,
-//         referenceJsonHasChange: hasChangeModReferenceField,
-//         referenceJsonLive: {
-//           ...state.referenceJsonLive,
-//           [fieldModReference]: newModReferenceChange
-//         }
-//       }
+    case 'UPDATE_BUTTON_SORT':
+      // console.log('reducer UPDATE_BUTTON_SORT ' + action.payload.responseMessage);
+      // console.log('action.payload'); console.log(action.payload);
+      let newUpdateFailure = 0;
+      let newArrayUpdateMessages = state.updateMessages;
+      let getPapersToSortFlagUpdateButton = false;
+//       let hasChangeUpdateButton = state.referenceJsonHasChange;
+      if (action.payload.responseMessage === "update success") {
+        console.log('reducer UPDATE_BUTTON_SORT ' + action.payload.responseMessage);
+        getPapersToSortFlagUpdateButton = true;
+//         hasChangeUpdateButton = {};
+      } else {
+        newArrayUpdateMessages.push(action.payload.responseMessage);
+        newUpdateFailure = 1;
+        // console.log('Update failure ' + action.payload.responseMessage);
+      }
+      let referenceJsonLive = state.referenceJsonLive;
+      if ((action.payload.field !== null) &&            // POST to a field, assign its db id to redux store
+          (action.payload.index !== null) &&
+          (action.payload.index in referenceJsonLive[action.payload.field]) &&
+          ('subField' in action.payload) &&
+          (action.payload.subField !== null) &&         // but only for related tables that create a dbid, not for cross_references
+          (action.payload.subField in referenceJsonLive[action.payload.field][action.payload.index])) {
+        referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
+      return {
+        ...state,
+        referenceJsonLive: referenceJsonLive,
+        getPapersToSortFlag: getPapersToSortFlagUpdateButton,
+        updateAlert: state.updateAlert + 1,
+        updateFailure: state.updateFailure + newUpdateFailure,
+        updateMessages: newArrayUpdateMessages,
+        sortUpdating: state.sortUpdating - 1
+      }
+//         referenceJsonHasChange: hasChangeUpdateButton,
 
-//     case 'QUERY_CHANGE_QUERY_FIELD':
-//       // console.log(action.payload);
-//       return {
-//         ...state,
-//         queryField: action.payload
-//       }
-//     case 'RESET_QUERY_REDIRECT':
-//       console.log("reset query redirect");
-//       return {
-//         ...state,
-//         redirectToBiblio: false
-//       }
-//     case 'QUERY_BUTTON':
-//       console.log("query button reducer set " + action.payload);
-//       let responseField = action.payload;
-//       let responseFound = action.responseFound;
-//       let responseColor = 'blue';
-//       let redirectToBiblio = false;
-//       let querySuccess = false;
-//       if (responseFound === 'not found') { responseColor = 'red'; }
-//         else { redirectToBiblio = true; querySuccess = true; }
-//       return {
-//         ...state,
-//         responseColor: responseColor,
-//         responseField: responseField,
-//         redirectToBiblio: redirectToBiblio,
-//         querySuccess: querySuccess
-//       }
     default:
       return state;
   }

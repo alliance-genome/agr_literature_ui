@@ -27,7 +27,7 @@ import { biblioAddNewRowString } from '../actions/biblioActions';
 import { biblioAddNewAuthorAffiliation } from '../actions/biblioActions';
 import { biblioAddNewRowDict } from '../actions/biblioActions';
 import { updateButtonBiblio } from '../actions/biblioActions';
-import { closeUpdateAlert } from '../actions/biblioActions';
+import { closeBiblioUpdateAlert } from '../actions/biblioActions';
 import { changeBiblioMeshExpandToggler } from '../actions/biblioActions';
 import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';
 import { biblioRevertField } from '../actions/biblioActions';
@@ -664,7 +664,7 @@ const AlertDismissibleBiblioUpdate = () => {
     variant = 'danger'; }
   if (updateAlert) {
     return (
-      <Alert variant={variant} onClose={() => dispatch(closeUpdateAlert())} dismissible>
+      <Alert variant={variant} onClose={() => dispatch(closeBiblioUpdateAlert())} dismissible>
         <Alert.Heading>{header}</Alert.Heading>
         {updateMessages.map((message, index) => (
           <div key={`${message} ${index}`}>{message}</div>
