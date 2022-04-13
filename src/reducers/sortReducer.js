@@ -45,6 +45,15 @@ export default function(state = initialState, action) {
         sortUpdating: action.payload
       }
 
+    case 'SORT_BUTTON_SET_RADIO_ALL':
+      console.log('SORT_BUTTON_SET_RADIO_ALL reducer ' + action.payload);
+      const referencesToSortSetRadioAll = JSON.parse(JSON.stringify(state.referencesToSortLive))
+      for (const[index, reference] of referencesToSortSetRadioAll.entries()) { reference['corpus'] = action.payload }
+      return {
+        ...state,
+        referencesToSortLive: referencesToSortSetRadioAll
+      }
+
     case 'SORT_BUTTON_MODS_QUERY':
       console.log(action.payload);
       // The endpoint only returns values that are 'needs_review', so inject those values to the objects

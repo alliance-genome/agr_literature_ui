@@ -17,6 +17,7 @@ import { changeSortCorpusToggler } from '../actions/sortActions';
 import { updateButtonSort } from '../actions/sortActions';
 import { closeSortUpdateAlert } from '../actions/sortActions';
 import { setSortUpdating } from '../actions/sortActions';
+import { sortButtonSetRadiosAll } from '../actions/sortActions';
 
 
 // DONE
@@ -110,13 +111,13 @@ const Sort = () => {
           <Row>
             <Col lg={9}></Col>
             <Col lg={1}>
-              <Button variant="outline-primary" as="input" type="button" value="Review" />{' '}
+              <Button variant="outline-primary" as="input" type="button" value="Review" onClick={() => dispatch(sortButtonSetRadiosAll('needs_review'))} />{' '}
             </Col>
             <Col lg={1}>
-              <Button variant="outline-primary" as="input" type="button" value="Inside" />{' '}
+              <Button variant="outline-primary" as="input" type="button" value="Inside" onClick={() => dispatch(sortButtonSetRadiosAll('inside_corpus'))} />{' '}
             </Col>
             <Col lg={1}>
-              <Button variant="outline-primary" as="input" type="button" value="Outside" />{' '}
+              <Button variant="outline-primary" as="input" type="button" value="Outside" onClick={() => dispatch(sortButtonSetRadiosAll('outside_corpus'))} />{' '}
             </Col>
           </Row>
           <RowDivider />

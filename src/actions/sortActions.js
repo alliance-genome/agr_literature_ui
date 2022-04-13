@@ -133,6 +133,14 @@ export const setSortUpdating = (payload) => {
   };
 };
 
+export const sortButtonSetRadiosAll = (payload) => {
+  console.log("action sortButtonSetRadiosAll");
+  return {
+    type: 'SORT_BUTTON_SET_RADIO_ALL',
+    payload: payload
+  };
+};
+
 // // replaced by biblioActions : setReferenceCurie + setGetReferenceCurieFlag
 // // export const resetQueryState = () => {
 // //   return {
