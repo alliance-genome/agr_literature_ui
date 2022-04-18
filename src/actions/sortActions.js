@@ -23,7 +23,7 @@ export const sortButtonModsQuery = (payload) => dispatch => {
   // console.log("payload " + payload);
   // https://dev4004-literature-rest.alliancegenome.org/search/need_review?mod_abbreviation=RGD&count=2
   const sortGetModsQuery = async () => {
-    const url = restUrl + '/search/need_review?count=5&mod_abbreviation=' + payload;
+    const url = restUrl + '/search/need_review?count=20&mod_abbreviation=' + payload;
     // console.log(url);
     const res = await fetch(url, {
       method: 'GET',
