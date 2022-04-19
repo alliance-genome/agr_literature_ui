@@ -273,27 +273,16 @@ export default function(state = initialState, action) {
       let subfieldModAssociation = modAssociationArray[2];
       let modAssociationNewValue = action.payload.value;
 
-//       if (subfieldModAssociation === 'curie') {
-//         let crossReferenceLiveCurie = state.referenceJsonLive[fieldModAssociation][indexModAssociation][subfieldModAssociation]
-//         let [ crossReferenceLiveCuriePrefix, crossReferenceLiveCurieId ] = splitCurie(crossReferenceLiveCurie)
-//         if (prefixOrIdModAssociation === 'prefix') {
-//           modAssociationNewValue = action.payload.value + ':' + crossReferenceLiveCurieId }
-//         else if (prefixOrIdModAssociation === 'id') {
-//           modAssociationNewValue = crossReferenceLiveCuriePrefix + ':' + action.payload.value }
-//         if (modAssociationNewValue === ':') { modAssociationNewValue = ''} }
-//       else if (subfieldModAssociation === 'is_obsolete') {
-//         modAssociationNewValue = action.payload.checked || false }
-
       let newModAssociationChange = state.referenceJsonLive[fieldModAssociation];
       newModAssociationChange[indexModAssociation]['needsChange'] = true;
       newModAssociationChange[indexModAssociation][subfieldModAssociation] = modAssociationNewValue
 
       let hasChangeModAssociationField = state.referenceJsonHasChange
-//       if (state.referenceJsonDb[fieldModAssociation][indexModAssociation][subfieldModAssociation] === modAssociationNewValue) {
-//         if (action.payload.field in hasChangeModAssociationField) {
-//           delete hasChangeModAssociationField[action.payload.field] } }
-//       else {
-//         hasChangeModAssociationField[action.payload.field] = 'diff' }
+      if (state.referenceJsonDb[fieldModAssociation][indexModAssociation][subfieldModAssociation] === modAssociationNewValue) {
+        if (action.payload.field in hasChangeModAssociationField) {
+          delete hasChangeModAssociationField[action.payload.field] } }
+      else {
+        hasChangeModAssociationField[action.payload.field] = 'diff' }
 
       return {
         ...state,
