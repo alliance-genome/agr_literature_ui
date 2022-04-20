@@ -463,9 +463,14 @@ export default function(state = initialState, action) {
         biblioAction: action.payload
       }
     case 'SET_REFERENCE_CURIE':
-      console.log("reducer set reference curie");
+      console.log("reducer set reference curie, also clear store");
+      // also clear store from the previous reference data
       return {
         ...state,
+        isLoading: true,
+        referenceJsonLive: {},
+        referenceJsonDb: {},
+        referenceJsonHasChange: {},
         referenceCurie: action.payload
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
