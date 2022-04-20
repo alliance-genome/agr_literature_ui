@@ -9,6 +9,8 @@ import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert'
 
+import { setReferenceCurie } from '../actions/biblioActions';
+import { setGetReferenceCurieFlag } from '../actions/biblioActions';
 
 import { changeFieldSortMods } from '../actions/sortActions';
 import { sortButtonModsQuery } from '../actions/sortActions';
@@ -134,7 +136,8 @@ const Sort = () => {
               <Col lg={4} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
                  <div style={{alignSelf: 'flex-start'}} ><b>Title:</b> {reference['title']}</div>
                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
-                   style={{alignSelf: 'flex-start'}} >{reference['curie']}</Link>
+                   style={{alignSelf: 'flex-start'}}  onClick={() => { dispatch(setReferenceCurie(reference['curie'])); 
+                   dispatch(setGetReferenceCurieFlag(true)); }} >{reference['curie']}</Link>
                  {reference['cross_references'].map((xref, index2) => (
                    <div key={`xref ${index} ${index2}`} style={{alignSelf: 'flex-start'}} >
                      <a href={xref['url']} target='_blank' rel="noreferrer" >{xref['curie']}</a></div>
