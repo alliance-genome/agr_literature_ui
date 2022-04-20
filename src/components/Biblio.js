@@ -663,6 +663,10 @@ const AlertDismissibleBiblioUpdate = () => {
     header = 'Update Failure';
     variant = 'danger'; }
   if (updateAlert) {
+    if (updateFailure === 0) {
+      setTimeout(() => {
+        dispatch(closeBiblioUpdateAlert())
+      }, 2000) }
     return (
       <Alert variant={variant} onClose={() => dispatch(closeBiblioUpdateAlert())} dismissible>
         <Alert.Heading>{header}</Alert.Heading>
