@@ -32,13 +32,9 @@ const NavigationBar = () => {
       <Nav.Link as={Link} to="/about">About</Nav.Link>
       <Nav.Link as={Link} to="/swaggerUI">Swagger</Nav.Link>
     </Nav>
-
-
     <Nav>
-
       <Login config={oktaSignInConfig}/>
     </Nav>
-
   </Navbar>
   )
 }

@@ -5,6 +5,7 @@
 // console.log('Router is needed in AppWithRouterAccess.js or pages like https://dev3001.alliancegenome.org/Biblio?action=editor&referenceCurie=AGR:AGR-Reference-0000829611 will not display')
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import NavigationBar from './NavigationBar'
+import NotLoggedInBar from './NotLoggedInBar'
 import Home from './Home'
 import Query from './Query'
 import Biblio from './Biblio'
@@ -61,6 +62,7 @@ const AppWithRouterAccess = () => {
         >
             <div className="App">
                 <NavigationBar />
+                <NotLoggedInBar />
                 <br />
                 <Route path='/' exact={true} component={Home}/>
                 <Route path='/query' component={Query} />
