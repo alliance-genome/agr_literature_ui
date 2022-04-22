@@ -5,16 +5,18 @@ import OktaSignInWidget from './OktaSignInWidget';
 import { useOktaAuth } from '@okta/okta-react';
 import  {  useEffect } from 'react';
 import {signIn, signOut} from "../actions/loginActions";
-import {  useDispatch } from 'react-redux';
+// import {  useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
+import Button from 'react-bootstrap/Button';
 
 
 
 const Login = ({config}) => {
-
+    const loggedInUser = useSelector(state => state.isLogged.userId);
     //const { oktaAuth, authState,authService  } = useOktaAuth();
     const { authState, oktaAuth } = useOktaAuth();
     //const [isSignedIn, setIsSignedIn] = useState(authState.isAuthenticated? true:false);
@@ -60,7 +62,7 @@ const Login = ({config}) => {
     const renderAuthButton =  () =>{
         if (!authState.isAuthenticated) {
             return(
-            <Popup trigger={<button className="button"> Sign In </button>} modal>
+            <Popup trigger={<Button as="input" type="button" variant="light" value="Sign In" /> } modal>
                 <span> <OktaSignInWidget
                     config={config}
                     onSuccess={onSuccess}
@@ -68,9 +70,7 @@ const Login = ({config}) => {
                 </span>
             </Popup>)
         } else if(authState.isAuthenticated){
-            return(<button onClick={onSignOutClick} className='button'>
-                Sign Out
-            </button>)
+            return(<>{loggedInUser}  <Button as="input" type="button" variant="light" value="Sign Out" onClick={onSignOutClick} /></>)
         } else{
             return(
                 <OktaSignInWidget
