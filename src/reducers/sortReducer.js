@@ -48,7 +48,7 @@ export default function(state = initialState, action) {
     case 'SORT_BUTTON_SET_RADIO_ALL':
       console.log('SORT_BUTTON_SET_RADIO_ALL reducer ' + action.payload);
       const referencesToSortSetRadioAll = JSON.parse(JSON.stringify(state.referencesToSortLive))
-      for (const[index, reference] of referencesToSortSetRadioAll.entries()) { reference['corpus'] = action.payload }
+      for (let reference of referencesToSortSetRadioAll) { reference['corpus'] = action.payload }
       return {
         ...state,
         referencesToSortLive: referencesToSortSetRadioAll
