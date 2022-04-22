@@ -62,7 +62,7 @@ const Login = ({config}) => {
     const renderAuthButton =  () =>{
         if (!authState.isAuthenticated) {
             return(
-            <Popup trigger={<Button as="input" type="button" variant="light" value="Sign In" /> } modal>
+            <Popup trigger={<Button as="input" type="button" variant="light" value="Sign In" size="sm" /> } modal>
                 <span> <OktaSignInWidget
                     config={config}
                     onSuccess={onSuccess}
@@ -70,7 +70,7 @@ const Login = ({config}) => {
                 </span>
             </Popup>)
         } else if(authState.isAuthenticated){
-            return(<>{loggedInUser}  <Button as="input" type="button" variant="light" value="Sign Out" onClick={onSignOutClick} /></>)
+            return(<>{loggedInUser}  <Button as="input" type="button" variant="light" value="Sign Out" size="sm" onClick={onSignOutClick} /></>)
         } else{
             return(
                 <OktaSignInWidget
