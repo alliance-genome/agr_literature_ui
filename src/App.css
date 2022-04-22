@@ -142,8 +142,8 @@
 .radio-span:hover {
   background-color: var(--light-blue);
   border-radius: 10px;
-  opacity: 90%;
 }
+/* opacity: 90%;  proper react build production does not like this, makes it disappear */
 
 .Col-editor-disabled {
   background-color: #e9ecef;
