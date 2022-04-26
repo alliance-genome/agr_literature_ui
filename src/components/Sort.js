@@ -134,7 +134,8 @@ const Sort = () => {
             <div key={`reference div ${index}`} >
             <Row key={`reference ${index}`} >
               <Col lg={4} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
-                 <div style={{alignSelf: 'flex-start'}} ><b>Title:</b> {reference['title']}</div>
+                 <div style={{alignSelf: 'flex-start'}} ><b>Title: </b>
+                   <span dangerouslySetInnerHTML={{__html: reference['title']}} /></div>
                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
                    style={{alignSelf: 'flex-start'}}  onClick={() => { dispatch(setReferenceCurie(reference['curie'])); 
                    dispatch(setGetReferenceCurieFlag(true)); }} >{reference['curie']}</Link>
@@ -143,9 +144,9 @@ const Sort = () => {
                      <a href={xref['url']} target='_blank' rel="noreferrer" >{xref['curie']}</a></div>
                  ))}
                  <div style={{alignSelf: 'flex-start'}} ><b>Journal:</b> { 
-                   (reference['resource_title']) ? reference['resource_title'] : 'N/A' }</div>
+                   (reference['resource_title']) ? <span dangerouslySetInnerHTML={{__html: reference['resource_title']}} /> : 'N/A' }</div>
               </Col>
-              <Col lg={5} className="Col-general Col-display" >{reference['abstract']}</Col>
+              <Col lg={5} className="Col-general Col-display" ><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
               <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
                   inline
