@@ -12,15 +12,18 @@ import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
 import Button from 'react-bootstrap/Button';
+import NavDropdown from 'react-bootstrap/NavDropdown';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faUserCircle } from '@fortawesome/free-solid-svg-icons'
 
 
 const Login = ({config}) => {
     const loggedInUser = useSelector(state => state.isLogged.userId);
-    //const { oktaAuth, authState,authService  } = useOktaAuth();
+    // const { oktaAuth, authState,authService  } = useOktaAuth();
     const { authState, oktaAuth } = useOktaAuth();
-    //const [isSignedIn, setIsSignedIn] = useState(authState.isAuthenticated? true:false);
-    //const [userId, setUserId] = useState('');
+    // const [isSignedIn, setIsSignedIn] = useState(authState.isAuthenticated? true:false);
+    // const [userId, setUserId] = useState('');
     const dispatch = useDispatch();
     useEffect(() => {
 
@@ -48,15 +51,12 @@ const Login = ({config}) => {
         return null;}
 
 
-
-
     const onSignOutClick = async () => {
 
         // Will redirect to Okta to end the session then redirect back to the configured `postLogoutRedirectUri`
-        //await oktaAuth.signOut({postLogoutRedirectUri:location_fullpath});
+        // await oktaAuth.signOut({postLogoutRedirectUri:location_fullpath});
         await oktaAuth.signOut();
-        //setIsSignedIn(false)
-
+        // setIsSignedIn(false)
     }
 
     const renderAuthButton =  () =>{
@@ -69,24 +69,26 @@ const Login = ({config}) => {
                     onError={onError}/>
                 </span>
             </Popup>)
-        } else if(authState.isAuthenticated){
-            return(<>{loggedInUser}  <Button as="input" type="button" variant="light" value="Sign Out" size="sm" onClick={onSignOutClick} /></>)
-        } else{
+        } else if (authState.isAuthenticated) {
+            return(
+	      <NavDropdown title={<FontAwesomeIcon icon={faUserCircle} />} alignRight id="basic-nav-dropdown">
+                <NavDropdown.Item >{loggedInUser}</NavDropdown.Item>
+                <NavDropdown.Item >
+                  <Button as="input" type="button" variant="primary" value="Sign Out" size="sm" onClick={onSignOutClick} />
+                </NavDropdown.Item>
+              </NavDropdown>)
+        } else {
             return(
                 <OktaSignInWidget
                     config={config}
                     onSuccess={onSuccess}
                     onError={onError}/>)
-
         }
     }
-
-
 
     return(<div>
         {renderAuthButton()}
     </div>)
-
 };
 
 export default Login
