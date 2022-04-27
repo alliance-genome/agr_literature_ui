@@ -1,21 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useHistory } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
-
 import { changeQueryField } from '../actions/queryActions';
 import { queryButtonCrossRefCurie } from '../actions/queryActions';
 import { resetQueryRedirect } from '../actions/queryActions';
-// import { resetQueryState } from '../actions/queryActions';	// replaced by resetBiblioIsLoading
-import { queryButtonTitle } from '../actions/queryActions';
-
 import { resetBiblioIsLoading } from '../actions/biblioActions';
-// import { resetBiblioReferenceCurie } from '../actions/biblioActions';	// replaced by setReferenceCurie + setGetReferenceCurieFlag
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
-
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
+import SearchLayout from './query/SearchLayout';
 
 
 
@@ -25,10 +17,6 @@ const Query = () => {
   const queryResponseColor = useSelector(state => state.query.responseColor);
   const queryRedirectToBiblio = useSelector(state => state.query.redirectToBiblio);
   const queryQuerySuccess = useSelector(state => state.query.querySuccess);
-  const titleField = useSelector(state => state.query.titleField);
-  const titleSearchInput = useSelector(state => state.query.titleSearchInput);
-  const titleQueryResponseColor = useSelector(state => state.query.titleQueryResponseColor);
-  const referencesReturned = useSelector(state => state.query.referencesReturned);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -51,32 +39,8 @@ const Query = () => {
       <button type="submit" onClick={() => dispatch(queryButtonCrossRefCurie(xrefcurieField))}>Query External Identifier Curie</button>
       <div>{queryQuerySuccess ? <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + queryResponseField}}><span style={{color: queryResponseColor}}>{queryResponseField}</span></Link> : <span style={{color: queryResponseColor}}>{queryResponseField}</span>}</div>
       <hr/>
-      <h4>Look up References by title.<br/></h4>
-      <input type="text" id="titleField" name="titleField" value={titleField} onChange={(e) => dispatch(changeQueryField(e))} />
-      <button type="submit" onClick={() => dispatch(queryButtonTitle(titleField))}>Query Titles</button>
-      { 
-        titleSearchInput &&
-        <Container>
-        <Row><Col>&nbsp;</Col></Row>
-        { referencesReturned.length > 0 ?
-          <>
-            <Row key="reference header"><Col><span style={{color: titleQueryResponseColor}}>{titleSearchInput}</span> returned</Col></Row>
-            <Row>
-              <Col lg={3} className="Col-general Col-display Col-display-left" >Curie</Col>
-              <Col lg={9} className="Col-general Col-display Col-display-right" >Title</Col>
-            </Row>
-            { referencesReturned.map((reference, index) => (
-              <Row key={`reference ${index}`}>
-                <Col lg={3} className="Col-general Col-display Col-display-left" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></Col>
-                <Col lg={9} className="Col-general Col-display Col-display-right" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></Col>
-              </Row>
-            )) }
-          </>
-        :
-          <Row key="reference header"><Col><span style={{color: titleQueryResponseColor}}>{titleSearchInput}</span> returned <span style={{color: titleQueryResponseColor}}>no match</span></Col></Row>
-        }
-        </Container>
-      }
+      <h4>Search References<br/></h4>
+        <SearchLayout/>
       <hr/>
       <Link to='/'>Go Back</Link>
     </div>

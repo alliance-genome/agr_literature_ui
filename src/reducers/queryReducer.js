@@ -1,9 +1,10 @@
+import {SET_SEARCH_ERROR, SET_SEARCH_FACETS, SET_SEARCH_LOADING, SET_SEARCH_RESULTS} from "../actions/queryActions";
 
 const initialState = {
-  titleField: '',
-  titleSearchInput: '',
-  titleQueryResponseColor: 'black',
-  referencesReturned: [],
+  searchResults: [],
+  searchLoading: false,
+  searchSuccess: false,
+  searchFacets: {},
   xrefcurieField: '',
   querySuccess: false,
   responseColor: 'black',
@@ -29,16 +30,37 @@ export default function(state = initialState, action) {
         redirectToBiblio: false
       }
 
-    case 'QUERY_BUTTON_TITLE':
-      console.log("query button title reducer set "); console.log(action.payload);
-      //   referencesReturned: [{'title': 'title one', 'curie': 'curie_one'}, {'title': 'title two', 'curie': 'curie_two'}]
-      let titleQueryResponseColor = 'blue';
-      if (action.responseFound === 'not found') { titleQueryResponseColor = 'red'; } 
+    case SET_SEARCH_RESULTS:
       return {
         ...state,
-        titleQueryResponseColor: titleQueryResponseColor,
-        referencesReturned: action.payload,
-        titleSearchInput: action.searchInput
+        searchLoading: false,
+        searchSuccess: true,
+        searchError: false,
+        searchResults: action.payload.searchResults
+      }
+
+    case SET_SEARCH_LOADING:
+      return {
+        ...state,
+        searchLoading: true,
+        searchSuccess: false,
+        searchError: false,
+        searchResults: []
+      }
+
+    case SET_SEARCH_ERROR:
+      return {
+        ...state,
+        searchLoading: false,
+        searchError: action.payload.value,
+        searchSuccess: false,
+        searchResults: []
+      }
+
+    case SET_SEARCH_FACETS:
+      return {
+        ...state,
+        searchFacets: action.payload.facets
       }
 
     case 'QUERY_BUTTON_XREF_CURIE':

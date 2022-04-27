@@ -1,11 +1,12 @@
-// import history from "../history";
+import axios from "axios";
 
-// import notGithubVariables from './notGithubVariables';
+export const SET_SEARCH_RESULTS = 'SET_SEARCH_RESULTS';
+export const SET_SEARCH_LOADING = 'SET_SEARCH_LOADING';
+export const SET_SEARCH_ERROR = 'SET_SEARCH_ERROR';
+export const SET_SEARCH_FACETS = 'SET_SEARCH_FACETS';
+
 
 const restUrl = process.env.REACT_APP_RESTAPI;
-// const restUrl = 'stage-literature-rest.alliancegenome.org';
-// const port = 11223;
-// const port = 49161;
 
 export const changeQueryField = (e) => {
   console.log('action change field ' + e.target.id + ' to ' + e.target.value);
@@ -18,49 +19,67 @@ export const changeQueryField = (e) => {
   };
 };
 
-// replaced by biblioActions : setReferenceCurie + setGetReferenceCurieFlag
-// export const resetQueryState = () => {
-//   return {
-//     type: 'RESET_QUERY_STATE'
-//   };
-// };
-
 export const resetQueryRedirect = () => {
   return {
     type: 'RESET_QUERY_REDIRECT'
   };
 };
 
-export const queryButtonTitle = (payload) => dispatch => {
-  console.log('in queryButtonTitle action');
-  console.log("payload " + payload);
-  const createGetQueryButtonTitle = async () => {
-    const url = restUrl + '/search/references/' + payload;
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json'
-      }
+export const fetchInitialFacets = () => {
+  return dispatch => {
+    axios.post(restUrl + '/search/references', {
+      query: null,
+      facets_values: null,
+      facets_limits: null,
+      return_facets_only: true
     })
-    const response = await res.json();
-    let response_payload = [];
-    let response_found = 'not found';
-    if ( (response[0] !== undefined) && (response[0].curie !== undefined) ) {
-      console.log('response not undefined');
-      response_found = 'found';
-      response_payload = response;
-    }
-    console.log('dispatch QUERY_BUTTON_TITLE');
-    dispatch({
-      type: 'QUERY_BUTTON_TITLE',
-      payload: response_payload,
-      responseFound: response_found,
-      searchInput: payload
-    })
+        .then(res => {
+          dispatch(setSearchFacets(res.data.aggregations));
+        })
+        .catch();
   }
-  createGetQueryButtonTitle()
 }
+
+export const searchReferences = (query, facets_values, facets_limits) => {
+  return dispatch => {
+    dispatch(setSearchLoading());
+    axios.post(restUrl + '/search/references', {
+      query: query,
+      facets_values: facets_values,
+      facets_limits: facets_limits
+    })
+        .then(res => {
+          dispatch(setSearchResults(res.data.hits));
+          dispatch(setSearchFacets(res.data.aggregations));
+        })
+        .catch(err => dispatch(setSearchError(true)));
+  }
+}
+
+export const setSearchLoading = () => ({
+  type: SET_SEARCH_LOADING
+});
+
+export const setSearchError = (value) => ({
+  type: SET_SEARCH_ERROR,
+  payload: {
+    value: value
+  }
+});
+
+export const setSearchResults = (searchResults) => ({
+  type: SET_SEARCH_RESULTS,
+  payload: {
+    searchResults: searchResults
+  }
+});
+
+export const setSearchFacets = (facets) => ({
+  type: SET_SEARCH_FACETS,
+  payload: {
+    facets: facets
+  }
+});
 
 export const queryButtonCrossRefCurie = (payload) => dispatch => {
   console.log('in queryButtonCrossRefCurie action');
