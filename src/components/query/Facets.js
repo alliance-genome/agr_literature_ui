@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import {fetchInitialFacets, searchReferences, setSearchFacetsValues} from '../../actions/queryActions';
+import {fetchInitialFacets, searchReferences} from '../../actions/queryActions';
 import Form from 'react-bootstrap/Form';
 import {Accordion, Badge, Button} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';

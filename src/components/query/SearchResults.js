@@ -5,7 +5,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import {Link} from 'react-router-dom';
 import {setGetReferenceCurieFlag, setReferenceCurie} from '../../actions/biblioActions';
-import {Modal, Spinner} from 'react-bootstrap';
+import {Modal} from 'react-bootstrap';
 import {setSearchError} from '../../actions/queryActions';
 import Button from 'react-bootstrap/Button';
 

@@ -3,20 +3,11 @@ import SearchBar from "./SearchBar";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import axios from 'axios';
-import {useDispatch, useSelector} from 'react-redux';
 import Facets from './Facets';
 import SearchResults from "./SearchResults";
 
 
 const SearchLayout = () => {
-
-    const dispatch = useDispatch();
-
-    const populateInitialFacets = () => {
-        axios.post()
-    }
-
     return (
         <div>
             <Container fluid>
