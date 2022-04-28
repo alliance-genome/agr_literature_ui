@@ -19,32 +19,30 @@ const Facet = ({facetsToInclude}) => {
                 facetsToInclude.includes(key.replace('.keyword', '').replace('_', ' ')))
                 .map(([key, value]) =>
                     <div style={{textAlign: "left", paddingLeft: "2em"}}>
-                        {Object.entries(searchFacets).map(([key, value]) =>
-                            <div>
-                                <h5>{key.replace('.keyword', '').replace('_', ' ')}</h5>
-                                {value.buckets.map(bucket => <div style={{paddingLeft: "1em"}}>
-                                    <Form.Check inline type="checkbox"
-                                                checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
-                                                onChange={(evt) => {
-                                                    let newSearchFacetsValues = searchFacetsValues;
-                                                    if (evt.target.checked) {
-                                                        if (!newSearchFacetsValues.hasOwnProperty(key)) {
-                                                            newSearchFacetsValues[key] = []
-                                                        }
-                                                        newSearchFacetsValues[key].push(bucket.key)
-                                                    } else {
-                                                        newSearchFacetsValues[key] = newSearchFacetsValues[key].filter(
-                                                            e => e !== bucket.key)
-                                                        if (newSearchFacetsValues[key].length === 0) {
-                                                            delete newSearchFacetsValues[key];
-                                                        }
+                        <div>
+                            <h5>{key.replace('.keyword', '').replace('_', ' ')}</h5>
+                            {value.buckets.map(bucket => <div style={{paddingLeft: "1em"}}>
+                                <Form.Check inline type="checkbox"
+                                            checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
+                                            onChange={(evt) => {
+                                                let newSearchFacetsValues = searchFacetsValues;
+                                                if (evt.target.checked) {
+                                                    if (!newSearchFacetsValues.hasOwnProperty(key)) {
+                                                        newSearchFacetsValues[key] = []
                                                     }
-                                                    dispatch(searchReferences(searchQuery, newSearchFacetsValues, searchFacetsLimits));
-                                                }}/>
-                                    {bucket.key} <Badge variant="secondary">{bucket.doc_count}</Badge>
-                                </div>)}
-                            </div>
-                        )}
+                                                    newSearchFacetsValues[key].push(bucket.key)
+                                                } else {
+                                                    newSearchFacetsValues[key] = newSearchFacetsValues[key].filter(
+                                                        e => e !== bucket.key)
+                                                    if (newSearchFacetsValues[key].length === 0) {
+                                                        delete newSearchFacetsValues[key];
+                                                    }
+                                                }
+                                                dispatch(searchReferences(searchQuery, newSearchFacetsValues, searchFacetsLimits));
+                                            }}/>
+                                {bucket.key} <Badge variant="secondary">{bucket.doc_count}</Badge>
+                            </div>)}
+                        </div>
                     </div>
                 )}
         </div>
