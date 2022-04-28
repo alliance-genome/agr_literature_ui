@@ -1,10 +1,19 @@
-import {SET_SEARCH_ERROR, SET_SEARCH_FACETS, SET_SEARCH_LOADING, SET_SEARCH_RESULTS} from "../actions/queryActions";
+import {
+  SET_SEARCH_ERROR,
+  SET_SEARCH_FACETS,
+  SET_SEARCH_FACETS_VALUES,
+  SET_SEARCH_LOADING, SET_SEARCH_QUERY,
+  SET_SEARCH_RESULTS
+} from '../actions/queryActions';
 
 const initialState = {
   searchResults: [],
   searchLoading: false,
   searchSuccess: false,
   searchFacets: {},
+  searchFacetsValues: {},
+  searchFacetsLimits: {},
+  searchQuery: null,
   xrefcurieField: '',
   querySuccess: false,
   responseColor: 'black',
@@ -57,10 +66,22 @@ export default function(state = initialState, action) {
         searchResults: []
       }
 
+    case SET_SEARCH_QUERY:
+      return {
+        ...state,
+        searchQuery: action.payload.query
+      }
+
     case SET_SEARCH_FACETS:
       return {
         ...state,
         searchFacets: action.payload.facets
+      }
+
+    case SET_SEARCH_FACETS_VALUES:
+      return {
+        ...state,
+        searchFacetsValues: action.payload.facetsValues
       }
 
     case 'QUERY_BUTTON_XREF_CURIE':

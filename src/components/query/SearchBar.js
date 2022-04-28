@@ -12,6 +12,8 @@ const SearchBar = () => {
     const [searchInputText, setSearchInputText] = useState('');
 
     const searchLoading = useSelector(state => state.query.searchLoading);
+    const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
+    const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
 
     const dispatch = useDispatch();
 
@@ -31,12 +33,12 @@ const SearchBar = () => {
                               onChange={(e) => setSearchInputText(e.target.value)}
                               onKeyPress={(event) => {
                                   if (event.charCode === 13) {
-                                      dispatch(searchReferences(searchInputText, null, null));
+                                      dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits));
                                   }
                               }}
                 />
                 <Button inline
-                        onClick={() => dispatch(searchReferences(searchInputText, null, null))}>
+                        onClick={() => dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits))}>
                     Search
                 </Button>
             </InputGroup>

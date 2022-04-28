@@ -4,6 +4,9 @@ export const SET_SEARCH_RESULTS = 'SET_SEARCH_RESULTS';
 export const SET_SEARCH_LOADING = 'SET_SEARCH_LOADING';
 export const SET_SEARCH_ERROR = 'SET_SEARCH_ERROR';
 export const SET_SEARCH_FACETS = 'SET_SEARCH_FACETS';
+export const SET_SEARCH_QUERY = 'SET_SEARCH_QUERY';
+export const SET_SEARCH_FACETS_VALUES = 'SET_SEARCH_FACETS_VALUES';
+export const SET_SEARCH_FACETS_LIMITS = 'SET_SEARCH_FACETS_LIMITS';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -40,13 +43,16 @@ export const fetchInitialFacets = () => {
   }
 }
 
-export const searchReferences = (query, facets_values, facets_limits) => {
+export const searchReferences = (query, facetsValues, facetsLimits) => {
   return dispatch => {
     dispatch(setSearchLoading());
+    dispatch(setSearchQuery(query));
+    dispatch(setSearchFacetsValues(facetsValues));
+    dispatch(setSearchFacetsLimits(facetsLimits));
     axios.post(restUrl + '/search/references', {
       query: query,
-      facets_values: facets_values,
-      facets_limits: facets_limits
+      facets_values: facetsValues,
+      facets_limits: facetsLimits
     })
         .then(res => {
           dispatch(setSearchResults(res.data.hits));
@@ -55,6 +61,27 @@ export const searchReferences = (query, facets_values, facets_limits) => {
         .catch(err => dispatch(setSearchError(true)));
   }
 }
+
+export const setSearchQuery = (query) => ({
+  type: SET_SEARCH_QUERY,
+  payload: {
+    query
+  }
+});
+
+export const setSearchFacetsValues = (facetsValues) => ({
+  type: SET_SEARCH_FACETS_VALUES,
+  payload: {
+    facetsValues
+  }
+});
+
+export const setSearchFacetsLimits = (facetsLimits) => ({
+  type: SET_SEARCH_FACETS_LIMITS,
+  payload: {
+    facetsLimits
+  }
+});
 
 export const setSearchLoading = () => ({
   type: SET_SEARCH_LOADING
