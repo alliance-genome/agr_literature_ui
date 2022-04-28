@@ -1,9 +1,9 @@
 import {
-  SET_SEARCH_ERROR,
-  SET_SEARCH_FACETS,
-  SET_SEARCH_FACETS_VALUES,
-  SET_SEARCH_LOADING, SET_SEARCH_QUERY,
-  SET_SEARCH_RESULTS
+  QUERY_SET_SEARCH_ERROR,
+  QUERY_SET_SEARCH_FACETS,
+  QUERY_SET_SEARCH_FACETS_VALUES,
+  QUERY_SET_SEARCH_LOADING, QUERY_SET_SEARCH_QUERY,
+  QUERY_SET_SEARCH_RESULTS
 } from '../actions/queryActions';
 
 const initialState = {
@@ -39,7 +39,7 @@ export default function(state = initialState, action) {
         redirectToBiblio: false
       }
 
-    case SET_SEARCH_RESULTS:
+    case QUERY_SET_SEARCH_RESULTS:
       return {
         ...state,
         searchLoading: false,
@@ -48,7 +48,7 @@ export default function(state = initialState, action) {
         searchResults: action.payload.searchResults
       }
 
-    case SET_SEARCH_LOADING:
+    case QUERY_SET_SEARCH_LOADING:
       return {
         ...state,
         searchLoading: true,
@@ -57,7 +57,7 @@ export default function(state = initialState, action) {
         searchResults: []
       }
 
-    case SET_SEARCH_ERROR:
+    case QUERY_SET_SEARCH_ERROR:
       return {
         ...state,
         searchLoading: false,
@@ -66,19 +66,19 @@ export default function(state = initialState, action) {
         searchResults: []
       }
 
-    case SET_SEARCH_QUERY:
+    case QUERY_SET_SEARCH_QUERY:
       return {
         ...state,
         searchQuery: action.payload.query
       }
 
-    case SET_SEARCH_FACETS:
+    case QUERY_SET_SEARCH_FACETS:
       return {
         ...state,
         searchFacets: action.payload.facets
       }
 
-    case SET_SEARCH_FACETS_VALUES:
+    case QUERY_SET_SEARCH_FACETS_VALUES:
       return {
         ...state,
         searchFacetsValues: action.payload.facetsValues

@@ -1,12 +1,12 @@
 import axios from "axios";
 
-export const SET_SEARCH_RESULTS = 'SET_SEARCH_RESULTS';
-export const SET_SEARCH_LOADING = 'SET_SEARCH_LOADING';
-export const SET_SEARCH_ERROR = 'SET_SEARCH_ERROR';
-export const SET_SEARCH_FACETS = 'SET_SEARCH_FACETS';
-export const SET_SEARCH_QUERY = 'SET_SEARCH_QUERY';
-export const SET_SEARCH_FACETS_VALUES = 'SET_SEARCH_FACETS_VALUES';
-export const SET_SEARCH_FACETS_LIMITS = 'SET_SEARCH_FACETS_LIMITS';
+export const QUERY_SET_SEARCH_RESULTS = 'QUERY_SET_SEARCH_RESULTS';
+export const QUERY_SET_SEARCH_LOADING = 'QUERY_SET_SEARCH_LOADING';
+export const QUERY_SET_SEARCH_ERROR = 'QUERY_SET_SEARCH_ERROR';
+export const QUERY_SET_SEARCH_FACETS = 'QUERY_SET_SEARCH_FACETS';
+export const QUERY_SET_SEARCH_QUERY = 'QUERY_SET_SEARCH_QUERY';
+export const QUERY_SET_SEARCH_FACETS_VALUES = 'QUERY_SET_SEARCH_FACETS_VALUES';
+export const QUERY_SET_SEARCH_FACETS_LIMITS = 'QUERY_SET_SEARCH_FACETS_LIMITS';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -63,46 +63,46 @@ export const searchReferences = (query, facetsValues, facetsLimits) => {
 }
 
 export const setSearchQuery = (query) => ({
-  type: SET_SEARCH_QUERY,
+  type: QUERY_SET_SEARCH_QUERY,
   payload: {
     query
   }
 });
 
 export const setSearchFacetsValues = (facetsValues) => ({
-  type: SET_SEARCH_FACETS_VALUES,
+  type: QUERY_SET_SEARCH_FACETS_VALUES,
   payload: {
     facetsValues
   }
 });
 
 export const setSearchFacetsLimits = (facetsLimits) => ({
-  type: SET_SEARCH_FACETS_LIMITS,
+  type: QUERY_SET_SEARCH_FACETS_LIMITS,
   payload: {
     facetsLimits
   }
 });
 
 export const setSearchLoading = () => ({
-  type: SET_SEARCH_LOADING
+  type: QUERY_SET_SEARCH_LOADING
 });
 
 export const setSearchError = (value) => ({
-  type: SET_SEARCH_ERROR,
+  type: QUERY_SET_SEARCH_ERROR,
   payload: {
     value: value
   }
 });
 
 export const setSearchResults = (searchResults) => ({
-  type: SET_SEARCH_RESULTS,
+  type: QUERY_SET_SEARCH_RESULTS,
   payload: {
     searchResults: searchResults
   }
 });
 
 export const setSearchFacets = (facets) => ({
-  type: SET_SEARCH_FACETS,
+  type: QUERY_SET_SEARCH_FACETS,
   payload: {
     facets: facets
   }
