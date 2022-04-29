@@ -1,9 +1,26 @@
+import {
+  QUERY_SET_SEARCH_ERROR,
+  QUERY_SET_SEARCH_FACETS, QUERY_SET_SEARCH_FACETS_LIMITS,
+  QUERY_SET_SEARCH_FACETS_VALUES,
+  QUERY_SET_SEARCH_LOADING, QUERY_SET_SEARCH_QUERY,
+  QUERY_SET_SEARCH_RESULTS,
+} from '../actions/queryActions';
+
+import _ from "lodash";
+
+
+export const INITIAL_FACETS_LIMIT = 10;
 
 const initialState = {
-  titleField: '',
-  titleSearchInput: '',
-  titleQueryResponseColor: 'black',
-  referencesReturned: [],
+  searchResults: [],
+  searchLoading: false,
+  searchSuccess: false,
+  searchFacets: {},
+  searchFacetsValues: {},
+  searchFacetsLimits: {
+    'pubmed_types.keyword': INITIAL_FACETS_LIMIT
+  },
+  searchQuery: null,
   xrefcurieField: '',
   querySuccess: false,
   responseColor: 'black',
@@ -29,16 +46,60 @@ export default function(state = initialState, action) {
         redirectToBiblio: false
       }
 
-    case 'QUERY_BUTTON_TITLE':
-      console.log("query button title reducer set "); console.log(action.payload);
-      //   referencesReturned: [{'title': 'title one', 'curie': 'curie_one'}, {'title': 'title two', 'curie': 'curie_two'}]
-      let titleQueryResponseColor = 'blue';
-      if (action.responseFound === 'not found') { titleQueryResponseColor = 'red'; } 
+    case QUERY_SET_SEARCH_RESULTS:
       return {
         ...state,
-        titleQueryResponseColor: titleQueryResponseColor,
-        referencesReturned: action.payload,
-        titleSearchInput: action.searchInput
+        searchLoading: false,
+        searchSuccess: true,
+        searchError: false,
+        searchResults: action.payload.searchResults
+      }
+
+    case QUERY_SET_SEARCH_LOADING:
+      return {
+        ...state,
+        searchLoading: true,
+        searchSuccess: false,
+        searchError: false,
+        searchResults: []
+      }
+
+    case QUERY_SET_SEARCH_ERROR:
+      return {
+        ...state,
+        searchLoading: false,
+        searchError: action.payload.value,
+        searchSuccess: false,
+        searchResults: []
+      }
+
+    case QUERY_SET_SEARCH_QUERY:
+      return {
+        ...state,
+        searchQuery: action.payload.query
+      }
+
+    case QUERY_SET_SEARCH_FACETS:
+      let newSearchFacetsLimits = _.cloneDeep(state.searchFacetsLimits);
+      Object.entries(action.payload.facets).forEach(([key, values]) => {
+        newSearchFacetsLimits[key] = Math.max(values.buckets.length, INITIAL_FACETS_LIMIT);
+      });
+      return {
+        ...state,
+        searchFacets: action.payload.facets,
+        searchFacetsLimits: newSearchFacetsLimits
+      }
+
+    case QUERY_SET_SEARCH_FACETS_VALUES:
+      return {
+        ...state,
+        searchFacetsValues: action.payload.facetsValues
+      }
+
+    case QUERY_SET_SEARCH_FACETS_LIMITS:
+      return {
+        ...state,
+        searchFacetsLimits: action.payload.facetsLimits
       }
 
     case 'QUERY_BUTTON_XREF_CURIE':
