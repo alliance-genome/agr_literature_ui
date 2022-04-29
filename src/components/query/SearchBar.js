@@ -14,6 +14,8 @@ const SearchBar = () => {
     const searchLoading = useSelector(state => state.query.searchLoading);
     const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
+    const searchResults = useSelector(state => state.query.searchResults);
+    const searchSuccess = useSelector(state => state.query.searchSuccess);
 
     const dispatch = useDispatch();
 
@@ -49,6 +51,12 @@ const SearchBar = () => {
                         <Spinner animation="border"/>
                     </div> : null
                 }
+                {
+                searchResults.length === 0 && searchSuccess ?
+                <div>
+                    No Results Found
+                </div> : null
+            }
             </div>
         </div>
     )
