@@ -247,8 +247,11 @@ const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
     valueDb = aggregateCitation(referenceJsonDb)
     valueLive = aggregateCitation(referenceJsonLive) }
   if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+  let valueToDisplay = valueLive;
+  if ( (fieldName === 'title') || (fieldName === 'abstract') ) {
+    valueToDisplay = (<span dangerouslySetInnerHTML={{__html: valueLive}} />) }
   return (
-        <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueLive} updatedFlag={updatedFlag} />); }
+        <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueToDisplay} updatedFlag={updatedFlag} />); }
 
 const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {	// need this because referenceJsonLive starts empty before values get added
