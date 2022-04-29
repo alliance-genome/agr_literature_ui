@@ -81,7 +81,7 @@ const Facets = () => {
                 </Accordion.Toggle>
                 <Accordion.Collapse eventKey="0">
                     <div>
-                        <Facet facetsToInclude={["pubmed type"]}/>
+                        <Facet facetsToInclude={["pubmed types"]}/>
                     </div>
                 </Accordion.Collapse>
             </div>
