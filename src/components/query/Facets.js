@@ -4,6 +4,7 @@ import {fetchInitialFacets, searchReferences} from '../../actions/queryActions';
 import Form from 'react-bootstrap/Form';
 import {Accordion, Badge, Button} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
+import {INITIAL_FACETS_LIMIT} from '../../reducers/queryReducer';
 
 const Facet = ({facetsToInclude}) => {
 
@@ -12,6 +13,14 @@ const Facet = ({facetsToInclude}) => {
     const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
     const dispatch = useDispatch();
+
+    const searchWithUpdatedFacetsLimits = (newSearchFacetsLimits) => {
+        if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
+            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits))
+        } else {
+            dispatch(fetchInitialFacets(newSearchFacetsLimits));
+        }
+    }
 
     return (
         <div>
@@ -42,6 +51,24 @@ const Facet = ({facetsToInclude}) => {
                                             }}/>
                                 {bucket.key} <Badge variant="secondary">{bucket.doc_count}</Badge>
                             </div>)}
+                            <div style={{textAlign: "right"}}>
+                                <a href="javascript:void(0);" onClick={()=> {
+                                    let newSearchFacetsLimits = searchFacetsLimits;
+                                    newSearchFacetsLimits[key] = searchFacetsLimits[key] * 2;
+                                    searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                                }}>+Show More</a>
+                                {searchFacetsLimits[key] > INITIAL_FACETS_LIMIT ?
+                                    <span>&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:void(0);" onClick={() => {
+                                        let newSearchFacetsLimits = searchFacetsLimits;
+                                        newSearchFacetsLimits[key] = searchFacetsLimits[key] = INITIAL_FACETS_LIMIT;
+                                        searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                                    }}>-Show Less</a></span> : null
+                                }
+                                &nbsp;&nbsp;&nbsp;&nbsp; <a href="javascript:void(0);" onClick={() =>{
+                                    let newSearchFacetsLimits = searchFacetsLimits;
+                                        newSearchFacetsLimits[key] = searchFacetsLimits[key] = 1000;
+                                        searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                            }}>+Show All</a></div>
                         </div>
                     </div>
                 )}
@@ -54,6 +81,7 @@ const Facets = () => {
 
     const [openFacets, setOpenFacets] = useState(new Set());
     const searchFacets = useSelector(state => state.query.searchFacets);
+    const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
     const dispatch = useDispatch();
 
     const toggleFacetGroup = (facetGroupLabel) => {
@@ -68,7 +96,7 @@ const Facets = () => {
 
     useEffect(() => {
         if (Object.keys(searchFacets).length === 0) {
-            dispatch(fetchInitialFacets());
+            dispatch(fetchInitialFacets(searchFacetsLimits));
         }
     }, [])
 

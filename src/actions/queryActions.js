@@ -28,12 +28,12 @@ export const resetQueryRedirect = () => {
   };
 };
 
-export const fetchInitialFacets = () => {
+export const fetchInitialFacets = (facetsLimits) => {
   return dispatch => {
     axios.post(restUrl + '/search/references', {
       query: null,
       facets_values: null,
-      facets_limits: null,
+      facets_limits: facetsLimits,
       return_facets_only: true
     })
         .then(res => {

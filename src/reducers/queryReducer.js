@@ -1,10 +1,15 @@
 import {
   QUERY_SET_SEARCH_ERROR,
-  QUERY_SET_SEARCH_FACETS,
+  QUERY_SET_SEARCH_FACETS, QUERY_SET_SEARCH_FACETS_LIMITS,
   QUERY_SET_SEARCH_FACETS_VALUES,
   QUERY_SET_SEARCH_LOADING, QUERY_SET_SEARCH_QUERY,
-  QUERY_SET_SEARCH_RESULTS
+  QUERY_SET_SEARCH_RESULTS,
 } from '../actions/queryActions';
+
+import _ from "lodash";
+
+
+export const INITIAL_FACETS_LIMIT = 10;
 
 const initialState = {
   searchResults: [],
@@ -12,7 +17,9 @@ const initialState = {
   searchSuccess: false,
   searchFacets: {},
   searchFacetsValues: {},
-  searchFacetsLimits: {},
+  searchFacetsLimits: {
+    'pubmed_types.keyword': INITIAL_FACETS_LIMIT
+  },
   searchQuery: null,
   xrefcurieField: '',
   querySuccess: false,
@@ -73,15 +80,26 @@ export default function(state = initialState, action) {
       }
 
     case QUERY_SET_SEARCH_FACETS:
+      let newSearchFacetsLimits = _.cloneDeep(state.searchFacetsLimits);
+      Object.entries(action.payload.facets).forEach(([key, values]) => {
+        newSearchFacetsLimits[key] = Math.max(values.buckets.length, INITIAL_FACETS_LIMIT);
+      });
       return {
         ...state,
-        searchFacets: action.payload.facets
+        searchFacets: action.payload.facets,
+        searchFacetsLimits: newSearchFacetsLimits
       }
 
     case QUERY_SET_SEARCH_FACETS_VALUES:
       return {
         ...state,
         searchFacetsValues: action.payload.facetsValues
+      }
+
+    case QUERY_SET_SEARCH_FACETS_LIMITS:
+      return {
+        ...state,
+        searchFacetsLimits: action.payload.facetsLimits
       }
 
     case 'QUERY_BUTTON_XREF_CURIE':
