@@ -27,10 +27,10 @@ const Facet = ({facetsToInclude}) => {
             {Object.entries(searchFacets).filter(([key, value]) =>
                 facetsToInclude.includes(key.replace('.keyword', '').replace('_', ' ')))
                 .map(([key, value]) =>
-                    <div style={{textAlign: "left", paddingLeft: "2em"}}>
+                    <div key={key} style={{textAlign: "left", paddingLeft: "2em"}}>
                         <div>
                             <h5>{key.replace('.keyword', '').replace('_', ' ')}</h5>
-                            {value.buckets.map(bucket => <div style={{paddingLeft: "1em"}}>
+                            {value.buckets.map(bucket => <div key={`${key} ${bucket.key}`} style={{paddingLeft: "1em"}}>
                                 <Form.Check inline type="checkbox"
                                             checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
                                             onChange={(evt) => {
@@ -52,23 +52,23 @@ const Facet = ({facetsToInclude}) => {
                                 {bucket.key} <Badge variant="secondary">{bucket.doc_count}</Badge>
                             </div>)}
                             <div style={{paddingLeft: "1em"}}>
-                                <a href="javascript:void(0);" onClick={()=> {
+                                <button className="button-to-link" onClick={()=> {
                                     let newSearchFacetsLimits = searchFacetsLimits;
                                     newSearchFacetsLimits[key] = searchFacetsLimits[key] * 2;
                                     searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
-                                }}>+Show More</a>
+                                }}>+Show More</button>
                                 {searchFacetsLimits[key] > INITIAL_FACETS_LIMIT ?
-                                    <span>&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:void(0);" onClick={() => {
+                                    <span>&nbsp;&nbsp;&nbsp;&nbsp;<button className="button-to-link" onClick={() => {
                                         let newSearchFacetsLimits = searchFacetsLimits;
                                         newSearchFacetsLimits[key] = searchFacetsLimits[key] = INITIAL_FACETS_LIMIT;
                                         searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
-                                    }}>-Show Less</a></span> : null
+                                    }}>-Show Less</button></span> : null
                                 }
-                                &nbsp;&nbsp;&nbsp;&nbsp; <a href="javascript:void(0);" onClick={() =>{
+                                &nbsp;&nbsp;&nbsp;&nbsp; <button className="button-to-link" onClick={() =>{
                                     let newSearchFacetsLimits = searchFacetsLimits;
                                         newSearchFacetsLimits[key] = searchFacetsLimits[key] = 1000;
                                         searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
-                            }}>+Show All</a></div>
+                            }}>+Show All</button></div>
                         </div>
                     </div>
                 )}

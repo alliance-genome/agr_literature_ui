@@ -43,6 +43,20 @@
   margin-left: 20px;
 }
 
+.button-to-link {
+  background: none!important;
+  border: none;
+  padding: 0!important;
+  font-family: arial, sans-serif;
+  color: #007bff;
+  cursor: pointer;
+}
+
+.button-to-link:hover {
+  color: #069;
+  text-decoration: underline;
+}
+
 .affiliation {
   font-size: 14px;
   color: grey;
