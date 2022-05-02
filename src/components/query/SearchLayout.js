@@ -17,11 +17,15 @@ const SearchLayout = () => {
                     </Col>
                 </Row>
                 <Row>
-                    <Col sm={3}>
-                        <Facets/>
-                    </Col>
-                    <Col sm={9}>
-                        <SearchResults/>
+                    <Col>
+                        <div style={{display: "flex"}}>
+                            <div style={{maxWidth: "25em", flex: "1"}}>
+                                <Facets/>
+                            </div>
+                            <div style={{flex: "1", }}>
+                                <SearchResults/>
+                            </div>
+                        </div>
                     </Col>
                 </Row>
             </Container>
