@@ -51,7 +51,7 @@ const Facet = ({facetsToInclude}) => {
                                             }}/>
                                 {bucket.key} <Badge variant="secondary">{bucket.doc_count}</Badge>
                             </div>)}
-                            <div style={{textAlign: "right"}}>
+                            <div style={{paddingLeft: "1em"}}>
                                 <button className="button-to-link" onClick={()=> {
                                     let newSearchFacetsLimits = searchFacetsLimits;
                                     newSearchFacetsLimits[key] = searchFacetsLimits[key] * 2;
