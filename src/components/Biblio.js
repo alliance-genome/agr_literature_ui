@@ -248,7 +248,7 @@ const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
     valueLive = aggregateCitation(referenceJsonLive) }
   if (valueLive !== valueDb) { updatedFlag = 'updated'; }
   let valueToDisplay = valueLive;
-  if ( (fieldName === 'title') || (fieldName === 'abstract') ) {
+  if ( (fieldName === 'title') || (fieldName === 'abstract') || (fieldName === 'citation') ) {
     valueToDisplay = (<span dangerouslySetInnerHTML={{__html: valueLive}} />) }
   return (
         <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueToDisplay} updatedFlag={updatedFlag} />); }
