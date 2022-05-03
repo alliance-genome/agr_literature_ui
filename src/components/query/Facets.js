@@ -5,6 +5,9 @@ import Form from 'react-bootstrap/Form';
 import {Accordion, Badge, Button} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
 import {INITIAL_FACETS_LIMIT} from '../../reducers/queryReducer';
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 const Facet = ({facetsToInclude}) => {
 
@@ -30,27 +33,37 @@ const Facet = ({facetsToInclude}) => {
                     <div key={key} style={{textAlign: "left", paddingLeft: "2em"}}>
                         <div>
                             <h5>{key.replace('.keyword', '').replace('_', ' ')}</h5>
-                            {value.buckets.map(bucket => <div key={`${key} ${bucket.key}`} style={{paddingLeft: "1em"}}>
-                                <Form.Check inline type="checkbox"
-                                            checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
-                                            onChange={(evt) => {
-                                                let newSearchFacetsValues = searchFacetsValues;
-                                                if (evt.target.checked) {
-                                                    if (!newSearchFacetsValues.hasOwnProperty(key)) {
-                                                        newSearchFacetsValues[key] = []
-                                                    }
-                                                    newSearchFacetsValues[key].push(bucket.key)
-                                                } else {
-                                                    newSearchFacetsValues[key] = newSearchFacetsValues[key].filter(
-                                                        e => e !== bucket.key)
-                                                    if (newSearchFacetsValues[key].length === 0) {
-                                                        delete newSearchFacetsValues[key];
-                                                    }
-                                                }
-                                                dispatch(searchReferences(searchQuery, newSearchFacetsValues, searchFacetsLimits));
-                                            }}/>
-                                {bucket.key} <Badge variant="secondary">{bucket.doc_count}</Badge>
-                            </div>)}
+                            {value.buckets.map(bucket =>
+                                <Container>
+                                    <Row>
+                                        <Col sm={1}>
+                                            <Form.Check inline type="checkbox"
+                                                        checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
+                                                        onChange={(evt) => {
+                                                            let newSearchFacetsValues = searchFacetsValues;
+                                                            if (evt.target.checked) {
+                                                                if (!newSearchFacetsValues.hasOwnProperty(key)) {
+                                                                    newSearchFacetsValues[key] = []
+                                                                }
+                                                                newSearchFacetsValues[key].push(bucket.key)
+                                                            } else {
+                                                                newSearchFacetsValues[key] = newSearchFacetsValues[key].filter(
+                                                                    e => e !== bucket.key)
+                                                                if (newSearchFacetsValues[key].length === 0) {
+                                                                    delete newSearchFacetsValues[key];
+                                                                }
+                                                            }
+                                                            dispatch(searchReferences(searchQuery, newSearchFacetsValues, searchFacetsLimits));
+                                                        }}/>
+                                        </Col>
+                                        <Col sm={8}>
+                                            {bucket.key}
+                                        </Col>
+                                        <Col>
+                                            <Badge variant="secondary">{bucket.doc_count}</Badge>
+                                        </Col>
+                                    </Row>
+                                </Container>)}
                             <div style={{paddingLeft: "1em"}}>
                                 <button className="button-to-link" onClick={()=> {
                                     let newSearchFacetsLimits = searchFacetsLimits;

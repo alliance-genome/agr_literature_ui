@@ -19,7 +19,7 @@ const SearchLayout = () => {
                 <Row>
                     <Col>
                         <div style={{display: "flex"}}>
-                            <div style={{maxWidth: "25em", flex: "1"}}>
+                            <div style={{maxWidth: "32em", flex: "1"}}>
                                 <Facets/>
                             </div>
                             <div style={{flex: "1", }}>
