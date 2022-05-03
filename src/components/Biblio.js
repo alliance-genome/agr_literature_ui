@@ -56,12 +56,12 @@ import { faUndo } from '@fortawesome/free-solid-svg-icons'
 // console.log(location.state);  }
 
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
-const fieldsArrayString = ['keywords', 'pubmed_type' ];
-const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_type', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsArrayString = ['keywords', 'pubmed_types' ];
+const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
-const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_type', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
-const fieldsDisplayOnly = [ 'citation', 'pubmed_type', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 
 const fieldTypeDict = {}
@@ -85,7 +85,7 @@ enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manua
 // abstract
 //
 // category
-// pubmed_type
+// pubmed_types
 // mod_reference_types
 //
 // resource (resource_curie resource_title ?)
@@ -248,7 +248,7 @@ const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
     valueLive = aggregateCitation(referenceJsonLive) }
   if (valueLive !== valueDb) { updatedFlag = 'updated'; }
   let valueToDisplay = valueLive;
-  if ( (fieldName === 'title') || (fieldName === 'abstract') ) {
+  if ( (fieldName === 'title') || (fieldName === 'abstract') || (fieldName === 'citation') ) {
     valueToDisplay = (<span dangerouslySetInnerHTML={{__html: valueLive}} />) }
   return (
         <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueToDisplay} updatedFlag={updatedFlag} />); }
