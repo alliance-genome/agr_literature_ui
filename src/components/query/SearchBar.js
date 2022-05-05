@@ -31,7 +31,7 @@ const SearchBar = () => {
                         <Dropdown.Item onClick={() => setFieldToSearch('Title')}>Title</Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown>
-                <Form.Control inline type="text" id="titleField" name="titleField" value={searchInputText}
+                <Form.Control inline="true" type="text" id="titleField" name="titleField" value={searchInputText}
                               onChange={(e) => setSearchInputText(e.target.value)}
                               onKeyPress={(event) => {
                                   if (event.charCode === 13) {
@@ -39,7 +39,7 @@ const SearchBar = () => {
                                   }
                               }}
                 />
-                <Button inline
+                <Button inline="true"
                         onClick={() => dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits))}>
                     Search
                 </Button>

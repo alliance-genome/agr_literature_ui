@@ -34,7 +34,7 @@ const Facet = ({facetsToInclude}) => {
                         <div>
                             <h5>{key.replace('.keyword', '').replace('_', ' ')}</h5>
                             {value.buckets.map(bucket =>
-                                <Container>
+                                <Container key={bucket.key}>
                                     <Row>
                                         <Col sm={1}>
                                             <Form.Check inline type="checkbox"
