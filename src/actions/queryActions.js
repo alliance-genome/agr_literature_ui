@@ -1,5 +1,6 @@
 import axios from "axios";
 
+export const QUERY_SET_SEARCH_RESULTS_COUNT = 'QUERY_SET_SEARCH_RESULTS_COUNT';
 export const QUERY_SET_SEARCH_RESULTS = 'QUERY_SET_SEARCH_RESULTS';
 export const QUERY_SET_SEARCH_LOADING = 'QUERY_SET_SEARCH_LOADING';
 export const QUERY_SET_SEARCH_ERROR = 'QUERY_SET_SEARCH_ERROR';
@@ -55,6 +56,7 @@ export const searchReferences = (query, facetsValues, facetsLimits) => {
       facets_limits: facetsLimits
     })
         .then(res => {
+          dispatch(setSearchResultsCount(res.data.return_count));
           dispatch(setSearchResults(res.data.hits));
           dispatch(setSearchFacets(res.data.aggregations));
         })
@@ -91,6 +93,13 @@ export const setSearchError = (value) => ({
   type: QUERY_SET_SEARCH_ERROR,
   payload: {
     value: value
+  }
+});
+
+export const setSearchResultsCount = (searchResultsCount) => ({
+  type: QUERY_SET_SEARCH_RESULTS_COUNT,
+  payload: {
+    searchResultsCount: searchResultsCount
   }
 });
 

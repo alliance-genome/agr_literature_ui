@@ -3,7 +3,7 @@ import {
   QUERY_SET_SEARCH_FACETS, QUERY_SET_SEARCH_FACETS_LIMITS,
   QUERY_SET_SEARCH_FACETS_VALUES,
   QUERY_SET_SEARCH_LOADING, QUERY_SET_SEARCH_QUERY,
-  QUERY_SET_SEARCH_RESULTS,
+  QUERY_SET_SEARCH_RESULTS, QUERY_SET_SEARCH_RESULTS_COUNT,
 } from '../actions/queryActions';
 
 import _ from "lodash";
@@ -13,6 +13,7 @@ export const INITIAL_FACETS_LIMIT = 10;
 
 const initialState = {
   searchResults: [],
+  searchResultsCount: 0,
   searchLoading: false,
   searchSuccess: false,
   searchFacets: {},
@@ -46,7 +47,17 @@ export default function(state = initialState, action) {
         redirectToBiblio: false
       }
 
+    case QUERY_SET_SEARCH_RESULTS_COUNT:
+      // console.log("reducer QUERY_SET_SEARCH_RESULTS_COUNT")
+      // console.log(action.payload.searchResultsCount);
+      return {
+        ...state,
+        searchResultsCount: action.payload.searchResultsCount
+      }
+
     case QUERY_SET_SEARCH_RESULTS:
+      // console.log("reducer QUERY_SET_SEARCH_RESULTS")
+      // console.log(action.payload.searchResults);
       return {
         ...state,
         searchLoading: false,
@@ -97,6 +108,8 @@ export default function(state = initialState, action) {
       }
 
     case QUERY_SET_SEARCH_FACETS_LIMITS:
+      // console.log("reducer QUERY_SET_SEARCH_FACETS_LIMITS")
+      // console.log(action.payload.facetsLimits);
       return {
         ...state,
         searchFacetsLimits: action.payload.facetsLimits
