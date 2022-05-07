@@ -8,6 +8,7 @@ export const QUERY_SET_SEARCH_FACETS = 'QUERY_SET_SEARCH_FACETS';
 export const QUERY_SET_SEARCH_QUERY = 'QUERY_SET_SEARCH_QUERY';
 export const QUERY_SET_SEARCH_FACETS_VALUES = 'QUERY_SET_SEARCH_FACETS_VALUES';
 export const QUERY_SET_SEARCH_FACETS_LIMITS = 'QUERY_SET_SEARCH_FACETS_LIMITS';
+export const QUERY_SET_SEARCH_SIZE_RESULTS_COUNT = 'QUERY_SET_SEARCH_SIZE_RESULTS_COUNT';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -44,7 +45,16 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const searchReferences = (query, facetsValues, facetsLimits) => {
+export const changeSelectSizeResultsCount = (sizeResultsCount, searchInputText, searchFacetsValues, searchFacetsLimits) => {
+  const intSizeResultsCount = parseInt(sizeResultsCount.replace('Results per page ', ''));
+  // console.log('action change select size results count ' + sizeResultsCount);
+  return dispatch => {
+    dispatch(setSearchSizeResultsCount(intSizeResultsCount));
+    dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits, intSizeResultsCount));
+  }
+};
+
+export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount) => {
   return dispatch => {
     dispatch(setSearchLoading());
     dispatch(setSearchQuery(query));
@@ -52,6 +62,7 @@ export const searchReferences = (query, facetsValues, facetsLimits) => {
     dispatch(setSearchFacetsLimits(facetsLimits));
     axios.post(restUrl + '/search/references', {
       query: query,
+      size_result_count: sizeResultsCount,
       facets_values: facetsValues,
       facets_limits: facetsLimits
     })
@@ -63,6 +74,13 @@ export const searchReferences = (query, facetsValues, facetsLimits) => {
         .catch(err => dispatch(setSearchError(true)));
   }
 }
+
+export const setSearchSizeResultsCount = (sizeResultsCount) => ({
+  type: QUERY_SET_SEARCH_SIZE_RESULTS_COUNT,
+  payload: {
+    sizeResultsCount
+  }
+});
 
 export const setSearchQuery = (query) => ({
   type: QUERY_SET_SEARCH_QUERY,

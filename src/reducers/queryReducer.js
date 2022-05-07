@@ -4,6 +4,7 @@ import {
   QUERY_SET_SEARCH_FACETS_VALUES,
   QUERY_SET_SEARCH_LOADING, QUERY_SET_SEARCH_QUERY,
   QUERY_SET_SEARCH_RESULTS, QUERY_SET_SEARCH_RESULTS_COUNT,
+  QUERY_SET_SEARCH_SIZE_RESULTS_COUNT,
 } from '../actions/queryActions';
 
 import _ from "lodash";
@@ -14,6 +15,7 @@ export const INITIAL_FACETS_LIMIT = 10;
 const initialState = {
   searchResults: [],
   searchResultsCount: 0,
+  searchSizeResultsCount: 10,
   searchLoading: false,
   searchSuccess: false,
   searchFacets: {},
@@ -82,6 +84,12 @@ export default function(state = initialState, action) {
         searchError: action.payload.value,
         searchSuccess: false,
         searchResults: []
+      }
+
+    case QUERY_SET_SEARCH_SIZE_RESULTS_COUNT:
+      return {
+        ...state,
+        searchSizeResultsCount: action.payload.sizeResultsCount
       }
 
     case QUERY_SET_SEARCH_QUERY:

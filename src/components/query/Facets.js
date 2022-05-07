@@ -15,11 +15,12 @@ const Facet = ({facetsToInclude}) => {
     const searchQuery = useSelector(state => state.query.searchQuery);
     const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
+    const searchSizeResultsCount = useSelector(state => state.query.searchSizeResultsCount);
     const dispatch = useDispatch();
 
     const searchWithUpdatedFacetsLimits = (newSearchFacetsLimits) => {
         if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
-            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits))
+            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount))
         } else {
             dispatch(fetchInitialFacets(newSearchFacetsLimits));
         }
@@ -53,7 +54,7 @@ const Facet = ({facetsToInclude}) => {
                                                                     delete newSearchFacetsValues[key];
                                                                 }
                                                             }
-                                                            dispatch(searchReferences(searchQuery, newSearchFacetsValues, searchFacetsLimits));
+                                                            dispatch(searchReferences(searchQuery, newSearchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
                                                         }}/>
                                         </Col>
                                         <Col sm={8}>

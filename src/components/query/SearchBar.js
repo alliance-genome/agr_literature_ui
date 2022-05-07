@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import {Dropdown, InputGroup, Spinner} from 'react-bootstrap';
-import {searchReferences} from '../../actions/queryActions';
+import {searchReferences, changeSelectSizeResultsCount} from '../../actions/queryActions';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -19,6 +19,7 @@ const SearchBar = () => {
     const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
     const searchResultsCount = useSelector(state => state.query.searchResultsCount);
+    const searchSizeResultsCount = useSelector(state => state.query.searchSizeResultsCount);
     const searchResults = useSelector(state => state.query.searchResults);
     const searchSuccess = useSelector(state => state.query.searchSuccess);
 
@@ -41,12 +42,12 @@ const SearchBar = () => {
                               onChange={(e) => setSearchInputText(e.target.value)}
                               onKeyPress={(event) => {
                                   if (event.charCode === 13) {
-                                      dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits));
+                                      dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
                                   }
                               }}
                 />
                 <Button inline="true"
-                        onClick={() => dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits))}>
+                        onClick={() => dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount))}>
                     Search
                 </Button>
             </InputGroup>
@@ -72,7 +73,15 @@ const SearchBar = () => {
                         <Card.Body>{searchResultsCount} results</Card.Body>
                     </Card>
                 </Col>
-                <Col sm={10}>
+                <Col sm={2}>
+                    <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount"
+                                  onChange={(e) => { dispatch(changeSelectSizeResultsCount(e.target.value, searchInputText, searchFacetsValues, searchFacetsLimits)); } }>
+                        <option>Results per page 10</option>
+                        <option>Results per page 25</option>
+                        <option>Results per page 50</option>
+                    </Form.Control>
+                </Col>
+                <Col sm={8}>
                 </Col>
             </Row>
         </Container>
