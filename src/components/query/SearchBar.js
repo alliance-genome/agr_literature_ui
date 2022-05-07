@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import {Dropdown, InputGroup, Spinner} from 'react-bootstrap';
-import {searchReferences, changeSelectSizeResultsCount} from '../../actions/queryActions';
+import {searchReferences, setSearchSizeResultsCount} from '../../actions/queryActions';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -75,7 +75,11 @@ const SearchBar = () => {
                 </Col>
                 <Col sm={2}>
                     <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount"
-                                  onChange={(e) => { dispatch(changeSelectSizeResultsCount(e.target.value, searchInputText, searchFacetsValues, searchFacetsLimits)); } }>
+                                  onChange={(e) => { 
+                                      const intSizeResultsCount = parseInt(e.target.value.replace('Results per page ', ''));
+                                      dispatch(setSearchSizeResultsCount(intSizeResultsCount));
+                                      dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits, intSizeResultsCount));
+                                  } }>
                         <option>Results per page 10</option>
                         <option>Results per page 25</option>
                         <option>Results per page 50</option>

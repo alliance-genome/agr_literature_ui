@@ -45,15 +45,6 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const changeSelectSizeResultsCount = (sizeResultsCount, searchInputText, searchFacetsValues, searchFacetsLimits) => {
-  const intSizeResultsCount = parseInt(sizeResultsCount.replace('Results per page ', ''));
-  // console.log('action change select size results count ' + sizeResultsCount);
-  return dispatch => {
-    dispatch(setSearchSizeResultsCount(intSizeResultsCount));
-    dispatch(searchReferences(searchInputText, searchFacetsValues, searchFacetsLimits, intSizeResultsCount));
-  }
-};
-
 export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount) => {
   return dispatch => {
     dispatch(setSearchLoading());
