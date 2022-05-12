@@ -3,7 +3,7 @@ import {
   QUERY_SET_SEARCH_FACETS, QUERY_SET_SEARCH_FACETS_LIMITS,
   QUERY_SET_SEARCH_FACETS_VALUES,
   QUERY_SET_SEARCH_LOADING, QUERY_SET_SEARCH_QUERY,
-  QUERY_SET_SEARCH_RESULTS, QUERY_SET_SEARCH_RESULTS_COUNT,
+  QUERY_SET_SEARCH_RESULTS,
   QUERY_SET_SEARCH_SIZE_RESULTS_COUNT,
 } from '../actions/queryActions';
 
@@ -49,14 +49,6 @@ export default function(state = initialState, action) {
         redirectToBiblio: false
       }
 
-    case QUERY_SET_SEARCH_RESULTS_COUNT:
-      // console.log("reducer QUERY_SET_SEARCH_RESULTS_COUNT")
-      // console.log(action.payload.searchResultsCount);
-      return {
-        ...state,
-        searchResultsCount: action.payload.searchResultsCount
-      }
-
     case QUERY_SET_SEARCH_RESULTS:
       // console.log("reducer QUERY_SET_SEARCH_RESULTS")
       // console.log(action.payload.searchResults);
@@ -65,6 +57,7 @@ export default function(state = initialState, action) {
         searchLoading: false,
         searchSuccess: true,
         searchError: false,
+        searchResultsCount: action.payload.searchResultsCount,
         searchResults: action.payload.searchResults
       }
 

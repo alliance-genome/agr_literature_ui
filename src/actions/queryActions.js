@@ -58,8 +58,7 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
       facets_limits: facetsLimits
     })
         .then(res => {
-          dispatch(setSearchResultsCount(res.data.return_count));
-          dispatch(setSearchResults(res.data.hits));
+          dispatch(setSearchResults(res.data.hits, res.data.return_count));
           dispatch(setSearchFacets(res.data.aggregations));
         })
         .catch(err => dispatch(setSearchError(true)));
@@ -105,16 +104,10 @@ export const setSearchError = (value) => ({
   }
 });
 
-export const setSearchResultsCount = (searchResultsCount) => ({
-  type: QUERY_SET_SEARCH_RESULTS_COUNT,
-  payload: {
-    searchResultsCount: searchResultsCount
-  }
-});
-
-export const setSearchResults = (searchResults) => ({
+export const setSearchResults = (searchResults, searchResultsCount) => ({
   type: QUERY_SET_SEARCH_RESULTS,
   payload: {
+    searchResultsCount: searchResultsCount,
     searchResults: searchResults
   }
 });
