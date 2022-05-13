@@ -9,6 +9,10 @@ import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
 import SearchLayout from './query/SearchLayout';
 
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
+
 
 
 const Query = () => {
@@ -34,9 +38,13 @@ const Query = () => {
   return (
     <div>
       <h4>Look up Reference by exact cross reference curie.<br/>e.g. PMID:24895670 or RGD:13542090 or WB:WBPaper00010006</h4>
-      <input type="text" id="xrefcurieField" name="xrefcurieField" value={xrefcurieField} onChange={(e) => dispatch(changeQueryField(e))} />
-      {queryRedirectToBiblio && pushHistory(queryResponseField)}
-      <button type="submit" onClick={() => dispatch(queryButtonCrossRefCurie(xrefcurieField))}>Query External Identifier Curie</button>
+      <div style={{width: "28em", margin: "auto"}}>
+        <InputGroup className="mb-2">
+          <Form.Control type="text" id="xrefcurieField" name="xrefcurieField" value={xrefcurieField} onChange={(e) => dispatch(changeQueryField(e))} />
+          {queryRedirectToBiblio && pushHistory(queryResponseField)}
+          <Button type="submit" size="sm" onClick={() => dispatch(queryButtonCrossRefCurie(xrefcurieField))}>Query External Identifier Curie</Button>
+        </InputGroup>
+      </div>
       <div>{queryQuerySuccess ? <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + queryResponseField}}><span style={{color: queryResponseColor}}>{queryResponseField}</span></Link> : <span style={{color: queryResponseColor}}>{queryResponseField}</span>}</div>
       <hr/>
       <h4>Search References<br/></h4>
