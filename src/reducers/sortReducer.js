@@ -1,7 +1,7 @@
 
 const initialState = {
   modsField: '',
-  referencesToSortLive: [],
+  referencesToSortLive: undefined,
   referencesToSortDb: [],
   getPapersToSortFlag: false,
   sortUpdating: 0,

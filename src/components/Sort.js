@@ -108,7 +108,15 @@ const Sort = () => {
           <Col lg={5} ></Col>
         </Row>
       </Container>
-      { referencesToSortLive.length > 0 && 
+      {
+        referencesToSortLive && referencesToSortLive.length === 0 ?
+            <div>
+              <br/>
+              <p>No Papers to sort</p>
+            </div>
+            : null
+      }
+      { referencesToSortLive && referencesToSortLive.length > 0 &&
         <Container fluid>
           <RowDivider />
           <RowDivider />
