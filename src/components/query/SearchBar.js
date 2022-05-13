@@ -7,7 +7,6 @@ import {useDispatch, useSelector} from 'react-redux';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card";
 
 
 const SearchBar = () => {
@@ -69,9 +68,7 @@ const SearchBar = () => {
         <Container fluid>
             <Row>
                 <Col sm={2}>
-                    <Card>
-                        <Card.Body>{searchResultsCount} results</Card.Body>
-                    </Card>
+                        <div className="div-grey-border">{searchResultsCount} results</div>
                 </Col>
                 <Col sm={2}>
                     <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount"
