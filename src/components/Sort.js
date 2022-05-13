@@ -109,7 +109,7 @@ const Sort = () => {
           <Col lg={4} ></Col>
           <Col lg={4} >
             <br/>
-            <Button style={{width: "10em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>
+            <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>
           </Col>
           <Col lg={4} ></Col>
         </Row>
