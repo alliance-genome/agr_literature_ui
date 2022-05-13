@@ -5,6 +5,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Facets from './Facets';
 import SearchResults from "./SearchResults";
+import SearchOptions from "./SearchOptions";
 
 
 const SearchLayout = () => {
@@ -16,6 +17,13 @@ const SearchLayout = () => {
                         <SearchBar/>
                     </Col>
                 </Row>
+                <Row><Col>&nbsp;</Col></Row>
+                <Row>
+                    <Col>
+                        <SearchOptions/>
+                    </Col>
+                </Row>
+                <Row><Col>&nbsp;</Col></Row>
                 <Row>
                     <Col>
                         <div style={{display: "flex"}}>

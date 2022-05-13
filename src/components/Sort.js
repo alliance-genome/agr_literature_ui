@@ -20,6 +20,7 @@ import { updateButtonSort } from '../actions/sortActions';
 import { closeSortUpdateAlert } from '../actions/sortActions';
 import { setSortUpdating } from '../actions/sortActions';
 import { sortButtonSetRadiosAll } from '../actions/sortActions';
+import {FormGroup, Spinner} from "react-bootstrap";
 
 
 // DONE
@@ -41,6 +42,7 @@ const Sort = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const sortUpdating = useSelector(state => state.sort.sortUpdating);
   const getPapersToSortFlag = useSelector(state => state.sort.getPapersToSortFlag);
+  const isLoading = useSelector(state => state.sort.isLoading);
   const dispatch = useDispatch();
 
   let buttonFindDisabled = 'disabled'
@@ -97,16 +99,24 @@ const Sort = () => {
             <br/>
             <Form.Control as="select" name="mods" type="select" htmlSize={mods.length} onChange={(e) => dispatch(changeFieldSortMods(e))} >
               {mods.map((optionValue, index) => (
-                <option key={`mod ${index} ${optionValue}`}>{optionValue}</option>
+                  <option key={`mod ${index} ${optionValue}`}>{optionValue}</option>
               ))}
             </Form.Control>
             <br/>
-            <Button as="input" type="button" disabled={buttonFindDisabled} value="Find Papers to Sort" onClick={() => dispatch(sortButtonModsQuery(modsField))} />{' '}
+            <Button size="sm" style={{width: "10em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>
           </Col>
           <Col lg={5} ></Col>
         </Row>
       </Container>
-      { referencesToSortLive.length > 0 && 
+      {
+        referencesToSortLive && referencesToSortLive.length === 0 ?
+            <div>
+              <br/>
+              <p>No Papers to sort</p>
+            </div>
+            : null
+      }
+      { referencesToSortLive && referencesToSortLive.length > 0 &&
         <Container fluid>
           <RowDivider />
           <RowDivider />

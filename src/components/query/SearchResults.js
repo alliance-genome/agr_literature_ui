@@ -35,6 +35,12 @@ const SearchResults = () => {
                     }
                 </Container> : null
             }
+            {
+                 searchResults.length === 0 && searchSuccess ?
+                    <div>
+                        No Results found
+                    </div> : null
+            }
             <Modal show={searchError} onHide={() => dispatch(setSearchError(false))}>
                 <Modal.Header closeButton>
                     <Modal.Title>Error</Modal.Title>
