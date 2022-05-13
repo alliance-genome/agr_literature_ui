@@ -15,6 +15,7 @@
   --updated-purple: #e6deff;
   --updated-purple-hover: #d5d1ff;
   --light-yellow: #ffffcc;
+  --light-grey: #ced4da;
 }
 
 
@@ -73,9 +74,16 @@
   background-color: white !important;
 }
 
+.div-grey-border {
+  border: 1px solid var(--light-grey);
+  border-radius: .25rem;
+  min-height: 1px;
+  padding: .35rem;
+}
+
 .biblio-updating {
   text-align: center;
-  background-color: #ced4da !important;
+  background-color: var(--light-grey) !important;
 }
 
 .biblio-button:hover {
@@ -97,7 +105,7 @@
     0 0 0 3px white,
     0 0 0 8px #ffffba;
   border-color: #2598c5 !important;
-  background-color: #ced4da !important;
+  background-color: var(--light-grey) !important;
   display: block;
   width: 100%;
   padding-left: .75rem;
