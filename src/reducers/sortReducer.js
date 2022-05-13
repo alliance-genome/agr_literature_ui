@@ -7,7 +7,8 @@ const initialState = {
   sortUpdating: 0,
   updateAlert: 0,
   updateFailure: 0,
-  updateMessages: []
+  updateMessages: [],
+  isLoading: false
 };
 
 // const initialState = {
@@ -52,6 +53,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         referencesToSortLive: referencesToSortSetRadioAll
+      }
+
+    case 'SORT_SET_IS_LOADING':
+      return {
+        ...state,
+        isLoading: action.payload
       }
 
     case 'SORT_BUTTON_MODS_QUERY':

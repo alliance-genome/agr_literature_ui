@@ -19,6 +19,10 @@ export const changeFieldSortMods = (e) => {
 };
 
 export const sortButtonModsQuery = (payload) => dispatch => {
+  dispatch({
+    type: 'SORT_SET_IS_LOADING',
+    payload: true
+  });
   console.log('in sortButtonModsQuery action');
   // console.log("payload " + payload);
   // https://dev4004-literature-rest.alliancegenome.org/search/need_review?mod_abbreviation=RGD&count=2
@@ -47,7 +51,11 @@ export const sortButtonModsQuery = (payload) => dispatch => {
       type: 'SORT_BUTTON_MODS_QUERY',
       payload: response_payload,
       responseFound: response_found
-    })
+    });
+    dispatch({
+      type: 'SORT_SET_IS_LOADING',
+      payload: false
+    });
   }
   sortGetModsQuery()
 };
