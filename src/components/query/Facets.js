@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import {fetchInitialFacets, searchReferences} from '../../actions/queryActions';
+import {addFacetValue, fetchInitialFacets, removeFacetValue, searchReferences} from '../../actions/queryActions';
 import Form from 'react-bootstrap/Form';
 import {Accordion, Badge, Button} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
@@ -41,20 +41,11 @@ const Facet = ({facetsToInclude}) => {
                                             <Form.Check inline type="checkbox"
                                                         checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
                                                         onChange={(evt) => {
-                                                            let newSearchFacetsValues = searchFacetsValues;
                                                             if (evt.target.checked) {
-                                                                if (!newSearchFacetsValues.hasOwnProperty(key)) {
-                                                                    newSearchFacetsValues[key] = []
-                                                                }
-                                                                newSearchFacetsValues[key].push(bucket.key)
+                                                                dispatch(addFacetValue(key, bucket.key));
                                                             } else {
-                                                                newSearchFacetsValues[key] = newSearchFacetsValues[key].filter(
-                                                                    e => e !== bucket.key)
-                                                                if (newSearchFacetsValues[key].length === 0) {
-                                                                    delete newSearchFacetsValues[key];
-                                                                }
+                                                                dispatch(removeFacetValue(key, bucket.key));
                                                             }
-                                                            dispatch(searchReferences(searchQuery, newSearchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
                                                         }}/>
                                         </Col>
                                         <Col sm={8}>
@@ -67,19 +58,19 @@ const Facet = ({facetsToInclude}) => {
                                 </Container>)}
                             <div style={{paddingLeft: "1em"}}>
                                 <button className="button-to-link" onClick={()=> {
-                                    let newSearchFacetsLimits = searchFacetsLimits;
+                                    let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                                     newSearchFacetsLimits[key] = searchFacetsLimits[key] * 2;
                                     searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
                                 }}>+Show More</button>
                                 {searchFacetsLimits[key] > INITIAL_FACETS_LIMIT ?
                                     <span>&nbsp;&nbsp;&nbsp;&nbsp;<button className="button-to-link" onClick={() => {
-                                        let newSearchFacetsLimits = searchFacetsLimits;
+                                        let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                                         newSearchFacetsLimits[key] = searchFacetsLimits[key] = INITIAL_FACETS_LIMIT;
                                         searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
                                     }}>-Show Less</button></span> : null
                                 }
                                 &nbsp;&nbsp;&nbsp;&nbsp; <button className="button-to-link" onClick={() =>{
-                                    let newSearchFacetsLimits = searchFacetsLimits;
+                                    let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                                         newSearchFacetsLimits[key] = searchFacetsLimits[key] = 1000;
                                         searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
                             }}>+Show All</button></div>
@@ -95,7 +86,10 @@ const Facets = () => {
 
     const [openFacets, setOpenFacets] = useState(new Set());
     const searchFacets = useSelector(state => state.query.searchFacets);
+    const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
+    const searchQuery = useSelector(state => state.query.searchQuery);
+    const searchSizeResultsCount = useSelector(state => state.query.searchSizeResultsCount);
     const dispatch = useDispatch();
 
     const toggleFacetGroup = (facetGroupLabel) => {
@@ -111,8 +105,10 @@ const Facets = () => {
     useEffect(() => {
         if (Object.keys(searchFacets).length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
+        } else {
+            dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
         }
-    }, [])
+    }, [searchFacetsValues]);
 
     return (
         <Accordion style={{textAlign: "left"}}>

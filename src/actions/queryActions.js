@@ -9,6 +9,8 @@ export const QUERY_SET_SEARCH_QUERY = 'QUERY_SET_SEARCH_QUERY';
 export const QUERY_SET_SEARCH_FACETS_VALUES = 'QUERY_SET_SEARCH_FACETS_VALUES';
 export const QUERY_SET_SEARCH_FACETS_LIMITS = 'QUERY_SET_SEARCH_FACETS_LIMITS';
 export const QUERY_SET_SEARCH_SIZE_RESULTS_COUNT = 'QUERY_SET_SEARCH_SIZE_RESULTS_COUNT';
+export const QUERY_ADD_FACET_VALUE = 'QUERY_ADD_FACET_VALUE';
+export const QUERY_REMOVE_FACET_VALUE = 'QUERY_REMOVE_FACET_VALUE';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -116,6 +118,22 @@ export const setSearchFacets = (facets) => ({
   type: QUERY_SET_SEARCH_FACETS,
   payload: {
     facets: facets
+  }
+});
+
+export const addFacetValue = (facet, value) => ({
+  type: QUERY_ADD_FACET_VALUE,
+  payload: {
+    facet: facet,
+    value: value
+  }
+});
+
+export const removeFacetValue = (facet, value) => ({
+  type: QUERY_REMOVE_FACET_VALUE,
+  payload: {
+    facet: facet,
+    value: value
   }
 });
 
