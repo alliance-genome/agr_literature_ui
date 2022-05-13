@@ -6,6 +6,7 @@ import Col from 'react-bootstrap/Col';
 import Facets from './Facets';
 import SearchResults from "./SearchResults";
 import SearchOptions from "./SearchOptions";
+import BreadCrumbs from "./BreadCrumbs";
 
 
 const SearchLayout = () => {
@@ -23,6 +24,12 @@ const SearchLayout = () => {
                         <SearchOptions/>
                     </Col>
                 </Row>
+                <Row><Col>&nbsp;</Col></Row>
+                 <Row>
+                     <Col>
+                         <BreadCrumbs/>
+                     </Col>
+                 </Row>
                 <Row><Col>&nbsp;</Col></Row>
                 <Row>
                     <Col>
