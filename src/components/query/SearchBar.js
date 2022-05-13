@@ -68,7 +68,10 @@ const SearchBar = () => {
         <Container fluid>
             <Row>
                 <Col sm={2}>
-                        <div className="div-grey-border">{searchResultsCount} results</div>
+                  {searchResultsCount > 0 ? 
+                        <div className="div-grey-border">{searchResultsCount} results</div> :
+                        <div className="div-grey-border"></div>
+                  }
                 </Col>
                 <Col sm={2}>
                     <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount"
