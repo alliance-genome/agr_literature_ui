@@ -1,4 +1,5 @@
 import {
+  QUERY_ADD_FACET_VALUE, QUERY_REMOVE_FACET_VALUE,
   QUERY_SET_SEARCH_ERROR,
   QUERY_SET_SEARCH_FACETS, QUERY_SET_SEARCH_FACETS_LIMITS,
   QUERY_SET_SEARCH_FACETS_VALUES,
@@ -106,6 +107,29 @@ export default function(state = initialState, action) {
       return {
         ...state,
         searchFacetsValues: action.payload.facetsValues
+      }
+
+    case QUERY_ADD_FACET_VALUE:
+      let addSearchFacetsValues = _.cloneDeep(state.searchFacetsValues);
+      if (!addSearchFacetsValues.hasOwnProperty(action.payload.facet)) {
+        addSearchFacetsValues[action.payload.facet] = [];
+      }
+      addSearchFacetsValues[action.payload.facet].push(action.payload.value);
+      return {
+        ...state,
+        searchFacetsValues: addSearchFacetsValues
+      }
+
+    case QUERY_REMOVE_FACET_VALUE:
+      let remSearchFacetsValues = _.cloneDeep(state.searchFacetsValues);
+      remSearchFacetsValues[action.payload.facet] = remSearchFacetsValues[action.payload.facet].filter(
+            e => e !== action.payload.value)
+      if (remSearchFacetsValues[action.payload.facet].length === 0) {
+        delete remSearchFacetsValues[action.payload.facet];
+      }
+      return {
+        ...state,
+        searchFacetsValues: remSearchFacetsValues
       }
 
     case QUERY_SET_SEARCH_FACETS_LIMITS:

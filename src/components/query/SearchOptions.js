@@ -20,10 +20,9 @@ const SearchOptions = () => {
         <Container fluid>
             <Row>
                 <Col sm={2}>
-                  {searchResultsCount > 0 ?
-                        <div className="div-grey-border">{searchResultsCount} results</div> :
-                        <div className="div-grey-border"></div>
-                  }
+                    <div className="div-grey-border">
+                        {searchResultsCount > 0 ? searchResultsCount + " results": null}
+                    </div>
                 </Col>
                 <Col sm={2}>
                     <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount"
