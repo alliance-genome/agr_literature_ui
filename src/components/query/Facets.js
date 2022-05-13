@@ -8,6 +8,7 @@ import {INITIAL_FACETS_LIMIT} from '../../reducers/queryReducer';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import _ from "lodash";
 
 const Facet = ({facetsToInclude}) => {
 
