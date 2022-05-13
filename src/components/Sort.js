@@ -102,10 +102,16 @@ const Sort = () => {
                   <option key={`mod ${index} ${optionValue}`}>{optionValue}</option>
               ))}
             </Form.Control>
-            <br/>
-            <Button size="sm" style={{width: "10em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>
           </Col>
           <Col lg={5} ></Col>
+        </Row>
+        <Row>
+          <Col lg={4} ></Col>
+          <Col lg={4} >
+            <br/>
+            <Button style={{width: "10em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>
+          </Col>
+          <Col lg={4} ></Col>
         </Row>
       </Container>
       {
