@@ -18,9 +18,9 @@ const BreadCrumbs = () => {
             <Row>
                 <Col style={{textAlign: "left"}}>
                     {Object.entries(searchFacetsValues).map(([facet, values]) =>
-                        <div>
+                        <div key={facet + "_group"}>
                             {values.map(value =>
-                                <span>
+                                <span key={value + "_breadcrumb"}>
                                     <Button variant="outline-secondary">{value} &nbsp;
                                         <RiCloseFill onClick={() => dispatch(removeFacetValue(facet, value))}/>
                                     </Button>&nbsp;&nbsp;
