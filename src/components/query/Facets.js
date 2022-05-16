@@ -30,11 +30,11 @@ const Facet = ({facetsToInclude}) => {
     return (
         <div>
             {Object.entries(searchFacets).filter(([key, value]) =>
-                facetsToInclude.includes(key.replace('.keyword', '').replace('_', ' ')))
+                facetsToInclude.includes(key.replace('.keyword', '').replaceAll('_', ' ')))
                 .map(([key, value]) =>
                     <div key={key} style={{textAlign: "left", paddingLeft: "2em"}}>
                         <div>
-                            <h5>{key.replace('.keyword', '').replace('_', ' ')}</h5>
+                            <h5>{key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
                             {value.buckets.map(bucket =>
                                 <Container key={bucket.key}>
                                     <Row>
@@ -58,11 +58,13 @@ const Facet = ({facetsToInclude}) => {
                                     </Row>
                                 </Container>)}
                             <div style={{paddingLeft: "1em"}}>
-                                <button className="button-to-link" onClick={()=> {
-                                    let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
-                                    newSearchFacetsLimits[key] = searchFacetsLimits[key] * 2;
-                                    searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
-                                }}>+Show More</button>
+                                {value.buckets.length >= searchFacetsLimits[key] ?
+                                    <button className="button-to-link" onClick={()=> {
+                                        let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
+                                        newSearchFacetsLimits[key] = searchFacetsLimits[key] * 2;
+                                        searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                                    }}>+Show More</button> : null
+                                }
                                 {searchFacetsLimits[key] > INITIAL_FACETS_LIMIT ?
                                     <span>&nbsp;&nbsp;&nbsp;&nbsp;<button className="button-to-link" onClick={() => {
                                         let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
@@ -70,11 +72,12 @@ const Facet = ({facetsToInclude}) => {
                                         searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
                                     }}>-Show Less</button></span> : null
                                 }
-                                &nbsp;&nbsp;&nbsp;&nbsp; <button className="button-to-link" onClick={() =>{
+                                {value.buckets.length >= searchFacetsLimits[key] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
+                                <button className="button-to-link" onClick={() =>{
                                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                                         newSearchFacetsLimits[key] = searchFacetsLimits[key] = 1000;
                                         searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
-                            }}>+Show All</button></div>
+                                }}>+Show All</button></span> : null } </div>
                         </div>
                     </div>
                 )}
@@ -120,7 +123,7 @@ const Facets = () => {
                 </Accordion.Toggle>
                 <Accordion.Collapse eventKey="0">
                     <div>
-                        <Facet facetsToInclude={["pubmed types"]}/>
+                        <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}/>
                     </div>
                 </Accordion.Collapse>
             </div>
