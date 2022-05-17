@@ -13,19 +13,8 @@ import _ from "lodash";
 const Facet = ({facetsToInclude}) => {
 
     const searchFacets = useSelector(state => state.query.searchFacets);
-    const searchQuery = useSelector(state => state.query.searchQuery);
     const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
-    const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
-    const searchSizeResultsCount = useSelector(state => state.query.searchSizeResultsCount);
     const dispatch = useDispatch();
-
-    const searchWithUpdatedFacetsLimits = (newSearchFacetsLimits) => {
-        if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
-            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount))
-        } else {
-            dispatch(fetchInitialFacets(newSearchFacetsLimits));
-        }
-    }
 
     return (
         <div>
@@ -57,31 +46,53 @@ const Facet = ({facetsToInclude}) => {
                                         </Col>
                                     </Row>
                                 </Container>)}
-                            <div style={{paddingLeft: "1em"}}>
-                                {value.buckets.length >= searchFacetsLimits[key] ?
-                                    <button className="button-to-link" onClick={()=> {
-                                        let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
-                                        newSearchFacetsLimits[key] = searchFacetsLimits[key] * 2;
-                                        searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
-                                    }}>+Show More</button> : null
-                                }
-                                {searchFacetsLimits[key] > INITIAL_FACETS_LIMIT ?
-                                    <span>&nbsp;&nbsp;&nbsp;&nbsp;<button className="button-to-link" onClick={() => {
-                                        let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
-                                        newSearchFacetsLimits[key] = searchFacetsLimits[key] = INITIAL_FACETS_LIMIT;
-                                        searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
-                                    }}>-Show Less</button></span> : null
-                                }
-                                {value.buckets.length >= searchFacetsLimits[key] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
-                                <button className="button-to-link" onClick={() =>{
-                                    let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
-                                        newSearchFacetsLimits[key] = searchFacetsLimits[key] = 1000;
-                                        searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
-                                }}>+Show All</button></span> : null } </div>
+                            <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
+                            <br/>
                         </div>
                     </div>
                 )}
         </div>
+    )
+}
+
+const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
+
+    const searchQuery = useSelector(state => state.query.searchQuery);
+    const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
+    const searchSizeResultsCount = useSelector(state => state.query.searchSizeResultsCount);
+    const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
+    const dispatch = useDispatch();
+
+    const searchWithUpdatedFacetsLimits = (newSearchFacetsLimits) => {
+        if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
+            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount))
+        } else {
+            dispatch(fetchInitialFacets(newSearchFacetsLimits));
+        }
+    }
+
+    return (
+        <div style={{paddingLeft: "1em"}}>
+            {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ?
+                <button className="button-to-link" onClick={()=> {
+                    let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
+                    newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] * 2;
+                    searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                }}>+Show More</button> : null
+            }
+            {searchFacetsLimits[facetLabel] > INITIAL_FACETS_LIMIT ?
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;<button className="button-to-link" onClick={() => {
+                    let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
+                    newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = INITIAL_FACETS_LIMIT;
+                    searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                }}>-Show Less</button></span> : null
+            }
+            {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
+                <button className="button-to-link" onClick={() =>{
+                    let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
+                    newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
+                    searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                }}>+Show All</button></span> : null } </div>
     )
 }
 
