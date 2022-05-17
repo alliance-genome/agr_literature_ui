@@ -16,7 +16,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import _ from "lodash";
 
-const Facet = ({facetsToInclude}) => {
+const Facet = ({facetsToInclude, renameFacets}) => {
 
     const searchFacets = useSelector(state => state.query.searchFacets);
     const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
@@ -29,7 +29,7 @@ const Facet = ({facetsToInclude}) => {
                 .map(([key, value]) =>
                     <div key={key} style={{textAlign: "left", paddingLeft: "2em"}}>
                         <div>
-                            <h5>{key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
+                            <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
                             {value.buckets.map(bucket =>
                                 <Container key={bucket.key}>
                                     <Row>
@@ -143,7 +143,8 @@ const Facets = () => {
                 </Accordion.Toggle>
                 <Accordion.Collapse eventKey="0">
                     <div>
-                        <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}/>
+                        <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}
+                               renameFacets={{"category.keyword": "alliance category"}}/>
                     </div>
                 </Accordion.Collapse>
             </div>
