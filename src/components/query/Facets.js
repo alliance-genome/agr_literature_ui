@@ -1,6 +1,12 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import {addFacetValue, fetchInitialFacets, removeFacetValue, searchReferences} from '../../actions/queryActions';
+import {
+    addFacetValue,
+    fetchInitialFacets,
+    removeFacetValue,
+    searchReferences,
+    setSearchFacetsLimits
+} from '../../actions/queryActions';
 import Form from 'react-bootstrap/Form';
 import {Accordion, Badge, Button} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
@@ -63,7 +69,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
     const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
     const dispatch = useDispatch();
 
-    const searchWithUpdatedFacetsLimits = (newSearchFacetsLimits) => {
+    const searchOrSetInitialFacets = (newSearchFacetsLimits) => {
         if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
             dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount))
         } else {
@@ -77,21 +83,24 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                 <button className="button-to-link" onClick={()=> {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] * 2;
-                    searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                    dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
+                    searchOrSetInitialFacets(newSearchFacetsLimits);
                 }}>+Show More</button> : null
             }
             {searchFacetsLimits[facetLabel] > INITIAL_FACETS_LIMIT ?
                 <span>&nbsp;&nbsp;&nbsp;&nbsp;<button className="button-to-link" onClick={() => {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = INITIAL_FACETS_LIMIT;
-                    searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                    dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
+                    searchOrSetInitialFacets(newSearchFacetsLimits);
                 }}>-Show Less</button></span> : null
             }
             {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
                 <button className="button-to-link" onClick={() =>{
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
-                    searchWithUpdatedFacetsLimits(newSearchFacetsLimits);
+                    dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
+                    searchOrSetInitialFacets(newSearchFacetsLimits);
                 }}>+Show All</button></span> : null } </div>
     )
 }
