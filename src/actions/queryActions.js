@@ -34,6 +34,7 @@ export const resetQueryRedirect = () => {
 
 export const fetchInitialFacets = (facetsLimits) => {
   return dispatch => {
+    dispatch(setSearchFacetsLimits(facetsLimits));
     axios.post(restUrl + '/search/references', {
       query: null,
       facets_values: null,

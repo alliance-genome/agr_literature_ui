@@ -22,8 +22,11 @@ const initialState = {
   searchFacets: {},
   searchFacetsValues: {},
   searchFacetsLimits: {
-    'pubmed_types.keyword': INITIAL_FACETS_LIMIT
+    'pubmed_types.keyword': INITIAL_FACETS_LIMIT,
+    'category.keyword': INITIAL_FACETS_LIMIT,
+    'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT
   },
+  searchFacetsShowMore: {},
   searchQuery: null,
   xrefcurieField: '',
   querySuccess: false,
@@ -93,14 +96,9 @@ export default function(state = initialState, action) {
       }
 
     case QUERY_SET_SEARCH_FACETS:
-      let newSearchFacetsLimits = _.cloneDeep(state.searchFacetsLimits);
-      Object.entries(action.payload.facets).forEach(([key, values]) => {
-        newSearchFacetsLimits[key] = Math.max(values.buckets.length, INITIAL_FACETS_LIMIT);
-      });
       return {
         ...state,
-        searchFacets: action.payload.facets,
-        searchFacetsLimits: newSearchFacetsLimits
+        searchFacets: action.payload.facets
       }
 
     case QUERY_SET_SEARCH_FACETS_VALUES:
