@@ -34,6 +34,7 @@ export const changeCreatePmidField = (e) => {
 };
 
 export const createQueryPubmed = (pmid) => dispatch => {
+  dispatch(setCreatePmidSearchLoading());
   pmid = pmid.replace(/[^\d.]/g, '');
   console.log("action createQueryPubmed " + pmid);
   const createQueryPmid = async () => {
@@ -88,6 +89,10 @@ export const createQueryPubmed = (pmid) => dispatch => {
   createQueryPmid();
 };
 
+export const setCreatePmidSearchLoading = () => ({
+  type: 'CREATE_SET_PMID_SEARCH_LOADING'
+});
+
 export const setCreateAction = (createAction) => {
   console.log("action setCreateAction");
   return {
@@ -102,12 +107,23 @@ export const resetCreateRedirect = () => {
   };
 };
 
+export const setCreatePmidCreateLoading = () => ({
+  type: 'CREATE_SET_PMID_CREATE_LOADING'
+});
+
+export const setCreateAllianceCreateLoading = () => ({
+  type: 'CREATE_SET_ALLIANCE_CREATE_LOADING'
+});
+
 export const updateButtonCreate = (updateArrayData, pmidOrAlliance) => dispatch => {
   console.log('in updateButtonCreate action');
   const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
   console.log("payload "); console.log(payload);
   let newId = null;
   console.log("subPath " + subPath);
+
+  if (pmidOrAlliance === 'alliance') {    dispatch(setCreateAllianceCreateLoading()); }
+    else if (pmidOrAlliance === 'pmid') { dispatch(setCreatePmidCreateLoading());     }
 
   const createUpdateButtonCreate = async () => {
     const url = restUrl + '/' + subPath;
@@ -164,6 +180,7 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance) => dispatch 
         responseMessage: response_message,
         index: index,
         value: newId,
+        pmidOrAlliance: pmidOrAlliance,
         field: field,
         subField: subField
       }

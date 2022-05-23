@@ -18,6 +18,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
+import Spinner from 'react-bootstrap/Spinner'
 
 
 const CreatePubmed = () => {
@@ -25,6 +26,8 @@ const CreatePubmed = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const pmid = useSelector(state => state.create.pmid);
   const pmidTitle = useSelector(state => state.create.pmidTitle);
+  const searchPmidLoading = useSelector(state => state.create.searchPmidLoading);
+  const createPmidLoading = useSelector(state => state.create.createPmidLoading);
   const generalClassName = 'Col-general';
 
   function createPubmedReference(pmid) {
@@ -42,7 +45,9 @@ const CreatePubmed = () => {
         <Form.Control as="input" name="pmid" id="pmid" type="input" value={pmid} className={`form-control`} placeholder="12345678" onChange={(e) => dispatch(changeCreatePmidField(e))} />
       </Col>
       <Col sm="4" className={`${generalClassName}`}>
-        <Button id={`button query pubmed`} variant="outline-secondary" onClick={() => dispatch(createQueryPubmed(pmid))} >Query PubMed ID</Button>
+        <Button id={`button query pubmed`} variant="outline-secondary" onClick={() => dispatch(createQueryPubmed(pmid))} >
+        {searchPmidLoading ? <Spinner animation="border" size="sm"/> : <span>Query PubMed ID</span> }
+        </Button>
       </Col>
     </Form.Group>
     <Form.Group as={Row} key="PmidTitle" >
@@ -51,23 +56,30 @@ const CreatePubmed = () => {
         <Form.Control as="input" name="pmidTitle" id="pmidTitle" type="input" value={pmidTitle} disabled="disabled" className={`form-control`} placeholder="no PubMed reference found for that id" />
       </Col>
     </Form.Group>
-    {pmidTitle && (<Button id={`button create pubmed`} variant="outline-secondary" onClick={() => createPubmedReference(pmid)} >Create a PubMed reference</Button>)}
+    { pmidTitle && (
+      <Button id={`button create pubmed`} variant="outline-secondary" onClick={() => createPubmedReference(pmid)} >
+        {createPmidLoading ? <Spinner animation="border" size="sm"/> : <span>Create a PubMed reference</span> }
+      </Button>
+    ) }
     </Container>);
 } // const CreatePubmed
-//     {pmidTitle && (<Button id={`button create pubmed`} variant="outline-secondary" onClick={() => dispatch(createPubmedReference(pmid))} >Create a PubMed reference</Button>)}
 
 const CreateAlliance = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const createAllianceLoading = useSelector(state => state.create.createAllianceLoading);
   function createAllianceReference() {
     const subPath = 'reference/'
     let updateJson = { 'title': 'placeholder title', 'category': 'other' }
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
     dispatch(updateButtonCreate(arrayData, 'alliance'))
   }
-//   let revertElement = (<Button id={`button create alliance`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} ></Button>);
-//   return (<Container><Button id={`button create alliance`} variant="outline-secondary" onClick={(e) => dispatch(changeCreateActionToggler(e))} >Create an Alliance reference</Button></Container>);
-  return (<Container><Button id={`button create alliance`} variant="outline-secondary" onClick={() => createAllianceReference()} >Create an Alliance reference</Button></Container>);
+  return (
+    <Container>
+      <Button id={`button create alliance`} variant="outline-secondary" onClick={() => createAllianceReference()} >
+        {createAllianceLoading ? <Spinner animation="border" size="sm"/> : <span>Create an Alliance reference</span> }
+      </Button>
+    </Container>);
 } // const CreateAlliance
 
 const CreateActionToggler = () => {
