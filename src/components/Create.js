@@ -7,11 +7,14 @@ import { setGetReferenceCurieFlag } from '../actions/biblioActions';
 import { resetBiblioIsLoading } from '../actions/biblioActions';
 
 import { changeCreateActionToggler } from '../actions/createActions';
+import { setCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
 // import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
 import { createQueryPubmed } from '../actions/createActions';
+
+import { useLocation } from 'react-router-dom';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -134,7 +137,14 @@ const CreateActionToggler = () => {
 } // const CreateActionToggler
 
 const CreateActionRouter = () => {
+  const dispatch = useDispatch();
   const createAction = useSelector(state => state.create.createAction);
+  const useQuery = () => { return new URLSearchParams(useLocation().search); }
+  let query = useQuery();
+  if (createAction === '') {
+    let paramAction = query.get('action');
+    dispatch(setCreateActionToggler(paramAction));
+  }
   switch (createAction) {
     case 'alliance':
       return (<Container><CreateActionToggler /><RowDivider /><CreateAlliance /></Container>);

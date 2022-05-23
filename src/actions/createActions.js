@@ -14,16 +14,14 @@ export const changeCreateActionToggler = (e) => {
   };
 };
 
-// export const changeCreateField = (e) => {
-//   console.log('action change field ' + e.target.name + ' to ' + e.target.value);
-//   return {
-//     type: 'CREATE_CHANGE_FIELD',
-//     payload: {
-//       field: e.target.name,
-//       value: e.target.value
-//     }
-//   };
-// };
+export const setCreateActionToggler = (value) => {
+  console.log('action set create action toggler radio to ' + value);
+  return {
+    type: 'CHANGE_CREATE_ACTION_TOGGLER',
+    payload: value
+  };
+};
+
 export const changeCreatePmidField = (e) => {
   return {
     type: 'CREATE_CHANGE_PMID_FIELD',
