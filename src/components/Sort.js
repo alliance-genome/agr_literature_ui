@@ -20,7 +20,7 @@ import { updateButtonSort } from '../actions/sortActions';
 import { closeSortUpdateAlert } from '../actions/sortActions';
 import { setSortUpdating } from '../actions/sortActions';
 import { sortButtonSetRadiosAll } from '../actions/sortActions';
-import {FormGroup, Spinner} from "react-bootstrap";
+import {Spinner} from "react-bootstrap";
 
 
 // DONE
