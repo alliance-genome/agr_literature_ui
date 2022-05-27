@@ -27,7 +27,7 @@ const initialState = {
     'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT
   },
   searchFacetsShowMore: {},
-  searchQuery: null,
+  searchQuery: undefined,
   xrefcurieField: '',
   querySuccess: false,
   responseColor: 'black',
