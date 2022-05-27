@@ -132,7 +132,7 @@ const Facets = () => {
         } else if (searchQuery !== undefined || Object.keys(searchFacetsValues).length > 0) {
             dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
         }
-    }, [searchFacetsValues]);
+    }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <Accordion style={{textAlign: "left"}}>
