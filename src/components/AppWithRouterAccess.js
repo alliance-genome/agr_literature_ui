@@ -7,7 +7,7 @@ import { BrowserRouter as Router, Route } from 'react-router-dom';
 import NavigationBar from './NavigationBar'
 import NotLoggedInBar from './NotLoggedInBar'
 import Home from './Home'
-import Query from './Query'
+import Search from './Search'
 import Biblio from './Biblio'
 import Sort from './Sort'
 import Flags from './Flags'
@@ -65,7 +65,7 @@ const AppWithRouterAccess = () => {
                 <NotLoggedInBar />
                 <br />
                 <Route path='/' exact={true} component={Home}/>
-                <Route path='/query' component={Query} />
+                <Route path='/search' component={Search} />
                 <Route path='/biblio' component={Biblio} />
                 <Route path='/sort' component={Sort} />
                 <Route path='/flags' component={Flags} />

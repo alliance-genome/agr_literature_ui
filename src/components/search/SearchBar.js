@@ -2,18 +2,18 @@ import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import {Dropdown, InputGroup, Spinner} from 'react-bootstrap';
-import {searchReferences, setSearchQuery} from '../../actions/queryActions';
+import {searchReferences, setSearchQuery} from '../../actions/searchActions';
 import {useDispatch, useSelector} from 'react-redux';
 
 
 const SearchBar = () => {
 
     const [fieldToSearch, setFieldToSearch] = useState('Title');
-    const searchLoading = useSelector(state => state.query.searchLoading);
-    const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
-    const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
-    const searchSizeResultsCount = useSelector(state => state.query.searchSizeResultsCount);
-    const searchQuery = useSelector(state => state.query.searchQuery);
+    const searchLoading = useSelector(state => state.search.searchLoading);
+    const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+    const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
+    const searchQuery = useSelector(state => state.search.searchQuery);
 
     const dispatch = useDispatch();
 

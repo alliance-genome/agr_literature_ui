@@ -6,15 +6,15 @@ import Col from 'react-bootstrap/Col';
 import {Link} from 'react-router-dom';
 import {setGetReferenceCurieFlag, setReferenceCurie} from '../../actions/biblioActions';
 import {Modal} from 'react-bootstrap';
-import {setSearchError} from '../../actions/queryActions';
+import {setSearchError} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 
 
 const SearchResults = () => {
 
-    const searchResults = useSelector(state => state.query.searchResults);
-    const searchSuccess = useSelector(state => state.query.searchSuccess);
-    const searchError = useSelector(state => state.query.searchError);
+    const searchResults = useSelector(state => state.search.searchResults);
+    const searchSuccess = useSelector(state => state.search.searchSuccess);
+    const searchError = useSelector(state => state.search.searchError);
 
     const dispatch = useDispatch();
 

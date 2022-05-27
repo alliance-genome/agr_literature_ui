@@ -17,7 +17,7 @@ const NavigationBar = () => {
   <Navbar className={navClass} >
     <Nav className="justify-content-center"  style={{ flex: 1}}>
       <Nav.Link >{homeLabel}</Nav.Link>
-      <Nav.Link as={Link} to="/query">Search</Nav.Link>
+      <Nav.Link as={Link} to="/search">Search</Nav.Link>
       <Nav.Link as={Link} to="/biblio">Biblio Edit</Nav.Link>
       <Nav.Link as={Link} to="/sort">Sort</Nav.Link>
       <Nav.Link as={Link} to="/create">Create</Nav.Link>

@@ -1,6 +1,6 @@
 import React from 'react';
 import Form from 'react-bootstrap/Form';
-import {searchReferences, setSearchSizeResultsCount} from '../../actions/queryActions';
+import {searchReferences, setSearchSizeResultsCount} from '../../actions/searchActions';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -9,10 +9,10 @@ import Col from "react-bootstrap/Col";
 
 const SearchOptions = () => {
 
-    const searchQuery = useSelector(state => state.query.searchQuery);
-    const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
-    const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
-    const searchResultsCount = useSelector(state => state.query.searchResultsCount);
+    const searchQuery = useSelector(state => state.search.searchQuery);
+    const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+    const searchResultsCount = useSelector(state => state.search.searchResultsCount);
 
     const dispatch = useDispatch();
 

@@ -1,12 +1,12 @@
 import {
-  QUERY_ADD_FACET_VALUE, QUERY_REMOVE_FACET_VALUE,
-  QUERY_SET_SEARCH_ERROR,
-  QUERY_SET_SEARCH_FACETS, QUERY_SET_SEARCH_FACETS_LIMITS,
-  QUERY_SET_SEARCH_FACETS_VALUES,
-  QUERY_SET_SEARCH_LOADING, QUERY_SET_SEARCH_QUERY,
-  QUERY_SET_SEARCH_RESULTS,
-  QUERY_SET_SEARCH_SIZE_RESULTS_COUNT,
-} from '../actions/queryActions';
+  SEARCH_ADD_FACET_VALUE, SEARCH_REMOVE_FACET_VALUE,
+  SEARCH_SET_SEARCH_ERROR,
+  SEARCH_SET_SEARCH_FACETS, SEARCH_SET_SEARCH_FACETS_LIMITS,
+  SEARCH_SET_SEARCH_FACETS_VALUES,
+  SEARCH_SET_SEARCH_LOADING, SEARCH_SET_SEARCH_SEARCH,
+  SEARCH_SET_SEARCH_RESULTS,
+  SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT,
+} from '../actions/searchActions';
 
 import _ from "lodash";
 
@@ -40,21 +40,21 @@ const initialState = {
 export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
-    case 'QUERY_CHANGE_QUERY_FIELD':
+    case 'SEARCH_CHANGE_QUERY_FIELD':
       console.log(action.payload);
       return {
         ...state,
         [action.payload.field]: action.payload.value
       }
-    case 'RESET_QUERY_REDIRECT':
+    case 'RESET_SEARCH_REDIRECT':
       console.log("reset query redirect");
       return {
         ...state,
         redirectToBiblio: false
       }
 
-    case QUERY_SET_SEARCH_RESULTS:
-      // console.log("reducer QUERY_SET_SEARCH_RESULTS")
+    case SEARCH_SET_SEARCH_RESULTS:
+      // console.log("reducer SEARCH_SET_SEARCH_RESULTS")
       // console.log(action.payload.searchResults);
       return {
         ...state,
@@ -65,7 +65,7 @@ export default function(state = initialState, action) {
         searchResults: action.payload.searchResults
       }
 
-    case QUERY_SET_SEARCH_LOADING:
+    case SEARCH_SET_SEARCH_LOADING:
       return {
         ...state,
         searchLoading: true,
@@ -74,7 +74,7 @@ export default function(state = initialState, action) {
         searchResults: []
       }
 
-    case QUERY_SET_SEARCH_ERROR:
+    case SEARCH_SET_SEARCH_ERROR:
       return {
         ...state,
         searchLoading: false,
@@ -83,31 +83,31 @@ export default function(state = initialState, action) {
         searchResults: []
       }
 
-    case QUERY_SET_SEARCH_SIZE_RESULTS_COUNT:
+    case SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT:
       return {
         ...state,
         searchSizeResultsCount: action.payload.sizeResultsCount
       }
 
-    case QUERY_SET_SEARCH_QUERY:
+    case SEARCH_SET_SEARCH_SEARCH:
       return {
         ...state,
         searchQuery: action.payload.query
       }
 
-    case QUERY_SET_SEARCH_FACETS:
+    case SEARCH_SET_SEARCH_FACETS:
       return {
         ...state,
         searchFacets: action.payload.facets
       }
 
-    case QUERY_SET_SEARCH_FACETS_VALUES:
+    case SEARCH_SET_SEARCH_FACETS_VALUES:
       return {
         ...state,
         searchFacetsValues: action.payload.facetsValues
       }
 
-    case QUERY_ADD_FACET_VALUE:
+    case SEARCH_ADD_FACET_VALUE:
       let addSearchFacetsValues = _.cloneDeep(state.searchFacetsValues);
       if (!addSearchFacetsValues.hasOwnProperty(action.payload.facet)) {
         addSearchFacetsValues[action.payload.facet] = [];
@@ -118,7 +118,7 @@ export default function(state = initialState, action) {
         searchFacetsValues: addSearchFacetsValues
       }
 
-    case QUERY_REMOVE_FACET_VALUE:
+    case SEARCH_REMOVE_FACET_VALUE:
       let remSearchFacetsValues = _.cloneDeep(state.searchFacetsValues);
       remSearchFacetsValues[action.payload.facet] = remSearchFacetsValues[action.payload.facet].filter(
             e => e !== action.payload.value)
@@ -130,15 +130,15 @@ export default function(state = initialState, action) {
         searchFacetsValues: remSearchFacetsValues
       }
 
-    case QUERY_SET_SEARCH_FACETS_LIMITS:
-      // console.log("reducer QUERY_SET_SEARCH_FACETS_LIMITS")
+    case SEARCH_SET_SEARCH_FACETS_LIMITS:
+      // console.log("reducer SEARCH_SET_SEARCH_FACETS_LIMITS")
       // console.log(action.payload.facetsLimits);
       return {
         ...state,
         searchFacetsLimits: action.payload.facetsLimits
       }
 
-    case 'QUERY_BUTTON_XREF_CURIE':
+    case 'SEARCH_BUTTON_XREF_CURIE':
       console.log("query button xref curie reducer set " + action.payload);
       let responseField = action.payload;
       let responseFound = action.responseFound;
@@ -178,7 +178,7 @@ export default function(state = initialState, action) {
 //     case 'CHANGE_FIELD':
 //       // console.log(action.payload);
 //       return action.payload;
-//     case 'QUERY_BUTTON':
+//     case 'SEARCH_BUTTON':
 //       console.log("query button reducer set " + action.payload);
 //       return action.payload;
 //     default:

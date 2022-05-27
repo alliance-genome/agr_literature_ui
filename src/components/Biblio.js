@@ -1454,10 +1454,10 @@ const Biblio = () => {
 
   const dispatch = useDispatch();
 
-  const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.query.redirectToBiblio);
+  const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.search.redirectToBiblio);
 //   console.log("biblio crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
 
-  const crossRefCurieQueryResponseField = useSelector(state => state.query.responseField);
+  const crossRefCurieQueryResponseField = useSelector(state => state.search.responseField);
   if ( crossRefCurieQueryRedirectToBiblio ) {
     console.log('biblio from redirect');
 // this is needed to keep the query page from redirecting here if going back to it, but changing it triggers a change there, which somehow triggers a dispatch of a bunch of stuff, including a double dispatch(biblioQueryReferenceCurie(referenceCurie)), which is wrong

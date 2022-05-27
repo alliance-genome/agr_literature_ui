@@ -6,11 +6,11 @@ import {
     removeFacetValue,
     searchReferences,
     setSearchFacetsLimits
-} from '../../actions/queryActions';
+} from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Accordion, Badge, Button} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
-import {INITIAL_FACETS_LIMIT} from '../../reducers/queryReducer';
+import {INITIAL_FACETS_LIMIT} from '../../reducers/searchReducer';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -18,8 +18,8 @@ import _ from "lodash";
 
 const Facet = ({facetsToInclude, renameFacets}) => {
 
-    const searchFacets = useSelector(state => state.query.searchFacets);
-    const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
+    const searchFacets = useSelector(state => state.search.searchFacets);
+    const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const dispatch = useDispatch();
 
     return (
@@ -63,10 +63,10 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
 const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 
-    const searchQuery = useSelector(state => state.query.searchQuery);
-    const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
-    const searchSizeResultsCount = useSelector(state => state.query.searchSizeResultsCount);
-    const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
+    const searchQuery = useSelector(state => state.search.searchQuery);
+    const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+    const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
+    const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const dispatch = useDispatch();
 
     const searchOrSetInitialFacets = (newSearchFacetsLimits) => {
@@ -109,11 +109,11 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 const Facets = () => {
 
     const [openFacets, setOpenFacets] = useState(new Set());
-    const searchFacets = useSelector(state => state.query.searchFacets);
-    const searchFacetsValues = useSelector(state => state.query.searchFacetsValues);
-    const searchFacetsLimits = useSelector(state => state.query.searchFacetsLimits);
-    const searchQuery = useSelector(state => state.query.searchQuery);
-    const searchSizeResultsCount = useSelector(state => state.query.searchSizeResultsCount);
+    const searchFacets = useSelector(state => state.search.searchFacets);
+    const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+    const searchQuery = useSelector(state => state.search.searchQuery);
+    const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const dispatch = useDispatch();
 
     const toggleFacetGroup = (facetGroupLabel) => {
