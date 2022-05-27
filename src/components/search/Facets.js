@@ -129,7 +129,7 @@ const Facets = () => {
     useEffect(() => {
         if (Object.keys(searchFacets).length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
-        } else {
+        } else if (searchQuery !== undefined || Object.keys(searchFacetsValues).length > 0) {
             dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
         }
     }, [searchFacetsValues]);
