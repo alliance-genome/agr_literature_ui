@@ -19,6 +19,17 @@ export const changeFieldInput = (e, object, key1) => {
 
 export const mergeResetReferences = () => { return { type: 'MERGE_RESET_REFERENCES' }; };
 
+export const mergeSwapKeep = () => { return { type: 'MERGE_SWAP_KEEP' }; };
+
+export const mergeSwapPairSimple = (fieldName) => { 
+  console.log("action mergeSwapPairSimple " + fieldName);
+  return { type: 'MERGE_SWAP_PAIR_SIMPLE',
+           payload: { fieldName: fieldName } }; };
+
+// export const mergeSwapPairSimple = (fieldName) => dispatch => {
+//   console.log("action mergeSwapPairSimple " + fieldName);
+// }
+
 export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispatch => {
   // console.log("ref1 " + referenceInput1);
   // console.log("ref2 " + referenceInput2);
@@ -66,7 +77,7 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
   const resolveReferenceCurie = async (referenceInput) => {
     let curieValue = '';
     let curieFound = false;
-    let successXref = false;
+    // let successXref = false;
     const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
     console.log('regexMatch');
     console.log( regexMatch);

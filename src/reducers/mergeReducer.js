@@ -15,6 +15,7 @@ const initialState = {
     input: 'PMID:1',
     curie: '',
     referenceJson: '',
+    referenceKeep: {},
     queryRefSuccess: '',
     message: 'Enter a cross reference curie',
     messageColor: 'black',
@@ -26,13 +27,16 @@ const initialState = {
     input: 'PMID:10',
     curie: '',
     referenceJson: '',
+    referenceKeep: {},
     queryRefSuccess: '',
     message: 'Enter a cross reference curie',
     messageColor: 'black',
     disableInput: '',
     blah: ''
   },
+  referenceSwap: {},
 
+  keepReference: 1,
   referenceQuerySuccess1: '',
   referenceQuerySuccess2: '',
   queryColorDefault: 'blue',
@@ -57,6 +61,26 @@ export default function(state = initialState, action) {
       return {
         ...state,
         [action.payload.object]: changeObjectCopy
+      }
+    case 'MERGE_SWAP_KEEP':
+      console.log(action.type);
+      const newKeepValue = (state.keepReference === 1) ? 2 : 1;
+      return {
+        ...state,
+        keepReference: newKeepValue
+      }
+    case 'MERGE_SWAP_PAIR_SIMPLE':
+      console.log(action.type);
+      let newReferenceSwap = {};
+      if (Object.keys(state.referenceSwap).length > 0) {
+        newReferenceSwap = JSON.parse(JSON.stringify(state.referenceSwap)); }
+      if (action.payload.fieldName in newReferenceSwap) {
+        delete newReferenceSwap[action.payload.fieldName] }
+      else {
+        newReferenceSwap[action.payload.fieldName] = true; }
+      return {
+        ...state,
+        referenceSwap: newReferenceSwap
       }
     case 'MERGE_RESET_REFERENCES':
       console.log(action.type);

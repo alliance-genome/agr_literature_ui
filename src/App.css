@@ -15,7 +15,10 @@
   --updated-purple: #e6deff;
   --updated-purple-hover: #d5d1ff;
   --light-yellow: #ffffcc;
-  --light-grey: #ced4da;
+  --light-grey-hover: #ced4da;
+  --light-grey: #e9ecef;
+  --light-red: #ffebeb;
+  --light-red-hover: #ffcccb;
 }
 
 
@@ -75,10 +78,31 @@
 }
 
 .div-grey-border {
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--light-grey-hover);
   border-radius: .25rem;
   min-height: 2.3rem;
   padding: .35rem;
+}
+
+.div-merge {
+  border-radius: .25rem;
+  padding: .35rem;
+  margin: .35rem;
+}
+
+.div-merge-grey {
+  border: 1px solid var(--light-grey-hover);
+  background-color: var(--light-grey) !important;
+}
+
+.div-merge-keep {
+  border: 1px solid var(--light-blue-hover);
+  background-color: var(--light-blue) !important;
+}
+
+.div-merge-obsolete {
+  border: 1px solid var(--light-red-hover);
+  background-color: var(--light-red) !important;
 }
 
 .biblio-updating {
