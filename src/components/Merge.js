@@ -21,6 +21,11 @@ import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
+const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
+// const fieldsArrayString = ['keywords', 'pubmed_types' ];
+const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+// const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+
 const MergeSelectionSection = () => {
   const keepReference = useSelector(state => state.merge.keepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
@@ -39,6 +44,7 @@ const MergeSelectionSection = () => {
   
   const dispatch = useDispatch();
   return (
+    <>
     <Container>
       <Row>
         <Col sm="5" >{header1}<br/>
@@ -61,13 +67,22 @@ const MergeSelectionSection = () => {
           })()}
         </Col>
       </Row>
-
       <RowDivider />
-      <RowDisplayPairSimple key="title" fieldName="title" referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} />
-      <RowDisplayPairSimple key="category" fieldName="category" referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} />
     </Container>
+
+    {(() => {
+      if (queryDoubleSuccess) { return (
+        <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} />
+      ) }
+    })()}
+    </>
   );
 }
+
+// <RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />
+
+//       <RowDisplayPairSimple key="title" fieldName="title" referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} />
+//       <RowDisplayPairSimple key="category" fieldName="category" referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} />
 
 //       <Row>
 //         <Col sm="2" >Title</Col>
@@ -80,8 +95,23 @@ const MergeSelectionSection = () => {
 //         <Col sm="5" >{referenceMeta2.referenceJson.category}</Col>
 //       </Row>
 
+const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+  const rowOrderedElements = []
+  for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
+    if (fieldName === 'DIVIDER') {
+      rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
+    else if (fieldsSimple.includes(fieldName)) {
+      rowOrderedElements.push(
+        <RowDisplayPairSimple key={fieldName} fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+  }
+  return (<Container fluid>{rowOrderedElements}</Container>);
+} // const MergePairsSection
+
+
 const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
   const dispatch = useDispatch();
+  if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
+       (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
   let keepClass1 = 'div-merge-keep';
   let keepClass2 = 'div-merge-obsolete';
   let swapColor = false;
@@ -96,6 +126,7 @@ const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, refere
     </Row>
   )
 }
+//       <Col sm="2" ><div className={`div-merge div-merge-grey`}>{fieldName}</div></Col>
 //       <Col sm="2" className={`div-merge div-merge-grey`}>{fieldName}</Col>
 //       <Col sm="5" className={`div-merge div-merge-keep`}>{referenceMeta1['referenceJson'][fieldName]}</Col>
 //       <Col sm="5" className={`div-merge div-merge-obsolete`}>{referenceMeta2['referenceJson'][fieldName]}</Col>

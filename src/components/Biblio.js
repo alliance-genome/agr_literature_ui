@@ -55,13 +55,13 @@ import { faUndo } from '@fortawesome/free-solid-svg-icons'
 // const Biblio = ({ appState, someAction, location }) => {
 // console.log(location.state);  }
 
-const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
+const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_types' ];
-const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
-const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'pages', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'issue_date', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
-const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 
 const fieldTypeDict = {}
@@ -91,7 +91,7 @@ enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manua
 // resource (resource_curie resource_title ?)
 // volume
 // issue_name
-// pages
+// page_range
 //
 // editors
 // publisher
@@ -99,8 +99,7 @@ enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manua
 //
 // date_published
 // date_arrived_in_pubmed
-// date_last_modified
-// issue_date
+// date_last_modified_in_pubmed
 //
 // tags (in separate tab)
 //
@@ -118,7 +117,7 @@ function splitCurie(curie, toReturn) {
   else { return [ curiePrefix, curieId ] } }
 
 function aggregateCitation(referenceJson) {
-  // Authors, (year) title.   Journal  volume (issue): pages
+  // Authors, (year) title.   Journal  volume (issue): page_range
   let year = ''
   if ( ('date_published' in referenceJson) && referenceJson['date_published'] !== null && (referenceJson['date_published'].match(/(\d{4})/)) ) {
     let match = referenceJson['date_published'].match(/(\d{4})/)
@@ -136,8 +135,8 @@ function aggregateCitation(referenceJson) {
   const journal = referenceJson['resource_title'] || ''
   const volume = referenceJson['volume'] || ''
   const issue = referenceJson['issue_name'] || ''
-  const pages = referenceJson['pages'] || ''
-  const citation = `${authorNames}, (${year}) ${title}  ${journal} ${volume} (${issue}): ${pages}`
+  const page_range = referenceJson['page_range'] || ''
+  const citation = `${authorNames}, (${year}) ${title}  ${journal} ${volume} (${issue}): ${page_range}`
   return citation }
 
 // helper function for processing directly from database 'comment_and_corrections' field, but data format does't work for RowEditor
@@ -1523,7 +1522,7 @@ const Biblio = () => {
 //   }
 //       {items}
 
-//   const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'pages', 'language', 'abstract', 'publisher', 'issue_name', 'issue_date', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified', 'resource_curie', 'resource_title' ];
+//   const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 
 
   function LoadingElement() {

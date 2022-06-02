@@ -12,7 +12,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'PMID:1',
+    input: 'PMID:23524264',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
