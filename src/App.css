@@ -86,6 +86,7 @@
 
 .div-merge {
   border-radius: .25rem;
+  overflow: hidden;
   padding: .35rem;
   margin: .35rem;
 }

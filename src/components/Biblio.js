@@ -1530,7 +1530,7 @@ const Biblio = () => {
   }
 
   if (referenceCurie === '') { 
-    return (<div><h4>Select a reference curie through <Link to='/Query'>Query</Link> or something else first</h4></div>) }
+    return (<div><h4>Select a reference curie through <Link to='/Search'>Search</Link> or something else first</h4></div>) }
   else {
     return (
       <div>
