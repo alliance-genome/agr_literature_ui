@@ -36,11 +36,20 @@ const MergeSelectionSection = () => {
   // left arrow icon fa-arrow-left 
   // <FontAwesomeIcon size='lg' icon={faLongArrowAltLeft} />
 
-  let header1 = (<span style={{fontSize: '1.2rem', color: 'green'}}>Keep</span>)
-  let header2 = (<span style={{fontSize: '1.2rem', color: 'red'}}>Obsolete</span>)
+  let header1 = (<span className={`span-merge-header-success`} >Keep</span>)
+  let header2 = (<span className={`span-merge-header-failure`} >Obsolete</span>)
   if (keepReference === 2) {
-    header2 = (<span style={{fontSize: '1.2rem', color: 'green'}}>Keep</span>)
-    header1 = (<span style={{fontSize: '1.2rem', color: 'red'}}>Obsolete</span>) }
+    header2 = (<span className={`span-merge-header-success`} >Keep</span>)
+    header1 = (<span className={`span-merge-header-failure`} >Obsolete</span>) }
+
+  let curie1Class = 'span-merge-message-init';
+  if (referenceMeta1.queryRefSuccess === null) { curie1Class = 'span-merge-message-init'; }
+    else if (referenceMeta1.queryRefSuccess === true) { curie1Class = 'span-merge-message-success'; }
+    else if (referenceMeta1.queryRefSuccess === false) { curie1Class = 'span-merge-message-failure'; }
+  let curie2Class = 'span-merge-message-init';
+  if (referenceMeta2.queryRefSuccess === null) { curie2Class = 'span-merge-message-init'; }
+    else if (referenceMeta2.queryRefSuccess === true) { curie2Class = 'span-merge-message-success'; }
+    else if (referenceMeta2.queryRefSuccess === false) { curie2Class = 'span-merge-message-failure'; }
   
   const dispatch = useDispatch();
   return (
@@ -49,14 +58,14 @@ const MergeSelectionSection = () => {
       <Row>
         <Col sm="5" >{header1}<br/>
           <Form.Control as="input" id="referenceMeta1.input" value={referenceMeta1.input} disabled={referenceMeta1.disableInput} onChange={(e) => dispatch(changeFieldInput(e, 'referenceMeta1', 'input'))} />
-          <span style={{color: referenceMeta1.messageColor}}>{referenceMeta1.message}</span>
+          <span className={curie1Class} >{referenceMeta1.message}</span>
         </Col>
         <Col sm="2" ><br/>
           <Button onClick={(e) => dispatch(mergeSwapKeep())}>Swap <FontAwesomeIcon icon={faExchangeAlt} /></Button>
         </Col>
         <Col sm="5" >{header2}<br/>
           <Form.Control as="input" id="referenceMeta2.input" value={referenceMeta2.input} disabled={referenceMeta2.disableInput} onChange={(e) => dispatch(changeFieldInput(e, 'referenceMeta2', 'input'))} />
-          <span style={{color: referenceMeta2.messageColor}}>{referenceMeta2.message}</span>
+          <span className={curie2Class} >{referenceMeta2.message}</span>
         </Col>
       </Row>
       <Row>
@@ -67,6 +76,7 @@ const MergeSelectionSection = () => {
           })()}
         </Col>
       </Row>
+      <RowDivider />
       <RowDivider />
     </Container>
 

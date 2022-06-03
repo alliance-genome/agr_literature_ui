@@ -6,9 +6,11 @@
 }
 */
 
+/*  --medium-blue: #00c9ff; */
 :root {
   --light-blue: #d9f4ff;
   --light-blue-hover: #bbeffd;
+  --medium-blue: #0069d9;
   --nav-blue: #2598c5;
   --nav-green: #16a085;
   --font-black: #282c34;
@@ -19,6 +21,7 @@
   --light-grey: #e9ecef;
   --light-red: #ffebeb;
   --light-red-hover: #ffcccb;
+  --medium-red: #ff0500;
 }
 
 
@@ -104,6 +107,28 @@
 .div-merge-obsolete {
   border: 1px solid var(--light-red-hover);
   background-color: var(--light-red) !important;
+}
+
+.span-merge-header-success {
+  font-size: 1.2em;
+  color: var(--medium-blue) !important;
+}
+
+.span-merge-header-failure {
+  font-size: 1.2em;
+  color: var(--medium-red) !important;
+}
+
+.span-merge-message-init {
+  color: 'black';
+}
+
+.span-merge-message-success {
+  color: var(--medium-blue) !important;
+}
+
+.span-merge-message-failure {
+  color: var(--medium-red) !important;
 }
 
 .biblio-updating {
