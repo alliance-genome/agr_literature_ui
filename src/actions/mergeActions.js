@@ -26,6 +26,11 @@ export const mergeSwapPairSimple = (fieldName) => {
   return { type: 'MERGE_SWAP_PAIR_SIMPLE',
            payload: { fieldName: fieldName } }; };
 
+export const mergeToggleMrt = (fieldName, oneOrTwo, index) => {
+  console.log("action mergeToggleMrt " + fieldName + ' ' + oneOrTwo + ' ' + index);
+  return { type: 'MERGE_TOGGLE_MRT',
+           payload: { fieldName: fieldName, oneOrTwo: oneOrTwo, index: index } }; };
+
 // export const mergeSwapPairSimple = (fieldName) => dispatch => {
 //   console.log("action mergeSwapPairSimple " + fieldName);
 // }

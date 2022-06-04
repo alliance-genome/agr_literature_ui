@@ -10,7 +10,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'PMID:23524264',
+    input: 'PMID:10025402',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -21,7 +21,7 @@ const initialState = {
   },
 //     input: 'AGR:AGR-Reference-0000852278',
   referenceMeta2: {
-    input: 'PMID:10',
+    input: 'PMID:23524264',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -74,6 +74,25 @@ export default function(state = initialState, action) {
       return {
         ...state,
         referenceSwap: newReferenceSwap
+      }
+    case 'MERGE_TOGGLE_MRT':
+      console.log(action.type);
+      console.log(action.payload);
+      let toggleMrtJson1 = JSON.parse(JSON.stringify(state.referenceMeta1));
+      let toggleMrtJson2 = JSON.parse(JSON.stringify(state.referenceMeta2));
+      
+      if (action.payload.oneOrTwo === 1) {
+        ('toggle' in toggleMrtJson1['referenceJson'][action.payload.fieldName][action.payload.index]) ?
+          delete toggleMrtJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
+          toggleMrtJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
+      if (action.payload.oneOrTwo === 2) {
+        ('toggle' in toggleMrtJson2['referenceJson'][action.payload.fieldName][action.payload.index]) ?
+          delete toggleMrtJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
+          toggleMrtJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
+      return {
+        ...state,
+        referenceMeta1: toggleMrtJson1,
+        referenceMeta2: toggleMrtJson2
       }
     case 'MERGE_RESET_REFERENCES':
       console.log(action.type);
