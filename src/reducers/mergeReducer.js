@@ -20,8 +20,10 @@ const initialState = {
     blah: ''
   },
 //     input: 'AGR:AGR-Reference-0000852278',
+//     input: 'PMID:23524264',
+//     input: 'PMID:29664630',	-> orcid
   referenceMeta2: {
-    input: 'PMID:23524264',
+    input: 'PMID:29664630',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -75,24 +77,24 @@ export default function(state = initialState, action) {
         ...state,
         referenceSwap: newReferenceSwap
       }
-    case 'MERGE_TOGGLE_MRT':
+    case 'MERGE_TOGGLE_INDEPENDENT':
       console.log(action.type);
       console.log(action.payload);
-      let toggleMrtJson1 = JSON.parse(JSON.stringify(state.referenceMeta1));
-      let toggleMrtJson2 = JSON.parse(JSON.stringify(state.referenceMeta2));
+      let toggleIndependentJson1 = JSON.parse(JSON.stringify(state.referenceMeta1));
+      let toggleIndependentJson2 = JSON.parse(JSON.stringify(state.referenceMeta2));
       
       if (action.payload.oneOrTwo === 1) {
-        ('toggle' in toggleMrtJson1['referenceJson'][action.payload.fieldName][action.payload.index]) ?
-          delete toggleMrtJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
-          toggleMrtJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
+        ('toggle' in toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]) ?
+          delete toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
+          toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
       if (action.payload.oneOrTwo === 2) {
-        ('toggle' in toggleMrtJson2['referenceJson'][action.payload.fieldName][action.payload.index]) ?
-          delete toggleMrtJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
-          toggleMrtJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
+        ('toggle' in toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]) ?
+          delete toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
+          toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
       return {
         ...state,
-        referenceMeta1: toggleMrtJson1,
-        referenceMeta2: toggleMrtJson2
+        referenceMeta1: toggleIndependentJson1,
+        referenceMeta2: toggleIndependentJson2
       }
     case 'MERGE_RESET_REFERENCES':
       console.log(action.type);
