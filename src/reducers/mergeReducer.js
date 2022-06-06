@@ -22,8 +22,9 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000852278',
 //     input: 'PMID:23524264',
 //     input: 'PMID:29664630',	-> orcid
+//     input: 'PMID:28049701',  -> keywords
   referenceMeta2: {
-    input: 'PMID:29664630',
+    input: 'PMID:28049701',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
