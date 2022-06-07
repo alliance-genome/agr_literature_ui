@@ -73,7 +73,7 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
     let response_payload = referenceCurie + ' not found';
     let response_success = false;
     if (response.curie !== undefined) {
-      console.log('response not undefined');
+      // console.log('response not undefined');
       response_success = true;
       response_payload = response; }
     return [response_payload, response_success]
@@ -84,8 +84,8 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
     let curieFound = false;
     // let successXref = false;
     const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
-    console.log('regexMatch');
-    console.log( regexMatch);
+    // console.log('regexMatch');
+    // console.log( regexMatch);
     if (regexMatch !== null) {
       curieFound = true;
       const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
