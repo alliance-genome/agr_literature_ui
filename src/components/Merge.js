@@ -292,13 +292,10 @@ const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMe
 } // const RowDisplayPairModReferenceTypes
 
 const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
-//   const dispatch = useDispatch();
+  const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
   const rowPairModCorpusAssociationsElements = []
-
-  // TODO sort where this goes later
-  let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
 
   const mcaMods = {}; const mca1 = {}; const mca2 = {};
   for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) { 
@@ -309,7 +306,8 @@ const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referen
         if (val1['corpus'] === null) { corpus1 = 'needs_review'; }
         else if (val1['corpus'] === true) { corpus1 = 'inside_corpus'; }
         else if (val1['corpus'] === false) { corpus1 = 'outside_corpus'; } }
-      mca1[val1['mod_abbreviation']] = { 'index': index, 'corpus': corpus1 }; } }
+      const toggle1 = ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') ? val1['toggle'] : null;
+      mca1[val1['mod_abbreviation']] = { 'index': index, 'corpus': corpus1, 'toggle': toggle1 }; } }
   for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) { 
     if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') {
       mcaMods[val2['mod_abbreviation']] = true;
@@ -318,17 +316,32 @@ const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referen
         if (val2['corpus'] === null) { corpus2 = 'needs_review'; }
         else if (val2['corpus'] === true) { corpus2 = 'inside_corpus'; }
         else if (val2['corpus'] === false) { corpus2 = 'outside_corpus'; } }
-      mca2[val2['mod_abbreviation']] = { 'index': index, 'corpus': corpus2 }; } }
+      const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
+      mca2[val2['mod_abbreviation']] = { 'index': index, 'corpus': corpus2, 'toggle': toggle2 }; } }
   // console.log(mca1); console.log(mca2); console.log(mcaMods);
   const sortedKeys = Object.keys(mcaMods).sort();
   for (let i = 0; i < sortedKeys.length; i++) {
     let element1 = (<div></div>); let element2 = (<div></div>);
     const mod = sortedKeys[i];
-    // TODO add onClick
+    let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
+    if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     if (mod in mca1) {
-      element1 = (<div className={`div-merge ${keepClass1}`} >{mca1[mod]['index']} - {mod} - {mca1[mod]['corpus']}</div>); }
+      if (mca1[mod]['toggle'] !== null && mca1[mod]['toggle'] !== '') { toggle1 = mca1[mod]['toggle']; }
+      if ( toggle1 ) { swapColor1 = !swapColor1; }
+      keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
+      element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => { 
+                    dispatch(mergeToggleIndependent(fieldName, 1, mca1[mod]['index'])); 
+                    if (mod in mca2) { dispatch(mergeToggleIndependent(fieldName, 2, mca2[mod]['index'])) } } }
+                  >{mca1[mod]['index']} - {mod} - {mca1[mod]['corpus']}</div>); }
     if (mod in mca2) {
-      element2 = (<div className={`div-merge ${keepClass2}`} >{mca2[mod]['index']} - {mod} - {mca2[mod]['corpus']}</div>); }
+      if (mca2[mod]['toggle'] !== null && mca2[mod]['toggle'] !== '') { toggle2 = mca2[mod]['toggle']; }
+      if ( toggle2 ) { swapColor2 = !swapColor2; }
+      keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
+      element2 = (<div className={`div-merge ${keepClass2}`}  onClick={() => { 
+                    if (mod in mca1) { dispatch(mergeToggleIndependent(fieldName, 1, mca1[mod]['index'])); }
+                    dispatch(mergeToggleIndependent(fieldName, 2, mca2[mod]['index'])) } }
+                  >{mca2[mod]['index']} - {mod} - {mca2[mod]['corpus']}</div>); }
     rowPairModCorpusAssociationsElements.push(
       <Row key={`toggle mca ${i}`}>
         <Col sm="2" ><div className={`div-merge div-merge-grey`}>{fieldName}</div></Col>
