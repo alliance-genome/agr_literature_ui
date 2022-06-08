@@ -25,11 +25,11 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_types' ];
-const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
-const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+// const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 const MergeSelectionSection = () => {
@@ -128,6 +128,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, keepR
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(
         <RowDisplayPairModReferenceTypes key="RowDisplayPairModReferenceTypes" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+    else if (fieldName === 'mod_corpus_associations') {
+      rowOrderedElements.push(
+        <RowDisplayPairModCorpusAssociations key="RowDisplayPairModCorpusAssociations" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
   }
   return (<Container fluid>{rowOrderedElements}</Container>);
 } // const MergePairsSection
@@ -186,12 +189,11 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
-  let element1 = (<div></div>); let element2 = (<div></div>);
   const rowPairAuthorsElements = []
   const maxLength = (referenceMeta1['referenceJson'][fieldName].length > referenceMeta2['referenceJson'][fieldName].length) ?  referenceMeta1['referenceJson'][fieldName].length : referenceMeta2['referenceJson'][fieldName].length;
   const autFields = ['first_name', 'last_name', 'name', 'order', 'corresponding_author', 'first_author', 'toggle'];
   for (let i = 0; i < maxLength; i++) { 
-    element1 = (<div></div>); element2 = (<div></div>);
+    let element1 = (<div></div>); let element2 = (<div></div>);
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     let string1 = ''; let string2 = '';
     let swapColor1 = false; let swapColor2 = false;
@@ -243,17 +245,16 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       </Row>);
   }
   return (<>{rowPairAuthorsElements}</>);
-} // const RowDisplayPairModReferenceTypes
+} // const RowDisplayPairAuthors 
 
 const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
-  let element1 = (<div></div>); let element2 = (<div></div>);
   const rowPairModReferenceTypesElements = []
   const maxLength = (referenceMeta1['referenceJson'][fieldName].length > referenceMeta2['referenceJson'][fieldName].length) ?  referenceMeta1['referenceJson'][fieldName].length : referenceMeta2['referenceJson'][fieldName].length;
   for (let i = 0; i < maxLength; i++) { 
-    element1 = (<div></div>); element2 = (<div></div>);
+    let element1 = (<div></div>); let element2 = (<div></div>);
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     let string1 = ''; let string2 = '';
     let swapColor1 = false; let swapColor2 = false;
@@ -289,6 +290,93 @@ const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMe
   }
   return (<>{rowPairModReferenceTypesElements}</>);
 } // const RowDisplayPairModReferenceTypes
+
+const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+//   const dispatch = useDispatch();
+  if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
+       (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
+  const rowPairModCorpusAssociationsElements = []
+
+  // TODO sort where this goes later
+  let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+
+  const mcaMods = {}; const mca1 = {}; const mca2 = {};
+  for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) { 
+    if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') {
+      mcaMods[val1['mod_abbreviation']] = true;
+      let corpus1 = 'needs_review';
+      if ('corpus' in val1) {
+        if (val1['corpus'] === null) { corpus1 = 'needs_review'; }
+        else if (val1['corpus'] === true) { corpus1 = 'inside_corpus'; }
+        else if (val1['corpus'] === false) { corpus1 = 'outside_corpus'; } }
+      mca1[val1['mod_abbreviation']] = { 'index': index, 'corpus': corpus1 }; } }
+  for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) { 
+    if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') {
+      mcaMods[val2['mod_abbreviation']] = true;
+      let corpus2 = 'needs_review';
+      if ('corpus' in val2) {
+        if (val2['corpus'] === null) { corpus2 = 'needs_review'; }
+        else if (val2['corpus'] === true) { corpus2 = 'inside_corpus'; }
+        else if (val2['corpus'] === false) { corpus2 = 'outside_corpus'; } }
+      mca2[val2['mod_abbreviation']] = { 'index': index, 'corpus': corpus2 }; } }
+  // console.log(mca1); console.log(mca2); console.log(mcaMods);
+  const sortedKeys = Object.keys(mcaMods).sort();
+  for (let i = 0; i < sortedKeys.length; i++) {
+    let element1 = (<div></div>); let element2 = (<div></div>);
+    const mod = sortedKeys[i];
+    // TODO add onClick
+    if (mod in mca1) {
+      element1 = (<div className={`div-merge ${keepClass1}`} >{mca1[mod]['index']} - {mod} - {mca1[mod]['corpus']}</div>); }
+    if (mod in mca2) {
+      element2 = (<div className={`div-merge ${keepClass2}`} >{mca2[mod]['index']} - {mod} - {mca2[mod]['corpus']}</div>); }
+    rowPairModCorpusAssociationsElements.push(
+      <Row key={`toggle mca ${i}`}>
+        <Col sm="2" ><div className={`div-merge div-merge-grey`}>{fieldName}</div></Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  }
+  
+
+//   const maxLength = (referenceMeta1['referenceJson'][fieldName].length > referenceMeta2['referenceJson'][fieldName].length) ?  referenceMeta1['referenceJson'][fieldName].length : referenceMeta2['referenceJson'][fieldName].length;
+//   for (let i = 0; i < maxLength; i++) {
+//     element1 = (<div></div>); element2 = (<div></div>);
+//     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+//     let string1 = ''; let string2 = '';
+//     let swapColor1 = false; let swapColor2 = false;
+//     if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+//     if (referenceMeta1['referenceJson'][fieldName][i] !== null && referenceMeta1['referenceJson'][fieldName][i] !== undefined) {
+//       let mrt1 = referenceMeta1['referenceJson'][fieldName][i];
+//       let src1 = ''; let rt1 = ''; let toggle1 = false;
+//       if (mrt1['source'] !== null && mrt1['source'] !== '') { src1 = mrt1['source']; }
+//       if (mrt1['reference_type'] !== null && mrt1['reference_type'] !== '') { rt1 = mrt1['reference_type']; }
+//       if (mrt1['toggle'] !== null && mrt1['toggle'] !== '') { toggle1 = mrt1['toggle']; }
+//       if ( toggle1 ) { swapColor1 = !swapColor1; }
+//       keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
+//       // console.log('toggle1 swapColor1 ' + swapColor1 + ' on index ' + i)
+//       if (src1 && rt1) { string1 = src1 + ' - ' + rt1; }
+//       element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 1, i))} >{string1}</div>); }
+//     if (referenceMeta2['referenceJson'][fieldName][i] !== null && referenceMeta2['referenceJson'][fieldName][i] !== undefined) {
+//       let mrt2 = referenceMeta2['referenceJson'][fieldName][i];
+//       let src2 = ''; let rt2 = ''; let toggle2 = false;
+//       if (mrt2['source'] !== null && mrt2['source'] !== '') { src2 = mrt2['source']; }
+//       if (mrt2['reference_type'] !== null && mrt2['reference_type'] !== '') { rt2 = mrt2['reference_type']; }
+//       if (mrt2['toggle'] !== null && mrt2['toggle'] !== '') { toggle2 = mrt2['toggle']; }
+//       if ( toggle2 ) { swapColor2 = !swapColor2; }
+//       keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
+//       // console.log('toggle2 swapColor2 ' + swapColor2 + ' on index ' + i)
+//       if (src2 && rt2) { string2 = src2 + ' - ' + rt2; }
+//       element2 = (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 2, i))} >{string2}</div>); }
+//     rowPairModCorpusAssociationsElements.push(
+//       <Row key={`toggle mrt ${i}`}>
+//         <Col sm="2" ><div className={`div-merge div-merge-grey`}>{fieldName}</div></Col>
+//         <Col sm="5" >{element1}</Col>
+//         <Col sm="5" >{element2}</Col>
+//       </Row>);
+//   }
+  return (<>{rowPairModCorpusAssociationsElements}</>);
+} // const RowDisplayPairModCorpusAssociations
+
 
 const Merge = () => {
   return (

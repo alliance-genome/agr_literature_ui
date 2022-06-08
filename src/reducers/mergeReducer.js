@@ -24,7 +24,7 @@ const initialState = {
 //     input: 'PMID:29664630',	-> orcid
 //     input: 'PMID:28049701',  -> keywords
   referenceMeta2: {
-    input: 'PMID:28049701',
+    input: 'PMID:23524264',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
