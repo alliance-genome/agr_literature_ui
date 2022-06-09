@@ -23,8 +23,9 @@ const initialState = {
 //     input: 'PMID:23524264',
 //     input: 'PMID:29664630',	-> orcid
 //     input: 'PMID:28049701',  -> keywords
+//     input: 'PMID:10704882',  -> corrections
   referenceMeta2: {
-    input: 'PMID:23524264',
+    input: 'PMID:10704882',
     curie: '',
     referenceJson: '',
     referenceKeep: {},

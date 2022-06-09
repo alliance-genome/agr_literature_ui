@@ -166,6 +166,33 @@ export const biblioAddNewRowDict = (e, initializeDict) => {
   };
 };
 
+export function generateCorrectionsSimple(referenceJson) {
+  let comcorMapping = {}
+  comcorMapping['CommentOn'] = 'HasComment'
+  comcorMapping['ErratumFor'] = 'HasErratum'
+  comcorMapping['ExpressionOfConcernFor'] = 'HasExpressionOfConcernFor'
+  comcorMapping['ReprintOf'] = 'HasReprint'
+  comcorMapping['RepublishedFrom'] = 'RepublishedIn'
+  comcorMapping['RetractionOf'] = 'HasRetraction'
+  comcorMapping['UpdateOf'] = 'HasUpdate'
+  const comcorDirections = ['to_references', 'from_references']
+  referenceJson['corrections'] = []
+  for (const direction of comcorDirections) {
+    for (const comcorDict of referenceJson['comment_and_corrections'][direction].values()) {
+      let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
+      let curie = comcorDict[curieFieldInDict]
+      let dbid = comcorDict['reference_comment_and_correction_id']
+      let type = comcorDict['reference_comment_and_correction_type']
+      if (direction === 'from_references') {
+        if (type in comcorMapping) { type = comcorMapping[type] } }
+      let newComcorDict = {}
+      newComcorDict['reference_comment_and_correction_id'] = dbid
+      newComcorDict['type'] = type
+      newComcorDict['curie'] = curie
+      referenceJson['corrections'].push(newComcorDict)
+  } }
+}
+
 export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   console.log("action referenceCurie " + referenceCurie);
@@ -190,30 +217,32 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
     if (response !== undefined) {
       const referenceJson = response;
       if ('comment_and_corrections' in referenceJson && referenceJson['comment_and_corrections'] !== null) {
-        let comcorMapping = {}
-        comcorMapping['CommentOn'] = 'HasComment'
-        comcorMapping['ErratumFor'] = 'HasErratum'
-        comcorMapping['ExpressionOfConcernFor'] = 'HasExpressionOfConcernFor'
-        comcorMapping['ReprintOf'] = 'HasReprint'
-        comcorMapping['RepublishedFrom'] = 'RepublishedIn'
-        comcorMapping['RetractionOf'] = 'HasRetraction'
-        comcorMapping['UpdateOf'] = 'HasUpdate'
-        const comcorDirections = ['to_references', 'from_references']
-        referenceJson['corrections'] = []
-        for (const direction of comcorDirections) {
-          for (const comcorDict of referenceJson['comment_and_corrections'][direction].values()) {
-            let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
-            let curie = comcorDict[curieFieldInDict]
-            let dbid = comcorDict['reference_comment_and_correction_id']
-            let type = comcorDict['reference_comment_and_correction_type']
-            if (direction === 'from_references') {
-              if (type in comcorMapping) { type = comcorMapping[type] } }
-            let newComcorDict = {}
-            newComcorDict['reference_comment_and_correction_id'] = dbid
-            newComcorDict['type'] = type
-            newComcorDict['curie'] = curie
-            referenceJson['corrections'].push(newComcorDict)
-      } } }
+        generateCorrectionsSimple(referenceJson);
+//         let comcorMapping = {}
+//         comcorMapping['CommentOn'] = 'HasComment'
+//         comcorMapping['ErratumFor'] = 'HasErratum'
+//         comcorMapping['ExpressionOfConcernFor'] = 'HasExpressionOfConcernFor'
+//         comcorMapping['ReprintOf'] = 'HasReprint'
+//         comcorMapping['RepublishedFrom'] = 'RepublishedIn'
+//         comcorMapping['RetractionOf'] = 'HasRetraction'
+//         comcorMapping['UpdateOf'] = 'HasUpdate'
+//         const comcorDirections = ['to_references', 'from_references']
+//         referenceJson['corrections'] = []
+//         for (const direction of comcorDirections) {
+//           for (const comcorDict of referenceJson['comment_and_corrections'][direction].values()) {
+//             let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
+//             let curie = comcorDict[curieFieldInDict]
+//             let dbid = comcorDict['reference_comment_and_correction_id']
+//             let type = comcorDict['reference_comment_and_correction_type']
+//             if (direction === 'from_references') {
+//               if (type in comcorMapping) { type = comcorMapping[type] } }
+//             let newComcorDict = {}
+//             newComcorDict['reference_comment_and_correction_id'] = dbid
+//             newComcorDict['type'] = type
+//             newComcorDict['curie'] = curie
+//             referenceJson['corrections'].push(newComcorDict)
+//         } }
+      }
       response_payload = referenceJson;
     }
 //     history.push("/Biblio");	// value hasn't been set in store yet

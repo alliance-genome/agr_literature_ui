@@ -107,7 +107,7 @@ enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manua
 // mesh_terms
 
 
-function splitCurie(curie, toReturn) {
+export function splitCurie(curie, toReturn) {
   let curiePrefix = ''; let curieId = '';
   if ( curie.match(/^([^:]*):(.*)$/) ) {
     [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }

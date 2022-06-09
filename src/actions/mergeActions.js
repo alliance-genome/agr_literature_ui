@@ -2,6 +2,8 @@
 
 // import notGithubVariables from './notGithubVariables';
 
+import { generateCorrectionsSimple } from './biblioActions';
+
 const restUrl = process.env.REACT_APP_RESTAPI;
 
 export const changeFieldInput = (e, object, key1) => {
@@ -126,6 +128,8 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
       let valuesRef = await Promise.allSettled([promiseRef1, promiseRef2]);
       referenceJson1 = valuesRef[0]['value'][0];
       referenceFound1 = valuesRef[0]['value'][1];
+      if ('comment_and_corrections' in referenceJson1 && referenceJson1['comment_and_corrections'] !== null) {
+        generateCorrectionsSimple(referenceJson1); }
       if (!referenceFound1) {
         curieValue1 = curieValue1 + ' not found'; }
       console.log(referenceJson1);
@@ -134,6 +138,8 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
       referenceFound2 = valuesRef[1]['value'][1];
       if (!referenceFound2) { 
         curieValue2 = curieValue2 + ' not found'; } }
+      if ('comment_and_corrections' in referenceJson2 && referenceJson2['comment_and_corrections'] !== null) {
+        generateCorrectionsSimple(referenceJson2); }
 
     dispatch({
       type: 'MERGE_QUERY_REFERENCES',
