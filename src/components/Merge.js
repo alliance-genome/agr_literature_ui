@@ -27,7 +27,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_types' ];
-const fieldsOrdered = [ 'title','corrections',  'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -139,6 +139,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, keepR
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(
         <RowDisplayPairCrossReferences key="RowDisplayPairCrossReferences" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+    else if (fieldName === 'mesh_terms') {
+      rowOrderedElements.push(
+        <RowDisplayPairPubmedMeshTerms key="RowDisplayPairPubmedMeshTerms" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
   }
   return (<Container fluid>{rowOrderedElements}</Container>);
 } // const MergePairsSection
@@ -191,7 +194,36 @@ const RowDisplayPairPubmedArrayString = ({fieldName, referenceMeta1, referenceMe
         <Col sm="5" >{element1}</Col>
         <Col sm="5" >{element2}</Col>
       </Row>);
-} // const RowDisplayPairKeywords
+} // const RowDisplayPairPubmedArrayString 
+
+const RowDisplayPairPubmedMeshTerms = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+  if ( (referenceMeta1['referenceJson'][fieldName] === null || referenceMeta1['referenceJson'][fieldName].length === 0) &&
+       (referenceMeta2['referenceJson'][fieldName] === null || referenceMeta2['referenceJson'][fieldName].length === 0) ) { return null; }
+  let element1 = (<div></div>); let element2 = (<div></div>);
+  if (referenceMeta1['referenceJson'][fieldName] !== null && referenceMeta1['referenceJson'][fieldName] !== undefined) {
+    const meshTextArray = []
+    for (const value of referenceMeta1['referenceJson'][fieldName]) {
+      let term = value['heading_term'];
+      if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
+      meshTextArray.push(term); }
+    const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.join('; ')}} />)
+    element1 = (<div className={`div-merge div-merge-grey`} >{meshText}</div>); }
+  if (referenceMeta2['referenceJson'][fieldName] !== null && referenceMeta2['referenceJson'][fieldName] !== undefined) {
+    const meshTextArray = []
+    for (const value of referenceMeta2['referenceJson'][fieldName]) {
+      let term = value['heading_term'];
+      if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
+      meshTextArray.push(term); }
+    const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.join('; ')}} />)
+    element2 = (<div className={`div-merge div-merge-grey`} >{meshText}</div>); }
+  return (
+      <Row key={`nontoggle ${fieldName}`}>
+        <Col sm="2" ><div className={`div-merge div-merge-grey`}>{fieldName}</div></Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+} // const RowDisplayPairPubmedMeshTerms 
+
 
 const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
   const dispatch = useDispatch();

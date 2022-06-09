@@ -461,7 +461,7 @@ const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson, displayOrEdi
         if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
         meshTextArray.push(term); }
 //       const meshText = meshTextArray.join('<span className="affiliation">; </span>');	// renders markup
-      const meshText = meshTextArray.join('; ');
+      const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.join('; ')}} />)
       rowMeshTermsElements.push(
         <Row key="meshTermsText" className="Row-general" xs={2} md={4} lg={6}>
           <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
