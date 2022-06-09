@@ -374,7 +374,7 @@ const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referen
                     dispatch(mergeToggleIndependent(fieldName, 1, mca1[mod]['index'])); 
                     if (mod in mca2) { dispatch(mergeToggleIndependent(fieldName, 2, mca2[mod]['index'])) } } }
 //                   >{mca1[mod]['index']} - {mod} - {mca1[mod]['corpus']}</div>);
-                  >{mca1[mod]['corpus']}</div>); }
+                  >{mod} - {mca1[mod]['corpus']}</div>); }
     if (mod in mca2) {
       if (mca2[mod]['toggle'] !== null && mca2[mod]['toggle'] !== '') { toggle2 = mca2[mod]['toggle']; }
       if ( toggle2 ) { swapColor2 = !swapColor2; }
@@ -383,7 +383,7 @@ const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referen
                     if (mod in mca1) { dispatch(mergeToggleIndependent(fieldName, 1, mca1[mod]['index'])); }
                     dispatch(mergeToggleIndependent(fieldName, 2, mca2[mod]['index'])) } }
 //                   >{mca2[mod]['index']} - {mod} - {mca2[mod]['corpus']}</div>);
-                  >{mca2[mod]['corpus']}</div>); }
+                  >{mod} - {mca2[mod]['corpus']}</div>); }
     rowPairModCorpusAssociationsElements.push(
       <Row key={`toggle mca ${i}`}>
         <Col sm="2" ><div className={`div-merge div-merge-grey`}>{fieldName}</div></Col>
