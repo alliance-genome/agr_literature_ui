@@ -20,6 +20,7 @@ import Badge from 'react-bootstrap/Badge'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
+import { faLock } from '@fortawesome/free-solid-svg-icons'
 // import { faLongArrowAltLeft } from '@fortawesome/free-solid-svg-icons'
 
 
@@ -148,12 +149,16 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, keepR
 
 const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
   const dispatch = useDispatch();
+  const hasPmid = true;
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
   let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete'; let swapColor = false;
   if (keepReference === 2) { swapColor = !swapColor; }
   if ( (fieldName in referenceSwap) && (referenceSwap[fieldName] === true) ) { swapColor = !swapColor; }
   if (swapColor) { keepClass2 = [keepClass1, keepClass1 = keepClass2][0]; }
+  const element0 = (hasPmid) ?
+    <div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faLock} /> {fieldName}</div> :
+    <div className={`div-merge div-merge-grey`}>{fieldName}</div>;
   let element1 = (<div></div>); let element2 = (<div></div>);
   if (referenceMeta1['referenceJson'][fieldName] !== null && referenceMeta1['referenceJson'][fieldName] !== '') { 
     element1 = (fieldsDisplayOnly.includes(fieldName)) ?
@@ -165,7 +170,7 @@ const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, refere
                (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeSwapPairSimple(fieldName))} >{referenceMeta2['referenceJson'][fieldName]}</div>); }
   return (
     <Row>
-      <Col sm="2" ><div className={`div-merge div-merge-grey`}>{fieldName}</div></Col>
+      <Col sm="2" >{element0}</Col>
       <Col sm="5" >{element1}</Col>
       <Col sm="5" >{element2}</Col>
     </Row>
@@ -460,7 +465,6 @@ const RowDisplayPairCorrections = ({fieldName, referenceMeta1, referenceMeta2, r
   for (let i = 0; i < maxLength; i++) { 
     let element1 = (<div></div>); let element2 = (<div></div>);
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
-    let string1 = ''; let string2 = '';
     let swapColor1 = false; let swapColor2 = false;
     if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
     if (referenceMeta1['referenceJson'][fieldName][i] !== null && referenceMeta1['referenceJson'][fieldName][i] !== undefined) {
