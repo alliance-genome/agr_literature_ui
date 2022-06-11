@@ -18,7 +18,7 @@ const initialState = {
   updateMessages: []
 };
 
-const checkHasPmid = (referenceJsonLive) => {
+export const checkHasPmid = (referenceJsonLive) => {
   // console.log('called checkHasPmid ' + referenceJsonLive.curie);
   let checkingHasPmid = false;
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] != null) {

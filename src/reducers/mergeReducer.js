@@ -1,4 +1,6 @@
 
+import { checkHasPmid } from './biblioReducer';
+
 const initialState = {
   referenceMetaDefault: {
     input: '',
@@ -39,6 +41,7 @@ const initialState = {
   referenceDb2: {},
   referenceSwap: {},
 
+  hasPmid: false,
   keepReference: 1,
   referenceQuerySuccess1: '',
   referenceQuerySuccess2: '',
@@ -145,6 +148,10 @@ export default function(state = initialState, action) {
       else {
         referenceMeta1Copy.disableInput = ''; referenceMeta2Copy.disableInput = ''; }
 
+      const mergeQueryHasPmid1 = checkHasPmid(referenceMeta1Copy.referenceJson);
+      const mergeQueryHasPmid2 = checkHasPmid(referenceMeta2Copy.referenceJson);
+      const mergeQueryHasPmid = (mergeQueryHasPmid1 || mergeQueryHasPmid2) ? true : false;
+
       return {
         ...state,
         referenceMeta1: referenceMeta1Copy,
@@ -152,6 +159,7 @@ export default function(state = initialState, action) {
         referenceDb1: referenceMeta1Copy,
         referenceDb2: referenceMeta2Copy,
         queryDoubleSuccess: queryDoubleSuccess,
+        hasPmid: mergeQueryHasPmid,
         blah: 'blah'
       }
 
