@@ -35,6 +35,8 @@ const initialState = {
     disableInput: '',
     blah: ''
   },
+  referenceDb1: {},
+  referenceDb2: {},
   referenceSwap: {},
 
   keepReference: 1,
@@ -62,9 +64,21 @@ export default function(state = initialState, action) {
       }
     case 'MERGE_SWAP_KEEP':
       console.log(action.type);
-      const newKeepValue = (state.keepReference === 1) ? 2 : 1;
+      // swap used to swap which reference to keep by changing its colors, instead of changing the reference, now it swaps the whole referenceMeta
+      let swapReferenceMeta2Copy = JSON.parse(JSON.stringify(state.referenceDb1));
+      let swapReferenceMeta1Copy = JSON.parse(JSON.stringify(state.referenceDb2));
+      let newKeepValue = 2;
+      if (state.keepReference === 2) {
+        swapReferenceMeta1Copy = JSON.parse(JSON.stringify(state.referenceDb1));
+        swapReferenceMeta2Copy = JSON.parse(JSON.stringify(state.referenceDb2));
+        newKeepValue = 1; }
+      // const newKeepValue = (state.keepReference === 1) ? 2 : 1;
+      
       return {
         ...state,
+        referenceMeta1: swapReferenceMeta1Copy,
+        referenceMeta2: swapReferenceMeta2Copy,
+        referenceSwap: {},
         keepReference: newKeepValue
       }
     case 'MERGE_SWAP_PAIR_SIMPLE':
@@ -135,6 +149,8 @@ export default function(state = initialState, action) {
         ...state,
         referenceMeta1: referenceMeta1Copy,
         referenceMeta2: referenceMeta2Copy,
+        referenceDb1: referenceMeta1Copy,
+        referenceDb2: referenceMeta2Copy,
         queryDoubleSuccess: queryDoubleSuccess,
         blah: 'blah'
       }
