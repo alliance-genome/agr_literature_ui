@@ -36,7 +36,7 @@ const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER'
 const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 const MergeSelectionSection = () => {
-  const keepReference = useSelector(state => state.merge.keepReference);
+  // const keepReference = useSelector(state => state.merge.keepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
   const referenceSwap = useSelector(state => state.merge.referenceSwap);
@@ -47,9 +47,9 @@ const MergeSelectionSection = () => {
 
   let header1 = (<span className={`span-merge-header-success`} >Keep</span>)
   let header2 = (<span className={`span-merge-header-failure`} >Obsolete</span>)
-  if (keepReference === 2) {
-    header2 = (<span className={`span-merge-header-success`} >Keep</span>)
-    header1 = (<span className={`span-merge-header-failure`} >Obsolete</span>) }
+  // if (keepReference === 2) {
+  //   header2 = (<span className={`span-merge-header-success`} >Keep</span>)
+  //   header1 = (<span className={`span-merge-header-failure`} >Obsolete</span>) }
 
   let curie1Class = 'span-merge-message-init';
   if (referenceMeta1.queryRefSuccess === null) { curie1Class = 'span-merge-message-init'; }
@@ -91,7 +91,7 @@ const MergeSelectionSection = () => {
 
     {(() => {
       if (queryDoubleSuccess) { return (
-        <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} />
+        <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} />
       ) }
     })()}
     </>
@@ -100,8 +100,8 @@ const MergeSelectionSection = () => {
 
 // <RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />
 
-//       <RowDisplayPairSimple key="title" fieldName="title" referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} />
-//       <RowDisplayPairSimple key="category" fieldName="category" referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} />
+//       <RowDisplayPairSimple key="title" fieldName="title" referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} />
+//       <RowDisplayPairSimple key="category" fieldName="category" referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} />
 
 //       <Row>
 //         <Col sm="2" >Title</Col>
@@ -114,46 +114,46 @@ const MergeSelectionSection = () => {
 //         <Col sm="5" >{referenceMeta2.referenceJson.category}</Col>
 //       </Row>
 
-const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap}) => {
   const rowOrderedElements = []
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
       rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
     else if (fieldsSimple.includes(fieldName)) {
       rowOrderedElements.push(
-        <RowDisplayPairSimple key={fieldName} fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+        <RowDisplayPairSimple key={fieldName} fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} /> ); }
     else if (fieldsPubmedArrayString.includes(fieldName)) {
       rowOrderedElements.push(
-        <RowDisplayPairPubmedArrayString key={fieldName} fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+        <RowDisplayPairPubmedArrayString key={fieldName} fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} /> ); }
     else if (fieldName === 'authors') {
       rowOrderedElements.push(
-        <RowDisplayPairAuthors key="RowDisplayPairAuthors" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+        <RowDisplayPairAuthors key="RowDisplayPairAuthors" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} /> ); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(
-        <RowDisplayPairModReferenceTypes key="RowDisplayPairModReferenceTypes" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+        <RowDisplayPairModReferenceTypes key="RowDisplayPairModReferenceTypes" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} /> ); }
     else if (fieldName === 'mod_corpus_associations') {
       rowOrderedElements.push(
-        <RowDisplayPairModCorpusAssociations key="RowDisplayPairModCorpusAssociations" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+        <RowDisplayPairModCorpusAssociations key="RowDisplayPairModCorpusAssociations" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} /> ); }
     else if (fieldName === 'corrections') {
       rowOrderedElements.push(
-        <RowDisplayPairCorrections key="RowDisplayPairCorrections" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+        <RowDisplayPairCorrections key="RowDisplayPairCorrections" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} /> ); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(
-        <RowDisplayPairCrossReferences key="RowDisplayPairCrossReferences" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+        <RowDisplayPairCrossReferences key="RowDisplayPairCrossReferences" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} /> ); }
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(
-        <RowDisplayPairPubmedMeshTerms key="RowDisplayPairPubmedMeshTerms" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} keepReference={keepReference} /> ); }
+        <RowDisplayPairPubmedMeshTerms key="RowDisplayPairPubmedMeshTerms" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} /> ); }
   }
   return (<Container fluid>{rowOrderedElements}</Container>);
 } // const MergePairsSection
 
-const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap}) => {
   const dispatch = useDispatch();
   const hasPmid = true;
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
   let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete'; let swapColor = false;
-  if (keepReference === 2) { swapColor = !swapColor; }
+  // if (keepReference === 2) { swapColor = !swapColor; }
   if ( (fieldName in referenceSwap) && (referenceSwap[fieldName] === true) ) { swapColor = !swapColor; }
   if (swapColor) { keepClass2 = [keepClass1, keepClass1 = keepClass2][0]; }
   const element0 = (hasPmid) ?
@@ -181,7 +181,7 @@ const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, refere
 //       <Col sm="5" className={`div-merge div-merge-keep`}>{referenceMeta1['referenceJson'][fieldName]}</Col>
 //       <Col sm="5" className={`div-merge div-merge-obsolete`}>{referenceMeta2['referenceJson'][fieldName]}</Col>
 
-const RowDisplayPairPubmedArrayString = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const RowDisplayPairPubmedArrayString = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap}) => {
 //   console.log(' e1 ' + referenceMeta1['referenceJson'][fieldName]);
 //   console.log(' e2 ' + referenceMeta2['referenceJson'][fieldName]);
   if ( (referenceMeta1['referenceJson'][fieldName] === null || referenceMeta1['referenceJson'][fieldName].length === 0) &&
@@ -201,7 +201,7 @@ const RowDisplayPairPubmedArrayString = ({fieldName, referenceMeta1, referenceMe
       </Row>);
 } // const RowDisplayPairPubmedArrayString 
 
-const RowDisplayPairPubmedMeshTerms = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const RowDisplayPairPubmedMeshTerms = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap}) => {
   if ( (referenceMeta1['referenceJson'][fieldName] === null || referenceMeta1['referenceJson'][fieldName].length === 0) &&
        (referenceMeta2['referenceJson'][fieldName] === null || referenceMeta2['referenceJson'][fieldName].length === 0) ) { return null; }
   let element1 = (<div></div>); let element2 = (<div></div>);
@@ -230,7 +230,7 @@ const RowDisplayPairPubmedMeshTerms = ({fieldName, referenceMeta1, referenceMeta
 } // const RowDisplayPairPubmedMeshTerms 
 
 
-const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap}) => {
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
@@ -242,7 +242,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     let string1 = ''; let string2 = '';
     let swapColor1 = false; let swapColor2 = false;
-    if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+    // if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
     if (referenceMeta1['referenceJson'][fieldName][i] !== null && referenceMeta1['referenceJson'][fieldName][i] !== undefined) {
       let aut1 = referenceMeta1['referenceJson'][fieldName][i];
       let aut1Data = {};
@@ -292,7 +292,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
   return (<>{rowPairAuthorsElements}</>);
 } // const RowDisplayPairAuthors 
 
-const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap}) => {
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
@@ -303,7 +303,7 @@ const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMe
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     let string1 = ''; let string2 = '';
     let swapColor1 = false; let swapColor2 = false;
-    if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+    // if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
     if (referenceMeta1['referenceJson'][fieldName][i] !== null && referenceMeta1['referenceJson'][fieldName][i] !== undefined) {
       let mrt1 = referenceMeta1['referenceJson'][fieldName][i];
       let src1 = ''; let rt1 = ''; let toggle1 = false;
@@ -336,7 +336,7 @@ const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMe
   return (<>{rowPairModReferenceTypesElements}</>);
 } // const RowDisplayPairModReferenceTypes
 
-const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap}) => {
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
@@ -369,7 +369,7 @@ const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referen
     let element1 = (<div></div>); let element2 = (<div></div>);
     const mod = sortedKeys[i];
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
-    if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+    // if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     if (mod in mca1) {
       if (mca1[mod]['toggle'] !== null && mca1[mod]['toggle'] !== '') { toggle1 = mca1[mod]['toggle']; }
@@ -399,7 +399,7 @@ const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referen
   return (<>{rowPairModCorpusAssociationsElements}</>);
 } // const RowDisplayPairModCorpusAssociations
 
-const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap}) => {
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
@@ -424,7 +424,7 @@ const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta
     let element1 = (<div></div>); let element2 = (<div></div>);
     const mod = sortedKeys[i];
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
-    if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+    // if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     if (mod in xref1) {
       if (xref1[mod]['toggle'] !== null && xref1[mod]['toggle'] !== '') { toggle1 = xref1[mod]['toggle']; }
@@ -454,7 +454,7 @@ const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta
   return (<>{rowPairCrossReferencesElements}</>);
 } // const RowDisplayPairCrossReferences
   
-const RowDisplayPairCorrections = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, keepReference}) => {
+const RowDisplayPairCorrections = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap}) => {
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
@@ -466,7 +466,7 @@ const RowDisplayPairCorrections = ({fieldName, referenceMeta1, referenceMeta2, r
     let element1 = (<div></div>); let element2 = (<div></div>);
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     let swapColor1 = false; let swapColor2 = false;
-    if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+    // if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
     if (referenceMeta1['referenceJson'][fieldName][i] !== null && referenceMeta1['referenceJson'][fieldName][i] !== undefined) {
       let cor1 = referenceMeta1['referenceJson'][fieldName][i];
       let cor1Data = {};
