@@ -221,15 +221,16 @@ const RowDisplayPairPubmedArrayString = ({fieldName, referenceMeta1, referenceMe
   let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete'; let swapColor = false;
   if ( ( fieldsPubmedUnlocked.includes(fieldName) || fieldsPubmedLocked.includes(fieldName) || fieldsPubmedOnly.includes(fieldName) ) &&
        (pmidKeepReference === 2) ) { swapColor = !swapColor; }
+  if (swapColor) { keepClass2 = [keepClass1, keepClass1 = keepClass2][0]; }
   const isLocked = GenerateIsLocked(fieldName, hasPmid);
   const element0 = GenerateFieldLabel(fieldName, isLocked);
   let element1 = (<div></div>); let element2 = (<div></div>);
   if (referenceMeta1['referenceJson'][fieldName] !== null && referenceMeta1['referenceJson'][fieldName] !== undefined) {
     const string1 = referenceMeta1['referenceJson'][fieldName].join(', ');
-    element1 = (<div className={`div-merge div-merge-grey`} >{string1}</div>); }
+    element1 = (<div className={`div-merge ${keepClass1}`} >{string1}</div>); }
   if (referenceMeta2['referenceJson'][fieldName] !== null && referenceMeta2['referenceJson'][fieldName] !== undefined) {
     const string2 = referenceMeta2['referenceJson'][fieldName].join(', ');
-    element2 = (<div className={`div-merge div-merge-grey`} >{string2}</div>); }
+    element2 = (<div className={`div-merge ${keepClass2}`} >{string2}</div>); }
   return (
       <Row key={`nontoggle ${fieldName}`}>
         <Col sm="2" >{element0}</Col>
@@ -244,6 +245,7 @@ const RowDisplayPairPubmedMeshTerms = ({fieldName, referenceMeta1, referenceMeta
   let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete'; let swapColor = false;
   if ( ( fieldsPubmedUnlocked.includes(fieldName) || fieldsPubmedLocked.includes(fieldName) || fieldsPubmedOnly.includes(fieldName) ) &&
        (pmidKeepReference === 2) ) { swapColor = !swapColor; }
+  if (swapColor) { keepClass2 = [keepClass1, keepClass1 = keepClass2][0]; }
   const isLocked = GenerateIsLocked(fieldName, hasPmid);
   const element0 = GenerateFieldLabel(fieldName, isLocked);
   let element1 = (<div></div>); let element2 = (<div></div>);
@@ -254,7 +256,7 @@ const RowDisplayPairPubmedMeshTerms = ({fieldName, referenceMeta1, referenceMeta
       if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
       meshTextArray.push(term); }
     const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.join('; ')}} />)
-    element1 = (<div className={`div-merge div-merge-grey`} >{meshText}</div>); }
+    element1 = (<div className={`div-merge ${keepClass1}`} >{meshText}</div>); }
   if (referenceMeta2['referenceJson'][fieldName] !== null && referenceMeta2['referenceJson'][fieldName] !== undefined) {
     const meshTextArray = []
     for (const value of referenceMeta2['referenceJson'][fieldName]) {
@@ -262,7 +264,7 @@ const RowDisplayPairPubmedMeshTerms = ({fieldName, referenceMeta1, referenceMeta
       if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
       meshTextArray.push(term); }
     const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.join('; ')}} />)
-    element2 = (<div className={`div-merge div-merge-grey`} >{meshText}</div>); }
+    element2 = (<div className={`div-merge ${keepClass2}`} >{meshText}</div>); }
   return (
       <Row key={`nontoggle ${fieldName}`}>
         <Col sm="2" >{element0}</Col>
