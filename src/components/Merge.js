@@ -179,6 +179,8 @@ const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, refere
 //   const hasPmid = true;
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
+    // keep resource_title in fieldsOrdered in case it's useful later, but only display it when looking at resource_curie
+  if (fieldName === 'resource_title') { return null; }
   let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete'; let swapColor = false;
   // if (keepReference === 2) { swapColor = !swapColor; }
   if ( ( fieldsPubmedUnlocked.includes(fieldName) || fieldsPubmedLocked.includes(fieldName) || fieldsPubmedOnly.includes(fieldName) ) &&
@@ -191,15 +193,21 @@ const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, refere
 //   const element0 = (hasPmid) ?
 //     <div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faUnlock} /> {fieldName}</div> :
 //     <div className={`div-merge div-merge-grey`}>{fieldName}</div>;
+
+  let fieldValue1 = (referenceMeta1['referenceJson'][fieldName]);
+  let fieldValue2 = (referenceMeta2['referenceJson'][fieldName]);
+  if (fieldName === 'resource_curie') { 
+    fieldValue1 = (<>{fieldValue1} <br/> {referenceMeta1['referenceJson']['resource_title']}</>); 
+    fieldValue2 = (<>{fieldValue2} <br/> {referenceMeta2['referenceJson']['resource_title']}</>); }
   let element1 = (<div></div>); let element2 = (<div></div>);
   if (referenceMeta1['referenceJson'][fieldName] !== null && referenceMeta1['referenceJson'][fieldName] !== '') { 
     element1 = (!hasPmid || isLocked === 'unlock') ?
-               (<div className={`div-merge ${keepClass1}`} onClick={() => dispatch(mergeSwapPairSimple(fieldName))} >{referenceMeta1['referenceJson'][fieldName]}</div>) :
-               (<div className={`div-merge ${keepClass1}`} >{referenceMeta1['referenceJson'][fieldName]}</div>); } 
+               (<div className={`div-merge ${keepClass1}`} onClick={() => dispatch(mergeSwapPairSimple(fieldName))} >{fieldValue1}</div>) :
+               (<div className={`div-merge ${keepClass1}`} >{fieldValue1}</div>); } 
   if (referenceMeta2['referenceJson'][fieldName] !== null && referenceMeta2['referenceJson'][fieldName] !== '') { 
     element2 = (!hasPmid || isLocked === 'unlock') ?
-               (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeSwapPairSimple(fieldName))} >{referenceMeta2['referenceJson'][fieldName]}</div>) :
-               (<div className={`div-merge ${keepClass2}`} >{referenceMeta2['referenceJson'][fieldName]}</div>); }
+               (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeSwapPairSimple(fieldName))} >{fieldValue2}</div>) :
+               (<div className={`div-merge ${keepClass2}`} >{fieldValue2}</div>); }
   return (
     <Row>
       <Col sm="2" >{element0}</Col>
