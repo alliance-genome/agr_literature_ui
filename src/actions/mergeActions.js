@@ -23,6 +23,8 @@ export const mergeResetReferences = () => { return { type: 'MERGE_RESET_REFERENC
 
 export const mergeSwapKeep = () => { return { type: 'MERGE_SWAP_KEEP' }; };
 
+export const mergeSwapKeepPmid = () => { return { type: 'MERGE_SWAP_KEEP_PMID' }; };
+
 export const mergeSwapPairSimple = (fieldName) => { 
   console.log("action mergeSwapPairSimple " + fieldName);
   return { type: 'MERGE_SWAP_PAIR_SIMPLE',

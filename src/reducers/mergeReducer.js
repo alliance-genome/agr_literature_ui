@@ -43,6 +43,7 @@ const initialState = {
 
   hasPmid: false,
   keepReference: 1,
+  pmidKeepReference: 1,
   referenceQuerySuccess1: '',
   referenceQuerySuccess2: '',
 //   referenceMessageDefault: 'Enter a Reference Agr ID or cross reference curie',
@@ -84,6 +85,15 @@ export default function(state = initialState, action) {
         referenceSwap: {},
         keepReference: newKeepValue
       }
+    case 'MERGE_SWAP_KEEP_PMID':
+      console.log(action.type);
+      let newPmidKeepValue = 2;
+      if (state.pmidKeepReference === 2) { newPmidKeepValue = 1; }
+      return {
+        ...state,
+        pmidKeepReference: newPmidKeepValue
+      }
+    
     case 'MERGE_SWAP_PAIR_SIMPLE':
       console.log(action.type);
       let newReferenceSwap = {};
