@@ -99,6 +99,18 @@
   background-color: var(--light-grey) !important;
 }
 
+/*
+.div-merge-stripes {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    var(--light-grey) 10px,
+    var(--light-grey) 20px
+  );
+}
+*/
+
 .div-merge-keep {
   border: 1px solid var(--light-blue-hover);
   background-color: var(--light-blue) !important;

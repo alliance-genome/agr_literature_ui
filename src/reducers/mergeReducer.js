@@ -42,6 +42,7 @@ const initialState = {
   referenceSwap: {},
 
   hasPmid: false,
+  isLoadingReferences: false,
   keepReference: 1,
   pmidKeepReference: 1,
   referenceQuerySuccess1: '',
@@ -58,6 +59,11 @@ const initialState = {
 export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
+    case 'MERGE_SET_IS_LOADING_REFERENCES':
+      return {
+        ...state,
+        isLoadingReferences: action.payload
+      }
     case 'MERGE_CHANGE_FIELD_INPUT':
       // console.log(action.payload);
       const changeObjectCopy = JSON.parse(JSON.stringify(state[action.payload.object]));

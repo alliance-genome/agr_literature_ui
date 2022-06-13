@@ -18,6 +18,7 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Badge from 'react-bootstrap/Badge'
+import {Spinner} from "react-bootstrap";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
@@ -87,6 +88,7 @@ const MergeSelectionSection = () => {
     else if (referenceMeta2.queryRefSuccess === true) { curie2Class = 'span-merge-message-success'; }
     else if (referenceMeta2.queryRefSuccess === false) { curie2Class = 'span-merge-message-failure'; }
   
+  const isLoadingReferences = useSelector(state => state.merge.isLoadingReferences);
   const dispatch = useDispatch();
   return (
     <>
@@ -108,7 +110,8 @@ const MergeSelectionSection = () => {
         <Col sm="12" >
           {(() => {
             if (queryDoubleSuccess) { return (<Button variant='warning' onClick={() => dispatch(mergeResetReferences())} >Discard changes and new query</Button>) }
-            return (<Button variant='primary' onClick={(e) => dispatch(mergeQueryReferences(referenceMeta1.input, referenceMeta2.input))} >Query for these references</Button>);
+            return (<Button variant='primary' onClick={(e) => dispatch(mergeQueryReferences(referenceMeta1.input, referenceMeta2.input))} >
+              {isLoadingReferences ? <Spinner animation="border" size="sm"/> : "Query for these references"}</Button>);
           })()}
         </Col>
       </Row>

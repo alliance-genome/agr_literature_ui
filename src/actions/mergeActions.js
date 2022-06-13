@@ -42,6 +42,10 @@ export const mergeToggleIndependent = (fieldName, oneOrTwo, index) => {
 export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispatch => {
   // console.log("ref1 " + referenceInput1);
   // console.log("ref2 " + referenceInput2);
+  dispatch({
+    type: 'MERGE_SET_IS_LOADING_REFERENCES',
+    payload: true
+  });
 
   const queryXref = async (referenceInput) => {
     const urlApi = restUrl + '/cross_reference/' + referenceInput;
@@ -130,19 +134,23 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
       let valuesRef = await Promise.allSettled([promiseRef1, promiseRef2]);
       referenceJson1 = valuesRef[0]['value'][0];
       referenceFound1 = valuesRef[0]['value'][1];
-      if ('comment_and_corrections' in referenceJson1 && referenceJson1['comment_and_corrections'] !== null) {
+      if (referenceJson1.constructor === Object && 'comment_and_corrections' in referenceJson1 &&
+          referenceJson1['comment_and_corrections'] !== null) {
         generateCorrectionsSimple(referenceJson1); }
       if (!referenceFound1) {
         curieValue1 = curieValue1 + ' not found'; }
-      console.log(referenceJson1);
-      console.log(referenceFound1);
       referenceJson2 = valuesRef[1]['value'][0];
       referenceFound2 = valuesRef[1]['value'][1];
       if (!referenceFound2) { 
         curieValue2 = curieValue2 + ' not found'; } }
-      if ('comment_and_corrections' in referenceJson2 && referenceJson2['comment_and_corrections'] !== null) {
+      if (referenceJson2.constructor === Object && 'comment_and_corrections' in referenceJson2 &&
+          referenceJson2['comment_and_corrections'] !== null) {
         generateCorrectionsSimple(referenceJson2); }
 
+    dispatch({
+      type: 'MERGE_SET_IS_LOADING_REFERENCES',
+      payload: false
+    });
     dispatch({
       type: 'MERGE_QUERY_REFERENCES',
       payload: {
@@ -153,7 +161,7 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
         referenceJson2: referenceJson2,
         referenceFound2: referenceFound2,
         blah: 'blah'
-    }})
+    }});
   }
 
   queryBothXrefs(referenceInput1, referenceInput2);
