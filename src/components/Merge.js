@@ -63,6 +63,7 @@ const GenerateIsLocked = (fieldName, hasPmid) => {
 
 const MergeSelectionSection = () => {
   // const keepReference = useSelector(state => state.merge.keepReference);
+  const isLoadingReferences = useSelector(state => state.merge.isLoadingReferences);
   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
@@ -88,7 +89,6 @@ const MergeSelectionSection = () => {
     else if (referenceMeta2.queryRefSuccess === true) { curie2Class = 'span-merge-message-success'; }
     else if (referenceMeta2.queryRefSuccess === false) { curie2Class = 'span-merge-message-failure'; }
   
-  const isLoadingReferences = useSelector(state => state.merge.isLoadingReferences);
   const dispatch = useDispatch();
   return (
     <>
