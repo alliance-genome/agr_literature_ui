@@ -74,7 +74,7 @@ const AppWithRouterAccess = () => {
                 <Route path='/ontomate' component={Ontomate} />
                 <Route path='/textpresso' component={Textpresso} />
                 <SecureRoute path='/create' component={Create} />
-                <SecureRoute path='/merge' component={Merge} />
+                <Route path='/merge' component={Merge} />
                 <Route path='/about' component={About} />
                 <Route path = '/swaggerUI' component={SwaggerComp} />
                 <Route path = '/loginRequired' component={LoginRequired} />
