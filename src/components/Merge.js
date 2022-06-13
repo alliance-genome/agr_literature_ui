@@ -23,7 +23,7 @@ import {Spinner} from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
-import { faUnlock } from '@fortawesome/free-solid-svg-icons'
+import { faLockOpen } from '@fortawesome/free-solid-svg-icons'
 // import { faLongArrowAltLeft } from '@fortawesome/free-solid-svg-icons'
 
 
@@ -47,7 +47,7 @@ const GenerateFieldLabel = (fieldName, isLocked) => {
   if ( isLocked === 'lock' ) { 
     return (<div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faLock} /> {fieldName}</div>); }
   else if ( isLocked === 'unlock' ) { 
-    return (<div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faUnlock} /> {fieldName}</div>); }
+    return (<div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faLockOpen} /> {fieldName}</div>); }
   return (<div className={`div-merge div-merge-grey`}>{fieldName}</div>);
 }
 
@@ -194,7 +194,7 @@ const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, refere
   const isLocked = GenerateIsLocked(fieldName, hasPmid);
   const element0 = GenerateFieldLabel(fieldName, isLocked);
 //   const element0 = (hasPmid) ?
-//     <div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faUnlock} /> {fieldName}</div> :
+//     <div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faLockOpen} /> {fieldName}</div> :
 //     <div className={`div-merge div-merge-grey`}>{fieldName}</div>;
 
   let fieldValue1 = (referenceMeta1['referenceJson'][fieldName]);
