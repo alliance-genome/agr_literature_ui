@@ -290,15 +290,18 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
   const rowPairAuthorsElements = [];
+  const author1Elements = [];
+  const author2Elements = [];
   let maxLength = 0;
   if (referenceMeta1['referenceJson'][fieldName] !== null && referenceMeta1['referenceJson'][fieldName].length > maxLength) {
     maxLength = referenceMeta1['referenceJson'][fieldName].length; }
   if (referenceMeta2['referenceJson'][fieldName] !== null && referenceMeta2['referenceJson'][fieldName].length > maxLength) {
     maxLength = referenceMeta2['referenceJson'][fieldName].length; }
   const autFields = ['first_name', 'last_name', 'name', 'order', 'corresponding_author', 'first_author', 'toggle'];
-  for (let i = 0; i < maxLength; i++) { 
-    const isLocked = GenerateIsLocked(fieldName, hasPmid);
-    const element0 = GenerateFieldLabel(fieldName, isLocked);
+  let maxOrder = 0;
+  const isLocked = GenerateIsLocked(fieldName, hasPmid);
+  const element0 = GenerateFieldLabel(fieldName, isLocked);
+  for (let i = 0; i < maxLength; i++) {
     let element1 = (<div></div>); let element2 = (<div></div>);
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     let string1 = ''; let string2 = '';
@@ -321,12 +324,14 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       else if ( aut1Data['first_name'] !== '') { aut1Data['name'] = aut1Data['first_name'] }
       else if ( aut1Data['last_name'] !== '') { aut1Data['name'] = aut1Data['last_name'] }
       string1 = aut1Data['order'] + ' - ' + aut1Data['name'];
+      if (aut1Data['order'] > maxOrder) { maxOrder = aut1Data['order']; }
       if ( aut1Data['orcid'] !== '') { string1 += ' - ' + aut1Data['orcid']; }
 //       if ( aut1Data['corresponding_author'] !== true) { string1 += " <Badge>corresponding</Badge>"; }
       element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 1, i))} >{string1}
         { (aut1Data['first_author'] === true) && <> <Badge variant="secondary">first</Badge></> }
         { (aut1Data['corresponding_author'] === true) && <> <Badge variant="secondary">corresponding</Badge></> }
-        </div>); }
+        </div>); 
+      author1Elements[aut1Data['order'] - 1] = element1; }
     if (referenceMeta2['referenceJson'][fieldName] !== null &&
         referenceMeta2['referenceJson'][fieldName][i] !== null && referenceMeta2['referenceJson'][fieldName][i] !== undefined) {
       let aut2 = referenceMeta2['referenceJson'][fieldName][i];
@@ -342,11 +347,17 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       else if ( aut2Data['first_name'] !== '') { aut2Data['name'] = aut2Data['first_name'] }
       else if ( aut2Data['last_name'] !== '') { aut2Data['name'] = aut2Data['last_name'] }
       string2 = aut2Data['order'] + ' - ' + aut2Data['name'];
+      if (aut2Data['order'] > maxOrder) { maxOrder = aut2Data['order']; }
       if ( aut2Data['orcid'] !== '') { string2 += ' - ' + aut2Data['orcid']; }
       element2 = (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 2, i))} >{string2}
         { (aut2Data['first_author'] === true) && <> <Badge variant="secondary">first</Badge></> }
         { (aut2Data['corresponding_author'] === true) && <> <Badge variant="secondary">corresponding</Badge></> }
-        </div>); }
+        </div>); 
+      author2Elements[aut2Data['order'] - 1] = element2; }
+  }
+  for (let i = 0; i < maxOrder; i++) {
+    const element1 = (author1Elements[i] !== undefined) ? author1Elements[i] : '';
+    const element2 = (author2Elements[i] !== undefined) ? author2Elements[i] : '';
     rowPairAuthorsElements.push(
       <Row key={`toggle aut ${i}`}>
         <Col sm="2" >{element0}</Col>
