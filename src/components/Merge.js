@@ -169,7 +169,10 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, hasPm
         <RowDisplayPairCorrections key="RowDisplayPairCorrections" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(
-        <RowDisplayPairCrossReferences key="RowDisplayPairCrossReferences" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} /> ); }
+        <RowDisplayPairCrossReferences key="RowDisplayPairCrossReferences valid" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} validOrObsolete='valid' /> );
+      rowOrderedElements.push(<RowDivider key={fieldIndex} />);
+      rowOrderedElements.push(
+        <RowDisplayPairCrossReferences key="RowDisplayPairCrossReferences obsolete" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} validOrObsolete='obsolete' /> ); }
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(
         <RowDisplayPairPubmedMeshTerms key="RowDisplayPairPubmedMeshTerms" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
@@ -487,7 +490,8 @@ const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referen
   return (<>{rowPairModCorpusAssociationsElements}</>);
 } // const RowDisplayPairModCorpusAssociations
 
-const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid}) => {
+
+const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, validOrObsolete}) => {
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
@@ -496,6 +500,9 @@ const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta
   const xrefPrefixes = {}; const xref1 = {}; const xref2 = {};
   if (referenceMeta1['referenceJson'][fieldName] !== null ) {
     for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) { 
+      if ('is_obsolete' in val1 && val1['is_obsolete'] !== null) {
+        if (val1['is_obsolete'] === true && validOrObsolete === 'valid') { continue; }
+        else if (val1['is_obsolete'] === false && validOrObsolete === 'obsolete') { continue; } }
       if ('curie' in val1 && val1['curie'] !== null && val1['curie'] !== '') {
         let xref1Prefix = splitCurie(val1['curie'], 'prefix');
         xrefPrefixes[xref1Prefix] = true;
@@ -503,6 +510,9 @@ const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta
         xref1[xref1Prefix] = { 'index': index, 'curie': val1['curie'], 'toggle': toggle1 }; } } }
   if (referenceMeta2['referenceJson'][fieldName] !== null ) {
     for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) { 
+      if ('is_obsolete' in val2 && val2['is_obsolete'] !== null) {
+        if (val2['is_obsolete'] === true && validOrObsolete === 'valid') { continue; }
+        else if (val2['is_obsolete'] === false && validOrObsolete === 'obsolete') { continue; } }
       if ('curie' in val2 && val2['curie'] !== null && val2['curie'] !== '') {
         let xref2Prefix = splitCurie(val2['curie'], 'prefix');
         xrefPrefixes[xref2Prefix] = true;
@@ -510,9 +520,10 @@ const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta
         xref2[xref2Prefix] = { 'index': index, 'curie': val2['curie'], 'toggle': toggle2 }; } } }
   // console.log(xref1); console.log(xref2); console.log(xrefPrefixes);
   const sortedKeys = Object.keys(xrefPrefixes).sort();
+  const isLocked = GenerateIsLocked(fieldName, hasPmid);
+  const fieldLabel = validOrObsolete + ' ' + fieldName;
+  const element0 = GenerateFieldLabel(fieldLabel, isLocked);
   for (let i = 0; i < sortedKeys.length; i++) {
-    const isLocked = GenerateIsLocked(fieldName, hasPmid);
-    const element0 = GenerateFieldLabel(fieldName, isLocked);
     let element1 = (<div></div>); let element2 = (<div></div>);
     const mod = sortedKeys[i];
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
@@ -539,7 +550,7 @@ const RowDisplayPairCrossReferences = ({fieldName, referenceMeta1, referenceMeta
 //                   >{xref2[mod]['index']} - {mod} - {xref2[mod]['curie']}</div>);
                   >{xref2[mod]['curie']}</div>); }
     rowPairCrossReferencesElements.push(
-      <Row key={`toggle xref ${i}`}>
+      <Row key={`toggle ${validOrObsolete} xref ${i}`}>
         <Col sm="2" >{element0}</Col>
         <Col sm="5" >{element1}</Col>
         <Col sm="5" >{element2}</Col>
