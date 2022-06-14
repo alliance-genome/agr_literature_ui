@@ -12,7 +12,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'AGR:AGR-Reference-0000869188',
+    input: 'AGR:AGR-Reference-0000744531',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
