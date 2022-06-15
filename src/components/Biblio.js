@@ -265,11 +265,11 @@ const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJ
   else { return null; } }
 
 // TODO to make live, copy RowDisplayModAssociation  RowEditorModAssociation  to Biblio.js   replace values of BiblioMock1 with Biblio  add (fieldName === 'mod_corpus_associations')  in BiblioDisplay and BiblioEditor   add mod_corpus_associations to fields_ordered
-const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
+const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
 //   fieldName = 'mod_corpus_associations';
-  if ('mod_corpus_associations' in referenceJson && referenceJson['mod_corpus_associations'] !== null) {
+  if ('mod_corpus_associations' in referenceJsonLive && referenceJsonLive['mod_corpus_associations'] !== null) {
     const rowModAssociationElements = []
-    for (const[index, modAssociationDict] of referenceJson['mod_corpus_associations'].entries()) {
+    for (const[index, modAssociationDict] of referenceJsonLive['mod_corpus_associations'].entries()) {
 //       let url = modAssociationDict['url'];
 //       let valueLiveCurie = modAssociationDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
 // //       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
@@ -494,49 +494,61 @@ const MeshExpandToggler = ({displayOrEditor}) => {
     </Row>);
 } // const MeshExpandToggler
 
-const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJson}) => {
+const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   // e.g. orcid/affiliations PMID:24895670   affiliations PMID:24913562   out of order PMID:33766856
   const authorExpand = useSelector(state => state.biblio.authorExpand);
-  if ('authors' in referenceJson && referenceJson['authors'] !== null) {
+  if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
     const rowAuthorElements = [];
     rowAuthorElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="display" />);
-    const orderedAuthors = [];
-    for (const value  of referenceJson['authors'].values()) {
+    const orderedAuthorsLive = []; const orderedAuthorsDb = [];
+    for (const value  of referenceJsonLive['authors'].values()) {
       let index = value['order'] - 1;
       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
-      orderedAuthors[index] = value; }
+      orderedAuthorsLive[index] = value; }
+    for (const value  of referenceJsonDb['authors'].values()) {
+      let index = value['order'] - 1;
+      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
+      orderedAuthorsDb[index] = value; }
 
     if (authorExpand === 'first') {
-      if ((orderedAuthors.length > 0) && (typeof orderedAuthors[0] !== 'undefined') && ('name' in orderedAuthors[0])) {
+      if ((orderedAuthorsLive.length > 0) && (typeof orderedAuthorsLive[0] !== 'undefined') && ('name' in orderedAuthorsLive[0])) {
         rowAuthorElements.push(
           <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general Col-display Col-display-left">first author</Col>
-            <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{orderedAuthors[0]['name']}</div></Col>
+            <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{orderedAuthorsLive[0]['name']}</div></Col>
           </Row>); } }
     else if (authorExpand === 'list') {
-      let authorNames = orderedAuthors.map((dict, index) => ( dict['name'] )).join('; ');
+      let authorNames = orderedAuthorsLive.map((dict, index) => ( dict['name'] )).join('; ');
       rowAuthorElements.push(
         <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
           <Col className="Col-general Col-display Col-display-left">all authors</Col>
           <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{authorNames}</div></Col>
         </Row>); }
     else if (authorExpand === 'detailed') {
-      for (const [index, value]  of orderedAuthors.entries()) {
+      for (const [index, value]  of orderedAuthorsLive.entries()) {
+        let updatedFlagAuthor = '';
         if (typeof value === 'undefined') { continue; }
         let orcid_curie = '';
         let orcid_url = '';
         if ('orcid' in value && value['orcid'] !== null) {
           orcid_curie = value['orcid']['curie'] || '';
           orcid_url = value['orcid']['url'] || ''; }
-        let affiliations = [];
-        if ('affiliations' in value) {
+        let affiliations = []; let affiliationsJoined = '';
+        if ('affiliations' in value && value['affiliations'] !== null) {
+          affiliationsJoined = (value['affiliations'].length > 0) ? value['affiliations'].join('') : '';
           for (const index_aff in value['affiliations']) {
             affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliations'][index_aff]}</div>); } }
         let orcid_link = (orcid_url === '') ? (<span>{orcid_curie}</span>) : (<a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>)
+        if (orderedAuthorsDb[index] !== undefined) {
+          if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== value['orcid']) { updatedFlagAuthor = 'updated'; }
+          if ('name' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['name'] !== value['name']) { updatedFlagAuthor = 'updated'; }
+          if ('affiliations' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['affiliations'] &&
+              orderedAuthorsDb[index]['affiliations'].join('') !== affiliationsJoined) { updatedFlagAuthor = 'updated'; }
+        }
         rowAuthorElements.push(
           <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general Col-display Col-display-left">author {value['order']}</Col>
-            <Col className="Col-general Col-display " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} {orcid_link}{affiliations}</div></Col>
+            <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} {orcid_link}{affiliations}</div></Col>
           </Row>); } }
     return (<>{rowAuthorElements}</>); }
   else { return null; }
@@ -593,7 +605,6 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
 
 
 const BiblioDisplay = () => {
-  const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   if (!('date_created' in referenceJsonLive)) { 
@@ -609,7 +620,7 @@ const BiblioDisplay = () => {
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_corpus_associations') {
-      rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
+      rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'corrections') {
@@ -619,7 +630,7 @@ const BiblioDisplay = () => {
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
     else if (fieldName === 'authors') {
-      rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
+      rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container><BiblioSubmitUpdateRouter />{rowOrderedElements}</Container>);
