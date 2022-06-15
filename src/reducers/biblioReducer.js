@@ -172,7 +172,7 @@ export default function(state = initialState, action) {
       let indexDomAuthorInfo = parseInt(authorInfoArray[1]);
       let subfieldAuthorInfo = authorInfoArray[2];
       let subindexDomAuthorInfo = null;
-      if (subfieldAuthorInfo === 'affiliation') {
+      if (subfieldAuthorInfo === 'affiliations') {
         subindexDomAuthorInfo = parseInt(authorInfoArray[3]) }
       let authorInfoNewValue = action.payload.value;
       if ( (subfieldAuthorInfo === 'first_author') || (subfieldAuthorInfo === 'corresponding_author') ) {
@@ -200,7 +200,7 @@ export default function(state = initialState, action) {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = {}
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['url'] = null;
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['curie'] = authorInfoNewValue; }
-      else if (subfieldAuthorInfo === 'affiliation') {
+      else if (subfieldAuthorInfo === 'affiliations') {
 //         let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] = authorInfoNewValue; }
       else if (subfieldAuthorInfo === 'order') {
