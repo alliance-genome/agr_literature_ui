@@ -167,7 +167,11 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance) => dispatch 
       }
       if ((method === 'POST') && (res.status === 201)) {
         newId = response_text.replace(/^"|"$/g, '');		// posting a new Alliance reference gives back text
-        if ( (pmidOrAlliance === 'pmid') && (response.hasOwnProperty("text")) ) { newId = response["text"]; }
+        if ( (pmidOrAlliance === 'pmid') && (response.hasOwnProperty("text")) ) { 
+          if ( response["text"].match(/AGR:AGR-Reference-[\d]{10}/) ) {	// if api responds with an Alliance reference, it is the newId to redirect
+            newId = response["text"]; }
+          else {							// if not Alliance reference, it is the error message
+            response_message = 'error: ' + response["text"]; } }
       }
       // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
       console.log('dispatch UPDATE_BUTTON_CREATE');
