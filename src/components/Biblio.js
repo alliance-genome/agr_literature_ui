@@ -419,7 +419,7 @@ const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, 
     return (<>{rowModReferenceTypesElements}</>); }
   else { return null; } }
 
-const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson, displayOrEditor}) => {
+const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJsonLive, displayOrEditor}) => {
   const meshExpand = useSelector(state => state.biblio.meshExpand);
   let cssDisplayLeft = 'Col-display Col-display-left';
   let cssDisplay = 'Col-display';
@@ -428,11 +428,11 @@ const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson, displayOrEdi
     cssDisplay = 'Col-editor-disabled';
     cssDisplayRight = 'Col-editor-disabled';
     cssDisplayLeft = ''; }
-  if ('mesh_terms' in referenceJson && referenceJson['mesh_terms'] !== null) {
+  if ('mesh_terms' in referenceJsonLive && referenceJsonLive['mesh_terms'] !== null) {
     const rowMeshTermsElements = []
     rowMeshTermsElements.push(<MeshExpandToggler key="meshExpandTogglerComponent" displayOrEditor={displayOrEditor} />);
     if (meshExpand === 'detailed') {
-      for (const[index, value] of referenceJson['mesh_terms'].entries()) {
+      for (const[index, value] of referenceJsonLive['mesh_terms'].entries()) {
         rowMeshTermsElements.push(
           <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
             <Col className={`Col-general ${cssDisplayLeft} `}>mesh_terms</Col>
@@ -441,7 +441,7 @@ const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJson, displayOrEdi
           </Row>); } }
     else {
       const meshTextArray = []
-      for (const value of referenceJson['mesh_terms']) {
+      for (const value of referenceJsonLive['mesh_terms']) {
         let term = value['heading_term'];
         if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
         meshTextArray.push(term); }
@@ -617,7 +617,7 @@ const BiblioDisplay = () => {
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
-      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} displayOrEditor="display" />); }
+      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
     else if (fieldName === 'authors') {
       rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
@@ -1422,7 +1422,7 @@ const BiblioEditor = () => {
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
-      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} displayOrEditor="editor" />); }
+      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
 // PUT THIS BACK
     else if (fieldName === 'authors') {
       rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
