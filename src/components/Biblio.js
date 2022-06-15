@@ -57,7 +57,7 @@ import { faUndo } from '@fortawesome/free-solid-svg-icons'
 
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_types' ];
-const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
 const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
@@ -100,8 +100,6 @@ enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manua
 // date_published
 // date_arrived_in_pubmed
 // date_last_modified_in_pubmed
-//
-// tags (in separate tab)
 //
 // keywords
 // mesh_terms
@@ -402,19 +400,6 @@ const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJson, re
 //     return (<>{rowCommentsCorrectionsElements}</>); }
 //   else { return null; } }
 
-const RowDisplayTags = ({fieldIndex, fieldName, referenceJson}) => {
-  if ('tags' in referenceJson && referenceJson['tags'] !== null) {
-    const rowTagElements = []
-    for (const[index, value] of referenceJson['tags'].entries()) {
-      rowTagElements.push(
-        <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-display Col-display-left">tags</Col>
-          <Col className="Col-general Col-display " lg={{ span: 2 }}>{value['tag_source']}</Col>
-          <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['tag_name']}</Col>
-        </Row>); }
-    return (<>{rowTagElements}</>); }
-  else { return null; } }
-
 const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
     const rowModReferenceTypesElements = []
@@ -629,8 +614,6 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
     else if (fieldName === 'corrections') {
       rowOrderedElements.push(<RowDisplayCommentsCorrections key="RowDisplayCommentsCorrections" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} referenceJson={referenceJson} />); }
-    else if (fieldName === 'tags') {
-      rowOrderedElements.push(<RowDisplayTags key="RowDisplayTags" fieldIndex={fieldIndex} fieldName={fieldName} referenceJson={referenceJson} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
