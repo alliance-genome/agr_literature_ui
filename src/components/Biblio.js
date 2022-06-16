@@ -1409,7 +1409,6 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 } // const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb})
 
 const BiblioEditor = () => {
-  const referenceJson = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   if (!('date_created' in referenceJsonLive)) { 
