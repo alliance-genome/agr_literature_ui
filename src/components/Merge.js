@@ -121,11 +121,65 @@ const MergeSelectionSection = () => {
 
     {(() => {
       if (queryDoubleSuccess) { return (
+        <>
+        <MergeSubmitUpdateButton />
         <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} />
+        </>
       ) }
     })()}
     </>
   );
+}
+
+const MergeSubmitUpdateButton = () => {
+  // change this to new isLoadingUpdate variable
+  const isLoadingReferences = useSelector(state => state.merge.isLoadingReferences);
+  const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
+  const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
+  const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
+  const referenceSwap = useSelector(state => state.merge.referenceSwap);
+//   const queryDoubleSuccess = useSelector(state => state.merge.queryDoubleSuccess);
+  const hasPmid = useSelector(state => state.merge.hasPmid);
+
+  function mergeReferences() {
+    const forApiArray = [];
+    let updateJson = {};
+
+    const remapFieldNamesApi = { 'resource_curie': 'resource' };
+
+    const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_title', 'citation'];
+    for (const fieldName of fieldsSimple.values()) {
+      if (fieldsSimpleNotPatch.includes(fieldName)) { continue; }
+      if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
+           (referenceMeta2['referenceJson'][fieldName] === null ) ) { continue; }
+
+      let keep1 = true;
+      if ( ( fieldsPubmedUnlocked.includes(fieldName) || fieldsPubmedLocked.includes(fieldName) || fieldsPubmedOnly.includes(fieldName) ) &&
+           (pmidKeepReference === 2 && hasPmid) ) { keep1 = !keep1; }
+      if ( (fieldName in referenceSwap) && (referenceSwap[fieldName] === true) ) { keep1 = !keep1; }
+
+      if (!keep1) {
+        console.log(keep1 + ' simple field ' + fieldName + ' one ' + referenceMeta1['referenceJson'][fieldName] + ' two ' + referenceMeta2['referenceJson'][fieldName]);
+        const fieldNameJson = ( fieldName in remapFieldNamesApi ) ? remapFieldNamesApi[fieldName] : fieldName;
+        updateJson[fieldNameJson] = referenceMeta2['referenceJson'][fieldName];
+      }
+    }
+    console.log(updateJson);
+    if (Object.keys(updateJson).length !== 0) {
+      const referenceCurie = referenceMeta1.curie;
+      let subPath = 'reference/' + referenceCurie;
+      let array = [ subPath, updateJson, 'PATCH', 0, null, null]
+      forApiArray.push( array );
+      console.log(forApiArray);
+    }
+  } // function mergeReferences()
+
+  return (<>
+           <Button variant='primary' onClick={() => mergeReferences()} >
+             {isLoadingReferences ? <Spinner animation="border" size="sm"/> : "Merge these references"}</Button>
+           <RowDivider />
+          </>
+         );
 }
 
 // <RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />
