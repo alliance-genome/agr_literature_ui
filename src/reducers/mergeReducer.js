@@ -1,5 +1,6 @@
 
 import { checkHasPmid } from './biblioReducer';
+import { splitCurie } from './biblioReducer';
 
 const initialState = {
   referenceMetaDefault: {
@@ -12,7 +13,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'AGR:AGR-Reference-0000869188',
+    input: 'PMID:23524264',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -33,7 +34,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
   referenceMeta2: {
-    input: 'AGR:AGR-Reference-0000790218',
+    input: 'PMID:24699224',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -58,6 +59,28 @@ const initialState = {
   queryDoubleSuccess: false,
   blah: 'blah'
 };
+
+
+const initializeQueriedData = (referenceJson1, referenceJson2) => {
+  if (referenceJson1.constructor !== Object || referenceJson2.constructor !== Object) { return; }
+
+  // mca that only has value for 2nd reference should be toggle based on mod pairs
+  const mca1 = {}; const mca2 = {};
+  if ('mod_corpus_associations' in referenceJson1 && referenceJson1['mod_corpus_associations'] != null) {
+    for (const [index, val1] of referenceJson1['mod_corpus_associations'].entries()) {
+      if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') {
+        mca1[val1['mod_abbreviation']] = index; } } }
+  if ('mod_corpus_associations' in referenceJson2 && referenceJson2['mod_corpus_associations'] != null) {
+    for (const [index, val2] of referenceJson2['mod_corpus_associations'].entries()) {
+      if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') {
+        mca2[val2['mod_abbreviation']] = index; } } }
+  for (const mod in mca2) {
+    if (!mca1[mod]) { 
+      referenceJson2['mod_corpus_associations'][mca2[mod]]['toggle'] = true; } }
+    
+  return
+}
+
 
 // to ignore a warning about Unexpected default export of anonymous function
 // eslint-disable-next-line
@@ -172,6 +195,8 @@ export default function(state = initialState, action) {
       const mergeQueryHasPmid1 = checkHasPmid(referenceMeta1Copy.referenceJson);
       const mergeQueryHasPmid2 = checkHasPmid(referenceMeta2Copy.referenceJson);
       const mergeQueryHasPmid = (mergeQueryHasPmid1 || mergeQueryHasPmid2) ? true : false;
+
+      initializeQueriedData(referenceMeta1Copy.referenceJson, referenceMeta2Copy.referenceJson);
 
       return {
         ...state,

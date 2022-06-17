@@ -28,7 +28,7 @@ export const checkHasPmid = (referenceJsonLive) => {
   return checkingHasPmid;
 }
 
-const splitCurie = (curie) => {
+export const splitCurie = (curie) => {
   let curiePrefix = ''; let curieId = '';
   if ( curie.match(/^([^:]*):(.*)$/) ) {
     [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }
