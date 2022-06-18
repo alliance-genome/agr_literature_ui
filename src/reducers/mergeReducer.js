@@ -1,6 +1,5 @@
 
 import { checkHasPmid } from './biblioReducer';
-import { splitCurie } from './biblioReducer';
 
 const initialState = {
   referenceMetaDefault: {
@@ -23,7 +22,7 @@ const initialState = {
     blah: ''
   },
 //     input: 'AGR:AGR-Reference-0000852278',
-//     input: 'PMID:23524264',
+//     input: 'PMID:23524264',	-> reference 1
 //     input: 'PMID:29664630',	-> orcid
 //     input: 'PMID:28049701',  -> keywords
 //     input: 'PMID:24699224',  -> more keywords
@@ -34,7 +33,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
   referenceMeta2: {
-    input: 'PMID:24699224',
+    input: 'AGR:AGR-Reference-0000869188',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
