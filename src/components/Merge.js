@@ -625,27 +625,29 @@ const RowDisplayPairCorrections = ({fieldName, referenceMeta1, referenceMeta2, r
     const isLocked = GenerateIsLocked(fieldName, hasPmid);
     const element0 = GenerateFieldLabel(fieldName, isLocked);
     let element1 = (<div></div>); let element2 = (<div></div>);
-    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
-    let swapColor1 = false; let swapColor2 = false;
-    // if (keepReference === 2) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
-    if ( ( fieldsPubmedUnlocked.includes(fieldName) || fieldsPubmedLocked.includes(fieldName) || fieldsPubmedOnly.includes(fieldName) ) &&
-         (pmidKeepReference === 2) ) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+    // let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+    // let swapColor1 = false; let swapColor2 = false;
+    // if ( ( fieldsPubmedUnlocked.includes(fieldName) || fieldsPubmedLocked.includes(fieldName) || fieldsPubmedOnly.includes(fieldName) ) &&
+    //      (pmidKeepReference === 2) ) { swapColor1 = !swapColor1; swapColor2 = !swapColor2; }
+    let keepClass = 'div-merge-keep';
     if (referenceMeta1['referenceJson'][fieldName][i] !== null && referenceMeta1['referenceJson'][fieldName][i] !== undefined) {
       let cor1 = referenceMeta1['referenceJson'][fieldName][i];
       let cor1Data = {};
       corFields.forEach( (x) => { cor1Data[x] = (cor1[x] !== null && cor1[x] !== '') ? cor1[x] : ''; } );
-      if ( cor1Data['toggle'] ) { swapColor1 = !swapColor1; }
-      keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
-      element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 1, i))} >{cor1Data['type']} {cor1Data['curie']}
+      // if ( cor1Data['toggle'] ) { swapColor1 = !swapColor1; }
+      // keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
+      // element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 1, i))} >{cor1Data['type']} {cor1Data['curie']}
+      element1 = (<div className={`div-merge ${keepClass}`} >{cor1Data['type']} {cor1Data['curie']}
         </div>); }
     if (referenceMeta2['referenceJson'][fieldName][i] !== null && referenceMeta2['referenceJson'][fieldName][i] !== undefined) {
       let cor2 = referenceMeta2['referenceJson'][fieldName][i];
       let cor2Data = {};
       corFields.forEach( (x) => { cor2Data[x] = (cor2[x] !== null && cor2[x] !== '') ? cor2[x] : ''; } );
-      if ( cor2Data['toggle'] ) { swapColor2 = !swapColor2; }
-      keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
-      // console.log('toggle2 swapColor2 ' + swapColor2 + ' on index ' + i)
-      element2 = (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 2, i))} >{cor2Data['type']} {cor2Data['curie']}
+      // if ( cor2Data['toggle'] ) { swapColor2 = !swapColor2; }
+      // keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
+      // // console.log('toggle2 swapColor2 ' + swapColor2 + ' on index ' + i)
+      // element2 = (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 2, i))} >{cor2Data['type']} {cor2Data['curie']
+      element2 = (<div className={`div-merge ${keepClass}`} >{cor2Data['type']} {cor2Data['curie']}
         </div>); }
     rowPairCorrectionsElements.push(
       <Row key={`toggle cor ${i}`}>
