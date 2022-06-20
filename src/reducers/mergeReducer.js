@@ -12,7 +12,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'PMID:23524264',
+    input: 'AGR:AGR-Reference-0000790218',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -56,6 +56,11 @@ const initialState = {
 //   referenceMessage1: 'Enter a Reference Agr ID or cross reference curie',
 //   referenceMessage2: 'Enter a Reference Agr ID or cross reference curie',
   queryDoubleSuccess: false,
+
+  mergeUpdating: 0,
+  updateAlert: 0,
+  updateFailure: 0,
+  updateMessages: [],
   blah: 'blah'
 };
 
@@ -208,6 +213,53 @@ export default function(state = initialState, action) {
         blah: 'blah'
       }
 
+    case 'SET_MERGE_UPDATING':
+      console.log('SET_MERGE_UPDATING reducer ' + action.payload);
+      return {
+        ...state,
+        mergeUpdating: action.payload
+      }
+
+    case 'MERGE_BUTTON_API_DISPATCH':
+      console.log('reducer MERGE_BUTTON_API_DISPATCH ' + action.payload.responseMessage);
+      console.log('action.payload'); console.log(action.payload);
+      let newUpdateFailure = 0;
+      let newArrayUpdateMessages = state.updateMessages;
+      // let getReferenceCurieFlagUpdateButton = false;			// biblio redirect to biblio 
+      // let hasChangeUpdateButton = state.referenceJsonHasChange;	// biblio set update button color if any changes
+      if (action.payload.responseMessage === "update success") {
+        console.log('reducer MERGE_BUTTON_API_DISPATCH ' + action.payload.responseMessage);
+        // getReferenceCurieFlagUpdateButton = true;
+        // hasChangeUpdateButton = {};
+      } else {
+        newArrayUpdateMessages.push(action.payload.responseMessage);
+        newUpdateFailure = 1;
+        // console.log('Update failure ' + action.payload.responseMessage);
+      }
+      let referenceJsonLive = state.referenceJsonLive;
+      if ((action.payload.field !== null) &&            // POST to a field, assign its db id to redux store
+          (action.payload.index !== null) &&
+          (action.payload.index in referenceJsonLive[action.payload.field]) &&
+          ('subField' in action.payload) &&
+          (action.payload.subField !== null) &&         // but only for related tables that create a dbid, not for cross_references
+          (action.payload.subField in referenceJsonLive[action.payload.field][action.payload.index])) {
+        referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
+      return {
+        ...state,
+        referenceJsonLive: referenceJsonLive,
+        updateAlert: state.updateAlert + 1,
+        updateFailure: state.updateFailure + newUpdateFailure,
+        updateMessages: newArrayUpdateMessages,
+        // getReferenceCurieFlag: getReferenceCurieFlagUpdateButton,
+        // referenceJsonHasChange: hasChangeUpdateButton,
+        mergeUpdating: state.mergeUpdating - 1
+      }
+    case 'CLOSE_MERGE_UPDATE_ALERT':
+      console.log('CLOSE_MERGE_UPDATE_ALERT reducer');
+      return {
+        ...state,
+        updateAlert: 0
+      }
 
 //     case 'QUERY_CHANGE_QUERY_FIELD':
 //       // console.log(action.payload);

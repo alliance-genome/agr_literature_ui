@@ -9,6 +9,9 @@ import { mergeSwapKeep } from '../actions/mergeActions';
 import { mergeSwapKeepPmid } from '../actions/mergeActions';
 import { mergeSwapPairSimple } from '../actions/mergeActions';
 import { mergeToggleIndependent } from '../actions/mergeActions';
+import { mergeButtonApiDispatch } from '../actions/mergeActions';
+import { setMergeUpdating } from '../actions/mergeActions';
+import { closeMergeUpdateAlert } from '../actions/mergeActions';
 
 import { splitCurie } from './Biblio';
 
@@ -18,6 +21,7 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Badge from 'react-bootstrap/Badge'
+import Alert from 'react-bootstrap/Alert'
 import {Spinner} from "react-bootstrap";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -122,7 +126,7 @@ const MergeSelectionSection = () => {
     {(() => {
       if (queryDoubleSuccess) { return (
         <>
-        <MergeSubmitUpdateButton />
+        <MergeSubmitUpdateRouter />
         <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} />
         </>
       ) }
@@ -131,9 +135,49 @@ const MergeSelectionSection = () => {
   );
 }
 
+const MergeSubmitUpdateRouter = () => {
+  return (<><AlertDismissibleMergeUpdate /><MergeSubmitUpdateButton /></>);
+//   const mergeUpdating = useSelector(state => state.merge.mergeUpdating);
+// 
+//   if (mergeUpdating > 0) {
+//     return (<MergeSubmitUpdating />); }	// this does not exist, find out what curators want when updating and after update
+//   else {
+//     return (<><AlertDismissibleMergeUpdate /><MergeSubmitUpdateButton /></>); }
+}
+
+const AlertDismissibleMergeUpdate = () => {
+  const dispatch = useDispatch();
+  const updateAlert = useSelector(state => state.merge.updateAlert);
+  const updateFailure = useSelector(state => state.merge.updateFailure);
+  const updateMessages = useSelector(state => state.merge.updateMessages);
+  let variant = 'danger';
+  let header = 'Update Failure';
+  if (updateFailure === 0) {
+    header = 'Update Success';
+    variant = 'success'; }
+  else {
+    header = 'Update Failure';
+    variant = 'danger'; }
+  if (updateAlert) {
+    if (updateFailure === 0) {
+      setTimeout(() => {
+        dispatch(closeMergeUpdateAlert())
+      }, 2000) }
+    return (
+      <Alert variant={variant} onClose={() => dispatch(closeMergeUpdateAlert())} dismissible>
+        <Alert.Heading>{header}</Alert.Heading>
+        {updateMessages.map((message, index) => (
+          <div key={`${message} ${index}`}>{message}</div>
+        ))}
+      </Alert>
+    );
+  } else { return null; }
+}
+
 const MergeSubmitUpdateButton = () => {
-  // change this to new isLoadingUpdate variable
-  const isLoadingReferences = useSelector(state => state.merge.isLoadingReferences);
+  const dispatch = useDispatch();
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const mergeUpdating = useSelector(state => state.merge.mergeUpdating);
   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
@@ -172,11 +216,22 @@ const MergeSubmitUpdateButton = () => {
       forApiArray.push( array );
       console.log(forApiArray);
     }
+
+    let dispatchCount = forApiArray.length;
+
+    // console.log('dispatchCount ' + dispatchCount)
+    dispatch(setMergeUpdating(dispatchCount))
+
+    for (const arrayData of forApiArray.values()) {
+      arrayData.unshift(accessToken)
+      dispatch(mergeButtonApiDispatch(arrayData))
+    }
+
   } // function mergeReferences()
 
   return (<>
            <Button variant='primary' onClick={() => mergeReferences()} >
-             {isLoadingReferences ? <Spinner animation="border" size="sm"/> : "Merge these references"}</Button>
+             {mergeUpdating > 0 ? <Spinner animation="border" size="sm"/> : "Merge these references"}</Button>
            <RowDivider />
           </>
          );
@@ -610,7 +665,7 @@ const RowDisplayPairCrossReferencesValid = ({fieldName, referenceMeta1, referenc
 } // const RowDisplayPairCrossReferencesValid
 
 const RowDisplayPairCrossReferencesObsolete = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, validOrObsolete}) => {
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
   const rowPairCrossReferencesElements = []
