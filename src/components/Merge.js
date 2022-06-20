@@ -225,14 +225,33 @@ const MergeSubmitUpdateButton = () => {
       let subPath = 'reference/' + referenceCurie;
       let array = [ subPath, updateJsonReferenceMain, 'PATCH', 0, null, null]
       forApiArray.push( array );
-      console.log(forApiArray);
     }
+
+    if ('mod_reference_types' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['mod_reference_types'] !== null) {
+      for (const modRefDict of referenceMeta1['referenceJson']['mod_reference_types'].values()) {
+        if (modRefDict['toggle']) {
+          let subPath = 'reference/mod_reference_type/' + modRefDict['mod_reference_type_id'];
+          let array = [ subPath, null, 'DELETE', 0, null, null]
+          forApiArray.push( array );
+    } } }
+    if ('mod_reference_types' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['mod_reference_types'] !== null) {
+      for (const modRefDict of referenceMeta2['referenceJson']['mod_reference_types'].values()) {
+        if (modRefDict['toggle']) {
+          const referenceCurie = referenceMeta1.curie;
+          const updateJsonMrt2 = { 'reference_curie': referenceCurie }
+          let subPath = 'reference/mod_reference_type/' + modRefDict['mod_reference_type_id'];
+          let array = [ subPath, updateJsonMrt2, 'PATCH', 0, null, null]
+          forApiArray.push( array );
+    } } }
+
+    // TODO  mod_corpus_associations mesh_terms corrections cross_references authors 
 
     let dispatchCount = forApiArray.length;
 
     // console.log('dispatchCount ' + dispatchCount)
     dispatch(setMergeUpdating(dispatchCount))
 
+    console.log(forApiArray);
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken)
       dispatch(mergeButtonApiDispatch(arrayData))
