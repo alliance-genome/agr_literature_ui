@@ -33,8 +33,9 @@ import { faLockOpen } from '@fortawesome/free-solid-svg-icons'
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
-const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
-const fieldsPubmedArrayString = ['keywords', 'pubmed_types' ];
+const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
+const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
+
 const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
@@ -187,7 +188,7 @@ const MergeSubmitUpdateButton = () => {
 
   function mergeReferences() {
     const forApiArray = [];
-    let updateJson = {};
+    let updateJsonReferenceMain = {};
 
     const remapFieldNamesApi = { 'resource_curie': 'resource' };
 
@@ -205,14 +206,24 @@ const MergeSubmitUpdateButton = () => {
       if (!keep1) {
         console.log(keep1 + ' simple field ' + fieldName + ' one ' + referenceMeta1['referenceJson'][fieldName] + ' two ' + referenceMeta2['referenceJson'][fieldName]);
         const fieldNameJson = ( fieldName in remapFieldNamesApi ) ? remapFieldNamesApi[fieldName] : fieldName;
-        updateJson[fieldNameJson] = referenceMeta2['referenceJson'][fieldName];
+        updateJsonReferenceMain[fieldNameJson] = referenceMeta2['referenceJson'][fieldName];
       }
     }
-    console.log(updateJson);
-    if (Object.keys(updateJson).length !== 0) {
+
+    for (const fieldName of fieldsPubmedArrayString.values()) {
+      if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
+           (referenceMeta2['referenceJson'][fieldName] === null ) ) { continue; }
+      let keep1 = true;
+      if ( pmidKeepReference === 2 && hasPmid ) { keep1 = !keep1; }
+      if (!keep1) {
+        const fieldNameJson = ( fieldName in remapFieldNamesApi ) ? remapFieldNamesApi[fieldName] : fieldName;
+        updateJsonReferenceMain[fieldNameJson] = referenceMeta2['referenceJson'][fieldName] } }
+
+    console.log(updateJsonReferenceMain);
+    if (Object.keys(updateJsonReferenceMain).length !== 0) {
       const referenceCurie = referenceMeta1.curie;
       let subPath = 'reference/' + referenceCurie;
-      let array = [ subPath, updateJson, 'PATCH', 0, null, null]
+      let array = [ subPath, updateJsonReferenceMain, 'PATCH', 0, null, null]
       forApiArray.push( array );
       console.log(forApiArray);
     }
