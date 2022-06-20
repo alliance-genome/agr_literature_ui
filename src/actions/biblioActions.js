@@ -257,7 +257,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
 };
 
 export const closeBiblioUpdateAlert = () => {
-  console.log("action closeUpdateAlert");
+  console.log("action closeBiblioUpdateAlert");
   return {
     type: 'CLOSE_BIBLIO_UPDATE_ALERT'
   };

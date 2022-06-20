@@ -75,8 +75,8 @@ export default function(state = initialState, action) {
       // console.log('action.payload'); console.log(action.payload);
       let newUpdateFailure = 0;
       let newArrayUpdateMessages = state.updateMessages;
-      let getReferenceCurieFlagUpdateButton = false;
-      let hasChangeUpdateButton = state.referenceJsonHasChange;
+      let getReferenceCurieFlagUpdateButton = false;			// redirect to a reference if successful update
+      let hasChangeUpdateButton = state.referenceJsonHasChange;		// update button color changes if any data changed, reset on updates
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
         getReferenceCurieFlagUpdateButton = true;
