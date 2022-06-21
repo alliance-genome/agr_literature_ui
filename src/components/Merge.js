@@ -261,6 +261,21 @@ const MergeSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
+// need to figure out how to know which direction .  editing corrections is also broken, but creating works.  
+//     if ('corrections' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['corrections'] !== null) {
+//       for (const corrDict of referenceMeta2['referenceJson']['corrections'].values()) {
+//         if (corrDict['toggle']) {
+//           const type = corrDict['type'];
+//           const corrCurie = corrDict['curie'];
+//           const referenceCurie1 = referenceMeta1.curie;
+//           const referenceCurie2 = referenceMeta2.curie;
+//           const updateJsonCorr2 = { 'reference_curie_from': referenceCurie, 'reference_curie_to': referenceCurie }	// figure this out
+//           let subPath = 'reference_comment_and_correction/' + corrDict['reference_comment_and_correction_id'];
+//           let array = [ subPath, updateJsonCorr2, 'PATCH', 0, null, null]
+//           forApiArray.push( array );
+//     } } }
+
+
     // TODO  mesh_terms corrections cross_references authors 
 
     let dispatchCount = forApiArray.length;
