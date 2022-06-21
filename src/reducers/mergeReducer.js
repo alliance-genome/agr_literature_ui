@@ -12,7 +12,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'AGR:AGR-Reference-0000790218',
+    input: 'AGR:AGR-Reference-0000869188',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -33,7 +33,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
   referenceMeta2: {
-    input: 'AGR:AGR-Reference-0000869188',
+    input: 'PMID:28049701',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -79,7 +79,7 @@ const initializeQueriedData = (referenceJson1, referenceJson2) => {
       if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') {
         mca2[val2['mod_abbreviation']] = index; } } }
   for (const mod in mca2) {
-    if (!mca1[mod]) { 
+    if (mca1[mod] === undefined) { 
       referenceJson2['mod_corpus_associations'][mca2[mod]]['toggle'] = true; } }
     
   return
