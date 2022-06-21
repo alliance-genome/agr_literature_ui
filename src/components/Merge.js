@@ -244,7 +244,24 @@ const MergeSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
-    // TODO  mod_corpus_associations mesh_terms corrections cross_references authors 
+    if ('mod_corpus_associations' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['mod_corpus_associations'] !== null) {
+      for (const mcaDict of referenceMeta1['referenceJson']['mod_corpus_associations'].values()) {
+        if (mcaDict['toggle']) {
+          let subPath = 'reference/mod_corpus_association/' + mcaDict['mod_corpus_association_id'];
+          let array = [ subPath, null, 'DELETE', 0, null, null]
+          forApiArray.push( array );
+    } } }
+    if ('mod_corpus_associations' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['mod_corpus_associations'] !== null) {
+      for (const mcaDict of referenceMeta2['referenceJson']['mod_corpus_associations'].values()) {
+        if (mcaDict['toggle']) {
+          const referenceCurie = referenceMeta1.curie;
+          const updateJsonMrt2 = { 'reference_curie': referenceCurie }
+          let subPath = 'reference/mod_corpus_association/' + mcaDict['mod_corpus_association_id'];
+          let array = [ subPath, updateJsonMrt2, 'PATCH', 0, null, null]
+          forApiArray.push( array );
+    } } }
+
+    // TODO  mesh_terms corrections cross_references authors 
 
     let dispatchCount = forApiArray.length;
 
