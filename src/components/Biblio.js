@@ -73,6 +73,7 @@ fieldTypeDict['category'] = 'select'
 const enumDict = {}
 enumDict['category'] = ['research_article', 'review_article', 'thesis', 'book', 'other', 'preprint', 'conference_publication', 'personal_communication', 'direct_data_submission', 'internal_process_reference', 'unknown', 'retraction', 'obsolete', 'correction']
 enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
+enumDict['personXrefPrefix'] = ['', 'ORCID']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor']
 enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
@@ -754,7 +755,9 @@ const BiblioSubmitUpdateButton = () => {
                 let orcidValue = null;
                 if ( (authorDict['orcid'] !== null) && ('curie' in authorDict['orcid']) && 
                      (authorDict['orcid']['curie'] !== null) && (authorDict['orcid']['curie'] !== '') ) {
-                  orcidValue = authorDict['orcid']['curie']; }
+                  orcidValue = authorDict['orcid']['curie'].toUpperCase();
+                  if (!( orcidValue.match(/^ORCID:(.*)$/) ) ) {
+                    orcidValue = 'ORCID:' + orcidValue; } }
                 updateJson['orcid'] = orcidValue; } } }
           let subPath = 'author/';
           let method = 'POST';
@@ -1308,7 +1311,24 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 
         let orcidValue = ''
         if ('orcid' in authorDict && authorDict['orcid'] !== null && 'curie' in authorDict['orcid'] && authorDict['orcid']['curie'] !== null) {
-          orcidValue = authorDict['orcid']['curie'] }
+          const orcidId = splitCurie(authorDict['orcid']['curie'], 'id');
+          orcidValue = (orcidId) ? orcidId : authorDict['orcid']['curie']; }
+//       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
+//       let updatedFlagCuriePrefix = ''; let updatedFlagCurieId = '';
+//       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
+//       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
+// 
+//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+//            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
+//              valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
+//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+//            (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+//              valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
+//       let [valueDbCuriePrefix, valueDbCurieId] = splitCurie(valueDbCurie);
+//       if (valueLiveCuriePrefix !== valueDbCuriePrefix) { updatedFlagCuriePrefix = 'updated'; }
+//       if (valueLiveCurieId !== valueDbCurieId) { updatedFlagCurieId = 'updated'; }
+//       if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
+
 
         // map author dom index to live store index to author id to db store index, to compare live values to store values
         let indexStoreAuthorLive = getStoreAuthorIndexFromDomIndex(index, referenceJsonLive[fieldName])
@@ -1338,7 +1358,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
                    (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') &&
                    (referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== null) &&
                    (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'] !== 'undefined') ) {
-                     valueDb = referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'] } }
+                     valueDb = splitCurie(referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'], 'id'); } }
             else {
               if ( (typeof referenceJsonDb[fieldName][indexStoreAuthorDb] !== 'undefined') &&
                    (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') ) {
@@ -1373,13 +1393,28 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
             <ColEditorSimple key={`colElement ${fieldName} ${index} first_name`} fieldType="input" fieldName={fieldName} colSize="5" value={authorDict['first_name']} updatedFlag={updatedDict['first_name']} placeholder="first name" disabled={disabled} fieldKey={`${fieldName} ${index} first_name`} dispatchAction={changeFieldAuthorsReferenceJson} />
             <ColEditorSimple key={`colElement ${fieldName} ${index} last_name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeNames} value={authorDict['last_name']} updatedFlag={updatedDict['last_name']} placeholder="last name" disabled={disabled} fieldKey={`${fieldName} ${index} last_name`} dispatchAction={changeFieldAuthorsReferenceJson} />
           </Form.Group>);
+
+        rowAuthorsElements.push(
+          <Form.Group as={Row} key={`${fieldName} ${index} role`} className={`${rowEvenness}`}>
+            <Col className="Col-general form-label col-form-label" sm="2" >role </Col>
+            <Col sm="1" > </Col>
+            <ColEditorCheckbox key={`colElement ${fieldName} ${index} corresponding_author`} colSize="2" label="corresponding" updatedFlag={updatedDict['corresponding_author']} disabled="" fieldKey={`${fieldName} ${index} corresponding_author`} checked={correspondingChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
+            <ColEditorCheckbox key={`colElement ${fieldName} ${index} first_author`} colSize="8" label="first author" updatedFlag={updatedDict['first_author']} disabled="" fieldKey={`${fieldName} ${index} first_author`} checked={firstAuthorChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
+          </Form.Group>);
         rowAuthorsElements.push(
           <Form.Group as={Row} key={`${fieldName} ${index} orcid`} className={`${rowEvenness}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >orcid </Col>
-            <ColEditorSimple key={`colElement ${fieldName} ${index} orcid`} fieldType="input" fieldName={fieldName} colSize="5"  value={orcidValue} updatedFlag={updatedDict['orcid']} placeholder="orcid" disabled={disabled} fieldKey={`${fieldName} ${index} orcid`} dispatchAction={changeFieldAuthorsReferenceJson} />
-            <ColEditorCheckbox key={`colElement ${fieldName} ${index} corresponding_author`} colSize="2" label="corresponding" updatedFlag={updatedDict['corresponding_author']} disabled="" fieldKey={`${fieldName} ${index} corresponding_author`} checked={correspondingChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
-            <ColEditorCheckbox key={`colElement ${fieldName} ${index} first_author`} colSize={otherColSizeOrcid} label="first author" updatedFlag={updatedDict['first_author']} disabled="" fieldKey={`${fieldName} ${index} first_author`} checked={firstAuthorChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
+            <Col className="Col-general form-label col-form-label" sm="2" >person identifier </Col>
+            <ColEditorSelect key={`colElement ${fieldName} ${index} orcidPrefix`} fieldType="select" fieldName={fieldName} colSize="2" value="ORCID" updatedFlag="" placeholder="curie" disabled="disabled" fieldKey={`${fieldName} ${index} orcid prefix`} enumType="personXrefPrefix" dispatchAction="" />
+            <ColEditorSimple key={`colElement ${fieldName} ${index} orcid`} fieldType="input" fieldName={fieldName} colSize="8"  value={orcidValue} updatedFlag={updatedDict['orcid']} placeholder="orcid" disabled={disabled} fieldKey={`${fieldName} ${index} orcid`} dispatchAction={changeFieldAuthorsReferenceJson} />
           </Form.Group>);
+        // rowAuthorsElements.push(
+        //   <Form.Group as={Row} key={`${fieldName} ${index} orcid`} className={`${rowEvenness}`}>
+        //     <Col className="Col-general form-label col-form-label" sm="2" >orcid </Col>
+        //     <ColEditorSimple key={`colElement ${fieldName} ${index} orcid`} fieldType="input" fieldName={fieldName} colSize="5"  value={orcidValue} updatedFlag={updatedDict['orcid']} placeholder="orcid" disabled={disabled} fieldKey={`${fieldName} ${index} orcid`} dispatchAction={changeFieldAuthorsReferenceJson} />
+        //     <ColEditorCheckbox key={`colElement ${fieldName} ${index} corresponding_author`} colSize="2" label="corresponding" updatedFlag={updatedDict['corresponding_author']} disabled="" fieldKey={`${fieldName} ${index} corresponding_author`} checked={correspondingChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
+        //     <ColEditorCheckbox key={`colElement ${fieldName} ${index} first_author`} colSize={otherColSizeOrcid} label="first author" updatedFlag={updatedDict['first_author']} disabled="" fieldKey={`${fieldName} ${index} first_author`} checked={firstAuthorChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
+        //   </Form.Group>);
+
         if ('affiliations' in authorDict && authorDict['affiliations'] !== null && authorDict['affiliations'].length > 0) {
           for (const[indexAff, affiliationsValue] of authorDict['affiliations'].entries()) {
             rowAuthorsElements.push(
