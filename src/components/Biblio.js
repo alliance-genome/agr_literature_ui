@@ -1281,7 +1281,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
           affiliationsLength = authorDict['affiliations'].length }
 
 //         let otherColSizeName = 7; let otherColSizeNames = 4; let otherColSizeOrcid = 2; let otherColSizeAffiliation = 9;
-        let otherColSizeName = 7; let otherColSizeNames = 5; let otherColSizeOrcid = 3; let otherColSizeAffiliation = 10;
+        let otherColSizeName = 7; let otherColSizeNames = 5; let otherColSizeAffiliation = 10;
 //         let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
         let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
         // if (disabled === 'disabled') { revertElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
@@ -1399,7 +1399,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
             <Col className="Col-general form-label col-form-label" sm="2" >role </Col>
             <Col sm="1" > </Col>
             <ColEditorCheckbox key={`colElement ${fieldName} ${index} corresponding_author`} colSize="2" label="corresponding" updatedFlag={updatedDict['corresponding_author']} disabled="" fieldKey={`${fieldName} ${index} corresponding_author`} checked={correspondingChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
-            <ColEditorCheckbox key={`colElement ${fieldName} ${index} first_author`} colSize="8" label="first author" updatedFlag={updatedDict['first_author']} disabled="" fieldKey={`${fieldName} ${index} first_author`} checked={firstAuthorChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
+            <ColEditorCheckbox key={`colElement ${fieldName} ${index} first_author`} colSize="7" label="first author" updatedFlag={updatedDict['first_author']} disabled="" fieldKey={`${fieldName} ${index} first_author`} checked={firstAuthorChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
           </Form.Group>);
         rowAuthorsElements.push(
           <Form.Group as={Row} key={`${fieldName} ${index} orcid`} className={`${rowEvenness}`}>
