@@ -532,7 +532,10 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
         let orcid_curie = '';
         let orcid_url = '';
         if ('orcid' in value && value['orcid'] !== null) {
-          orcid_curie = value['orcid']['curie'] || '';
+          if (value['orcid']['curie'] && value['orcid']['curie'] !== null) {
+            orcid_curie = value['orcid']['curie'].toUpperCase();
+            if (!( orcid_curie.match(/^ORCID:(.*)$/) ) ) {
+              orcid_curie = 'ORCID:' + orcid_curie; } }
           orcid_url = value['orcid']['url'] || ''; }
         let affiliations = []; let affiliationsJoined = '';
         if ('affiliations' in value && value['affiliations'] !== null) {
@@ -540,8 +543,10 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
           for (const index_aff in value['affiliations']) {
             affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliations'][index_aff]}</div>); } }
         let orcid_link = (orcid_url === '') ? (<span>{orcid_curie}</span>) : (<a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>)
+
         if (orderedAuthorsDb[index] !== undefined) {
-          if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== value['orcid']) { updatedFlagAuthor = 'updated'; }
+          if ('orcid' in orderedAuthorsDb[index] && 'curie' in orderedAuthorsDb[index]['orcid'] &&
+              'ORCID:' + splitCurie(orderedAuthorsDb[index]['orcid']['curie'], 'id') !== orcid_curie) { updatedFlagAuthor = 'updated'; }
           if ('name' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['name'] !== value['name']) { updatedFlagAuthor = 'updated'; }
           if ('affiliations' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['affiliations'] &&
               orderedAuthorsDb[index]['affiliations'].join('') !== affiliationsJoined) { updatedFlagAuthor = 'updated'; }
@@ -1313,22 +1318,6 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         if ('orcid' in authorDict && authorDict['orcid'] !== null && 'curie' in authorDict['orcid'] && authorDict['orcid']['curie'] !== null) {
           const orcidId = splitCurie(authorDict['orcid']['curie'], 'id');
           orcidValue = (orcidId) ? orcidId : authorDict['orcid']['curie']; }
-//       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
-//       let updatedFlagCuriePrefix = ''; let updatedFlagCurieId = '';
-//       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
-//       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
-// 
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-//              valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//              valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
-//       let [valueDbCuriePrefix, valueDbCurieId] = splitCurie(valueDbCurie);
-//       if (valueLiveCuriePrefix !== valueDbCuriePrefix) { updatedFlagCuriePrefix = 'updated'; }
-//       if (valueLiveCurieId !== valueDbCurieId) { updatedFlagCurieId = 'updated'; }
-//       if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
-
 
         // map author dom index to live store index to author id to db store index, to compare live values to store values
         let indexStoreAuthorLive = getStoreAuthorIndexFromDomIndex(index, referenceJsonLive[fieldName])
