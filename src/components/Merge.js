@@ -22,6 +22,8 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Badge from 'react-bootstrap/Badge'
 import Alert from 'react-bootstrap/Alert'
+import Tooltip from 'react-bootstrap/Tooltip'
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
 import {Spinner} from "react-bootstrap";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -49,10 +51,18 @@ const fieldsPubmedOnly = [ 'correction', 'pubmed_types', 'date_arrived_in_pubmed
 // const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 const GenerateFieldLabel = (fieldName, isLocked) => {
+  const renderTooltipLock = ( <Tooltip id="lock-tooltip" > Data in this field cannot be manually changed during a merge. </Tooltip> );
+  const renderTooltipUnlock = ( <Tooltip id="unlock-tooltip" > Data in this field is tied to the PMID, but may be manually changed during a merge. </Tooltip> );
   if ( isLocked === 'lock' ) { 
-    return (<div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faLock} /> {fieldName}</div>); }
+    return (<div className={`div-merge div-merge-grey`}> 
+      <OverlayTrigger placement="right" delay={{ show: 250, hide: 400 }} overlay={renderTooltipLock} >
+        <FontAwesomeIcon icon={faLock} />
+      </OverlayTrigger> {fieldName}</div>); }
   else if ( isLocked === 'unlock' ) { 
-    return (<div className={`div-merge div-merge-grey`}> <FontAwesomeIcon icon={faLockOpen} /> {fieldName}</div>); }
+    return (<div className={`div-merge div-merge-grey`}> 
+      <OverlayTrigger placement="right" delay={{ show: 250, hide: 400 }} overlay={renderTooltipUnlock} >
+        <FontAwesomeIcon icon={faLockOpen} />
+      </OverlayTrigger> {fieldName}</div>); }
   return (<div className={`div-merge div-merge-grey`}>{fieldName}</div>);
 }
 
