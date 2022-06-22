@@ -271,9 +271,31 @@ const MergeSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
-    
+    if ('cross_references' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['cross_references'] !== null) {
+      for (const xrefDict of referenceMeta1['referenceJson']['cross_references'].values()) {
+        const curie = xrefDict['curie'];
+        const subPath = 'cross_reference/' + xrefDict['curie'];
+        if ('is_obsolete' in xrefDict && xrefDict['is_obsolete'] !== null) {
+          if (xrefDict['is_obsolete'] === false && xrefDict['toggle']) {		// was valid, now toggle, set obsolete
+            const updateJsonXref1Obsolete = { 'is_obsolete': true }
+            let array = [ subPath, updateJsonXref1Obsolete, 'PATCH', 0, null, null];
+            forApiArray.push( array ); } } } }
+    if ('cross_references' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['cross_references'] !== null) {
+      for (const xrefDict of referenceMeta2['referenceJson']['cross_references'].values()) {
+        if ('is_obsolete' in xrefDict && xrefDict['is_obsolete'] !== null) {
+          const curie = xrefDict['curie'];
+          const subPath = 'cross_reference/' + xrefDict['curie'];
+          const referenceCurie = referenceMeta1.curie;
+          const updateJsonXref2 = { 'reference_curie': referenceCurie }
+          if (xrefDict['is_obsolete'] === false) {		// was valid
+            if (xrefDict['toggle']) { }				// yes toggle, keep to ref1
+            else {						// no toggle, set obsolete to ref1
+              updateJsonXref2['is_obsolete'] = true; } }
+          else if (xrefDict['is_obsolete'] === true) { }	// was obsolete, set to ref1
+          let array = [ subPath, updateJsonXref2, 'PATCH', 0, null, null];
+          forApiArray.push( array ); } } }
 
-    // TODO  mesh_terms cross_references authors   corrections 
+    // TODO  mesh_terms authors   corrections 
 
 // need to figure out how to know which direction .  editing corrections is also broken, but creating works.  
 //     if ('corrections' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['corrections'] !== null) {

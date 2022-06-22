@@ -33,7 +33,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
   referenceMeta2: {
-    input: 'PMID:28049701',
+    input: 'AGR:AGR-Reference-0000869189',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
