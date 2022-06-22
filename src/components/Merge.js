@@ -261,6 +261,10 @@ const MergeSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
+    
+
+    // TODO  mesh_terms cross_references authors   corrections 
+
 // need to figure out how to know which direction .  editing corrections is also broken, but creating works.  
 //     if ('corrections' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['corrections'] !== null) {
 //       for (const corrDict of referenceMeta2['referenceJson']['corrections'].values()) {
@@ -274,9 +278,6 @@ const MergeSubmitUpdateButton = () => {
 //           let array = [ subPath, updateJsonCorr2, 'PATCH', 0, null, null]
 //           forApiArray.push( array );
 //     } } }
-
-
-    // TODO  mesh_terms corrections cross_references authors 
 
     let dispatchCount = forApiArray.length;
 
@@ -750,9 +751,8 @@ const RowDisplayPairCrossReferencesObsolete = ({fieldName, referenceMeta1, refer
         const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
         xref2[xref2Prefix] = { 'index': index, 'curie': val2['curie'], 'toggle': toggle2 }; } } }
   const sortedKeys = Object.keys(xrefPrefixes).sort();
-  const isLocked = GenerateIsLocked(fieldName, hasPmid);
   const fieldLabel = 'obsolete ' + fieldName;
-  const element0 = GenerateFieldLabel(fieldLabel, isLocked);
+  const element0 = GenerateFieldLabel(fieldLabel, 'lock');
   for (let i = 0; i < sortedKeys.length; i++) {
     let element1 = (<div></div>); let element2 = (<div></div>);
     const mod = sortedKeys[i];
