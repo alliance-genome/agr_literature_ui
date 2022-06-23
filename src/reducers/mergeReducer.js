@@ -12,7 +12,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'AGR:AGR-Reference-0000869188',
+    input: 'AGR:AGR-Reference-0000869189',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -32,8 +32,9 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000869188',	-> empty paper in lit-4002
 //     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
+//     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
   referenceMeta2: {
-    input: 'AGR:AGR-Reference-0000869189',
+    input: 'AGR:AGR-Reference-0000869178',
     curie: '',
     referenceJson: '',
     referenceKeep: {},

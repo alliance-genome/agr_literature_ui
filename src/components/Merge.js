@@ -273,17 +273,16 @@ const MergeSubmitUpdateButton = () => {
 
     if ('cross_references' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['cross_references'] !== null) {
       for (const xrefDict of referenceMeta1['referenceJson']['cross_references'].values()) {
-        const curie = xrefDict['curie'];
         const subPath = 'cross_reference/' + xrefDict['curie'];
         if ('is_obsolete' in xrefDict && xrefDict['is_obsolete'] !== null) {
           if (xrefDict['is_obsolete'] === false && xrefDict['toggle']) {		// was valid, now toggle, set obsolete
             const updateJsonXref1Obsolete = { 'is_obsolete': true }
             let array = [ subPath, updateJsonXref1Obsolete, 'PATCH', 0, null, null];
-            forApiArray.push( array ); } } } }
+            forApiArray.push( array );
+    } } } }
     if ('cross_references' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['cross_references'] !== null) {
       for (const xrefDict of referenceMeta2['referenceJson']['cross_references'].values()) {
         if ('is_obsolete' in xrefDict && xrefDict['is_obsolete'] !== null) {
-          const curie = xrefDict['curie'];
           const subPath = 'cross_reference/' + xrefDict['curie'];
           const referenceCurie = referenceMeta1.curie;
           const updateJsonXref2 = { 'reference_curie': referenceCurie }
@@ -293,9 +292,27 @@ const MergeSubmitUpdateButton = () => {
               updateJsonXref2['is_obsolete'] = true; } }
           else if (xrefDict['is_obsolete'] === true) { }	// was obsolete, set to ref1
           let array = [ subPath, updateJsonXref2, 'PATCH', 0, null, null];
-          forApiArray.push( array ); } } }
+          forApiArray.push( array );
+    } } }
 
-    // TODO  mesh_terms authors   corrections 
+    if ('mesh_terms' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['mesh_terms'] !== null) {
+      for (const meshDict of referenceMeta1['referenceJson']['mesh_terms']) {
+        if (pmidKeepReference === 2 && hasPmid) { 
+          let subPath = 'reference/mesh_detail/' + meshDict['mesh_detail_id'];
+          let array = [ subPath, null, 'DELETE', 0, null, null]
+          forApiArray.push( array );
+    } } }
+    if ('mesh_terms' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['mesh_terms'] !== null) {
+      for (const meshDict of referenceMeta2['referenceJson']['mesh_terms'].values()) {
+        if (pmidKeepReference === 2 && hasPmid) { 
+          const referenceCurie = referenceMeta1.curie;
+          const updateJsonMrt2 = { 'reference_curie': referenceCurie }
+          let subPath = 'reference/mesh_detail/' + meshDict['mesh_detail_id'];
+          let array = [ subPath, updateJsonMrt2, 'PATCH', 0, null, null]
+          forApiArray.push( array );
+    } } }
+
+    // TODO  authors   corrections 
 
 // need to figure out how to know which direction .  editing corrections is also broken, but creating works.  
 //     if ('corrections' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['corrections'] !== null) {
