@@ -34,7 +34,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
   referenceMeta2: {
-    input: 'AGR:AGR-Reference-0000869178',
+    input: 'AGR:AGR-Reference-0000869188',
     curie: '',
     referenceJson: '',
     referenceKeep: {},

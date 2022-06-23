@@ -312,8 +312,61 @@ const MergeSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
-    // TODO  authors   corrections 
+    let authorOrder = 0;
+    if ('authors' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['authors'] !== null) {
+      const orderedAuthors = [];
+      for (const value of referenceMeta1['referenceJson']['authors'].values()) {
+        let index = value['order'] - 1;
+        if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'order' field value of 0
+        orderedAuthors[index] = value; }
+      for (const [index, authDict] of orderedAuthors.entries()) {
+        // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' order ' + authDict['order']);
+        let swap = false;
+        if (authDict['toggle']) { swap = !swap; }
+        if (pmidKeepReference === 2) { swap = !swap; }
+        if (swap) {
+          // console.log('remove ' + authDict['author_id'] + ' ' + authDict['order']);
+          let subPath = 'author/' + authDict['author_id'];
+          let array = [ subPath, null, 'DELETE', 0, null, null];
+          forApiArray.push( array ); } 
+        else { 
+          authorOrder++;
+          // console.log('no swap raise authorOrder to ' + authorOrder);
+          if (authorOrder-1 !== index) {
+            // console.log('reorder ' + authDict['author_id'] + ' to authorOrder ' + authorOrder);
+            const updateJsonAuth1 = { 'order': authorOrder }
+            let subPath = 'author/' + authDict['author_id'];
+            let array = [ subPath, updateJsonAuth1, 'PATCH', 0, null, null];
+            forApiArray.push( array );
+    } } } }
+    if ('authors' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['authors'] !== null) {
+      const orderedAuthors = [];
+      for (const value of referenceMeta2['referenceJson']['authors'].values()) {
+        let index = value['order'] - 1;
+        if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'order' field value of 0
+        orderedAuthors[index] = value; }
+      for (const [index, authDict] of orderedAuthors.entries()) {
+        // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' order ' + authDict['order']);
+        let swap = false;
+        if (authDict['toggle']) { swap = !swap; }
+        if (pmidKeepReference === 2) { swap = !swap; }
+        if (swap) {
+          authorOrder++;
+          // console.log('transfer ' + authDict['author_id'] + ' ' + authDict['order'] + ' to ' + authorOrder);
+          const referenceCurie = referenceMeta1.curie;
+          const updateJsonAuth2 = { 'reference_curie': referenceCurie, 'order': authorOrder }
+          let subPath = 'author/' + authDict['author_id'];
+          let array = [ subPath, updateJsonAuth2, 'PATCH', 0, null, null];
+          forApiArray.push( array ); } 
+        else { 
+          // console.log('no swap remove ' + authorOrder);
+          let subPath = 'author/' + authDict['author_id'];
+          let array = [ subPath, null, 'DELETE', 0, null, null];
+          forApiArray.push( array );
+    } } }
 
+
+    // TODO  corrections 
 // need to figure out how to know which direction .  editing corrections is also broken, but creating works.  
 //     if ('corrections' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['corrections'] !== null) {
 //       for (const corrDict of referenceMeta2['referenceJson']['corrections'].values()) {
