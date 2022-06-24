@@ -157,8 +157,9 @@ const MergeSubmitCompleteMergeUpdateRouter = () => {
 
   if (updateFailure === 0) {
     return (<>
-              Data has been merged from {referenceMeta2.curie} into {referenceMeta1.curie} but the merge is not complete.<br/>
-              Optionally verify the winning reference information <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> and losing information to be removed <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a>.<br/><br/>
+              Selected data has been transferred from {referenceMeta2.curie} into {referenceMeta1.curie}.<br/>
+              If you wish, you may verify the winning reference information <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> and losing information to be removed from <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a>.<br/>
+              To finish, click Complete Merge below.<br/><br/>
               <MergeSubmitCompleteMergeUpdateButton />
             </>); }
   else {
@@ -174,9 +175,12 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
 
   function completeMergeReferences() {
-    let updateJsonReferenceMain = { 'merged_into_reference_curie': referenceMeta1.curie };
-    let subPath = 'reference/' + referenceMeta2.curie;
-    let array = [ subPath, updateJsonReferenceMain, 'PATCH', 0, null, null];
+    // old API and merged_into in reference table
+    // let updateJsonReferenceMain = { 'merged_into_reference_curie': referenceMeta1.curie };
+    // let subPath = 'reference/' + referenceMeta2.curie;
+    // let array = [ subPath, updateJsonReferenceMain, 'PATCH', 0, null, null];
+    let subPath = 'reference/merge/' + referenceMeta2.curie + '/' + referenceMeta1.curie;
+    let array = [ subPath, null, 'POST', 0, null, null];
     array.unshift('mergeComplete');
     array.unshift(accessToken);
     console.log('completing merge');
@@ -189,7 +193,7 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
            <Button variant='primary' onClick={() => completeMergeReferences()} >
              {mergeCompleting > 0 ? <Spinner animation="border" size="sm"/> : "Complete Merge"}</Button>
            <RowDivider />
-             {(completionMergeHappened > 0 && mergeCompleting === 0) && <>References completed merging.</>}
+             {(completionMergeHappened > 0 && mergeCompleting === 0) && <>{referenceMeta2.curie} has been merged into {referenceMeta1.curie}.<br/>Information associated with {referenceMeta2.curie} has been removed.</>}
           </>
          );
 } // const MergeSubmitCompleteMergeUpdateButton
@@ -453,7 +457,7 @@ const MergeSubmitDataMergeUpdateButton = () => {
 
   return (<>
            <Button variant='primary' onClick={() => mergeReferences()} >
-             {mergeUpdating > 0 ? <Spinner animation="border" size="sm"/> : "Merge Data"}</Button>
+             {mergeUpdating > 0 ? <Spinner animation="border" size="sm"/> : "Transfer Data"}</Button>
            <RowDivider />
           </>
          );
