@@ -11,6 +11,7 @@ import { mergeSwapPairSimple } from '../actions/mergeActions';
 import { mergeToggleIndependent } from '../actions/mergeActions';
 import { mergeButtonApiDispatch } from '../actions/mergeActions';
 import { setMergeUpdating } from '../actions/mergeActions';
+import { setMergeCompleting } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
 
 import { splitCurie } from './Biblio';
@@ -137,8 +138,8 @@ const MergeSelectionSection = () => {
     {(() => {
       if (queryDoubleSuccess) { return (
         <>
-        <MergeSubmitUpdateRouter />
         <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} />
+        <MergeSubmitDataMergeUpdateRouter />
         </>
       ) }
     })()}
@@ -146,14 +147,72 @@ const MergeSelectionSection = () => {
   );
 }
 
-const MergeSubmitUpdateRouter = () => {
-  return (<><AlertDismissibleMergeUpdate /><MergeSubmitUpdateButton /></>);
-//   const mergeUpdating = useSelector(state => state.merge.mergeUpdating);
-// 
+
+const MergeSubmitCompleteMergeUpdateRouter = () => {
+  const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
+  const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
+  const updateFailure = useSelector(state => state.merge.updateFailure);
+  const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
+  const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
+
+  if (updateFailure === 0) {
+    return (<>
+              Data has been merged from {referenceMeta2.curie} into {referenceMeta1.curie} but the merge is not complete.<br/>
+              Optionally verify the winning reference information <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> and losing information to be removed <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a>.<br/><br/>
+              <MergeSubmitCompleteMergeUpdateButton />
+            </>); }
+  else {
+    return (<>Data has been merged from {referenceMeta2.curie} into {referenceMeta1.curie} but something went wrong, <a href="/merge" target="_blank" rel="noreferrer noopener">try again in a new browser tab</a>.</>); }
+} // const MergeSubmitCompleteMergeUpdateRouter
+
+const MergeSubmitCompleteMergeUpdateButton = () => {
+  const dispatch = useDispatch();
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const mergeCompleting = useSelector(state => state.merge.mergeCompleting);
+//   const mergeCompleteMessage = useSelector(state => state.merge.mergeCompleteMessage);
+//   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
+  const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
+  const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
+//   const referenceSwap = useSelector(state => state.merge.referenceSwap);
+//   const hasPmid = useSelector(state => state.merge.hasPmid);
+  const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
+
+  function completeMergeReferences() {
+    let updateJsonReferenceMain = { 'merged_into_reference_curie': referenceMeta1.curie };
+    let subPath = 'reference/' + referenceMeta2.curie;
+    let array = [ subPath, updateJsonReferenceMain, 'PATCH', 0, null, null];
+    array.unshift('mergeComplete');
+    array.unshift(accessToken);
+    console.log('completing merge');
+    console.log(array);
+    dispatch(setMergeCompleting(1))
+    dispatch(mergeButtonApiDispatch(array))
+  }
+
+  return (<>
+           <Button variant='primary' onClick={() => completeMergeReferences()} >
+             {mergeCompleting > 0 ? <Spinner animation="border" size="sm"/> : "Complete Merge"}</Button>
+           <RowDivider />
+             {(completionMergeHappened > 0 && mergeCompleting === 0) && <>References completed merging.</>}
+          </>
+         );
+} // const MergeSubmitCompleteMergeUpdateButton
+
+
+const MergeSubmitDataMergeUpdateRouter = () => {
+  const dataMergeHappened = useSelector(state => state.merge.dataMergeHappened);
+  const mergeUpdating = useSelector(state => state.merge.mergeUpdating);
+
+  if ( !(dataMergeHappened) || mergeUpdating > 0) {
+    return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /></>); }
+  else if (dataMergeHappened && mergeUpdating === 0) {
+    return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /><MergeSubmitCompleteMergeUpdateRouter /></>); }
+  return (<>Error, unexpected state. </>);
+
 //   if (mergeUpdating > 0) {
 //     return (<MergeSubmitUpdating />); }	// this does not exist, find out what curators want when updating and after update
 //   else {
-//     return (<><AlertDismissibleMergeUpdate /><MergeSubmitUpdateButton /></>); }
+//     return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /></>); }
 }
 
 const AlertDismissibleMergeUpdate = () => {
@@ -185,7 +244,7 @@ const AlertDismissibleMergeUpdate = () => {
   } else { return null; }
 }
 
-const MergeSubmitUpdateButton = () => {
+const MergeSubmitDataMergeUpdateButton = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const mergeUpdating = useSelector(state => state.merge.mergeUpdating);
@@ -345,7 +404,8 @@ const MergeSubmitUpdateButton = () => {
         let index = value['order'] - 1;
         if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'order' field value of 0
         orderedAuthors[index] = value; }
-      for (const [index, authDict] of orderedAuthors.entries()) {
+      for (const authDict of orderedAuthors.values()) {
+      // for (const [index, authDict] of orderedAuthors.entries())
         // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' order ' + authDict['order']);
         let swap = false;
         if (authDict['toggle']) { swap = !swap; }
@@ -388,6 +448,7 @@ const MergeSubmitUpdateButton = () => {
 
     console.log(forApiArray);
     for (const arrayData of forApiArray.values()) {
+      arrayData.unshift('mergeData');
       arrayData.unshift(accessToken)
       dispatch(mergeButtonApiDispatch(arrayData))
     }
@@ -396,11 +457,11 @@ const MergeSubmitUpdateButton = () => {
 
   return (<>
            <Button variant='primary' onClick={() => mergeReferences()} >
-             {mergeUpdating > 0 ? <Spinner animation="border" size="sm"/> : "Merge these references"}</Button>
+             {mergeUpdating > 0 ? <Spinner animation="border" size="sm"/> : "Merge Data"}</Button>
            <RowDivider />
           </>
          );
-}
+} // const MergeSubmitDataMergeUpdateButton
 
 // <RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />
 

@@ -34,7 +34,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
   referenceMeta2: {
-    input: 'AGR:AGR-Reference-0000869188',
+    input: 'AGR:AGR-Reference-0000869191',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -59,6 +59,9 @@ const initialState = {
   queryDoubleSuccess: false,
 
   mergeUpdating: 0,
+  mergeCompleting: 0,
+  dataMergeHappened: false,
+  completionMergeHappened: false,
   updateAlert: 0,
   updateFailure: 0,
   updateMessages: [],
@@ -218,7 +221,16 @@ export default function(state = initialState, action) {
       console.log('SET_MERGE_UPDATING reducer ' + action.payload);
       return {
         ...state,
+        dataMergeHappened: true,
         mergeUpdating: action.payload
+      }
+
+    case 'SET_MERGE_COMPLETING':
+      console.log('SET_MERGE_COMPLETING reducer ' + action.payload);
+      return {
+        ...state,
+        completionMergeHappened: true,
+        mergeCompleting: action.payload
       }
 
     case 'MERGE_BUTTON_API_DISPATCH':
@@ -245,6 +257,8 @@ export default function(state = initialState, action) {
           (action.payload.subField !== null) &&         // but only for related tables that create a dbid, not for cross_references
           (action.payload.subField in referenceJsonLive[action.payload.field][action.payload.index])) {
         referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
+      const mergeUpdatingApiDispatch = (action.payload.mergeType === 'mergeData') ? state.mergeUpdating - 1 : state.mergeUpdating;
+      const mergeCompletingApiDispatch = (action.payload.mergeType === 'mergeComplete') ? state.mergeCompleting - 1 : state.mergeCompleting;
       return {
         ...state,
         referenceJsonLive: referenceJsonLive,
@@ -253,7 +267,8 @@ export default function(state = initialState, action) {
         updateMessages: newArrayUpdateMessages,
         // getReferenceCurieFlag: getReferenceCurieFlagUpdateButton,
         // referenceJsonHasChange: hasChangeUpdateButton,
-        mergeUpdating: state.mergeUpdating - 1
+        mergeCompleting: mergeCompletingApiDispatch,
+        mergeUpdating: mergeUpdatingApiDispatch
       }
     case 'CLOSE_MERGE_UPDATE_ALERT':
       console.log('CLOSE_MERGE_UPDATE_ALERT reducer');

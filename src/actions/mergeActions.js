@@ -169,7 +169,7 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
 
 export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
   // console.log('in mergeButtonApiDispatch action');
-  const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
+  const [accessToken, mergeType, subPath, payload, method, index, field, subField] = updateArrayData;
   // console.log("payload " + payload);
   // console.log("payload "); console.log(updateArrayData);
   let newId = null;
@@ -216,12 +216,20 @@ export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
           index: index,
           value: newId,
           field: field,
-          subField: subField
+          subField: subField,
+          mergeType: mergeType
         }
       })
     }, 500);
   }
   createUpdateButtonMerge()
+};
+
+export const setMergeCompleting = (payload) => {
+  return {
+    type: 'SET_MERGE_COMPLETING',
+    payload: payload
+  };
 };
 
 export const setMergeUpdating = (payload) => {
