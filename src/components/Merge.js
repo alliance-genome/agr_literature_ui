@@ -168,13 +168,9 @@ const MergeSubmitCompleteMergeUpdateRouter = () => {
 const MergeSubmitCompleteMergeUpdateButton = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const mergeCompleting = useSelector(state => state.merge.mergeCompleting);
-//   const mergeCompleteMessage = useSelector(state => state.merge.mergeCompleteMessage);
-//   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
-//   const referenceSwap = useSelector(state => state.merge.referenceSwap);
-//   const hasPmid = useSelector(state => state.merge.hasPmid);
+  const mergeCompleting = useSelector(state => state.merge.mergeCompleting);
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
 
   function completeMergeReferences() {
