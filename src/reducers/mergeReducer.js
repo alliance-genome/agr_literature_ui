@@ -34,7 +34,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
   referenceMeta2: {
-    input: 'AGR:AGR-Reference-0000869191',
+    input: 'AGR:AGR-Reference-0000869200',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -58,9 +58,9 @@ const initialState = {
 //   referenceMessage2: 'Enter a Reference Agr ID or cross reference curie',
   queryDoubleSuccess: false,
 
-  mergeUpdating: 0,
-  mergeCompleting: 0,
-  dataMergeHappened: false,
+  mergeTransferringCount: 0,
+  mergeCompletingCount: 0,
+  dataTransferHappened: false,
   completionMergeHappened: false,
   updateAlert: 0,
   updateFailure: 0,
@@ -221,8 +221,8 @@ export default function(state = initialState, action) {
       console.log('SET_MERGE_UPDATING reducer ' + action.payload);
       return {
         ...state,
-        dataMergeHappened: true,
-        mergeUpdating: action.payload
+        dataTransferHappened: true,
+        mergeTransferringCount: action.payload
       }
 
     case 'SET_MERGE_COMPLETING':
@@ -230,7 +230,14 @@ export default function(state = initialState, action) {
       return {
         ...state,
         completionMergeHappened: true,
-        mergeCompleting: action.payload
+        mergeCompletingCount: action.payload
+      }
+
+    case 'SET_DATA_TRANSFER_HAPPENED':
+      console.log('SET_DATA_TRANSFER_HAPPENED reducer ' + action.payload);
+      return {
+        ...state,
+        dataTransferHappened: action.payload
       }
 
     case 'MERGE_BUTTON_API_DISPATCH':
@@ -257,8 +264,8 @@ export default function(state = initialState, action) {
           (action.payload.subField !== null) &&         // but only for related tables that create a dbid, not for cross_references
           (action.payload.subField in referenceJsonLive[action.payload.field][action.payload.index])) {
         referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
-      const mergeUpdatingApiDispatch = (action.payload.mergeType === 'mergeData') ? state.mergeUpdating - 1 : state.mergeUpdating;
-      const mergeCompletingApiDispatch = (action.payload.mergeType === 'mergeComplete') ? state.mergeCompleting - 1 : state.mergeCompleting;
+      const mergeTransferringCountApiDispatch = (action.payload.mergeType === 'mergeData') ? state.mergeTransferringCount - 1 : state.mergeTransferringCount;
+      const mergeCompletingCountApiDispatch = (action.payload.mergeType === 'mergeComplete') ? state.mergeCompletingCount - 1 : state.mergeCompletingCount;
       return {
         ...state,
         referenceJsonLive: referenceJsonLive,
@@ -267,8 +274,8 @@ export default function(state = initialState, action) {
         updateMessages: newArrayUpdateMessages,
         // getReferenceCurieFlag: getReferenceCurieFlagUpdateButton,
         // referenceJsonHasChange: hasChangeUpdateButton,
-        mergeCompleting: mergeCompletingApiDispatch,
-        mergeUpdating: mergeUpdatingApiDispatch
+        mergeCompletingCount: mergeCompletingCountApiDispatch,
+        mergeTransferringCount: mergeTransferringCountApiDispatch
       }
     case 'CLOSE_MERGE_UPDATE_ALERT':
       console.log('CLOSE_MERGE_UPDATE_ALERT reducer');

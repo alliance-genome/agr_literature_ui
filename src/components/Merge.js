@@ -12,6 +12,7 @@ import { mergeToggleIndependent } from '../actions/mergeActions';
 import { mergeButtonApiDispatch } from '../actions/mergeActions';
 import { setMergeUpdating } from '../actions/mergeActions';
 import { setMergeCompleting } from '../actions/mergeActions';
+import { setDataTransferHappened } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
 
 import { splitCurie } from './Biblio';
@@ -26,6 +27,7 @@ import Alert from 'react-bootstrap/Alert'
 import Tooltip from 'react-bootstrap/Tooltip'
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
 import {Spinner} from "react-bootstrap";
+import {Modal} from "react-bootstrap";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
@@ -86,6 +88,10 @@ const MergeSelectionSection = () => {
   const referenceSwap = useSelector(state => state.merge.referenceSwap);
   const queryDoubleSuccess = useSelector(state => state.merge.queryDoubleSuccess);
   const hasPmid = useSelector(state => state.merge.hasPmid);
+
+  const dataTransferHappened = useSelector(state => state.merge.dataTransferHappened);
+  const mergeTransferringCount = useSelector(state => state.merge.mergeTransferringCount);
+
   // swap icon fa-exchange
   // left arrow icon fa-arrow-left 
   // <FontAwesomeIcon size='lg' icon={faLongArrowAltLeft} />
@@ -136,34 +142,47 @@ const MergeSelectionSection = () => {
     </Container>
 
     {(() => {
+//         <MergeSubmitDataMergeUpdateRouter />
       if (queryDoubleSuccess) { return (
         <>
-        <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} />
-        <MergeSubmitDataMergeUpdateRouter />
+          <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} />
+          <AlertDismissibleMergeUpdate />
+          <MergeSubmitDataMergeUpdateButton />
         </>
       ) }
     })()}
+
+    { dataTransferHappened && mergeTransferringCount === 0 ?
+      <MergeSubmitCompleteMergeUpdateRouter /> : null
+    }
+
     </>
   );
 }
 
-
 const MergeSubmitCompleteMergeUpdateRouter = () => {
+  const dispatch = useDispatch();
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
+  const dataTransferHappened = useSelector(state => state.merge.dataTransferHappened);
   const updateFailure = useSelector(state => state.merge.updateFailure);
   const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
   const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
 
-  if (updateFailure === 0) {
-    return (<>
-              Selected data has been transferred from {referenceMeta2.curie} into {referenceMeta1.curie}.<br/>
-              If you wish, you may verify the winning reference information <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> and losing information to be removed from <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a>.<br/>
-              To finish, click Complete Merge below.<br/><br/>
-              <MergeSubmitCompleteMergeUpdateButton />
-            </>); }
-  else {
-    return (<>Data has been merged from {referenceMeta2.curie} into {referenceMeta1.curie} but something went wrong, <a href="/merge" target="_blank" rel="noreferrer noopener">try again in a new browser tab</a>.</>); }
+  const modalBody = updateFailure ? 
+                    <Modal.Body>Data has been merged from {referenceMeta2.curie} into {referenceMeta1.curie} but something went wrong, <a href="/merge" target="_blank" rel="noreferrer noopener">try again in a new browser tab</a>.</Modal.Body> :
+                    <Modal.Body>Selected data has been transferred from {referenceMeta2.curie} into {referenceMeta1.curie}.<br/><br/>
+                    If you wish, you may verify the winning reference information <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> and losing information to be removed from <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a>.<br/><br/>
+                    To finish, click Complete Merge below.<br/><br/>
+                    <MergeSubmitCompleteMergeUpdateButton /></Modal.Body>
+  const modalHeader = updateFailure ? 
+                      <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
+                      <Modal.Header closeButton><Modal.Title>Transfer Success</Modal.Title></Modal.Header>
+
+  return (<Modal size="lg" show={dataTransferHappened} onHide={() => dispatch(setDataTransferHappened(false))} >
+           {modalHeader}
+           {modalBody}
+          </Modal>);
 } // const MergeSubmitCompleteMergeUpdateRouter
 
 const MergeSubmitCompleteMergeUpdateButton = () => {
@@ -171,7 +190,7 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
-  const mergeCompleting = useSelector(state => state.merge.mergeCompleting);
+  const mergeCompletingCount = useSelector(state => state.merge.mergeCompletingCount);
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
 
   function completeMergeReferences() {
@@ -191,9 +210,9 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
 
   return (<>
            <Button variant='primary' onClick={() => completeMergeReferences()} >
-             {mergeCompleting > 0 ? <Spinner animation="border" size="sm"/> : "Complete Merge"}</Button>
+             {mergeCompletingCount > 0 ? <Spinner animation="border" size="sm"/> : "Complete Merge"}</Button>
            <RowDivider />
-             {(completionMergeHappened > 0 && mergeCompleting === 0) && <>{referenceMeta2.curie} has been merged into {referenceMeta1.curie}.<br/>Information associated with {referenceMeta2.curie} has been removed.</>}
+             {(completionMergeHappened > 0 && mergeCompletingCount === 0) && <>{referenceMeta2.curie} has been merged into {referenceMeta1.curie}.<br/>Information associated with {referenceMeta2.curie} has been removed.</>}
           </>
          );
 } // const MergeSubmitCompleteMergeUpdateButton
@@ -201,15 +220,15 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
 
 const MergeSubmitDataMergeUpdateRouter = () => {
   const dataMergeHappened = useSelector(state => state.merge.dataMergeHappened);
-  const mergeUpdating = useSelector(state => state.merge.mergeUpdating);
+  const mergeTransferringCount = useSelector(state => state.merge.mergeTransferringCount);
 
-  if ( !(dataMergeHappened) || mergeUpdating > 0) {
+  if ( !(dataMergeHappened) || mergeTransferringCount > 0) {
     return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /></>); }
-  else if (dataMergeHappened && mergeUpdating === 0) {
+  else if (dataMergeHappened && mergeTransferringCount === 0) {
     return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /><MergeSubmitCompleteMergeUpdateRouter /></>); }
   return (<>Error, unexpected state. </>);
 
-//   if (mergeUpdating > 0) {
+//   if (mergeTransferringCount > 0) {
 //     return (<MergeSubmitUpdating />); }	// this does not exist, find out what curators want when updating and after update
 //   else {
 //     return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /></>); }
@@ -247,7 +266,7 @@ const AlertDismissibleMergeUpdate = () => {
 const MergeSubmitDataMergeUpdateButton = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const mergeUpdating = useSelector(state => state.merge.mergeUpdating);
+  const mergeTransferringCount = useSelector(state => state.merge.mergeTransferringCount);
   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
@@ -457,7 +476,7 @@ const MergeSubmitDataMergeUpdateButton = () => {
 
   return (<>
            <Button variant='primary' onClick={() => mergeReferences()} >
-             {mergeUpdating > 0 ? <Spinner animation="border" size="sm"/> : "Transfer Data"}</Button>
+             {mergeTransferringCount > 0 ? <Spinner animation="border" size="sm"/> : "Transfer Data"}</Button>
            <RowDivider />
           </>
          );
