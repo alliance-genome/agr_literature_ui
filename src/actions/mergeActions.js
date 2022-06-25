@@ -250,6 +250,13 @@ export const setDataTransferHappened = (payload) => {
   };
 };
 
+// export const setCompletionMergeHappened = (payload) => {
+//   return {
+//     type: 'SET_COMPLETION_MERGE_HAPPENED',
+//     payload: payload
+//   };
+// };
+
 export const closeMergeUpdateAlert = () => {
   console.log("action closeMergeUpdateAlert");
   return {

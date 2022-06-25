@@ -13,6 +13,7 @@ import { mergeButtonApiDispatch } from '../actions/mergeActions';
 import { setMergeUpdating } from '../actions/mergeActions';
 import { setMergeCompleting } from '../actions/mergeActions';
 import { setDataTransferHappened } from '../actions/mergeActions';
+// import { setCompletionMergeHappened } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
 
 import { splitCurie } from './Biblio';
@@ -91,6 +92,8 @@ const MergeSelectionSection = () => {
 
   const dataTransferHappened = useSelector(state => state.merge.dataTransferHappened);
   const mergeTransferringCount = useSelector(state => state.merge.mergeTransferringCount);
+  const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
+  const mergeCompletingCount = useSelector(state => state.merge.mergeCompletingCount);
 
   // swap icon fa-exchange
   // left arrow icon fa-arrow-left 
@@ -142,25 +145,57 @@ const MergeSelectionSection = () => {
     </Container>
 
     {(() => {
-//         <MergeSubmitDataMergeUpdateRouter />
       if (queryDoubleSuccess) { return (
         <>
           <MergePairsSection referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} />
           <AlertDismissibleMergeUpdate />
-          <MergeSubmitDataMergeUpdateButton />
+          <MergeSubmitDataTransferUpdateButton />
         </>
       ) }
     })()}
 
     { dataTransferHappened && mergeTransferringCount === 0 ?
-      <MergeSubmitCompleteMergeUpdateRouter /> : null
+      <MergeDataTransferredModal /> : null
+    }
+
+    { completionMergeHappened && mergeCompletingCount === 0 ?
+      <MergeCompletedMergeModal /> : null
     }
 
     </>
   );
 }
 
-const MergeSubmitCompleteMergeUpdateRouter = () => {
+const MergeCompletedMergeModal = () => {
+  const dispatch = useDispatch();
+  const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
+  const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
+  const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
+  const updateFailure = useSelector(state => state.merge.updateFailure);
+  const updateMessages = useSelector(state => state.merge.updateMessages);
+
+  const modalBody = updateFailure ? 
+                    <Modal.Body>{referenceMeta2.curie} has failed to merge into {referenceMeta1.curie}.<br/>
+                      Contact a developer with the error message:<br/><br/>
+                      Merge Completion Failure<br/>
+                      {updateMessages.map((message, index) => (
+                        <div key={`${message} ${index}`}>{message}</div>
+                      ))}</Modal.Body> :
+                    <Modal.Body>{referenceMeta2.curie} has been merged into {referenceMeta1.curie}.<br/>Information associated with {referenceMeta2.curie} has been removed.</Modal.Body>
+  const modalHeader = updateFailure ? 
+                      <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
+                      <Modal.Header closeButton><Modal.Title>Merge Complete</Modal.Title></Modal.Header>
+
+  // if wanting to simply hide modal and show form in previous state.  currently resetting form to original values.
+  // <Modal size="lg" show={completionMergeHappened} onHide={() => dispatch(setCompletionMergeHappened(false))} >
+
+  return (<Modal size="lg" show={completionMergeHappened} onHide={() => dispatch(mergeResetReferences())} >
+           {modalHeader}
+           {modalBody}
+          </Modal>);
+}
+
+const MergeDataTransferredModal = () => {
   const dispatch = useDispatch();
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
@@ -183,7 +218,7 @@ const MergeSubmitCompleteMergeUpdateRouter = () => {
            {modalHeader}
            {modalBody}
           </Modal>);
-} // const MergeSubmitCompleteMergeUpdateRouter
+} // const MergeDataTransferredModal
 
 const MergeSubmitCompleteMergeUpdateButton = () => {
   const dispatch = useDispatch();
@@ -191,7 +226,7 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
   const mergeCompletingCount = useSelector(state => state.merge.mergeCompletingCount);
-  const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
+//   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
 
   function completeMergeReferences() {
     // old API and merged_into in reference table
@@ -204,35 +239,20 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
     array.unshift(accessToken);
     console.log('completing merge');
     console.log(array);
-    dispatch(setMergeCompleting(1))
-    dispatch(mergeButtonApiDispatch(array))
+    dispatch(setDataTransferHappened(false));
+    dispatch(setMergeCompleting(1));
+    dispatch(mergeButtonApiDispatch(array));
   }
 
   return (<>
            <Button variant='primary' onClick={() => completeMergeReferences()} >
              {mergeCompletingCount > 0 ? <Spinner animation="border" size="sm"/> : "Complete Merge"}</Button>
-           <RowDivider />
-             {(completionMergeHappened > 0 && mergeCompletingCount === 0) && <>{referenceMeta2.curie} has been merged into {referenceMeta1.curie}.<br/>Information associated with {referenceMeta2.curie} has been removed.</>}
           </>
          );
+//            <RowDivider />
+//              {(completionMergeHappened > 0 && mergeCompletingCount === 0) && <>{referenceMeta2.curie} has been merged into {referenceMeta1.curie}.<br/>Information associated with {referenceMeta2.curie} has been removed.</>}
 } // const MergeSubmitCompleteMergeUpdateButton
 
-
-const MergeSubmitDataMergeUpdateRouter = () => {
-  const dataMergeHappened = useSelector(state => state.merge.dataMergeHappened);
-  const mergeTransferringCount = useSelector(state => state.merge.mergeTransferringCount);
-
-  if ( !(dataMergeHappened) || mergeTransferringCount > 0) {
-    return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /></>); }
-  else if (dataMergeHappened && mergeTransferringCount === 0) {
-    return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /><MergeSubmitCompleteMergeUpdateRouter /></>); }
-  return (<>Error, unexpected state. </>);
-
-//   if (mergeTransferringCount > 0) {
-//     return (<MergeSubmitUpdating />); }	// this does not exist, find out what curators want when updating and after update
-//   else {
-//     return (<><AlertDismissibleMergeUpdate /><MergeSubmitDataMergeUpdateButton /></>); }
-}
 
 const AlertDismissibleMergeUpdate = () => {
   const dispatch = useDispatch();
@@ -263,7 +283,7 @@ const AlertDismissibleMergeUpdate = () => {
   } else { return null; }
 }
 
-const MergeSubmitDataMergeUpdateButton = () => {
+const MergeSubmitDataTransferUpdateButton = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const mergeTransferringCount = useSelector(state => state.merge.mergeTransferringCount);
@@ -480,7 +500,7 @@ const MergeSubmitDataMergeUpdateButton = () => {
            <RowDivider />
           </>
          );
-} // const MergeSubmitDataMergeUpdateButton
+} // const MergeSubmitDataTransferUpdateButton
 
 // <RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />
 

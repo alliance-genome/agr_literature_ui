@@ -174,7 +174,22 @@ export default function(state = initialState, action) {
         ...state,
         referenceMeta1: JSON.parse(JSON.stringify(state.referenceMetaDefault)),
         referenceMeta2: JSON.parse(JSON.stringify(state.referenceMetaDefault)),
+        referenceDb1: {},
+        referenceDb2: {},
+        referenceSwap: {},
+        hasPmid: false,
+        isLoadingReferences: false,
+        keepReference: 1,
+        pmidKeepReference: 1,
+        referenceQuerySuccess1: '',
+        referenceQuerySuccess2: '',
         queryDoubleSuccess: false,
+        mergeCompletingCount: 0,
+        dataTransferHappened: false,
+        completionMergeHappened: false,
+        updateAlert: 0,
+        updateFailure: 0,
+        updateMessages: [],
         blah: 'blah'
       }
     case 'MERGE_QUERY_REFERENCES':
@@ -239,6 +254,13 @@ export default function(state = initialState, action) {
         ...state,
         dataTransferHappened: action.payload
       }
+
+//     case 'SET_COMPLETION_MERGE_HAPPENED':
+//       console.log('SET_COMPLETION_MERGE_HAPPENED reducer ' + action.payload);
+//       return {
+//         ...state,
+//         completionMergeHappened: action.payload
+//       }
 
     case 'MERGE_BUTTON_API_DISPATCH':
       console.log('reducer MERGE_BUTTON_API_DISPATCH ' + action.payload.responseMessage);
