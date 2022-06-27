@@ -194,9 +194,7 @@ export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
       const response = JSON.parse(response_text);
       if ( ((method === 'PATCH') && (res.status !== 202)) ||
            ((method === 'DELETE') && (res.status !== 204)) ||
-// PUT THIS BACK
-//            ((method === 'POST') && (res.status !== 201))
-           ((method === 'POST') && (res.status !== 200)) ) {
+           ((method === 'POST') && (res.status !== 201)) ) {
         console.log('mergeButtonApiDispatch action response not updated');
         if (typeof(response.detail) !== 'object') {
             response_message = response.detail; }
@@ -205,9 +203,7 @@ export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
           else {
             response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
       }
-// PUT THIS BACK
-//       if ((method === 'POST') && (res.status === 201))
-      if ((method === 'POST') && (res.status === 200)) {
+      if ((method === 'POST') && (res.status === 201)) {
         newId = parseInt(response_text); }
       // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
       console.log('dispatch MERGE_BUTTON_API_DISPATCH');
