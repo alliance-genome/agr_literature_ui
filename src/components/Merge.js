@@ -585,6 +585,9 @@ const RowDisplayPairSimple = ({fieldName, referenceMeta1, referenceMeta2, refere
   if (fieldName === 'resource_curie') { 
     fieldValue1 = (<>{fieldValue1} <br/> {referenceMeta1['referenceJson']['resource_title']}</>); 
     fieldValue2 = (<>{fieldValue2} <br/> {referenceMeta2['referenceJson']['resource_title']}</>); }
+  if ( (fieldName === 'title') || (fieldName === 'abstract') ) {
+    fieldValue1 = (<span dangerouslySetInnerHTML={{__html: referenceMeta1['referenceJson'][fieldName]}} />);
+    fieldValue2 = (<span dangerouslySetInnerHTML={{__html: referenceMeta2['referenceJson'][fieldName]}} />); }
   let element1 = (<div></div>); let element2 = (<div></div>);
   if (referenceMeta1['referenceJson'][fieldName] !== null && referenceMeta1['referenceJson'][fieldName] !== '') { 
     element1 = (!hasPmid || isLocked === 'unlock') ?
