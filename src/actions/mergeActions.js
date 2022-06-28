@@ -120,10 +120,6 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
     // console.log('curieValue2 ' + curieValue2);
     // console.log('curieFound2 ' + curieFound2);
 
-    if (curieValue1 === curieValue2) {
-      curieValue2 = curieValue2 + ' is the same as the reference curie to keep';
-      curieFound2 = false; }
-
     let referenceJson1 = '';
     let referenceFound1 = false
     let referenceJson2 = '';
@@ -132,20 +128,28 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
       const promiseRef1 = queryRef(curieValue1);
       const promiseRef2 = queryRef(curieValue2);
       let valuesRef = await Promise.allSettled([promiseRef1, promiseRef2]);
+
       referenceJson1 = valuesRef[0]['value'][0];
       referenceFound1 = valuesRef[0]['value'][1];
+
       if (referenceJson1.constructor === Object && 'comment_and_corrections' in referenceJson1 &&
           referenceJson1['comment_and_corrections'] !== null) {
         generateCorrectionsSimple(referenceJson1); }
-      if (!referenceFound1) {
-        curieValue1 = curieValue1 + ' not found'; }
+
       referenceJson2 = valuesRef[1]['value'][0];
       referenceFound2 = valuesRef[1]['value'][1];
-      if (!referenceFound2) { 
-        curieValue2 = curieValue2 + ' not found'; } }
+
+      curieValue1 = (referenceFound1) ? referenceJson1['curie'] : curieValue1 + ' not found';
+      curieValue2 = (referenceFound2) ? referenceJson2['curie'] : curieValue2 + ' not found';
+
       if (referenceJson2.constructor === Object && 'comment_and_corrections' in referenceJson2 &&
           referenceJson2['comment_and_corrections'] !== null) {
         generateCorrectionsSimple(referenceJson2); }
+
+      if (curieValue1 === curieValue2) {
+        curieValue2 = curieValue2 + ' is the same as the reference curie to keep';
+        referenceFound2 = false; curieFound2 = false; }
+    } // if (curieFound1 && curieFound2)
 
     dispatch({
       type: 'MERGE_SET_IS_LOADING_REFERENCES',
