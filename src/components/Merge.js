@@ -190,7 +190,7 @@ const MergeCompletedMergeModal = () => {
   // if wanting to simply hide modal and show form in previous state.  currently resetting form to original values.
   // <Modal size="lg" show={completionMergeHappened} onHide={() => dispatch(setCompletionMergeHappened(false))} >
 
-  return (<Modal size="lg" show={completionMergeHappened} onHide={() => dispatch(mergeResetReferences())} >
+  return (<Modal size="lg" show={completionMergeHappened} backdrop="static" onHide={() => dispatch(mergeResetReferences())} >
            {modalHeader}
            {modalBody}
           </Modal>);
@@ -216,7 +216,7 @@ const MergeDataTransferredModal = () => {
                       <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
                       <Modal.Header ><Modal.Title>Transfer Success</Modal.Title></Modal.Header>
 
-  return (<Modal size="lg" show={showDataTransferModal} onHide={() => dispatch(setShowDataTransferModal(false))} >
+  return (<Modal size="lg" show={showDataTransferModal} backdrop="static" onHide={() => dispatch(setShowDataTransferModal(false))} >
            {modalHeader}
            {modalBody}
           </Modal>);
