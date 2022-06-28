@@ -246,6 +246,13 @@ export const setDataTransferHappened = (payload) => {
   };
 };
 
+export const setShowDataTransferModal = (payload) => {
+  return {
+    type: 'SET_SHOW_DATA_TRANSFER_MODAL',
+    payload: payload
+  };
+};
+
 // export const setCompletionMergeHappened = (payload) => {
 //   return {
 //     type: 'SET_COMPLETION_MERGE_HAPPENED',

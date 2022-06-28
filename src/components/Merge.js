@@ -13,6 +13,7 @@ import { mergeButtonApiDispatch } from '../actions/mergeActions';
 import { setMergeUpdating } from '../actions/mergeActions';
 import { setMergeCompleting } from '../actions/mergeActions';
 import { setDataTransferHappened } from '../actions/mergeActions';
+import { setShowDataTransferModal } from '../actions/mergeActions';
 // import { setCompletionMergeHappened } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
 
@@ -200,6 +201,7 @@ const MergeDataTransferredModal = () => {
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
   const dataTransferHappened = useSelector(state => state.merge.dataTransferHappened);
+  const showDataTransferModal = useSelector(state => state.merge.showDataTransferModal);
   const updateFailure = useSelector(state => state.merge.updateFailure);
   const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
   const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
@@ -212,9 +214,9 @@ const MergeDataTransferredModal = () => {
                     <MergeSubmitCompleteMergeUpdateButton /></Modal.Body>
   const modalHeader = updateFailure ? 
                       <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
-                      <Modal.Header closeButton><Modal.Title>Transfer Success</Modal.Title></Modal.Header>
+                      <Modal.Header ><Modal.Title>Transfer Success</Modal.Title></Modal.Header>
 
-  return (<Modal size="lg" show={dataTransferHappened} onHide={() => dispatch(setDataTransferHappened(false))} >
+  return (<Modal size="lg" show={showDataTransferModal} onHide={() => dispatch(setShowDataTransferModal(false))} >
            {modalHeader}
            {modalBody}
           </Modal>);
@@ -240,6 +242,7 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
     console.log('completing merge');
     console.log(array);
     dispatch(setDataTransferHappened(false));
+    dispatch(setShowDataTransferModal(false));
     dispatch(setMergeCompleting(1));
     dispatch(mergeButtonApiDispatch(array));
   }
@@ -286,6 +289,7 @@ const AlertDismissibleMergeUpdate = () => {
 const MergeSubmitDataTransferUpdateButton = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const dataTransferHappened = useSelector(state => state.merge.dataTransferHappened);
   const mergeTransferringCount = useSelector(state => state.merge.mergeTransferringCount);
   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
@@ -494,12 +498,14 @@ const MergeSubmitDataTransferUpdateButton = () => {
 
   } // function mergeReferences()
 
-  return (<>
-           <Button variant='primary' onClick={() => mergeReferences()} >
-             {mergeTransferringCount > 0 ? <Spinner animation="border" size="sm"/> : "Transfer Data"}</Button>
-           <RowDivider />
-          </>
-         );
+  if (dataTransferHappened) { return null; }
+  else {
+    return (<>
+             <Button variant='primary' onClick={() => mergeReferences()} >
+               {mergeTransferringCount > 0 ? <Spinner animation="border" size="sm"/> : "Transfer Data"}</Button>
+             <RowDivider />
+            </>
+           ); }
 } // const MergeSubmitDataTransferUpdateButton
 
 // <RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />

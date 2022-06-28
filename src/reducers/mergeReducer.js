@@ -61,6 +61,7 @@ const initialState = {
   mergeTransferringCount: 0,
   mergeCompletingCount: 0,
   dataTransferHappened: false,
+  showDataTransferModal: false,
   completionMergeHappened: false,
   updateAlert: 0,
   updateFailure: 0,
@@ -186,6 +187,7 @@ export default function(state = initialState, action) {
         queryDoubleSuccess: false,
         mergeCompletingCount: 0,
         dataTransferHappened: false,
+        showDataTransferModal: false,
         completionMergeHappened: false,
         updateAlert: 0,
         updateFailure: 0,
@@ -237,6 +239,7 @@ export default function(state = initialState, action) {
       return {
         ...state,
         dataTransferHappened: true,
+        showDataTransferModal: true,
         mergeTransferringCount: action.payload
       }
 
@@ -253,6 +256,13 @@ export default function(state = initialState, action) {
       return {
         ...state,
         dataTransferHappened: action.payload
+      }
+
+    case 'SET_SHOW_DATA_TRANSFER_MODAL':
+      console.log('SET_SHOW_DATA_TRANSFER_MODAL reducer ' + action.payload);
+      return {
+        ...state,
+        showDataTransferModal: action.payload
       }
 
 //     case 'SET_COMPLETION_MERGE_HAPPENED':
