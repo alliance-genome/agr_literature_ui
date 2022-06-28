@@ -7,7 +7,7 @@ const initialState = {
     curie: '',
     referenceJson: '',
     queryRefSuccess: null,
-    message: 'Enter a cross reference curie',
+    message: 'Enter an AGR reference or cross reference curie',
     disableInput: '',
     blah: ''
   },
@@ -17,7 +17,7 @@ const initialState = {
     referenceJson: '',
     referenceKeep: {},
     queryRefSuccess: null,
-    message: 'Enter a cross reference curie',
+    message: 'Enter an AGR reference or cross reference curie',
     disableInput: '',
     blah: ''
   },
@@ -39,7 +39,7 @@ const initialState = {
     referenceJson: '',
     referenceKeep: {},
     queryRefSuccess: null,
-    message: 'Enter a cross reference curie',
+    message: 'Enter an AGR reference or cross reference curie',
     disableInput: '',
     blah: ''
   },
