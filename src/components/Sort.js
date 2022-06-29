@@ -173,7 +173,7 @@ const Sort = () => {
                   onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                 />
               </Col>
-              <Col lg={1} className="Col-general Col-display" >
+              <Col lg={1} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
                 <Form.Check
                   inline
                   checked={ (reference['corpus'] === 'inside_corpus') ? 'checked' : '' }
@@ -182,6 +182,11 @@ const Sort = () => {
                   id={`inside_corpus_toggle ${index}`}
                   onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                 />
+                <Form.Control as="select" id={`primary_select ${index}`} >
+                  <option>Experimental</option>
+                  <option>Not Experimental</option>
+                  <option>Meeting Abstract</option>
+                </Form.Control>
               </Col>
               <Col lg={1} className="Col-general Col-display" >
                 <Form.Check
