@@ -200,7 +200,6 @@ const MergeDataTransferredModal = () => {
   const dispatch = useDispatch();
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
-  const dataTransferHappened = useSelector(state => state.merge.dataTransferHappened);
   const showDataTransferModal = useSelector(state => state.merge.showDataTransferModal);
   const updateFailure = useSelector(state => state.merge.updateFailure);
   const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
