@@ -28,7 +28,11 @@ const Download = () => {
             </Form.Control>
         </Col>
         <Col sm={2}>
-            <Button style={{width: "12em"}} >Download json</Button>
+            <a
+              href="https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/miniSGD"
+              download
+            >
+            <Button style={{width: "12em"}} >Download json</Button></a>
         </Col>
         <Col sm={4}></Col>
       </Row>
