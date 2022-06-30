@@ -22,6 +22,7 @@ const NavigationBar = () => {
       <Nav.Link as={Link} to="/sort">Sort</Nav.Link>
       <Nav.Link as={Link} to="/create">Create</Nav.Link>
       <Nav.Link as={Link} to="/merge">Merge</Nav.Link>
+      <Nav.Link as={Link} to="/download">Download</Nav.Link>
       <Nav.Link as={Link} to="/swaggerUI">Swagger</Nav.Link>
     </Nav>
     <Nav>

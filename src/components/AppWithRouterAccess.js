@@ -17,6 +17,7 @@ import Ontomate from './Ontomate'
 import Textpresso from './Textpresso'
 import Create from './Create'
 import Merge from './Merge'
+import Download from './Download'
 import About from './About'
 // import Login from './Login'
 import LoginRequired from './LoginRequired'
@@ -75,6 +76,7 @@ const AppWithRouterAccess = () => {
                 <Route path='/textpresso' component={Textpresso} />
                 <SecureRoute path='/create' component={Create} />
                 <Route path='/merge' component={Merge} />
+                <Route path='/download' component={Download} />
                 <Route path='/about' component={About} />
                 <Route path = '/swaggerUI' component={SwaggerComp} />
                 <Route path = '/loginRequired' component={LoginRequired} />
