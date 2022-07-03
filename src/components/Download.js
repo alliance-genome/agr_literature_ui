@@ -1,5 +1,9 @@
 // import { Link } from 'react-router-dom'
 
+import { useSelector, useDispatch } from 'react-redux';
+
+import { downloadButtonDownload } from '../actions/downloadActions';
+
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -9,6 +13,8 @@ import Button from 'react-bootstrap/Button'
 
 const Download = () => {
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
+  const dispatch = useDispatch();
+  const accessToken = useSelector(state => state.isLogged.accessToken);
 
   return (
     <Container>
@@ -28,11 +34,7 @@ const Download = () => {
             </Form.Control>
         </Col>
         <Col sm={2}>
-            <a
-              href="https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/miniSGD"
-              download
-            >
-            <Button style={{width: "12em"}} >Download json</Button></a>
+            <Button style={{width: "12em"}}  onClick={() => dispatch(downloadButtonDownload(accessToken, 'mod')) }>Download json</Button>
         </Col>
         <Col sm={4}></Col>
       </Row>
@@ -41,3 +43,9 @@ const Download = () => {
 }
 
 export default Download
+
+//             <a
+//               href="https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/miniSGD"
+//               download
+//             >
+//             <Button style={{width: "12em"}} >Download json</Button></a>
