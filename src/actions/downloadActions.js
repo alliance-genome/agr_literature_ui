@@ -6,15 +6,18 @@ import axios from "axios";
 
 // const restUrl = process.env.REACT_APP_RESTAPI;
 
-export const downloadButtonDownload = (accessToken, mod) => dispatch => {
-  console.log('in downloadButtonDownload action');
-  console.log(accessToken);
+export const downloadActionButtonDownload = (accessToken, mod) => dispatch => {
+  // console.log('in downloadActionButtonDownload action');
+  // console.log(accessToken);
+
+  dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING', payload: true });
+  dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: true });
 
   const downloadFile = async () => {
 
     // use real url when api on prod
     // const url = restUrl + '/dumps/latest/' + mod;
-    const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/miniSGD';
+    const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/' + mod;
     const filename = 'reference_dump_' + mod;
 
     axios({
@@ -36,26 +39,32 @@ export const downloadButtonDownload = (accessToken, mod) => dispatch => {
         document.body.appendChild(link);
         link.click();
 
+        dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING', payload: false });
+        // dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: false });	// do not make this go away, awkward if fast download
         // Clean up and remove the link
         link.parentNode.removeChild(link);
     });
 
-    // test just getting stuff
-    // const url = restUrl + '/' + subPath;
-//     console.log(url);
-//     const res = await fetch(url, {
-//       method: 'GET',
-//       mode: 'cors',
-//       headers: {
-//         'content-type': 'application/json',
-//         'authorization': 'Bearer ' + accessToken
-//       },
-//     })
-// //       body: JSON.stringify( payload )
-// 
-//     let response_message = 'file download success';
-//     console.log(res);
-
   }
   downloadFile()
+};
+
+
+export const changeFieldDownloadMod = (e) => {
+  console.log('action change field ' + e.target.name + ' to ' + e.target.value);
+  return {
+    type: 'CHANGE_FIELD_DOWNLOAD_MOD',
+    payload: {
+      field: e.target.id,
+      value: e.target.value
+    }
+  };
+};
+
+export const setDownloadShowDownloading = (value) => {
+  console.log('action change download show download to ' + value);
+  return {
+    type: 'DOWNLOAD_SET_SHOW_DOWNLOADING',
+    payload: value
+  };
 };

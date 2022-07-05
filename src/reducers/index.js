@@ -6,6 +6,7 @@ import biblioReducer from './biblioReducer';
 import sortReducer from './sortReducer';
 import createReducer from './createReducer';
 import mergeReducer from './mergeReducer';
+import downloadReducer from './downloadReducer';
 
 
 export default combineReducers({
@@ -16,5 +17,6 @@ export default combineReducers({
   biblio: biblioReducer,
   sort: sortReducer,
   create: createReducer,
-  merge: mergeReducer
+  merge: mergeReducer,
+  download: downloadReducer
 });
