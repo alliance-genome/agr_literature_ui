@@ -4,7 +4,7 @@
 
 import axios from "axios";
 
-// const restUrl = process.env.REACT_APP_RESTAPI;
+const restUrl = process.env.REACT_APP_RESTAPI;
 
 export const downloadActionButtonDownload = (accessToken, mod) => dispatch => {
   // console.log('in downloadActionButtonDownload action');
@@ -16,8 +16,8 @@ export const downloadActionButtonDownload = (accessToken, mod) => dispatch => {
   const downloadFile = async () => {
 
     // use real url when api on prod
-    // const url = restUrl + '/dumps/latest/' + mod;
-    const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/' + mod;
+    const url = restUrl + '/reference/dumps/latest/' + mod;
+    // const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/' + mod;
     const filename = 'reference_dump_' + mod;
 
     axios({
