@@ -51,7 +51,7 @@ const Sort = () => {
   let buttonUpdateDisabled = ''
   if (sortUpdating > 0) { buttonUpdateDisabled = 'disabled'; }
 
-  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
+  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
     console.log('sort DISPATCH sortButtonModsQuery ' + modsField);
