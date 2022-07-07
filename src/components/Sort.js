@@ -163,42 +163,81 @@ const Sort = () => {
                    (reference['resource_title']) ? <span dangerouslySetInnerHTML={{__html: reference['resource_title']}} /> : 'N/A' }</div>
               </Col>
               <Col lg={5} className="Col-general Col-display" ><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
-              <Col lg={1} className="Col-general Col-display" >
-                <Form.Check
-                  inline
-                  checked={ (reference['corpus'] === 'needs_review') ? 'checked' : '' }
-                  type='radio'
-                  label='review'
-                  id={`needs_review_toggle ${index}`}
-                  onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                />
-              </Col>
-              <Col lg={1} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
-                <Form.Check
-                  inline
-                  checked={ (reference['corpus'] === 'inside_corpus') ? 'checked' : '' }
-                  type='radio'
-                  label='inside'
-                  id={`inside_corpus_toggle ${index}`}
-                  onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                />
-                <Form.Control as="select" id={`primary_select ${index}`} >
-                  <option>Experimental</option>
-                  <option>Not Experimental</option>
-                  <option>Meeting Abstract</option>
-                </Form.Control>
+
+              <Col lg={1} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                <Container style={{height: '100%', padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                  <Row style={{height: '4em', padding: 0}}>
+                    <Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                      <Form.Check
+                        inline
+                        checked={ (reference['corpus'] === 'needs_review') ? 'checked' : '' }
+                        type='radio'
+                        label='review'
+                        id={`needs_review_toggle ${index}`}
+                        onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+                      />
+                  </Col></Row>
+                  <Row style={{height: '8em'}}><Col></Col></Row>
+                </Container>
               </Col>
               <Col lg={1} className="Col-general Col-display" >
-                <Form.Check
-                  inline
-                  checked={ (reference['corpus'] === 'outside_corpus') ? 'checked' : '' }
-                  type='radio'
-                  label='outside'
-                  id={`outside_corpus_toggle ${index}`}
-                  onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                />
+                <Container style={{height: '100%', padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                  <Row style={{height: '4em', padding: 0}}>
+                  <Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                    <Form.Check
+                      inline
+                      checked={ (reference['corpus'] === 'inside_corpus') ? 'checked' : '' }
+                      type='radio'
+                      label='inside'
+                      id={`inside_corpus_toggle ${index}`}
+                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+                    />
+                  </Col></Row>
+                  <Row style={{height: '8em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                    <Form.Check
+                      inline
+                      type='radio'
+                      label='experimental'
+                      id={`experimental_toggle ${index}`}
+                    />
+                    <Form.Check
+                      inline
+                      type='radio'
+                      label='not expt'
+                      id={`not_experimental_toggle ${index}`}
+                    />
+                    <Form.Check
+                      inline
+                      type='radio'
+                      label='meeting'
+                      id={`meeting_toggle ${index}`}
+                    />
+                    <Form.Control as="select" id={`primary_select ${index}`} style={{display: 'none'}}>
+                      <option>Experimental</option>
+                      <option>Not Experimental</option>
+                      <option>Meeting Abstract</option>
+                    </Form.Control>
+                  </Col></Row>
+                </Container>
+              </Col>
+              <Col lg={1} className="Col-general Col-display" >
+                <Container style={{height: '100%', padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                  <Row style={{height: '4em', padding: 0}}>
+                    <Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                      <Form.Check
+                        inline
+                        checked={ (reference['corpus'] === 'outside_corpus') ? 'checked' : '' }
+                        type='radio'
+                        label='outside'
+                        id={`outside_corpus_toggle ${index}`}
+                        onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+                      />
+                   </Col></Row>
+                   <Row style={{height: '8em'}}><Col></Col></Row>
+                </Container>
               </Col>
             </Row>
+
             </div>
           ))}
           <RowDivider />
