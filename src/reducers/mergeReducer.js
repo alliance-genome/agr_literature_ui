@@ -1,5 +1,6 @@
 
 import { checkHasPmid } from './biblioReducer';
+import { splitCurie } from '../components/Biblio';
 
 const initialState = {
   referenceMetaDefault: {
@@ -12,7 +13,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'AGR:AGR-Reference-0000869189',
+    input: 'AGR:AGR-Reference-0000569189',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -34,7 +35,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
   referenceMeta2: {
-    input: 'AGR:AGR-Reference-0000869200',
+    input: 'PMID:28049701',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -73,7 +74,7 @@ const initialState = {
 const initializeQueriedData = (referenceJson1, referenceJson2) => {
   if (referenceJson1.constructor !== Object || referenceJson2.constructor !== Object) { return; }
 
-  // mca that only has value for 2nd reference should be toggle based on mod pairs
+  // mca that only has value for 2nd reference should be toggled based on mod pairs
   const mca1 = {}; const mca2 = {};
   if ('mod_corpus_associations' in referenceJson1 && referenceJson1['mod_corpus_associations'] != null) {
     for (const [index, val1] of referenceJson1['mod_corpus_associations'].entries()) {
@@ -86,7 +87,23 @@ const initializeQueriedData = (referenceJson1, referenceJson2) => {
   for (const mod in mca2) {
     if (mca1[mod] === undefined) { 
       referenceJson2['mod_corpus_associations'][mca2[mod]]['toggle'] = true; } }
-    
+
+  // xref that only has value for 2nd reference should be toggled based on xref prefix pairs
+  const xref1 = {}; const xref2 = {};
+  if ('cross_references' in referenceJson1 && referenceJson1['cross_references'] != null) {
+    for (const [index, val1] of referenceJson1['cross_references'].entries()) {
+      if ('curie' in val1 && val1['curie'] !== null && val1['curie'] !== '') {
+        let xref1Prefix = splitCurie(val1['curie'], 'prefix');
+        xref1[xref1Prefix] = index; } } }
+  if ('cross_references' in referenceJson2 && referenceJson2['cross_references'] != null) {
+    for (const [index, val2] of referenceJson2['cross_references'].entries()) {
+      if ('curie' in val2 && val2['curie'] !== null && val2['curie'] !== '') {
+        let xref2Prefix = splitCurie(val2['curie'], 'prefix');
+        xref2[xref2Prefix] = index; } } }
+  for (const prefix in xref2) {
+    if (xref1[prefix] === undefined) { 
+      referenceJson2['cross_references'][xref2[prefix]]['toggle'] = true; } }
+
   return
 }
 
