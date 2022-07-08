@@ -430,30 +430,38 @@ const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJsonLive, displayO
     cssDisplayRight = 'Col-editor-disabled';
     cssDisplayLeft = ''; }
   if ('mesh_terms' in referenceJsonLive && referenceJsonLive['mesh_terms'] !== null) {
+
     const rowMeshTermsElements = []
     rowMeshTermsElements.push(<MeshExpandToggler key="meshExpandTogglerComponent" displayOrEditor={displayOrEditor} />);
+
+    const sortableMeshTermElements = {};
+    const meshTextArray = [];
+    for (const[index, value] of referenceJsonLive['mesh_terms'].entries()) {
+      let term = value['heading_term'];
+      if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
+      const lcTerm = term.toLowerCase();
+      if (meshExpand === 'detailed') {
+        sortableMeshTermElements[lcTerm] = (
+        <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className={`Col-general ${cssDisplayLeft} `}>mesh_terms</Col>
+          <Col className={`Col-general ${cssDisplay} `} lg={{ span: 5 }}>{value['heading_term']}</Col>
+          <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 5 }}>{value['qualifier_term']}</Col>
+        </Row>); }
+      else {
+        meshTextArray.push(term); } }
+
     if (meshExpand === 'detailed') {
-      for (const[index, value] of referenceJsonLive['mesh_terms'].entries()) {
-        rowMeshTermsElements.push(
-          <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className={`Col-general ${cssDisplayLeft} `}>mesh_terms</Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 5 }}>{value['heading_term']}</Col>
-            <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 5 }}>{value['qualifier_term']}</Col>
-          </Row>); } }
+      const sortedKeys = Object.keys(sortableMeshTermElements).sort();
+      for (let i = 0; i < sortedKeys.length; i++) {
+        rowMeshTermsElements.push(sortableMeshTermElements[sortedKeys[i]]); } }
     else {
-      const meshTextArray = []
-      for (const value of referenceJsonLive['mesh_terms']) {
-        let term = value['heading_term'];
-        if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
-        meshTextArray.push(term); }
-//       const meshText = meshTextArray.join('<span className="affiliation">; </span>');	// renders markup
-      const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.join('; ')}} />)
+      const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); }).join('; ')}} />)
       rowMeshTermsElements.push(
         <Row key="meshTermsText" className="Row-general" xs={2} md={4} lg={6}>
           <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
           <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>{meshText}</Col>
-        </Row>);
-    }
+        </Row>); }
+
     return (<>{rowMeshTermsElements}</>); }
   else { return null; } }
 
