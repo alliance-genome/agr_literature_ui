@@ -6,7 +6,5 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    volumes:
-      - "./nginx.conf:/etc/nginx/nginx.conf"
     ports:
       - "${LIT_UI_PORT}:80"
