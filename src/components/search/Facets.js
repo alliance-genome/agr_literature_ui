@@ -118,6 +118,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 const Facets = () => {
 
     const [openFacets, setOpenFacets] = useState(new Set());
+    const searchResults = useSelector(state => state.search.searchResults);
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
@@ -136,9 +137,9 @@ const Facets = () => {
     }
 
     useEffect(() => {
-        if (Object.keys(searchFacets).length === 0) {
+        if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
-        } else if (searchQuery !== undefined || Object.keys(searchFacetsValues).length > 0) {
+        } else {
             dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
