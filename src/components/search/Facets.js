@@ -16,6 +16,12 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import _ from "lodash";
 
+export const RENAME_FACETS = {
+    "category.keyword": "alliance category",
+    "mods_in_corpus.keyword": "corpus - in corpus",
+    "mods_needs_review.keyword": "corpus - needs review"
+}
+
 const Facet = ({facetsToInclude, renameFacets}) => {
 
     const searchFacets = useSelector(state => state.search.searchFacets);
@@ -148,9 +154,7 @@ const Facets = () => {
                 <Accordion.Collapse eventKey="0">
                     <div>
                         <Facet facetsToInclude={["mods in corpus", "mods needs review"]}
-                               renameFacets={{
-                                   "mods_in_corpus.keyword": "corpus - in corpus",
-                                   "mods_needs_review.keyword": "corpus - needs review"}}/>
+                               renameFacets={RENAME_FACETS}/>
                     </div>
                 </Accordion.Collapse>
             </div>
@@ -164,7 +168,7 @@ const Facets = () => {
                 <Accordion.Collapse eventKey="0">
                     <div>
                         <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}
-                               renameFacets={{"category.keyword": "alliance category"}}/>
+                               renameFacets={RENAME_FACETS}/>
                     </div>
                 </Accordion.Collapse>
             </div>
