@@ -1,6 +1,6 @@
 
 const initialState = {
-  mod: 'miniSGD',
+  mod: 'FB',
   showDownloadingModal: false,
   isDownloading: false
 };
