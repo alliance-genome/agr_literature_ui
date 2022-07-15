@@ -6,6 +6,7 @@ import {useDispatch, useSelector} from "react-redux";
 import Button from "react-bootstrap/Button";
 import {RiCloseFill} from "react-icons/ri";
 import {removeFacetValue} from "../../actions/searchActions";
+import {RENAME_FACETS} from "./Facets";
 
 
 const BreadCrumbs = () => {
@@ -21,7 +22,7 @@ const BreadCrumbs = () => {
                         <span key={facet + "_group"}>
                             {values.map(value =>
                                 <span key={value + "_breadcrumb"}>
-                                    <Button variant="outline-secondary">{value} &nbsp;
+                                    <Button variant="outline-secondary">{(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value} &nbsp;
                                         <RiCloseFill onClick={() => dispatch(removeFacetValue(facet, value))}/>
                                     </Button>&nbsp;&nbsp;
                                 </span>)}

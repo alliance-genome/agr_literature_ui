@@ -16,6 +16,12 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import _ from "lodash";
 
+export const RENAME_FACETS = {
+    "category.keyword": "alliance category",
+    "mods_in_corpus.keyword": "corpus - in corpus",
+    "mods_needs_review.keyword": "corpus - needs review"
+}
+
 const Facet = ({facetsToInclude, renameFacets}) => {
 
     const searchFacets = useSelector(state => state.search.searchFacets);
@@ -24,10 +30,12 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     return (
         <div>
-            {Object.entries(searchFacets).filter(([key, value]) =>
-                facetsToInclude.includes(key.replace('.keyword', '').replaceAll('_', ' ')))
-                .map(([key, value]) =>
-                    <div key={key} style={{textAlign: "left", paddingLeft: "2em"}}>
+            {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
+                let key = facetToInclude + '.keyword'
+                key = key.replaceAll(' ', '_');
+                let value = searchFacets[key];
+                return (
+                    <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
                         <div>
                             <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
                             {value.buckets.map(bucket =>
@@ -57,6 +65,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                         </div>
                     </div>
                 )}
+            )}
         </div>
     )
 }
@@ -109,6 +118,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 const Facets = () => {
 
     const [openFacets, setOpenFacets] = useState(new Set());
+    const searchResults = useSelector(state => state.search.searchResults);
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
@@ -127,14 +137,29 @@ const Facets = () => {
     }
 
     useEffect(() => {
-        if (Object.keys(searchFacets).length === 0) {
+        if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
-        } else if (searchQuery !== undefined || Object.keys(searchFacetsValues).length > 0) {
+        } else {
             dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
+        <div>
+        <Accordion style={{textAlign: "left"}}>
+            <div>
+                <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="0"
+                                  onClick={() => toggleFacetGroup('Alliance Metadata')}>
+                    {openFacets.has('Alliance Metadata') ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} Alliance Metadata
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="0">
+                    <div>
+                        <Facet facetsToInclude={["mods in corpus", "mods needs review"]}
+                               renameFacets={RENAME_FACETS}/>
+                    </div>
+                </Accordion.Collapse>
+            </div>
+        </Accordion>
         <Accordion style={{textAlign: "left"}}>
             <div>
                 <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="0"
@@ -144,11 +169,12 @@ const Facets = () => {
                 <Accordion.Collapse eventKey="0">
                     <div>
                         <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}
-                               renameFacets={{"category.keyword": "alliance category"}}/>
+                               renameFacets={RENAME_FACETS}/>
                     </div>
                 </Accordion.Collapse>
             </div>
         </Accordion>
+        </div>
     )
 }
 
