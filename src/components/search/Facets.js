@@ -24,10 +24,12 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     return (
         <div>
-            {Object.entries(searchFacets).filter(([key, value]) =>
-                facetsToInclude.includes(key.replace('.keyword', '').replaceAll('_', ' ')))
-                .map(([key, value]) =>
-                    <div key={key} style={{textAlign: "left", paddingLeft: "2em"}}>
+            {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
+                let key = facetToInclude + '.keyword'
+                key = key.replaceAll(' ', '_');
+                let value = searchFacets[key];
+                return (
+                    <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
                         <div>
                             <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
                             {value.buckets.map(bucket =>
@@ -57,6 +59,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                         </div>
                     </div>
                 )}
+            )}
         </div>
     )
 }
@@ -135,6 +138,7 @@ const Facets = () => {
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
+        <div>
         <Accordion style={{textAlign: "left"}}>
             <div>
                 <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="0"
@@ -150,12 +154,14 @@ const Facets = () => {
                     </div>
                 </Accordion.Collapse>
             </div>
+        </Accordion>
+        <Accordion style={{textAlign: "left"}}>
             <div>
-                <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="1"
+                <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="0"
                                   onClick={() => toggleFacetGroup('Bibliographic Data')}>
                     {openFacets.has('Bibliographic Data') ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} Bibliographic Data
                 </Accordion.Toggle>
-                <Accordion.Collapse eventKey="1">
+                <Accordion.Collapse eventKey="0">
                     <div>
                         <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}
                                renameFacets={{"category.keyword": "alliance category"}}/>
@@ -163,6 +169,7 @@ const Facets = () => {
                 </Accordion.Collapse>
             </div>
         </Accordion>
+        </div>
     )
 }
 
