@@ -138,12 +138,26 @@ const Facets = () => {
         <Accordion style={{textAlign: "left"}}>
             <div>
                 <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="0"
-                                  onClick={() => toggleFacetGroup('Bibliographic Data')}>
-                    {openFacets.has('Bibliographic Data') ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} Bibliographic Data
+                                  onClick={() => toggleFacetGroup('Alliance Metadata')}>
+                    {openFacets.has('Alliance Metadata') ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} Alliance Metadata
                 </Accordion.Toggle>
                 <Accordion.Collapse eventKey="0">
                     <div>
-                        <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status", "mods in corpus"]}
+                        <Facet facetsToInclude={["mods in corpus", "mods needs review"]}
+                               renameFacets={{
+                                   "mods_in_corpus.keyword": "corpus - in corpus",
+                                   "mods_needs_review.keyword": "corpus - needs review"}}/>
+                    </div>
+                </Accordion.Collapse>
+            </div>
+            <div>
+                <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="1"
+                                  onClick={() => toggleFacetGroup('Bibliographic Data')}>
+                    {openFacets.has('Bibliographic Data') ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} Bibliographic Data
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="1">
+                    <div>
+                        <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}
                                renameFacets={{"category.keyword": "alliance category"}}/>
                     </div>
                 </Accordion.Collapse>
