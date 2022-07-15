@@ -143,7 +143,7 @@ const Facets = () => {
                 </Accordion.Toggle>
                 <Accordion.Collapse eventKey="0">
                     <div>
-                        <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}
+                        <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status", "mods in corpus"]}
                                renameFacets={{"category.keyword": "alliance category"}}/>
                     </div>
                 </Accordion.Collapse>
