@@ -6,11 +6,14 @@ import axios from "axios";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
-export const downloadActionButtonDownload = (accessToken, mod) => dispatch => {
+export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand) => dispatch => {
   // console.log('in downloadActionButtonDownload action');
   // console.log(accessToken);
 
-  dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING', payload: true });
+  if (nightlyOrOndemand === 'nightly') {
+    dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
+  else if (nightlyOrOndemand === 'ondemand') {
+    dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true }); }
   dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: true });
 
   const downloadFile = async () => {
@@ -39,7 +42,11 @@ export const downloadActionButtonDownload = (accessToken, mod) => dispatch => {
         document.body.appendChild(link);
         link.click();
 
-        dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING', payload: false });
+        if (nightlyOrOndemand === 'nightly') {
+          dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: false }); }
+        else if (nightlyOrOndemand === 'ondemand') {
+          dispatch({ type: 'DOWNLOAD_SET_AUTO_DOWNLOAD_ONDEMAND', payload: false });
+          dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: false }); }
         // dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: false });	// do not make this go away, awkward if fast download
         // Clean up and remove the link
         link.parentNode.removeChild(link);

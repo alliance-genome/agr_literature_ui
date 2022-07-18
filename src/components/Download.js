@@ -17,20 +17,28 @@ import {Modal} from "react-bootstrap";
 
 
 const Download = () => {
-  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
+  const mods = ['miniSGD', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const userId = useSelector(state => state.isLogged.userId);
-  const isDownloading = useSelector(state => state.download.isDownloading);
+  const autoDownloadOndemand = useSelector(state => state.download.autoDownloadOndemand);
+  const isDownloadingNightly = useSelector(state => state.download.isDownloadingNightly);
+  const isDownloadingOndemand = useSelector(state => state.download.isDownloadingOndemand);
   const mod = useSelector(state => state.download.mod);
 
-  const buttonDownloadDisabled = isDownloading ? 'disabled' : '';
+  const buttonDownloadNightlyDisabled = isDownloadingNightly ? 'disabled' : '';
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
   // console.log(query);
   let paramAction = query.get('action');
   let paramFilename = query.get('filename');
+  if ( (paramFilename !== null) && (paramFilename !== '') &&
+       (paramAction !== null) && (paramAction === 'filedownload') &&
+       autoDownloadOndemand ) {
+    console.log(paramFilename);
+    dispatch(downloadActionButtonDownload(accessToken, paramFilename, 'ondemand'));
+  }
   // console.log(paramAction);
   // console.log(paramFilename);
   // download?action=filedownload&filename=20220618
@@ -45,7 +53,7 @@ const Download = () => {
       </Row>
       <Row><Col>&nbsp;</Col></Row>
       <Row>
-        <Col sm={3}></Col>
+        <Col sm={2}></Col>
         <Col sm={2}>
             <Form.Control as="select" value={mod} name="mods" type="select" htmlSize="1" style={{width: '10em'}} onChange={(e) => dispatch(changeFieldDownloadMod(e))} >
               {mods.map((optionValue, index) => (
@@ -53,22 +61,20 @@ const Download = () => {
               ))}
             </Form.Control>
         </Col>
-        <Col sm={2}>
-            <Button style={{width: "11em"}} disabled={buttonDownloadDisabled} onClick={() => dispatch(downloadActionButtonDownload(accessToken, mod)) }>{isDownloading ? <Spinner animation="border" size="sm"/> : "Download latest json"}</Button>
+        <Col sm={3}>
+            <Button style={{width: "12em"}} disabled={buttonDownloadNightlyDisabled} onClick={() => dispatch(downloadActionButtonDownload(accessToken, mod, 'nightly')) }>{isDownloadingNightly ? <Spinner animation="border" size="sm"/> : "Download Nightly File"}</Button>
         </Col>
-        <Col sm={2}>
-            <Button style={{width: "11em"}} onClick={() => alert("Generating a dump of " + mod + ". The download link will be emailed to " + userId) }>Request new dump</Button>
+        <Col sm={3}>
+            <Button style={{width: "11em"}} onClick={() => alert("Generating a new reference file for " + mod + ". A download link will be emailed to " + userId) }>Generate New File</Button>
         </Col>
-        <Col sm={3}></Col>
+        <Col sm={2}></Col>
       </Row>
-      { (paramAction !== null && paramAction === 'filedownload') && (
+      { isDownloadingOndemand && (
         <>
         <Row><Col>&nbsp;</Col></Row>
         <Row>
-          <Col sm={5}></Col>
-          <Col sm={2}>
-            <Button style={{width: "11em"}} onClick={() => alert("This would download the file " + paramFilename) }>Download {paramFilename}</Button>
-          </Col>
+          <Col sm={4}></Col>
+          <Col sm={3}>Downloading new file in progress {paramFilename} <Spinner animation="border" size="sm"/></Col>
           <Col sm={5}></Col>
         </Row>
         </>

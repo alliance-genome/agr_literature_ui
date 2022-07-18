@@ -1,8 +1,10 @@
 
 const initialState = {
-  mod: 'FB',
+  mod: 'miniSGD',
   showDownloadingModal: false,
-  isDownloading: false
+  autoDownloadOndemand: true,
+  isDownloadingOndemand: false,
+  isDownloadingNightly: false
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -11,11 +13,25 @@ export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
 
-    case 'DOWNLOAD_SET_IS_DOWNLOADING':
+    case 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY':
       // console.log(action.payload);
       return {
         ...state,
-        isDownloading: action.payload
+        isDownloadingNightly: action.payload
+      }
+
+    case 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND':
+      // console.log(action.payload);
+      return {
+        ...state,
+        isDownloadingOndemand: action.payload
+      }
+
+    case 'DOWNLOAD_SET_AUTO_DOWNLOAD_ONDEMAND':
+      // console.log(action.payload);
+      return {
+        ...state,
+        autoDownloadOndemand: action.payload
       }
 
     case 'DOWNLOAD_SET_SHOW_DOWNLOADING':
