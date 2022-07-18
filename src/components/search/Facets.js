@@ -31,40 +31,46 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     return (
         <div>
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
-                let key = facetToInclude + '.keyword'
-                key = key.replaceAll(' ', '_');
-                let value = searchFacets[key];
-                return (
-                    <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
-                        <div>
-                            <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
-                            {value.buckets.map(bucket =>
-                                <Container key={bucket.key}>
-                                    <Row>
-                                        <Col sm={1}>
-                                            <Form.Check inline type="checkbox"
-                                                        checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
-                                                        onChange={(evt) => {
-                                                            if (evt.target.checked) {
-                                                                dispatch(addFacetValue(key, bucket.key));
-                                                            } else {
-                                                                dispatch(removeFacetValue(key, bucket.key));
-                                                            }
-                                                        }}/>
-                                        </Col>
-                                        <Col sm={8}>
-                                            {bucket.key}
-                                        </Col>
-                                        <Col>
-                                            <Badge variant="secondary">{bucket.doc_count}</Badge>
-                                        </Col>
-                                    </Row>
-                                </Container>)}
-                            <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
-                            <br/>
-                        </div>
-                    </div>
-                )}
+                    let key = facetToInclude + '.keyword'
+                    key = key.replaceAll(' ', '_');
+                    if (key in searchFacets) {
+                        let value = searchFacets[key];
+
+                        return (
+                            <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
+                                <div>
+                                    <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
+                                    {value.buckets.map(bucket =>
+                                        <Container key={bucket.key}>
+                                            <Row>
+                                                <Col sm={1}>
+                                                    <Form.Check inline type="checkbox"
+                                                                checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
+                                                                onChange={(evt) => {
+                                                                    if (evt.target.checked) {
+                                                                        dispatch(addFacetValue(key, bucket.key));
+                                                                    } else {
+                                                                        dispatch(removeFacetValue(key, bucket.key));
+                                                                    }
+                                                                }}/>
+                                                </Col>
+                                                <Col sm={8}>
+                                                    {bucket.key}
+                                                </Col>
+                                                <Col>
+                                                    <Badge variant="secondary">{bucket.doc_count}</Badge>
+                                                </Col>
+                                            </Row>
+                                        </Container>)}
+                                    <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
+                                    <br/>
+                                </div>
+                            </div>
+                        )
+                    } else {
+                        return null
+                    }
+                }
             )}
         </div>
     )
