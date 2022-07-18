@@ -1,6 +1,7 @@
 // import { Link } from 'react-router-dom'
 
 import { useSelector, useDispatch } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 
 import { downloadActionButtonDownload } from '../actions/downloadActions';
 import { changeFieldDownloadMod } from '../actions/downloadActions';
@@ -25,6 +26,15 @@ const Download = () => {
 
   const buttonDownloadDisabled = isDownloading ? 'disabled' : '';
 
+  const useQuery = () => { return new URLSearchParams(useLocation().search); }
+  let query = useQuery();
+  // console.log(query);
+  let paramAction = query.get('action');
+  let paramFilename = query.get('filename');
+  // console.log(paramAction);
+  // console.log(paramFilename);
+  // download?action=filedownload&filename=20220618
+
   return (
     <Container>
       <ModalDownloading />
@@ -47,10 +57,22 @@ const Download = () => {
             <Button style={{width: "11em"}} disabled={buttonDownloadDisabled} onClick={() => dispatch(downloadActionButtonDownload(accessToken, mod)) }>{isDownloading ? <Spinner animation="border" size="sm"/> : "Download latest json"}</Button>
         </Col>
         <Col sm={2}>
-            <Button style={{width: "11em"}} disabled={buttonDownloadDisabled} onClick={() => alert("Generating a dump of " + mod + ". The download link will be emailed to " + userId) }>Request new dump</Button>
+            <Button style={{width: "11em"}} onClick={() => alert("Generating a dump of " + mod + ". The download link will be emailed to " + userId) }>Request new dump</Button>
         </Col>
         <Col sm={3}></Col>
       </Row>
+      { (paramAction !== null && paramAction === 'filedownload') && (
+        <>
+        <Row><Col>&nbsp;</Col></Row>
+        <Row>
+          <Col sm={5}></Col>
+          <Col sm={2}>
+            <Button style={{width: "11em"}} onClick={() => alert("This would download the file " + paramFilename) }>Download {paramFilename}</Button>
+          </Col>
+          <Col sm={5}></Col>
+        </Row>
+        </>
+      ) }
     </Container>
   )
 }
