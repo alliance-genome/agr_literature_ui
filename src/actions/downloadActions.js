@@ -75,3 +75,11 @@ export const setDownloadShowDownloading = (value) => {
     payload: value
   };
 };
+
+export const setDownloadShowGenerating = (value) => {
+  console.log('action change download show generating to ' + value);
+  return {
+    type: 'DOWNLOAD_SET_SHOW_GENERATING',
+    payload: value
+  };
+};

@@ -2,6 +2,7 @@
 const initialState = {
   mod: 'miniSGD',
   showDownloadingModal: false,
+  showGeneratingModal: false,
   autoDownloadOndemand: true,
   isDownloadingOndemand: false,
   isDownloadingNightly: false
@@ -39,6 +40,13 @@ export default function(state = initialState, action) {
       return {
         ...state,
         showDownloadingModal: action.payload
+      }
+
+    case 'DOWNLOAD_SET_SHOW_GENERATING':
+      // console.log(action.payload);
+      return {
+        ...state,
+        showGeneratingModal: action.payload
       }
 
     case 'CHANGE_FIELD_DOWNLOAD_MOD':

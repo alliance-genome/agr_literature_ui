@@ -6,6 +6,7 @@ import { useLocation } from 'react-router-dom';
 import { downloadActionButtonDownload } from '../actions/downloadActions';
 import { changeFieldDownloadMod } from '../actions/downloadActions';
 import { setDownloadShowDownloading } from '../actions/downloadActions';
+import { setDownloadShowGenerating } from '../actions/downloadActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -20,7 +21,6 @@ const Download = () => {
   const mods = ['miniSGD', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const userId = useSelector(state => state.isLogged.userId);
   const autoDownloadOndemand = useSelector(state => state.download.autoDownloadOndemand);
   const isDownloadingNightly = useSelector(state => state.download.isDownloadingNightly);
   const isDownloadingOndemand = useSelector(state => state.download.isDownloadingOndemand);
@@ -46,6 +46,7 @@ const Download = () => {
   return (
     <Container>
       <ModalDownloading />
+      <ModalGenerating />
       <Row>
         <Col>
           <h4>Download latest MOD reference dump .json</h4>
@@ -65,7 +66,7 @@ const Download = () => {
             <Button style={{width: "12em"}} disabled={buttonDownloadNightlyDisabled} onClick={() => dispatch(downloadActionButtonDownload(accessToken, mod, 'nightly')) }>{isDownloadingNightly ? <Spinner animation="border" size="sm"/> : "Download Nightly File"}</Button>
         </Col>
         <Col sm={3}>
-            <Button style={{width: "11em"}} onClick={() => alert("Generating a new reference file for " + mod + ". A download link will be emailed to " + userId) }>Generate New File</Button>
+            <Button style={{width: "11em"}} onClick={() => dispatch(setDownloadShowGenerating(true))}>Generate New File</Button>
         </Col>
         <Col sm={2}></Col>
       </Row>
@@ -90,6 +91,18 @@ const ModalDownloading = () => {
   return (<Modal size="lg" show={showDownloadingModal} backdrop="static" onHide={() => dispatch(setDownloadShowDownloading(false))} >
            <Modal.Header closeButton><Modal.Title>Downloading</Modal.Title></Modal.Header>
            <Modal.Body>Your file is getting downloaded and will eventually show up in your downloads, no need to click the download button again</Modal.Body>
+          </Modal>);
+}
+
+const ModalGenerating = () => {
+  const showGeneratingModal = useSelector(state => state.download.showGeneratingModal);
+  const mod = useSelector(state => state.download.mod);
+  const userId = useSelector(state => state.isLogged.userId);
+  const dispatch = useDispatch();
+  
+  return (<Modal size="lg" show={showGeneratingModal} backdrop="static" onHide={() => dispatch(setDownloadShowGenerating(false))} >
+           <Modal.Header closeButton><Modal.Title>Generating</Modal.Title></Modal.Header>
+           <Modal.Body>Generating a new reference file for {mod}. A download link will be emailed to {userId}</Modal.Body>
           </Modal>);
 }
 
