@@ -8,7 +8,7 @@ import {
     setSearchFacetsLimits
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
-import {Accordion, Badge, Button} from 'react-bootstrap';
+import {Accordion, Badge, Button, Collapse} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
 import {INITIAL_FACETS_LIMIT} from '../../reducers/searchReducer';
 import Container from "react-bootstrap/Container";
@@ -20,6 +20,11 @@ export const RENAME_FACETS = {
     "category.keyword": "alliance category",
     "mods_in_corpus.keyword": "corpus - in corpus",
     "mods_needs_review.keyword": "corpus - needs review"
+}
+
+export const FACETS_CATEGORIES_WITH_FACETS = {
+    "Alliance Metadata": ["mods in corpus", "mods needs review"],
+    "Bibliographic Data": ["pubmed types", "category", "pubmed publication status"]
 }
 
 const Facet = ({facetsToInclude, renameFacets}) => {
@@ -150,36 +155,32 @@ const Facets = () => {
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    useEffect(() => {
+        Object.keys(searchFacetsValues).forEach(facet =>
+            Object.entries(FACETS_CATEGORIES_WITH_FACETS).forEach(([category, facetsInCategory]) => {
+                if (facetsInCategory.includes(facet.replace('.keyword', '').replaceAll('_', ' '))) {
+                    toggleFacetGroup(category);
+                }
+            })
+        )
+    }, []);
+
     return (
         <div>
-        <Accordion style={{textAlign: "left"}}>
-            <div>
-                <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="0"
-                                  onClick={() => toggleFacetGroup('Alliance Metadata')}>
-                    {openFacets.has('Alliance Metadata') ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} Alliance Metadata
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="0">
-                    <div>
-                        <Facet facetsToInclude={["mods in corpus", "mods needs review"]}
-                               renameFacets={RENAME_FACETS}/>
+            {
+                Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
+                    <div style={{textAlign: "left"}}>
+                        <Button variant="light" size="lg" eventKey="0" onClick={() => toggleFacetGroup(facetCategory)}>
+                            {openFacets.has(facetCategory) ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} {facetCategory}
+                        </Button>
+                        <Collapse in={openFacets.has(facetCategory)}>
+                            <div>
+                                <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>
+                            </div>
+                        </Collapse>
                     </div>
-                </Accordion.Collapse>
-            </div>
-        </Accordion>
-        <Accordion style={{textAlign: "left"}}>
-            <div>
-                <Accordion.Toggle as={Button} variant="light" size="lg" eventKey="0"
-                                  onClick={() => toggleFacetGroup('Bibliographic Data')}>
-                    {openFacets.has('Bibliographic Data') ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} Bibliographic Data
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="0">
-                    <div>
-                        <Facet facetsToInclude={["pubmed types", "category", "pubmed publication status"]}
-                               renameFacets={RENAME_FACETS}/>
-                    </div>
-                </Accordion.Collapse>
-            </div>
-        </Accordion>
+                )
+            }
         </div>
     )
 }
