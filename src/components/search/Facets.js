@@ -8,7 +8,7 @@ import {
     setSearchFacetsLimits
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
-import {Accordion, Badge, Button, Collapse} from 'react-bootstrap';
+import {Badge, Button, Collapse} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
 import {INITIAL_FACETS_LIMIT} from '../../reducers/searchReducer';
 import Container from "react-bootstrap/Container";
@@ -163,7 +163,7 @@ const Facets = () => {
                 }
             })
         )
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div>
