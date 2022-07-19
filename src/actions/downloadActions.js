@@ -10,11 +10,14 @@ export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand
   // console.log('in downloadActionButtonDownload action');
   // console.log(accessToken);
 
+  let modalHeader = 'Downloading';
+  let modalBody = 'Your file is getting downloaded and will eventually show up in your downloads, no need to click the download button again.';
   if (nightlyOrOndemand === 'nightly') {
     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
   else if (nightlyOrOndemand === 'ondemand') {
     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true }); }
-  dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: true });
+//   dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: true });
+  dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: modalBody } });
 
   const downloadFile = async () => {
 
@@ -68,18 +71,37 @@ export const changeFieldDownloadMod = (e) => {
   };
 };
 
-export const setDownloadShowDownloading = (value) => {
-  console.log('action change download show download to ' + value);
+// export const setDownloadShowDownloading = (value) => {
+//   console.log('action change download show download to ' + value);
+//   return {
+//     type: 'DOWNLOAD_SET_SHOW_DOWNLOADING',
+//     payload: value
+//   };
+// };
+
+// export const setDownloadShowGenerating = (value) => {
+//   console.log('action change download show generating to ' + value);
+//   return {
+//     type: 'DOWNLOAD_SET_SHOW_GENERATING',
+//     payload: value
+//   };
+// };
+
+export const setDownloadShowGeneric = (value) => {
+  console.log('action change download show generic to ' + value);
   return {
-    type: 'DOWNLOAD_SET_SHOW_DOWNLOADING',
+    type: 'DOWNLOAD_SET_SHOW_GENERIC',
     payload: value
   };
 };
 
-export const setDownloadShowGenerating = (value) => {
-  console.log('action change download show generating to ' + value);
+export const downloadUpdateGenericModal = (modalHeader, modalBody) => {
+  console.log('action download update generic modal to ' + modalHeader + ' | ' + modalBody);
   return {
-    type: 'DOWNLOAD_SET_SHOW_GENERATING',
-    payload: value
+    type: 'DOWNLOAD_UPDATE_GENERIC_MODAL',
+    payload: {
+      modalHeader: modalHeader,
+      modalBody: modalBody
+    }
   };
-};
+}

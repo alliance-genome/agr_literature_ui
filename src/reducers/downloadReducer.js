@@ -1,7 +1,10 @@
 
 const initialState = {
   mod: 'miniSGD',
-  showDownloadingModal: false,
+  showGenericModal: false,
+  genericModalHeader: '',
+  genericModalBody: '',
+//   showDownloadingModal: false,
   showGeneratingModal: false,
   autoDownloadOndemand: true,
   isDownloadingOndemand: false,
@@ -35,19 +38,35 @@ export default function(state = initialState, action) {
         autoDownloadOndemand: action.payload
       }
 
-    case 'DOWNLOAD_SET_SHOW_DOWNLOADING':
+    case 'DOWNLOAD_SET_SHOW_GENERIC':
       // console.log(action.payload);
       return {
         ...state,
-        showDownloadingModal: action.payload
+        showGenericModal: action.payload
       }
 
-    case 'DOWNLOAD_SET_SHOW_GENERATING':
+    case 'DOWNLOAD_UPDATE_GENERIC_MODAL':
       // console.log(action.payload);
       return {
         ...state,
-        showGeneratingModal: action.payload
+        showGenericModal: true,
+        genericModalHeader: action.payload.modalHeader,
+        genericModalBody: action.payload.modalBody
       }
+
+//     case 'DOWNLOAD_SET_SHOW_DOWNLOADING':
+//       // console.log(action.payload);
+//       return {
+//         ...state,
+//         showDownloadingModal: action.payload
+//       }
+
+//     case 'DOWNLOAD_SET_SHOW_GENERATING':
+//       // console.log(action.payload);
+//       return {
+//         ...state,
+//         showGeneratingModal: action.payload
+//       }
 
     case 'CHANGE_FIELD_DOWNLOAD_MOD':
       // console.log(action.payload);
