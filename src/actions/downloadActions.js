@@ -5,6 +5,7 @@
 import axios from "axios";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
+const uiUrl = process.env.REACT_APP_UI_URL;
 
 export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand) => dispatch => {
   // console.log('in downloadActionButtonDownload action');
@@ -58,6 +59,68 @@ export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand
   }
   downloadFile()
 };
+
+export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispatch => {
+  // console.log('in downloadActionButtonGenerate action');
+  // console.log(accessToken);
+
+  let modalHeader = 'Generating File';
+  let modalBody = 'Your file is getting downloaded and will eventually show up in your downloads, no need to click the download button again.';
+//   if (nightlyOrOndemand === 'nightly') {
+//     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
+//   else if (nightlyOrOndemand === 'ondemand') {
+//     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true }); }
+// //   dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: true });
+//   dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: modalBody } });
+
+  const downloadFile = async () => {
+    // use real url when api on prod
+    // const url = restUrl + '/reference/dumps/ondemand';
+    const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/ondemand';
+    // const filename = 'reference_dump_' + mod;
+
+    const json = { 'mod': mod, 'email': userId, 'ui_root_url': uiUrl };
+
+    axios({
+        url: url,
+        method: "POST",
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer ' + accessToken
+        },
+        body: JSON.stringify( json ),
+        responseType: "json"
+    }).then(response => {
+      console.log(response);
+      const response_json = response.json();
+      console.log(response_json);
+// Valerio, the response_json -> message field should get set to be the modalBody and dispatch the next line
+//   dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: modalBody } });
+
+//         const url = window.URL.createObjectURL(new Blob([response.data]));
+//         const link = document.createElement("a");
+//         link.href = url;
+//         link.setAttribute(
+//             "download",
+//             filename
+//         );
+//         document.body.appendChild(link);
+//         link.click();
+// 
+//         if (nightlyOrOndemand === 'nightly') {
+//           dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: false }); }
+//         else if (nightlyOrOndemand === 'ondemand') {
+//           dispatch({ type: 'DOWNLOAD_SET_AUTO_DOWNLOAD_ONDEMAND', payload: false });
+//           dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: false }); }
+//         // dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: false });	// do not make this go away, awkward if fast download
+//         // Clean up and remove the link
+//         link.parentNode.removeChild(link);
+    });
+
+  }
+  downloadFile()
+};
+
 
 
 export const changeFieldDownloadMod = (e) => {
