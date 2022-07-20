@@ -21,7 +21,7 @@ import {Modal} from "react-bootstrap";
 
 
 const Download = () => {
-  const mods = ['miniSGD', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
+  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const autoDownloadOndemand = useSelector(state => state.download.autoDownloadOndemand);
