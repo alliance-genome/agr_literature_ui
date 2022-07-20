@@ -68,7 +68,7 @@ export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispat
 
     let modalHeader = 'Generating File';
     const url = restUrl + '/reference/dumps/ondemand?mod=' + mod + '&email=' +
-        userId + '&ui_root_url=' + uiUrl + '/download?action=filedownload&filename=';
+        userId + '&ui_root_url=' + encodeURIComponent(uiUrl + '/download?action=filedownload&filename=');
 
     let message = "An error occurred in the API request (downloadActionButtonGenerate function)";
 
