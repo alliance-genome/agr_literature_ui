@@ -4,11 +4,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 
 import { downloadActionButtonDownload } from '../actions/downloadActions';
+import { downloadActionButtonGenerate } from '../actions/downloadActions';
 import { changeFieldDownloadMod } from '../actions/downloadActions';
 // import { setDownloadShowDownloading } from '../actions/downloadActions';
 // import { setDownloadShowGenerating } from '../actions/downloadActions';
 import { setDownloadShowGeneric } from '../actions/downloadActions';
-import { downloadUpdateGenericModal } from '../actions/downloadActions';
+// import { downloadUpdateGenericModal } from '../actions/downloadActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -85,11 +86,7 @@ const Download = () => {
             <Button style={{width: "12em"}} disabled={buttonDownloadNightlyDisabled} onClick={() => dispatch(downloadActionButtonDownload(accessToken, mod, 'nightly')) }>{isDownloadingNightly ? <Spinner animation="border" size="sm"/> : "Download Nightly File"}</Button>
         </Col>
         <Col sm={3}>
-            <Button style={{width: "12em"}} disabled={buttonDownloadGenerateDisabled} onClick={() => {
-              const modalHeader = 'Generating File';
-              const modalBody = "Generating a new reference file for " + mod + ". A download link will be emailed to " + userId;
-              dispatch(downloadUpdateGenericModal(modalHeader, modalBody));
-              } } >Generate New File</Button>
+            <Button style={{width: "12em"}} disabled={buttonDownloadGenerateDisabled} onClick={() => dispatch(downloadActionButtonGenerate(accessToken, mod, userId))}>Generate New File</Button>
         </Col>
         <Col sm={2}></Col>
       </Row>
@@ -127,6 +124,12 @@ const ModalGeneric = ({showGenericModal, genericModalHeader, genericModalBody}) 
 //           </Modal>);
 // }
 
+//             <Button style={{width: "12em"}} disabled={buttonDownloadGenerateDisabled} onClick={() => {
+// 
+//               const modalHeader = 'Generating File';
+//               const modalBody = "Generating a new reference file for " + mod + ". A download link will be emailed to " + userId;
+//               dispatch(downloadUpdateGenericModal(modalHeader, modalBody));
+//               } } >Generate New File</Button>
 //             <Button style={{width: "12em"}} disabled={buttonDownloadGenerateDisabled} onClick={() => dispatch(setDownloadShowGenerating(true))}>Generate New File</Button>
 // TODO replace this once we have an API for generating. replace setDownloadShowGenerating with new action that calls API and returns a message for generic modal
 // const ModalGenerating = () => {

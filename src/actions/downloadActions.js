@@ -5,6 +5,7 @@
 import axios from "axios";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
+const uiUrl = process.env.REACT_APP_UI_URL;
 
 export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand) => dispatch => {
   // console.log('in downloadActionButtonDownload action');
@@ -22,7 +23,11 @@ export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand
   const downloadFile = async () => {
 
     // use real url when api on prod
-    const url = restUrl + '/reference/dumps/latest/' + mod;
+      let urlBase = restUrl + '/reference/dumps/';
+      if (nightlyOrOndemand === 'nightly') {
+          urlBase = urlBase + 'latest/'
+      }
+      const url = urlBase + mod;
     // const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/' + mod;
     const filename = 'reference_dump_' + mod;
 
@@ -58,6 +63,29 @@ export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand
   }
   downloadFile()
 };
+
+export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispatch => {
+
+    let modalHeader = 'Generating File';
+    const url = restUrl + '/reference/dumps/ondemand?mod=' + mod + '&email=' +
+        userId + '&ui_root_url=' + encodeURIComponent(uiUrl + '/download?action=filedownload&filename=');
+
+    let message = "An error occurred in the API request (downloadActionButtonGenerate function)";
+
+    axios({
+        url: url,
+        method: "POST",
+        headers: {
+            'content-type': 'application/json',
+            'authorization': 'Bearer ' + accessToken
+        },
+        responseType: "json"
+    }).then(response => {
+        message = response.data.message;
+    }).finally(() =>
+        dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: message }}));
+};
+
 
 
 export const changeFieldDownloadMod = (e) => {
