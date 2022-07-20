@@ -65,7 +65,6 @@ export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispat
   // console.log(accessToken);
 
   let modalHeader = 'Generating File';
-  let modalBody = 'Your file is getting downloaded and will eventually show up in your downloads, no need to click the download button again.';
 //   if (nightlyOrOndemand === 'nightly') {
 //     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
 //   else if (nightlyOrOndemand === 'ondemand') {
@@ -88,11 +87,9 @@ export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispat
         },
         responseType: "json"
     }).then(response => {
-      console.log(response);
-      const response_json = response.json();
-      console.log(response_json);
+        dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: response.data.message } });
 // Valerio, the response_json -> message field should get set to be the modalBody and dispatch the next line
-//   dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: modalBody } });
+
 
 //         const url = window.URL.createObjectURL(new Blob([response.data]));
 //         const link = document.createElement("a");
