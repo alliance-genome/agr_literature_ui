@@ -7,13 +7,15 @@ import axios from "axios";
 const restUrl = process.env.REACT_APP_RESTAPI;
 const uiUrl = process.env.REACT_APP_UI_URL;
 
-export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand) => dispatch => {
+export const downloadActionButtonDownload = (accessToken, apiFilename, nightlyOrOndemand) => dispatch => {
   // console.log('in downloadActionButtonDownload action');
   // console.log(accessToken);
 
   let modalHeader = 'Downloading';
   let modalBody = 'Your file is getting downloaded and will eventually show up in your downloads, no need to click the download button again.';
+  let filename = apiFilename;
   if (nightlyOrOndemand === 'nightly') {
+    filename = 'reference_' + apiFilename + '_nightly';
     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
   else if (nightlyOrOndemand === 'ondemand') {
     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true }); }
@@ -27,9 +29,8 @@ export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand
       if (nightlyOrOndemand === 'nightly') {
           urlBase = urlBase + 'latest/'
       }
-      const url = urlBase + mod;
+      const url = urlBase + apiFilename;
     // const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/' + mod;
-    const filename = 'reference_dump_' + mod;
 
     axios({
         url: url,
