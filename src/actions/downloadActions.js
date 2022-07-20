@@ -23,7 +23,11 @@ export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand
   const downloadFile = async () => {
 
     // use real url when api on prod
-    const url = restUrl + '/reference/dumps/latest/' + mod;
+      let urlBase = restUrl + '/reference/dumps/';
+      if (nightlyOrOndemand === 'nightly') {
+          urlBase = urlBase + 'latest/'
+      }
+      const url = urlBase + mod;
     // const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/' + mod;
     const filename = 'reference_dump_' + mod;
 
