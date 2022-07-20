@@ -156,13 +156,15 @@ const Facets = () => {
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
+        let newOpenFacets = new Set([...openFacets]);
         Object.keys(searchFacetsValues).forEach(facet =>
             Object.entries(FACETS_CATEGORIES_WITH_FACETS).forEach(([category, facetsInCategory]) => {
                 if (facetsInCategory.includes(facet.replace('.keyword', '').replaceAll('_', ' '))) {
-                    toggleFacetGroup(category);
+                    newOpenFacets.add(category);
                 }
             })
-        )
+        );
+        setOpenFacets(newOpenFacets);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
