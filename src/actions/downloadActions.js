@@ -75,11 +75,9 @@ export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispat
 
   const downloadFile = async () => {
     // use real url when api on prod
-    // const url = restUrl + '/reference/dumps/ondemand';
-    const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/ondemand';
+     const url = restUrl + '/reference/dumps/ondemand?mod=' + mod + '&email=' +
+        userId + '&ui_root_url=' + uiUrl + '/download?action=filedownload&filename=';
     // const filename = 'reference_dump_' + mod;
-
-    const json = { 'mod': mod, 'email': userId, 'ui_root_url': uiUrl };
 
     axios({
         url: url,
@@ -88,7 +86,6 @@ export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispat
           'content-type': 'application/json',
           'authorization': 'Bearer ' + accessToken
         },
-        body: JSON.stringify( json ),
         responseType: "json"
     }).then(response => {
       console.log(response);
