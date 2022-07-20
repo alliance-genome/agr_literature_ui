@@ -61,58 +61,25 @@ export const downloadActionButtonDownload = (accessToken, mod, nightlyOrOndemand
 };
 
 export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispatch => {
-  // console.log('in downloadActionButtonGenerate action');
-  // console.log(accessToken);
 
-  let modalHeader = 'Generating File';
-//   if (nightlyOrOndemand === 'nightly') {
-//     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
-//   else if (nightlyOrOndemand === 'ondemand') {
-//     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true }); }
-// //   dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: true });
-//   dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: modalBody } });
-
-  const downloadFile = async () => {
-    // use real url when api on prod
-     const url = restUrl + '/reference/dumps/ondemand?mod=' + mod + '&email=' +
+    let modalHeader = 'Generating File';
+    const url = restUrl + '/reference/dumps/ondemand?mod=' + mod + '&email=' +
         userId + '&ui_root_url=' + uiUrl + '/download?action=filedownload&filename=';
-    // const filename = 'reference_dump_' + mod;
+
+    let message = "An error occurred in the API request (downloadActionButtonGenerate function)";
 
     axios({
         url: url,
         method: "POST",
         headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer ' + accessToken
+            'content-type': 'application/json',
+            'authorization': 'Bearer ' + accessToken
         },
         responseType: "json"
     }).then(response => {
-        dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: response.data.message } });
-// Valerio, the response_json -> message field should get set to be the modalBody and dispatch the next line
-
-
-//         const url = window.URL.createObjectURL(new Blob([response.data]));
-//         const link = document.createElement("a");
-//         link.href = url;
-//         link.setAttribute(
-//             "download",
-//             filename
-//         );
-//         document.body.appendChild(link);
-//         link.click();
-// 
-//         if (nightlyOrOndemand === 'nightly') {
-//           dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: false }); }
-//         else if (nightlyOrOndemand === 'ondemand') {
-//           dispatch({ type: 'DOWNLOAD_SET_AUTO_DOWNLOAD_ONDEMAND', payload: false });
-//           dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: false }); }
-//         // dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: false });	// do not make this go away, awkward if fast download
-//         // Clean up and remove the link
-//         link.parentNode.removeChild(link);
-    });
-
-  }
-  downloadFile()
+        message = response.data.message;
+    }).finally(() =>
+        dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: message }}));
 };
 
 
