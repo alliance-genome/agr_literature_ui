@@ -724,12 +724,13 @@ const BiblioSubmitUpdateButton = () => {
     // console.log('updateBiblio')
     const forApiArray = []
     let updateJson = {}
-    const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title' ];
+    const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title'];
     for (const field of fieldsSimple.values()) {
       if ((field in referenceJsonLive) && !(fieldsSimpleNotPatch.includes(field)) && !(fieldsDisplayOnly.includes(field))) {
         updateJson[field] = referenceJsonLive[field] } }
+    const fieldsArrayStringNotPatch = ['obsolete_references'];
     for (const field of fieldsArrayString.values()) {
-      if (field in referenceJsonLive) {
+      if ((field in referenceJsonLive) && !(fieldsArrayStringNotPatch.includes(field)) && !(fieldsDisplayOnly.includes(field))) {
         updateJson[field] = referenceJsonLive[field] } }
     let subPath = 'reference/' + referenceCurie;
     let array = [ subPath, updateJson, 'PATCH', 0, null, null]
