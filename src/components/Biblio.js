@@ -156,13 +156,19 @@ const BiblioActionToggler = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   let displayChecked = '';
   let editorChecked = '';
+  let entityChecked = '';
   let radioFormEditorClassname = 'radio-form';
+  let radioFormEntityClassname = 'radio-form';
   let radioFormDisplayClassname = 'radio-form';
   let biblioActionTogglerSelected = 'display';
   if (biblioAction === 'editor') { 
       radioFormEditorClassname += ' underlined';
       editorChecked = 'checked';
       biblioActionTogglerSelected = 'editor'; }
+    else if (biblioAction === 'entity') { 
+      radioFormEntityClassname += ' underlined';
+      entityChecked = 'checked';
+      biblioActionTogglerSelected = 'entity'; }
     else {
       radioFormDisplayClassname += ' underlined';
       displayChecked = 'checked'; }
@@ -196,7 +202,7 @@ const BiblioActionToggler = () => {
           className={radioFormDisplayClassname}
           checked={displayChecked}
           type='radio'
-          label='display'
+          label='biblio display'
           id='biblio-toggler-display'
           onChange={(e) => dispatch(changeBiblioActionToggler(e))}
         />
@@ -207,8 +213,19 @@ const BiblioActionToggler = () => {
           className={radioFormEditorClassname}
           checked={editorChecked}
           type='radio'
-          label='editor'
+          label='biblio editor'
           id='biblio-toggler-editor'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e))}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormEntityClassname}
+          checked={entityChecked}
+          type='radio'
+          label='entity editor'
+          id='biblio-toggler-entity'
           onChange={(e) => dispatch(changeBiblioActionToggler(e))}
         />
       </div>
@@ -225,6 +242,8 @@ const BiblioActionRouter = () => {
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
     case 'editor':
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioEditor /></Container>);
+    case 'entity':
+      return (<Container><BiblioActionToggler /><RowDivider /><BiblioEntity /></Container>);
     default:
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
   }
@@ -616,6 +635,19 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
     </Row>);
 } // const AuthorExpandToggler
 
+
+const BiblioEntity = () => {
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+  if (!('date_created' in referenceJsonLive)) { 
+    let message = 'No AGR Reference Curie found';
+    if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
+    return(<>{message}</>); }
+  const rowOrderedElements = []
+  rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+  rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+  return (<Container>{rowOrderedElements}</Container>);
+} // const BiblioEntity
 
 
 const BiblioDisplay = () => {
