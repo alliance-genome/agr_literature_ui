@@ -303,6 +303,14 @@ export const setBiblioAction = (biblioAction) => {
   };
 };
 
+export const setUpdateCitationFlag = (updateCitationFlag) => {
+  console.log("action setUpdateCitationFlag");
+  return {
+    type: 'SET_UPDATE_CITATION_FLAG',
+    payload: updateCitationFlag
+  };
+};
+
 export const updateButtonBiblio = (updateArrayData) => dispatch => {
   // console.log('in updateButtonBiblio action');
   const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;

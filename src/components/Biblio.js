@@ -14,6 +14,7 @@ import { setBiblioAction } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 // import { biblioMock1QueryReferenceCurie } from '../actions/biblioMock1Actions';
 import { setBiblioUpdating } from '../actions/biblioActions';
+import { setUpdateCitationFlag } from '../actions/biblioActions';
 
 import { changeFieldReferenceJson } from '../actions/biblioActions';
 import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
@@ -918,6 +919,9 @@ const BiblioSubmitUpdateButton = () => {
     // console.log('dispatchCount ' + dispatchCount)
     dispatch(setBiblioUpdating(dispatchCount))
 
+    // set flag to update citation once all these api calls are done
+    dispatch(setUpdateCitationFlag(true))
+
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken)
       dispatch(updateButtonBiblio(arrayData))
@@ -1528,6 +1532,8 @@ const Biblio = () => {
 //   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
   const isLoading = useSelector(state => state.biblio.isLoading);
 //   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const updateCitationFlag = useSelector(state => state.biblio.updateCitationFlag);
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
@@ -1542,7 +1548,15 @@ const Biblio = () => {
     if (paramAction !== null) { dispatch(setBiblioAction(paramAction)); }
   }
 
-  if (referenceCurie !== '' && (getReferenceCurieFlag === true)) {
+  // citation needs to be updated after processing separate biblio api calls. update citation and make flag false
+  if (referenceCurie !== '' && (updateCitationFlag === true)) {
+    console.log('biblio DISPATCH update citation for ' + referenceCurie);
+    dispatch(updateButtonBiblio( [accessToken, 'reference/citationupdate/' + referenceCurie, null, 'POST', 0, null, null] ));
+    dispatch(setUpdateCitationFlag(false))
+  }
+
+  // if there's a curie, biblio has stopped updating therefore get curie, and citation has been updated, requery the reference data
+  if (referenceCurie !== '' && (getReferenceCurieFlag === true) && (updateCitationFlag === false)) {
     console.log('biblio DISPATCH biblioQueryReferenceCurie ' + referenceCurie);
     dispatch(biblioQueryReferenceCurie(referenceCurie));
   }

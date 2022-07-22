@@ -2,6 +2,7 @@
 const initialState = {
   biblioAction: '',
   biblioUpdating: 0,
+  updateCitationFlag: false,
   referenceCurie: '',
   referenceJsonLive: {},
   referenceJsonDb: {},
@@ -461,6 +462,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         biblioAction: action.payload
+      }
+    case 'SET_UPDATE_CITATION_FLAG':
+      console.log("reducer set update citation flag");
+      return {
+        ...state,
+        updateCitationFlag: action.payload
       }
     case 'SET_REFERENCE_CURIE':
       console.log("reducer set reference curie, also clear store");
