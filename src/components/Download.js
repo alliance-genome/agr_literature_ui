@@ -34,8 +34,8 @@ const Download = () => {
   const genericModalHeader = useSelector(state => state.download.genericModalHeader);
   const genericModalBody = useSelector(state => state.download.genericModalBody);
 
-  const buttonDownloadNightlyDisabled = (isDownloadingNightly || (accessToken === null)) ? 'disabled' : '';
-  const buttonDownloadGenerateDisabled = (accessToken === null) ? 'disabled' : '';
+  const buttonDownloadNightlyDisabled = (isDownloadingNightly || (userId === null) || (accessToken === null)) ? 'disabled' : '';
+  const buttonDownloadGenerateDisabled = ((userId === null) || (accessToken === null)) ? 'disabled' : '';
 
   let notDownloadingMessage = '';
 
