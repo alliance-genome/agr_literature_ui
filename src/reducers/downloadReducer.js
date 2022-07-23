@@ -7,6 +7,7 @@ const initialState = {
 //   showDownloadingModal: false,
   showGeneratingModal: false,
   autoDownloadOndemand: true,
+  isRequestingGeneration: false,
   isDownloadingOndemand: false,
   isDownloadingNightly: false
 };
@@ -36,6 +37,13 @@ export default function(state = initialState, action) {
       return {
         ...state,
         autoDownloadOndemand: action.payload
+      }
+
+    case 'DOWNLOAD_SET_IS_REQUESTING_GENERATION':
+      // console.log(action.payload);
+      return {
+        ...state,
+        isRequestingGeneration: action.payload
       }
 
     case 'DOWNLOAD_SET_SHOW_GENERIC':

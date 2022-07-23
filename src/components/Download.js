@@ -27,6 +27,7 @@ const Download = () => {
   const autoDownloadOndemand = useSelector(state => state.download.autoDownloadOndemand);
   const isDownloadingNightly = useSelector(state => state.download.isDownloadingNightly);
   const isDownloadingOndemand = useSelector(state => state.download.isDownloadingOndemand);
+  const isRequestingGeneration = useSelector(state => state.download.isRequestingGeneration);
   const mod = useSelector(state => state.download.mod);
   const userId = useSelector(state => state.isLogged.userId);
 
@@ -35,7 +36,7 @@ const Download = () => {
   const genericModalBody = useSelector(state => state.download.genericModalBody);
 
   const buttonDownloadNightlyDisabled = (isDownloadingNightly || (userId === null) || (accessToken === null)) ? 'disabled' : '';
-  const buttonDownloadGenerateDisabled = ((userId === null) || (accessToken === null)) ? 'disabled' : '';
+  const buttonDownloadGenerateDisabled = (isRequestingGeneration || (userId === null) || (accessToken === null)) ? 'disabled' : '';
 
   let notDownloadingMessage = '';
 
@@ -86,7 +87,7 @@ const Download = () => {
             <Button style={{width: "12em"}} disabled={buttonDownloadNightlyDisabled} onClick={() => dispatch(downloadActionButtonDownload(accessToken, mod, 'nightly')) }>{isDownloadingNightly ? <Spinner animation="border" size="sm"/> : "Download Nightly File"}</Button>
         </Col>
         <Col sm={3}>
-            <Button style={{width: "12em"}} disabled={buttonDownloadGenerateDisabled} onClick={() => dispatch(downloadActionButtonGenerate(accessToken, mod, userId))}>Generate New File</Button>
+            <Button style={{width: "12em"}} disabled={buttonDownloadGenerateDisabled} onClick={() => dispatch(downloadActionButtonGenerate(accessToken, mod, userId))}>{isRequestingGeneration ? <Spinner animation="border" size="sm"/> : "Generate New File"}</Button>
         </Col>
         <Col sm={2}></Col>
       </Row>

@@ -72,6 +72,7 @@ export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispat
         userId + '&ui_root_url=' + encodeURIComponent(uiUrl + '/download?action=filedownload&filename=');
 
     let message = "An error occurred in the API request (downloadActionButtonGenerate function)";
+    dispatch({ type: 'DOWNLOAD_SET_IS_REQUESTING_GENERATION', payload: true });
 
     axios({
         url: url,
@@ -83,8 +84,10 @@ export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispat
         responseType: "json"
     }).then(response => {
         message = response.data.message;
-    }).finally(() =>
-        dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: message }}));
+    }).finally(() => {
+        dispatch({ type: 'DOWNLOAD_SET_IS_REQUESTING_GENERATION', payload: false });
+        dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: message }});
+    });
 };
 
 
