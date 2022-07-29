@@ -15,7 +15,7 @@ export const downloadActionButtonDownload = (accessToken, apiFilename, nightlyOr
   let modalBody = 'Your file is getting downloaded and will eventually show up in your downloads, no need to click the download button again.';
   let filename = apiFilename;
   if (nightlyOrOndemand === 'nightly') {
-    filename = 'reference_' + apiFilename + '_nightly';
+    filename = 'reference_' + apiFilename + '_nightly.json.gz';
     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
   else if (nightlyOrOndemand === 'ondemand') {
     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true }); }
