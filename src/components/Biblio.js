@@ -647,12 +647,13 @@ const BiblioEntity = () => {
   const rowOrderedElements = []
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  rowOrderedElements.push(<GeneAutocomplete />);
+  rowOrderedElements.push(<GeneAutocomplete key="geneAutocomplete"/>);
   return (<Container>{rowOrderedElements}</Container>);
 } // const BiblioEntity
 
 const GeneAutocomplete = () => {
   const dispatch = useDispatch();
+  const accessToken = useSelector(state => state.isLogged.accessToken);
   const value = useSelector(state => state.biblio.entityStuff.genetextarea);
   const geneStringList = useSelector(state => state.biblio.entityStuff.geneStringList);
   const geneStringsJoined = (geneStringList) ? geneStringList.join("\n") : '';
@@ -660,7 +661,7 @@ const GeneAutocomplete = () => {
   return (
     <Row className="form-group row" >
       <Col className="form-label col-form-label" sm="6" >
-        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e))} />
+        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
       </Col>
       <Col sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
     </Row>);

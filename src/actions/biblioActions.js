@@ -2,10 +2,14 @@
 
 // import notGithubVariables from './notGithubVariables';
 
+import axios from "axios";
+
 const restUrl = process.env.REACT_APP_RESTAPI;
 // const restUrl = 'stage-literature-rest.alliancegenome.org';
 // const port = 11223;
 // const port = 49161;
+
+const ateamApiBaseUrl = 'https://beta-curation.alliancegenome.org/';
 
 export const changeFieldReferenceJson = (e) => {
   console.log('action change field reference json ' + e.target.id + ' to ' + e.target.value);
@@ -94,12 +98,57 @@ export const changeFieldAuthorsReferenceJson = (e) => {
   };
 };
 
-export const changeFieldEntityGeneList = (e) => {
+export const changeFieldEntityGeneList = (e, accessToken) => {
   console.log('action change field entity gene list ' + e.target.id + ' to ' + e.target.value);
   let splitList = [];
   if (e.target.value && e.target.value !== '') { 
     splitList = e.target.value.split(',').map(element => { return element.trim(); });
   }
+//   const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
+//   const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
+  const aGeneApiUrl = ateamApiBaseUrl + 'api/gene/search?limit=10&page=0';
+
+  console.log(aGeneApiUrl);
+  console.log(accessToken);
+  const geneSymbol = e.target.value;
+// simple search
+//   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
+// sgd-specific search
+  const searchGeneJson = 
+    {"searchFilters": {
+      "nameFilters": {
+        "symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"} },
+      "taxonFilters": {
+        "taxon.curie_keyword":{"queryString":"NCBITaxon:559292","tokenOperator":"AND"} }
+    } }
+
+// test straightforward way, but gets response with body: ReadableStream
+//   const queryGeneApi = async () => {
+//     const res = await fetch(aGeneApiUrl, {
+//       method: 'POST',
+//       mode: 'cors',
+//       headers: {
+//         'content-type': 'application/json',
+//         'authorization': 'Bearer ' + accessToken
+//       },
+//       body: JSON.stringify( json )
+//     })
+//     const response = await res.json();
+//     console.log(response);
+//   }
+//   queryGeneApi();
+  
+// this might or might not work, the A-team api is having CORS issues
+   axios.post(aGeneApiUrl, searchGeneJson, {
+     headers: {
+       'content-type': 'application/json',
+       'authorization': 'Bearer ' + accessToken
+     }
+   })
+   .then(res => {
+     console.log(res.data.results);
+   })
+
   return {
     type: 'CHANGE_FIELD_ENTITY_GENE_LIST',
     payload: {
