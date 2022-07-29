@@ -3,6 +3,7 @@ const initialState = {
   biblioAction: '',
   biblioUpdating: 0,
   updateCitationFlag: false,
+  entityStuff: {},
   referenceCurie: '',
   referenceJsonLive: {},
   referenceJsonDb: {},
@@ -68,6 +69,16 @@ export default function(state = initialState, action) {
         referenceJsonHasChange: hasChangeField,
         referenceJsonLive: {
           ...state.referenceJsonLive,
+          [action.payload.field]: action.payload.value
+        }
+      }
+    case 'CHANGE_FIELD_ENTITY_GENE_LIST':
+      // console.log(action.payload);
+      return {
+        ...state,
+        entityStuff: {
+          ...state.entityStuff,
+          geneStringList: action.payload.geneStringList,
           [action.payload.field]: action.payload.value
         }
       }

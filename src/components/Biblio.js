@@ -35,6 +35,8 @@ import { biblioRevertField } from '../actions/biblioActions';
 import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
 
+import { changeFieldEntityGeneList } from '../actions/biblioActions';
+
 import { useLocation } from 'react-router-dom';
 
 import Container from 'react-bootstrap/Container';
@@ -191,8 +193,6 @@ const BiblioActionToggler = () => {
 //     dispatch(changeBiblioActionToggler(e))
 //     history.push("/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie);
 //   }
-
-//   let selected
 
   return (
     <Form>
@@ -647,8 +647,27 @@ const BiblioEntity = () => {
   const rowOrderedElements = []
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+  rowOrderedElements.push(<GeneAutocomplete />);
   return (<Container>{rowOrderedElements}</Container>);
 } // const BiblioEntity
+
+const GeneAutocomplete = () => {
+  const dispatch = useDispatch();
+  const value = useSelector(state => state.biblio.entityStuff.genetextarea);
+  const geneStringList = useSelector(state => state.biblio.entityStuff.geneStringList);
+  const geneStringsJoined = (geneStringList) ? geneStringList.join("\n") : '';
+//   let dispatchAction={changeFieldReferenceJson};
+  return (
+    <Row className="form-group row" >
+      <Col className="form-label col-form-label" sm="6" >
+        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e))} />
+      </Col>
+      <Col sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
+    </Row>);
+//   return null;
+//               <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} />
+//   let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
+}
 
 
 const BiblioDisplay = () => {
@@ -1561,41 +1580,6 @@ const Biblio = () => {
     dispatch(biblioQueryReferenceCurie(referenceCurie));
   }
 
-// set in reducer when BIBLIO_GET_REFERENCE_CURIE populates referenceJson
-//   if ((setLoadingQuery === true) && (getReferenceCurieFlag === false)) {
-//     console.log('biblio dispatch setLoadingQuery false');
-//     dispatch(setLoadingQuery(false));
-//   }
-
-//   const referenceJson = useSelector(state => state.biblio.referenceJson);
-
-//     <Row className="Row-general" xs={2} md={4} lg={6}>
-//       <Col className="Col-general Col-display">reference_id</Col>
-//       <Col className="Col-general Col-display" lg={{ span: 10 }}>{referenceJson.reference_id}</Col>
-//     </Row>
-
-//       <Row className="Row-general" xs={2} md={4} lg={6}>
-//         <Col className="Col-general Col-display">value</Col>
-//         <Col className="Col-general Col-display" lg={{ span: 10 }}>{referenceJson.value}</Col>
-//       </Row>
-
-// this works, but want to try jsx map
-//   const items = []
-//   for (const [index, value] of fieldsSimple.entries()) {
-// //     items.push(<div align="left" className="task" key={index}>{value} to {referenceJson[value]}</div>)
-//     if (referenceJson[value] !== null) {
-//     items.push(
-//       <Row className="Row-general" xs={2} md={4} lg={6}>
-//         <Col className="Col-general Col-display">{value}</Col>
-//         <Col className="Col-general Col-display" lg={{ span: 10 }}>{referenceJson[value]}</Col>
-//       </Row>);
-//     }
-//   }
-//       {items}
-
-//   const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
-
-
   function LoadingElement() {
     return (<Container><img src={loading_gif} className="loading_gif" alt="loading" /></Container>);
   }
@@ -1612,87 +1596,7 @@ const Biblio = () => {
       </div>
     ) }
 
-// this in return works
-//       <input type="text" name="crossRefCurieQuery" value={tempField} onChange={(e) => dispatch(changeTemp(e))} />
+} // const Biblio = () =>
 
-// all of these in return lose focus if they're defined as functional components inside the Biblio functional component, but work fine if created outside
-//       <BiblioEditor />
-//       { loadingQuery ? <LoadingElement /> : <BiblioDisplay /> }
-//       { loadingQuery ? <LoadingElement /> : <BiblioEditor /> }
-
-// manual field definition
-//       <div align="left" className="task" >reference_id: {referenceJson.reference_id}</div>
-//       <div align="left" className="task" >title: {referenceJson.title}</div>
-//       <div align="left" className="task" >volume: {referenceJson.volume}</div>
-//       <div align="left" className="task" >date_updated: {referenceJson.date_updated}</div>
-//       <div align="left" className="task" >abstract: {referenceJson.abstract}</div>
-
-
-//   const [tasks, setTasks] = useState([
-//     {
-//       id: 1,
-//       text: 'something first',
-//       day: 'Feb 5th at 2:30pm',
-//       reminder: true,
-//     },
-//     {
-//       id: 2,
-//       text: 'something second',
-//       day: 'Feb 6th at 1:30pm',
-//       reminder: true,
-//     },
-//     {
-//       id: 3,
-//       text: 'something third',
-//       day: 'Feb 5th at 1:00pm',
-//       reminder: false,
-//     }
-//   ])
-
-//   const [tasks, setTasks] = useState({
-//     "data": [
-//         {
-//             "datePublished": "1978",
-//             "citation": "Abdul Kader N et al. (1978) Revue de Nematologie \"Induction, detection and isolation of temperature-sensitive lethal and/or ....\"",
-//             "pages": "27-37",
-//             "primaryId": "WB:WBPaper00000003",
-//             "volume": "1"
-//         }]
-//   })
-//
-//   useEffect(() => {
-//     const getTasks = async () => {
-//       const tasksFromServer = await fetchTasks()
-//       setTasks(tasksFromServer)
-//     }
-//
-//     getTasks()
-//   }, [])
-//
-//   const fetchTasks = async () => {
-//     const res = await fetch('http://dev.alliancegenome.org/azurebrd/agr-lit/sample.json', {mode: 'cors'})
-//     const data = await res.json()
-//     return data
-//   }
-//
-//   return (
-//     <div>
-//       <h4>Biblio about this Reference</h4>
-//       <div>{crossRefCurieQueryResponseField}</div>
-//       <Link to='/'>Go Back</Link>
-//       {tasks['data'].map((task, index) => (
-//         <div align="left" key={index} className={`task ${task.reminder && 'reminder'}`}><h5>{task.primaryId}</h5>pages : {task.pages}<div>{task.citation}</div></div>
-//       ))}
-//     </div>
-//   )
-
-}
-
-//       {tasks.length > 0 ? ( <div>hello</div> ) : ( <div>nothing</div> )}
-//       {tasks.map((task, index) => (
-//         <>
-//         <div className={`task ${task.reminder && 'reminder'}`}>{task.id} : {task.text}<div>{task.day}</div></div>
-//         </>
-//       ))}
 
 export default Biblio

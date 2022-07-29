@@ -94,6 +94,23 @@ export const changeFieldAuthorsReferenceJson = (e) => {
   };
 };
 
+export const changeFieldEntityGeneList = (e) => {
+  console.log('action change field entity gene list ' + e.target.id + ' to ' + e.target.value);
+  let splitList = [];
+  if (e.target.value && e.target.value !== '') { 
+    splitList = e.target.value.split(',').map(element => { return element.trim(); });
+  }
+  return {
+    type: 'CHANGE_FIELD_ENTITY_GENE_LIST',
+    payload: {
+      field: e.target.id,
+      value: e.target.value,
+      geneStringList: splitList
+    }
+  };
+};
+
+
 const getRevertButtonFromFontAwesomeElement = (activeElement) => {
   if (activeElement.nodeName === 'BUTTON') { return activeElement; }
   else if (activeElement.nodeName === 'svg') { return activeElement.parentNode; }
