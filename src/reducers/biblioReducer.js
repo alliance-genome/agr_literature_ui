@@ -82,6 +82,15 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
+    case 'SET_GENE_STRING_LIST':
+      // console.log(action.payload);
+      return {
+        ...state,
+        entityStuff: {
+          ...state.entityStuff,
+          geneStringList: action.payload.geneStringList
+        }
+      }
     case 'UPDATE_BUTTON_BIBLIO':
       // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
       // console.log('action.payload'); console.log(action.payload);
