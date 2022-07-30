@@ -110,9 +110,9 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
     const aGeneApiUrl = ateamApiBaseUrl + 'api/gene/search?limit=10&page=0';
   
-    console.log(aGeneApiUrl);
-    console.log(accessToken);
-    const geneSymbol = e.target.value;
+    // console.log(aGeneApiUrl);
+    // console.log(accessToken);
+    // const geneSymbol = e.target.value;
 
     // simple search
     //   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
@@ -149,30 +149,36 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
     })
     .then(res => {
       console.log(res.data.results);
-      let geneStringList = [];
+      const searchMap = {};
       // probably should sort in input order
       for (const geneResult of res.data.results) {
-        geneStringList.push(geneResult.symbol + " " + geneResult.curie);
-        console.log(geneResult.curie);
-        console.log(geneResult.symbol);
+        if (geneResult.curie && geneResult.symbol) { searchMap[geneResult.symbol] = geneResult.curie; }
+        // geneResultList.push(geneResult.symbol + " " + geneResult.curie);
+        // console.log(geneResult.curie);
+        // console.log(geneResult.symbol);
       }
-      dispatch(setGeneStringList(geneStringList));
+      let geneResultList = [];
+      for (const geneSymbol of splitList) {
+        if (geneSymbol in searchMap) {
+          geneResultList.push( { 'geneSymbol': geneSymbol, 'curie': searchMap[geneSymbol] } ); }
+        else { 
+          geneResultList.push( { 'geneSymbol': geneSymbol, 'curie': 'no Alliance curie' } ); } }
+      dispatch(setGeneResultList(geneResultList));
     })
   
     return {
       type: 'CHANGE_FIELD_ENTITY_GENE_LIST',
       payload: {
         field: e.target.id,
-        value: e.target.value,
-        geneStringList: splitList
+        value: e.target.value
       }
     };
   }
 };
 
-const setGeneStringList = (geneStringList) => ({
-  type: 'SET_GENE_STRING_LIST',
-  payload: { geneStringList: geneStringList }
+const setGeneResultList = (geneResultList) => ({
+  type: 'SET_GENE_RESULT_LIST',
+  payload: { geneResultList: geneResultList }
 });
 
 

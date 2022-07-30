@@ -655,8 +655,14 @@ const GeneAutocomplete = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const value = useSelector(state => state.biblio.entityStuff.genetextarea);
-  const geneStringList = useSelector(state => state.biblio.entityStuff.geneStringList);
+  const geneResultList = useSelector(state => state.biblio.entityStuff.geneResultList);
+  // const geneStringsJoined = (geneStringList) ? geneStringList.join("\n") : '';
+  let geneStringList = [];
+  if (geneResultList) {
+    for (const geneResObject of geneResultList) {
+      geneStringList.push(geneResObject.geneSymbol + " -- " + geneResObject.curie); } }
   const geneStringsJoined = (geneStringList) ? geneStringList.join("\n") : '';
+
 //   let dispatchAction={changeFieldReferenceJson};
   return (
     <Row className="form-group row" >
@@ -665,7 +671,6 @@ const GeneAutocomplete = () => {
       </Col>
       <Col sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
     </Row>);
-//   return null;
 //               <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} />
 //   let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
 }
