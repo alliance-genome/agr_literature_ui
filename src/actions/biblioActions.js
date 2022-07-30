@@ -150,13 +150,13 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
     .then(res => {
       console.log(res.data.results);
       const searchMap = {};
-      // probably should sort in input order
-      for (const geneResult of res.data.results) {
-        if (geneResult.curie && geneResult.symbol) { searchMap[geneResult.symbol] = geneResult.curie; }
-        // geneResultList.push(geneResult.symbol + " " + geneResult.curie);
-        // console.log(geneResult.curie);
-        // console.log(geneResult.symbol);
-      }
+      if (res.data.results) {
+        for (const geneResult of res.data.results) {
+          if (geneResult.curie && geneResult.symbol) { searchMap[geneResult.symbol] = geneResult.curie; }
+          // geneResultList.push(geneResult.symbol + " " + geneResult.curie);
+          // console.log(geneResult.curie);
+          // console.log(geneResult.symbol);
+      } }
       let geneResultList = [];
       for (const geneSymbol of splitList) {
         if (geneSymbol in searchMap) {
