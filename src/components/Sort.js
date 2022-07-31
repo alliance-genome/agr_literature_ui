@@ -16,6 +16,7 @@ import { changeFieldSortMods } from '../actions/sortActions';
 import { sortButtonModsQuery } from '../actions/sortActions';
 
 import { changeSortCorpusToggler } from '../actions/sortActions';
+import { changeSortWorkflowToggler } from '../actions/sortActions';
 import { updateButtonSort } from '../actions/sortActions';
 import { closeSortUpdateAlert } from '../actions/sortActions';
 import { setSortUpdating } from '../actions/sortActions';
@@ -73,11 +74,21 @@ const Sort = () => {
         let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
         const field = null;
         const subField = null;
-        const method = 'PATCH';
+        let method = 'PATCH';
         let array = [ subPath, updateJson, method, index, field, subField ]
         forApiArray.push( array );
-      }
-    }
+        if (reference['corpus'] === 'inside_corpus') {
+          let workflowTagId = null;
+          if      (reference['workflow'] === 'experimental')     { workflowTagId = 'ATP:0000103'; }
+          else if (reference['workflow'] === 'not_experimental') { workflowTagId = 'ATP:0000104'; }
+          else if (reference['workflow'] === 'meeting')          { workflowTagId = 'ATP:0000106'; }
+          if (workflowTagId !== null) {
+            updateJson = { 'workflow_tag_id': workflowTagId, 'mod_abbreviation': '', 'reference_curie': reference['curie'] }
+            subPath = 'workflow_tag/'
+            method = 'POST';
+            let array = [ subPath, updateJson, method, index, field, subField ]
+            forApiArray.push( array );
+    } } } }
     let dispatchCount = forApiArray.length;
 
     console.log('dispatchCount ' + dispatchCount)
@@ -196,21 +207,30 @@ const Sort = () => {
                   <Row style={{height: '8em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
                     <Form.Check
                       inline
+                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      checked={ (reference['workflow'] === 'experimental') ? 'checked' : '' }
                       type='radio'
                       label='experimental'
                       id={`experimental_toggle ${index}`}
+                      onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
                     />
                     <Form.Check
                       inline
+                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      checked={ (reference['workflow'] === 'not_experimental') ? 'checked' : '' }
                       type='radio'
                       label='not expt'
                       id={`not_experimental_toggle ${index}`}
+                      onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
                     />
                     <Form.Check
                       inline
+                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      checked={ (reference['workflow'] === 'meeting') ? 'checked' : '' }
                       type='radio'
                       label='meeting'
                       id={`meeting_toggle ${index}`}
+                      onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
                     />
                     <Form.Control as="select" id={`primary_select ${index}`} style={{display: 'none'}}>
                       <option>Experimental</option>

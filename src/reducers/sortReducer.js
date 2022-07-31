@@ -62,10 +62,12 @@ export default function(state = initialState, action) {
       }
 
     case 'SORT_BUTTON_MODS_QUERY':
+      // console.log('reducer SORT_BUTTON_MODS_QUERY');
       console.log(action.payload);
       // The endpoint only returns values that are 'needs_review', so inject those values to the objects
       for (let reference of action.payload) {
-        reference['corpus'] = 'needs_review'
+        reference['corpus'] = 'needs_review';
+        reference['workflow'] = 'experimental';
       }
       // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
       const referencesToSortDb = JSON.parse(JSON.stringify(action.payload))
@@ -78,7 +80,7 @@ export default function(state = initialState, action) {
 //         referencesToSort: [{'title': "A conserved serine residue regulates the stability of Drosophila Salvador and human WW domain-containing adaptor 45 through proteasomal degradation.", 'abstract': "The abstract one goes here" }, {'title': "Phylogenetic-based propagation of functional annotations within the Gene Ontology consortium.", 'abstract': "The abstract two goes here" }]
 
     case 'CHANGE_SORT_CORPUS_TOGGLER':
-      console.log('reducer SORT_BUTTON_MODS_QUERY');
+      console.log('reducer CHANGE_SORT_CORPUS_TOGGLER');
       console.log(action.payload);
       let corpusArray = action.payload.split(" ");
       let fieldCorpusValue = corpusArray[0].replace(/_toggle$/, '');
@@ -88,6 +90,19 @@ export default function(state = initialState, action) {
       return {
         ...state,
         referencesToSortLive: sortToggleCorpusReferencesToSortLive
+      }
+
+    case 'CHANGE_SORT_WORKFLOW_TOGGLER':
+      console.log('reducer CHANGE_SORT_WORKFLOW_TOGGLER');
+      console.log(action.payload);
+      let workflowArray = action.payload.split(" ");
+      let fieldWorkflowValue = workflowArray[0].replace(/_toggle$/, '');
+      let indexReferenceWorkflow = workflowArray[1];
+      let sortToggleWorkflowReferencesToSortLive = JSON.parse(JSON.stringify(state.referencesToSortLive))
+      sortToggleWorkflowReferencesToSortLive[indexReferenceWorkflow]['workflow'] = fieldWorkflowValue;
+      return {
+        ...state,
+        referencesToSortLive: sortToggleWorkflowReferencesToSortLive
       }
 
     case 'UPDATE_BUTTON_SORT':

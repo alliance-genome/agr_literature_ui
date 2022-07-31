@@ -68,6 +68,14 @@ export const changeSortCorpusToggler = (e) => {
   };
 };
 
+export const changeSortWorkflowToggler = (e) => {
+  console.log('action change sort workflow toggler radio ' + e.target.id + ' to ' + e.target.value);
+  return {
+    type: 'CHANGE_SORT_WORKFLOW_TOGGLER',
+    payload: e.target.id
+  };
+};
+
 export const updateButtonSort = (updateArrayData) => dispatch => {
   // console.log('in updateButtonSort action');
   const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
