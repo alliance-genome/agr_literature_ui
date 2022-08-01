@@ -1,6 +1,9 @@
 
+//   biblioEntityDisplayType: 'textarea-disabled',
+//   biblioEntityDisplayType: 'div-line-breaks',
 const initialState = {
   biblioAction: '',
+  biblioEntityDisplayType: 'textarea-disabled',
   biblioUpdating: 0,
   updateCitationFlag: false,
   entityStuff: {},
@@ -469,6 +472,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         authorExpand: action.payload
+      }
+    case 'CHANGE_BIBLIO_ENTITY_DISPLAY_TYPE_TOGGLER':
+      // console.log(action.payload);
+      return {
+        ...state,
+        biblioEntityDisplayType: action.payload
       }
     case 'CHANGE_BIBLIO_ACTION_TOGGLER':
       // console.log(action.payload);

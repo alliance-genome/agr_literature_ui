@@ -36,6 +36,7 @@ import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
 
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
+import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -244,7 +245,7 @@ const BiblioActionRouter = () => {
     case 'editor':
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioEditor /></Container>);
     case 'entity':
-      return (<Container><BiblioActionToggler /><RowDivider /><BiblioEntity /></Container>);
+      return (<><Container><BiblioActionToggler /></Container><BiblioEntity /></>);
     default:
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
   }
@@ -637,6 +638,65 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
 } // const AuthorExpandToggler
 
 
+const BiblioEntityDisplayTypeToggler = () => {
+  const dispatch = useDispatch();
+  const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
+  let divlinebreaksChecked = '';
+  let containerrowsChecked = '';
+  let textareadisabledChecked = '';
+  let radioFormDivlinebreaksClassname = 'radio-form';
+  let radioFormContainerrowsClassname = 'radio-form';
+  let radioFormTextareadisabledClassname = 'radio-form';
+  if (biblioEntityDisplayType === 'div-line-breaks') { 
+      radioFormDivlinebreaksClassname += ' underlined';
+      divlinebreaksChecked = 'checked'; }
+    else if (biblioEntityDisplayType === 'container-rows') { 
+      radioFormContainerrowsClassname += ' underlined';
+      containerrowsChecked = 'checked'; }
+    else {
+      radioFormTextareadisabledClassname += ' underlined';
+      textareadisabledChecked = 'checked'; }
+  return (
+    <Form>
+    <div key={`default-radio`} className="mb-3">
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormTextareadisabledClassname}
+          checked={textareadisabledChecked}
+          type='radio'
+          label='textarea disabled'
+          id='biblio-toggler-entity-display-type-textarea-disabled'
+          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormDivlinebreaksClassname}
+          checked={divlinebreaksChecked}
+          type='radio'
+          label='div line breaks'
+          id='biblio-toggler-entity-display-type-div-line-breaks'
+          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormContainerrowsClassname}
+          checked={containerrowsChecked}
+          type='radio'
+          label='container rows'
+          id='biblio-toggler-entity-display-type-container-rows'
+          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+        />
+      </div>
+    </div>
+    </Form>);
+} // const BiblioEntityDisplayTypeToggler = () =>
+
+
 const BiblioEntity = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
@@ -645,6 +705,10 @@ const BiblioEntity = () => {
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
   const rowOrderedElements = []
+
+
+  rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
+
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<GeneAutocomplete key="geneAutocomplete"/>);
@@ -653,24 +717,63 @@ const BiblioEntity = () => {
 
 const GeneAutocomplete = () => {
   const dispatch = useDispatch();
+  const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const value = useSelector(state => state.biblio.entityStuff.genetextarea);
   const geneResultList = useSelector(state => state.biblio.entityStuff.geneResultList);
-  // const geneStringsJoined = (geneStringList) ? geneStringList.join("\n") : '';
   let geneStringList = [];
   if (geneResultList) {
     for (const geneResObject of geneResultList) {
       geneStringList.push(geneResObject.geneSymbol + " -- " + geneResObject.curie); } }
-  const geneStringsJoined = (geneStringList) ? geneStringList.join("\n") : '';
+
+  if (biblioEntityDisplayType === 'div-line-breaks') { 
+      return (
+        <Row className="form-group row" >
+          <Col className="form-label col-form-label" sm="6" >
+            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+          </Col>
+          <Col className="form-label col-form-label" sm="6" >
+            {geneStringList.map( (geneString, index) => { return(<div key={`geneEntityDivlineBreaks ${index}`}>{geneString}<br/></div>) })}
+          </Col>
+        </Row>); }
+    else if (biblioEntityDisplayType === 'textarea-disabled') { 
+      const geneStringsJoined = (geneStringList) ? geneStringList.join("\n") : '';
+      return (
+        <Row className="form-group row" >
+          <Col className="form-label col-form-label" sm="6" >
+            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+          </Col>
+          <Col className="form-label col-form-label" sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
+        </Row>); }
+    else if (biblioEntityDisplayType === 'container-rows') { 
+      return (
+        <Row className="form-group row" >
+          <Col className="form-label col-form-label" sm="6" >
+            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+          </Col>
+          <Col className="form-label col-form-label" sm="6" >
+            <Container>
+              { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
+                return (
+                  <Row key={`geneEntityContainerrows ${index}`}>
+                    <Col className="Col-general Col-display Col-display-left" sm="6">{geneResult.geneSymbol}</Col>
+                    <Col className="Col-general Col-display Col-display-right" sm="6">{geneResult.curie}</Col>
+                  </Row> )
+              } ) }
+            </Container>
+          </Col>
+        </Row>); }
+
+//   return (
+//     <Row className="form-group row" >
+//       <Col className="form-label col-form-label" sm="6" >
+//         <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+//       </Col>
+//       <Col className="form-label col-form-label" sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
+//     </Row>);
+
 
 //   let dispatchAction={changeFieldReferenceJson};
-  return (
-    <Row className="form-group row" >
-      <Col className="form-label col-form-label" sm="6" >
-        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
-      </Col>
-      <Col sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
-    </Row>);
 //               <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} />
 //   let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
 }
