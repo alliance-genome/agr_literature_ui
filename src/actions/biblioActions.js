@@ -176,6 +176,11 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
   }
 };
 
+export const changeFieldEntityNoteText = (e) => ({
+  type: 'CHANGE_FIELD_ENTITY_NOTE_TEXT',
+  payload: { field: e.target.id, value: e.target.value }
+});
+
 const setGeneResultList = (geneResultList) => ({
   type: 'SET_GENE_RESULT_LIST',
   payload: { geneResultList: geneResultList }

@@ -36,6 +36,7 @@ import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
 
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
+import { changeFieldEntityNoteText } from '../actions/biblioActions';
 import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
@@ -643,9 +644,11 @@ const BiblioEntityDisplayTypeToggler = () => {
   const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
   let divlinebreaksChecked = '';
   let containerrowsChecked = '';
+  let entitycontainerrowsChecked = '';
   let textareadisabledChecked = '';
   let radioFormDivlinebreaksClassname = 'radio-form';
   let radioFormContainerrowsClassname = 'radio-form';
+  let radioFormEntitycontainerrowsClassname = 'radio-form';
   let radioFormTextareadisabledClassname = 'radio-form';
   if (biblioEntityDisplayType === 'div-line-breaks') { 
       radioFormDivlinebreaksClassname += ' underlined';
@@ -653,6 +656,9 @@ const BiblioEntityDisplayTypeToggler = () => {
     else if (biblioEntityDisplayType === 'container-rows') { 
       radioFormContainerrowsClassname += ' underlined';
       containerrowsChecked = 'checked'; }
+    else if (biblioEntityDisplayType === 'entity-container-rows') { 
+      radioFormEntitycontainerrowsClassname += ' underlined';
+      entitycontainerrowsChecked = 'checked'; }
     else {
       radioFormTextareadisabledClassname += ' underlined';
       textareadisabledChecked = 'checked'; }
@@ -692,6 +698,17 @@ const BiblioEntityDisplayTypeToggler = () => {
           onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
         />
       </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormEntitycontainerrowsClassname}
+          checked={entitycontainerrowsChecked}
+          type='radio'
+          label='entity container rows'
+          id='biblio-toggler-entity-display-type-entity-container-rows'
+          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+        />
+      </div>
     </div>
     </Form>);
 } // const BiblioEntityDisplayTypeToggler = () =>
@@ -705,14 +722,11 @@ const BiblioEntity = () => {
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
   const rowOrderedElements = []
-
-
   rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
-
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  rowOrderedElements.push(<GeneAutocomplete key="geneAutocomplete"/>);
-  return (<Container>{rowOrderedElements}</Container>);
+//   rowOrderedElements.push(<GeneAutocomplete key="geneAutocomplete"/>);
+  return (<><Container>{rowOrderedElements}</Container><GeneAutocomplete key="geneAutocomplete"/></>);
 } // const BiblioEntity
 
 const GeneAutocomplete = () => {
@@ -720,6 +734,7 @@ const GeneAutocomplete = () => {
   const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const value = useSelector(state => state.biblio.entityStuff.genetextarea);
+  const noteText = useSelector(state => state.biblio.entityStuff.notetextarea);
   const geneResultList = useSelector(state => state.biblio.entityStuff.geneResultList);
   let geneStringList = [];
   if (geneResultList) {
@@ -728,6 +743,7 @@ const GeneAutocomplete = () => {
 
   if (biblioEntityDisplayType === 'div-line-breaks') { 
       return (
+        <Container>
         <Row className="form-group row" >
           <Col className="form-label col-form-label" sm="6" >
             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
@@ -735,18 +751,20 @@ const GeneAutocomplete = () => {
           <Col className="form-label col-form-label" sm="6" >
             {geneStringList.map( (geneString, index) => { return(<div key={`geneEntityDivlineBreaks ${index}`}>{geneString}<br/></div>) })}
           </Col>
-        </Row>); }
+        </Row></Container>); }
     else if (biblioEntityDisplayType === 'textarea-disabled') { 
       const geneStringsJoined = (geneStringList) ? geneStringList.join("\n") : '';
       return (
+        <Container>
         <Row className="form-group row" >
           <Col className="form-label col-form-label" sm="6" >
             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
           </Col>
           <Col className="form-label col-form-label" sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
-        </Row>); }
-    else if (biblioEntityDisplayType === 'container-rows') { 
+        </Row></Container>); }
+    else if (biblioEntityDisplayType === 'container-rows') {
       return (
+        <Container>
         <Row className="form-group row" >
           <Col className="form-label col-form-label" sm="6" >
             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
@@ -762,7 +780,46 @@ const GeneAutocomplete = () => {
               } ) }
             </Container>
           </Col>
-        </Row>); }
+        </Row></Container>); }
+    else if (biblioEntityDisplayType === 'entity-container-rows') { 
+      return (
+        <Container fluid>
+        <Row className="form-group row" ><Col className="form-label col-form-label" sm="2"><h3>Entity Selection</h3></Col></Row>
+        <Row className="form-group row" >
+          <Col className="div-grey-border" sm="1">topic</Col>
+          <Col className="div-grey-border" sm="1">entity_type</Col>
+          <Col className="div-grey-border" sm="1">species</Col>
+          <Col className="div-grey-border" sm="3">entity list</Col>
+          <Col className="div-grey-border" sm="2">entity validation</Col>
+          <Col className="div-grey-border" sm="1">priority</Col>
+          <Col className="div-grey-border" sm="2">notes</Col>
+          <Col className="div-grey-border" sm="1">button</Col>
+        </Row>
+        <Row className="form-group row" >
+          <Col className="div-grey-border" sm="1">genomic_entities</Col>
+          <Col className="div-grey-border" sm="1">Gene</Col>
+          <Col className="div-grey-border" sm="1">S. cerevisiae</Col>
+          <Col className="form-label col-form-label" sm="3" >
+            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+          </Col>
+          <Col className="form-label col-form-label" sm="2" >
+            <Container>
+              { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
+                return (
+                  <Row key={`geneEntityContainerrows ${index}`}>
+                    <Col className="Col-general Col-display Col-display-left" sm="5">{geneResult.geneSymbol}</Col>
+                    <Col className="Col-general Col-display Col-display-right" sm="7">{geneResult.curie}</Col>
+                  </Row> )
+              } ) }
+            </Container>
+          </Col>
+          <Col className="div-grey-border" sm="1">priority</Col>
+          <Col className="form-label col-form-label" sm="2">
+            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={value} onChange={(e) => dispatch(changeFieldEntityNoteText(e))} />
+          </Col>
+          <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
+        </Row></Container>); }
+  return null;
 
 //   return (
 //     <Row className="form-group row" >

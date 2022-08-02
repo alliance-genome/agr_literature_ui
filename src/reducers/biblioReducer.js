@@ -1,6 +1,7 @@
 
 //   biblioEntityDisplayType: 'textarea-disabled',
 //   biblioEntityDisplayType: 'div-line-breaks',
+//   biblioEntityDisplayType: 'entity-container-rows',
 const initialState = {
   biblioAction: '',
   biblioEntityDisplayType: 'textarea-disabled',
@@ -72,6 +73,15 @@ export default function(state = initialState, action) {
         referenceJsonHasChange: hasChangeField,
         referenceJsonLive: {
           ...state.referenceJsonLive,
+          [action.payload.field]: action.payload.value
+        }
+      }
+    case 'CHANGE_FIELD_ENTITY_NOTE_TEXT':
+      // console.log(action.payload);
+      return {
+        ...state,
+        entityStuff: {
+          ...state.entityStuff,
           [action.payload.field]: action.payload.value
         }
       }
