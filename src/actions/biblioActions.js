@@ -103,7 +103,7 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
     console.log('action change field entity gene list ' + e.target.id + ' to ' + e.target.value);
     let splitList = [];
     if (e.target.value && e.target.value !== '') { 
-      splitList = e.target.value.split(',').map(element => { return element.trim(); });
+      splitList = e.target.value.split(',').map(element => { return element.trim(); }).filter(item => item);
     }
     const geneQueryString = splitList.join(" ");
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
@@ -166,18 +166,17 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
       dispatch(setGeneResultList(geneResultList));
     })
   
-    return {
-      type: 'CHANGE_FIELD_ENTITY_GENE_LIST',
-      payload: {
-        field: e.target.id,
-        value: e.target.value
-      }
-    };
+    dispatch(changeFieldEntityGeneTextarea(e));
   }
 };
 
-export const changeFieldEntityNoteText = (e) => ({
-  type: 'CHANGE_FIELD_ENTITY_NOTE_TEXT',
+export const changeFieldEntityGeneTextarea = (e) => ({
+  type: 'CHANGE_FIELD_ENTITY_GENE_TEXTAREA',
+  payload: { field: e.target.id, value: e.target.value }
+});
+
+export const changeFieldEntityNoteTextarea = (e) => ({
+  type: 'CHANGE_FIELD_ENTITY_NOTE_TEXTAREA',
   payload: { field: e.target.id, value: e.target.value }
 });
 

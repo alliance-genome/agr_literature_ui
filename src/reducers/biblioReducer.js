@@ -4,7 +4,7 @@
 //   biblioEntityDisplayType: 'entity-container-rows',
 const initialState = {
   biblioAction: '',
-  biblioEntityDisplayType: 'textarea-disabled',
+  biblioEntityDisplayType: 'entity-side-by-side',
   biblioUpdating: 0,
   updateCitationFlag: false,
   entityStuff: {},
@@ -76,7 +76,7 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
-    case 'CHANGE_FIELD_ENTITY_NOTE_TEXT':
+    case 'CHANGE_FIELD_ENTITY_NOTE_TEXTAREA':
       // console.log(action.payload);
       return {
         ...state,
@@ -85,7 +85,7 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
-    case 'CHANGE_FIELD_ENTITY_GENE_LIST':
+    case 'CHANGE_FIELD_ENTITY_GENE_TEXTAREA':
       // console.log(action.payload);
       return {
         ...state,
