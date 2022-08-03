@@ -914,17 +914,15 @@ const GeneAutocomplete = () => {
         <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
         <Row className="form-group row" >
           <Col className="div-grey-border" sm="3">topic</Col>
-          <Col className="div-grey-border" sm="2">entity_type</Col>
+          <Col className="div-grey-border" sm="3">entity_type</Col>
           <Col className="div-grey-border" sm="3">species</Col>
-          <Col className="div-grey-border" sm="2">priority</Col>
-          <Col className="div-grey-border" sm="2">button</Col>
+          <Col className="div-grey-border" sm="3">priority</Col>
         </Row>
         <Row className="form-group row" >
           <Col className="div-grey-border" sm="3">genomic_entities</Col>
-          <Col className="div-grey-border" sm="2">Gene</Col>
-          <Col className="div-grey-border" sm="3">S. cerevisiae</Col>
-          <Col className="div-grey-border" sm="2">priority</Col>
-          <Col className="form-label col-form-label" sm="2"><Button variant="primary">Add</Button></Col>
+          <Col className="div-grey-border" sm="3">Gene</Col>
+          <Col className="div-grey-border" sm="3">S. cerevisiae S288C</Col>
+          <Col className="div-grey-border" sm="3">priority</Col>
         </Row>
         <Row className="form-group row" >
           <Col className="div-grey-border" sm="2">entity list</Col>
@@ -938,9 +936,10 @@ const GeneAutocomplete = () => {
         </Row>
         <Row className="form-group row" >
           <Col className="div-grey-border" sm="2">notes</Col>
-          <Col className="form-label col-form-label" sm="10">
+          <Col className="form-label col-form-label" sm="9">
             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
           </Col>
+          <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
         </Row></Container>); }
     else if (biblioEntityDisplayType === 'entity-side-by-side') {
       return (
@@ -949,17 +948,15 @@ const GeneAutocomplete = () => {
         <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
         <Row className="form-group row" >
           <Col className="div-grey-border" sm="3">topic</Col>
-          <Col className="div-grey-border" sm="2">entity_type</Col>
+          <Col className="div-grey-border" sm="3">entity_type</Col>
           <Col className="div-grey-border" sm="3">species</Col>
-          <Col className="div-grey-border" sm="2">priority</Col>
-          <Col className="div-grey-border" sm="2">button</Col>
+          <Col className="div-grey-border" sm="3">priority</Col>
         </Row>
         <Row className="form-group row" >
           <Col className="div-grey-border" sm="3">genomic_entities</Col>
-          <Col className="div-grey-border" sm="2">Gene</Col>
-          <Col className="div-grey-border" sm="3">S. cerevisiae</Col>
-          <Col className="div-grey-border" sm="2">priority</Col>
-          <Col className="form-label col-form-label" sm="2"><Button variant="primary">Add</Button></Col>
+          <Col className="div-grey-border" sm="3">Gene</Col>
+          <Col className="div-grey-border" sm="3">S. cerevisiae S288C</Col>
+          <Col className="div-grey-border" sm="3">priority</Col>
         </Row>
         <Row className="form-group row" >
           <Col className="div-grey-border" sm="3">entity list</Col>
@@ -985,9 +982,10 @@ const GeneAutocomplete = () => {
         </Row>
         <Row className="form-group row" >
           <Col className="div-grey-border" sm="2">notes</Col>
-          <Col className="form-label col-form-label" sm="10">
+          <Col className="form-label col-form-label" sm="9">
             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
           </Col>
+          <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
         </Row></Container>); }
   return null;
 
