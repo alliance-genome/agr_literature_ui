@@ -210,7 +210,7 @@ const Sort = () => {
                       disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
                       checked={ (reference['workflow'] === 'experimental') ? 'checked' : '' }
                       type='radio'
-                      label='experimental'
+                      label='expt'
                       id={`experimental_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
                     />
