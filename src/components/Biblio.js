@@ -38,6 +38,8 @@ import { biblioRevertAuthorArray } from '../actions/biblioActions';
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
 import { changeFieldEntityNoteTextarea } from '../actions/biblioActions';
 // import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
+import { updateButtonBiblioEntityAdd } from '../actions/biblioActions';
+import { setBiblioUpdatingEntityAdd } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -773,23 +775,106 @@ const BiblioEntity = () => {
 //   rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-//   rowOrderedElements.push(<GeneAutocomplete key="geneAutocomplete"/>);
-  return (<><Container>{rowOrderedElements}</Container><GeneAutocomplete key="geneAutocomplete"/></>);
+//   rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
+  return (<><Container>{rowOrderedElements}</Container><EntityCreate key="entityCreate"/><EntityEditor key="entityEditor"/></>);
 } // const BiblioEntity
 
-const GeneAutocomplete = () => {
+const EntityEditor = () => {
+  const dispatch = useDispatch();
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+//   if ('topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'] !== null) {
+      return (
+        <Container fluid>
+        <RowDivider />
+        <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
+        <Row className="form-group row" >
+          <Col className="div-grey-border" sm="1">topic</Col>
+          <Col className="div-grey-border" sm="1">entity_type</Col>
+          <Col className="div-grey-border" sm="1">species (taxon)</Col>
+          <Col className="div-grey-border" sm="2">entity name</Col>
+          <Col className="div-grey-border" sm="2">entity curie</Col>
+          <Col className="div-grey-border" sm="1">priority</Col>
+          <Col className="div-grey-border" sm="3">notes</Col>
+          <Col className="div-grey-border" sm="1">button</Col>
+        </Row>
+        { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
+          return (
+            <Row key={`geneEntityContainerrows ${index}`}>
+              <Col className="div-grey-border" sm="1">{tetDict.topic}</Col>
+              <Col className="div-grey-border" sm="1">{tetDict.entity_type}</Col>
+              <Col className="div-grey-border" sm="1">{tetDict.taxon}</Col>
+              <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
+              <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
+              <Col className="div-grey-border" sm="1">priority</Col>
+              <Col className="div-grey-border" sm="3">{tetDict.note}</Col>
+              <Col className="form-label col-form-label" sm="1"><Button variant="primary" >Remove</Button></Col>
+            </Row> )
+        } ) }
+        </Container>); 
+//   }
+//     for (const[index, tetDict] of referenceJsonLive['topic_entity_tags'].entries()) {
+
+//               <Col className="Col-general Col-display Col-display-right" sm="1">{tetDict.alliance_entity}</Col>
+// these need individual control
+//               <Col className="form-label col-form-label" sm="3">
+//                 <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//               </Col>
+
+
+//   return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
+//               <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
+//               <Col className={`Col-general Col-display Col-display-right ${updatedFlag}`} lg={{ span: 10 }}>{value}</Col>
+//             </Row>); }
+//   } }
+}
+
+const EntityCreate = () => {
   const dispatch = useDispatch();
 //   const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const geneText = useSelector(state => state.biblio.entityStuff.genetextarea);
   const noteText = useSelector(state => state.biblio.entityStuff.notetextarea);
   const geneResultList = useSelector(state => state.biblio.entityStuff.geneResultList);
-  let geneStringListDash = [];
-  let geneStringListParen = [];
-  if (geneResultList) {
-    for (const geneResObject of geneResultList) {
-      geneStringListParen.push(geneResObject.geneSymbol + " ( " + geneResObject.curie + " ) ");
-      geneStringListDash.push(geneResObject.geneSymbol + " -- " + geneResObject.curie); } }
+//   let geneStringListDash = [];
+//   let geneStringListParen = [];
+//   if (geneResultList) {
+//     for (const geneResObject of geneResultList) {
+//       geneStringListParen.push(geneResObject.geneSymbol + " ( " + geneResObject.curie + " ) ");
+//       geneStringListDash.push(geneResObject.geneSymbol + " -- " + geneResObject.curie); } }
+
+  function createEntities(refCurie) {
+    const forApiArray = []
+    if ( geneResultList && geneResultList.length > 0 ) {
+      for (const geneResult of geneResultList.values()) {
+        console.log(geneResult);
+        console.log(geneResult.curie);
+        if (geneResult.curie !== 'no Alliance curie') {
+          let updateJson = {};
+          updateJson['reference_curie'] = refCurie;
+          updateJson['topic'] = 'genomic_entities';
+          updateJson['entity_type'] = 'Gene';
+          updateJson['alliance_entity'] = geneResult.curie;
+//           updateJson['taxon'] = 'NCBITaxon:559292';	// API is broken, use integer for now
+          updateJson['taxon'] = 559292;
+          updateJson['note'] = noteText;
+          let subPath = 'topic_entity_tag/';
+          let method = 'POST';
+          let array = [ subPath, updateJson, method, 0, null, null]
+          forApiArray.push( array );
+    } } }
+      
+    let dispatchCount = forApiArray.length;
+
+    // console.log('dispatchCount ' + dispatchCount)
+    dispatch(setBiblioUpdatingEntityAdd(dispatchCount))
+
+    for (const arrayData of forApiArray.values()) {
+      arrayData.unshift(accessToken);
+      console.log(arrayData);
+      dispatch(updateButtonBiblioEntityAdd(arrayData))
+    }
+  }
 
 //   if (biblioEntityDisplayType === 'div-line-breaks') { 
 //       return (
@@ -868,7 +953,7 @@ const GeneAutocomplete = () => {
           <Col className="form-label col-form-label" sm="3">
             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
           </Col>
-          <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
+          <Col className="form-label col-form-label" sm="1"><Button variant="primary" onClick={() => createEntities(referenceJsonLive.curie)} >Add</Button></Col>
         </Row></Container>); 
 //      }
 //     else if (biblioEntityDisplayType === 'entity-container-vert') {

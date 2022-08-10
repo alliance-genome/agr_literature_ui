@@ -7,6 +7,7 @@
 const initialState = {
   biblioAction: '',
   biblioUpdating: 0,
+  biblioUpdatingEntityAdd: 0,
   updateCitationFlag: false,
   entityStuff: {},
   referenceCurie: '',
@@ -104,6 +105,19 @@ export default function(state = initialState, action) {
           geneResultList: action.payload.geneResultList
         }
       }
+    case 'SET_BIBLIO_UPDATING_ENTITY_ADD':
+      console.log('SET_BIBLIO_UPDATING_ENTITY_ADD reducer ' + action.payload);
+      return {
+        ...state,
+        biblioUpdatingEntityAdd: action.payload
+      }
+    case 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD':
+      // console.log(action.payload);
+      return {
+        ...state,
+        biblioUpdatingEntityAdd: state.biblioUpdatingEntityAdd - 1
+      }
+
     case 'UPDATE_BUTTON_BIBLIO':
       // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
       // console.log('action.payload'); console.log(action.payload);

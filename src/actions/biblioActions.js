@@ -98,9 +98,71 @@ export const changeFieldAuthorsReferenceJson = (e) => {
   };
 };
 
+export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIBLIO_UPDATING_ENTITY_ADD', payload: payload }; };
+
+export const updateButtonBiblioEntityAdd = (updateArrayData) => dispatch => {
+  // console.log('in updateButtonBiblioEntityAdd action');
+  const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
+  // const post_json = JSON.stringify(payload);
+  // console.log("payload " + post_json);
+  // console.log("payload " + payload);
+  // console.log("payload "); console.log(updateArrayData);
+  let newId = null;
+  const createUpdateButtonBiblioEntityAdd = async () => {
+    const url = restUrl + '/' + subPath;
+    console.log(url);
+    // console.log(notGithubVariables.authToken);
+    const res = await fetch(url, {
+      method: method,
+      mode: 'cors',
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + accessToken
+      },
+      body: JSON.stringify( payload )
+    })
+
+    let response_message = 'update success';
+    if ((method === 'DELETE') && (res.status === 204)) { }	// success of delete has no res.text so can't process like others
+    else {
+      const response_text = await res.text();
+      const response = JSON.parse(response_text);
+      if ( ((method === 'PATCH') && (res.status !== 202)) || 
+           ((method === 'DELETE') && (res.status !== 204)) || 
+           ((method === 'POST') && (res.status !== 201)) ) {
+        console.log('updateButtonBiblioEntityAdd action response not updated');
+        if (typeof(response.detail) !== 'object') {
+            response_message = response.detail; }
+          else if (typeof(response.detail[0].msg) !== 'object') {
+            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
+          else {
+            response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
+      }
+      if ((method === 'POST') && (res.status === 201)) {
+        newId = parseInt(response_text); }
+      // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
+      console.log('dispatch UPDATE_BUTTON_BIBLIO_ENTITY_ADD');
+    }
+    setTimeout(() => {
+      dispatch({
+        type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+        payload: {
+          responseMessage: response_message,
+          index: index,
+          value: newId,
+          field: field,
+          subField: subField
+        }
+      })
+    }, 500);
+  }
+  createUpdateButtonBiblioEntityAdd()
+};
+
+
 export const changeFieldEntityGeneList = (e, accessToken) => {
   return dispatch => {
-    console.log('action change field entity gene list ' + e.target.id + ' to ' + e.target.value);
+    // console.log('action change field entity gene list ' + e.target.id + ' to ' + e.target.value);
     let splitList = [];
     if (e.target.value && e.target.value !== '') { 
       splitList = e.target.value.split(',').map(element => { return element.trim(); }).filter(item => item);
