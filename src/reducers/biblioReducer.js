@@ -2,9 +2,10 @@
 //   biblioEntityDisplayType: 'textarea-disabled',
 //   biblioEntityDisplayType: 'div-line-breaks',
 //   biblioEntityDisplayType: 'entity-container-rows',
+//   biblioEntityDisplayType: 'entity-side-by-side',
+//   biblioEntityDisplayType: 'entity-container-rows',
 const initialState = {
   biblioAction: '',
-  biblioEntityDisplayType: 'entity-side-by-side',
   biblioUpdating: 0,
   updateCitationFlag: false,
   entityStuff: {},
@@ -483,12 +484,12 @@ export default function(state = initialState, action) {
         ...state,
         authorExpand: action.payload
       }
-    case 'CHANGE_BIBLIO_ENTITY_DISPLAY_TYPE_TOGGLER':
-      // console.log(action.payload);
-      return {
-        ...state,
-        biblioEntityDisplayType: action.payload
-      }
+//     case 'CHANGE_BIBLIO_ENTITY_DISPLAY_TYPE_TOGGLER':
+//       // console.log(action.payload);
+//       return {
+//         ...state,
+//         biblioEntityDisplayType: action.payload
+//       }
     case 'CHANGE_BIBLIO_ACTION_TOGGLER':
       // console.log(action.payload);
       return {

@@ -387,14 +387,14 @@ export const changeBiblioActionToggler = (e) => {
   };
 };
 
-export const changeBiblioEntityDisplayTypeToggler = (e) => {
-  console.log('action change biblio entity display type toggler radio ' + e.target.id + ' to ' + e.target.value);
-  let biblioEntityTypeDisplayTogglerSelected = e.target.id.replace(/biblio-toggler-entity-display-type-/, '');
-  return {
-    type: 'CHANGE_BIBLIO_ENTITY_DISPLAY_TYPE_TOGGLER',
-    payload: biblioEntityTypeDisplayTogglerSelected
-  };
-};
+// export const changeBiblioEntityDisplayTypeToggler = (e) => {
+//   console.log('action change biblio entity display type toggler radio ' + e.target.id + ' to ' + e.target.value);
+//   let biblioEntityTypeDisplayTogglerSelected = e.target.id.replace(/biblio-toggler-entity-display-type-/, '');
+//   return {
+//     type: 'CHANGE_BIBLIO_ENTITY_DISPLAY_TYPE_TOGGLER',
+//     payload: biblioEntityTypeDisplayTogglerSelected
+//   };
+// };
 
 export const setBiblioAction = (biblioAction) => {
   console.log("action setBiblioAction");

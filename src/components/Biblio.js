@@ -37,7 +37,7 @@ import { biblioRevertAuthorArray } from '../actions/biblioActions';
 
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
 import { changeFieldEntityNoteTextarea } from '../actions/biblioActions';
-import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
+// import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -639,127 +639,127 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
 } // const AuthorExpandToggler
 
 
-const BiblioEntityDisplayTypeToggler = () => {
-  const dispatch = useDispatch();
-  const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
-  let divlinebreaksChecked = '';
-  let containerrowsChecked = '';
-  let entitycontainerrowsChecked = '';
-  let entitycontainervertChecked = '';
-  let entitystackcommasChecked = '';
-  let entitysidebysideChecked = '';
-  let textareadisabledChecked = '';
-  let radioFormDivlinebreaksClassname = 'radio-form';
-  let radioFormContainerrowsClassname = 'radio-form';
-  let radioFormTextareadisabledClassname = 'radio-form';
-  let radioFormEntitycontainerrowsClassname = 'radio-form';
-  let radioFormEntitycontainervertClassname = 'radio-form';
-  let radioFormEntitystackcommasClassname = 'radio-form';
-  let radioFormEntitysidebysideClassname = 'radio-form';
-  if (biblioEntityDisplayType === 'div-line-breaks') { 
-      radioFormDivlinebreaksClassname += ' underlined';
-      divlinebreaksChecked = 'checked'; }
-    else if (biblioEntityDisplayType === 'container-rows') { 
-      radioFormContainerrowsClassname += ' underlined';
-      containerrowsChecked = 'checked'; }
-    else if (biblioEntityDisplayType === 'entity-container-rows') { 
-      radioFormEntitycontainerrowsClassname += ' underlined';
-      entitycontainerrowsChecked = 'checked'; }
-    else if (biblioEntityDisplayType === 'entity-container-vert') { 
-      radioFormEntitycontainervertClassname += ' underlined';
-      entitycontainervertChecked = 'checked'; }
-    else if (biblioEntityDisplayType === 'entity-stack-commas') { 
-      radioFormEntitystackcommasClassname += ' underlined';
-      entitystackcommasChecked = 'checked'; }
-    else if (biblioEntityDisplayType === 'entity-side-by-side') { 
-      radioFormEntitysidebysideClassname += ' underlined';
-      entitysidebysideChecked = 'checked'; }
-    else {
-      radioFormTextareadisabledClassname += ' underlined';
-      textareadisabledChecked = 'checked'; }
-  return (
-    <Form>
-    <div key={`default-radio`} className="mb-3">
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormTextareadisabledClassname}
-          checked={textareadisabledChecked}
-          type='radio'
-          label='textarea disabled'
-          id='biblio-toggler-entity-display-type-textarea-disabled'
-          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormDivlinebreaksClassname}
-          checked={divlinebreaksChecked}
-          type='radio'
-          label='div line breaks'
-          id='biblio-toggler-entity-display-type-div-line-breaks'
-          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormContainerrowsClassname}
-          checked={containerrowsChecked}
-          type='radio'
-          label='container rows'
-          id='biblio-toggler-entity-display-type-container-rows'
-          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormEntitycontainerrowsClassname}
-          checked={entitycontainerrowsChecked}
-          type='radio'
-          label='entity rows'
-          id='biblio-toggler-entity-display-type-entity-container-rows'
-          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormEntitycontainervertClassname}
-          checked={entitycontainervertChecked}
-          type='radio'
-          label='entity vert'
-          id='biblio-toggler-entity-display-type-entity-container-vert'
-          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormEntitystackcommasClassname}
-          checked={entitystackcommasChecked}
-          type='radio'
-          label='entity stack commas'
-          id='biblio-toggler-entity-display-type-entity-stack-commas'
-          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormEntitysidebysideClassname}
-          checked={entitysidebysideChecked}
-          type='radio'
-          label='entity side by side'
-          id='biblio-toggler-entity-display-type-entity-side-by-side'
-          onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
-        />
-      </div>
-    </div>
-    </Form>);
-} // const BiblioEntityDisplayTypeToggler = () =>
+// const BiblioEntityDisplayTypeToggler = () => {
+//   const dispatch = useDispatch();
+//   const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
+//   let divlinebreaksChecked = '';
+//   let containerrowsChecked = '';
+//   let entitycontainerrowsChecked = '';
+//   let entitycontainervertChecked = '';
+//   let entitystackcommasChecked = '';
+//   let entitysidebysideChecked = '';
+//   let textareadisabledChecked = '';
+//   let radioFormDivlinebreaksClassname = 'radio-form';
+//   let radioFormContainerrowsClassname = 'radio-form';
+//   let radioFormTextareadisabledClassname = 'radio-form';
+//   let radioFormEntitycontainerrowsClassname = 'radio-form';
+//   let radioFormEntitycontainervertClassname = 'radio-form';
+//   let radioFormEntitystackcommasClassname = 'radio-form';
+//   let radioFormEntitysidebysideClassname = 'radio-form';
+//   if (biblioEntityDisplayType === 'div-line-breaks') { 
+//       radioFormDivlinebreaksClassname += ' underlined';
+//       divlinebreaksChecked = 'checked'; }
+//     else if (biblioEntityDisplayType === 'container-rows') { 
+//       radioFormContainerrowsClassname += ' underlined';
+//       containerrowsChecked = 'checked'; }
+//     else if (biblioEntityDisplayType === 'entity-container-rows') { 
+//       radioFormEntitycontainerrowsClassname += ' underlined';
+//       entitycontainerrowsChecked = 'checked'; }
+//     else if (biblioEntityDisplayType === 'entity-container-vert') { 
+//       radioFormEntitycontainervertClassname += ' underlined';
+//       entitycontainervertChecked = 'checked'; }
+//     else if (biblioEntityDisplayType === 'entity-stack-commas') { 
+//       radioFormEntitystackcommasClassname += ' underlined';
+//       entitystackcommasChecked = 'checked'; }
+//     else if (biblioEntityDisplayType === 'entity-side-by-side') { 
+//       radioFormEntitysidebysideClassname += ' underlined';
+//       entitysidebysideChecked = 'checked'; }
+//     else {
+//       radioFormTextareadisabledClassname += ' underlined';
+//       textareadisabledChecked = 'checked'; }
+//   return (
+//     <Form>
+//     <div key={`default-radio`} className="mb-3">
+//       <div className='radio-span'>
+//         <Form.Check
+//           inline
+//           className={radioFormTextareadisabledClassname}
+//           checked={textareadisabledChecked}
+//           type='radio'
+//           label='textarea disabled'
+//           id='biblio-toggler-entity-display-type-textarea-disabled'
+//           onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+//         />
+//       </div>
+//       <div className='radio-span'>
+//         <Form.Check
+//           inline
+//           className={radioFormDivlinebreaksClassname}
+//           checked={divlinebreaksChecked}
+//           type='radio'
+//           label='div line breaks'
+//           id='biblio-toggler-entity-display-type-div-line-breaks'
+//           onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+//         />
+//       </div>
+//       <div className='radio-span'>
+//         <Form.Check
+//           inline
+//           className={radioFormContainerrowsClassname}
+//           checked={containerrowsChecked}
+//           type='radio'
+//           label='container rows'
+//           id='biblio-toggler-entity-display-type-container-rows'
+//           onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+//         />
+//       </div>
+//       <div className='radio-span'>
+//         <Form.Check
+//           inline
+//           className={radioFormEntitycontainerrowsClassname}
+//           checked={entitycontainerrowsChecked}
+//           type='radio'
+//           label='entity rows'
+//           id='biblio-toggler-entity-display-type-entity-container-rows'
+//           onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+//         />
+//       </div>
+//       <div className='radio-span'>
+//         <Form.Check
+//           inline
+//           className={radioFormEntitycontainervertClassname}
+//           checked={entitycontainervertChecked}
+//           type='radio'
+//           label='entity vert'
+//           id='biblio-toggler-entity-display-type-entity-container-vert'
+//           onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+//         />
+//       </div>
+//       <div className='radio-span'>
+//         <Form.Check
+//           inline
+//           className={radioFormEntitystackcommasClassname}
+//           checked={entitystackcommasChecked}
+//           type='radio'
+//           label='entity stack commas'
+//           id='biblio-toggler-entity-display-type-entity-stack-commas'
+//           onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+//         />
+//       </div>
+//       <div className='radio-span'>
+//         <Form.Check
+//           inline
+//           className={radioFormEntitysidebysideClassname}
+//           checked={entitysidebysideChecked}
+//           type='radio'
+//           label='entity side by side'
+//           id='biblio-toggler-entity-display-type-entity-side-by-side'
+//           onChange={(e) => dispatch(changeBiblioEntityDisplayTypeToggler(e))}
+//         />
+//       </div>
+//     </div>
+//     </Form>);
+// } // const BiblioEntityDisplayTypeToggler = () =>
 
 
 const BiblioEntity = () => {
@@ -770,7 +770,7 @@ const BiblioEntity = () => {
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
   const rowOrderedElements = []
-  rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
+//   rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
 //   rowOrderedElements.push(<GeneAutocomplete key="geneAutocomplete"/>);
@@ -779,7 +779,7 @@ const BiblioEntity = () => {
 
 const GeneAutocomplete = () => {
   const dispatch = useDispatch();
-  const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
+//   const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const geneText = useSelector(state => state.biblio.entityStuff.genetextarea);
   const noteText = useSelector(state => state.biblio.entityStuff.notetextarea);
@@ -791,47 +791,47 @@ const GeneAutocomplete = () => {
       geneStringListParen.push(geneResObject.geneSymbol + " ( " + geneResObject.curie + " ) ");
       geneStringListDash.push(geneResObject.geneSymbol + " -- " + geneResObject.curie); } }
 
-  if (biblioEntityDisplayType === 'div-line-breaks') { 
-      return (
-        <Container>
-        <Row className="form-group row" >
-          <Col className="form-label col-form-label" sm="6" >
-            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="6" >
-            {geneStringListDash.map( (geneString, index) => { return(<div key={`geneEntityDivlineBreaks ${index}`}>{geneString}<br/></div>) })}
-          </Col>
-        </Row></Container>); }
-    else if (biblioEntityDisplayType === 'textarea-disabled') { 
-      const geneStringsJoined = (geneStringListDash) ? geneStringListDash.join("\n") : '';
-      return (
-        <Container>
-        <Row className="form-group row" >
-          <Col className="form-label col-form-label" sm="6" >
-            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
-        </Row></Container>); }
-    else if (biblioEntityDisplayType === 'container-rows') {
-      return (
-        <Container>
-        <Row className="form-group row" >
-          <Col className="form-label col-form-label" sm="6" >
-            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="6" >
-            <Container>
-              { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
-                return (
-                  <Row key={`geneEntityContainerrows ${index}`}>
-                    <Col className="Col-general Col-display Col-display-left" sm="6">{geneResult.geneSymbol}</Col>
-                    <Col className="Col-general Col-display Col-display-right" sm="6">{geneResult.curie}</Col>
-                  </Row> )
-              } ) }
-            </Container>
-          </Col>
-        </Row></Container>); }
-    else if (biblioEntityDisplayType === 'entity-container-rows') {
+//   if (biblioEntityDisplayType === 'div-line-breaks') { 
+//       return (
+//         <Container>
+//         <Row className="form-group row" >
+//           <Col className="form-label col-form-label" sm="6" >
+//             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+//           </Col>
+//           <Col className="form-label col-form-label" sm="6" >
+//             {geneStringListDash.map( (geneString, index) => { return(<div key={`geneEntityDivlineBreaks ${index}`}>{geneString}<br/></div>) })}
+//           </Col>
+//         </Row></Container>); }
+//     else if (biblioEntityDisplayType === 'textarea-disabled') { 
+//       const geneStringsJoined = (geneStringListDash) ? geneStringListDash.join("\n") : '';
+//       return (
+//         <Container>
+//         <Row className="form-group row" >
+//           <Col className="form-label col-form-label" sm="6" >
+//             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+//           </Col>
+//           <Col className="form-label col-form-label" sm="6" ><Form.Control as="textarea" id="geneStrings" disabled="disabled" value={geneStringsJoined} /></Col>
+//         </Row></Container>); }
+//     else if (biblioEntityDisplayType === 'container-rows') {
+//       return (
+//         <Container>
+//         <Row className="form-group row" >
+//           <Col className="form-label col-form-label" sm="6" >
+//             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+//           </Col>
+//           <Col className="form-label col-form-label" sm="6" >
+//             <Container>
+//               { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
+//                 return (
+//                   <Row key={`geneEntityContainerrows ${index}`}>
+//                     <Col className="Col-general Col-display Col-display-left" sm="6">{geneResult.geneSymbol}</Col>
+//                     <Col className="Col-general Col-display Col-display-right" sm="6">{geneResult.curie}</Col>
+//                   </Row> )
+//               } ) }
+//             </Container>
+//           </Col>
+//         </Row></Container>); }
+//     else if (biblioEntityDisplayType === 'entity-container-rows') {
       return (
         <Container fluid>
         <RowDivider />
@@ -869,125 +869,126 @@ const GeneAutocomplete = () => {
             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
           </Col>
           <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
-        </Row></Container>); }
-    else if (biblioEntityDisplayType === 'entity-container-vert') {
-      return (
-        <Container>
-        <RowDivider />
-        <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="2">topic</Col>
-          <Col className="div-grey-border" sm="1">entity_type</Col>
-          <Col className="div-grey-border" sm="1">species</Col>
-          <Col className="div-grey-border" sm="3">entity list</Col>
-          <Col className="div-grey-border" sm="1">priority</Col>
-          <Col className="div-grey-border" sm="3">notes</Col>
-          <Col className="div-grey-border" sm="1">button</Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="2">genomic_entities</Col>
-          <Col className="div-grey-border" sm="1">Gene</Col>
-          <Col className="div-grey-border" sm="1">S. cerevisiae</Col>
-          <Col className="form-label col-form-label" sm="3" >
-            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
-            <Container>
-              { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
-                return (
-                  <Row key={`geneEntityContainervert ${index}`}>
-                    <Col className="Col-general Col-display Col-display-left" sm="5">{geneResult.geneSymbol}</Col>
-                    <Col className="Col-general Col-display Col-display-right" sm="7">{geneResult.curie}</Col>
-                  </Row> )
-              } ) }
-            </Container>
-          </Col>
-          <Col className="div-grey-border" sm="1">priority</Col>
-          <Col className="form-label col-form-label" sm="3">
-            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
-        </Row></Container>); }
-    else if (biblioEntityDisplayType === 'entity-stack-commas') {
-      const geneStringsJoined = (geneStringListParen) ? geneStringListParen.join("; ") : '';
-      return (
-        <Container>
-        <RowDivider />
-        <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="3">topic</Col>
-          <Col className="div-grey-border" sm="3">entity_type</Col>
-          <Col className="div-grey-border" sm="3">species</Col>
-          <Col className="div-grey-border" sm="3">priority</Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="3">genomic_entities</Col>
-          <Col className="div-grey-border" sm="3">Gene</Col>
-          <Col className="div-grey-border" sm="3">S. cerevisiae S288C</Col>
-          <Col className="div-grey-border" sm="3">priority</Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="2">entity list</Col>
-          <Col className="form-label col-form-label" sm="10" >
-            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
-          </Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="2">entity validation</Col>
-          <Col className="form-label col-form-label" sm="10" >{geneStringsJoined}</Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="2">notes</Col>
-          <Col className="form-label col-form-label" sm="9">
-            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
-        </Row></Container>); }
-    else if (biblioEntityDisplayType === 'entity-side-by-side') {
-      return (
-        <Container>
-        <RowDivider />
-        <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="3">topic</Col>
-          <Col className="div-grey-border" sm="3">entity_type</Col>
-          <Col className="div-grey-border" sm="3">species</Col>
-          <Col className="div-grey-border" sm="3">priority</Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="3">genomic_entities</Col>
-          <Col className="div-grey-border" sm="3">Gene</Col>
-          <Col className="div-grey-border" sm="3">S. cerevisiae S288C</Col>
-          <Col className="div-grey-border" sm="3">priority</Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="3">entity list</Col>
-          <Col className="div-grey-border" sm="9">entity validation</Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="form-label col-form-label" sm="3" >
-            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="9" >
-            <Container>
-              <Row >
-              { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
-                return (
-                    <Col key={`geneEntitySidebyside ${index}`} sm="6"><Container><Row>
-                    <Col className="Col-general Col-display Col-display-left" sm="6">{geneResult.geneSymbol}</Col>
-                    <Col className="Col-general Col-display Col-display-right" sm="6">{geneResult.curie}</Col>
-                    </Row></Container></Col>)
-              } ) }
-              </Row>
-            </Container>
-          </Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="2">notes</Col>
-          <Col className="form-label col-form-label" sm="9">
-            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
-        </Row></Container>); }
-  return null;
+        </Row></Container>); 
+//      }
+//     else if (biblioEntityDisplayType === 'entity-container-vert') {
+//       return (
+//         <Container>
+//         <RowDivider />
+//         <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="2">topic</Col>
+//           <Col className="div-grey-border" sm="1">entity_type</Col>
+//           <Col className="div-grey-border" sm="1">species</Col>
+//           <Col className="div-grey-border" sm="3">entity list</Col>
+//           <Col className="div-grey-border" sm="1">priority</Col>
+//           <Col className="div-grey-border" sm="3">notes</Col>
+//           <Col className="div-grey-border" sm="1">button</Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="2">genomic_entities</Col>
+//           <Col className="div-grey-border" sm="1">Gene</Col>
+//           <Col className="div-grey-border" sm="1">S. cerevisiae</Col>
+//           <Col className="form-label col-form-label" sm="3" >
+//             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+//             <Container>
+//               { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
+//                 return (
+//                   <Row key={`geneEntityContainervert ${index}`}>
+//                     <Col className="Col-general Col-display Col-display-left" sm="5">{geneResult.geneSymbol}</Col>
+//                     <Col className="Col-general Col-display Col-display-right" sm="7">{geneResult.curie}</Col>
+//                   </Row> )
+//               } ) }
+//             </Container>
+//           </Col>
+//           <Col className="div-grey-border" sm="1">priority</Col>
+//           <Col className="form-label col-form-label" sm="3">
+//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//           </Col>
+//           <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
+//         </Row></Container>); }
+//     else if (biblioEntityDisplayType === 'entity-stack-commas') {
+//       const geneStringsJoined = (geneStringListParen) ? geneStringListParen.join("; ") : '';
+//       return (
+//         <Container>
+//         <RowDivider />
+//         <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="3">topic</Col>
+//           <Col className="div-grey-border" sm="3">entity_type</Col>
+//           <Col className="div-grey-border" sm="3">species</Col>
+//           <Col className="div-grey-border" sm="3">priority</Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="3">genomic_entities</Col>
+//           <Col className="div-grey-border" sm="3">Gene</Col>
+//           <Col className="div-grey-border" sm="3">S. cerevisiae S288C</Col>
+//           <Col className="div-grey-border" sm="3">priority</Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="2">entity list</Col>
+//           <Col className="form-label col-form-label" sm="10" >
+//             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+//           </Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="2">entity validation</Col>
+//           <Col className="form-label col-form-label" sm="10" >{geneStringsJoined}</Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="2">notes</Col>
+//           <Col className="form-label col-form-label" sm="9">
+//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//           </Col>
+//           <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
+//         </Row></Container>); }
+//     else if (biblioEntityDisplayType === 'entity-side-by-side') {
+//       return (
+//         <Container>
+//         <RowDivider />
+//         <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="3">topic</Col>
+//           <Col className="div-grey-border" sm="3">entity_type</Col>
+//           <Col className="div-grey-border" sm="3">species</Col>
+//           <Col className="div-grey-border" sm="3">priority</Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="3">genomic_entities</Col>
+//           <Col className="div-grey-border" sm="3">Gene</Col>
+//           <Col className="div-grey-border" sm="3">S. cerevisiae S288C</Col>
+//           <Col className="div-grey-border" sm="3">priority</Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="3">entity list</Col>
+//           <Col className="div-grey-border" sm="9">entity validation</Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="form-label col-form-label" sm="3" >
+//             <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+//           </Col>
+//           <Col className="form-label col-form-label" sm="9" >
+//             <Container>
+//               <Row >
+//               { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
+//                 return (
+//                     <Col key={`geneEntitySidebyside ${index}`} sm="6"><Container><Row>
+//                     <Col className="Col-general Col-display Col-display-left" sm="6">{geneResult.geneSymbol}</Col>
+//                     <Col className="Col-general Col-display Col-display-right" sm="6">{geneResult.curie}</Col>
+//                     </Row></Container></Col>)
+//               } ) }
+//               </Row>
+//             </Container>
+//           </Col>
+//         </Row>
+//         <Row className="form-group row" >
+//           <Col className="div-grey-border" sm="2">notes</Col>
+//           <Col className="form-label col-form-label" sm="9">
+//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//           </Col>
+//           <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
+//         </Row></Container>); }
+//   return null;
 
 //   return (
 //     <Row className="form-group row" >
