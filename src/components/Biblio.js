@@ -15,6 +15,7 @@ import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 // import { biblioMock1QueryReferenceCurie } from '../actions/biblioMock1Actions';
 import { setBiblioUpdating } from '../actions/biblioActions';
 import { setUpdateCitationFlag } from '../actions/biblioActions';
+import { setEntityModalText } from '../actions/biblioActions';
 
 import { changeFieldReferenceJson } from '../actions/biblioActions';
 import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
@@ -49,6 +50,8 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
+import Spinner from 'react-bootstrap/Spinner'
+import Modal from 'react-bootstrap/Modal'
 
 import loading_gif from '../images/loading_cat.gif';
 
@@ -168,11 +171,11 @@ const BiblioActionToggler = () => {
   let radioFormEntityClassname = 'radio-form';
   let radioFormDisplayClassname = 'radio-form';
   let biblioActionTogglerSelected = 'display';
-  if (biblioAction === 'editor') { 
+  if (biblioAction === 'editor') {
       radioFormEditorClassname += ' underlined';
       editorChecked = 'checked';
       biblioActionTogglerSelected = 'editor'; }
-    else if (biblioAction === 'entity') { 
+    else if (biblioAction === 'entity') {
       radioFormEntityClassname += ' underlined';
       entityChecked = 'checked';
       biblioActionTogglerSelected = 'entity'; }
@@ -339,7 +342,7 @@ const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, ref
             <Col className={`Col-general Col-display ${updatedFlagMod} `} lg={{ span: 2 }}>{valueLiveMod}</Col>
             <Col className={`Col-general Col-display ${updatedFlagCorpus} `} lg={{ span: 4 }}>{valueLiveCorpus}</Col>
             <Col className={`Col-general Col-display Col-display-right ${updatedFlagSource} `} lg={{ span: 4 }}>{valueLiveSource}</Col>
-          </Row>); 
+          </Row>);
 //         }
       } // if (enumDict['mods'].includes(valueLiveCuriePrefix))
     return (<>{rowModAssociationElements}</>); }
@@ -658,22 +661,22 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
 //   let radioFormEntitycontainervertClassname = 'radio-form';
 //   let radioFormEntitystackcommasClassname = 'radio-form';
 //   let radioFormEntitysidebysideClassname = 'radio-form';
-//   if (biblioEntityDisplayType === 'div-line-breaks') { 
+//   if (biblioEntityDisplayType === 'div-line-breaks') {
 //       radioFormDivlinebreaksClassname += ' underlined';
 //       divlinebreaksChecked = 'checked'; }
-//     else if (biblioEntityDisplayType === 'container-rows') { 
+//     else if (biblioEntityDisplayType === 'container-rows') {
 //       radioFormContainerrowsClassname += ' underlined';
 //       containerrowsChecked = 'checked'; }
-//     else if (biblioEntityDisplayType === 'entity-container-rows') { 
+//     else if (biblioEntityDisplayType === 'entity-container-rows') {
 //       radioFormEntitycontainerrowsClassname += ' underlined';
 //       entitycontainerrowsChecked = 'checked'; }
-//     else if (biblioEntityDisplayType === 'entity-container-vert') { 
+//     else if (biblioEntityDisplayType === 'entity-container-vert') {
 //       radioFormEntitycontainervertClassname += ' underlined';
 //       entitycontainervertChecked = 'checked'; }
-//     else if (biblioEntityDisplayType === 'entity-stack-commas') { 
+//     else if (biblioEntityDisplayType === 'entity-stack-commas') {
 //       radioFormEntitystackcommasClassname += ' underlined';
 //       entitystackcommasChecked = 'checked'; }
-//     else if (biblioEntityDisplayType === 'entity-side-by-side') { 
+//     else if (biblioEntityDisplayType === 'entity-side-by-side') {
 //       radioFormEntitysidebysideClassname += ' underlined';
 //       entitysidebysideChecked = 'checked'; }
 //     else {
@@ -767,7 +770,7 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
 const BiblioEntity = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
-  if (!('date_created' in referenceJsonLive)) { 
+  if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
@@ -781,15 +784,17 @@ const BiblioEntity = () => {
 
 const EntityEditor = () => {
   const dispatch = useDispatch();
+  const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type' };
+  const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C' };
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
 //   if ('topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'] !== null) {
       return (
         <Container fluid>
         <RowDivider />
-        <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
+        <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Editor</h3></Col></Row>
         <Row className="form-group row" >
-          <Col className="div-grey-border" sm="1">topic</Col>
-          <Col className="div-grey-border" sm="1">entity_type</Col>
+          <Col className="div-grey-border" sm="1">data type</Col>
+          <Col className="div-grey-border" sm="1">entity type</Col>
           <Col className="div-grey-border" sm="1">species (taxon)</Col>
           <Col className="div-grey-border" sm="2">entity name</Col>
           <Col className="div-grey-border" sm="2">entity curie</Col>
@@ -800,24 +805,33 @@ const EntityEditor = () => {
         { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
           return (
             <Row key={`geneEntityContainerrows ${index}`}>
-              <Col className="div-grey-border" sm="1">{tetDict.topic}</Col>
-              <Col className="div-grey-border" sm="1">{tetDict.entity_type}</Col>
-              <Col className="div-grey-border" sm="1">{tetDict.taxon}</Col>
+              <Col className="div-grey-border" sm="1">{tetDict.topic in curieToNameAtp ? curieToNameAtp[tetDict.topic] : tetDict.topic }</Col>
+              <Col className="div-grey-border" sm="1">{tetDict.entity_type in curieToNameAtp ? curieToNameAtp[tetDict.entity_type] : tetDict.entity_type }</Col>
+              <Col className="div-grey-border" sm="1">{tetDict.taxon in curieToNameTaxon ? curieToNameTaxon[tetDict.taxon] : tetDict.taxon }</Col>
               <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
               <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
               <Col className="div-grey-border" sm="1">priority</Col>
-              <Col className="div-grey-border" sm="3">{tetDict.note}</Col>
-              <Col className="form-label col-form-label" sm="1"><Button variant="primary" >Remove</Button></Col>
+              <Col className="form-label col-form-label" sm="3">
+                <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+                <Button variant="outline-primary" >Update note</Button>&nbsp;
+                <Button variant="outline-danger" >Remove note</Button>
+              </Col>
+              <Col className="form-label col-form-label" sm="1"><Button variant="outline-danger" >Remove Entity</Button></Col>
             </Row> )
         } ) }
-        </Container>); 
+        </Container>);
 //   }
 //     for (const[index, tetDict] of referenceJsonLive['topic_entity_tags'].entries()) {
+
+//               <Col className="div-grey-border" sm="3">{tetDict.note}</Col>
+// {tetDict.note}
 
 //               <Col className="Col-general Col-display Col-display-right" sm="1">{tetDict.alliance_entity}</Col>
 // these need individual control
 //               <Col className="form-label col-form-label" sm="3">
 //                 <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//                 <Button variant="outline-primary" >Update note</Button>&nbsp;
+//                 <Button variant="outline-danger" >Remove note</Button>
 //               </Col>
 
 
@@ -828,11 +842,24 @@ const EntityEditor = () => {
 //   } }
 }
 
+
+const ModalGeneric = ({showGenericModal, genericModalHeader, genericModalBody}) => {
+  const dispatch = useDispatch();
+  if (showGenericModal) {
+    return (<Modal size="lg" show={showGenericModal} backdrop="static" onHide={() => dispatch(setEntityModalText(''))} >
+             <Modal.Header closeButton><Modal.Title>{genericModalHeader}</Modal.Title></Modal.Header>
+             <Modal.Body><div dangerouslySetInnerHTML={{__html:`${genericModalBody}`}}/></Modal.Body>
+            </Modal>); }
+  return null;
+}
+
 const EntityCreate = () => {
   const dispatch = useDispatch();
 //   const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
+  const entityModalText = useSelector(state => state.biblio.entityModalText);
   const geneText = useSelector(state => state.biblio.entityStuff.genetextarea);
   const noteText = useSelector(state => state.biblio.entityStuff.notetextarea);
   const geneResultList = useSelector(state => state.biblio.entityStuff.geneResultList);
@@ -852,18 +879,17 @@ const EntityCreate = () => {
         if (geneResult.curie !== 'no Alliance curie') {
           let updateJson = {};
           updateJson['reference_curie'] = refCurie;
-          updateJson['topic'] = 'genomic_entities';
-          updateJson['entity_type'] = 'Gene';
+          updateJson['topic'] = 'ATP:0000122';
+          updateJson['entity_type'] = 'ATP:0000005';
           updateJson['alliance_entity'] = geneResult.curie;
-//           updateJson['taxon'] = 'NCBITaxon:559292';	// API is broken, use integer for now
-          updateJson['taxon'] = 559292;
+          updateJson['taxon'] = 'NCBITaxon:559292';
           updateJson['note'] = noteText;
           let subPath = 'topic_entity_tag/';
           let method = 'POST';
           let array = [ subPath, updateJson, method, 0, null, null]
           forApiArray.push( array );
     } } }
-      
+
     let dispatchCount = forApiArray.length;
 
     // console.log('dispatchCount ' + dispatchCount)
@@ -876,7 +902,53 @@ const EntityCreate = () => {
     }
   }
 
-//   if (biblioEntityDisplayType === 'div-line-breaks') { 
+  const showGenericModal = true;
+  const genericModalHeader = 'genericModalHeader';
+  const genericModalBody = 'genericModalBody';
+
+  return (
+    <Container fluid>
+    <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error" genericModalBody={entityModalText} />
+    <RowDivider />
+    <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Addition</h3></Col></Row>
+    <Row className="form-group row" >
+      <Col className="div-grey-border" sm="1">data type</Col>
+      <Col className="div-grey-border" sm="1">entity type</Col>
+      <Col className="div-grey-border" sm="1">species</Col>
+      <Col className="div-grey-border" sm="2">entity list</Col>
+      <Col className="div-grey-border" sm="2">entity validation</Col>
+      <Col className="div-grey-border" sm="1">priority</Col>
+      <Col className="div-grey-border" sm="3">notes</Col>
+      <Col className="div-grey-border" sm="1">button</Col>
+    </Row>
+    <Row className="form-group row" >
+      <Col className="div-grey-border" sm="1">entity type ATP:0000122</Col>
+      <Col className="div-grey-border" sm="1">gene ATP:0000005</Col>
+      <Col className="div-grey-border" sm="1">S. cerevisiae S288C</Col>
+      <Col className="form-label col-form-label" sm="2" >
+        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+      </Col>
+      <Col className="form-label col-form-label" sm="2" >
+        <Container>
+          { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
+            return (
+              <Row key={`geneEntityContainerrows ${index}`}>
+                <Col className="Col-general Col-display Col-display-left" sm="5">{geneResult.geneSymbol}</Col>
+                <Col className="Col-general Col-display Col-display-right" sm="7">{geneResult.curie}</Col>
+              </Row>)
+          } ) }
+        </Container>
+      </Col>
+      <Col className="div-grey-border" sm="1">priority</Col>
+      <Col className="form-label col-form-label" sm="3">
+        <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+      </Col>
+      <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
+    </Row></Container>);
+}
+
+
+//   if (biblioEntityDisplayType === 'div-line-breaks') {
 //       return (
 //         <Container>
 //         <Row className="form-group row" >
@@ -887,7 +959,7 @@ const EntityCreate = () => {
 //             {geneStringListDash.map( (geneString, index) => { return(<div key={`geneEntityDivlineBreaks ${index}`}>{geneString}<br/></div>) })}
 //           </Col>
 //         </Row></Container>); }
-//     else if (biblioEntityDisplayType === 'textarea-disabled') { 
+//     else if (biblioEntityDisplayType === 'textarea-disabled') {
 //       const geneStringsJoined = (geneStringListDash) ? geneStringListDash.join("\n") : '';
 //       return (
 //         <Container>
@@ -917,44 +989,7 @@ const EntityCreate = () => {
 //           </Col>
 //         </Row></Container>); }
 //     else if (biblioEntityDisplayType === 'entity-container-rows') {
-      return (
-        <Container fluid>
-        <RowDivider />
-        <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Selection</h3></Col></Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="1">topic</Col>
-          <Col className="div-grey-border" sm="1">entity_type</Col>
-          <Col className="div-grey-border" sm="1">species</Col>
-          <Col className="div-grey-border" sm="2">entity list</Col>
-          <Col className="div-grey-border" sm="2">entity validation</Col>
-          <Col className="div-grey-border" sm="1">priority</Col>
-          <Col className="div-grey-border" sm="3">notes</Col>
-          <Col className="div-grey-border" sm="1">button</Col>
-        </Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="1">genomic_entities</Col>
-          <Col className="div-grey-border" sm="1">Gene</Col>
-          <Col className="div-grey-border" sm="1">S. cerevisiae</Col>
-          <Col className="form-label col-form-label" sm="2" >
-            <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="2" >
-            <Container>
-              { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
-                return (
-                  <Row key={`geneEntityContainerrows ${index}`}>
-                    <Col className="Col-general Col-display Col-display-left" sm="5">{geneResult.geneSymbol}</Col>
-                    <Col className="Col-general Col-display Col-display-right" sm="7">{geneResult.curie}</Col>
-                  </Row> )
-              } ) }
-            </Container>
-          </Col>
-          <Col className="div-grey-border" sm="1">priority</Col>
-          <Col className="form-label col-form-label" sm="3">
-            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
-          </Col>
-          <Col className="form-label col-form-label" sm="1"><Button variant="primary" onClick={() => createEntities(referenceJsonLive.curie)} >Add</Button></Col>
-        </Row></Container>); 
+
 //      }
 //     else if (biblioEntityDisplayType === 'entity-container-vert') {
 //       return (
@@ -1087,13 +1122,12 @@ const EntityCreate = () => {
 //   let dispatchAction={changeFieldReferenceJson};
 //               <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} />
 //   let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
-}
 
 
 const BiblioDisplay = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
-  if (!('date_created' in referenceJsonLive)) { 
+  if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
@@ -1239,7 +1273,7 @@ const BiblioSubmitUpdateButton = () => {
               updateJson[field] = authorDict[field]
               if (field === 'orcid') {		// orcids just pass the orcid string, not the whole dict
                 let orcidValue = null;
-                if ( (authorDict['orcid'] !== null) && ('curie' in authorDict['orcid']) && 
+                if ( (authorDict['orcid'] !== null) && ('curie' in authorDict['orcid']) &&
                      (authorDict['orcid']['curie'] !== null) && (authorDict['orcid']['curie'] !== '') ) {
                   orcidValue = authorDict['orcid']['curie'].toUpperCase();
                   if (!( orcidValue.match(/^ORCID:(.*)$/) ) ) {
@@ -1280,7 +1314,7 @@ const BiblioSubmitUpdateButton = () => {
           let apiJson = {'reference_curie_from': fromCurie, 'reference_curie_to': toCurie, 'reference_comment_and_correction_type': comcorType}
           let method = 'POST'
           let subPath = 'reference_comment_and_correction/'
-          if (('reference_comment_and_correction_id' in comcorDict) && 
+          if (('reference_comment_and_correction_id' in comcorDict) &&
               (comcorDict['reference_comment_and_correction_id'] !== 'new')) {	// whole new entries needs create
             method = 'PATCH'
             subPath = 'reference_comment_and_correction/' + comcorDict['reference_comment_and_correction_id'] }
@@ -1577,7 +1611,7 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 // //       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
 //       let valueLiveCorpus = crossRefDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
 //       let valueLiveSource = crossRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
-// 
+//
 //       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
 //            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
 //              valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
@@ -1602,7 +1636,7 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
             <ColEditorSelect key={`colElement ${fieldName} ${index} corpus`} fieldType="select" fieldName={fieldName} colSize={otherColSize} value={valueLiveCorpus} updatedFlag={updatedFlagCorpus} placeholder="corpus" disabled={disabled} fieldKey={`${fieldName} ${index} corpus`} enumType="modAssociationCorpus" dispatchAction={changeFieldModAssociationReferenceJson} />
             <ColEditorSelect key={`colElement ${fieldName} ${index} mod_corpus_sort_source`} fieldType="select" fieldName={fieldName} colSize={otherColSizeB} value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="mod_corpus_sort_source" disabled={disabled} fieldKey={`${fieldName} ${index} mod_corpus_sort_source`} enumType="modAssociationSource" dispatchAction={changeFieldModAssociationReferenceJson} />
             {revertElement}
-          </Form.Group>); } } 
+          </Form.Group>); } }
 //           }
 //             <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurieId} updatedFlag={updatedFlagCurieId} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie id`} dispatchAction={changeFieldModAssociationReferenceJson} />
 //             <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldModAssociationReferenceJson} />
@@ -1823,7 +1857,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
                      valueDb = referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField][i] }
               if (valueLive !== valueDb) { updatedFlag = 'updated'; }
               updatedDict[updatableField][i] = updatedFlag } }
-          else { 
+          else {
             let valueDb = ''; let updatedFlag = ''; let valueLive = authorDict[updatableField];
             if (updatableField === 'orcid') {
               valueLive = orcidValue;
@@ -1919,7 +1953,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 const BiblioEditor = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
-  if (!('date_created' in referenceJsonLive)) { 
+  if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
@@ -2004,7 +2038,7 @@ const Biblio = () => {
     return (<Container><img src={loading_gif} className="loading_gif" alt="loading" /></Container>);
   }
 
-  if (referenceCurie === '') { 
+  if (referenceCurie === '') {
     return (<div><h4>Select a reference curie through <Link to='/Search'>Search</Link> or something else first</h4></div>) }
   else {
     return (

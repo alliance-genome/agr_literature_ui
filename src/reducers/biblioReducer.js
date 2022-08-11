@@ -6,10 +6,13 @@
 //   biblioEntityDisplayType: 'entity-container-rows',
 const initialState = {
   biblioAction: '',
-  biblioUpdating: 0,
   biblioUpdatingEntityAdd: 0,
-  updateCitationFlag: false,
   entityStuff: {},
+  isAddingEntity: false,
+  entityModalText: '',
+
+  biblioUpdating: 0,
+  updateCitationFlag: false,
   referenceCurie: '',
   referenceJsonLive: {},
   referenceJsonDb: {},
@@ -105,6 +108,12 @@ export default function(state = initialState, action) {
           geneResultList: action.payload.geneResultList
         }
       }
+    case 'SET_ENTITY_MODAL_TEXT':
+      console.log('SET_ENTITY_MODAL_TEXT reducer ' + action.payload);
+      return {
+        ...state,
+        entityModalText: action.payload
+      }
     case 'SET_BIBLIO_UPDATING_ENTITY_ADD':
       console.log('SET_BIBLIO_UPDATING_ENTITY_ADD reducer ' + action.payload);
       return {
@@ -112,9 +121,25 @@ export default function(state = initialState, action) {
         biblioUpdatingEntityAdd: action.payload
       }
     case 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD':
+      console.log('UPDATE_BUTTON_BIBLIO_ENTITY_ADD reducer ');
       // console.log(action.payload);
+      let getReferenceCurieFlagUpdateButtonEntityAdd = false;			// redirect to a reference if all updates successful
+      let entityModalTextUpdateButtonEntityAdd = state.entityModalText;
+      if (action.payload.responseMessage === "update success") {
+        console.log('reducer UPDATE_BUTTON_BIBLIO_ENTITY_ADD ' + action.payload.responseMessage);
+        console.log('state.biblioUpdatingEntityAdd ' + state.biblioUpdatingEntityAdd);
+        if (state.biblioUpdatingEntityAdd === 1) {
+          entityModalTextUpdateButtonEntityAdd = '';
+          getReferenceCurieFlagUpdateButtonEntityAdd = true; }
+      } else {
+        entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
+        console.log('Add failure ' + action.payload.responseMessage);
+      }
+
       return {
         ...state,
+        entityModalText: entityModalTextUpdateButtonEntityAdd,
+        getReferenceCurieFlag: getReferenceCurieFlagUpdateButtonEntityAdd,
         biblioUpdatingEntityAdd: state.biblioUpdatingEntityAdd - 1
       }
 

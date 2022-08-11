@@ -188,15 +188,14 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
       newId = parseInt(res.data); }
     dispatch({
       type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-      payload: {
-        responseMessage: response_message,
-        index: index,
-        value: newId,
-        field: field,
-        subField: subField
-      }
+      payload: { responseMessage: response_message }
     })
   })
+  .catch(err =>
+    dispatch({
+      type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+      payload: { responseMessage: 'error: ' + subPath + ' ' + err }
+    }));
 } };
 
 export const changeFieldEntityGeneList = (e, accessToken) => {
@@ -266,7 +265,12 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
           geneResultList.push( { 'geneSymbol': geneSymbol, 'curie': 'no Alliance curie' } ); } }
       dispatch(setGeneResultList(geneResultList));
     })
-  
+    .catch(err =>
+      dispatch({
+        type: 'SET_ENTITY_MODAL_TEXT',
+        payload: 'Entity lookup API failure' + err
+      }));
+
     dispatch(changeFieldEntityGeneTextarea(e));
   }
 };
@@ -587,6 +591,13 @@ export const resetBiblioIsLoading = () => {
 //     type: 'RESET_BIBLIO_REFERENCE_CURIE'
 //   };
 // };
+
+export const setEntityModalText = (payload) => {
+  return {
+    type: 'SET_ENTITY_MODAL_TEXT',
+    payload: payload
+  };
+};
 
 export const setBiblioUpdating = (payload) => {
   return {
