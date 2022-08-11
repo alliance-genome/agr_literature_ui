@@ -793,7 +793,7 @@ const EntityEditor = () => {
         <RowDivider />
         <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Editor</h3></Col></Row>
         <Row className="form-group row" >
-          <Col className="div-grey-border" sm="1">data type</Col>
+          <Col className="div-grey-border" sm="1">topic</Col>
           <Col className="div-grey-border" sm="1">entity type</Col>
           <Col className="div-grey-border" sm="1">species (taxon)</Col>
           <Col className="div-grey-border" sm="2">entity name</Col>
@@ -909,7 +909,7 @@ const EntityCreate = () => {
     <RowDivider />
     <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Addition</h3></Col></Row>
     <Row className="form-group row" >
-      <Col className="div-grey-border" sm="1">data type</Col>
+      <Col className="div-grey-border" sm="1">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
       <Col className="div-grey-border" sm="1">species</Col>
       <Col className="div-grey-border" sm="2">entity list</Col>
