@@ -886,7 +886,8 @@ const EntityCreate = () => {
           updateJson['note'] = noteText;
           let subPath = 'topic_entity_tag/';
           let method = 'POST';
-          let array = [ subPath, updateJson, method, 0, null, null]
+          // let array = [ subPath, updateJson, method, 0, null, null]
+          let array = [ subPath, updateJson, method]
           forApiArray.push( array );
     } } }
 
@@ -901,10 +902,6 @@ const EntityCreate = () => {
       dispatch(updateButtonBiblioEntityAdd(arrayData))
     }
   }
-
-  const showGenericModal = true;
-  const genericModalHeader = 'genericModalHeader';
-  const genericModalBody = 'genericModalBody';
 
   return (
     <Container fluid>

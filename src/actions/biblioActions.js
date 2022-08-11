@@ -161,10 +161,11 @@ export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIB
 
 export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatch => {
   // console.log('in updateButtonBiblioEntityAdd action');
-  const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
+  // const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
+  const [accessToken, subPath, payload, method] = updateArrayData;
   // console.log("payload " + payload);
   // console.log("payload "); console.log(updateArrayData);
-  let newId = null;
+  // let newId = null;
   const url = restUrl + '/' + subPath;
   let response_message = 'update success';
 
@@ -184,8 +185,8 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
          ((method === 'DELETE') && (res.status !== 204)) ||
          ((method === 'POST') && (res.status !== 201)) ) {
            response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method; }
-    if ((method === 'POST') && (res.status === 201)) {
-      newId = parseInt(res.data); }
+    // if ((method === 'POST') && (res.status === 201)) {
+    //   newId = parseInt(res.data); }
     dispatch({
       type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
       payload: { responseMessage: response_message }
