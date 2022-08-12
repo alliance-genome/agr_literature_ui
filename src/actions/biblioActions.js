@@ -272,17 +272,12 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
         payload: 'Entity lookup API failure' + err
       }));
 
-    dispatch(changeFieldEntityGeneTextarea(e));
+    dispatch(changeFieldEntityAddGeneralField(e));
   }
 };
 
-export const changeFieldEntityGeneTextarea = (e) => ({
-  type: 'CHANGE_FIELD_ENTITY_GENE_TEXTAREA',
-  payload: { field: e.target.id, value: e.target.value }
-});
-
-export const changeFieldEntityNoteTextarea = (e) => ({
-  type: 'CHANGE_FIELD_ENTITY_NOTE_TEXTAREA',
+export const changeFieldEntityAddGeneralField = (e) => ({
+  type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',
   payload: { field: e.target.id, value: e.target.value }
 });
 

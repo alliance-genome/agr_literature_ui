@@ -37,7 +37,7 @@ import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
 
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
-import { changeFieldEntityNoteTextarea } from '../actions/biblioActions';
+import { changeFieldEntityAddGeneralField } from '../actions/biblioActions';
 // import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
 import { updateButtonBiblioEntityAdd } from '../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../actions/biblioActions';
@@ -782,9 +782,12 @@ const BiblioEntity = () => {
   return (<><Container>{rowOrderedElements}</Container><EntityCreate key="entityCreate"/><EntityEditor key="entityEditor"/></>);
 } // const BiblioEntity
 
+
 const EntityEditor = () => {
   const dispatch = useDispatch();
-  const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type' };
+  const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
+  const priorityList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
+
   const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C' };
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
 //   if ('topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'] !== null) {
@@ -803,6 +806,12 @@ const EntityEditor = () => {
           <Col className="div-grey-border" sm="1">button</Col>
         </Row>
         { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
+          let priorityValue = '';
+          // UI only allows display/selection of one priority qualifier, but someone could connect in the database multiple priority qualifier in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
+          if ('props' in tetDict && tetDict['props'].length > 0) {
+            for (const tetpDict of tetDict['props'].values()) {
+              if ('qualifier' in tetpDict && tetpDict['qualifier'] !== '' && priorityList.includes(tetpDict['qualifier'])) {
+                priorityValue = tetpDict['qualifier']; } } }
           return (
             <Row key={`geneEntityContainerrows ${index}`}>
               <Col className="div-grey-border" sm="1">{tetDict.topic in curieToNameAtp ? curieToNameAtp[tetDict.topic] : tetDict.topic }</Col>
@@ -810,9 +819,15 @@ const EntityEditor = () => {
               <Col className="div-grey-border" sm="1">{tetDict.taxon in curieToNameTaxon ? curieToNameTaxon[tetDict.taxon] : tetDict.taxon }</Col>
               <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
               <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
-              <Col className="div-grey-border" sm="1">priority</Col>
+              <Col sm="1">
+                <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+                  { priorityList.map((optionValue, index) => (
+                    <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
+                  ))}
+                </Form.Control>
+              </Col>
               <Col className="form-label col-form-label" sm="3">
-                <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+                <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
                 <Button variant="outline-primary" >Update note</Button>&nbsp;
                 <Button variant="outline-danger" >Remove note</Button>
               </Col>
@@ -829,7 +844,7 @@ const EntityEditor = () => {
 //               <Col className="Col-general Col-display Col-display-right" sm="1">{tetDict.alliance_entity}</Col>
 // these need individual control
 //               <Col className="form-label col-form-label" sm="3">
-//                 <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//                 <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
 //                 <Button variant="outline-primary" >Update note</Button>&nbsp;
 //                 <Button variant="outline-danger" >Remove note</Button>
 //               </Col>
@@ -860,9 +875,10 @@ const EntityCreate = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
-  const geneText = useSelector(state => state.biblio.entityStuff.genetextarea);
-  const noteText = useSelector(state => state.biblio.entityStuff.notetextarea);
-  const geneResultList = useSelector(state => state.biblio.entityStuff.geneResultList);
+  const geneText = useSelector(state => state.biblio.entityAdd.genetextarea);
+  const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
+  const tetprioritySelect = useSelector(state => state.biblio.entityAdd.tetprioritySelect);
+  const geneResultList = useSelector(state => state.biblio.entityAdd.geneResultList);
 //   let geneStringListDash = [];
 //   let geneStringListParen = [];
 //   if (geneResultList) {
@@ -884,6 +900,9 @@ const EntityCreate = () => {
           updateJson['alliance_entity'] = geneResult.curie;
           updateJson['taxon'] = 'NCBITaxon:559292';
           updateJson['note'] = noteText;
+          if (tetprioritySelect && tetprioritySelect !== '') {
+            updateJson['props'] = [ { 'qualifier': tetprioritySelect } ]; }
+          // console.log(updateJson);
           let subPath = 'topic_entity_tag/';
           let method = 'POST';
           // let array = [ subPath, updateJson, method, 0, null, null]
@@ -902,6 +921,9 @@ const EntityCreate = () => {
       dispatch(updateButtonBiblioEntityAdd(arrayData))
     }
   }
+
+  const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
+  const priorityList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 
   return (
     <Container fluid>
@@ -936,9 +958,15 @@ const EntityCreate = () => {
           } ) }
         </Container>
       </Col>
-      <Col className="div-grey-border" sm="1">priority</Col>
+      <Col sm="1">
+        <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" value={tetprioritySelect} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+          { priorityList.map((optionValue, index) => (
+            <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
+          ))}
+        </Form.Control>
+      </Col>
       <Col className="form-label col-form-label" sm="3">
-        <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+        <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
       </Col>
       <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
     </Row></Container>);
@@ -1020,7 +1048,7 @@ const EntityCreate = () => {
 //           </Col>
 //           <Col className="div-grey-border" sm="1">priority</Col>
 //           <Col className="form-label col-form-label" sm="3">
-//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
 //           </Col>
 //           <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
 //         </Row></Container>); }
@@ -1055,7 +1083,7 @@ const EntityCreate = () => {
 //         <Row className="form-group row" >
 //           <Col className="div-grey-border" sm="2">notes</Col>
 //           <Col className="form-label col-form-label" sm="9">
-//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
 //           </Col>
 //           <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
 //         </Row></Container>); }
@@ -1101,7 +1129,7 @@ const EntityCreate = () => {
 //         <Row className="form-group row" >
 //           <Col className="div-grey-border" sm="2">notes</Col>
 //           <Col className="form-label col-form-label" sm="9">
-//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityNoteTextarea(e))} />
+//             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
 //           </Col>
 //           <Col className="form-label col-form-label" sm="1"><Button variant="primary">Add</Button></Col>
 //         </Row></Container>); }

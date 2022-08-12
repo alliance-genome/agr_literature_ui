@@ -7,7 +7,7 @@
 const initialState = {
   biblioAction: '',
   biblioUpdatingEntityAdd: 0,
-  entityStuff: {},
+  entityAdd: {},
   isAddingEntity: false,
   entityModalText: '',
 
@@ -81,21 +81,12 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
-    case 'CHANGE_FIELD_ENTITY_NOTE_TEXTAREA':
+    case 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD':
       // console.log(action.payload);
       return {
         ...state,
-        entityStuff: {
-          ...state.entityStuff,
-          [action.payload.field]: action.payload.value
-        }
-      }
-    case 'CHANGE_FIELD_ENTITY_GENE_TEXTAREA':
-      // console.log(action.payload);
-      return {
-        ...state,
-        entityStuff: {
-          ...state.entityStuff,
+        entityAdd: {
+          ...state.entityAdd,
           [action.payload.field]: action.payload.value
         }
       }
@@ -103,8 +94,8 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       return {
         ...state,
-        entityStuff: {
-          ...state.entityStuff,
+        entityAdd: {
+          ...state.entityAdd,
           geneResultList: action.payload.geneResultList
         }
       }
