@@ -35,20 +35,16 @@ const initialState = {
 
 const deriveEntitiesToMap = (referenceJson) => {
   let biblioGetReferenceCurieEntityEntitiesToMap = {};
-  console.log('referenceJson')
-  console.log(referenceJson)
   if ('topic_entity_tags' in referenceJson && referenceJson['topic_entity_tags'].length > 0) {
     for (const tet of referenceJson['topic_entity_tags']) {
       if (('taxon' in tet && tet['taxon'] !== '') &&
           ('entity_type' in tet && tet['entity_type'] !== '') &&
           ('alliance_entity' in tet && tet['alliance_entity'] !== '')) {
-            console.log(tet['taxon'] + " " + tet['entity_type'] + " " + tet['alliance_entity']);
+            // console.log(tet['taxon'] + " " + tet['entity_type'] + " " + tet['alliance_entity']);
             if (!(tet['entity_type'] in biblioGetReferenceCurieEntityEntitiesToMap)) {
               biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']] = {}; }
             if (!(tet['taxon'] in biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']])) {
               biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']][tet['taxon']] = new Set(); }
-            console.log('SET');
-            console.log(biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']][tet['taxon']]);
             biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']][tet['taxon']].add(tet['alliance_entity']);
   } } }
   return biblioGetReferenceCurieEntityEntitiesToMap;
@@ -134,7 +130,6 @@ export default function(state = initialState, action) {
       if (!(action.payload.taxon in biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType])) {
         biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType][action.payload.taxon] = {}; }
       for (const [entityCurie, entityName] of Object.entries(action.payload.entityMappings)) {
-        console.log('REDUCER set ' + entityCurie + ' to ' + entityName);
         biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType][action.payload.taxon][entityCurie] = entityName; }
       // must update referenceJsonLive to trigger rendering it again with new entityEntityMappings giving the entity names
       return {

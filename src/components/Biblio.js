@@ -786,24 +786,17 @@ const BiblioEntity = () => {
 
   for (const [entityType, entityTypeValue] of Object.entries(entityEntitiesToMap)) {
     if (allowedEntityTypes.has(entityType)) {
-      for (const [taxon, entitySet] of Object.entries(entityEntitiesToMap[entityType])) {
+      for (const [taxon, entitySet] of Object.entries(entityTypeValue)) {
         if (allowedTaxons.has(taxon)) {
-          console.log('yes')
-          console.log(entitySet)
           const entityCurieLookupList = [];
           entitySet.forEach((entityCurie) => {
-            console.log(entityCurie);
-            if (entityType in entityEntityMappings && taxon in entityEntityMappings[entityType] &&
-                entityCurie in entityEntityMappings[entityType][taxon]) {
-              console.log('already in as ' + entityEntityMappings[entityType][taxon][entityCurie]); }
-            else {
-              entityCurieLookupList.push(entityCurie);
-              console.log('needs lookup'); }
+            if (!(entityType in entityEntityMappings && taxon in entityEntityMappings[entityType] &&
+                  entityCurie in entityEntityMappings[entityType][taxon])) {
+              entityCurieLookupList.push(entityCurie); }
           });
           if (entityCurieLookupList.length > 0) {
             const entityCurieLookupString = entityCurieLookupList.join(" ");
-            console.log('look up');
-            console.log(entityCurieLookupString);
+            // console.log('look up ' + entityCurieLookupString);
             dispatch(ateamLookupEntityList(accessToken, entityType, taxon, entityCurieLookupString))
   } } } } }
 

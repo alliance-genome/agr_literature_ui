@@ -224,10 +224,6 @@ export const ateamLookupEntityList = (accessToken, entityType, taxon, entityCuri
       }
     })
     .then(res => {
-      console.log(aGeneApiUrl);
-      console.log('axios result');
-      console.log(res.data.results);
-      const searchMap = {};
       if (res.data.results) {
         for (const geneResult of res.data.results) {
           if (geneResult.curie && geneResult.symbol) { entityMappings[geneResult.curie] = geneResult.symbol; }
