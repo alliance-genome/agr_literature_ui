@@ -783,6 +783,7 @@ const BiblioEntity = () => {
   allowedEntityTypes.add('ATP:0000005');
   const allowedTaxons = new Set();
   allowedTaxons.add('NCBITaxon:559292');
+  allowedTaxons.add('NCBITaxon:6239');
 
   for (const [entityType, entityTypeValue] of Object.entries(entityEntitiesToMap)) {
     if (allowedEntityTypes.has(entityType)) {
@@ -820,7 +821,7 @@ const EntityEditor = () => {
   const priorityList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 
   const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
-  const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C' };
+  const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans' };
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   return (
     <Container fluid>
@@ -892,6 +893,7 @@ const EntityCreate = () => {
   const geneText = useSelector(state => state.biblio.entityAdd.genetextarea);
   const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
   const tetprioritySelect = useSelector(state => state.biblio.entityAdd.tetprioritySelect);
+  const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const geneResultList = useSelector(state => state.biblio.entityAdd.geneResultList);
 //   let geneStringListDash = [];
 //   let geneStringListParen = [];
@@ -912,7 +914,8 @@ const EntityCreate = () => {
           updateJson['topic'] = 'ATP:0000122';
           updateJson['entity_type'] = 'ATP:0000005';
           updateJson['alliance_entity'] = geneResult.curie;
-          updateJson['taxon'] = 'NCBITaxon:559292';
+          // updateJson['taxon'] = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
+          updateJson['taxon'] = taxonSelect;
           updateJson['note'] = noteText;
           if (tetprioritySelect && tetprioritySelect !== '') {
             updateJson['props'] = [ { 'qualifier': tetprioritySelect } ]; }
@@ -939,6 +942,15 @@ const EntityCreate = () => {
   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
   const priorityList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 
+  const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans', '': '' };
+  const taxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239' ];
+
+  // const taxonSelect = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
+  // const taxonSelect = 'NCBITaxon:6239';	// to hardcode if they don't want a dropdown
+  // figure out if they want general disabling to work the same for the whole row, in which case combine the next two variables
+  const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
+  const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
+
   return (
     <Container fluid>
     <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error" genericModalBody={entityModalText} />
@@ -957,9 +969,15 @@ const EntityCreate = () => {
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">entity type ATP:0000122</Col>
       <Col className="div-grey-border" sm="1">gene ATP:0000005</Col>
-      <Col className="div-grey-border" sm="1">S. cerevisiae S288C</Col>
+      <Col sm="1">
+        <Form.Control as="select" id="taxonSelect" type="taxonSelect" value={taxonSelect} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+          { taxonList.map((optionValue, index) => (
+            <option key={`taxonSelect ${optionValue}`} value={optionValue}>{curieToNameTaxon[optionValue]}</option>
+          ))}
+        </Form.Control>
+      </Col>
       <Col className="form-label col-form-label" sm="2" >
-        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken))} />
+        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} disabled={disabledEntityList} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken, taxonSelect))} />
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Container>
@@ -982,10 +1000,11 @@ const EntityCreate = () => {
       <Col className="form-label col-form-label" sm="3">
         <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
       </Col>
-      <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
+      <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
     </Row></Container>);
 }
 
+//       <Col className="div-grey-border" sm="1">S. cerevisiae S288C</Col>
 
 //   if (biblioEntityDisplayType === 'div-line-breaks') {
 //       return (

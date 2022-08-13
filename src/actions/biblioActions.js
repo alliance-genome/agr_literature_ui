@@ -244,7 +244,7 @@ const addEntityMappings = (entityType, taxon, entityMappings) => ({
   payload: { entityType: entityType, taxon: taxon, entityMappings: entityMappings }
 });
 
-export const changeFieldEntityGeneList = (e, accessToken) => {
+export const changeFieldEntityGeneList = (e, accessToken, taxon) => {
   return dispatch => {
     // console.log('action change field entity gene list ' + e.target.id + ' to ' + e.target.value);
     let splitList = [];
@@ -267,7 +267,7 @@ export const changeFieldEntityGeneList = (e, accessToken) => {
     const searchGeneJson = 
       {"searchFilters": {
         "nameFilters": { "symbol_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"} },
-        "taxonFilters": { "taxon.curie_keyword":{"queryString":"NCBITaxon:559292","tokenOperator":"AND"} }
+        "taxonFilters": { "taxon.curie_keyword":{"queryString":taxon,"tokenOperator":"AND"} }
       } }
   
     // straightforward way
