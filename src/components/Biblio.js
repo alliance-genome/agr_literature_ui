@@ -88,7 +88,7 @@ enumDict['personXrefPrefix'] = ['', 'ORCID']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'Xenbase', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN']
 enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor']
 enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
-enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'assigned_for_review']
+enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'automated_alliance', 'assigned_for_review']
 
 // title
 // cross_references (doi, pmid, modID)
