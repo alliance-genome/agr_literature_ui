@@ -1,4 +1,6 @@
 
+import _ from "lodash";
+
 //   biblioEntityDisplayType: 'textarea-disabled',
 //   biblioEntityDisplayType: 'div-line-breaks',
 //   biblioEntityDisplayType: 'entity-container-rows',
@@ -10,6 +12,8 @@ const initialState = {
   entityAdd: {},
   isAddingEntity: false,
   entityModalText: '',
+  entityEntitiesToMap: {},
+  entityEntityMappings: {},
 
   biblioUpdating: 0,
   updateCitationFlag: false,
@@ -28,6 +32,27 @@ const initialState = {
   updateFailure: 0,
   updateMessages: []
 };
+
+const deriveEntitiesToMap = (referenceJson) => {
+  let biblioGetReferenceCurieEntityEntitiesToMap = {};
+  console.log('referenceJson')
+  console.log(referenceJson)
+  if ('topic_entity_tags' in referenceJson && referenceJson['topic_entity_tags'].length > 0) {
+    for (const tet of referenceJson['topic_entity_tags']) {
+      if (('taxon' in tet && tet['taxon'] !== '') &&
+          ('entity_type' in tet && tet['entity_type'] !== '') &&
+          ('alliance_entity' in tet && tet['alliance_entity'] !== '')) {
+            console.log(tet['taxon'] + " " + tet['entity_type'] + " " + tet['alliance_entity']);
+            if (!(tet['entity_type'] in biblioGetReferenceCurieEntityEntitiesToMap)) {
+              biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']] = {}; }
+            if (!(tet['taxon'] in biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']])) {
+              biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']][tet['taxon']] = new Set(); }
+            console.log('SET');
+            console.log(biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']][tet['taxon']]);
+            biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']][tet['taxon']].add(tet['alliance_entity']);
+  } } }
+  return biblioGetReferenceCurieEntityEntitiesToMap;
+}
 
 export const checkHasPmid = (referenceJsonLive) => {
   // console.log('called checkHasPmid ' + referenceJsonLive.curie);
@@ -98,6 +123,24 @@ export default function(state = initialState, action) {
           ...state.entityAdd,
           geneResultList: action.payload.geneResultList
         }
+      }
+    case 'ENTITY_ADD_ENTITY_MAPPINGS':
+      // console.log('reducer ENTITY_ADD_ENTITY_MAPPINGS');
+      // console.log(action.payload);
+      // payload: { entityType: entityType, taxon: taxon, entityMappings: entityMappings }
+      const biblioEntityEntityMappingsAddEntityMappings = state.entityEntityMappings;
+      if (!(action.payload.entityType in biblioEntityEntityMappingsAddEntityMappings)) {
+        biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType] = {}; }
+      if (!(action.payload.taxon in biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType])) {
+        biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType][action.payload.taxon] = {}; }
+      for (const [entityCurie, entityName] of Object.entries(action.payload.entityMappings)) {
+        console.log('REDUCER set ' + entityCurie + ' to ' + entityName);
+        biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType][action.payload.taxon][entityCurie] = entityName; }
+      // must update referenceJsonLive to trigger rendering it again with new entityEntityMappings giving the entity names
+      return {
+        ...state,
+        referenceJsonLive: _.cloneDeep(state.referenceJsonLive),
+        entityEntityMappings: biblioEntityEntityMappingsAddEntityMappings
       }
     case 'SET_ENTITY_MODAL_TEXT':
       console.log('SET_ENTITY_MODAL_TEXT reducer ' + action.payload);
@@ -629,13 +672,17 @@ export default function(state = initialState, action) {
                    action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'outside_corpus'; }
         }
 
+        const biblioGetReferenceCurieEntityEntitiesToMap = deriveEntitiesToMap(action.payload)
+        // console.log(biblioGetReferenceCurieEntityEntitiesToMap);
+
         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
-        const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
+        const dbCopyGetReferenceCurie = _.cloneDeep(action.payload);
         return {
           ...state,
           referenceCurie: action.payload.curie,
           referenceJsonLive: action.payload,
           referenceJsonDb: dbCopyGetReferenceCurie,
+          entityEntitiesToMap: biblioGetReferenceCurieEntityEntitiesToMap,
           hasPmid: pmidBool,
           getReferenceCurieFlag: false,
           isLoading: false

@@ -36,6 +36,7 @@ import { biblioRevertField } from '../actions/biblioActions';
 import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
 
+import { ateamLookupEntityList } from '../actions/biblioActions';
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
 import { changeFieldEntityAddGeneralField } from '../actions/biblioActions';
 // import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
@@ -768,12 +769,49 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
 
 
 const BiblioEntity = () => {
+  const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
+  const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
+  // example data structure
+  // const entityEntityMappings = { 'ATP:0000005' : { 'NCBITaxon:559292' : { 'SGD:S000001855' : 'ACT1' } } };
+
+  const allowedEntityTypes = new Set();
+  allowedEntityTypes.add('ATP:0000005');
+  const allowedTaxons = new Set();
+  allowedTaxons.add('NCBITaxon:559292');
+
+  for (const [entityType, entityTypeValue] of Object.entries(entityEntitiesToMap)) {
+    if (allowedEntityTypes.has(entityType)) {
+      for (const [taxon, entitySet] of Object.entries(entityEntitiesToMap[entityType])) {
+        if (allowedTaxons.has(taxon)) {
+          console.log('yes')
+          console.log(entitySet)
+          const entityCurieLookupList = [];
+          entitySet.forEach((entityCurie) => {
+            console.log(entityCurie);
+            if (entityType in entityEntityMappings && taxon in entityEntityMappings[entityType] &&
+                entityCurie in entityEntityMappings[entityType][taxon]) {
+              console.log('already in as ' + entityEntityMappings[entityType][taxon][entityCurie]); }
+            else {
+              entityCurieLookupList.push(entityCurie);
+              console.log('needs lookup'); }
+          });
+          if (entityCurieLookupList.length > 0) {
+            const entityCurieLookupString = entityCurieLookupList.join(" ");
+            console.log('look up');
+            console.log(entityCurieLookupString);
+            dispatch(ateamLookupEntityList(accessToken, entityType, taxon, entityCurieLookupString))
+  } } } } }
+
   if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
+
   const rowOrderedElements = []
 //   rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
@@ -788,74 +826,57 @@ const EntityEditor = () => {
   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
   const priorityList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 
+  const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
   const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C' };
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-//   if ('topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'] !== null) {
+  return (
+    <Container fluid>
+    <RowDivider />
+    <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Editor</h3></Col></Row>
+    <Row className="form-group row" >
+      <Col className="div-grey-border" sm="1">topic</Col>
+      <Col className="div-grey-border" sm="1">entity type</Col>
+      <Col className="div-grey-border" sm="1">species (taxon)</Col>
+      <Col className="div-grey-border" sm="2">entity name</Col>
+      <Col className="div-grey-border" sm="2">entity curie</Col>
+      <Col className="div-grey-border" sm="1">priority</Col>
+      <Col className="div-grey-border" sm="3">notes</Col>
+      <Col className="div-grey-border" sm="1">button</Col>
+    </Row>
+    { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
+      let priorityValue = '';
+      // UI only allows display/selection of one priority qualifier, but someone could connect in the database multiple priority qualifier in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
+      if ('props' in tetDict && tetDict['props'].length > 0) {
+        for (const tetpDict of tetDict['props'].values()) {
+          if ('qualifier' in tetpDict && tetpDict['qualifier'] !== '' && priorityList.includes(tetpDict['qualifier'])) {
+            priorityValue = tetpDict['qualifier']; } } }
+      const entityName = (tetDict.entity_type in entityEntityMappings && tetDict.taxon in entityEntityMappings[tetDict.entity_type] &&
+                          tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
+                          entityEntityMappings[tetDict.entity_type][tetDict.taxon][tetDict.alliance_entity] : 'unknown';
       return (
-        <Container fluid>
-        <RowDivider />
-        <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Editor</h3></Col></Row>
-        <Row className="form-group row" >
-          <Col className="div-grey-border" sm="1">topic</Col>
-          <Col className="div-grey-border" sm="1">entity type</Col>
-          <Col className="div-grey-border" sm="1">species (taxon)</Col>
-          <Col className="div-grey-border" sm="2">entity name</Col>
-          <Col className="div-grey-border" sm="2">entity curie</Col>
-          <Col className="div-grey-border" sm="1">priority</Col>
-          <Col className="div-grey-border" sm="3">notes</Col>
-          <Col className="div-grey-border" sm="1">button</Col>
-        </Row>
-        { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
-          let priorityValue = '';
-          // UI only allows display/selection of one priority qualifier, but someone could connect in the database multiple priority qualifier in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
-          if ('props' in tetDict && tetDict['props'].length > 0) {
-            for (const tetpDict of tetDict['props'].values()) {
-              if ('qualifier' in tetpDict && tetpDict['qualifier'] !== '' && priorityList.includes(tetpDict['qualifier'])) {
-                priorityValue = tetpDict['qualifier']; } } }
-          return (
-            <Row key={`geneEntityContainerrows ${index}`}>
-              <Col className="div-grey-border" sm="1">{tetDict.topic in curieToNameAtp ? curieToNameAtp[tetDict.topic] : tetDict.topic }</Col>
-              <Col className="div-grey-border" sm="1">{tetDict.entity_type in curieToNameAtp ? curieToNameAtp[tetDict.entity_type] : tetDict.entity_type }</Col>
-              <Col className="div-grey-border" sm="1">{tetDict.taxon in curieToNameTaxon ? curieToNameTaxon[tetDict.taxon] : tetDict.taxon }</Col>
-              <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
-              <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
-              <Col sm="1">
-                <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
-                  { priorityList.map((optionValue, index) => (
-                    <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
-                  ))}
-                </Form.Control>
-              </Col>
-              <Col className="form-label col-form-label" sm="3">
-                <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
-                <Button variant="outline-primary" >Update note</Button>&nbsp;
-                <Button variant="outline-danger" >Remove note</Button>
-              </Col>
-              <Col className="form-label col-form-label" sm="1"><Button variant="outline-danger" >Remove Entity</Button></Col>
-            </Row> )
-        } ) }
-        </Container>);
-//   }
-//     for (const[index, tetDict] of referenceJsonLive['topic_entity_tags'].entries()) {
-
-//               <Col className="div-grey-border" sm="3">{tetDict.note}</Col>
-// {tetDict.note}
-
-//               <Col className="Col-general Col-display Col-display-right" sm="1">{tetDict.alliance_entity}</Col>
-// these need individual control
-//               <Col className="form-label col-form-label" sm="3">
-//                 <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
-//                 <Button variant="outline-primary" >Update note</Button>&nbsp;
-//                 <Button variant="outline-danger" >Remove note</Button>
-//               </Col>
-
-
-//   return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-//               <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
-//               <Col className={`Col-general Col-display Col-display-right ${updatedFlag}`} lg={{ span: 10 }}>{value}</Col>
-//             </Row>); }
-//   } }
-}
+        <Row key={`geneEntityContainerrows ${index}`}>
+          <Col className="div-grey-border" sm="1">{tetDict.topic in curieToNameAtp ? curieToNameAtp[tetDict.topic] : tetDict.topic }</Col>
+          <Col className="div-grey-border" sm="1">{tetDict.entity_type in curieToNameAtp ? curieToNameAtp[tetDict.entity_type] : tetDict.entity_type }</Col>
+          <Col className="div-grey-border" sm="1">{tetDict.taxon in curieToNameTaxon ? curieToNameTaxon[tetDict.taxon] : tetDict.taxon }</Col>
+          <Col className="div-grey-border" sm="2">{entityName}</Col>
+          <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
+          <Col sm="1">
+            <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+              { priorityList.map((optionValue, index) => (
+                <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
+              ))}
+            </Form.Control>
+          </Col>
+          <Col className="form-label col-form-label" sm="3">
+            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
+            <Button variant="outline-primary" >Update note</Button>&nbsp;
+            <Button variant="outline-danger" >Remove note</Button>
+          </Col>
+          <Col className="form-label col-form-label" sm="1"><Button variant="outline-danger" >Remove Entity</Button></Col>
+        </Row> )
+    } ) }
+    </Container>);
+} // const EntityEditor = () =>
 
 
 const ModalGeneric = ({showGenericModal, genericModalHeader, genericModalBody}) => {

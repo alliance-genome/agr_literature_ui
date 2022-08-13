@@ -199,11 +199,60 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
     }));
 } };
 
+
+export const ateamLookupEntityList = (accessToken, entityType, taxon, entityCurieLookupString) => {
+  return dispatch => {
+    console.log('looking up ateamLookupEntityList ' + entityCurieLookupString);
+
+    // sample test data
+    // const entityMappings = { 'SGD:S000005737': 'one', 'SGD:S000001855': 'two' }
+    // dispatch(addEntityMappings(entityType, taxon, entityMappings));
+
+    const entityMappings = {};
+    // right now always look for gene, entityType === ATP:0000005, if using others, change aGeneApiUrl
+    const aGeneApiUrl = ateamApiBaseUrl + 'api/gene/search?limit=10&page=0';
+
+    const searchEntityJson =
+      {"searchFilters": {
+        "nameFilters": { "curie_keyword":{"queryString":entityCurieLookupString,"tokenOperator":"OR"} }
+      } }
+
+    axios.post(aGeneApiUrl, searchEntityJson, {
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + accessToken
+      }
+    })
+    .then(res => {
+      console.log(aGeneApiUrl);
+      console.log('axios result');
+      console.log(res.data.results);
+      const searchMap = {};
+      if (res.data.results) {
+        for (const geneResult of res.data.results) {
+          if (geneResult.curie && geneResult.symbol) { entityMappings[geneResult.curie] = geneResult.symbol; }
+      } }
+      dispatch(addEntityMappings(entityType, taxon, entityMappings));
+    })
+    .catch(err => {
+      // console.log('axios failure'); console.log(err);
+      dispatch({
+        type: 'SET_ENTITY_MODAL_TEXT',
+        payload: 'Entity lookup API failure' + err
+      })});
+  }
+};
+
+const addEntityMappings = (entityType, taxon, entityMappings) => ({
+  type: 'ENTITY_ADD_ENTITY_MAPPINGS',
+  payload: { entityType: entityType, taxon: taxon, entityMappings: entityMappings }
+});
+
 export const changeFieldEntityGeneList = (e, accessToken) => {
   return dispatch => {
     // console.log('action change field entity gene list ' + e.target.id + ' to ' + e.target.value);
     let splitList = [];
-    if (e.target.value && e.target.value !== '') { 
+    if (e.target.value && e.target.value !== '') {
       splitList = e.target.value.split(',').map(element => { return element.trim(); }).filter(item => item);
     }
     const geneQueryString = splitList.join(" ");
