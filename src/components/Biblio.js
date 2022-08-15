@@ -1,5 +1,5 @@
 // import { useState } from 'react'
-// import { useEffect } from 'react';
+import { useEffect } from 'react';
 // import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 // import { useHistory } from "react-router-dom";
@@ -902,6 +902,11 @@ const EntityCreate = () => {
 //       geneStringListParen.push(geneResObject.geneSymbol + " ( " + geneResObject.curie + " ) ");
 //       geneStringListDash.push(geneResObject.geneSymbol + " -- " + geneResObject.curie); } }
 
+  useEffect( () => {
+    if (!(taxonSelect === '' || taxonSelect === undefined)) {
+      dispatch(changeFieldEntityGeneList(geneText, accessToken, taxonSelect)) }
+  }, [geneText, taxonSelect]);
+
   function createEntities(refCurie) {
     const forApiArray = []
     if ( geneResultList && geneResultList.length > 0 ) {
@@ -970,14 +975,14 @@ const EntityCreate = () => {
       <Col className="div-grey-border" sm="1">entity type ATP:0000122</Col>
       <Col className="div-grey-border" sm="1">gene ATP:0000005</Col>
       <Col sm="1">
-        <Form.Control as="select" id="taxonSelect" type="taxonSelect" value={taxonSelect} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+        <Form.Control as="select" id="taxonSelect" type="taxonSelect" value={taxonSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
           { taxonList.map((optionValue, index) => (
             <option key={`taxonSelect ${optionValue}`} value={optionValue}>{curieToNameTaxon[optionValue]}</option>
           ))}
         </Form.Control>
       </Col>
       <Col className="form-label col-form-label" sm="2" >
-        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} disabled={disabledEntityList} onChange={(e) => dispatch(changeFieldEntityGeneList(e, accessToken, taxonSelect))} />
+        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Container>

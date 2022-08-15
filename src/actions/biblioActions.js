@@ -244,12 +244,12 @@ const addEntityMappings = (entityType, taxon, entityMappings) => ({
   payload: { entityType: entityType, taxon: taxon, entityMappings: entityMappings }
 });
 
-export const changeFieldEntityGeneList = (e, accessToken, taxon) => {
+export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
   return dispatch => {
-    // console.log('action change field entity gene list ' + e.target.id + ' to ' + e.target.value);
+    // console.log('action change field entity gene list ' + geneText);
     let splitList = [];
-    if (e.target.value && e.target.value !== '') {
-      splitList = e.target.value.split(',').map(element => { return element.trim(); }).filter(item => item);
+    if (geneText && geneText !== '') {
+      splitList = geneText.split(',').map(element => { return element.trim(); }).filter(item => item);
     }
     const geneQueryString = splitList.join(" ");
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
@@ -316,8 +316,6 @@ export const changeFieldEntityGeneList = (e, accessToken, taxon) => {
         type: 'SET_ENTITY_MODAL_TEXT',
         payload: 'Entity lookup API failure' + err
       }));
-
-    dispatch(changeFieldEntityAddGeneralField(e));
   }
 };
 
