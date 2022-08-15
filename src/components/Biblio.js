@@ -42,6 +42,8 @@ import { changeFieldEntityAddGeneralField } from '../actions/biblioActions';
 // import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
 import { updateButtonBiblioEntityAdd } from '../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../actions/biblioActions';
+import { updateButtonBiblioEntityRemoveEntity } from '../actions/biblioActions';
+import { setBiblioEntityRemoveEntity } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -820,9 +822,12 @@ const EntityEditor = () => {
   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
   const priorityList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 
+  const accessToken = useSelector(state => state.isLogged.accessToken);
   const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
   const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans' };
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
+
   return (
     <Container fluid>
     <RowDivider />
@@ -848,7 +853,7 @@ const EntityEditor = () => {
                           tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
                           entityEntityMappings[tetDict.entity_type][tetDict.taxon][tetDict.alliance_entity] : 'unknown';
       return (
-        <Row key={`geneEntityContainerrows ${index}`}>
+        <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
           <Col className="div-grey-border" sm="1">{tetDict.topic in curieToNameAtp ? curieToNameAtp[tetDict.topic] : tetDict.topic }</Col>
           <Col className="div-grey-border" sm="1">{tetDict.entity_type in curieToNameAtp ? curieToNameAtp[tetDict.entity_type] : tetDict.entity_type }</Col>
           <Col className="div-grey-border" sm="1">{tetDict.taxon in curieToNameTaxon ? curieToNameTaxon[tetDict.taxon] : tetDict.taxon }</Col>
@@ -866,11 +871,21 @@ const EntityEditor = () => {
             <Button variant="outline-primary" >Update note</Button>&nbsp;
             <Button variant="outline-danger" >Remove note</Button>
           </Col>
-          <Col className="form-label col-form-label" sm="1"><Button variant="outline-danger" >Remove Entity</Button></Col>
+          <Col className="form-label col-form-label" sm="1">
+            <Button variant="outline-danger" 
+              disabled={biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? 'disabled' : ''}
+              onClick={() => {
+                dispatch(setBiblioEntityRemoveEntity(tetDict.topic_entity_tag_id, true));
+                dispatch(updateButtonBiblioEntityRemoveEntity(accessToken, tetDict.topic_entity_tag_id, null, 'DELETE')) } } >
+            {biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? <Spinner animation="border" size="sm"/> : "Remove Entity"}</Button></Col>
         </Row> )
     } ) }
     </Container>);
 } // const EntityEditor = () =>
+
+
+//           <Col className="form-label col-form-label" sm="1"><Button variant="outline-danger" >Remove Entity</Button></Col>
+//           <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
 
 
 const ModalGeneric = ({showGenericModal, genericModalHeader, genericModalBody}) => {
@@ -905,7 +920,7 @@ const EntityCreate = () => {
   useEffect( () => {
     if (!(taxonSelect === '' || taxonSelect === undefined)) {
       dispatch(changeFieldEntityGeneList(geneText, accessToken, taxonSelect)) }
-  }, [geneText, taxonSelect]);
+  }, [geneText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function createEntities(refCurie) {
     const forApiArray = []

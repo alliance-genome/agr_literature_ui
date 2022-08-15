@@ -159,6 +159,46 @@ export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIB
 //   createUpdateButtonBiblioEntityAdd()
 // };
 
+
+export const setBiblioEntityRemoveEntity = (tetId, value) => ({
+  type: 'SET_BIBLIO_ENTITY_REMOVE_ENTITY',
+  payload: { tetId: tetId, value: value }
+});
+
+export const updateButtonBiblioEntityRemoveEntity = (accessToken, tetId, payload, method) => { return dispatch => {
+  // console.log(subPath);
+  // console.log(method);
+  const url = restUrl + '/topic_entity_tag/' + tetId;
+  let response_message = 'update success';
+
+  axios({
+      url: url,
+      method: method,
+      headers: {
+        'content-type': 'application/json',
+        'mode': 'cors',
+        'authorization': 'Bearer ' + accessToken
+      },
+      data: payload
+  })
+  .then(res => {
+    console.log(res);
+    if ( ((method === 'PATCH') && (res.status !== 202)) ||
+         ((method === 'DELETE') && (res.status !== 204)) ||
+         ((method === 'POST') && (res.status !== 201)) ) {
+           response_message = 'error: ' + tetId + ' : API status code ' + res.status + ' for method ' + method; }
+    dispatch({
+      type: 'UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY',
+      payload: { tetId: tetId, responseMessage: response_message }
+    })
+  })
+  .catch(err =>
+    dispatch({
+      type: 'UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY',
+      payload: { tetId: tetId, responseMessage: 'error: updateButtonBiblioEntityRemoveEntity failure on topic_entity_tag_id ' + tetId + ' ' + err }
+    }));
+} };
+
 export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatch => {
   // console.log('in updateButtonBiblioEntityAdd action');
   // const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;

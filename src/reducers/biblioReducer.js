@@ -9,6 +9,7 @@ import _ from "lodash";
 const initialState = {
   biblioAction: '',
   biblioUpdatingEntityAdd: 0,
+  biblioUpdatingEntityRemoveEntity: {},
   entityAdd: {},
   isAddingEntity: false,
   entityModalText: '',
@@ -148,6 +149,39 @@ export default function(state = initialState, action) {
       return {
         ...state,
         biblioUpdatingEntityAdd: action.payload
+      }
+    case 'SET_BIBLIO_ENTITY_REMOVE_ENTITY':
+      console.log('SET_BIBLIO_ENTITY_REMOVE_ENTITY reducer ');
+      console.log(action.payload);
+      const biblioEntityRemoveEntityUpdatingTet = _.cloneDeep(state.biblioUpdatingEntityRemoveEntity);
+      biblioEntityRemoveEntityUpdatingTet[action.payload.tetId] = action.payload.value;
+      return {
+        ...state,
+        biblioUpdatingEntityRemoveEntity: biblioEntityRemoveEntityUpdatingTet
+      }
+    case 'UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY':
+      console.log('UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY reducer ');
+      console.log(action.payload);
+      const referenceJsonLiveBiblioEntityRemoveEntity = _.cloneDeep(state.referenceJsonLive);
+      const biblioEntityRemoveEntityUpdatedTet = _.cloneDeep(state.biblioUpdatingEntityRemoveEntity);
+      biblioEntityRemoveEntityUpdatedTet[action.payload.tetId] = false;
+      let entityModalTextUpdateButtonEntityRemoveEntity = state.entityModalText;
+      if (action.payload.responseMessage === "update success") {
+        entityModalTextUpdateButtonEntityRemoveEntity = '';
+        if ('topic_entity_tags' in referenceJsonLiveBiblioEntityRemoveEntity &&
+            referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'].length > 0) {
+          const filteredTet = referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'].filter(
+            (tet) => { if ('topic_entity_tag_id' in tet && tet['topic_entity_tag_id'] !== action.payload.tetId) { return tet; } });
+          referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'] = filteredTet; }
+      } else {
+        entityModalTextUpdateButtonEntityRemoveEntity += "<br>\n" + action.payload.responseMessage;
+      }
+
+      return {
+        ...state,
+        entityModalText: entityModalTextUpdateButtonEntityRemoveEntity,
+        biblioUpdatingEntityRemoveEntity: biblioEntityRemoveEntityUpdatedTet,
+        referenceJsonLive: referenceJsonLiveBiblioEntityRemoveEntity
       }
     case 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD':
       console.log('UPDATE_BUTTON_BIBLIO_ENTITY_ADD reducer ');
