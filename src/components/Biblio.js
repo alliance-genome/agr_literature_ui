@@ -860,14 +860,14 @@ const EntityEditor = () => {
           <Col className="div-grey-border" sm="2">{entityName}</Col>
           <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
           <Col sm="1">
-            <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+            <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" disabled="disabled" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
               { priorityList.map((optionValue, index) => (
                 <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
               ))}
             </Form.Control>
           </Col>
           <Col className="form-label col-form-label" sm="3">
-            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
+            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} disabled="disabled" onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
             <Button variant="outline-primary" >Update note</Button>&nbsp;
             <Button variant="outline-danger" >Remove note</Button>
           </Col>
