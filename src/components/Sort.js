@@ -83,11 +83,18 @@ const Sort = () => {
           else if (reference['workflow'] === 'not_experimental') { workflowTagId = 'ATP:0000104'; }
           else if (reference['workflow'] === 'meeting')          { workflowTagId = 'ATP:0000106'; }
           if (workflowTagId !== null) {
-            updateJson = { 'workflow_tag_id': workflowTagId, 'mod_abbreviation': '', 'reference_curie': reference['curie'] }
-            subPath = 'workflow_tag/'
-            method = 'POST';
-            let array = [ subPath, updateJson, method, index, field, subField ]
-            forApiArray.push( array );
+            if (reference['existing_reference_workflow_tag_id_expt_meeting']) {
+              updateJson = { 'workflow_tag_id': workflowTagId }
+              subPath = 'workflow_tag/' + reference['existing_reference_workflow_tag_id_expt_meeting'];
+              method = 'PATCH';
+              let array = [ subPath, updateJson, method, index, field, subField ]
+              forApiArray.push( array ); }
+            else {
+              updateJson = { 'workflow_tag_id': workflowTagId, 'mod_abbreviation': '', 'reference_curie': reference['curie'] }
+              subPath = 'workflow_tag/'
+              method = 'POST';
+              let array = [ subPath, updateJson, method, index, field, subField ]
+              forApiArray.push( array ); }
     } } } }
     let dispatchCount = forApiArray.length;
 

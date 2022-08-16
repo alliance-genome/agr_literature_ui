@@ -68,12 +68,23 @@ export default function(state = initialState, action) {
       for (let reference of action.payload) {
         reference['corpus'] = 'needs_review';
         reference['workflow'] = 'experimental';
+        reference['existing_reference_workflow_tag_id_expt_meeting'] = '';	// parent term in ontology is called reference_type which is not clear
         if ('workflow_tags' in reference && reference['workflow_tags'].length > 0) {
           for (const workflowTag of reference['workflow_tags'].values()) {
             // initialize radio button workflow values if workflow ATP has those
-            if (workflowTag.workflow_tag_id === 'ATP:0000104') { reference['workflow'] = 'not_experimental'; }
-            else if (workflowTag.workflow_tag_id === 'ATP:0000106') { reference['workflow'] = 'meeting'; }
-      } } }
+            if (workflowTag.workflow_tag_id === 'ATP:0000103') {
+              reference['existing_reference_workflow_tag_id_expt_meeting'] = workflowTag.reference_workflow_tag_id;
+              reference['workflow'] = 'experimental'; }
+            else if (workflowTag.workflow_tag_id === 'ATP:0000104') {
+              reference['existing_reference_workflow_tag_id_expt_meeting'] = workflowTag.reference_workflow_tag_id;
+              reference['workflow'] = 'not_experimental'; }
+            else if (workflowTag.workflow_tag_id === 'ATP:0000106') {
+              reference['existing_reference_workflow_tag_id_expt_meeting'] = workflowTag.reference_workflow_tag_id;
+              reference['workflow'] = 'meeting'; }
+        } }
+        if ('category' in reference && reference['category'] === 'review_article') { reference['workflow'] = 'not_experimental'; }
+
+      }
       // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
       const referencesToSortDb = JSON.parse(JSON.stringify(action.payload))
       return {
