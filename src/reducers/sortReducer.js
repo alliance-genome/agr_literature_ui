@@ -62,13 +62,18 @@ export default function(state = initialState, action) {
       }
 
     case 'SORT_BUTTON_MODS_QUERY':
-      // console.log('reducer SORT_BUTTON_MODS_QUERY');
-      console.log(action.payload);
+      console.log('reducer SORT_BUTTON_MODS_QUERY');
+      // console.log(action.payload);
       // The endpoint only returns values that are 'needs_review', so inject those values to the objects
       for (let reference of action.payload) {
         reference['corpus'] = 'needs_review';
         reference['workflow'] = 'experimental';
-      }
+        if ('workflow_tags' in reference && reference['workflow_tags'].length > 0) {
+          for (const workflowTag of reference['workflow_tags'].values()) {
+            // initialize radio button workflow values if workflow ATP has those
+            if (workflowTag.workflow_tag_id === 'ATP:0000104') { reference['workflow'] = 'not_experimental'; }
+            else if (workflowTag.workflow_tag_id === 'ATP:0000106') { reference['workflow'] = 'meeting'; }
+      } } }
       // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
       const referencesToSortDb = JSON.parse(JSON.stringify(action.payload))
       return {

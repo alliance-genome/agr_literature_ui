@@ -157,7 +157,9 @@ const Sort = () => {
             <Col lg={2} >Outside </Col>
           </Row>
           <RowDivider /> */}
-          {referencesToSortLive.map((reference, index) => (
+          {referencesToSortLive.map((reference, index) => {
+            // console.log(reference);	// check previous workflow here
+            return (
             <div key={`reference div ${index}`} >
             <Row key={`reference ${index}`} >
               <Col lg={4} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
@@ -259,7 +261,7 @@ const Sort = () => {
             </Row>
 
             </div>
-          ))}
+          )} )}
           <RowDivider />
           <Row><Col>
             <BiblioSubmitUpdateRouter />
