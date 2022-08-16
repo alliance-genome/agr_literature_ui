@@ -11,6 +11,7 @@ const initialState = {
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
   entityAdd: {},
+  entityAddInit: { 'taxonSelect': '', 'genetextarea': '', 'notetextarea': '', 'tetprioritySelect': '', 'geneResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
   entityEntitiesToMap: {},
@@ -188,11 +189,13 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       let getReferenceCurieFlagUpdateButtonEntityAdd = false;			// redirect to a reference if all updates successful
       let entityModalTextUpdateButtonEntityAdd = state.entityModalText;
+      let entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAdd);
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO_ENTITY_ADD ' + action.payload.responseMessage);
         console.log('state.biblioUpdatingEntityAdd ' + state.biblioUpdatingEntityAdd);
         if (state.biblioUpdatingEntityAdd === 1) {
           entityModalTextUpdateButtonEntityAdd = '';
+          entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInit);
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
       } else {
         entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
@@ -202,6 +205,7 @@ export default function(state = initialState, action) {
       return {
         ...state,
         entityModalText: entityModalTextUpdateButtonEntityAdd,
+        entityAdd: entityAddUpdateButtonEntityAdd,
         getReferenceCurieFlag: getReferenceCurieFlagUpdateButtonEntityAdd,
         biblioUpdatingEntityAdd: state.biblioUpdatingEntityAdd - 1
       }
