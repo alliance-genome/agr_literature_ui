@@ -560,11 +560,8 @@ export const changeBiblioAuthorExpandToggler = (e) => {
   };
 };
 
-export const changeBiblioActionToggler = (e) => {
-  console.log('action change biblio action toggler radio ' + e.target.id + ' to ' + e.target.value);
-  let biblioActionTogglerSelected = 'display';
-  if (e.target.id === 'biblio-toggler-editor') { biblioActionTogglerSelected = 'editor'; }
-  else if (e.target.id === 'biblio-toggler-entity') { biblioActionTogglerSelected = 'entity'; }
+export const changeBiblioActionToggler = (e, biblioActionTogglerSelected) => {
+  console.log('action change biblio action toggler radio ' + e.target.id + ' to ' + biblioActionTogglerSelected);
   return {
     type: 'CHANGE_BIBLIO_ACTION_TOGGLER',
     payload: biblioActionTogglerSelected

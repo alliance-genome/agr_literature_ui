@@ -169,9 +169,13 @@ const BiblioActionToggler = () => {
   let displayChecked = '';
   let editorChecked = '';
   let entityChecked = '';
+  let topicChecked = '';
+  let workflowChecked = '';
+  let radioFormDisplayClassname = 'radio-form';
   let radioFormEditorClassname = 'radio-form';
   let radioFormEntityClassname = 'radio-form';
-  let radioFormDisplayClassname = 'radio-form';
+  let radioFormTopicClassname = 'radio-form';
+  let radioFormWorkflowClassname = 'radio-form';
   let biblioActionTogglerSelected = 'display';
   if (biblioAction === 'editor') {
       radioFormEditorClassname += ' underlined';
@@ -181,6 +185,14 @@ const BiblioActionToggler = () => {
       radioFormEntityClassname += ' underlined';
       entityChecked = 'checked';
       biblioActionTogglerSelected = 'entity'; }
+    else if (biblioAction === 'topic') {
+      radioFormTopicClassname += ' underlined';
+      topicChecked = 'checked';
+      biblioActionTogglerSelected = 'topic'; }
+    else if (biblioAction === 'workflow') {
+      radioFormWorkflowClassname += ' underlined';
+      workflowChecked = 'checked';
+      biblioActionTogglerSelected = 'workflow'; }
     else {
       radioFormDisplayClassname += ' underlined';
       displayChecked = 'checked'; }
@@ -214,7 +226,7 @@ const BiblioActionToggler = () => {
           type='radio'
           label='biblio display'
           id='biblio-toggler-display'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e))}
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'display'))}
         />
       </div>
       <div className='radio-span'>
@@ -225,7 +237,7 @@ const BiblioActionToggler = () => {
           type='radio'
           label='biblio editor'
           id='biblio-toggler-editor'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e))}
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'editor'))}
         />
       </div>
       <div className='radio-span'>
@@ -236,7 +248,29 @@ const BiblioActionToggler = () => {
           type='radio'
           label='entity editor'
           id='biblio-toggler-entity'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e))}
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'entity'))}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormTopicClassname}
+          checked={topicChecked}
+          type='radio'
+          label='topic editor'
+          id='biblio-toggler-topic'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'topic'))}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormWorkflowClassname}
+          checked={workflowChecked}
+          type='radio'
+          label='workflow editor'
+          id='biblio-toggler-workflow'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'workflow'))}
         />
       </div>
     </div>
@@ -253,7 +287,11 @@ const BiblioActionRouter = () => {
     case 'editor':
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioEditor /></Container>);
     case 'entity':
-      return (<><Container><BiblioActionToggler /></Container><BiblioEntity /></>);
+      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
+    case 'topic':
+      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
+    case 'workflow':
+      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
     default:
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
   }
@@ -768,13 +806,39 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
 //     </Form>);
 // } // const BiblioEntityDisplayTypeToggler = () =>
 
-
-const BiblioEntity = () => {
+const BiblioWorkflow = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
 
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
+  const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
+  return (
+    <Container fluid>
+    <RowDivider />
+    <Row className="form-group row" >
+      <Col className="form-label col-form-label" sm="3"><h3>Workflow Editor</h3></Col></Row>
+    <Row className="form-group row" >
+      <Col className="div-grey-border" sm="1">topic</Col>
+      <Col className="div-grey-border" sm="1">entity type</Col>
+      <Col className="div-grey-border" sm="1">species (taxon)</Col>
+      <Col className="div-grey-border" sm="2">entity name</Col>
+      <Col className="div-grey-border" sm="2">entity curie</Col>
+      <Col className="div-grey-border" sm="1">priority</Col>
+      <Col className="div-grey-border" sm="3">notes</Col>
+      <Col className="div-grey-border" sm="1">button</Col>
+    </Row>
+    </Container> );
+}
+
+const BiblioTagging = () => {
+  const dispatch = useDispatch();
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
   const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
   // example data structure
@@ -808,19 +872,24 @@ const BiblioEntity = () => {
     return(<>{message}</>); }
 
   const rowOrderedElements = []
-//   rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
+  // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-//   rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
-  return (<><Container>{rowOrderedElements}</Container><EntityCreate key="entityCreate"/><EntityEditor key="entityEditor"/></>);
-} // const BiblioEntity
+  // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
+  return (<><Container>{rowOrderedElements}</Container>
+            { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
+} // const BiblioTagging
 
+const BiblioEntity = () => {
+  return (<><EntityCreate key="entityCreate" />
+            <EntityEditor key="entityEditor" /></>); }
 
 const EntityEditor = () => {
   const dispatch = useDispatch();
   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
   const priorityList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 
+  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
   const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans' };
@@ -830,7 +899,8 @@ const EntityEditor = () => {
   return (
     <Container fluid>
     <RowDivider />
-    <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Editor</h3></Col></Row>
+    <Row className="form-group row" >
+      <Col className="form-label col-form-label" sm="3"><h3>{biblioAction.charAt(0).toUpperCase() + biblioAction.slice(1)} Editor</h3></Col></Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
@@ -851,33 +921,36 @@ const EntityEditor = () => {
       const entityName = (tetDict.entity_type in entityEntityMappings && tetDict.taxon in entityEntityMappings[tetDict.entity_type] &&
                           tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
                           entityEntityMappings[tetDict.entity_type][tetDict.taxon][tetDict.alliance_entity] : 'unknown';
-      return (
-        <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
-          <Col className="div-grey-border" sm="1">{tetDict.topic in curieToNameAtp ? curieToNameAtp[tetDict.topic] : tetDict.topic }</Col>
-          <Col className="div-grey-border" sm="1">{tetDict.entity_type in curieToNameAtp ? curieToNameAtp[tetDict.entity_type] : tetDict.entity_type }</Col>
-          <Col className="div-grey-border" sm="1">{tetDict.taxon in curieToNameTaxon ? curieToNameTaxon[tetDict.taxon] : tetDict.taxon }</Col>
-          <Col className="div-grey-border" sm="2">{entityName}</Col>
-          <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
-          <Col sm="1">
-            <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" disabled="disabled" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
-              { priorityList.map((optionValue, index) => (
-                <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
-              ))}
-            </Form.Control>
-          </Col>
-          <Col className="form-label col-form-label" sm="3">
-            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} disabled="disabled" onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
-            <Button variant="outline-primary" >Update note</Button>&nbsp;
-            <Button variant="outline-danger" >Remove note</Button>
-          </Col>
-          <Col className="form-label col-form-label" sm="1">
-            <Button variant="outline-danger" 
-              disabled={biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? 'disabled' : ''}
-              onClick={() => {
-                dispatch(setBiblioEntityRemoveEntity(tetDict.topic_entity_tag_id, true));
-                dispatch(updateButtonBiblioEntityRemoveEntity(accessToken, tetDict.topic_entity_tag_id, null, 'DELETE')) } } >
-            {biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? <Spinner animation="border" size="sm"/> : "Remove Entity"}</Button></Col>
-        </Row> )
+      if ( (biblioAction === 'entity') && (tetDict.topic !== 'ATP:0000122') ) { return; }
+      else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return; }
+      else {
+        return (
+          <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
+            <Col className="div-grey-border" sm="1">{tetDict.topic in curieToNameAtp ? curieToNameAtp[tetDict.topic] : tetDict.topic }</Col>
+            <Col className="div-grey-border" sm="1">{tetDict.entity_type in curieToNameAtp ? curieToNameAtp[tetDict.entity_type] : tetDict.entity_type }</Col>
+            <Col className="div-grey-border" sm="1">{tetDict.taxon in curieToNameTaxon ? curieToNameTaxon[tetDict.taxon] : tetDict.taxon }</Col>
+            <Col className="div-grey-border" sm="2">{entityName}</Col>
+            <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
+            <Col sm="1">
+              <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" disabled="disabled" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+                { priorityList.map((optionValue, index) => (
+                  <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
+                ))}
+              </Form.Control>
+            </Col>
+            <Col className="form-label col-form-label" sm="3">
+              <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} disabled="disabled" onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
+              <Button variant="outline-primary" >Update note</Button>&nbsp;
+              <Button variant="outline-danger" >Remove note</Button>
+            </Col>
+            <Col className="form-label col-form-label" sm="1">
+              <Button variant="outline-danger" 
+                disabled={biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? 'disabled' : ''}
+                onClick={() => {
+                  dispatch(setBiblioEntityRemoveEntity(tetDict.topic_entity_tag_id, true));
+                  dispatch(updateButtonBiblioEntityRemoveEntity(accessToken, tetDict.topic_entity_tag_id, null, 'DELETE')) } } >
+              {biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? <Spinner animation="border" size="sm"/> : "Remove Entity"}</Button></Col>
+          </Row> ) }
     } ) }
     </Container>);
 } // const EntityEditor = () =>
@@ -902,6 +975,7 @@ const EntityCreate = () => {
 //   const biblioEntityDisplayType = useSelector(state => state.biblio.biblioEntityDisplayType);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const geneText = useSelector(state => state.biblio.entityAdd.genetextarea);
@@ -974,7 +1048,8 @@ const EntityCreate = () => {
     <Container fluid>
     <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error" genericModalBody={entityModalText} />
     <RowDivider />
-    <Row className="form-group row" ><Col className="form-label col-form-label" sm="3"><h3>Entity Addition</h3></Col></Row>
+    <Row className="form-group row" >
+      <Col className="form-label col-form-label" sm="3"><h3>{biblioAction.charAt(0).toUpperCase() + biblioAction.slice(1)} Addition</h3></Col></Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
@@ -986,7 +1061,11 @@ const EntityCreate = () => {
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
     <Row className="form-group row" >
-      <Col className="div-grey-border" sm="1">entity type ATP:0000122</Col>
+      <Col className="div-grey-border" sm="1">
+        { biblioAction === 'entity' ?
+          'entity type ATP:0000122' :
+          'insert topic here'}
+      </Col>
       <Col className="div-grey-border" sm="1">gene ATP:0000005</Col>
       <Col sm="1">
         <Form.Control as="select" id="taxonSelect" type="taxonSelect" value={taxonSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
