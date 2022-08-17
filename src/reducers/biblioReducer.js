@@ -172,7 +172,7 @@ export default function(state = initialState, action) {
         if ('topic_entity_tags' in referenceJsonLiveBiblioEntityRemoveEntity &&
             referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'].length > 0) {
           const filteredTet = referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'].filter(
-            (tet) => { if ('topic_entity_tag_id' in tet && tet['topic_entity_tag_id'] !== action.payload.tetId) { return tet; } });
+            (tet) => ('topic_entity_tag_id' in tet && tet['topic_entity_tag_id'] !== action.payload.tetId) );
           referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'] = filteredTet; }
       } else {
         entityModalTextUpdateButtonEntityRemoveEntity += "<br>\n" + action.payload.responseMessage;
