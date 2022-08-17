@@ -10,7 +10,6 @@ import { useSelector, useDispatch } from 'react-redux';
 // import { resetQueryRedirect } from '../actions/biblioActions';
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
-// import { setLoadingQuery } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 // import { biblioMock1QueryReferenceCurie } from '../actions/biblioMock1Actions';
 import { setBiblioUpdating } from '../actions/biblioActions';
@@ -2089,12 +2088,11 @@ const Biblio = () => {
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
   if (referenceCurie === '' || biblioAction === '') {
-    console.log(query);
+    // console.log(query);
     let paramAction = query.get('action');
     let paramReferenceCurie = query.get('referenceCurie');
-    console.log("biblio urlParam paramAction", paramAction);
-    console.log("biblio urlParam paramReferenceCurie", paramReferenceCurie);
-//     if (paramReferenceCurie !== null) { dispatch(setLoadingQuery(true)); }
+    // console.log("biblio urlParam paramAction", paramAction);
+    // console.log("biblio urlParam paramReferenceCurie", paramReferenceCurie);
     if (paramReferenceCurie !== null) { dispatch(setReferenceCurie(paramReferenceCurie)); }
     if (paramAction !== null) { dispatch(setBiblioAction(paramAction)); }
   }

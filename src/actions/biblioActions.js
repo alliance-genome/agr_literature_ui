@@ -242,7 +242,7 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
 
 export const ateamLookupEntityList = (accessToken, entityType, taxon, entityCurieLookupString) => {
   return dispatch => {
-    console.log('looking up ateamLookupEntityList ' + entityCurieLookupString);
+    // console.log('looking up ateamLookupEntityList ' + entityCurieLookupString);
 
     // sample test data
     // const entityMappings = { 'SGD:S000005737': 'one', 'SGD:S000001855': 'two' }
@@ -471,14 +471,14 @@ export function generateCorrectionsSimple(referenceJson) {
 
 export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
-  console.log("action referenceCurie " + referenceCurie);
+  // console.log("action referenceCurie " + referenceCurie);
   const createBiblioQueryReferenceCurie = async () => {
     const url = restUrl + '/reference/' + referenceCurie;
 //     const url = 'https://' + restUrl + '/reference/' + referenceCurie;
 //     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + referenceCurie;
 //     const url = 'http://dev.alliancegenome.org:49161/reference/' + referenceCurie;
 //     const url = 'http://localhost:49161/reference/' + referenceCurie;
-    console.log(url);
+    // console.log(url);
     const res = await fetch(url, {
       method: 'GET',
       mode: 'cors',
@@ -487,8 +487,8 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
       }
     })
     const response = await res.json();
-    console.log("action response");
-    console.log(response);
+    // console.log("action response");
+    // console.log(response);
     let response_payload = 'not found';
     if (response !== undefined) {
       const referenceJson = response;
