@@ -355,23 +355,7 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
         "taxonFilters": { "taxon.curie_keyword":{"queryString":taxon,"tokenOperator":"AND"} }
       } }
   
-    // straightforward way
-    // const queryGeneApi = async () => {
-    //   const res = await fetch(aGeneApiUrl, {
-    //     method: 'POST',
-    //     mode: 'cors',
-    //     headers: {
-    //       'content-type': 'application/json',
-    //       'authorization': 'Bearer ' + accessToken
-    //     },
-    //     body: JSON.stringify( json )
-    //   })
-    //   const response = await res.json();
-    //   console.log(response);
-    // }
-    // queryGeneApi();
-    
-    // try GET1, GLG1
+    // try GET1, SGD:S000001766, MGM1
     axios.post(aGeneApiUrl, searchGeneJson, {
       headers: {
         'content-type': 'application/json',
@@ -379,8 +363,7 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
       }
     })
     .then(res => {
-      console.log('res.data.results');
-      console.log(res.data.results);
+      // console.log(res.data.results);
       const searchMap = {};
       if (res.data.results) {
         for (const geneResult of res.data.results) {
