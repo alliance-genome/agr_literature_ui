@@ -160,6 +160,48 @@ export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIB
 // };
 
 
+export const setBiblioWorkflowCuratability = (value) => ({
+  type: 'SET_BIBLIO_WORKFLOW_CURATABILITY',
+  payload: { value: value }
+});
+
+export const updateSelectBiblioWorkflowCuratability = (accessToken, workflowTagId, payload, method) => { return dispatch => {
+  // console.log(subPath);
+  // console.log(method);
+  const url = (workflowTagId) ? restUrl + '/workflow_tag/' + workflowTagId : restUrl + '/workflow_tag/';
+  console.log(payload);
+  console.log(url);
+  let response_message = 'update success';
+
+  axios({
+      url: url,
+      method: method,
+      headers: {
+        'content-type': 'application/json',
+        'mode': 'cors',
+        'authorization': 'Bearer ' + accessToken
+      },
+      data: payload
+  })
+  .then(res => {
+    console.log(res);
+    if ( ((method === 'PATCH') && (res.status !== 202)) ||
+         ((method === 'DELETE') && (res.status !== 204)) ||
+         ((method === 'POST') && (res.status !== 201)) ) {
+           response_message = 'error: ' + workflowTagId + ' : API status code ' + res.status + ' for method ' + method; }
+    dispatch({
+      type: 'UPDATE_SELECT_BIBLIO_WORKFLOW_CURATABILITY',
+      payload: { workflowTagId: workflowTagId, responseMessage: response_message }
+    })
+  })
+  .catch(err =>
+    dispatch({
+      type: 'UPDATE_SELECT_BIBLIO_WORKFLOW_CURATABILITY',
+      payload: { workflowTagId: workflowTagId, responseMessage: 'error: updateSelectBiblioEntityCuratability failure on workflow_tag_id ' + workflowTagId + ' ' + err }
+    }));
+} };
+
+
 export const setBiblioEntityRemoveEntity = (tetId, value) => ({
   type: 'SET_BIBLIO_ENTITY_REMOVE_ENTITY',
   payload: { tetId: tetId, value: value }
@@ -667,6 +709,13 @@ export const resetBiblioIsLoading = () => {
 //     type: 'RESET_BIBLIO_REFERENCE_CURIE'
 //   };
 // };
+
+export const setWorkflowModalText = (payload) => {
+  return {
+    type: 'SET_WORKFLOW_MODAL_TEXT',
+    payload: payload
+  };
+};
 
 export const setEntityModalText = (payload) => {
   return {

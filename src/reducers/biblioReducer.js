@@ -16,6 +16,8 @@ const initialState = {
   entityModalText: '',
   entityEntitiesToMap: {},
   entityEntityMappings: {},
+  workflowModalText: '',
+  isUpdatingWorkflowCuratability: false,
 
   biblioUpdating: 0,
   updateCitationFlag: false,
@@ -51,6 +53,19 @@ const deriveEntitiesToMap = (referenceJson) => {
   } } }
   return biblioGetReferenceCurieEntityEntitiesToMap;
 }
+
+const deriveCuratability = (referenceJson) => {
+  referenceJson['workflow_curatability'] = {};      // parent term in ontology is called reference_type which is not clear
+  if ('workflow_tags' in referenceJson && referenceJson['workflow_tags'].length > 0) {
+    for (const workflowTag of referenceJson['workflow_tags'].values()) {
+      // initialize radio button workflow values if workflow ATP has those
+      if (workflowTag.workflow_tag_id === 'ATP:0000103') {
+        referenceJson['workflow_curatability'] = workflowTag; }
+      else if (workflowTag.workflow_tag_id === 'ATP:0000104') {
+        referenceJson['workflow_curatability'] = workflowTag; }
+      else if (workflowTag.workflow_tag_id === 'ATP:0000106') {
+        referenceJson['workflow_curatability'] = workflowTag; }
+} } }
 
 export const checkHasPmid = (referenceJsonLive) => {
   // console.log('called checkHasPmid ' + referenceJsonLive.curie);
@@ -122,6 +137,38 @@ export default function(state = initialState, action) {
           geneResultList: action.payload.geneResultList
         }
       }
+
+    case 'SET_WORKFLOW_MODAL_TEXT':
+      console.log('SET_WORKFLOW_MODAL_TEXT reducer ' + action.payload);
+      return {
+        ...state,
+        workflowModalText: action.payload
+      }
+    case 'SET_BIBLIO_WORKFLOW_CURATABILITY':
+      console.log('SET_BIBLIO_WORKFLOW_CURATABILITY reducer ');
+      console.log(action.payload);
+      const referenceJsonLiveBiblioEntitySetCuratability = _.cloneDeep(state.referenceJsonLive);
+      referenceJsonLiveBiblioEntitySetCuratability['workflow_curatability']['workflow_tag_id'] = action.payload.value;
+      return {
+        ...state,
+        isUpdatingWorkflowCuratability: true,
+        referenceJsonLive: referenceJsonLiveBiblioEntitySetCuratability
+      }
+    case 'UPDATE_SELECT_BIBLIO_WORKFLOW_CURATABILITY':
+      console.log('UPDATE_SELECT_BIBLIO_WORKFLOW_CURATABILITY reducer ');
+      console.log(action.payload);
+      let workflowModalTextUpdateSelectBiblioWorkflowCuratability = state.workflowModalText;
+      if (action.payload.responseMessage === "update success") {
+        workflowModalTextUpdateSelectBiblioWorkflowCuratability = '';
+      } else {
+        workflowModalTextUpdateSelectBiblioWorkflowCuratability += "<br>\n" + action.payload.responseMessage;
+      }
+      return {
+        ...state,
+        workflowModalText: workflowModalTextUpdateSelectBiblioWorkflowCuratability,
+        isUpdatingWorkflowCuratability: false,
+      }
+
     case 'ENTITY_ADD_ENTITY_MAPPINGS':
       // console.log('reducer ENTITY_ADD_ENTITY_MAPPINGS');
       // console.log(action.payload);
@@ -177,7 +224,6 @@ export default function(state = initialState, action) {
       } else {
         entityModalTextUpdateButtonEntityRemoveEntity += "<br>\n" + action.payload.responseMessage;
       }
-
       return {
         ...state,
         entityModalText: entityModalTextUpdateButtonEntityRemoveEntity,
@@ -704,6 +750,9 @@ export default function(state = initialState, action) {
           else if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === false) {
                    action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'outside_corpus'; }
         }
+
+        // const biblioGetReferenceCurieEntityEntitiesToMap = deriveEntitiesToMap(action.payload)
+        deriveCuratability(action.payload);
 
         const biblioGetReferenceCurieEntityEntitiesToMap = deriveEntitiesToMap(action.payload)
         // console.log(biblioGetReferenceCurieEntityEntitiesToMap);

@@ -14,7 +14,6 @@ import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 // import { biblioMock1QueryReferenceCurie } from '../actions/biblioMock1Actions';
 import { setBiblioUpdating } from '../actions/biblioActions';
 import { setUpdateCitationFlag } from '../actions/biblioActions';
-import { setEntityModalText } from '../actions/biblioActions';
 
 import { changeFieldReferenceJson } from '../actions/biblioActions';
 import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
@@ -43,6 +42,11 @@ import { updateButtonBiblioEntityAdd } from '../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../actions/biblioActions';
 import { updateButtonBiblioEntityRemoveEntity } from '../actions/biblioActions';
 import { setBiblioEntityRemoveEntity } from '../actions/biblioActions';
+import { setEntityModalText } from '../actions/biblioActions';
+
+import { setBiblioWorkflowCuratability } from '../actions/biblioActions';
+import { updateSelectBiblioWorkflowCuratability } from '../actions/biblioActions';
+import { setWorkflowModalText } from '../actions/biblioActions';
 
 import { useLocation } from 'react-router-dom';
 
@@ -809,28 +813,71 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
 const BiblioWorkflow = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-  const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+  // const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
 
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
-  const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
+  // const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
+  // const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
+  const isUpdatingWorkflowCuratability = useSelector(state => state.biblio.isUpdatingWorkflowCuratability);
+  const workflowModalText = useSelector(state => state.biblio.workflowModalText);
+
+  const curieToNameAtp = { 'ATP:0000103': 'experimental', 'ATP:0000104': 'not experimental', 'ATP:0000106': 'meeting', '': '' };
+  const curatabilityList = [ '', 'ATP:0000103', 'ATP:0000104', 'ATP:0000106' ];
+  const curatabilityValue = 'workflow_tag_id' in referenceJsonLive['workflow_curatability'] ? 
+                            referenceJsonLive['workflow_curatability']['workflow_tag_id'] : '';
+
   return (
     <Container fluid>
+    <ModalGeneric showGenericModal={workflowModalText !== '' ? true : false} genericModalHeader="Workflow Error" 
+                  genericModalBody={workflowModalText} onHideAction={setWorkflowModalText('')} />
     <RowDivider />
     <Row className="form-group row" >
       <Col className="form-label col-form-label" sm="3"><h3>Workflow Editor</h3></Col></Row>
     <Row className="form-group row" >
-      <Col className="div-grey-border" sm="1">topic</Col>
-      <Col className="div-grey-border" sm="1">entity type</Col>
-      <Col className="div-grey-border" sm="1">species (taxon)</Col>
-      <Col className="div-grey-border" sm="2">entity name</Col>
-      <Col className="div-grey-border" sm="2">entity curie</Col>
-      <Col className="div-grey-border" sm="1">priority</Col>
-      <Col className="div-grey-border" sm="3">notes</Col>
-      <Col className="div-grey-border" sm="1">button</Col>
+      <Col sm="1"></Col>
+      <Col className="div-grey-border" sm="2">Reference Type (curatability)</Col>
+      <Col className="div-grey-border" sm="2">Date Updated</Col>
+      <Col className="div-grey-border" sm="2">Updater</Col>
+      <Col className="div-grey-border" sm="2">Date Created</Col>
+      <Col className="div-grey-border" sm="2">Creator</Col>
+      <Col sm="1"></Col>
+    </Row>
+    <Row className="form-group row" >
+      <Col sm="1"></Col>
+      <Col sm="2">
+        <Form.Control as="select" id="curatabilitySelect" type="curatabilitySelect" value={curatabilityValue} 
+          disabled={isUpdatingWorkflowCuratability === true ? 'disabled' : ''}
+          onChange={(e) => {
+            console.log(e.target.value);
+            dispatch(setBiblioWorkflowCuratability(e.target.value));
+            ('reference_workflow_tag_id' in referenceJsonLive['workflow_curatability']) ?
+              console.log('exists ' + referenceJsonLive['workflow_curatability']['reference_workflow_tag_id']) :
+              console.log('new');
+            ('reference_workflow_tag_id' in referenceJsonLive['workflow_curatability']) ?
+              dispatch(updateSelectBiblioWorkflowCuratability(accessToken, referenceJsonLive['workflow_curatability']['reference_workflow_tag_id'], {'workflow_tag_id': e.target.value}, 'PATCH')) :
+              dispatch(updateSelectBiblioWorkflowCuratability(accessToken, null, {'workflow_tag_id': e.target.value, 'reference_curie': referenceJsonLive['curie'], 'mod_abbreviation': '' }, 'POST'));
+          } } >
+          { curatabilityList.map((optionValue, index) => (
+            <option key={`curatabilitySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
+          ))}
+        </Form.Control>
+      </Col>
+      <Col className="div-grey-border" sm="2">
+        {'date_updated' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['date_updated'] : ''}
+      </Col>
+      <Col className="div-grey-border" sm="2">
+        {'updated_by' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['updated_by'] : ''}
+      </Col>
+      <Col className="div-grey-border" sm="2">
+        {'date_created' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['date_created'] : ''}
+      </Col>
+      <Col className="div-grey-border" sm="2">
+        {'created_by' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['created_by'] : ''}
+      </Col>
+      <Col sm="1"></Col>
     </Row>
     </Container> );
-}
+} // const BiblioWorkflow
 
 const BiblioTagging = () => {
   const dispatch = useDispatch();
@@ -921,8 +968,8 @@ const EntityEditor = () => {
       const entityName = (tetDict.entity_type in entityEntityMappings && tetDict.taxon in entityEntityMappings[tetDict.entity_type] &&
                           tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
                           entityEntityMappings[tetDict.entity_type][tetDict.taxon][tetDict.alliance_entity] : 'unknown';
-      if ( (biblioAction === 'entity') && (tetDict.topic !== 'ATP:0000122') ) { return; }
-      else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return; }
+      if ( (biblioAction === 'entity') && (tetDict.topic !== 'ATP:0000122') ) { return ""; }
+      else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return ""; }
       else {
         return (
           <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
@@ -960,10 +1007,10 @@ const EntityEditor = () => {
 //           <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
 
 
-const ModalGeneric = ({showGenericModal, genericModalHeader, genericModalBody}) => {
+const ModalGeneric = ({showGenericModal, genericModalHeader, genericModalBody, onHideAction}) => {
   const dispatch = useDispatch();
   if (showGenericModal) {
-    return (<Modal size="lg" show={showGenericModal} backdrop="static" onHide={() => dispatch(setEntityModalText(''))} >
+    return (<Modal size="lg" show={showGenericModal} backdrop="static" onHide={() => dispatch(onHideAction)} >
              <Modal.Header closeButton><Modal.Title>{genericModalHeader}</Modal.Title></Modal.Header>
              <Modal.Body><div dangerouslySetInnerHTML={{__html:`${genericModalBody}`}}/></Modal.Body>
             </Modal>); }
@@ -1046,7 +1093,8 @@ const EntityCreate = () => {
 
   return (
     <Container fluid>
-    <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error" genericModalBody={entityModalText} />
+    <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error"
+                  genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
     <Row className="form-group row" >
       <Col className="form-label col-form-label" sm="3"><h3>{biblioAction.charAt(0).toUpperCase() + biblioAction.slice(1)} Addition</h3></Col></Row>
