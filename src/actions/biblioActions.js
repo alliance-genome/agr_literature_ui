@@ -345,10 +345,13 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
     // simple search
     //   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
   
-    // SGD-specific search
+    // search by taxon + exact symbol keyword or exact curie keyword
     const searchGeneJson = 
       {"searchFilters": {
-        "nameFilters": { "symbol_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"} },
+        "nameFilters": {
+          "symbol_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"},
+          "curie_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"}
+        },
         "taxonFilters": { "taxon.curie_keyword":{"queryString":taxon,"tokenOperator":"AND"} }
       } }
   
@@ -376,11 +379,14 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
       }
     })
     .then(res => {
+      console.log('res.data.results');
       console.log(res.data.results);
       const searchMap = {};
       if (res.data.results) {
         for (const geneResult of res.data.results) {
-          if (geneResult.curie && geneResult.symbol) { searchMap[geneResult.symbol] = geneResult.curie; }
+          if (geneResult.curie && geneResult.symbol) {
+            searchMap[geneResult.curie] = geneResult.curie;
+            searchMap[geneResult.symbol] = geneResult.curie; }
           // geneResultList.push(geneResult.symbol + " " + geneResult.curie);
           // console.log(geneResult.curie);
           // console.log(geneResult.symbol);
