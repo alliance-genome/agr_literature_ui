@@ -209,6 +209,7 @@ const MergeDataTransferredModal = () => {
                     <Modal.Body>Data has been merged from {referenceMeta2.curie} into {referenceMeta1.curie} but something went wrong, <a href="/merge" target="_blank" rel="noreferrer noopener">try again in a new browser tab</a>.</Modal.Body> :
                     <Modal.Body>Selected data has been transferred from {referenceMeta2.curie} into {referenceMeta1.curie}.<br/><br/>
                     If you wish, you may verify the winning reference information <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> and losing information to be removed from <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a>.<br/><br/>
+                    Note that merged corrections will only be viewable on merge completion.<br/><br/>
                     To finish, click Complete Merge below.<br/><br/>
                     <MergeSubmitCompleteMergeUpdateButton /></Modal.Body>
   const modalHeader = updateFailure ? 
