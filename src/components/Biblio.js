@@ -1055,7 +1055,7 @@ const EntityCreate = () => {
         if (geneResult.curie !== 'no Alliance curie') {
           let updateJson = {};
           updateJson['reference_curie'] = refCurie;
-          updateJson['topic'] = 'insert topic here';
+          updateJson['topic'] = biblioAction === 'entity' ? 'ATP:0000122' : 'insert topic here';
           updateJson['entity_type'] = 'ATP:0000005';
           updateJson['alliance_entity'] = geneResult.curie;
           // updateJson['taxon'] = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
