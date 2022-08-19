@@ -166,6 +166,7 @@ export default function(state = initialState, action) {
       return {
         ...state,
         workflowModalText: workflowModalTextUpdateSelectBiblioWorkflowCuratability,
+        getReferenceCurieFlag: true,
         isUpdatingWorkflowCuratability: false,
       }
 
