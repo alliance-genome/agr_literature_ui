@@ -848,14 +848,18 @@ const BiblioWorkflow = () => {
         <Form.Control as="select" id="curatabilitySelect" type="curatabilitySelect" value={curatabilityValue} 
           disabled={isUpdatingWorkflowCuratability === true ? 'disabled' : ''}
           onChange={(e) => {
-            console.log(e.target.value);
+            // console.log(e.target.value);
             dispatch(setBiblioWorkflowCuratability(e.target.value));
-            ('reference_workflow_tag_id' in referenceJsonLive['workflow_curatability']) ?
-              console.log('exists ' + referenceJsonLive['workflow_curatability']['reference_workflow_tag_id']) :
-              console.log('new');
-            ('reference_workflow_tag_id' in referenceJsonLive['workflow_curatability']) ?
-              dispatch(updateSelectBiblioWorkflowCuratability(accessToken, referenceJsonLive['workflow_curatability']['reference_workflow_tag_id'], {'workflow_tag_id': e.target.value}, 'PATCH')) :
-              dispatch(updateSelectBiblioWorkflowCuratability(accessToken, null, {'workflow_tag_id': e.target.value, 'reference_curie': referenceJsonLive['curie'], 'mod_abbreviation': '' }, 'POST'));
+            if ('reference_workflow_tag_id' in referenceJsonLive['workflow_curatability']) {
+              if (e.target.value === '') {
+                // console.log('exists ' + referenceJsonLive['workflow_curatability']['reference_workflow_tag_id'] + ' DELETE');
+                dispatch(updateSelectBiblioWorkflowCuratability(accessToken, referenceJsonLive['workflow_curatability']['reference_workflow_tag_id'], null, 'DELETE')) }
+              else {
+                // console.log('exists ' + referenceJsonLive['workflow_curatability']['reference_workflow_tag_id'] + ' PATCH');
+                dispatch(updateSelectBiblioWorkflowCuratability(accessToken, referenceJsonLive['workflow_curatability']['reference_workflow_tag_id'], {'workflow_tag_id': e.target.value}, 'PATCH')) } }
+            else {
+              // console.log('new');
+              dispatch(updateSelectBiblioWorkflowCuratability(accessToken, null, {'workflow_tag_id': e.target.value, 'reference_curie': referenceJsonLive['curie'], 'mod_abbreviation': '' }, 'POST')); }
           } } >
           { curatabilityList.map((optionValue, index) => (
             <option key={`curatabilitySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
