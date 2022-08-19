@@ -826,6 +826,13 @@ const BiblioWorkflow = () => {
   const curatabilityValue = 'workflow_tag_id' in referenceJsonLive['workflow_curatability'] ? 
                             referenceJsonLive['workflow_curatability']['workflow_tag_id'] : '';
 
+  function parseGmtDateStringToReadable(dateString) {
+    // eventually figure out where this function will be used and move it there.  use "fr-CA" to get YYYY-MM-DD format
+    // console.log(dateString + "+00:00")
+    let newDate = new Date(dateString + "+00:00");
+    return (newDate.toLocaleDateString("fr-CA") + ' ' + newDate.toLocaleTimeString());
+  }
+
   return (
     <Container fluid>
     <ModalGeneric showGenericModal={workflowModalText !== '' ? true : false} genericModalHeader="Workflow Error" 
@@ -867,13 +874,15 @@ const BiblioWorkflow = () => {
         </Form.Control>
       </Col>
       <Col className="div-grey-border" sm="2">
-        {'date_updated' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['date_updated'] : ''}
+        {'date_updated' in referenceJsonLive['workflow_curatability'] ?
+          parseGmtDateStringToReadable(referenceJsonLive['workflow_curatability']['date_updated']) : ''}
       </Col>
       <Col className="div-grey-border" sm="2">
         {'updated_by' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['updated_by'] : ''}
       </Col>
       <Col className="div-grey-border" sm="2">
-        {'date_created' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['date_created'] : ''}
+        {'date_created' in referenceJsonLive['workflow_curatability'] ?
+          parseGmtDateStringToReadable(referenceJsonLive['workflow_curatability']['date_created']) : ''}
       </Col>
       <Col className="div-grey-border" sm="2">
         {'created_by' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['created_by'] : ''}
