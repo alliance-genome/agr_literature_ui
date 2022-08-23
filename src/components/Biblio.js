@@ -44,6 +44,7 @@ import { updateButtonBiblioEntityEditEntity } from '../actions/biblioActions';
 import { setBiblioEntityRemoveEntity } from '../actions/biblioActions';
 import { setEntityModalText } from '../actions/biblioActions';
 import { changeFieldEntityEditor } from '../actions/biblioActions';
+import { setFieldEntityEditor } from '../actions/biblioActions';
 
 
 import { setBiblioWorkflowCuratability } from '../actions/biblioActions';
@@ -1000,7 +1001,16 @@ const EntityEditor = () => {
                 ))}
               </Form.Control>
             </Col>
-            <Col className="form-label col-form-label" sm="3">
+            <Col className="form-label col-form-label" sm="3" style={{position: 'relative'}}>
+              <span style={{position: 'absolute', top: '0.2em', right: '1.2em'}}>
+                <span style={{color: 'green'}}
+                  onClick={() => {
+                    dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': tetDict.note || ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >&#10003;</span><br/>
+                <span style={{color: 'red'}}
+                  onClick={() => {
+                    dispatch(setFieldEntityEditor('note ' + index, ''));
+                    dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >X</span>
+              </span>
               <Form.Control as="textarea" id={`note ${index}`} type="note" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityEditor(e))} />
               <Button variant="outline-primary"
                 onClick={() => {
@@ -1008,6 +1018,7 @@ const EntityEditor = () => {
                 Update note</Button>&nbsp;
               <Button variant="outline-danger"
                 onClick={() => {
+                  dispatch(setFieldEntityEditor('note ' + index, ''));
                   dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >
                 Remove note</Button>
             </Col>

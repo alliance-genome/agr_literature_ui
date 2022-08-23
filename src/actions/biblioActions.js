@@ -391,6 +391,11 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
   }
 };
 
+export const setFieldEntityEditor = (id, value) => ({
+  type: 'CHANGE_FIELD_ENTITY_EDITOR',
+  payload: { field: id, value: value }
+});
+
 export const changeFieldEntityEditor = (e) => ({
   type: 'CHANGE_FIELD_ENTITY_EDITOR',
   payload: { field: e.target.id, value: e.target.value }
