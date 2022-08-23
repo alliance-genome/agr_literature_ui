@@ -401,6 +401,11 @@ export const changeFieldEntityEditor = (e) => ({
   payload: { field: e.target.id, value: e.target.value }
 });
 
+export const changeFieldEntityEditorPriority = (e) => ({
+  type: 'CHANGE_FIELD_ENTITY_EDITOR_PRIORITY',
+  payload: { field: e.target.id, value: e.target.value }
+});
+
 export const changeFieldEntityAddGeneralField = (e) => ({
   type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',
   payload: { field: e.target.id, value: e.target.value }

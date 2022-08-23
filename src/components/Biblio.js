@@ -45,6 +45,7 @@ import { setBiblioEntityRemoveEntity } from '../actions/biblioActions';
 import { setEntityModalText } from '../actions/biblioActions';
 import { changeFieldEntityEditor } from '../actions/biblioActions';
 import { setFieldEntityEditor } from '../actions/biblioActions';
+import { changeFieldEntityEditorPriority } from '../actions/biblioActions';
 
 
 import { setBiblioWorkflowCuratability } from '../actions/biblioActions';
@@ -975,11 +976,14 @@ const EntityEditor = () => {
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
     { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
-      let priorityValue = '';
+      let priorityValue = ''; let priorityId = ''; let priorityIndex = '';
       // UI only allows display/selection of one priority qualifier, but someone could connect in the database multiple priority qualifier in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
       if ('props' in tetDict && tetDict['props'].length > 0) {
-        for (const tetpDict of tetDict['props'].values()) {
+        // for (const tetpDict of tetDict['props'].values())
+        for (const[indexPriority, tetpDict] of tetDict['props'].entries()) {
           if ('qualifier' in tetpDict && tetpDict['qualifier'] !== '' && priorityList.includes(tetpDict['qualifier'])) {
+            priorityId = tetpDict['topic_entity_tag_prop_id'];
+            priorityIndex = indexPriority;
             priorityValue = tetpDict['qualifier']; } } }
       const entityName = (tetDict.entity_type in entityEntityMappings && tetDict.taxon in entityEntityMappings[tetDict.entity_type] &&
                           tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
@@ -994,19 +998,22 @@ const EntityEditor = () => {
             <Col className="div-grey-border" sm="1">{tetDict.taxon in curieToNameTaxon ? curieToNameTaxon[tetDict.taxon] : tetDict.taxon }</Col>
             <Col className="div-grey-border" sm="2">{entityName}</Col>
             <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
+
             <Col sm="1">
-              <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" disabled="disabled" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+              {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new priority where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
+              <Form.Control as="select" id={`priority ${index} ${priorityIndex} ${priorityId}`} type="tetprioritySelect" disabled="disabled" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
                 { priorityList.map((optionValue, index) => (
                   <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
                 ))}
               </Form.Control>
             </Col>
+
             <Col className="form-label col-form-label" sm="3" style={{position: 'relative'}}>
               <span style={{position: 'absolute', top: '0.2em', right: '1.2em'}}>
-                <span style={{color: 'green'}}
+                <span style={{color: '#007bff'}}
                   onClick={() => {
                     dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': tetDict.note || ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >&#10003;</span><br/>
-                <span style={{color: 'red'}}
+                <span style={{color: '#dc3545'}}
                   onClick={() => {
                     dispatch(setFieldEntityEditor('note ' + index, ''));
                     dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >X</span>
