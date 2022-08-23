@@ -98,6 +98,7 @@ export const changeFieldAuthorsReferenceJson = (e) => {
   };
 };
 
+
 export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIBLIO_UPDATING_ENTITY_ADD', payload: payload }; };
 
 // export const updateButtonBiblioEntityAdd_NOTAXIOS = (updateArrayData) => dispatch => {
@@ -207,7 +208,7 @@ export const setBiblioEntityRemoveEntity = (tetId, value) => ({
   payload: { tetId: tetId, value: value }
 });
 
-export const updateButtonBiblioEntityRemoveEntity = (accessToken, tetId, payload, method) => { return dispatch => {
+export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, method, dispatchAction) => { return dispatch => {
   // console.log(subPath);
   // console.log(method);
   const url = restUrl + '/topic_entity_tag/' + tetId;
@@ -230,14 +231,14 @@ export const updateButtonBiblioEntityRemoveEntity = (accessToken, tetId, payload
          ((method === 'POST') && (res.status !== 201)) ) {
            response_message = 'error: ' + tetId + ' : API status code ' + res.status + ' for method ' + method; }
     dispatch({
-      type: 'UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY',
+      type: dispatchAction,
       payload: { tetId: tetId, responseMessage: response_message }
     })
   })
   .catch(err =>
     dispatch({
-      type: 'UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY',
-      payload: { tetId: tetId, responseMessage: 'error: updateButtonBiblioEntityRemoveEntity failure on topic_entity_tag_id ' + tetId + ' ' + err }
+      type: dispatchAction,
+      payload: { tetId: tetId, responseMessage: 'error: updateButtonBiblioEntityEditEntity failure on topic_entity_tag_id ' + tetId + ' ' + err }
     }));
 } };
 
@@ -389,6 +390,11 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
       }));
   }
 };
+
+export const changeFieldEntityEditor = (e) => ({
+  type: 'CHANGE_FIELD_ENTITY_EDITOR',
+  payload: { field: e.target.id, value: e.target.value }
+});
 
 export const changeFieldEntityAddGeneralField = (e) => ({
   type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',

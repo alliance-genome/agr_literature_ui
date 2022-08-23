@@ -40,9 +40,11 @@ import { changeFieldEntityAddGeneralField } from '../actions/biblioActions';
 // import { changeBiblioEntityDisplayTypeToggler } from '../actions/biblioActions';
 import { updateButtonBiblioEntityAdd } from '../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../actions/biblioActions';
-import { updateButtonBiblioEntityRemoveEntity } from '../actions/biblioActions';
+import { updateButtonBiblioEntityEditEntity } from '../actions/biblioActions';
 import { setBiblioEntityRemoveEntity } from '../actions/biblioActions';
 import { setEntityModalText } from '../actions/biblioActions';
+import { changeFieldEntityEditor } from '../actions/biblioActions';
+
 
 import { setBiblioWorkflowCuratability } from '../actions/biblioActions';
 import { updateSelectBiblioWorkflowCuratability } from '../actions/biblioActions';
@@ -999,16 +1001,22 @@ const EntityEditor = () => {
               </Form.Control>
             </Col>
             <Col className="form-label col-form-label" sm="3">
-              <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={tetDict.note || ''} disabled="disabled" onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
-              <Button variant="outline-primary" >Update note</Button>&nbsp;
-              <Button variant="outline-danger" >Remove note</Button>
+              <Form.Control as="textarea" id={`note ${index}`} type="note" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityEditor(e))} />
+              <Button variant="outline-primary"
+                onClick={() => {
+                  dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': tetDict.note || ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >
+                Update note</Button>&nbsp;
+              <Button variant="outline-danger"
+                onClick={() => {
+                  dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >
+                Remove note</Button>
             </Col>
             <Col className="form-label col-form-label" sm="1">
               <Button variant="outline-danger" 
                 disabled={biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? 'disabled' : ''}
                 onClick={() => {
                   dispatch(setBiblioEntityRemoveEntity(tetDict.topic_entity_tag_id, true));
-                  dispatch(updateButtonBiblioEntityRemoveEntity(accessToken, tetDict.topic_entity_tag_id, null, 'DELETE')) } } >
+                  dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, null, 'DELETE', 'UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY')) } } >
               {biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? <Spinner animation="border" size="sm"/> : "Remove Entity"}</Button></Col>
           </Row> ) }
     } ) }

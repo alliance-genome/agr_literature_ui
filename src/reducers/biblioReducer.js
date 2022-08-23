@@ -119,6 +119,21 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
+    case 'CHANGE_FIELD_ENTITY_EDITOR':
+      // biblioUpdatingEntityUpdateEntityconsole.log(action.payload);
+      let entityEditorArray = action.payload.field.split(" ");
+      let fieldEntityEditor = entityEditorArray[0];
+      let indexEntityEditor = entityEditorArray[1];
+      let entityEditorNewValue = action.payload.value;
+      let newTopicEntityTags = state.referenceJsonLive['topic_entity_tags'];
+      newTopicEntityTags[indexEntityEditor][fieldEntityEditor] = entityEditorNewValue;
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          topic_entity_tags: newTopicEntityTags
+        }
+      }
     case 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD':
       // console.log(action.payload);
       return {
@@ -200,17 +215,28 @@ export default function(state = initialState, action) {
         biblioUpdatingEntityAdd: action.payload
       }
     case 'SET_BIBLIO_ENTITY_REMOVE_ENTITY':
-      console.log('SET_BIBLIO_ENTITY_REMOVE_ENTITY reducer ');
-      console.log(action.payload);
+      // console.log('SET_BIBLIO_ENTITY_REMOVE_ENTITY reducer ');
+      // console.log(action.payload);
       const biblioEntityRemoveEntityUpdatingTet = _.cloneDeep(state.biblioUpdatingEntityRemoveEntity);
       biblioEntityRemoveEntityUpdatingTet[action.payload.tetId] = action.payload.value;
       return {
         ...state,
         biblioUpdatingEntityRemoveEntity: biblioEntityRemoveEntityUpdatingTet
       }
+    case 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE':
+      // console.log('UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE reducer ');
+      // console.log(action.payload);
+      let entityModalTextUpdateButtonEntityEditNote = state.entityModalText;
+      if (action.payload.responseMessage === "update success") { entityModalTextUpdateButtonEntityEditNote = ''; }
+        else { entityModalTextUpdateButtonEntityEditNote += "<br>\n" + action.payload.responseMessage; }
+      return {
+        ...state,
+        entityModalText: entityModalTextUpdateButtonEntityEditNote
+      }
+
     case 'UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY':
-      console.log('UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY reducer ');
-      console.log(action.payload);
+      // console.log('UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY reducer ');
+      // console.log(action.payload);
       const referenceJsonLiveBiblioEntityRemoveEntity = _.cloneDeep(state.referenceJsonLive);
       const biblioEntityRemoveEntityUpdatedTet = _.cloneDeep(state.biblioUpdatingEntityRemoveEntity);
       biblioEntityRemoveEntityUpdatedTet[action.payload.tetId] = false;
