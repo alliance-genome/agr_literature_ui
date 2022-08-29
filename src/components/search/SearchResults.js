@@ -25,18 +25,18 @@ const SearchResults = () => {
                 <Container>
                     { searchResults.map((reference, index) => (
                         <Row key={`reference ${index}`}>
-                            <Col className="Col-general Col-display" >
-                              <div className="searchRow searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
-                              <div className="searchRow searchRow-xref">
+                            <Col className="Col-general Col-display Col-search" >
+                              <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+                              <div className="searchRow-xref">
                                 <ul><li><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></li>
                                   {reference.cross_references.map((xref, i) => (
                                   <li><span className="obsolete">{xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span>{xref.curie}</li>
                                 ))}
                                 </ul>
                               </div>
-                              <div className="searchRow searchRow-other">Authors : {reference.authors ? reference.authors.map((author, i) => ((i ? ', ' : '') + author.name)) : ''}</div>
-                              <div className="searchRow searchRow-other">Publication Date: {reference.date_published}</div>
-                              <div className="searchRow searchRow-other">Abstract: <p>{reference.abstract == null || reference.abstract.length<500 ? reference.abstract : reference.abstract.substring(0,500)+'...'}</p></div>
+                              <div className="searchRow-other">Authors : {reference.authors ? reference.authors.map((author, i) => ((i ? ', ' : '') + author.name)) : ''}</div>
+                              <div className="searchRow-other">Publication Date: {reference.date_published}</div>
+                              <div className="searchRow-other">Abstract: <p>{reference.abstract == null || reference.abstract.length<500 ? reference.abstract : reference.abstract.substring(0,500)+'...'}</p></div>
                             </Col>
                         </Row>))
                     }
