@@ -23,14 +23,21 @@ const SearchResults = () => {
             {
                 searchResults.length > 0 && searchSuccess ?
                 <Container>
-                    <Row>
-                        <Col lg={3} className="Col-general Col-display Col-display-left" >Curie</Col>
-                        <Col lg={9} className="Col-general Col-display Col-display-right" >Title</Col>
-                    </Row>
                     { searchResults.map((reference, index) => (
                         <Row key={`reference ${index}`}>
-                            <Col lg={3} className="Col-general Col-display Col-display-left" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></Col>
-                            <Col lg={9} className="Col-general Col-display Col-display-right" ><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></Col>
+                            <Col className="Col-general Col-display" >
+                              <div className="searchRow searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+                              <div className="searchRow searchRow-xref">
+                                <ul><li><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></li>
+                                  {reference.cross_references.map((xref, i) => (
+                                  <li><span className="obsolete">{xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span>{xref.curie}</li>
+                                ))}
+                                </ul>
+                              </div>
+                              <div className="searchRow searchRow-other">Authors : {reference.authors ? reference.authors.map((author, i) => ((i ? ', ' : '') + author.name)) : ''}</div>
+                              <div className="searchRow searchRow-other">Publication Date: {reference.date_published}</div>
+                              <div className="searchRow searchRow-other">Abstract: <p>{reference.abstract == null || reference.abstract.length<500 ? reference.abstract : reference.abstract.substring(0,500)+'...'}</p></div>
+                            </Col>
                         </Row>))
                     }
                 </Container> : null
