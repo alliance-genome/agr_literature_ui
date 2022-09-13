@@ -729,6 +729,13 @@ export const setEntityModalText = (payload) => {
   };
 };
 
+export const setBiblioEditorModalText = (payload) => {
+  return {
+    type: 'SET_BIBLIO_EDITOR_MODAL_TEXT',
+    payload: payload
+  };
+};
+
 export const setBiblioUpdating = (payload) => {
   return {
     type: 'SET_BIBLIO_UPDATING',

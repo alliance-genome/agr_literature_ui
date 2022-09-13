@@ -20,6 +20,7 @@ const initialState = {
   isUpdatingWorkflowCuratability: false,
 
   biblioUpdating: 0,
+  biblioEditorModalText: '',
   updateCitationFlag: false,
   referenceCurie: '',
   referenceJsonLive: {},
@@ -302,6 +303,12 @@ export default function(state = initialState, action) {
         biblioUpdatingEntityAdd: state.biblioUpdatingEntityAdd - 1
       }
 
+    case 'SET_BIBLIO_EDITOR_MODAL_TEXT':
+      console.log('SET_BIBLIO_EDITOR_MODAL_TEXT reducer ' + action.payload);
+      return {
+        ...state,
+        biblioEditorModalText: action.payload
+      }
     case 'UPDATE_BUTTON_BIBLIO':
       // console.log('reducer UPDATE_BUTTON_BIBLIO ' + action.payload.responseMessage);
       // console.log('action.payload'); console.log(action.payload);

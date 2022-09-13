@@ -33,6 +33,7 @@ import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';
 import { biblioRevertField } from '../actions/biblioActions';
 import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
+import { setBiblioEditorModalText } from '../actions/biblioActions';
 
 import { ateamLookupEntityList } from '../actions/biblioActions';
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
@@ -1469,8 +1470,32 @@ const BiblioSubmitUpdateButton = () => {
       updateJson['is_obsolete'] = crossRefDict['is_obsolete'] }
     return updateJson }
 
+  function validateFormUpdateBiblio(referenceCurie, referenceJsonLive) {
+    // console.log('validateFormUpdateBiblio')
+    let validationError = false;
+    if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
+      let prefixDict = {}
+      for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+        if ( ('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] === true) ) { continue; }
+        if ('curie' in crossRefDict) {			// pre-existing entries need delete or update
+          let valueLiveCuriePrefix = splitCurie(crossRefDict['curie'], 'prefix');
+          if (valueLiveCuriePrefix in prefixDict) { prefixDict[valueLiveCuriePrefix].push(crossRefDict['curie']); }
+            else { prefixDict[valueLiveCuriePrefix] = [crossRefDict['curie']]; } } }
+      let modalTextError = '';
+      for (const [prefix, values] of Object.entries(prefixDict)) {
+        if (values.length > 1) { 
+          validationError = true;
+          modalTextError += prefix + ' has too many valid values ' + values.join(', ') + '<br/>'; } }
+      (modalTextError !== '') && dispatch(setBiblioEditorModalText(modalTextError))
+    }
+    return validationError;
+  } // function validateFormUpdateBiblio(referenceCurie, referenceJsonLive)
+
   function updateBiblio(referenceCurie, referenceJsonLive) {
     // console.log('updateBiblio')
+    const validationError = validateFormUpdateBiblio(referenceCurie, referenceJsonLive);
+    if (validationError) { return; }
+
     const forApiArray = []
     let updateJson = {}
     const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title'];
@@ -1594,9 +1619,8 @@ const BiblioSubmitUpdateButton = () => {
             subField = null;
             method = 'PATCH' }
           let array = [ subPath, updateJson, method, index, field, subField ]
-// comment these out when the endpoint allows null corpus to mean needs_review
-          console.log(updateJson)
-          console.log(array)
+          // console.log(updateJson)
+          // console.log(array)
           forApiArray.push( array );
     } } }
 
@@ -2196,6 +2220,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 const BiblioEditor = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+  const biblioEditorModalText = useSelector(state => state.biblio.biblioEditorModalText);
   if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
@@ -2218,12 +2243,15 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
-// PUT THIS BACK
     else if (fieldName === 'authors') {
       rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
-  return (<Container><Form><BiblioSubmitUpdateRouter />{rowOrderedElements}</Form></Container>);
+  return (<Container>
+            <ModalGeneric showGenericModal={biblioEditorModalText !== '' ? true : false} genericModalHeader="Biblio Editor Error" 
+                          genericModalBody={biblioEditorModalText} onHideAction={setBiblioEditorModalText('')} />
+            <Form><BiblioSubmitUpdateRouter />{rowOrderedElements}</Form>
+          </Container>);
 } // const BiblioEditor
 
 const Biblio = () => {
