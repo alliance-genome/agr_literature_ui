@@ -125,10 +125,10 @@ export default function(state = initialState, action) {
       console.log(action.payload);
       // changes which value to display, but does not update database. ideally this would update the database without reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new priority where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated
       let entityEditorPriorityArray = action.payload.field.split(" ");
-      let fieldEntityEditorPriority = entityEditorPriorityArray[0];
+      // let fieldEntityEditorPriority = entityEditorPriorityArray[0];
       let indexTetEntityEditorPriority = entityEditorPriorityArray[1];
       let indexTetpEntityEditorPriority = entityEditorPriorityArray[2];
-      let tetpidEntityEditorPriority = entityEditorPriorityArray[3];
+      // let tetpidEntityEditorPriority = entityEditorPriorityArray[3];
       let entityEditorPriorityNewValue = action.payload.value;
       let newTopicEntityTagsPriority = state.referenceJsonLive['topic_entity_tags'];
       newTopicEntityTagsPriority[indexTetEntityEditorPriority]['props'][indexTetpEntityEditorPriority]['qualifier'] = entityEditorPriorityNewValue;

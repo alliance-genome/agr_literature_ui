@@ -939,11 +939,43 @@ const BiblioTagging = () => {
   const rowOrderedElements = []
   // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+  rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
   return (<><Container>{rowOrderedElements}</Container>
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging
+
+const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+  if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
+    const rowCrossReferenceElements = []
+    for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+      let url = crossRefDict['url'];
+      let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
+      let valueLiveCuriePrefix = splitCurie(valueLiveCurie, 'prefix');
+      if (valueLiveCuriePrefix !== 'PMCID') { continue; }
+      let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
+             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+             valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
+      if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+      if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
+      let isObsolete = '';
+      if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+             if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
+             else { isObsolete = ''; } }
+      let updatedFlag = '';
+      if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated' }
+      if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
+      const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
+      rowCrossReferenceElements.push(<RowDisplaySimple key={`${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
+    return (<>{rowCrossReferenceElements}</>); }
+  else { return null; } }
+
 
 const BiblioEntity = () => {
   return (<><EntityCreate key="entityCreate" />
@@ -1475,7 +1507,7 @@ const BiblioSubmitUpdateButton = () => {
     let validationError = false;
     if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
       let prefixDict = {}
-      for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+      for (const crossRefDict of referenceJsonLive['cross_references'].values()) {
         if ( ('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] === true) ) { continue; }
         if ('curie' in crossRefDict) {			// pre-existing entries need delete or update
           let valueLiveCuriePrefix = splitCurie(crossRefDict['curie'], 'prefix');
