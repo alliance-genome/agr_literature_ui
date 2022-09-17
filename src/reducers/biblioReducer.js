@@ -377,7 +377,8 @@ export default function(state = initialState, action) {
       console.log('CLOSE_BIBLIO_UPDATE_ALERT reducer');
       return {
         ...state,
-        updateAlert: 0
+        updateAlert: 0,
+        updateMessages: []
       }
 
     case 'VALIDATE_FORM_UPDATE_BIBLIO':
