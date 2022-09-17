@@ -14,6 +14,8 @@ import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 // import { biblioMock1QueryReferenceCurie } from '../actions/biblioMock1Actions';
 import { setBiblioUpdating } from '../actions/biblioActions';
 import { setUpdateCitationFlag } from '../actions/biblioActions';
+import { setUpdateBiblioFlag } from '../actions/biblioActions';
+import { validateFormUpdateBiblio } from '../actions/biblioActions';
 
 import { changeFieldReferenceJson } from '../actions/biblioActions';
 import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
@@ -1502,32 +1504,8 @@ const BiblioSubmitUpdateButton = () => {
       updateJson['is_obsolete'] = crossRefDict['is_obsolete'] }
     return updateJson }
 
-  function validateFormUpdateBiblio(referenceCurie, referenceJsonLive) {
-    // console.log('validateFormUpdateBiblio')
-    let validationError = false;
-    if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
-      let prefixDict = {}
-      for (const crossRefDict of referenceJsonLive['cross_references'].values()) {
-        if ( ('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] === true) ) { continue; }
-        if ('curie' in crossRefDict) {			// pre-existing entries need delete or update
-          let valueLiveCuriePrefix = splitCurie(crossRefDict['curie'], 'prefix');
-          if (valueLiveCuriePrefix in prefixDict) { prefixDict[valueLiveCuriePrefix].push(crossRefDict['curie']); }
-            else { prefixDict[valueLiveCuriePrefix] = [crossRefDict['curie']]; } } }
-      let modalTextError = '';
-      for (const [prefix, values] of Object.entries(prefixDict)) {
-        if (values.length > 1) { 
-          validationError = true;
-          modalTextError += prefix + ' has too many valid values ' + values.join(', ') + '<br/>'; } }
-      (modalTextError !== '') && dispatch(setBiblioEditorModalText(modalTextError))
-    }
-    return validationError;
-  } // function validateFormUpdateBiblio(referenceCurie, referenceJsonLive)
-
   function updateBiblio(referenceCurie, referenceJsonLive) {
     // console.log('updateBiblio')
-    const validationError = validateFormUpdateBiblio(referenceCurie, referenceJsonLive);
-    if (validationError) { return; }
-
     const forApiArray = []
     let updateJson = {}
     const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title'];
@@ -1701,14 +1679,20 @@ const BiblioSubmitUpdateButton = () => {
     // console.log('end updateBiblio')
   } // function updateBiblio(referenceCurie, referenceJsonLive)
 
+  const updateBiblioFlag = useSelector(state => state.biblio.updateBiblioFlag);
+  if (referenceJsonLive.curie !== '' && (updateBiblioFlag === true)) {
+    console.log('biblio DISPATCH update biblio for ' + referenceJsonLive.curie);
+    updateBiblio(referenceJsonLive.curie, referenceJsonLive)
+    dispatch(setUpdateBiblioFlag(false))
+  }
+
   return (
        <Row className="form-group row" >
          <Col className="form-label col-form-label" sm="2" ></Col>
-         <Col sm="10" ><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => updateBiblio(referenceJsonLive.curie, referenceJsonLive)}>Update Biblio Data</div></Col>
+         <Col sm="10" ><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => dispatch(validateFormUpdateBiblio())}>Update Biblio Data</div></Col>
        </Row>
   );
 } // const BiblioSubmitUpdateButton
-
 
 const ColEditorSimple = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, dispatchAction}) => {
   const dispatch = useDispatch();

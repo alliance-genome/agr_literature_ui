@@ -1,5 +1,6 @@
 
 import _ from "lodash";
+import { splitCurie } from '../components/Biblio';
 
 //   biblioEntityDisplayType: 'textarea-disabled',
 //   biblioEntityDisplayType: 'div-line-breaks',
@@ -21,6 +22,7 @@ const initialState = {
 
   biblioUpdating: 0,
   biblioEditorModalText: '',
+  updateBiblioFlag: false,
   updateCitationFlag: false,
   referenceCurie: '',
   referenceJsonLive: {},
@@ -68,6 +70,35 @@ const deriveCuratability = (referenceJson) => {
         referenceJson['workflow_curatability'] = workflowTag; }
 } } }
 
+const validateMcaPrefixDup = (mcaJsonLive) => {
+  let prefixDict = {}
+  for (const crossRefDict of mcaJsonLive.values()) {
+    if ('mod_abbreviation' in crossRefDict) {
+      let mcaMod = crossRefDict['mod_abbreviation']
+      if (mcaMod in prefixDict) { prefixDict[mcaMod] += 1; }
+        else { prefixDict[mcaMod] = 1; } } }
+  let modalTextError = '';
+  for (const mcaMod in prefixDict) {
+    if (prefixDict[mcaMod] > 1) {
+      modalTextError += 'Mod Corpus Association validation error: ' + mcaMod + ' has too many values: ' + prefixDict[mcaMod] + '<br/>'; } }
+  return modalTextError;
+}
+
+const validateXrefPrefixDup = (xrefJsonLive, fieldName) => {
+  let prefixDict = {}
+  for (const crossRefDict of xrefJsonLive.values()) {
+    if ( ('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] === true) ) { continue; }
+    if ('curie' in crossRefDict) {                  // pre-existing entries need delete or update
+      let valueLiveCuriePrefix = splitCurie(crossRefDict['curie'], 'prefix');
+      if (valueLiveCuriePrefix in prefixDict) { prefixDict[valueLiveCuriePrefix].push(crossRefDict['curie']); }
+        else { prefixDict[valueLiveCuriePrefix] = [crossRefDict['curie']]; } } }
+  let modalTextError = '';
+  for (const [prefix, values] of Object.entries(prefixDict)) {
+    if (values.length > 1) {
+      modalTextError += 'Cross Reference validation error: ' + prefix + ' has too many valid values ' + values.join(', ') + '<br/>'; } }
+  return modalTextError;
+}
+
 export const checkHasPmid = (referenceJsonLive) => {
   // console.log('called checkHasPmid ' + referenceJsonLive.curie);
   let checkingHasPmid = false;
@@ -76,13 +107,6 @@ export const checkHasPmid = (referenceJsonLive) => {
       if ( (xref.curie.match(/^PMID:/)) && (xref.is_obsolete === false) ) {
         checkingHasPmid = true; } } }
   return checkingHasPmid;
-}
-
-export const splitCurie = (curie) => {
-  let curiePrefix = ''; let curieId = '';
-  if ( curie.match(/^([^:]*):(.*)$/) ) {
-    [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }
-  return [ curiePrefix, curieId ]
 }
 
 const getStoreAuthorIndexFromDomIndex = (indexDomAuthorInfo, newAuthorInfoChange) => {
@@ -356,6 +380,23 @@ export default function(state = initialState, action) {
         updateAlert: 0
       }
 
+    case 'VALIDATE_FORM_UPDATE_BIBLIO':
+      console.log('VALIDATE_FORM_UPDATE_BIBLIO reducer');
+      console.log(state.referenceJsonLive);
+      let validationTextErrors = '';
+      if ('mod_corpus_associations' in state.referenceJsonLive) {
+        const mcaModalTextError = validateMcaPrefixDup(state.referenceJsonLive['mod_corpus_associations']);
+        validationTextErrors += mcaModalTextError; }
+      if ('cross_references' in state.referenceJsonLive) {
+        let xrefModalTextError = validateXrefPrefixDup(state.referenceJsonLive['cross_references'])
+        validationTextErrors += xrefModalTextError; }
+      const validationUpdateBiblioFlag = (validationTextErrors === '') ? true : false;
+      return {
+        ...state,
+        updateBiblioFlag: validationUpdateBiblioFlag,
+        biblioEditorModalText: validationTextErrors
+      }
+
     case 'CHANGE_FIELD_ARRAY_REFERENCE_JSON':
       // console.log('reducer CHANGE_FIELD_ARRAY_REFERENCE_JSON ' + action.payload);
       let stringArray = action.payload.field.split(" ");
@@ -523,9 +564,12 @@ export default function(state = initialState, action) {
       else {
         hasChangeModAssociationField[action.payload.field] = 'diff' }
 
+      let mcaModalTextError = validateMcaPrefixDup(newModAssociationChange)
+
       return {
         ...state,
         referenceJsonHasChange: hasChangeModAssociationField,
+        biblioEditorModalText: mcaModalTextError,
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldModAssociation]: newModAssociationChange
@@ -565,10 +609,13 @@ export default function(state = initialState, action) {
       else {
         hasChangeCrossReferencesField[action.payload.field] = 'diff' }
 
+      let xrefModalTextError = validateXrefPrefixDup(newCrossReferencesChange)
+
       return {
         ...state,
         referenceJsonHasChange: hasChangeCrossReferencesField,
         hasPmid: pmidBoolCrossReference,
+        biblioEditorModalText: xrefModalTextError,
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldCrossReferences]: newCrossReferencesChange
@@ -706,6 +753,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         biblioAction: action.payload
+      }
+    case 'SET_UPDATE_BIBLIO_FLAG':
+      console.log("reducer set update biblio flag");
+      return {
+        ...state,
+        updateBiblioFlag: action.payload
       }
     case 'SET_UPDATE_CITATION_FLAG':
       console.log("reducer set update citation flag");
