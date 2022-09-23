@@ -27,7 +27,7 @@ const initialState = {
     'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT
   },
   searchFacetsShowMore: {},
-  searchQuery: undefined
+  searchQuery: ""
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
