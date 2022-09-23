@@ -26,20 +26,20 @@ const SearchBar = () => {
                             {fieldToSearch}
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
-                            <Dropdown.Item onClick={() => setFieldToSearch('All text fields')}>All text fields</Dropdown.Item>
                             <Dropdown.Item onClick={() => setFieldToSearch('Title')}>Title</Dropdown.Item>
+                            <Dropdown.Item onClick={() => setFieldToSearch('ID')}>ID</Dropdown.Item>
                         </Dropdown.Menu>
                     </Dropdown>
                     <Form.Control inline="true" type="text" id="titleField" name="titleField" value={searchQuery}
                                   onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                                   onKeyPress={(event) => {
                                       if (event.charCode === 13) {
-                                          dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
+                                          dispatch(searchReferences(searchQuery, fieldToSearch, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
                                       }
                                   }}
                     />
                     <Button inline="true" style={{width: "5em"}}
-                            onClick={() => dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount))}>
+                            onClick={() => dispatch(searchReferences(searchQuery, fieldToSearch, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount))}>
                         {searchLoading ? <Spinner animation="border" size="sm"/> : <span>Search</span>  }
                     </Button>
                 </InputGroup>

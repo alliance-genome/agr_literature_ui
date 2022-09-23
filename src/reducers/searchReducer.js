@@ -32,7 +32,8 @@ const initialState = {
   querySuccess: false,
   responseColor: 'black',
   responseField: 'unknown reference',
-  redirectToBiblio: false
+  redirectToBiblio: false,
+  searchError: false
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -145,14 +146,18 @@ export default function(state = initialState, action) {
       let responseColor = 'blue';
       let redirectToBiblio = false;
       let querySuccess = false;
-      if (responseFound === 'not found') { responseColor = 'red'; }
-        else { redirectToBiblio = true; querySuccess = true; }
+      let searchError = false;
+      if (responseFound === 'not found') {
+        responseColor = 'red';
+        searchError = true;
+      } else { redirectToBiblio = true; querySuccess = true; }
       return {
         ...state,
         responseColor: responseColor,
         responseField: responseField,
         redirectToBiblio: redirectToBiblio,
-        querySuccess: querySuccess
+        querySuccess: querySuccess,
+        searchError: searchError
       }
 //     case 'FETCH_POSTS':
 //       console.log('in postReducer case FETCH_POSTS');

@@ -29,7 +29,7 @@ const SearchOptions = () => {
                                   onChange={(e) => {
                                       const intSizeResultsCount = parseInt(e.target.value.replace('Results per page ', ''));
                                       dispatch(setSearchSizeResultsCount(intSizeResultsCount));
-                                      dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, intSizeResultsCount));
+                                      dispatch(searchReferences(searchQuery, '', searchFacetsValues, searchFacetsLimits, intSizeResultsCount));
                                   } }>
                         <option>Results per page 10</option>
                         <option>Results per page 25</option>

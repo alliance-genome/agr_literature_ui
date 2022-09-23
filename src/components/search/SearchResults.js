@@ -15,6 +15,8 @@ const SearchResults = () => {
     const searchResults = useSelector(state => state.search.searchResults);
     const searchSuccess = useSelector(state => state.search.searchSuccess);
     const searchError = useSelector(state => state.search.searchError);
+    const searchResponseField = useSelector(state => state.search.responseField);
+    const searchQuerySuccess = useSelector(state => state.search.querySuccess);
 
     const dispatch = useDispatch();
 
@@ -52,7 +54,7 @@ const SearchResults = () => {
                 <Modal.Header closeButton>
                     <Modal.Title>Error</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>Couldn't search references</Modal.Body>
+                <Modal.Body>{!searchQuerySuccess && (searchResponseField.endsWith('not found')) ? "Reference not found" : "Couldn't search references"}</Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => dispatch(setSearchError(false))}>
                         Close

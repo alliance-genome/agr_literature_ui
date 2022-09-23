@@ -20,7 +20,6 @@ const Search = () => {
   const searchResponseField = useSelector(state => state.search.responseField);
   const searchResponseColor = useSelector(state => state.search.responseColor);
   const searchRedirectToBiblio = useSelector(state => state.search.redirectToBiblio);
-  const searchQuerySuccess = useSelector(state => state.search.querySuccess);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -37,16 +36,7 @@ const Search = () => {
 
   return (
     <div>
-      <h4>Look up Reference by exact cross reference curie.<br/>e.g. PMID:24895670 or RGD:13542090 or WB:WBPaper00010006</h4>
-      <div style={{width: "28em", margin: "auto"}}>
-        <InputGroup className="mb-2">
-          <Form.Control type="text" id="xrefcurieField" name="xrefcurieField" value={xrefcurieField} onChange={(e) => dispatch(changeQueryField(e))} />
-          {searchRedirectToBiblio && pushHistory(searchResponseField)}
-          <Button type="submit" size="sm" onClick={() => dispatch(searchButtonCrossRefCurie(xrefcurieField))}>Query External Identifier Curie</Button>
-        </InputGroup>
-      </div>
-      <div>{searchQuerySuccess ? <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + searchResponseField}}><span style={{color: searchResponseColor}}>{searchResponseField}</span></Link> : <span style={{color: searchResponseColor}}>{searchResponseField}</span>}</div>
-      <hr/>
+      {searchRedirectToBiblio && pushHistory(searchResponseField)}
       <h4>Search References<br/></h4>
         <SearchLayout/>
       <hr/>

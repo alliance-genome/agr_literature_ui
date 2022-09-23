@@ -48,23 +48,36 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount) => {
+export const searchReferences = (query, fieldToSearch, facetsValues, facetsLimits, sizeResultsCount) => {
   return dispatch => {
-    dispatch(setSearchLoading());
-    dispatch(setSearchQuery(query));
-    dispatch(setSearchFacetsValues(facetsValues));
-    dispatch(setSearchFacetsLimits(facetsLimits));
-    axios.post(restUrl + '/search/references', {
-      query: query,
-      size_result_count: sizeResultsCount,
-      facets_values: facetsValues,
-      facets_limits: facetsLimits
-    })
-        .then(res => {
-          dispatch(setSearchResults(res.data.hits, res.data.return_count));
-          dispatch(setSearchFacets(res.data.aggregations));
+    if (fieldToSearch === 'ID') {
+      if (query.startsWith('AGR:') || query.startsWith('AGRKB:')) {
+        dispatch({
+          type: 'SEARCH_BUTTON_XREF_CURIE',
+          payload: query,
+          responseFound: 'found'
         })
-        .catch(err => dispatch(setSearchError(true)));
+      } else {
+        dispatch(searchButtonCrossRefCurie(query));
+      }
+      dispatch(setSearchQuery(""));
+    } else {
+      dispatch(setSearchLoading());
+      dispatch(setSearchQuery(query));
+      dispatch(setSearchFacetsValues(facetsValues));
+      dispatch(setSearchFacetsLimits(facetsLimits));
+      axios.post(restUrl + '/search/references', {
+        query: query,
+        size_result_count: sizeResultsCount,
+        facets_values: facetsValues,
+        facets_limits: facetsLimits
+      })
+          .then(res => {
+            dispatch(setSearchResults(res.data.hits, res.data.return_count));
+            dispatch(setSearchFacets(res.data.aggregations));
+          })
+          .catch(err => dispatch(setSearchError(true)));
+    }
   }
 }
 

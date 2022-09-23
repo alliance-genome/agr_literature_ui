@@ -91,7 +91,8 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 
     const searchOrSetInitialFacets = (newSearchFacetsLimits) => {
         if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
-            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount))
+            dispatch(searchReferences(searchQuery, '', searchFacetsValues, newSearchFacetsLimits,
+                searchSizeResultsCount))
         } else {
             dispatch(fetchInitialFacets(newSearchFacetsLimits));
         }
@@ -151,7 +152,9 @@ const Facets = () => {
         if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
-            dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
+            if (searchQuery !== "" && Object.keys(searchFacetsValues).length > 0)
+            dispatch(searchReferences(searchQuery, '', searchFacetsValues, searchFacetsLimits,
+                searchSizeResultsCount));
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
