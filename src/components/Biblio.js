@@ -1,5 +1,5 @@
 // import { useState } from 'react'
-import { useEffect } from 'react';
+import {useEffect, useState} from 'react';
 // import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 // import { useHistory } from "react-router-dom";
@@ -8,7 +8,7 @@ import { useSelector, useDispatch } from 'react-redux';
 // import { useSelector } from 'react-redux';
 
 // import { resetQueryRedirect } from '../actions/biblioActions';
-import { setReferenceCurie } from '../actions/biblioActions';
+import {queryId, setReferenceCurie} from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 // import { biblioMock1QueryReferenceCurie } from '../actions/biblioMock1Actions';
@@ -70,6 +70,7 @@ import loading_gif from '../images/loading_cat.gif';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUndo } from '@fortawesome/free-solid-svg-icons'
+import {InputGroup} from "react-bootstrap";
 
 // http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
 
@@ -2270,6 +2271,29 @@ const BiblioEditor = () => {
           </Container>);
 } // const BiblioEditor
 
+const BiblioIdQuery = () => {
+  const dispatch = useDispatch();
+  const [idQuery, setIdQuery] = useState('');
+  return (
+      <div>
+        <div style={{width: "28em", margin: "auto"}}>
+          <InputGroup className="mb-2">
+            <Form.Control placeholder="e.g., PMID:24895670 or AGR:AGR-Reference-0000000001" type="text"
+                          id="xrefcurieField" name="xrefcurieField" value={idQuery}
+                          onChange={(e) => setIdQuery(e.target.value)}
+                          onKeyPress={(event) => {
+                            if (event.charCode === 13) {
+                              dispatch(queryId(idQuery));
+                            }
+                          }}
+            />
+            <Button type="submit" size="sm" onClick={() => dispatch(queryId(idQuery))}>Query exact ID</Button>
+          </InputGroup>
+        </div>
+      </div>
+  )
+}
+
 const Biblio = () => {
 
   const dispatch = useDispatch();
@@ -2323,18 +2347,20 @@ const Biblio = () => {
   function LoadingElement() {
     return (<Container><img src={loading_gif} className="loading_gif" alt="loading" /></Container>);
   }
-
-  if (referenceCurie === '') {
-    return (<div><h4>Select a reference curie through <Link to='/Search'>Search</Link> or something else first</h4></div>) }
-  else {
-    return (
+  return (
       <div>
-        <h4>Biblio about this Reference</h4>
-        <div align="center" className="task" >{referenceCurie}</div>
-        { isLoading ? <LoadingElement /> : <BiblioActionRouter /> }
-        <Link to='/'>Go Back</Link>
+        <BiblioIdQuery/>
+        <br/>
+        {referenceCurie !== '' ?
+            <div>
+              <h4>Biblio about this Reference</h4>
+              <div align="center" className="task">{referenceCurie}</div>
+              {isLoading ? <LoadingElement/> : <BiblioActionRouter/>}
+              <Link to='/'>Go Back</Link>
+            </div> : null
+        }
       </div>
-    ) }
+  )
 
 } // const Biblio = () =>
 
