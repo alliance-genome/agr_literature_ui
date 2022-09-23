@@ -60,7 +60,6 @@ export const searchReferences = (query, fieldToSearch, facetsValues, facetsLimit
       } else {
         dispatch(searchButtonCrossRefCurie(query));
       }
-      dispatch(setSearchQuery(""));
     } else {
       dispatch(setSearchLoading());
       dispatch(setSearchQuery(query));

@@ -152,7 +152,7 @@ const Facets = () => {
         if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
-            if (searchQuery !== "" && Object.keys(searchFacetsValues).length > 0) {
+            if (searchQuery !== "" || searchResults.length > 0) {
                 dispatch(searchReferences(searchQuery, '', searchFacetsValues, searchFacetsLimits,
                     searchSizeResultsCount));
             }

@@ -27,7 +27,7 @@ const initialState = {
     'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT
   },
   searchFacetsShowMore: {},
-  searchQuery: undefined,
+  searchQuery: "",
   xrefcurieField: '',
   querySuccess: false,
   responseColor: 'black',
@@ -79,9 +79,7 @@ export default function(state = initialState, action) {
       return {
         ...state,
         searchLoading: false,
-        searchError: action.payload.value,
-        searchSuccess: false,
-        searchResults: []
+        searchError: action.payload.value
       }
 
     case SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT:
