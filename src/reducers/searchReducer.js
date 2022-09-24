@@ -27,12 +27,7 @@ const initialState = {
     'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT
   },
   searchFacetsShowMore: {},
-  searchQuery: undefined,
-  xrefcurieField: '',
-  querySuccess: false,
-  responseColor: 'black',
-  responseField: 'unknown reference',
-  redirectToBiblio: false
+  searchQuery: ""
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -45,12 +40,6 @@ export default function(state = initialState, action) {
       return {
         ...state,
         [action.payload.field]: action.payload.value
-      }
-    case 'RESET_SEARCH_REDIRECT':
-      console.log("reset query redirect");
-      return {
-        ...state,
-        redirectToBiblio: false
       }
 
     case SEARCH_SET_SEARCH_RESULTS:
@@ -138,22 +127,6 @@ export default function(state = initialState, action) {
         searchFacetsLimits: action.payload.facetsLimits
       }
 
-    case 'SEARCH_BUTTON_XREF_CURIE':
-      console.log("query button xref curie reducer set " + action.payload);
-      let responseField = action.payload;
-      let responseFound = action.responseFound;
-      let responseColor = 'blue';
-      let redirectToBiblio = false;
-      let querySuccess = false;
-      if (responseFound === 'not found') { responseColor = 'red'; }
-        else { redirectToBiblio = true; querySuccess = true; }
-      return {
-        ...state,
-        responseColor: responseColor,
-        responseField: responseField,
-        redirectToBiblio: redirectToBiblio,
-        querySuccess: querySuccess
-      }
 //     case 'FETCH_POSTS':
 //       console.log('in postReducer case FETCH_POSTS');
 //       return {

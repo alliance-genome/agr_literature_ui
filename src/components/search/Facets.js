@@ -151,6 +151,7 @@ const Facets = () => {
         if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
+            if (searchQuery !== "" || searchResults.length > 0)
             dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -26,12 +26,6 @@ export const changeQueryField = (e) => {
   };
 };
 
-export const resetSearchRedirect = () => {
-  return {
-    type: 'RESET_SEARCH_REDIRECT'
-  };
-};
-
 export const fetchInitialFacets = (facetsLimits) => {
   return dispatch => {
     dispatch(setSearchFacetsLimits(facetsLimits));
@@ -138,38 +132,3 @@ export const removeFacetValue = (facet, value) => ({
   }
 });
 
-export const searchButtonCrossRefCurie = (payload) => dispatch => {
-  console.log('in searchButtonCrossRefCurie action');
-  console.log("payload " + payload);
-  const createGetQueryCrossRefCurie = async () => {
-//     const url = 'http://dev.alliancegenome.org:49161/cross_reference/' + payload;
-//     const url = 'http://dev.alliancegenome.org:' + port + '/cross_reference/' + payload;
-//     const url = 'https://' + restUrl + '/cross_reference/' + payload;
-    const url = restUrl + '/cross_reference/' + payload;
-    // console.log(url);
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json'
-      }
-    })
-    const response = await res.json();
-    let response_payload = payload + ' not found';
-    let response_found = 'not found';
-    if (response.reference_curie !== undefined) {
-      console.log('response not undefined');
-      response_found = 'found';
-      response_payload = response.reference_curie;
-    }
-//     history.push("/Biblio");	// value hasn't been set in store yet
-    // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-    console.log('dispatch SEARCH_BUTTON_XREF_CURIE');
-    dispatch({
-      type: 'SEARCH_BUTTON_XREF_CURIE',
-      payload: response_payload,
-      responseFound: response_found
-    })
-  }
-  createGetQueryCrossRefCurie()
-};

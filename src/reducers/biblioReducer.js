@@ -776,7 +776,8 @@ export default function(state = initialState, action) {
         referenceJsonLive: {},
         referenceJsonDb: {},
         referenceJsonHasChange: {},
-        referenceCurie: action.payload
+        referenceCurie: action.payload,
+        getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
       console.log("biblio reducer set get reference curie flag");
