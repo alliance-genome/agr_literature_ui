@@ -792,10 +792,8 @@ export const queryId = (id) => {
       }).then(res => {
         res.json().then(response => {
           let response_payload = id;
-          let response_found = 'not found';
           if (response.reference_curie !== undefined) {
             console.log('response not undefined');
-            response_found = 'found';
             response_payload = response.reference_curie;
           }
           dispatch(setReferenceCurie(response_payload));
