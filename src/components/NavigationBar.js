@@ -5,8 +5,12 @@ import { Link  } from 'react-router-dom';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 // import NavDropdown from 'react-bootstrap/NavDropdown';
+
 import Login from './Login'
+import OktaHelp from './OktaHelp'
+
 import {oktaSignInConfig} from "../config";
+
 
 const devOrProd = process.env.REACT_APP_DEV_OR_PROD;
 var navClass = (devOrProd === 'dev') ? "Navbar-dev" : "Navbar";
@@ -26,6 +30,7 @@ const NavigationBar = () => {
       <Nav.Link as={Link} to="/swaggerUI">Swagger</Nav.Link>
     </Nav>
     <Nav>
+      <OktaHelp />
       <Login config={oktaSignInConfig}/>
     </Nav>
   </Navbar>
