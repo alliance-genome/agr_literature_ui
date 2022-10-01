@@ -13,9 +13,7 @@ const OktaHelp = () => {
   const handleShow = () => setShow(true);
   return (
     <>
-      <div style={{padding: '0 .5rem', alignSelf: 'center'}}>
-        <Button variant="light" size="sm" type="button" onClick={handleShow}>Okta Help</Button>
-      </div>
+      <Button  style={{marginInline: '.5rem', alignSelf: 'center'}} variant="light" size="sm" type="button" onClick={handleShow}>Okta Help</Button>
       <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title>Okta Account Help</Modal.Title>
