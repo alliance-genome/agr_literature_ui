@@ -4,7 +4,7 @@ import {
   SEARCH_SET_SEARCH_FACETS, SEARCH_SET_SEARCH_FACETS_LIMITS,
   SEARCH_SET_SEARCH_FACETS_VALUES,
   SEARCH_SET_SEARCH_LOADING, SEARCH_SET_SEARCH_SEARCH,
-  SEARCH_SET_SEARCH_RESULTS,
+  SEARCH_SET_SEARCH_RESULTS, SEARCH_SET_SEARCH_RESULTS_PAGE,
   SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT,
 } from '../actions/searchActions';
 
@@ -17,6 +17,7 @@ const initialState = {
   searchResults: [],
   searchResultsCount: 0,
   searchSizeResultsCount: 10,
+  searchResultsPage: 0,
   searchLoading: false,
   searchSuccess: false,
   searchFacets: {},
@@ -87,6 +88,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         searchSizeResultsCount: action.payload.sizeResultsCount
+      }
+
+    case SEARCH_SET_SEARCH_RESULTS_PAGE:
+      return {
+        ...state,
+        searchResultsPage: action.payload.searchResultsPage
       }
 
     case SEARCH_SET_SEARCH_SEARCH:

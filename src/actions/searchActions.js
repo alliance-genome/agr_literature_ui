@@ -1,6 +1,7 @@
 import axios from "axios";
 
 export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
+export const SEARCH_SET_SEARCH_RESULTS_PAGE = 'SEARCH_SET_SEARCH_RESULTS_PAGE';
 export const SEARCH_SET_SEARCH_RESULTS = 'SEARCH_SET_SEARCH_RESULTS';
 export const SEARCH_SET_SEARCH_LOADING = 'SEARCH_SET_SEARCH_LOADING';
 export const SEARCH_SET_SEARCH_ERROR = 'SEARCH_SET_SEARCH_ERROR';
@@ -48,7 +49,7 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount) => {
+export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount,searchResultsPage) => {
   return dispatch => {
     dispatch(setSearchLoading());
     dispatch(setSearchQuery(query));
@@ -57,6 +58,7 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
     axios.post(restUrl + '/search/references', {
       query: query,
       size_result_count: sizeResultsCount,
+      page: searchResultsPage,
       facets_values: facetsValues,
       facets_limits: facetsLimits
     })
@@ -72,6 +74,13 @@ export const setSearchSizeResultsCount = (sizeResultsCount) => ({
   type: SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT,
   payload: {
     sizeResultsCount
+  }
+});
+
+export const setSearchResultsPage = (searchResultsPage) => ({
+  type: SEARCH_SET_SEARCH_RESULTS_PAGE,
+  payload: {
+    searchResultsPage
   }
 });
 
