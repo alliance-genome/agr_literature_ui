@@ -5,7 +5,8 @@ import {
     fetchInitialFacets,
     removeFacetValue,
     searchReferences,
-    setSearchFacetsLimits
+    setSearchFacetsLimits,
+    setSearchResultsPage
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse} from 'react-bootstrap';
@@ -91,7 +92,8 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 
     const searchOrSetInitialFacets = (newSearchFacetsLimits) => {
         if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
-            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount))
+            dispatch(setSearchResultsPage(0));
+            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,0))
         } else {
             dispatch(fetchInitialFacets(newSearchFacetsLimits));
         }
@@ -152,7 +154,8 @@ const Facets = () => {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
             if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0) {
-                dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
+                dispatch(setSearchResultsPage(0));
+                dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount, 0));
             }
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
