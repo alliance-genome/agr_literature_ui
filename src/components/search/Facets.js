@@ -153,9 +153,10 @@ const Facets = () => {
         if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
-            if (searchQuery !== "" || searchResults.length > 0)
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,0));
+            if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0) {
+                dispatch(setSearchResultsPage(0));
+                dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount, 0));
+            }
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
