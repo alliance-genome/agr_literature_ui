@@ -20,9 +20,31 @@ const SearchOptions = () => {
 
     const dispatch = useDispatch();
 
+    const pagination_elements = searchResultsCount ? (
+      <Pagination>
+        <Pagination.First  onClick={() => changePage('First')} />
+        <Pagination.Prev   onClick={() => changePage('Prev')} />
+        <Pagination.Item  disabled>{searchResultsPage+1}</Pagination.Item>
+        <Pagination.Ellipsis disabled/>
+        <Pagination.Item  disabled>{Math.ceil(searchResultsCount/searchSizeResultsCount)}</Pagination.Item>
+        <Pagination.Next   onClick={() => changePage('Next')} />
+        <Pagination.Last   onClick={() => changePage('Last')} />
+      </Pagination>
+    ) : (
+      <Pagination>
+        <Pagination.First  disabled />
+        <Pagination.Prev   disabled />
+        <Pagination.Item  disabled> . </Pagination.Item>
+        <Pagination.Ellipsis disabled/>
+        <Pagination.Item  disabled> . </Pagination.Item>
+        <Pagination.Next   disabled/>
+        <Pagination.Last   disabled />
+      </Pagination>
+    )
+
     function changePage(action){
       let page = searchResultsPage;
-      let lastPage= parseInt(searchResultsCount/searchSizeResultsCount);
+      let lastPage= Math.ceil(searchResultsCount/searchSizeResultsCount)-1;
       switch (action){
         case 'Next':
           page=Math.min(lastPage,page+1);
@@ -68,13 +90,7 @@ const SearchOptions = () => {
                     </Form.Control>
                 </Col>
                 <Col sm={6}>
-                  <Pagination>
-                    <Pagination.First  onClick={() => changePage('First')} />
-                    <Pagination.Prev   onClick={() => changePage('Prev')} />
-                    <Pagination.Item   active>{searchResultsPage+1}</Pagination.Item>
-                    <Pagination.Next   onClick={() => changePage('Next')} />
-                    <Pagination.Last   onClick={() => changePage('Last')} />
-                  </Pagination>
+                  {pagination_elements}
                 </Col>
                 <Col sm={2}>
                 </Col>
