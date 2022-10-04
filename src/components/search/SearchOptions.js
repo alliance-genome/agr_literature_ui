@@ -24,23 +24,11 @@ const SearchOptions = () => {
       <Pagination>
         <Pagination.First  onClick={() => changePage('First')} />
         <Pagination.Prev   onClick={() => changePage('Prev')} />
-        <Pagination.Item  disabled>{searchResultsPage+1}</Pagination.Item>
-        <Pagination.Ellipsis disabled/>
-        <Pagination.Item  disabled>{Math.ceil(searchResultsCount/searchSizeResultsCount)}</Pagination.Item>
+        <Pagination.Item  disabled>{"Page " + (searchResultsPage+1) + " of " + Math.ceil(searchResultsCount/searchSizeResultsCount)}</Pagination.Item>
         <Pagination.Next   onClick={() => changePage('Next')} />
         <Pagination.Last   onClick={() => changePage('Last')} />
       </Pagination>
-    ) : (
-      <Pagination>
-        <Pagination.First  disabled />
-        <Pagination.Prev   disabled />
-        <Pagination.Item  disabled> . </Pagination.Item>
-        <Pagination.Ellipsis disabled/>
-        <Pagination.Item  disabled> . </Pagination.Item>
-        <Pagination.Next   disabled/>
-        <Pagination.Last   disabled />
-      </Pagination>
-    )
+    ) : null
 
     function changePage(action){
       let page = searchResultsPage;
