@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import {Dropdown, InputGroup, Spinner} from 'react-bootstrap';
-import {searchReferences, setSearchQuery} from '../../actions/searchActions';
+import {searchReferences, setSearchQuery, setSearchResultsPage} from '../../actions/searchActions';
 import {useDispatch, useSelector} from 'react-redux';
 
 
@@ -13,6 +13,7 @@ const SearchBar = () => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
+    const searchResultsPage = useSelector(state => state.search.searchResultsPage);
     const searchQuery = useSelector(state => state.search.searchQuery);
 
     const dispatch = useDispatch();
@@ -34,12 +35,16 @@ const SearchBar = () => {
                                   onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                                   onKeyPress={(event) => {
                                       if (event.charCode === 13) {
-                                          dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount));
+                                        dispatch(setSearchResultsPage(0));
+                                        dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,0));
                                       }
                                   }}
                     />
                     <Button inline="true" style={{width: "5em"}}
-                            onClick={() => dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount))}>
+                            onClick={() => {
+                              dispatch(setSearchResultsPage(0));
+                              dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,0))
+                            }}>
                         {searchLoading ? <Spinner animation="border" size="sm"/> : <span>Search</span>  }
                     </Button>
                 </InputGroup>
