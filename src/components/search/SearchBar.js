@@ -13,7 +13,6 @@ const SearchBar = () => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
-    const searchResultsPage = useSelector(state => state.search.searchResultsPage);
     const searchQuery = useSelector(state => state.search.searchQuery);
 
     const dispatch = useDispatch();
