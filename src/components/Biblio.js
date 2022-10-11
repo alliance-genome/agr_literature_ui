@@ -2278,7 +2278,7 @@ const BiblioIdQuery = () => {
       <div>
         <div style={{width: "28em", margin: "auto"}}>
           <InputGroup className="mb-2">
-            <Form.Control placeholder="e.g., PMID:24895670 or AGR:AGR-Reference-0000000001" type="text"
+            <Form.Control placeholder="e.g., PMID:24895670 or AGRKB:101000000878586" type="text"
                           id="xrefcurieField" name="xrefcurieField" value={idQuery}
                           onChange={(e) => setIdQuery(e.target.value)}
                           onKeyPress={(event) => {
