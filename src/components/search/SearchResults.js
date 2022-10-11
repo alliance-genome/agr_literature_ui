@@ -13,9 +13,9 @@ const XrefElement = (xref) => {
     const [url, setUrl] = useState(null);
     useEffect(() => {
       searchXref(xref.xref.curie, setUrl);
-    }, [url]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
     return (
-      <li><span className="obsolete">{xref.xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span><a href={url}>{xref.xref.curie}</a></li>
+      <li><span className="obsolete">{xref.xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span><a href={url} rel="noreferrer noopener" target="_blank">{xref.xref.curie}</a></li>
     )
 }
 
