@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -6,9 +6,18 @@ import Col from 'react-bootstrap/Col';
 import {Link} from 'react-router-dom';
 import {setGetReferenceCurieFlag, setReferenceCurie} from '../../actions/biblioActions';
 import {Modal} from 'react-bootstrap';
-import {setSearchError} from '../../actions/searchActions';
+import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 
+const XrefElement = (xref) => {
+    const [url, setUrl] = useState(null);
+    useEffect(() => {
+      searchXref(xref.xref.curie, setUrl);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return (
+      <li><span className="obsolete">{xref.xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span><a href={url} rel="noreferrer noopener" target="_blank">{xref.xref.curie}</a></li>
+    )
+}
 
 const SearchResults = () => {
 
@@ -29,8 +38,8 @@ const SearchResults = () => {
                               <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
                               <div className="searchRow-xref">
                                 <ul><li><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></li>
-                                  {reference.cross_references.map((xref, i) => (
-                                  <li><span className="obsolete">{xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span>{xref.curie}</li>
+                                {reference.cross_references.map((xref, i) => (
+                                  <XrefElement xref={xref}/>
                                 ))}
                                 </ul>
                               </div>

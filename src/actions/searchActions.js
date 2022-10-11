@@ -64,6 +64,14 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
   }
 }
 
+export const searchXref = (xref, setUrl) => {
+  axios.get(restUrl + '/cross_reference/'+xref)
+  .then(res => {
+    setUrl(res.data.url);
+  })
+  .catch();
+}
+
 export const setSearchSizeResultsCount = (sizeResultsCount) => ({
   type: SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT,
   payload: {
