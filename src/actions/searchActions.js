@@ -67,7 +67,11 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
 export const searchXref = (xref, setUrl) => {
   axios.get(restUrl + '/cross_reference/'+xref)
   .then(res => {
-    setUrl(res.data.url);
+    if(res.data.pages){
+      setUrl(res.data.pages[0].url)
+    }else{
+        setUrl(res.data.url);
+    }
   })
   .catch();
 }
