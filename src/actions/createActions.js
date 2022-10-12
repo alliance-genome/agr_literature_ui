@@ -148,10 +148,13 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance) => dispatch 
       let response = JSON.parse(response_text);
       if (pmidOrAlliance === 'pmid') {		// for pmid, API returns an escaped JSON that has to be converted again
         // console.log(typeof(response));
-        if (typeof(response) === 'string') {
+        if (typeof (response) === 'string') {
           // console.log(response);
-          if (response === '') { response_message = 'error: ' + subPath + ' : returned an empty string'; }
-          else { response = JSON.parse(response); } } }
+          if (response === '') {
+            response_message = 'error: ' + subPath + ' : returned an empty string';
+          }
+        }
+      }
       // console.log(response);
       // console.log(typeof response);
       if ( ((method === 'PATCH') && (res.status !== 202)) || 
