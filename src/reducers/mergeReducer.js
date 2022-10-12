@@ -13,7 +13,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'AGR:AGR-Reference-0000569189',
+    input: 'PMID:23524264',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -22,6 +22,7 @@ const initialState = {
     disableInput: '',
     blah: ''
   },
+//     input: 'AGR:AGR-Reference-0000569189',
 //     input: 'AGR:AGR-Reference-0000852278',
 //     input: 'PMID:23524264',	-> reference 1
 //     input: 'PMID:29664630',	-> orcid
