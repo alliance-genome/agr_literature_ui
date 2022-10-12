@@ -70,7 +70,7 @@ export const searchXref = (xref, setUrl) => {
     if(res.data.pages){
       setUrl(res.data.pages[0].url)
     }else{
-        setUrl(res.data.url);
+      setUrl(res.data.url);
     }
   })
   .catch();
@@ -152,4 +152,3 @@ export const removeFacetValue = (facet, value) => ({
     value: value
   }
 });
-
