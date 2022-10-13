@@ -71,6 +71,7 @@ const deriveCuratability = (referenceJson) => {
 } } }
 
 const validateMcaPrefixDup = (mcaJsonLive) => {
+  if (mcaJsonLive === null) { return ''; }
   let prefixDict = {}
   for (const crossRefDict of mcaJsonLive.values()) {
     if ('mod_abbreviation' in crossRefDict) {
@@ -85,6 +86,7 @@ const validateMcaPrefixDup = (mcaJsonLive) => {
 }
 
 const validateXrefPrefixDup = (xrefJsonLive, fieldName) => {
+  if (xrefJsonLive === null) { return ''; }
   let prefixDict = {}
   for (const crossRefDict of xrefJsonLive.values()) {
     if ( ('is_obsolete' in crossRefDict) && (crossRefDict['is_obsolete'] === true) ) { continue; }
