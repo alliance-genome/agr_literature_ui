@@ -38,9 +38,9 @@ const SearchResults = () => {
                               <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
                               <div className="searchRow-xref">
                                 <ul><li><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></li>
-                                {reference.cross_references.map((xref, i) => (
+                                {reference.cross_references ? reference.cross_references.map((xref, i) => (
                                   <XrefElement xref={xref}/>
-                                ))}
+                                )) : null}
                                 </ul>
                               </div>
                               <div className="searchRow-other">Authors : {reference.authors ? reference.authors.map((author, i) => ((i ? ', ' : '') + author.name)) : ''}</div>
