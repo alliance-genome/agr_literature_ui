@@ -1703,17 +1703,25 @@ const BiblioDateComponent = ({referenceJsonLive}) => {
   const dispatch = useDispatch();
   console.log(referenceJsonLive);
   const now = new Date();
+  console.log(referenceJsonLive['date_published_start']);
+  console.log(referenceJsonLive['date_published_end']);
 //   const dateRangeStart = ('date_published_start' in referenceJsonLive && referenceJsonLive['date_published_start'] !== null) ?
 //                          referenceJsonLive['date_published_start'] : new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
 //   const dateRangeEnd = ('date_published_end' in referenceJsonLive && referenceJsonLive['date_published_end'] !== null) ?
 //                        referenceJsonLive['date_published_end'] : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const dateRangeStart = ('date_published_start' in referenceJsonLive) ? referenceJsonLive['date_published_start'] : null
-  const dateRangeEnd = ('date_published_end' in referenceJsonLive) ? referenceJsonLive['date_published_end'] : null
-  const [dateRangeArray, onChangeDateRange] = useState([dateRangeStart, dateRangeEnd]);
-  useEffect( () => {
-    console.log(dateRangeArray)
-    dispatch(changeFieldDatePublishedRange(dateRangeArray));
-  }, [dateRangeArray]); // eslint-disable-line react-hooks/exhaustive-deps
+  let dateRangeStart = ('date_published_start' in referenceJsonLive) ? referenceJsonLive['date_published_start'] : null
+  if (dateRangeStart !== null) { dateRangeStart = new Date(dateRangeStart + 60000 * dateRangeStart.getTimezoneOffset()) }
+  let dateRangeEnd = ('date_published_end' in referenceJsonLive) ? referenceJsonLive['date_published_end'] : null
+  if (dateRangeEnd !== null) { dateRangeEnd = new Date(dateRangeEnd + 60000 * dateRangeEnd.getTimezoneOffset()) }
+//   const [dateRangeArray, onChangeDateRange] = useState([dateRangeStart, dateRangeEnd]);
+//   useEffect( () => {
+//     console.log(dateRangeArray)
+//     dispatch(changeFieldDatePublishedRange(dateRangeArray));
+//   }, [dateRangeArray]); // eslint-disable-line react-hooks/exhaustive-deps
+//             onChange={(newDateRangeArr) => dispatch(changeFieldDatePublishedRange(newDateRangeArr))}
+//             value={[dateRangeStart, dateRangeEnd]}
+//             onChange={onChangeDateRange}
+//             value={dateRangeArray}
   return (
           <DateRangePicker
             calendarAriaLabel="Toggle calendar"
@@ -1721,8 +1729,11 @@ const BiblioDateComponent = ({referenceJsonLive}) => {
             dayAriaLabel="Day"
             monthAriaLabel="Month"
             nativeInputAriaLabel="Date"
-            onChange={onChangeDateRange}
-            value={dateRangeArray}
+            onChange={(newDateRangeArr) => { 
+              newDateRangeArr[0] = new Date(newDateRangeArr[0] - 60000 * newDateRangeArr[0].getTimezoneOffset());
+              newDateRangeArr[1] = new Date(newDateRangeArr[1] - 60000 * newDateRangeArr[1].getTimezoneOffset());
+              dispatch(changeFieldDatePublishedRange(newDateRangeArr))} }
+            value={[dateRangeStart, dateRangeEnd]}
             yearAriaLabel="Year"
           />
   )

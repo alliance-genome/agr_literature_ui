@@ -152,12 +152,43 @@ export default function(state = initialState, action) {
       // cannot use toISOString() because of timezone changing the end date
       if ( (action.payload.value[0] instanceof Date) && 
            (action.payload.value[1] instanceof Date) ) {
-        const date_published_start = action.payload.value[0].getFullYear() + '-' + 
-                                     (action.payload.value[0].getMonth() + 1) + '-' +
-                                     action.payload.value[0].getDate()
-        const date_published_end = action.payload.value[1].getFullYear() + '-' + 
-                                   (action.payload.value[1].getMonth() + 1) + '-' +
-                                   action.payload.value[1].getDate()
+        console.log(Date.UTC(action.payload.value[0]))
+        console.log(action.payload.value[0].toDateString())
+        console.log(action.payload.value[1].toDateString())
+        console.log(action.payload.value[0].toString())
+        console.log(action.payload.value[1].toString())
+        console.log(action.payload.value[0].getDate())
+        console.log(action.payload.value[1].getDate())
+        console.log(action.payload.value[0].toISOString())
+        console.log(action.payload.value[1].toISOString())
+        // console.log(moment(action.payload.value[0]).utcOffset(0, true).format()) // moment not installed
+        const date_published_start = action.payload.value[0]
+        const date_published_end = action.payload.value[1]
+//         const date_published_start = action.payload.value[0] - action.payload.value[0].getTimezoneOffset()
+//         const date_published_end = action.payload.value[1] - action.payload.value[1].getTimezoneOffset()
+
+        // at some point needed to extract these because the timezone made dates off by one, 
+        // but this also makes it off by one and adds more warnings
+
+//         const date_published_start = new Date(Date.UTC(2022, 0, 1, 0, 0, 0))
+//         const date_published_start = new Date(2022, 0, 1, 0, 0, 0)
+//         const date_published_start = new Date(action.payload.value[0].getFullYear(),
+//                                      (action.payload.value[0].getMonth()),
+//                                      action.payload.value[0].getDate(), 0, 0, 0)
+//         const date_published_end   = new Date(action.payload.value[1].getFullYear(),
+//                                      (action.payload.value[1].getMonth()),
+//                                      action.payload.value[1].getDate(), 0, 0, 0)
+
+// new Date(Date.UTC) has good date in store with 00:00:00.000Z  but displays one day before on calendar
+// new Date() has good date in calendar but has store with 07:00:00.000Z 
+// default payload has good date in calendar but has 07:00.00.00Z start and date+1 06:59:59.999Z on store
+
+        // const date_published_start = action.payload.value[0].getFullYear() + '-' + 
+        //                              (action.payload.value[0].getMonth() + 1) + '-' +
+        //                              action.payload.value[0].getDate()
+        // const date_published_end = action.payload.value[1].getFullYear() + '-' + 
+        //                            (action.payload.value[1].getMonth() + 1) + '-' +
+        //                            action.payload.value[1].getDate()
         return {
           ...state,
           referenceJsonLive: {
