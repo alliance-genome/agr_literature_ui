@@ -146,6 +146,27 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
+    case 'CHANGE_FIELD_DATE_PUBLISHED_RANGE':
+      console.log('reducer CHANGE_FIELD_DATE_PUBLISHED_RANGE');
+      console.log(action.payload);
+      // cannot use toISOString() because of timezone changing the end date
+      if ( (action.payload.value[0] instanceof Date) && 
+           (action.payload.value[1] instanceof Date) ) {
+        const date_published_start = action.payload.value[0].getFullYear() + '-' + 
+                                     (action.payload.value[0].getMonth() + 1) + '-' +
+                                     action.payload.value[0].getDate()
+        const date_published_end = action.payload.value[1].getFullYear() + '-' + 
+                                   (action.payload.value[1].getMonth() + 1) + '-' +
+                                   action.payload.value[1].getDate()
+        return {
+          ...state,
+          referenceJsonLive: {
+            ...state.referenceJsonLive,
+            date_published_start: date_published_start,
+            date_published_end: date_published_end
+          }
+        } }
+      else { return state }
     case 'CHANGE_FIELD_ENTITY_EDITOR_PRIORITY':
       console.log('action CHANGE_FIELD_ENTITY_EDITOR_PRIORITY');
       console.log(action.payload);

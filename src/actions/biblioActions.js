@@ -98,6 +98,18 @@ export const changeFieldAuthorsReferenceJson = (e) => {
   };
 };
 
+export const changeFieldDatePublishedRange = (datePublishedRange) => {
+  console.log('action change field date published range ');
+  console.log(datePublishedRange);
+  return {
+    type: 'CHANGE_FIELD_DATE_PUBLISHED_RANGE',
+    payload: {
+      field: 'datePublishedRange',
+      value: datePublishedRange
+    }
+  };
+}
+
 
 export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIBLIO_UPDATING_ENTITY_ADD', payload: payload }; };
 

@@ -36,6 +36,7 @@ import { biblioRevertField } from '../actions/biblioActions';
 import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
 import { setBiblioEditorModalText } from '../actions/biblioActions';
+import { changeFieldDatePublishedRange } from '../actions/biblioActions';
 
 import { ateamLookupEntityList } from '../actions/biblioActions';
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
@@ -71,6 +72,8 @@ import loading_gif from '../images/loading_cat.gif';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUndo } from '@fortawesome/free-solid-svg-icons'
 import {InputGroup} from "react-bootstrap";
+
+import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 
 // http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
 
@@ -1689,11 +1692,40 @@ const BiblioSubmitUpdateButton = () => {
 
   return (
        <Row className="form-group row" >
+         <BiblioDateComponent referenceJsonLive={referenceJsonLive} />
          <Col className="form-label col-form-label" sm="2" ></Col>
          <Col sm="10" ><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => dispatch(validateFormUpdateBiblio())}>Update Biblio Data</div></Col>
        </Row>
   );
 } // const BiblioSubmitUpdateButton
+
+const BiblioDateComponent = ({referenceJsonLive}) => {
+  const dispatch = useDispatch();
+  console.log(referenceJsonLive);
+  const now = new Date();
+  const dateRangeStart = ('date_published_start' in referenceJsonLive && referenceJsonLive['date_published_start'] !== null) ?
+                         referenceJsonLive['date_published_start'] : new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const dateRangeEnd = ('date_published_end' in referenceJsonLive && referenceJsonLive['date_published_end'] !== null) ?
+                       referenceJsonLive['date_published_end'] : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const [dateRangeArray, onChangeDateRange] = useState([dateRangeStart, dateRangeEnd]);
+  useEffect( () => {
+    console.log(dateRangeArray)
+    dispatch(changeFieldDatePublishedRange(dateRangeArray));
+  }, [dateRangeArray]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+          <DateRangePicker
+            calendarAriaLabel="Toggle calendar"
+            clearAriaLabel="Clear value"
+            dayAriaLabel="Day"
+            monthAriaLabel="Month"
+            nativeInputAriaLabel="Date"
+            onChange={onChangeDateRange}
+            value={dateRangeArray}
+            yearAriaLabel="Year"
+          />
+  )
+} // const BiblioDateComponent
+
 
 const ColEditorSimple = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, dispatchAction}) => {
   const dispatch = useDispatch();
