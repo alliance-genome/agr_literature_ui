@@ -1716,11 +1716,11 @@ const BiblioDateComponent = ({referenceJsonLive}) => {
                 dispatch(changeFieldDatePublishedRange([null, null]));
               } else {
                 if (newDateRangeArr[0] !== null) {
-                  newDateRangeArr[0] = new Date(newDateRangeArr[0].toDateString()).toISOString().substr(
+                  newDateRangeArr[0] = new Date(newDateRangeArr[0].toDateString()).toISOString().substring(
                       0, 10) + "T00:00:00";
                 }
                 if (newDateRangeArr[1] !== null) {
-                  newDateRangeArr[1] = new Date(newDateRangeArr[1].toDateString()).toISOString().substr(
+                  newDateRangeArr[1] = new Date(newDateRangeArr[1].toDateString()).toISOString().substring(
                       0, 10) + "T00:00:00";
                 }
                 dispatch(changeFieldDatePublishedRange(newDateRangeArr))
