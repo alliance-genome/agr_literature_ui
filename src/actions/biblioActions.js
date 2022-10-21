@@ -465,6 +465,15 @@ export const biblioRevertAuthorArray = (e, initializeDict) => {
     }
   };
 };
+export const biblioRevertDatePublished = (e) => {
+  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
+  return {
+    type: 'BIBLIO_REVERT_DATE_PUBLISHED',
+    payload: {
+      field: activeElement.id
+    }
+  };
+};
 
 export const biblioAddNewRowString = (e) => {
   return {

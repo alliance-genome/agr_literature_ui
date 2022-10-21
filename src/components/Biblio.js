@@ -35,6 +35,7 @@ import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';
 import { biblioRevertField } from '../actions/biblioActions';
 import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
+import { biblioRevertDatePublished } from '../actions/biblioActions';
 import { setBiblioEditorModalText } from '../actions/biblioActions';
 import { changeFieldDatePublishedRange } from '../actions/biblioActions';
 
@@ -1797,9 +1798,9 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
 const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
-  let disabled = ''
-  if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
-  if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
+  let disabled = false
+  if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = true; }
+  if (fieldsDisplayOnly.includes(fieldName)) { disabled = true; }
   let valueLive = ''; let valueDb = ''; let updatedFlag = '';
   if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
   if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
@@ -1811,8 +1812,8 @@ const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb})
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
   let otherColSize = 5;
-  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-  if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 6; }
+  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertDatePublished(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+  if (disabled) { revertElement = (<></>); otherColSize = 6; }
   return ( <Form.Group as={Row} key={fieldName} >
              <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
              <ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled="disabled" fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />
@@ -1833,9 +1834,9 @@ const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
                 dispatch(changeFieldDatePublishedRange([null, null])); }
               else {
                 if (newDateRangeArr[0] !== null) {
-                  newDateRangeArr[0] = new Date(newDateRangeArr[0].toDateString()).toISOString().substring(0, 10) + "T00:00:00"; }
+                  newDateRangeArr[0] = new Date(newDateRangeArr[0].toDateString()).toISOString().substring(0, 10); }
                 if (newDateRangeArr[1] !== null) {
-                  newDateRangeArr[1] = new Date(newDateRangeArr[1].toDateString()).toISOString().substring(0, 10) + "T00:00:00"; }
+                  newDateRangeArr[1] = new Date(newDateRangeArr[1].toDateString()).toISOString().substring(0, 10); }
                 dispatch(changeFieldDatePublishedRange(newDateRangeArr)) }
             }} />)
 } // const BiblioDateComponent

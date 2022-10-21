@@ -148,13 +148,34 @@ export default function(state = initialState, action) {
       }
     case 'CHANGE_FIELD_DATE_PUBLISHED_RANGE':
       console.log('reducer CHANGE_FIELD_DATE_PUBLISHED_RANGE');
-      console.log(action.payload);
+      // console.log(action.payload);
+      const date_published = action.payload.value[0] + ' - ' + action.payload.value[1]
+      const date_published_start = action.payload.value[0] + "T00:00:00"
+      const date_published_end = action.payload.value[1] + "T00:00:00"
+      let referenceJsonHasChangeDatePublished = state.referenceJsonHasChange
+      if (state.referenceJsonDb['date_published'] === date_published) {
+        if ('date_published' in referenceJsonHasChangeDatePublished) {
+          delete referenceJsonHasChangeDatePublished['date_published'] } }
+      else {
+        referenceJsonHasChangeDatePublished['date_published'] = 'diff' }
+      if (state.referenceJsonDb['date_published_start'] === date_published_start) {
+        if ('date_published_start' in referenceJsonHasChangeDatePublished) {
+          delete referenceJsonHasChangeDatePublished['date_published_start'] } }
+      else {
+        referenceJsonHasChangeDatePublished['date_published_start'] = 'diff' }
+      if (state.referenceJsonDb['date_published_end'] === date_published_end) {
+        if ('date_published_end' in referenceJsonHasChangeDatePublished) {
+          delete referenceJsonHasChangeDatePublished['date_published_end'] } }
+      else {
+        referenceJsonHasChangeDatePublished['date_published_end'] = 'diff' }
       return {
         ...state,
+        referenceJsonHasChange: referenceJsonHasChangeDatePublished,
         referenceJsonLive: {
           ...state.referenceJsonLive,
-          date_published_start: action.payload.value[0],
-          date_published_end: action.payload.value[1]
+          date_published: date_published,
+          date_published_start: date_published_start,
+          date_published_end: date_published_end
         }
       }
     case 'CHANGE_FIELD_ENTITY_EDITOR_PRIORITY':
@@ -686,6 +707,21 @@ export default function(state = initialState, action) {
           [fieldStringArrayRevert]: revertValue
         }
       }
+    case 'BIBLIO_REVERT_DATE_PUBLISHED':
+      console.log('BIBLIO_REVERT_DATE_PUBLISHED'); console.log(action.payload);
+      const dateFieldsToRevert = ['date_published', 'date_published_start', 'date_published_end']
+      const referenceJsonLiveBiblioRevertDatePublished = _.cloneDeep(state.referenceJsonLive);
+      let hasChangeFieldDatePublishedRevert = state.referenceJsonHasChange
+      for (const dateFieldToRevert of dateFieldsToRevert) {
+        referenceJsonLiveBiblioRevertDatePublished[dateFieldToRevert] = state.referenceJsonDb[dateFieldToRevert]
+        if (dateFieldToRevert in hasChangeFieldDatePublishedRevert) {
+          delete hasChangeFieldDatePublishedRevert[dateFieldToRevert] } }
+      return {
+        ...state,
+        referenceJsonHasChange: hasChangeFieldDatePublishedRevert,
+        referenceJsonLive: referenceJsonLiveBiblioRevertDatePublished
+      }
+
     case 'BIBLIO_ADD_NEW_ROW':
       // console.log(action.payload);
       let newArrayPushDb = state.referenceJsonDb[action.payload.field] || [];
