@@ -91,6 +91,7 @@ const fieldsOrdered = [ 'title', 'date_published', 'mod_corpus_associations', 'c
 
 const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
+const fieldsDatePublished = [ 'date_published', 'date_published_start', 'date_published_end' ];
 
 
 const fieldTypeDict = {}
@@ -1517,6 +1518,9 @@ const BiblioSubmitUpdateButton = () => {
     const fieldsSimpleNotPatch = ['reference_id', 'curie', 'resource_curie', 'resource_title'];
     for (const field of fieldsSimple.values()) {
       if ((field in referenceJsonLive) && !(fieldsSimpleNotPatch.includes(field)) && !(fieldsDisplayOnly.includes(field))) {
+        updateJson[field] = referenceJsonLive[field] } }
+    for (const field of fieldsDatePublished.values()) {
+      if (field in referenceJsonLive) {
         updateJson[field] = referenceJsonLive[field] } }
     const fieldsArrayStringNotPatch = ['obsolete_references'];
     for (const field of fieldsArrayString.values()) {
