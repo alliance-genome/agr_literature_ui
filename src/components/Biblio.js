@@ -35,7 +35,9 @@ import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';
 import { biblioRevertField } from '../actions/biblioActions';
 import { biblioRevertFieldArray } from '../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../actions/biblioActions';
+import { biblioRevertDatePublished } from '../actions/biblioActions';
 import { setBiblioEditorModalText } from '../actions/biblioActions';
+import { changeFieldDatePublishedRange } from '../actions/biblioActions';
 
 import { ateamLookupEntityList } from '../actions/biblioActions';
 import { changeFieldEntityGeneList } from '../actions/biblioActions';
@@ -72,6 +74,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUndo } from '@fortawesome/free-solid-svg-icons'
 import {InputGroup} from "react-bootstrap";
 
+import DateRangePicker from '@wojtekmaj/react-daterange-picker'
+
 // http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
 
 
@@ -79,13 +83,13 @@ import {InputGroup} from "react-bootstrap";
 // const Biblio = ({ appState, someAction, location }) => {
 // console.log(location.state);  }
 
-const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
+const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
 const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms' ];
-// const fieldsOrdered = [ 'title', 'mod_reference_types' ];
 
 const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
+const fieldsDatePublished = [ 'date_published', 'date_published_start', 'date_published_end' ];
 
 
 const fieldTypeDict = {}
@@ -1513,6 +1517,9 @@ const BiblioSubmitUpdateButton = () => {
     for (const field of fieldsSimple.values()) {
       if ((field in referenceJsonLive) && !(fieldsSimpleNotPatch.includes(field)) && !(fieldsDisplayOnly.includes(field))) {
         updateJson[field] = referenceJsonLive[field] } }
+    for (const field of fieldsDatePublished.values()) {
+      if (field in referenceJsonLive) {
+        updateJson[field] = referenceJsonLive[field] } }
     const fieldsArrayStringNotPatch = ['obsolete_references'];
     for (const field of fieldsArrayString.values()) {
       if ((field in referenceJsonLive) && !(fieldsArrayStringNotPatch.includes(field)) && !(fieldsDisplayOnly.includes(field))) {
@@ -1789,6 +1796,54 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
       </Row>);
   }
   return (<>{rowArrayStringElements}</>); }
+
+const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+  const dispatch = useDispatch();
+  const hasPmid = useSelector(state => state.biblio.hasPmid);
+  let disabled = false
+  if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = true; }
+  if (fieldsDisplayOnly.includes(fieldName)) { disabled = true; }
+  let valueLive = ''; let valueDb = ''; let updatedFlag = '';
+  if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
+  if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
+  if (fieldName === 'citation') {
+    valueDb = aggregateCitation(referenceJsonDb)
+    valueLive = aggregateCitation(referenceJsonLive) }
+  if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+  valueLive = valueLive || '';
+  let fieldType = 'input';
+  if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
+  let otherColSize = 5;
+  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertDatePublished(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+  if (disabled) { revertElement = (<></>); otherColSize = 6; }
+  return ( <Form.Group as={Row} key={fieldName} >
+             <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
+             <ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled="disabled" fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />
+             <Col sm="4" key="colElement dateRange" style={{alignSelf: 'center'}}><BiblioDateComponent referenceJsonLive={referenceJsonLive} disabled={disabled} /></Col>
+             {revertElement}
+           </Form.Group>);
+} // const RowEditorDatePublished
+
+const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
+  const dispatch = useDispatch();
+  const dateRangeStart = ('date_published_start' in referenceJsonLive && referenceJsonLive['date_published_start'] !== null) ?
+                          new Date(referenceJsonLive['date_published_start']) : null
+  const dateRangeEnd = ('date_published_end' in referenceJsonLive && referenceJsonLive['date_published_end'] !== null) ?
+                          new Date(referenceJsonLive['date_published_end']) : null
+  return (<DateRangePicker value={[dateRangeStart, dateRangeEnd]} disabled={disabled}
+            onChange={(newDateRangeArr) => {
+              if (newDateRangeArr === null) {
+                dispatch(changeFieldDatePublishedRange([null, null])); }
+              else {
+                if (newDateRangeArr[0] !== null) {
+                  newDateRangeArr[0] = new Date(newDateRangeArr[0].toDateString()).toISOString().substring(0, 10); }
+                if (newDateRangeArr[1] !== null) {
+                  newDateRangeArr[1] = new Date(newDateRangeArr[1].toDateString()).toISOString().substring(0, 10); }
+                dispatch(changeFieldDatePublishedRange(newDateRangeArr)) }
+            }} />)
+} // const BiblioDateComponent
+
+
 
 const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
@@ -2262,6 +2317,8 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
     else if (fieldName === 'authors') {
       rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'date_published') {
+      rowOrderedElements.push(<RowEditorDatePublished key="RowEditorDatePublished" fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container>

@@ -98,6 +98,18 @@ export const changeFieldAuthorsReferenceJson = (e) => {
   };
 };
 
+export const changeFieldDatePublishedRange = (datePublishedRange) => {
+  console.log('action change field date published range ');
+  console.log(datePublishedRange);
+  return {
+    type: 'CHANGE_FIELD_DATE_PUBLISHED_RANGE',
+    payload: {
+      field: 'datePublishedRange',
+      value: datePublishedRange
+    }
+  };
+}
+
 
 export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIBLIO_UPDATING_ENTITY_ADD', payload: payload }; };
 
@@ -450,6 +462,15 @@ export const biblioRevertAuthorArray = (e, initializeDict) => {
       field: activeElement.id,
       initializeDict: initializeDict,
       type: 'author_array'
+    }
+  };
+};
+export const biblioRevertDatePublished = (e) => {
+  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
+  return {
+    type: 'BIBLIO_REVERT_DATE_PUBLISHED',
+    payload: {
+      field: activeElement.id
     }
   };
 };
