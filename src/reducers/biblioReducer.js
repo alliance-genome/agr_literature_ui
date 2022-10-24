@@ -149,9 +149,11 @@ export default function(state = initialState, action) {
     case 'CHANGE_FIELD_DATE_PUBLISHED_RANGE':
       console.log('reducer CHANGE_FIELD_DATE_PUBLISHED_RANGE');
       // console.log(action.payload);
-      const date_published = action.payload.value[0] + ' - ' + action.payload.value[1]
       const date_published_start = action.payload.value[0] + "T00:00:00"
       const date_published_end = action.payload.value[1] + "T00:00:00"
+      const date_published = (date_published_start === date_published_end) ?
+                             action.payload.value[0] :
+                             action.payload.value[0] + ' - ' + action.payload.value[1]
       let referenceJsonHasChangeDatePublished = state.referenceJsonHasChange
       if (state.referenceJsonDb['date_published'] === date_published) {
         if ('date_published' in referenceJsonHasChangeDatePublished) {
