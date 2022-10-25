@@ -342,7 +342,7 @@ const BiblioSubmitUpdateButton = () => {
       for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
         if ('needsChange' in crossRefDict) {
           let needsCreate = false
-          if ('cross_reference_id' in crossRefDict) {		// whole new entries needs create
+          if (crossRefDict['cross_reference_id'] === 'new') {		// whole new entries needs create
             needsCreate = true }
           else if ('curie' in crossRefDict) {			// pre-existing entries need delete or update
             let crossRefCurieDb = referenceJsonDb[field][index]['curie']
