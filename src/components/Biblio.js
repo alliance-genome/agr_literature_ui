@@ -74,15 +74,6 @@ import loading_gif from '../images/loading_cat.gif';
 // mesh_terms
 
 
-// export function splitCurie(curie, toReturn) {
-//   let curiePrefix = ''; let curieId = '';
-//   if ( curie.match(/^([^:]*):(.*)$/) ) {
-//     [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }
-//   if (toReturn === undefined) { return [ curiePrefix, curieId ] }
-//   else if (toReturn === 'id') { return curieId }
-//   else if (toReturn === 'prefix') { return curiePrefix }
-//   else { return [ curiePrefix, curieId ] } }
-
 const BiblioActionToggler = () => {
   const dispatch = useDispatch();
   const biblioAction = useSelector(state => state.biblio.biblioAction);
