@@ -1,8 +1,8 @@
 // import { useState, useEffect } from 'react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-
 import { useSelector, useDispatch } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import RowDivider from './biblio/RowDivider';
 import ModalGeneric from './biblio/ModalGeneric';
@@ -10,7 +10,7 @@ import ModalGeneric from './biblio/ModalGeneric';
 import BiblioEntity from './biblio/BiblioEntity';
 import BiblioWorkflow from './biblio/BiblioWorkflow';
 
-import {queryId, setReferenceCurie} from '../actions/biblioActions';
+import { queryId, setReferenceCurie } from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 import { setBiblioUpdating } from '../actions/biblioActions';
@@ -41,22 +41,6 @@ import { setBiblioEditorModalText } from '../actions/biblioActions';
 import { changeFieldDatePublishedRange } from '../actions/biblioActions';
 
 import { ateamLookupEntityList } from '../actions/biblioActions';
-// import { changeFieldEntityGeneList } from '../actions/biblioActions';
-// import { changeFieldEntityAddGeneralField } from '../actions/biblioActions';
-// import { updateButtonBiblioEntityAdd } from '../actions/biblioActions';
-// import { setBiblioUpdatingEntityAdd } from '../actions/biblioActions';
-// import { updateButtonBiblioEntityEditEntity } from '../actions/biblioActions';
-// import { setBiblioEntityRemoveEntity } from '../actions/biblioActions';
-// import { setEntityModalText } from '../actions/biblioActions';
-// import { changeFieldEntityEditor } from '../actions/biblioActions';
-// import { setFieldEntityEditor } from '../actions/biblioActions';
-// import { changeFieldEntityEditorPriority } from '../actions/biblioActions';
-
-// import { setBiblioWorkflowCuratability } from '../actions/biblioActions';
-// import { updateSelectBiblioWorkflowCuratability } from '../actions/biblioActions';
-// import { setWorkflowModalText } from '../actions/biblioActions';
-
-import { useLocation } from 'react-router-dom';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -64,14 +48,12 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
-// import Spinner from 'react-bootstrap/Spinner'
-// import Modal from 'react-bootstrap/Modal'
+import InputGroup from 'react-bootstrap/InputGroup';
 
 import loading_gif from '../images/loading_cat.gif';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUndo } from '@fortawesome/free-solid-svg-icons'
-import {InputGroup} from "react-bootstrap";
 
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 
@@ -164,19 +146,6 @@ function aggregateCitation(referenceJson) {
   const page_range = referenceJson['page_range'] || ''
   const citation = `${authorNames}, (${year}) ${title}  ${journal} ${volume} (${issue}): ${page_range}`
   return citation }
-
-// helper function for processing directly from database 'comment_and_corrections' field, but data format does't work for RowEditor
-// function convertCommentCorrectionType(type) {
-//   let comcorMapping = {}
-//   comcorMapping['CommentOn'] = 'HasComment'
-//   comcorMapping['ErratumFor'] = 'HasErratum'
-//   comcorMapping['ExpressionOfConcernFor'] = 'HasExpressionOfConcernFor'
-//   comcorMapping['ReprintOf'] = 'HasReprint'
-//   comcorMapping['RepublishedFrom'] = 'RepublishedIn'
-//   comcorMapping['RetractionOf'] = 'HasRetraction'
-//   comcorMapping['UpdateOf'] = 'HasUpdate'
-//   if (type in comcorMapping) { return comcorMapping[type]; }
-//     else { return type } }
 
 const BiblioActionToggler = () => {
   const dispatch = useDispatch();
@@ -292,7 +261,6 @@ const BiblioActionToggler = () => {
     </Form>);
 } // const BiblioActionToggler
 
-// const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
 const BiblioActionRouter = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
@@ -347,22 +315,15 @@ const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJ
     return (<>{rowArrayStringElements}</>); }
   else { return null; } }
 
-// TODO to make live, copy RowDisplayModAssociation  RowEditorModAssociation  to Biblio.js   replace values of BiblioMock1 with Biblio  add (fieldName === 'mod_corpus_associations')  in BiblioDisplay and BiblioEditor   add mod_corpus_associations to fields_ordered
 const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
 //   fieldName = 'mod_corpus_associations';
   if ('mod_corpus_associations' in referenceJsonLive && referenceJsonLive['mod_corpus_associations'] !== null) {
     const rowModAssociationElements = []
     for (const[index, modAssociationDict] of referenceJsonLive['mod_corpus_associations'].entries()) {
-//       let url = modAssociationDict['url'];
-//       let valueLiveCurie = modAssociationDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
-// //       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
-//       let valueLiveCuriePrefix = splitCurie(valueLiveCurie, 'prefix');
       let valueLiveMod = modAssociationDict['mod_abbreviation']; let valueDbMod = ''; let updatedFlagMod = '';
       let valueLiveCorpus = modAssociationDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
       let valueLiveSource = modAssociationDict['mod_corpus_sort_source']; let valueDbSource = ''; let updatedFlagSource = '';
 
-//       if (enumDict['mods'].includes(valueLiveMod)) {
-//         let valueLiveIsObsolete = modAssociationDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
              (typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') ) {
                valueDbMod = referenceJsonDb[fieldName][index]['mod_abbreviation'] }
@@ -372,25 +333,10 @@ const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, ref
         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
              (typeof referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] !== 'undefined') ) {
                valueDbSource = referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] }
-//         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//                valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
         if (valueLiveMod !== valueDbMod) { updatedFlagMod = 'updated'; }
-//         if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
         if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
         if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
 
-//         let isObsolete = '';
-//         if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//                if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
-//                else { isObsolete = ''; } }
-//         let updatedFlag = '';
-//         if ( (updatedFlagCurie === 'updated') || (updatedFlagCorpus === 'updated') || (updatedFlagSource === 'updated') ) { updatedFlag = 'updated' }
-//         if ('pages' in modAssociationDict && modAssociationDict['pages'] !== null) { url = modAssociationDict['pages'][0]['url']; }
-//         const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
-//         const modAssociationValue = (<div>{valueLiveCuriePrefix} {valueLiveCorpus} {valueLiveSource}</div>);
-//         rowModAssociationElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={modAssociationValue} updatedFlag={updatedFlag} />);
         rowModAssociationElements.push(
           <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general Col-display Col-display-left">mod_corpus_associations</Col>
@@ -398,7 +344,6 @@ const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, ref
             <Col className={`Col-general Col-display ${updatedFlagCorpus} `} lg={{ span: 4 }}>{valueLiveCorpus}</Col>
             <Col className={`Col-general Col-display Col-display-right ${updatedFlagSource} `} lg={{ span: 4 }}>{valueLiveSource}</Col>
           </Row>);
-//         }
       } // if (enumDict['mods'].includes(valueLiveCuriePrefix))
     return (<>{rowModAssociationElements}</>); }
   else { return null; } }
@@ -454,34 +399,6 @@ const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive
     return (<>{rowCommentsCorrectionsElements}</>); }
   else { return null; } }
 
-// processing directly from database 'comment_and_corrections' field, but data format does't work for RowEditor
-// const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
-//   if ('comment_and_corrections' in referenceJson && referenceJson['comment_and_corrections'] !== null) {
-//     const rowCommentsCorrectionsElements = []
-//     const comcorDirections = ['to_references', 'from_references']
-//     for (const direction of comcorDirections) {
-//       for (const[index, comcorDict] of referenceJson['comment_and_corrections'][direction].entries()) {
-//         let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
-//         let valueLiveCurie = comcorDict[curieFieldInDict]; let valueDbCurie = ''; let updatedFlagCurie = '';
-//         const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
-//         let valueLiveType = comcorDict['reference_comment_and_correction_type']; let valueDbType = ''; let updatedFlagType = '';
-//         if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][direction][index][curieFieldInDict] !== 'undefined') ) {
-//                valueDbCurie = referenceJsonDb[fieldName][direction][index][curieFieldInDict] }
-//         if ( (typeof referenceJsonDb[fieldName][direction][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] !== 'undefined') ) {
-//                valueDbType = referenceJsonDb[fieldName][direction][index]['reference_comment_and_correction_type'] }
-//         if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
-//         if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
-//         if (direction === 'from_references') {
-//           valueLiveType = convertCommentCorrectionType(valueLiveType)
-//           valueDbType = convertCommentCorrectionType(valueDbType) }
-//         let updatedFlag = '';
-//         if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
-//         const comcorValue = (<div>{valueLiveType} <a href={url} rel="noreferrer noopener">{valueLiveCurie}</a></div>);
-//         rowCommentsCorrectionsElements.push(<RowDisplaySimple key={`${fieldIndex} ${direction} ${index}`} fieldName={fieldName} value={comcorValue} updatedFlag={updatedFlag} />); } }
-//     return (<>{rowCommentsCorrectionsElements}</>); }
-//   else { return null; } }
 
 const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
@@ -1155,7 +1072,6 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
         let valueDb = ''; let updatedFlag = '';
         if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
         if (valueLive !== valueDb) { updatedFlag = 'updated'; }
-//           <Form.Group as={Row} key={`${fieldName} ${index}`} controlId={`${fieldName} ${index}`}>
         rowArrayStringElements.push(
           <Form.Group as={Row} key={`${fieldName} ${index}`} >
             <Form.Label column sm="2" className="Col-general" >{fieldName}</Form.Label>
@@ -1218,7 +1134,6 @@ const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
 } // const BiblioDateComponent
 
 
-
 const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
@@ -1262,23 +1177,6 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
   }
   return (<>{rowModReferenceTypesElements}</>); }
 
-//           <Col sm={otherColSize}>
-//               <Form.Control as={fieldType} id={`${fieldName} ${index} reference_type`} type="{fieldName}" value={valueLiveReferenceType} className={`form-control ${updatedFlagReferenceType}`} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} />
-//           </Col>
-
-//         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-//         </Row>); }
-
-//                  <Form.Control as={fieldType} type="{fieldName}" value={value} disabled={disabled} placeholder={fieldName} onChange={(e) => dispatch(changeFieldReferenceJson(e))} >
-//                    {fieldName in enumDict && enumDict[fieldName].map((optionValue, index) => (
-//                      <option key={`${fieldName} ${optionValue}`}>{optionValue}</option>
-//                    ))}
-//                  </Form.Control>
-
-//           <Col className="Col-general Col-display Col-display-left">mod_reference_types</Col>
-//           <Col className="Col-general Col-display " lg={{ span: 2 }}>{value['source']}</Col>
-//           <Col className="Col-general Col-display Col-display-right" lg={{ span: 8 }}>{value['reference_type']}</Col>
-
 const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
 //   const xrefFieldName = fieldName;
 //   fieldName = 'mod_corpus_associations';
@@ -1315,31 +1213,6 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
         if (valueLiveMod !== valueDbMod) { updatedFlagMod = 'updated'; }
         if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
         if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
-
-// // In This Mock, a bunch of variables are not used, clean them up
-//       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
-//       let updatedFlagCuriePrefix = ''; // let updatedFlagCurieId = '';
-// //       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
-//       let valueLiveCuriePrefix = splitCurie(valueLiveCurie, 'prefix');
-// //       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
-//       let valueLiveCorpus = crossRefDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
-//       let valueLiveSource = crossRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
-//
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-//              valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') ) {
-//              valueDbCorpus = referenceJsonDb[fieldName][index]['corpus'] }
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') ) {
-//              valueDbSource = referenceJsonDb[fieldName][index]['source'] }
-// //       let [valueDbCuriePrefix, valueDbCurieId] = splitCurie(valueDbCurie);
-//       let valueDbCuriePrefix = splitCurie(valueDbCurie, 'prefix');
-//       if (valueLiveCuriePrefix !== valueDbCuriePrefix) { updatedFlagCuriePrefix = 'updated'; }
-// //       if (valueLiveCurieId !== valueDbCurieId) { updatedFlagCurieId = 'updated'; }
-//       if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
-//       if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
 
 //       if (enumDict['mods'].includes(valueLiveCuriePrefix)) {
         rowModAssociationElements.push(
@@ -1726,7 +1599,6 @@ const BiblioIdQuery = () => {
 }
 
 const Biblio = () => {
-
   const dispatch = useDispatch();
 
   const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.search.redirectToBiblio);
@@ -1792,8 +1664,7 @@ const Biblio = () => {
         }
       </div>
   )
-
-} // const Biblio = () =>
+} // const Biblio
 
 
 export default Biblio
