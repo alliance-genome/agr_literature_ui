@@ -4,9 +4,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import RowDivider from './RowDivider';
 
 import { BiblioSubmitUpdateRouter } from './BiblioEditor';
+import { AuthorExpandToggler } from './BiblioEditor';
+import { splitCurie } from './BiblioEditor';
+import { aggregateCitation } from './BiblioEditor';
 
 import { changeBiblioMeshExpandToggler } from '../../actions/biblioActions';
-import { changeBiblioAuthorExpandToggler } from '../../actions/biblioActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -49,38 +51,6 @@ import { fieldsSimple, fieldsArrayString, fieldsOrdered } from './BiblioEditor';
 // keywords
 // mesh_terms
 
-
-export function splitCurie(curie, toReturn) {
-  let curiePrefix = ''; let curieId = '';
-  if ( curie.match(/^([^:]*):(.*)$/) ) {
-    [curie, curiePrefix, curieId] = curie.match(/^([^:]*):(.*)$/) }
-  if (toReturn === undefined) { return [ curiePrefix, curieId ] }
-  else if (toReturn === 'id') { return curieId }
-  else if (toReturn === 'prefix') { return curiePrefix }
-  else { return [ curiePrefix, curieId ] } }
-
-function aggregateCitation(referenceJson) {
-  // Authors, (year) title.   Journal  volume (issue): page_range
-  let year = ''
-  if ( ('date_published' in referenceJson) && referenceJson['date_published'] !== null && (referenceJson['date_published'].match(/(\d{4})/)) ) {
-    let match = referenceJson['date_published'].match(/(\d{4})/)
-    if (match[1] !== undefined) { year = match[1] } }
-  let title = referenceJson['title'] || ''
-  if (!(title.match(/\.$/))) { title = title + '.' }
-  let authorNames = ''
-  if ('authors' in referenceJson && referenceJson['authors'] !== null) {
-    const orderedAuthors = [];
-    for (const value  of referenceJson['authors'].values()) {
-      let index = value['order'] - 1;
-      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
-      orderedAuthors[index] = value; }
-    authorNames = orderedAuthors.map((dict, index) => ( dict['name'] )).join('; '); }
-  const journal = referenceJson['resource_title'] || ''
-  const volume = referenceJson['volume'] || ''
-  const issue = referenceJson['issue_name'] || ''
-  const page_range = referenceJson['page_range'] || ''
-  const citation = `${authorNames}, (${year}) ${title}  ${journal} ${volume} (${issue}): ${page_range}`
-  return citation }
 
 export const RowDisplaySimple = ({fieldName, value, updatedFlag}) => {
   return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
@@ -369,52 +339,6 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
 } // const RowDisplayAuthors
 
 //             <Col className="Col-general Col-display " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
-
-const AuthorExpandToggler = ({displayOrEditor}) => {
-  const dispatch = useDispatch();
-  const authorExpand = useSelector(state => state.biblio.authorExpand);
-  let cssDisplayLeft = 'Col-display Col-display-left';
-  let cssDisplayRight = 'Col-display Col-display-right';
-  if (displayOrEditor === 'editor') {
-    cssDisplayRight = 'Col-editor-disabled';
-    cssDisplayLeft = ''; }
-  let firstChecked = '';
-  let listChecked = '';
-  let detailedChecked = '';
-  if (authorExpand === 'first') { firstChecked = 'checked'; }
-    else if (authorExpand === 'list') { listChecked = 'checked'; }
-    else { detailedChecked = 'checked'; }
-  return (
-    <Row key="authorExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
-      <Col className={`Col-general ${cssDisplayLeft}  `}>authors</Col>
-      <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>
-        <Form.Check
-          inline
-          checked={firstChecked}
-          type='radio'
-          label='first'
-          id='biblio-author-expand-toggler-first'
-          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
-        />
-        <Form.Check
-          inline
-          checked={listChecked}
-          type='radio'
-          label='list'
-          id='biblio-author-expand-toggler-list'
-          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
-        />
-        <Form.Check
-          inline
-          checked={detailedChecked}
-          type='radio'
-          label='detailed'
-          id='biblio-author-expand-toggler-detailed'
-          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
-        />
-      </Col>
-    </Row>);
-} // const AuthorExpandToggler
 
 
 const BiblioDisplay = () => {

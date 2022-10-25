@@ -110,7 +110,7 @@ export function splitCurie(curie, toReturn) {
   else if (toReturn === 'prefix') { return curiePrefix }
   else { return [ curiePrefix, curieId ] } }
 
-function aggregateCitation(referenceJson) {
+export function aggregateCitation(referenceJson) {
   // Authors, (year) title.   Journal  volume (issue): page_range
   let year = ''
   if ( ('date_published' in referenceJson) && referenceJson['date_published'] !== null && (referenceJson['date_published'].match(/(\d{4})/)) ) {
@@ -961,7 +961,7 @@ const BiblioEditor = () => {
 } // const BiblioEditor
 
 
-const AuthorExpandToggler = ({displayOrEditor}) => {
+export const AuthorExpandToggler = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const authorExpand = useSelector(state => state.biblio.authorExpand);
   let cssDisplayLeft = 'Col-display Col-display-left';
