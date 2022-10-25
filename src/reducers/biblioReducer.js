@@ -1,6 +1,6 @@
 
 import _ from "lodash";
-import { splitCurie } from '../components/Biblio';
+import { splitCurie } from '../components/biblio/BiblioEditor';
 
 //   biblioEntityDisplayType: 'textarea-disabled',
 //   biblioEntityDisplayType: 'div-line-breaks',

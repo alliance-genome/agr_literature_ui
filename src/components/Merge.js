@@ -17,7 +17,7 @@ import { setShowDataTransferModal } from '../actions/mergeActions';
 // import { setCompletionMergeHappened } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
 
-import { splitCurie } from './Biblio';
+import { splitCurie } from './biblio/BiblioEditor';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';

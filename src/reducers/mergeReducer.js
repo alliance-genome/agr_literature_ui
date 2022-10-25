@@ -1,6 +1,6 @@
 
 import { checkHasPmid } from './biblioReducer';
-import { splitCurie } from '../components/Biblio';
+import { splitCurie } from '../components/biblio/BiblioEditor';
 
 const initialState = {
   referenceMetaDefault: {
