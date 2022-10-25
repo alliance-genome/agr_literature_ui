@@ -1,17 +1,11 @@
 // import { useState, useEffect } from 'react';
-// import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-// import { useLocation } from 'react-router-dom';
-// import { Link } from 'react-router-dom';
 
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
 
 import { RowDisplayMeshTerms } from './BiblioDisplay';
 
-// import { queryId, setReferenceCurie } from '../../actions/biblioActions';
-// import { setBiblioAction } from '../../actions/biblioActions';
-// import { biblioQueryReferenceCurie } from '../../actions/biblioActions';
 import { setBiblioUpdating } from '../../actions/biblioActions';
 import { setUpdateCitationFlag } from '../../actions/biblioActions';
 import { setUpdateBiblioFlag } from '../../actions/biblioActions';
@@ -24,13 +18,11 @@ import { changeFieldModAssociationReferenceJson } from '../../actions/biblioActi
 import { changeFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
 import { changeFieldCommentsCorrectionsReferenceJson } from '../../actions/biblioActions';
 import { changeFieldAuthorsReferenceJson } from '../../actions/biblioActions';
-// import { changeBiblioActionToggler } from '../../actions/biblioActions';
 import { biblioAddNewRowString } from '../../actions/biblioActions';
 import { biblioAddNewAuthorAffiliation } from '../../actions/biblioActions';
 import { biblioAddNewRowDict } from '../../actions/biblioActions';
 import { updateButtonBiblio } from '../../actions/biblioActions';
 import { closeBiblioUpdateAlert } from '../../actions/biblioActions';
-// import { changeBiblioMeshExpandToggler } from '../../actions/biblioActions';
 import { changeBiblioAuthorExpandToggler } from '../../actions/biblioActions';
 import { biblioRevertField } from '../../actions/biblioActions';
 import { biblioRevertFieldArray } from '../../actions/biblioActions';
@@ -39,17 +31,12 @@ import { biblioRevertDatePublished } from '../../actions/biblioActions';
 import { setBiblioEditorModalText } from '../../actions/biblioActions';
 import { changeFieldDatePublishedRange } from '../../actions/biblioActions';
 
-// import { ateamLookupEntityList } from '../../actions/biblioActions';
-
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
-// import InputGroup from 'react-bootstrap/InputGroup';
-
-// import loading_gif from '../../images/loading_cat.gif';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUndo } from '@fortawesome/free-solid-svg-icons'
@@ -147,45 +134,14 @@ function aggregateCitation(referenceJson) {
   return citation }
 
 
+export const BiblioSubmitUpdateRouter = () => {
+  const biblioUpdating = useSelector(state => state.biblio.biblioUpdating);
 
-// const MeshExpandToggler = ({displayOrEditor}) => {
-//   const dispatch = useDispatch();
-//   const meshExpand = useSelector(state => state.biblio.meshExpand);
-//   let cssDisplayLeft = 'Col-display Col-display-left';
-// //   let cssDisplay = 'Col-display';
-//   let cssDisplayRight = 'Col-display Col-display-right';
-//   if (displayOrEditor === 'editor') {
-// //     cssDisplay = 'Col-editor-disabled';
-//     cssDisplayRight = 'Col-editor-disabled';
-//     cssDisplayLeft = ''; }
-//   let shortChecked = '';
-//   let detailedChecked = '';
-//   if (meshExpand === 'short') { shortChecked = 'checked'; }
-//     else { detailedChecked = 'checked'; }
-//   return (
-//     <Row key="meshExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
-//       <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
-//       <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>
-//         <Form.Check
-//           inline
-//           checked={shortChecked}
-//           type='radio'
-//           label='short'
-//           id='biblio-mesh-expand-toggler-short'
-//           onChange={(e) => dispatch(changeBiblioMeshExpandToggler(e))}
-//         />
-//         <Form.Check
-//           inline
-//           checked={detailedChecked}
-//           type='radio'
-//           label='detailed'
-//           id='biblio-mesh-expand-toggler-detailed'
-//           onChange={(e) => dispatch(changeBiblioMeshExpandToggler(e))}
-//         />
-//       </Col>
-//     </Row>);
-// } // const MeshExpandToggler
-
+  if (biblioUpdating > 0) {
+    return (<BiblioSubmitUpdating />); }
+  else {
+    return (<><AlertDismissibleBiblioUpdate /><BiblioSubmitUpdateButton /></>); }
+} // const BiblioSubmitUpdateRouter
 
 const AlertDismissibleBiblioUpdate = () => {
   const dispatch = useDispatch();
@@ -215,7 +171,6 @@ const AlertDismissibleBiblioUpdate = () => {
     );
   } else { return null; }
 }
-
 
 const BiblioSubmitUpdating = () => {
   return (
@@ -855,17 +810,6 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
           else if ( (authorDict['last_name'] !== null) && (authorDict['last_name'] !== '') ) {
             authorDict['name'] = authorDict['last_name'] } }
 
-//         let valueLiveSource = authorDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
-//         let valueLiveReferenceType = authorDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
-//         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') ) {
-//                valueDbSource = referenceJsonDb[fieldName][index]['source'] }
-//         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') ) {
-//                valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
-//         if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
-//         if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
-
         let orcidValue = ''
         if ('orcid' in authorDict && authorDict['orcid'] !== null && 'curie' in authorDict['orcid'] && authorDict['orcid']['curie'] !== null) {
           const orcidId = splitCurie(authorDict['orcid']['curie'], 'id');
@@ -948,13 +892,6 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
             <ColEditorSelect key={`colElement ${fieldName} ${index} orcidPrefix`} fieldType="select" fieldName={fieldName} colSize="2" value="ORCID" updatedFlag="" placeholder="curie" disabled="disabled" fieldKey={`${fieldName} ${index} orcid prefix`} enumType="personXrefPrefix" dispatchAction="" />
             <ColEditorSimple key={`colElement ${fieldName} ${index} orcid`} fieldType="input" fieldName={fieldName} colSize="8"  value={orcidValue} updatedFlag={updatedDict['orcid']} placeholder="orcid" disabled={disabled} fieldKey={`${fieldName} ${index} orcid`} dispatchAction={changeFieldAuthorsReferenceJson} />
           </Form.Group>);
-        // rowAuthorsElements.push(
-        //   <Form.Group as={Row} key={`${fieldName} ${index} orcid`} className={`${rowEvenness}`}>
-        //     <Col className="Col-general form-label col-form-label" sm="2" >orcid </Col>
-        //     <ColEditorSimple key={`colElement ${fieldName} ${index} orcid`} fieldType="input" fieldName={fieldName} colSize="5"  value={orcidValue} updatedFlag={updatedDict['orcid']} placeholder="orcid" disabled={disabled} fieldKey={`${fieldName} ${index} orcid`} dispatchAction={changeFieldAuthorsReferenceJson} />
-        //     <ColEditorCheckbox key={`colElement ${fieldName} ${index} corresponding_author`} colSize="2" label="corresponding" updatedFlag={updatedDict['corresponding_author']} disabled="" fieldKey={`${fieldName} ${index} corresponding_author`} checked={correspondingChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
-        //     <ColEditorCheckbox key={`colElement ${fieldName} ${index} first_author`} colSize={otherColSizeOrcid} label="first author" updatedFlag={updatedDict['first_author']} disabled="" fieldKey={`${fieldName} ${index} first_author`} checked={firstAuthorChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
-        //   </Form.Group>);
 
         if ('affiliations' in authorDict && authorDict['affiliations'] !== null && authorDict['affiliations'].length > 0) {
           for (const[indexAff, affiliationsValue] of authorDict['affiliations'].entries()) {
@@ -1023,14 +960,6 @@ const BiblioEditor = () => {
           </Container>);
 } // const BiblioEditor
 
-export const BiblioSubmitUpdateRouter = () => {
-  const biblioUpdating = useSelector(state => state.biblio.biblioUpdating);
-
-  if (biblioUpdating > 0) {
-    return (<BiblioSubmitUpdating />); }
-  else {
-    return (<><AlertDismissibleBiblioUpdate /><BiblioSubmitUpdateButton /></>); }
-} // const BiblioSubmitUpdateRouter
 
 const AuthorExpandToggler = ({displayOrEditor}) => {
   const dispatch = useDispatch();
@@ -1077,51 +1006,6 @@ const AuthorExpandToggler = ({displayOrEditor}) => {
       </Col>
     </Row>);
 } // const AuthorExpandToggler
-
-// const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJsonLive, displayOrEditor}) => {
-//   const meshExpand = useSelector(state => state.biblio.meshExpand);
-//   let cssDisplayLeft = 'Col-display Col-display-left';
-//   let cssDisplay = 'Col-display';
-//   let cssDisplayRight = 'Col-display Col-display-right';
-//   if (displayOrEditor === 'editor') {
-//     cssDisplay = 'Col-editor-disabled';
-//     cssDisplayRight = 'Col-editor-disabled';
-//     cssDisplayLeft = ''; }
-//   if ('mesh_terms' in referenceJsonLive && referenceJsonLive['mesh_terms'] !== null) {
-// 
-//     const rowMeshTermsElements = []
-//     rowMeshTermsElements.push(<MeshExpandToggler key="meshExpandTogglerComponent" displayOrEditor={displayOrEditor} />);
-// 
-//     const sortableMeshTermElements = {};
-//     const meshTextArray = [];
-//     for (const[index, value] of referenceJsonLive['mesh_terms'].entries()) {
-//       let term = value['heading_term'];
-//       if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
-//       const lcTerm = term.toLowerCase();
-//       if (meshExpand === 'detailed') {
-//         sortableMeshTermElements[lcTerm] = (
-//         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className={`Col-general ${cssDisplayLeft} `}>mesh_terms</Col>
-//           <Col className={`Col-general ${cssDisplay} `} lg={{ span: 5 }}>{value['heading_term']}</Col>
-//           <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 5 }}>{value['qualifier_term']}</Col>
-//         </Row>); }
-//       else {
-//         meshTextArray.push(term); } }
-// 
-//     if (meshExpand === 'detailed') {
-//       const sortedKeys = Object.keys(sortableMeshTermElements).sort();
-//       for (let i = 0; i < sortedKeys.length; i++) {
-//         rowMeshTermsElements.push(sortableMeshTermElements[sortedKeys[i]]); } }
-//     else {
-//       const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); }).join('; ')}} />)
-//       rowMeshTermsElements.push(
-//         <Row key="meshTermsText" className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
-//           <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>{meshText}</Col>
-//         </Row>); }
-// 
-//     return (<>{rowMeshTermsElements}</>); }
-//   else { return null; } }
 
 
 export default BiblioEditor
