@@ -1,61 +1,55 @@
 // import { useState, useEffect } from 'react';
-import { useState } from 'react';
+// import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+// import { useLocation } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 
-import RowDivider from './biblio/RowDivider';
-// import ModalGeneric from './biblio/ModalGeneric';
+import RowDivider from './RowDivider';
+// import ModalGeneric from './ModalGeneric';
 
-import BiblioDisplay from './biblio/BiblioDisplay';
-import BiblioEditor from './biblio/BiblioEditor';
-import BiblioEntity from './biblio/BiblioEntity';
-import BiblioWorkflow from './biblio/BiblioWorkflow';
+import { BiblioSubmitUpdateRouter } from './BiblioEditor';
 
-import { RowDisplayString } from './biblio/BiblioDisplay';
-import { RowDisplaySimple } from './biblio/BiblioDisplay';
+// import { queryId, setReferenceCurie } from '../../actions/biblioActions';
+// import { setBiblioAction } from '../../actions/biblioActions';
+// import { biblioQueryReferenceCurie } from '../../actions/biblioActions';
+// import { setBiblioUpdating } from '../../actions/biblioActions';
+// import { setUpdateCitationFlag } from '../../actions/biblioActions';
+// import { setUpdateBiblioFlag } from '../../actions/biblioActions';
+// import { validateFormUpdateBiblio } from '../../actions/biblioActions';
 
-import { queryId, setReferenceCurie } from '../actions/biblioActions';
-import { setBiblioAction } from '../actions/biblioActions';
-import { biblioQueryReferenceCurie } from '../actions/biblioActions';
-// import { setBiblioUpdating } from '../actions/biblioActions';
-import { setUpdateCitationFlag } from '../actions/biblioActions';
-// import { setUpdateBiblioFlag } from '../actions/biblioActions';
-// import { validateFormUpdateBiblio } from '../actions/biblioActions';
+// import { changeFieldReferenceJson } from '../../actions/biblioActions';
+// import { changeFieldArrayReferenceJson } from '../../actions/biblioActions';
+// import { changeFieldModReferenceReferenceJson } from '../../actions/biblioActions';
+// import { changeFieldModAssociationReferenceJson } from '../../actions/biblioActions';
+// import { changeFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
+// import { changeFieldCommentsCorrectionsReferenceJson } from '../../actions/biblioActions';
+// import { changeFieldAuthorsReferenceJson } from '../../actions/biblioActions';
+// import { changeBiblioActionToggler } from '../../actions/biblioActions';
+// import { biblioAddNewRowString } from '../../actions/biblioActions';
+// import { biblioAddNewAuthorAffiliation } from '../../actions/biblioActions';
+// import { biblioAddNewRowDict } from '../../actions/biblioActions';
+// import { updateButtonBiblio } from '../../actions/biblioActions';
+// import { closeBiblioUpdateAlert } from '../../actions/biblioActions';
+import { changeBiblioMeshExpandToggler } from '../../actions/biblioActions';
+import { changeBiblioAuthorExpandToggler } from '../../actions/biblioActions';
+// import { biblioRevertField } from '../../actions/biblioActions';
+// import { biblioRevertFieldArray } from '../../actions/biblioActions';
+// import { biblioRevertAuthorArray } from '../../actions/biblioActions';
+// import { biblioRevertDatePublished } from '../../actions/biblioActions';
+// import { setBiblioEditorModalText } from '../../actions/biblioActions';
+// import { changeFieldDatePublishedRange } from '../../actions/biblioActions';
 
-// import { changeFieldReferenceJson } from '../actions/biblioActions';
-// import { changeFieldArrayReferenceJson } from '../actions/biblioActions';
-// import { changeFieldModReferenceReferenceJson } from '../actions/biblioActions';
-// import { changeFieldModAssociationReferenceJson } from '../actions/biblioActions';
-// import { changeFieldCrossReferencesReferenceJson } from '../actions/biblioActions';
-// import { changeFieldCommentsCorrectionsReferenceJson } from '../actions/biblioActions';
-// import { changeFieldAuthorsReferenceJson } from '../actions/biblioActions';
-import { changeBiblioActionToggler } from '../actions/biblioActions';
-// import { biblioAddNewRowString } from '../actions/biblioActions';
-// import { biblioAddNewAuthorAffiliation } from '../actions/biblioActions';
-// import { biblioAddNewRowDict } from '../actions/biblioActions';
-import { updateButtonBiblio } from '../actions/biblioActions';
-// import { closeBiblioUpdateAlert } from '../actions/biblioActions';
-// import { changeBiblioMeshExpandToggler } from '../actions/biblioActions';
-// import { changeBiblioAuthorExpandToggler } from '../actions/biblioActions';
-// import { biblioRevertField } from '../actions/biblioActions';
-// import { biblioRevertFieldArray } from '../actions/biblioActions';
-// import { biblioRevertAuthorArray } from '../actions/biblioActions';
-// import { biblioRevertDatePublished } from '../actions/biblioActions';
-// import { setBiblioEditorModalText } from '../actions/biblioActions';
-// import { changeFieldDatePublishedRange } from '../actions/biblioActions';
-
-import { ateamLookupEntityList } from '../actions/biblioActions';
+// import { ateamLookupEntityList } from '../../actions/biblioActions';
 
 import Container from 'react-bootstrap/Container';
-// import Row from 'react-bootstrap/Row';
-// import Col from 'react-bootstrap/Col';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 // import Alert from 'react-bootstrap/Alert'
-import Button from 'react-bootstrap/Button'
-import InputGroup from 'react-bootstrap/InputGroup';
+// import Button from 'react-bootstrap/Button'
+// import InputGroup from 'react-bootstrap/InputGroup';
 
-import loading_gif from '../images/loading_cat.gif';
+// import loading_gif from '../../images/loading_cat.gif';
 
 // import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 // import { faUndo } from '@fortawesome/free-solid-svg-icons'
@@ -65,11 +59,15 @@ import loading_gif from '../images/loading_cat.gif';
 // http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
 
 
+import { fieldsSimple, fieldsArrayString, fieldsOrdered } from './BiblioEditor';
+
+
 // constants available in BiblioEditor
 // import { 
 //   fieldsSimple, fieldsArrayString, fieldsOrdered, fieldsPubmed, fieldsDisplayOnly, fieldsDatePublished,
 //   fieldTypeDict, enumDict
-// } from './biblio/BiblioEditor';
+// } from './BiblioEditor';
+
 
 // if passing an object with <Redirect push to={{ pathname: "/Biblio", state: { pie: "the pie" } }} />, would access new state with
 // const Biblio = ({ appState, someAction, location }) => {
@@ -137,555 +135,103 @@ export function splitCurie(curie, toReturn) {
   else if (toReturn === 'prefix') { return curiePrefix }
   else { return [ curiePrefix, curieId ] } }
 
-// function aggregateCitation(referenceJson) {
-//   // Authors, (year) title.   Journal  volume (issue): page_range
-//   let year = ''
-//   if ( ('date_published' in referenceJson) && referenceJson['date_published'] !== null && (referenceJson['date_published'].match(/(\d{4})/)) ) {
-//     let match = referenceJson['date_published'].match(/(\d{4})/)
-//     if (match[1] !== undefined) { year = match[1] } }
-//   let title = referenceJson['title'] || ''
-//   if (!(title.match(/\.$/))) { title = title + '.' }
-//   let authorNames = ''
-//   if ('authors' in referenceJson && referenceJson['authors'] !== null) {
-//     const orderedAuthors = [];
-//     for (const value  of referenceJson['authors'].values()) {
-//       let index = value['order'] - 1;
-//       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
-//       orderedAuthors[index] = value; }
-//     authorNames = orderedAuthors.map((dict, index) => ( dict['name'] )).join('; '); }
-//   const journal = referenceJson['resource_title'] || ''
-//   const volume = referenceJson['volume'] || ''
-//   const issue = referenceJson['issue_name'] || ''
-//   const page_range = referenceJson['page_range'] || ''
-//   const citation = `${authorNames}, (${year}) ${title}  ${journal} ${volume} (${issue}): ${page_range}`
-//   return citation }
+function aggregateCitation(referenceJson) {
+  // Authors, (year) title.   Journal  volume (issue): page_range
+  let year = ''
+  if ( ('date_published' in referenceJson) && referenceJson['date_published'] !== null && (referenceJson['date_published'].match(/(\d{4})/)) ) {
+    let match = referenceJson['date_published'].match(/(\d{4})/)
+    if (match[1] !== undefined) { year = match[1] } }
+  let title = referenceJson['title'] || ''
+  if (!(title.match(/\.$/))) { title = title + '.' }
+  let authorNames = ''
+  if ('authors' in referenceJson && referenceJson['authors'] !== null) {
+    const orderedAuthors = [];
+    for (const value  of referenceJson['authors'].values()) {
+      let index = value['order'] - 1;
+      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
+      orderedAuthors[index] = value; }
+    authorNames = orderedAuthors.map((dict, index) => ( dict['name'] )).join('; '); }
+  const journal = referenceJson['resource_title'] || ''
+  const volume = referenceJson['volume'] || ''
+  const issue = referenceJson['issue_name'] || ''
+  const page_range = referenceJson['page_range'] || ''
+  const citation = `${authorNames}, (${year}) ${title}  ${journal} ${volume} (${issue}): ${page_range}`
+  return citation }
 
-const BiblioActionToggler = () => {
-  const dispatch = useDispatch();
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
-  let displayChecked = '';
-  let editorChecked = '';
-  let entityChecked = '';
-  let topicChecked = '';
-  let workflowChecked = '';
-  let radioFormDisplayClassname = 'radio-form';
-  let radioFormEditorClassname = 'radio-form';
-  let radioFormEntityClassname = 'radio-form';
-  let radioFormTopicClassname = 'radio-form';
-  let radioFormWorkflowClassname = 'radio-form';
-  let biblioActionTogglerSelected = 'display';
-  if (biblioAction === 'editor') {
-      radioFormEditorClassname += ' underlined';
-      editorChecked = 'checked';
-      biblioActionTogglerSelected = 'editor'; }
-    else if (biblioAction === 'entity') {
-      radioFormEntityClassname += ' underlined';
-      entityChecked = 'checked';
-      biblioActionTogglerSelected = 'entity'; }
-    else if (biblioAction === 'topic') {
-      radioFormTopicClassname += ' underlined';
-      topicChecked = 'checked';
-      biblioActionTogglerSelected = 'topic'; }
-    else if (biblioAction === 'workflow') {
-      radioFormWorkflowClassname += ' underlined';
-      workflowChecked = 'checked';
-      biblioActionTogglerSelected = 'workflow'; }
-    else {
-      radioFormDisplayClassname += ' underlined';
-      displayChecked = 'checked'; }
-  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie
-  window.history.replaceState({}, null, newUrl)
+export const RowDisplaySimple = ({fieldName, value, updatedFlag}) => {
+  return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
+              <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
+              <Col className={`Col-general Col-display Col-display-right ${updatedFlag}`} lg={{ span: 10 }}>{value}</Col>
+            </Row>); }
 
-// calling below
-//         onChange={(e) => dispatch(toggleBiblioAction(e))}
-// doesn't work because
-//         Error: Actions must be plain objects. Use custom middleware for async actions.
-// still need a way to change history (url)
-//   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-//   const history = useHistory();
-//   function toggleBiblioAction(e) {
-//     let biblioActionTogglerSelected = 'display';
-//     if (e.target.id === 'biblio-toggler-editor') { biblioActionTogglerSelected = 'editor'; }
-//     // console.log(biblioActionTogglerSelected)
-//     dispatch(changeBiblioActionToggler(e))
-//     history.push("/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie);
-//   }
-
+export const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+  let valueLive = ''; let valueDb = ''; let updatedFlag = '';
+  if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
+  if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
+  if (fieldName === 'citation') {
+    valueDb = aggregateCitation(referenceJsonDb)
+    valueLive = aggregateCitation(referenceJsonLive) }
+  if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+  let valueToDisplay = valueLive;
+  if ( (fieldName === 'title') || (fieldName === 'abstract') || (fieldName === 'citation') ) {
+    valueToDisplay = (<span dangerouslySetInnerHTML={{__html: valueLive}} />) }
   return (
-    <Form>
-    <div key={`default-radio`} className="mb-3">
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormDisplayClassname}
-          checked={displayChecked}
-          type='radio'
-          label='biblio display'
-          id='biblio-toggler-display'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'display'))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormEditorClassname}
-          checked={editorChecked}
-          type='radio'
-          label='biblio editor'
-          id='biblio-toggler-editor'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'editor'))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormEntityClassname}
-          checked={entityChecked}
-          type='radio'
-          label='entity editor'
-          id='biblio-toggler-entity'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'entity'))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormTopicClassname}
-          checked={topicChecked}
-          type='radio'
-          label='topic editor'
-          id='biblio-toggler-topic'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'topic'))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormWorkflowClassname}
-          checked={workflowChecked}
-          type='radio'
-          label='workflow editor'
-          id='biblio-toggler-workflow'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'workflow'))}
-        />
-      </div>
-    </div>
-    </Form>);
-} // const BiblioActionToggler
+        <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueToDisplay} updatedFlag={updatedFlag} />); }
 
+const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
+  if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {	// need this because referenceJsonLive starts empty before values get added
+    const rowArrayStringElements = []
+    if (referenceJsonLive[fieldName].length === 0) {
+      rowArrayStringElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value="" updatedFlag="" />); }
+    else {
+      for (const [index, valueLive] of referenceJsonLive[fieldName].entries()) {
+        let valueDb = ''; let updatedFlag = '';
+        if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
+        if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+        rowArrayStringElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={valueLive} updatedFlag={updatedFlag} />); } }
+    return (<>{rowArrayStringElements}</>); }
+  else { return null; } }
 
-const BiblioActionRouter = () => {
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
-  switch (biblioAction) {
-    case 'display':
-      return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
-    case 'editor':
-      return (<Container><BiblioActionToggler /><RowDivider /><BiblioEditor /></Container>);
-    case 'entity':
-      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
-    case 'topic':
-      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
-    case 'workflow':
-      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
-    default:
-      return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
-  }
-}
+const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+//   fieldName = 'mod_corpus_associations';
+  if ('mod_corpus_associations' in referenceJsonLive && referenceJsonLive['mod_corpus_associations'] !== null) {
+    const rowModAssociationElements = []
+    for (const[index, modAssociationDict] of referenceJsonLive['mod_corpus_associations'].entries()) {
+      let valueLiveMod = modAssociationDict['mod_abbreviation']; let valueDbMod = ''; let updatedFlagMod = '';
+      let valueLiveCorpus = modAssociationDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
+      let valueLiveSource = modAssociationDict['mod_corpus_sort_source']; let valueDbSource = ''; let updatedFlagSource = '';
 
+        if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+             (typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') ) {
+               valueDbMod = referenceJsonDb[fieldName][index]['mod_abbreviation'] }
+        if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+             (typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') ) {
+               valueDbCorpus = referenceJsonDb[fieldName][index]['corpus'] }
+        if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+             (typeof referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] !== 'undefined') ) {
+               valueDbSource = referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] }
+        if (valueLiveMod !== valueDbMod) { updatedFlagMod = 'updated'; }
+        if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
+        if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
 
-// const RowDisplaySimple = ({fieldName, value, updatedFlag}) => {
-//   return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-//               <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
-//               <Col className={`Col-general Col-display Col-display-right ${updatedFlag}`} lg={{ span: 10 }}>{value}</Col>
-//             </Row>); }
-// 
-// const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
-//   let valueLive = ''; let valueDb = ''; let updatedFlag = '';
-//   if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
-//   if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
-//   if (fieldName === 'citation') {
-//     valueDb = aggregateCitation(referenceJsonDb)
-//     valueLive = aggregateCitation(referenceJsonLive) }
-//   if (valueLive !== valueDb) { updatedFlag = 'updated'; }
-//   let valueToDisplay = valueLive;
-//   if ( (fieldName === 'title') || (fieldName === 'abstract') || (fieldName === 'citation') ) {
-//     valueToDisplay = (<span dangerouslySetInnerHTML={{__html: valueLive}} />) }
-//   return (
-//         <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueToDisplay} updatedFlag={updatedFlag} />); }
-// 
-// const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
-//   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {	// need this because referenceJsonLive starts empty before values get added
-//     const rowArrayStringElements = []
-//     if (referenceJsonLive[fieldName].length === 0) {
-//       rowArrayStringElements.push(<RowDisplaySimple key={fieldName} fieldName={fieldName} value="" updatedFlag="" />); }
-//     else {
-//       for (const [index, valueLive] of referenceJsonLive[fieldName].entries()) {
-//         let valueDb = ''; let updatedFlag = '';
-//         if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
-//         if (valueLive !== valueDb) { updatedFlag = 'updated'; }
-//         rowArrayStringElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={valueLive} updatedFlag={updatedFlag} />); } }
-//     return (<>{rowArrayStringElements}</>); }
-//   else { return null; } }
-// 
-// const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
-// //   fieldName = 'mod_corpus_associations';
-//   if ('mod_corpus_associations' in referenceJsonLive && referenceJsonLive['mod_corpus_associations'] !== null) {
-//     const rowModAssociationElements = []
-//     for (const[index, modAssociationDict] of referenceJsonLive['mod_corpus_associations'].entries()) {
-//       let valueLiveMod = modAssociationDict['mod_abbreviation']; let valueDbMod = ''; let updatedFlagMod = '';
-//       let valueLiveCorpus = modAssociationDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
-//       let valueLiveSource = modAssociationDict['mod_corpus_sort_source']; let valueDbSource = ''; let updatedFlagSource = '';
-// 
-//         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') ) {
-//                valueDbMod = referenceJsonDb[fieldName][index]['mod_abbreviation'] }
-//         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') ) {
-//                valueDbCorpus = referenceJsonDb[fieldName][index]['corpus'] }
-//         if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//              (typeof referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] !== 'undefined') ) {
-//                valueDbSource = referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] }
-//         if (valueLiveMod !== valueDbMod) { updatedFlagMod = 'updated'; }
-//         if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
-//         if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
-// 
-//         rowModAssociationElements.push(
-//           <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-//             <Col className="Col-general Col-display Col-display-left">mod_corpus_associations</Col>
-//             <Col className={`Col-general Col-display ${updatedFlagMod} `} lg={{ span: 2 }}>{valueLiveMod}</Col>
-//             <Col className={`Col-general Col-display ${updatedFlagCorpus} `} lg={{ span: 4 }}>{valueLiveCorpus}</Col>
-//             <Col className={`Col-general Col-display Col-display-right ${updatedFlagSource} `} lg={{ span: 4 }}>{valueLiveSource}</Col>
-//           </Row>);
-//       } // if (enumDict['mods'].includes(valueLiveCuriePrefix))
-//     return (<>{rowModAssociationElements}</>); }
-//   else { return null; } }
-// 
-// const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
-//   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
-//     const rowCrossReferenceElements = []
-//     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
-//       let url = crossRefDict['url'];
-//       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
-// 
-//       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-//              valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//              valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
-//       if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
-//       if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
-//       let isObsolete = '';
-//       if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//              if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
-//              else { isObsolete = ''; } }
-//       let updatedFlag = '';
-//       if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated' }
-//       if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
-//       const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
-//       rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
-//     return (<>{rowCrossReferenceElements}</>); }
-//   else { return null; } }
-// 
-// const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
-//   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
-//     const rowCommentsCorrectionsElements = []
-//     for (const[index, comcorDict] of referenceJsonLive[fieldName].entries()) {
-//       let valueLiveCurie = comcorDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
-//       const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
-//       let valueLiveType = comcorDict['type']; let valueDbType = ''; let updatedFlagType = '';
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-//              valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['type'] !== 'undefined') ) {
-//              valueDbType = referenceJsonDb[fieldName][index]['type'] }
-//       if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
-//       if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
-//       let updatedFlag = '';
-//       if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
-//       const comcorValue = (<div>{valueLiveType} <a href={url} rel="noreferrer noopener">{valueLiveCurie}</a></div>);
-//       rowCommentsCorrectionsElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={comcorValue} updatedFlag={updatedFlag} />); }
-//     return (<>{rowCommentsCorrectionsElements}</>); }
-//   else { return null; } }
-// 
-// 
-// const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
-//   if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
-//     const rowModReferenceTypesElements = []
-//     for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
-//       let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
-//       let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
-//       if (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') { valueDbSource = referenceJsonDb[fieldName][index]['source'] }
-//       if (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') { valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
-//       if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
-//       if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
-//       rowModReferenceTypesElements.push(
-//         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className="Col-general Col-display Col-display-left">mod_reference_types</Col>
-//           <Col className={`Col-general Col-display ${updatedFlagSource} `} lg={{ span: 2 }}>{valueLiveSource}</Col>
-//           <Col className={`Col-general Col-display Col-display-right ${updatedFlagReferenceType} `} lg={{ span: 8 }}>{valueLiveReferenceType}</Col>
-//         </Row>); }
-//     return (<>{rowModReferenceTypesElements}</>); }
-//   else { return null; } }
-// 
-// const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJsonLive, displayOrEditor}) => {
-//   const meshExpand = useSelector(state => state.biblio.meshExpand);
-//   let cssDisplayLeft = 'Col-display Col-display-left';
-//   let cssDisplay = 'Col-display';
-//   let cssDisplayRight = 'Col-display Col-display-right';
-//   if (displayOrEditor === 'editor') {
-//     cssDisplay = 'Col-editor-disabled';
-//     cssDisplayRight = 'Col-editor-disabled';
-//     cssDisplayLeft = ''; }
-//   if ('mesh_terms' in referenceJsonLive && referenceJsonLive['mesh_terms'] !== null) {
-// 
-//     const rowMeshTermsElements = []
-//     rowMeshTermsElements.push(<MeshExpandToggler key="meshExpandTogglerComponent" displayOrEditor={displayOrEditor} />);
-// 
-//     const sortableMeshTermElements = {};
-//     const meshTextArray = [];
-//     for (const[index, value] of referenceJsonLive['mesh_terms'].entries()) {
-//       let term = value['heading_term'];
-//       if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
-//       const lcTerm = term.toLowerCase();
-//       if (meshExpand === 'detailed') {
-//         sortableMeshTermElements[lcTerm] = (
-//         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className={`Col-general ${cssDisplayLeft} `}>mesh_terms</Col>
-//           <Col className={`Col-general ${cssDisplay} `} lg={{ span: 5 }}>{value['heading_term']}</Col>
-//           <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 5 }}>{value['qualifier_term']}</Col>
-//         </Row>); }
-//       else {
-//         meshTextArray.push(term); } }
-// 
-//     if (meshExpand === 'detailed') {
-//       const sortedKeys = Object.keys(sortableMeshTermElements).sort();
-//       for (let i = 0; i < sortedKeys.length; i++) {
-//         rowMeshTermsElements.push(sortableMeshTermElements[sortedKeys[i]]); } }
-//     else {
-//       const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); }).join('; ')}} />)
-//       rowMeshTermsElements.push(
-//         <Row key="meshTermsText" className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
-//           <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>{meshText}</Col>
-//         </Row>); }
-// 
-//     return (<>{rowMeshTermsElements}</>); }
-//   else { return null; } }
-// 
-// const MeshExpandToggler = ({displayOrEditor}) => {
-//   const dispatch = useDispatch();
-//   const meshExpand = useSelector(state => state.biblio.meshExpand);
-//   let cssDisplayLeft = 'Col-display Col-display-left';
-// //   let cssDisplay = 'Col-display';
-//   let cssDisplayRight = 'Col-display Col-display-right';
-//   if (displayOrEditor === 'editor') {
-// //     cssDisplay = 'Col-editor-disabled';
-//     cssDisplayRight = 'Col-editor-disabled';
-//     cssDisplayLeft = ''; }
-//   let shortChecked = '';
-//   let detailedChecked = '';
-//   if (meshExpand === 'short') { shortChecked = 'checked'; }
-//     else { detailedChecked = 'checked'; }
-//   return (
-//     <Row key="meshExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
-//       <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
-//       <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>
-//         <Form.Check
-//           inline
-//           checked={shortChecked}
-//           type='radio'
-//           label='short'
-//           id='biblio-mesh-expand-toggler-short'
-//           onChange={(e) => dispatch(changeBiblioMeshExpandToggler(e))}
-//         />
-//         <Form.Check
-//           inline
-//           checked={detailedChecked}
-//           type='radio'
-//           label='detailed'
-//           id='biblio-mesh-expand-toggler-detailed'
-//           onChange={(e) => dispatch(changeBiblioMeshExpandToggler(e))}
-//         />
-//       </Col>
-//     </Row>);
-// } // const MeshExpandToggler
-// 
-// const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
-//   // e.g. orcid/affiliations PMID:24895670   affiliations PMID:24913562   out of order PMID:33766856
-//   const authorExpand = useSelector(state => state.biblio.authorExpand);
-//   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-//     const rowAuthorElements = [];
-//     rowAuthorElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="display" />);
-//     const orderedAuthorsLive = []; const orderedAuthorsDb = [];
-//     for (const value  of referenceJsonLive['authors'].values()) {
-//       let index = value['order'] - 1;
-//       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
-//       orderedAuthorsLive[index] = value; }
-//     for (const value  of referenceJsonDb['authors'].values()) {
-//       let index = value['order'] - 1;
-//       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
-//       orderedAuthorsDb[index] = value; }
-// 
-//     if (authorExpand === 'first') {
-//       if ((orderedAuthorsLive.length > 0) && (typeof orderedAuthorsLive[0] !== 'undefined') && ('name' in orderedAuthorsLive[0])) {
-//         rowAuthorElements.push(
-//           <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
-//             <Col className="Col-general Col-display Col-display-left">first author</Col>
-//             <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{orderedAuthorsLive[0]['name']}</div></Col>
-//           </Row>); } }
-//     else if (authorExpand === 'list') {
-//       let authorNames = orderedAuthorsLive.map((dict, index) => ( dict['name'] )).join('; ');
-//       rowAuthorElements.push(
-//         <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
-//           <Col className="Col-general Col-display Col-display-left">all authors</Col>
-//           <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{authorNames}</div></Col>
-//         </Row>); }
-//     else if (authorExpand === 'detailed') {
-//       for (const [index, value]  of orderedAuthorsLive.entries()) {
-//         let updatedFlagAuthor = '';
-//         if (typeof value === 'undefined') { continue; }
-//         let orcid_curie = '';
-//         let orcid_url = '';
-//         if ('orcid' in value && value['orcid'] !== null) {
-//           if (value['orcid']['curie'] && value['orcid']['curie'] !== null) {
-//             orcid_curie = value['orcid']['curie'].toUpperCase();
-//             if (!( orcid_curie.match(/^ORCID:(.*)$/) ) ) {
-//               orcid_curie = 'ORCID:' + orcid_curie; } }
-//           orcid_url = value['orcid']['url'] || ''; }
-//         let affiliations = []; let affiliationsJoined = '';
-//         if ('affiliations' in value && value['affiliations'] !== null) {
-//           affiliationsJoined = (value['affiliations'].length > 0) ? value['affiliations'].join('') : '';
-//           for (const index_aff in value['affiliations']) {
-//             affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliations'][index_aff]}</div>); } }
-//         let orcid_link = (orcid_url === '') ? (<span>{orcid_curie}</span>) : (<a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>)
-// 
-//         if (orderedAuthorsDb[index] !== undefined) {
-//           if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== null && 'curie' in orderedAuthorsDb[index]['orcid'] &&
-//               'ORCID:' + splitCurie(orderedAuthorsDb[index]['orcid']['curie'], 'id') !== orcid_curie) { updatedFlagAuthor = 'updated'; }
-//           if ('name' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['name'] !== value['name']) { updatedFlagAuthor = 'updated'; }
-//           if ('affiliations' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['affiliations'] &&
-//               orderedAuthorsDb[index]['affiliations'].join('') !== affiliationsJoined) { updatedFlagAuthor = 'updated'; }
-//         }
-//         rowAuthorElements.push(
-//           <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-//             <Col className="Col-general Col-display Col-display-left">author {value['order']}</Col>
-//             <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} {orcid_link}{affiliations}</div></Col>
-//           </Row>); } }
-//     return (<>{rowAuthorElements}</>); }
-//   else { return null; }
-// } // const RowDisplayAuthors
-// 
-// //             <Col className="Col-general Col-display " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
-// 
-// const AuthorExpandToggler = ({displayOrEditor}) => {
-//   const dispatch = useDispatch();
-//   const authorExpand = useSelector(state => state.biblio.authorExpand);
-//   let cssDisplayLeft = 'Col-display Col-display-left';
-//   let cssDisplayRight = 'Col-display Col-display-right';
-//   if (displayOrEditor === 'editor') {
-//     cssDisplayRight = 'Col-editor-disabled';
-//     cssDisplayLeft = ''; }
-//   let firstChecked = '';
-//   let listChecked = '';
-//   let detailedChecked = '';
-//   if (authorExpand === 'first') { firstChecked = 'checked'; }
-//     else if (authorExpand === 'list') { listChecked = 'checked'; }
-//     else { detailedChecked = 'checked'; }
-//   return (
-//     <Row key="authorExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
-//       <Col className={`Col-general ${cssDisplayLeft}  `}>authors</Col>
-//       <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>
-//         <Form.Check
-//           inline
-//           checked={firstChecked}
-//           type='radio'
-//           label='first'
-//           id='biblio-author-expand-toggler-first'
-//           onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
-//         />
-//         <Form.Check
-//           inline
-//           checked={listChecked}
-//           type='radio'
-//           label='list'
-//           id='biblio-author-expand-toggler-list'
-//           onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
-//         />
-//         <Form.Check
-//           inline
-//           checked={detailedChecked}
-//           type='radio'
-//           label='detailed'
-//           id='biblio-author-expand-toggler-detailed'
-//           onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
-//         />
-//       </Col>
-//     </Row>);
-// } // const AuthorExpandToggler
+        rowModAssociationElements.push(
+          <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+            <Col className="Col-general Col-display Col-display-left">mod_corpus_associations</Col>
+            <Col className={`Col-general Col-display ${updatedFlagMod} `} lg={{ span: 2 }}>{valueLiveMod}</Col>
+            <Col className={`Col-general Col-display ${updatedFlagCorpus} `} lg={{ span: 4 }}>{valueLiveCorpus}</Col>
+            <Col className={`Col-general Col-display Col-display-right ${updatedFlagSource} `} lg={{ span: 4 }}>{valueLiveSource}</Col>
+          </Row>);
+      } // if (enumDict['mods'].includes(valueLiveCuriePrefix))
+    return (<>{rowModAssociationElements}</>); }
+  else { return null; } }
 
-
-const BiblioTagging = () => {
-  const dispatch = useDispatch();
-  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-  const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
-
-  const accessToken = useSelector(state => state.isLogged.accessToken);
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
-  const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
-  const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
-  // example data structure
-  // const entityEntityMappings = { 'ATP:0000005' : { 'NCBITaxon:559292' : { 'SGD:S000001855' : 'ACT1' } } };
-
-  const allowedEntityTypes = new Set();
-  allowedEntityTypes.add('ATP:0000005');
-  const allowedTaxons = new Set();
-  allowedTaxons.add('NCBITaxon:559292');
-  allowedTaxons.add('NCBITaxon:6239');
-
-  for (const [entityType, entityTypeValue] of Object.entries(entityEntitiesToMap)) {
-    if (allowedEntityTypes.has(entityType)) {
-      for (const [taxon, entitySet] of Object.entries(entityTypeValue)) {
-        if (allowedTaxons.has(taxon)) {
-          const entityCurieLookupList = [];
-          entitySet.forEach((entityCurie) => {
-            if (!(entityType in entityEntityMappings && taxon in entityEntityMappings[entityType] &&
-                  entityCurie in entityEntityMappings[entityType][taxon])) {
-              entityCurieLookupList.push(entityCurie); }
-          });
-          if (entityCurieLookupList.length > 0) {
-            const entityCurieLookupString = entityCurieLookupList.join(" ");
-            // console.log('look up ' + entityCurieLookupString);
-            dispatch(ateamLookupEntityList(accessToken, entityType, taxon, entityCurieLookupString))
-  } } } } }
-
-  if (!('date_created' in referenceJsonLive)) {
-    let message = 'No AGR Reference Curie found';
-    if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
-    return(<>{message}</>); }
-
-  const rowOrderedElements = []
-  // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
-  rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
-  return (<><Container>{rowOrderedElements}</Container>
-            { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
-} // const BiblioTagging
-
-const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
     const rowCrossReferenceElements = []
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
       let url = crossRefDict['url'];
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
-      let valueLiveCuriePrefix = splitCurie(valueLiveCurie, 'prefix');
-      if (valueLiveCuriePrefix !== 'PMCID') { continue; }
+
       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
@@ -704,44 +250,362 @@ const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJ
       if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated' }
       if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
       const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
-      rowCrossReferenceElements.push(<RowDisplaySimple key={`${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
+      rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
     return (<>{rowCrossReferenceElements}</>); }
   else { return null; } }
 
+const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
+    const rowCommentsCorrectionsElements = []
+    for (const[index, comcorDict] of referenceJsonLive[fieldName].entries()) {
+      let valueLiveCurie = comcorDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
+      const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
+      let valueLiveType = comcorDict['type']; let valueDbType = ''; let updatedFlagType = '';
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
+             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
+      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+           (typeof referenceJsonDb[fieldName][index]['type'] !== 'undefined') ) {
+             valueDbType = referenceJsonDb[fieldName][index]['type'] }
+      if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+      if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
+      let updatedFlag = '';
+      if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
+      const comcorValue = (<div>{valueLiveType} <a href={url} rel="noreferrer noopener">{valueLiveCurie}</a></div>);
+      rowCommentsCorrectionsElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={comcorValue} updatedFlag={updatedFlag} />); }
+    return (<>{rowCommentsCorrectionsElements}</>); }
+  else { return null; } }
 
-// const BiblioDisplay = () => {
+
+const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
+    const rowModReferenceTypesElements = []
+    for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
+      let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
+      let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
+      if (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') { valueDbSource = referenceJsonDb[fieldName][index]['source'] }
+      if (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') { valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
+      if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
+      if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
+      rowModReferenceTypesElements.push(
+        <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-display Col-display-left">mod_reference_types</Col>
+          <Col className={`Col-general Col-display ${updatedFlagSource} `} lg={{ span: 2 }}>{valueLiveSource}</Col>
+          <Col className={`Col-general Col-display Col-display-right ${updatedFlagReferenceType} `} lg={{ span: 8 }}>{valueLiveReferenceType}</Col>
+        </Row>); }
+    return (<>{rowModReferenceTypesElements}</>); }
+  else { return null; } }
+
+export const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJsonLive, displayOrEditor}) => {
+  const meshExpand = useSelector(state => state.biblio.meshExpand);
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplay = 'Col-display';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') {
+    cssDisplay = 'Col-editor-disabled';
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
+  if ('mesh_terms' in referenceJsonLive && referenceJsonLive['mesh_terms'] !== null) {
+
+    const rowMeshTermsElements = []
+    rowMeshTermsElements.push(<MeshExpandToggler key="meshExpandTogglerComponent" displayOrEditor={displayOrEditor} />);
+
+    const sortableMeshTermElements = {};
+    const meshTextArray = [];
+    for (const[index, value] of referenceJsonLive['mesh_terms'].entries()) {
+      let term = value['heading_term'];
+      if (value['qualifier_term'] !== null) { term += ' ' + value['qualifier_term']; }
+      const lcTerm = term.toLowerCase();
+      if (meshExpand === 'detailed') {
+        sortableMeshTermElements[lcTerm] = (
+        <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className={`Col-general ${cssDisplayLeft} `}>mesh_terms</Col>
+          <Col className={`Col-general ${cssDisplay} `} lg={{ span: 5 }}>{value['heading_term']}</Col>
+          <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 5 }}>{value['qualifier_term']}</Col>
+        </Row>); }
+      else {
+        meshTextArray.push(term); } }
+
+    if (meshExpand === 'detailed') {
+      const sortedKeys = Object.keys(sortableMeshTermElements).sort();
+      for (let i = 0; i < sortedKeys.length; i++) {
+        rowMeshTermsElements.push(sortableMeshTermElements[sortedKeys[i]]); } }
+    else {
+      const meshText = (<span dangerouslySetInnerHTML={{__html: meshTextArray.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); }).join('; ')}} />)
+      rowMeshTermsElements.push(
+        <Row key="meshTermsText" className="Row-general" xs={2} md={4} lg={6}>
+          <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
+          <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>{meshText}</Col>
+        </Row>); }
+
+    return (<>{rowMeshTermsElements}</>); }
+  else { return null; } }
+
+const MeshExpandToggler = ({displayOrEditor}) => {
+  const dispatch = useDispatch();
+  const meshExpand = useSelector(state => state.biblio.meshExpand);
+  let cssDisplayLeft = 'Col-display Col-display-left';
+//   let cssDisplay = 'Col-display';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') {
+//     cssDisplay = 'Col-editor-disabled';
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
+  let shortChecked = '';
+  let detailedChecked = '';
+  if (meshExpand === 'short') { shortChecked = 'checked'; }
+    else { detailedChecked = 'checked'; }
+  return (
+    <Row key="meshExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
+      <Col className={`Col-general ${cssDisplayLeft}  `}>mesh_terms</Col>
+      <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>
+        <Form.Check
+          inline
+          checked={shortChecked}
+          type='radio'
+          label='short'
+          id='biblio-mesh-expand-toggler-short'
+          onChange={(e) => dispatch(changeBiblioMeshExpandToggler(e))}
+        />
+        <Form.Check
+          inline
+          checked={detailedChecked}
+          type='radio'
+          label='detailed'
+          id='biblio-mesh-expand-toggler-detailed'
+          onChange={(e) => dispatch(changeBiblioMeshExpandToggler(e))}
+        />
+      </Col>
+    </Row>);
+} // const MeshExpandToggler
+
+const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  // e.g. orcid/affiliations PMID:24895670   affiliations PMID:24913562   out of order PMID:33766856
+  const authorExpand = useSelector(state => state.biblio.authorExpand);
+  if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
+    const rowAuthorElements = [];
+    rowAuthorElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="display" />);
+    const orderedAuthorsLive = []; const orderedAuthorsDb = [];
+    for (const value  of referenceJsonLive['authors'].values()) {
+      let index = value['order'] - 1;
+      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
+      orderedAuthorsLive[index] = value; }
+    for (const value  of referenceJsonDb['authors'].values()) {
+      let index = value['order'] - 1;
+      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
+      orderedAuthorsDb[index] = value; }
+
+    if (authorExpand === 'first') {
+      if ((orderedAuthorsLive.length > 0) && (typeof orderedAuthorsLive[0] !== 'undefined') && ('name' in orderedAuthorsLive[0])) {
+        rowAuthorElements.push(
+          <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
+            <Col className="Col-general Col-display Col-display-left">first author</Col>
+            <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{orderedAuthorsLive[0]['name']}</div></Col>
+          </Row>); } }
+    else if (authorExpand === 'list') {
+      let authorNames = orderedAuthorsLive.map((dict, index) => ( dict['name'] )).join('; ');
+      rowAuthorElements.push(
+        <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-display Col-display-left">all authors</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{authorNames}</div></Col>
+        </Row>); }
+    else if (authorExpand === 'detailed') {
+      for (const [index, value]  of orderedAuthorsLive.entries()) {
+        let updatedFlagAuthor = '';
+        if (typeof value === 'undefined') { continue; }
+        let orcid_curie = '';
+        let orcid_url = '';
+        if ('orcid' in value && value['orcid'] !== null) {
+          if (value['orcid']['curie'] && value['orcid']['curie'] !== null) {
+            orcid_curie = value['orcid']['curie'].toUpperCase();
+            if (!( orcid_curie.match(/^ORCID:(.*)$/) ) ) {
+              orcid_curie = 'ORCID:' + orcid_curie; } }
+          orcid_url = value['orcid']['url'] || ''; }
+        let affiliations = []; let affiliationsJoined = '';
+        if ('affiliations' in value && value['affiliations'] !== null) {
+          affiliationsJoined = (value['affiliations'].length > 0) ? value['affiliations'].join('') : '';
+          for (const index_aff in value['affiliations']) {
+            affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliations'][index_aff]}</div>); } }
+        let orcid_link = (orcid_url === '') ? (<span>{orcid_curie}</span>) : (<a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>)
+
+        if (orderedAuthorsDb[index] !== undefined) {
+          if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== null && 'curie' in orderedAuthorsDb[index]['orcid'] &&
+              'ORCID:' + splitCurie(orderedAuthorsDb[index]['orcid']['curie'], 'id') !== orcid_curie) { updatedFlagAuthor = 'updated'; }
+          if ('name' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['name'] !== value['name']) { updatedFlagAuthor = 'updated'; }
+          if ('affiliations' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['affiliations'] &&
+              orderedAuthorsDb[index]['affiliations'].join('') !== affiliationsJoined) { updatedFlagAuthor = 'updated'; }
+        }
+        rowAuthorElements.push(
+          <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+            <Col className="Col-general Col-display Col-display-left">author {value['order']}</Col>
+            <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} {orcid_link}{affiliations}</div></Col>
+          </Row>); } }
+    return (<>{rowAuthorElements}</>); }
+  else { return null; }
+} // const RowDisplayAuthors
+
+//             <Col className="Col-general Col-display " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
+
+const AuthorExpandToggler = ({displayOrEditor}) => {
+  const dispatch = useDispatch();
+  const authorExpand = useSelector(state => state.biblio.authorExpand);
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') {
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
+  let firstChecked = '';
+  let listChecked = '';
+  let detailedChecked = '';
+  if (authorExpand === 'first') { firstChecked = 'checked'; }
+    else if (authorExpand === 'list') { listChecked = 'checked'; }
+    else { detailedChecked = 'checked'; }
+  return (
+    <Row key="authorExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
+      <Col className={`Col-general ${cssDisplayLeft}  `}>authors</Col>
+      <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>
+        <Form.Check
+          inline
+          checked={firstChecked}
+          type='radio'
+          label='first'
+          id='biblio-author-expand-toggler-first'
+          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+        />
+        <Form.Check
+          inline
+          checked={listChecked}
+          type='radio'
+          label='list'
+          id='biblio-author-expand-toggler-list'
+          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+        />
+        <Form.Check
+          inline
+          checked={detailedChecked}
+          type='radio'
+          label='detailed'
+          id='biblio-author-expand-toggler-detailed'
+          onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
+        />
+      </Col>
+    </Row>);
+} // const AuthorExpandToggler
+
+
+// const BiblioTagging = () => {
+//   const dispatch = useDispatch();
 //   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
 //   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+// 
+//   const accessToken = useSelector(state => state.isLogged.accessToken);
+//   const biblioAction = useSelector(state => state.biblio.biblioAction);
+//   const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
+//   const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
+//   // example data structure
+//   // const entityEntityMappings = { 'ATP:0000005' : { 'NCBITaxon:559292' : { 'SGD:S000001855' : 'ACT1' } } };
+// 
+//   const allowedEntityTypes = new Set();
+//   allowedEntityTypes.add('ATP:0000005');
+//   const allowedTaxons = new Set();
+//   allowedTaxons.add('NCBITaxon:559292');
+//   allowedTaxons.add('NCBITaxon:6239');
+// 
+//   for (const [entityType, entityTypeValue] of Object.entries(entityEntitiesToMap)) {
+//     if (allowedEntityTypes.has(entityType)) {
+//       for (const [taxon, entitySet] of Object.entries(entityTypeValue)) {
+//         if (allowedTaxons.has(taxon)) {
+//           const entityCurieLookupList = [];
+//           entitySet.forEach((entityCurie) => {
+//             if (!(entityType in entityEntityMappings && taxon in entityEntityMappings[entityType] &&
+//                   entityCurie in entityEntityMappings[entityType][taxon])) {
+//               entityCurieLookupList.push(entityCurie); }
+//           });
+//           if (entityCurieLookupList.length > 0) {
+//             const entityCurieLookupString = entityCurieLookupList.join(" ");
+//             // console.log('look up ' + entityCurieLookupString);
+//             dispatch(ateamLookupEntityList(accessToken, entityType, taxon, entityCurieLookupString))
+//   } } } } }
+// 
 //   if (!('date_created' in referenceJsonLive)) {
 //     let message = 'No AGR Reference Curie found';
 //     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
 //     return(<>{message}</>); }
-//   const rowOrderedElements = []
-//   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
-//     if (fieldName === 'DIVIDER') {
-//       rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
-//     else if (fieldsSimple.includes(fieldName)) {
-//       rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//     else if (fieldsArrayString.includes(fieldName)) {
-//       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//     else if (fieldName === 'mod_corpus_associations') {
-//       rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//     else if (fieldName === 'cross_references') {
-//       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//     else if (fieldName === 'corrections') {
-//       rowOrderedElements.push(<RowDisplayCommentsCorrections key="RowDisplayCommentsCorrections" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//     else if (fieldName === 'mod_reference_types') {
-//       rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//     else if (fieldName === 'mesh_terms') {
-//       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
-//     else if (fieldName === 'authors') {
-//       rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//     else if (fieldName === 'date_published') {
-//       rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-//   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 // 
-//   return (<Container><BiblioSubmitUpdateRouter />{rowOrderedElements}</Container>);
-// } // const BiblioDisplay
+//   const rowOrderedElements = []
+//   // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
+//   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+//   rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+//   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+//   // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
+//   return (<><Container>{rowOrderedElements}</Container>
+//             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
+// } // const BiblioTagging
+
+// const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+//   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
+//     const rowCrossReferenceElements = []
+//     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+//       let url = crossRefDict['url'];
+//       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
+//       let valueLiveCuriePrefix = splitCurie(valueLiveCurie, 'prefix');
+//       if (valueLiveCuriePrefix !== 'PMCID') { continue; }
+//       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
+//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+//            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
+//              valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
+//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
+//            (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+//              valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
+//       if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+//       if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
+//       let isObsolete = '';
+//       if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
+//            (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
+//              if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
+//              else { isObsolete = ''; } }
+//       let updatedFlag = '';
+//       if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated' }
+//       if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
+//       const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
+//       rowCrossReferenceElements.push(<RowDisplaySimple key={`${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
+//     return (<>{rowCrossReferenceElements}</>); }
+//   else { return null; } }
+
+
+const BiblioDisplay = () => {
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+  if (!('date_created' in referenceJsonLive)) {
+    let message = 'No AGR Reference Curie found';
+    if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
+    return(<>{message}</>); }
+  const rowOrderedElements = []
+  for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
+    if (fieldName === 'DIVIDER') {
+      rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
+    else if (fieldsSimple.includes(fieldName)) {
+      rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldsArrayString.includes(fieldName)) {
+      rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'mod_corpus_associations') {
+      rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'cross_references') {
+      rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'corrections') {
+      rowOrderedElements.push(<RowDisplayCommentsCorrections key="RowDisplayCommentsCorrections" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'mod_reference_types') {
+      rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'mesh_terms') {
+      rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
+    else if (fieldName === 'authors') {
+      rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'date_published') {
+      rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+  } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
+
+  return (<Container><BiblioSubmitUpdateRouter />{rowOrderedElements}</Container>);
+} // const BiblioDisplay
 
 // const BiblioSubmitUpdateRouter = () => {
 //   const biblioUpdating = useSelector(state => state.biblio.biblioUpdating);
@@ -751,7 +615,7 @@ const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJ
 //   else {
 //     return (<><AlertDismissibleBiblioUpdate /><BiblioSubmitUpdateButton /></>); }
 // } // const BiblioSubmitUpdateRouter
-
+// 
 // const AlertDismissibleBiblioUpdate = () => {
 //   const dispatch = useDispatch();
 //   const updateAlert = useSelector(state => state.biblio.updateAlert);
@@ -790,7 +654,7 @@ const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJ
 //        </Row>
 //   );
 // }
-// 
+
 // const BiblioSubmitUpdateButton = () => {
 //   const dispatch = useDispatch();
 //   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -1588,96 +1452,5 @@ const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJ
 // //           </Container>);
 // // } // const BiblioEditor
 
-const BiblioIdQuery = () => {
-  const dispatch = useDispatch();
-  const [idQuery, setIdQuery] = useState('');
-  return (
-      <div>
-        <div style={{width: "28em", margin: "auto"}}>
-          <InputGroup className="mb-2">
-            <Form.Control placeholder="e.g., PMID:24895670 or AGRKB:101000000878586" type="text"
-                          id="xrefcurieField" name="xrefcurieField" value={idQuery}
-                          onChange={(e) => setIdQuery(e.target.value)}
-                          onKeyPress={(event) => {
-                            if (event.charCode === 13) {
-                              dispatch(queryId(idQuery));
-                            }
-                          }}
-            />
-            <Button type="submit" size="sm" onClick={() => dispatch(queryId(idQuery))}>Query exact ID</Button>
-          </InputGroup>
-        </div>
-      </div>
-  )
-}
 
-const Biblio = () => {
-  const dispatch = useDispatch();
-
-  const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.search.redirectToBiblio);
-//   console.log("biblio crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
-
-  const crossRefCurieQueryResponseField = useSelector(state => state.search.responseField);
-  if ( crossRefCurieQueryRedirectToBiblio ) {
-    console.log('biblio from redirect');
-// this is needed to keep the query page from redirecting here if going back to it, but changing it triggers a change there, which somehow triggers a dispatch of a bunch of stuff, including a double dispatch(biblioQueryReferenceCurie(referenceCurie)), which is wrong
-// Warning: Cannot update a component (`Biblio`) while rendering a different component (`Biblio`). To locate the bad setState() call inside `Biblio`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
-//     dispatch(resetQueryRedirect());
-    dispatch(setReferenceCurie(crossRefCurieQueryResponseField));
-  }
-
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
-  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  const getReferenceCurieFlag = useSelector(state => state.biblio.getReferenceCurieFlag);
-//   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
-  const isLoading = useSelector(state => state.biblio.isLoading);
-//   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
-  const accessToken = useSelector(state => state.isLogged.accessToken);
-  const updateCitationFlag = useSelector(state => state.biblio.updateCitationFlag);
-
-  const useQuery = () => { return new URLSearchParams(useLocation().search); }
-  let query = useQuery();
-  if (referenceCurie === '' || biblioAction === '') {
-    // console.log(query);
-    let paramAction = query.get('action');
-    let paramReferenceCurie = query.get('referenceCurie');
-    // console.log("biblio urlParam paramAction", paramAction);
-    // console.log("biblio urlParam paramReferenceCurie", paramReferenceCurie);
-    if (paramReferenceCurie !== null) { dispatch(setReferenceCurie(paramReferenceCurie)); }
-    if (paramAction !== null) { dispatch(setBiblioAction(paramAction)); }
-  }
-
-  // citation needs to be updated after processing separate biblio api calls. update citation and make flag false
-  if (referenceCurie !== '' && (updateCitationFlag === true)) {
-    console.log('biblio DISPATCH update citation for ' + referenceCurie);
-    dispatch(updateButtonBiblio( [accessToken, 'reference/citationupdate/' + referenceCurie, null, 'POST', 0, null, null] ));
-    dispatch(setUpdateCitationFlag(false))
-  }
-
-  // if there's a curie, biblio has stopped updating therefore get curie, and citation has been updated, requery the reference data
-  if (referenceCurie !== '' && (getReferenceCurieFlag === true) && (updateCitationFlag === false)) {
-    console.log('biblio DISPATCH biblioQueryReferenceCurie ' + referenceCurie);
-    dispatch(biblioQueryReferenceCurie(referenceCurie));
-  }
-
-  function LoadingElement() {
-    return (<Container><img src={loading_gif} className="loading_gif" alt="loading" /></Container>);
-  }
-  return (
-      <div>
-        <BiblioIdQuery/>
-        <br/>
-        {referenceCurie !== '' ?
-            <div>
-              <h4>Biblio about this Reference</h4>
-              <div align="center" className="task">{referenceCurie}</div>
-              {isLoading ? <LoadingElement/> : <BiblioActionRouter/>}
-              <Link to='/'>Go Back</Link>
-            </div> : null
-        }
-      </div>
-  )
-} // const Biblio
-
-
-export default Biblio
+export default BiblioDisplay
