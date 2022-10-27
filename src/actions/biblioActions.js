@@ -537,16 +537,23 @@ export function generateCorrectionsSimple(referenceJson) {
   } }
 }
 
+export const fetchModReferenceTypes = async (mods) => {
+  const baseUrl = restUrl + '/reference/mod_reference_type/by_mod/';
+  let modReferenceTypes = {}
+  for (const mod of mods) {
+    if (mod !== '') {
+      const result = await axios.get(baseUrl + mod)
+      modReferenceTypes[mod] = await result.data;
+      modReferenceTypes[mod].unshift('');
+    }
+  }
+  return modReferenceTypes
+}
+
 export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
-  // console.log("action referenceCurie " + referenceCurie);
   const createBiblioQueryReferenceCurie = async () => {
     const url = restUrl + '/reference/' + referenceCurie;
-//     const url = 'https://' + restUrl + '/reference/' + referenceCurie;
-//     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + referenceCurie;
-//     const url = 'http://dev.alliancegenome.org:49161/reference/' + referenceCurie;
-//     const url = 'http://localhost:49161/reference/' + referenceCurie;
-    // console.log(url);
     const res = await fetch(url, {
       method: 'GET',
       mode: 'cors',
@@ -555,42 +562,14 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
       }
     })
     const response = await res.json();
-    // console.log("action response");
-    // console.log(response);
     let response_payload = 'not found';
     if (response !== undefined) {
       const referenceJson = response;
       if ('comment_and_corrections' in referenceJson && referenceJson['comment_and_corrections'] !== null) {
         generateCorrectionsSimple(referenceJson);
-//         let comcorMapping = {}
-//         comcorMapping['CommentOn'] = 'HasComment'
-//         comcorMapping['ErratumFor'] = 'HasErratum'
-//         comcorMapping['ExpressionOfConcernFor'] = 'HasExpressionOfConcernFor'
-//         comcorMapping['ReprintOf'] = 'HasReprint'
-//         comcorMapping['RepublishedFrom'] = 'RepublishedIn'
-//         comcorMapping['RetractionOf'] = 'HasRetraction'
-//         comcorMapping['UpdateOf'] = 'HasUpdate'
-//         const comcorDirections = ['to_references', 'from_references']
-//         referenceJson['corrections'] = []
-//         for (const direction of comcorDirections) {
-//           for (const comcorDict of referenceJson['comment_and_corrections'][direction].values()) {
-//             let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
-//             let curie = comcorDict[curieFieldInDict]
-//             let dbid = comcorDict['reference_comment_and_correction_id']
-//             let type = comcorDict['reference_comment_and_correction_type']
-//             if (direction === 'from_references') {
-//               if (type in comcorMapping) { type = comcorMapping[type] } }
-//             let newComcorDict = {}
-//             newComcorDict['reference_comment_and_correction_id'] = dbid
-//             newComcorDict['type'] = type
-//             newComcorDict['curie'] = curie
-//             referenceJson['corrections'].push(newComcorDict)
-//         } }
       }
       response_payload = referenceJson;
     }
-//     history.push("/Biblio");	// value hasn't been set in store yet
-
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
     dispatch({
       type: 'BIBLIO_GET_REFERENCE_CURIE',

@@ -6,7 +6,7 @@ import ModalGeneric from './ModalGeneric';
 
 import { RowDisplayMeshTerms } from './BiblioDisplay';
 
-import { setBiblioUpdating } from '../../actions/biblioActions';
+import {fetchModReferenceTypes, setBiblioUpdating} from '../../actions/biblioActions';
 import { setUpdateCitationFlag } from '../../actions/biblioActions';
 import { setUpdateBiblioFlag } from '../../actions/biblioActions';
 import { validateFormUpdateBiblio } from '../../actions/biblioActions';
@@ -42,6 +42,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUndo } from '@fortawesome/free-solid-svg-icons'
 
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
+import {useEffect, useState} from "react";
 
 // http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
 
@@ -538,6 +539,12 @@ const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
 
 
 const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  const [modReferenceTypes, setModReferenceTypes] = useState({});
+
+  useEffect(() => {
+    fetchModReferenceTypes(enumDict['mods']).then((modRefTypes) => setModReferenceTypes(modRefTypes));
+  }, [])
+
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const revertDictFields = 'source, reference_type'
@@ -567,8 +574,23 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
       rowModReferenceTypesElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
-          <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
-          <ColEditorSimple key={`colElement ${fieldName} ${index} reference_type`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveReferenceType} updatedFlag={updatedFlagReferenceType} placeholder="reference_type" disabled={disabled} fieldKey={`${fieldName} ${index} reference_type`} dispatchAction={changeFieldModReferenceReferenceJson} />
+          <Col sm={4}>
+            <Form.Control as="select" id={`${fieldName} ${index} source`} fieldName={fieldName} value={valueLiveSource} placeholder="source" className={`form-control ${updatedFlagSource}`} disabled={disabled} fieldKey={`${fieldName} ${index} source`} onChange={(e) => {
+              dispatch(changeFieldModReferenceReferenceJson(e));
+              dispatch(changeFieldModReferenceReferenceJson({target: {id: `${fieldName} ${index} reference_type`, value: ''}}));
+            }}>
+              {enumDict['mods'].map((optionValue, index) => (
+                  <option key={`${fieldName} ${index} reference_type ${optionValue}`}>{optionValue}</option>
+              ))}
+            </Form.Control>
+          </Col>
+          <Col sm={otherColSize}>
+            <Form.Control as="select" id={`${fieldName} ${index} reference_type`} type={fieldName} value={valueLiveReferenceType} className={`form-control ${updatedFlagReferenceType}`} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} >
+            {valueLiveSource in modReferenceTypes ? modReferenceTypes[valueLiveSource].map((optionValue, index) => (
+                  <option key={`${fieldName} ${index} reference_type ${optionValue}`}>{optionValue}</option>
+              )) : null}
+            </Form.Control>
+          </Col>
           {revertElement}
         </Form.Group>); } }
   if (disabled === '') {
