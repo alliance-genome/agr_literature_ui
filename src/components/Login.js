@@ -19,6 +19,7 @@ import { faUserCircle } from '@fortawesome/free-solid-svg-icons'
 
 const Login = ({config}) => {
     const loggedInUser = useSelector(state => state.isLogged.userId);
+    const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
     const accessToken = useSelector(state => state.isLogged.accessToken);
     // to have a version of the okta token text wrapped at 60 character, if needed for display
     // const textWrapAccessToken = (accessToken !== null) ? accessToken.match(/.{1,60}/g).join('\n') : '';
@@ -75,6 +76,9 @@ const Login = ({config}) => {
                 <NavDropdown.Item >
                   <Button as="input" type="button" variant="primary" value="Sign Out" size="sm" onClick={onSignOutClick} />
                 </NavDropdown.Item>
+                {oktaGroups !== null && oktaGroups.map((optionValue, index) => (
+                  <NavDropdown.Item key={optionValue}>{optionValue}</NavDropdown.Item>
+                ))}
                 <NavDropdown.Item style={{whiteSpace: 'normal', color: 'blue', textDecoration: 'underline'}} 
                   onClick={() => { navigator.clipboard.writeText(accessToken); } } >copy okta token</NavDropdown.Item>
               </NavDropdown>)
