@@ -25,7 +25,8 @@ const initialState = {
   searchFacetsLimits: {
     'pubmed_types.keyword': INITIAL_FACETS_LIMIT,
     'category.keyword': INITIAL_FACETS_LIMIT,
-    'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT
+    'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT,
+    'authors.name.keyword': INITIAL_FACETS_LIMIT
   },
   searchFacetsShowMore: {},
   searchQuery: ""
