@@ -20,12 +20,13 @@ import _ from "lodash";
 export const RENAME_FACETS = {
     "category.keyword": "alliance category",
     "mods_in_corpus.keyword": "corpus - in corpus",
-    "mods_needs_review.keyword": "corpus - needs review"
+    "mods_needs_review.keyword": "corpus - needs review",
+    "authors.name.keyword": "Authors"
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review"],
-    "Bibliographic Data": ["pubmed types", "category", "pubmed publication status"]
+    "Bibliographic Data": ["pubmed types", "category", "pubmed publication status", "authors.name"]
 }
 
 const Facet = ({facetsToInclude, renameFacets}) => {
