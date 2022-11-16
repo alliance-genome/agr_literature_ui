@@ -12,6 +12,7 @@ export const SEARCH_SET_SEARCH_FACETS_LIMITS = 'SEARCH_SET_SEARCH_FACETS_LIMITS'
 export const SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT = 'SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT';
 export const SEARCH_ADD_FACET_VALUE = 'SEARCH_ADD_FACET_VALUE';
 export const SEARCH_REMOVE_FACET_VALUE = 'SEARCH_REMOVE_FACET_VALUE';
+export const SEARCH_SET_AUTHOR_FILTER = 'SEARCH_SET_AUTHOR_FILTER';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -43,7 +44,7 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount,searchResultsPage) => {
+export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter) => {
   return dispatch => {
     dispatch(setSearchLoading());
     dispatch(setSearchQuery(query));
@@ -54,7 +55,8 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
       size_result_count: sizeResultsCount,
       page: searchResultsPage,
       facets_values: facetsValues,
-      facets_limits: facetsLimits
+      facets_limits: facetsLimits,
+      author_filter: authorFilter
     })
         .then(res => {
           dispatch(setSearchResults(res.data.hits, res.data.return_count));
@@ -150,5 +152,12 @@ export const removeFacetValue = (facet, value) => ({
   payload: {
     facet: facet,
     value: value
+  }
+});
+
+export const setAuthorFilter = (authorFilter) => ({
+  type: SEARCH_SET_AUTHOR_FILTER,
+  payload: {
+    authorFilter : authorFilter
   }
 });

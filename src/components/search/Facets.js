@@ -6,7 +6,8 @@ import {
     removeFacetValue,
     searchReferences,
     setSearchFacetsLimits,
-    setSearchResultsPage
+    setSearchResultsPage,
+    setAuthorFilter
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse} from 'react-bootstrap';
@@ -15,6 +16,7 @@ import {INITIAL_FACETS_LIMIT} from '../../reducers/searchReducer';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import InputGroup from 'react-bootstrap/InputGroup';
 import _ from "lodash";
 
 export const RENAME_FACETS = {
@@ -89,12 +91,14 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    const authorFilter = useSelector(state => state.search.authorFilter);
+    const searchResultsPage  = useSelector(state => state.search.searchResultsPage);
     const dispatch = useDispatch();
 
     const searchOrSetInitialFacets = (newSearchFacetsLimits) => {
         if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
             dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,0))
+            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,0,authorFilter))
         } else {
             dispatch(fetchInitialFacets(newSearchFacetsLimits));
         }
@@ -124,7 +128,16 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
                     searchOrSetInitialFacets(newSearchFacetsLimits);
-                }}>+Show All</button></span> : null } </div>
+                }}>+Show All</button></span> : null }
+            {facetLabel == 'authors.name.keyword' ?
+              <InputGroup size="sm" className="mb-2" style ={{width: "85%"}}>
+              <Form.Control inline="true" type="text" id="authorFilter" name="authorFilter" value={authorFilter}
+                onChange={(e) => dispatch(setAuthorFilter(e.target.value))}/>
+              <Button inline="true" style={{width: "4em"}} size="sm"
+                onClick={() => {
+                  dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter))
+                }}>Filter</Button></InputGroup> : null}
+            </div>
     )
 }
 
