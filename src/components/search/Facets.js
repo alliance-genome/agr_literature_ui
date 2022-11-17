@@ -131,7 +131,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                 }}>+Show All</button></span> : null }
             {facetLabel == 'authors.name.keyword' ?
               <InputGroup size="sm" className="mb-2" style ={{width: "85%"}}>
-              <Form.Control inline="true" type="text" id="authorFilter" name="authorFilter" value={authorFilter}
+              <Form.Control inline="true" type="text" id="authorFilter" name="authorFilter" placeholder="Filter Authors (case sensitive)" value={authorFilter}
                 onChange={(e) => dispatch(setAuthorFilter(e.target.value))}/>
               <Button inline="true" style={{width: "4em"}} size="sm"
                 onClick={() => {
