@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
+import LoadingOverlay from 'react-loading-overlay';
 import {
     addFacetValue,
     fetchInitialFacets,
@@ -19,7 +20,6 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import InputGroup from 'react-bootstrap/InputGroup';
 import _ from "lodash";
-import Spinner from "react-bootstrap/Spinner";
 
 export const RENAME_FACETS = {
     "category.keyword": "alliance category",
@@ -168,6 +168,7 @@ const Facets = () => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchQuery = useSelector(state => state.search.searchQuery);
+    const facetsLoading = useSelector(state => state.search.facetsLoading);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const dispatch = useDispatch();
 
@@ -206,7 +207,9 @@ const Facets = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-        <div>
+
+
+        <LoadingOverlay active={facetsLoading} spinner text='Loading...'>
             {
                 Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
                     <div style={{textAlign: "left"}}>
@@ -221,7 +224,7 @@ const Facets = () => {
                     </div>
                 )
             }
-        </div>
+        </LoadingOverlay>
     )
 }
 

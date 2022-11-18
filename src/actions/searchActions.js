@@ -13,6 +13,7 @@ export const SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT = 'SEARCH_SET_SEARCH_SIZE_RESU
 export const SEARCH_ADD_FACET_VALUE = 'SEARCH_ADD_FACET_VALUE';
 export const SEARCH_REMOVE_FACET_VALUE = 'SEARCH_REMOVE_FACET_VALUE';
 export const SEARCH_SET_AUTHOR_FILTER = 'SEARCH_SET_AUTHOR_FILTER';
+export const SEARCH_SET_FACETS_LOADING = 'SEARCH_SET_FACETS_LOADING';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -68,6 +69,7 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
 
 export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter) => {
   return dispatch => {
+    dispatch(setFacetsLoading());
     axios.post(restUrl + '/search/references', {
       query: query,
       size_result_count: sizeResultsCount,
@@ -132,6 +134,10 @@ export const setSearchFacetsLimits = (facetsLimits) => ({
 
 export const setSearchLoading = () => ({
   type: SEARCH_SET_SEARCH_LOADING
+});
+
+export const setFacetsLoading = () => ({
+  type: SEARCH_SET_FACETS_LOADING
 });
 
 export const setSearchError = (value) => ({
