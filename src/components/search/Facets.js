@@ -95,7 +95,6 @@ const AuthorFilter = () => {
   const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
   const authorFilter = useSelector(state => state.search.authorFilter);
   const searchResultsPage  = useSelector(state => state.search.searchResultsPage);
-  const facetsLoading = useSelector(state => state.search.facetsLoading);
   const dispatch = useDispatch();
 
   return (
