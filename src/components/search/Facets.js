@@ -98,8 +98,6 @@ const AuthorFilter = () => {
   const facetsLoading = useSelector(state => state.search.facetsLoading);
   const dispatch = useDispatch();
 
-  console.log("current author filter", authorFilter);
-
   return (
     <InputGroup size="sm" className="mb-3" style ={{width: "85%"}}>
     <Form.Control inline="true" type="text" id="authorFilter" name="authorFilter" placeholder="Filter Authors (case sensitive)" value={authorFilter}
