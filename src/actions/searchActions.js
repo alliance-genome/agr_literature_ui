@@ -66,6 +66,23 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
   }
 }
 
+export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter) => {
+  return dispatch => {
+    axios.post(restUrl + '/search/references', {
+      query: query,
+      size_result_count: sizeResultsCount,
+      page: searchResultsPage,
+      facets_values: facetsValues,
+      facets_limits: facetsLimits,
+      author_filter: authorFilter
+    })
+        .then(res => {
+          dispatch(setSearchFacets(res.data.aggregations));
+        })
+        .catch(err => dispatch(setSearchError(true)));
+  }
+}
+
 export const searchXref = (xref, setUrl) => {
   axios.get(restUrl + '/cross_reference/'+xref)
   .then(res => {
