@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import {Dropdown, InputGroup, Spinner} from 'react-bootstrap';
-import {searchReferences, setSearchQuery, setSearchResultsPage} from '../../actions/searchActions';
+import {searchReferences, setSearchQuery, setSearchResultsPage, setAuthorFilter} from '../../actions/searchActions';
 import {useDispatch, useSelector} from 'react-redux';
 
 
@@ -35,6 +35,7 @@ const SearchBar = () => {
                                   onKeyPress={(event) => {
                                       if (event.charCode === 13) {
                                         dispatch(setSearchResultsPage(0));
+                                        dispatch(setAuthorFilter(''));
                                         dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,0));
                                       }
                                   }}
@@ -42,6 +43,7 @@ const SearchBar = () => {
                     <Button inline="true" style={{width: "5em"}}
                             onClick={() => {
                               dispatch(setSearchResultsPage(0));
+                              dispatch(setAuthorFilter(''));
                               dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,0))
                             }}>
                         {searchLoading ? <Spinner animation="border" size="sm"/> : <span>Search</span>  }

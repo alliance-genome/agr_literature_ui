@@ -5,7 +5,7 @@ import {
   SEARCH_SET_SEARCH_FACETS_VALUES,
   SEARCH_SET_SEARCH_LOADING, SEARCH_SET_SEARCH_SEARCH,
   SEARCH_SET_SEARCH_RESULTS, SEARCH_SET_SEARCH_RESULTS_PAGE,
-  SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT,
+  SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT, SEARCH_SET_AUTHOR_FILTER
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -25,10 +25,12 @@ const initialState = {
   searchFacetsLimits: {
     'pubmed_types.keyword': INITIAL_FACETS_LIMIT,
     'category.keyword': INITIAL_FACETS_LIMIT,
-    'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT
+    'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT,
+    'authors.name.keyword': INITIAL_FACETS_LIMIT
   },
   searchFacetsShowMore: {},
-  searchQuery: ""
+  searchQuery: "",
+  authorFilter: "",
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -91,6 +93,12 @@ export default function(state = initialState, action) {
         searchQuery: action.payload.query
       }
 
+    case SEARCH_SET_AUTHOR_FILTER:
+      return {
+        ...state,
+        authorFilter: action.payload.authorFilter
+      }
+
     case SEARCH_SET_SEARCH_FACETS:
       return {
         ...state,
@@ -151,7 +159,7 @@ export default function(state = initialState, action) {
       return state;
   }
 }
-  
+
 
 // const crossRefCurieQueryFieldReducer = (state = 'ab', action) => {
 //   switch (action.type) {
