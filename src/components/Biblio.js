@@ -29,6 +29,8 @@ import { ateamLookupEntityList } from '../actions/biblioActions';
 import { downloadActionReferenceFileUrlDownload } from '../actions/biblioActions';
 
 import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import InputGroup from 'react-bootstrap/InputGroup';
@@ -253,16 +255,21 @@ const BiblioTagging = () => {
   // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} />);
+  rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
   return (<><Container>{rowOrderedElements}</Container>
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging
 
-export const RowDisplayReflinks = ({fieldName, referenceJsonLive}) => {
+export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEditor}) => {
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplay = 'Col-display';
+  if (displayOrEditor === 'editor') {
+    cssDisplay = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
   let access = 'No';
   for (const oktaGroup of oktaGroups) {
     if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
@@ -287,7 +294,12 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive}) => {
       let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
       if (is_ok) {
         referencefileValue = (<div><button className='button-to-link' onClick={ () => downloadActionReferenceFileUrlDownload(accessToken, filename, referencefileDict['referencefile_id']) } >{filename}</button></div>); }
-      rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />); }
+//       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
+        rowReferencefileElements.push(
+          <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+            <Col className={`Col-general ${cssDisplayLeft} `}>{fieldName}</Col>
+            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 10 }}>{referencefileValue}</Col>
+          </Row>); }
     return (<>{rowReferencefileElements}</>); }
   else { return null; } }
 
