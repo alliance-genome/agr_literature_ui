@@ -793,3 +793,28 @@ export const queryId = (id) => {
     }
   }
 };
+
+export const downloadActionReferenceFileUrlDownload = (accessToken, filename, referencefileId) => {
+    // console.log('in downloadActionReferenceFileUrlDownload action');
+    // console.log(accessToken);
+    // console.log(restUrl + '/reference/referencefile/file_url/' + referencefileId);
+
+    axios({
+        url: restUrl + '/reference/referencefile/file_url/' + referencefileId,
+        method: "GET",
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer ' + accessToken
+        },
+    }).then(response => {
+        const link = document.createElement("a");
+        link.href = response.data;
+        link.setAttribute(
+            "download",
+            filename
+        );
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+    }).catch(error => { alert(error); });
+};

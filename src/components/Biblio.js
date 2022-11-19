@@ -26,6 +26,8 @@ import { updateButtonBiblio } from '../actions/biblioActions';
 
 import { ateamLookupEntityList } from '../actions/biblioActions';
 
+import { downloadActionReferenceFileUrlDownload } from '../actions/biblioActions';
+
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
@@ -251,11 +253,43 @@ const BiblioTagging = () => {
   // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+  rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
   return (<><Container>{rowOrderedElements}</Container>
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging
+
+const RowDisplayReflinks = ({fieldName, referenceJsonLive}) => {
+  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  let access = 'No';
+  for (const oktaGroup of oktaGroups) {
+    if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
+      else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
+      else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
+      else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
+      else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
+      else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
+      else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
+      else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } }
+  if ('referencefiles' in referenceJsonLive && referenceJsonLive['referencefiles'] !== null) {
+    const rowReferencefileElements = []
+    for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries()) {
+      let is_ok = false;
+      let allowed_mods = [];
+      for (const rfm of referencefileDict['referencefile_mods']) {
+        if (rfm['mod_abbreviation'] !== null) { allowed_mods.push(rfm['mod_abbreviation']); }
+        if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === access) { is_ok = true; }
+      }
+      if (access === 'developer') { is_ok = true; }
+      let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
+      let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
+      if (is_ok) {
+        referencefileValue = (<div><button className='button-to-link' onClick={ () => downloadActionReferenceFileUrlDownload(accessToken, filename, referencefileDict['referencefile_id']) } >{filename}</button></div>); }
+      rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />); }
+    return (<>{rowReferencefileElements}</>); }
+  else { return null; } }
 
 const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
@@ -283,7 +317,7 @@ const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJ
       if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated' }
       if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
       const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
-      rowCrossReferenceElements.push(<RowDisplaySimple key={`${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
+      rowCrossReferenceElements.push(<RowDisplaySimple key={`xref_pmc ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
     return (<>{rowCrossReferenceElements}</>); }
   else { return null; } }
 
