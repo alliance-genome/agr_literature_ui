@@ -7,6 +7,7 @@ import { BiblioSubmitUpdateRouter } from './BiblioEditor';
 import { AuthorExpandToggler } from './BiblioEditor';
 import { splitCurie } from './BiblioEditor';
 import { aggregateCitation } from './BiblioEditor';
+import { RowDisplayReflinks } from '../Biblio';
 
 import { changeBiblioMeshExpandToggler } from '../../actions/biblioActions';
 
@@ -370,6 +371,8 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'date_published') {
       rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'referencefiles') {
+      rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container><BiblioSubmitUpdateRouter />{rowOrderedElements}</Container>);

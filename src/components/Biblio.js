@@ -260,7 +260,7 @@ const BiblioTagging = () => {
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging
 
-const RowDisplayReflinks = ({fieldName, referenceJsonLive}) => {
+export const RowDisplayReflinks = ({fieldName, referenceJsonLive}) => {
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   let access = 'No';

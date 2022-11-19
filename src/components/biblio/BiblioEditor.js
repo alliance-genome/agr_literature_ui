@@ -5,6 +5,7 @@ import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
 
 import { RowDisplayMeshTerms } from './BiblioDisplay';
+import { RowDisplayReflinks } from '../Biblio';
 
 import {fetchModReferenceTypes, setBiblioUpdating} from '../../actions/biblioActions';
 import { setUpdateCitationFlag } from '../../actions/biblioActions';
@@ -53,7 +54,7 @@ import {useEffect, useState} from "react";
 
 export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 export const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
-export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms' ];
+export const fieldsOrdered = [ 'referencefiles', 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
 export const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 export const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
@@ -575,7 +576,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
           <Col sm={4}>
-            <Form.Control as="select" id={`${fieldName} ${index} source`} fieldName={fieldName} value={valueLiveSource} placeholder="source" className={`form-control ${updatedFlagSource}`} disabled={disabled} fieldKey={`${fieldName} ${index} source`} onChange={(e) => {
+            <Form.Control as="select" id={`${fieldName} ${index} source`} value={valueLiveSource} placeholder="source" className={`form-control ${updatedFlagSource}`} disabled={disabled} key={`${fieldName} ${index} source`} onChange={(e) => {
               dispatch(changeFieldModReferenceReferenceJson(e));
               dispatch(changeFieldModReferenceReferenceJson({target: {id: `${fieldName} ${index} reference_type`, value: ''}}));
             }}>
@@ -973,6 +974,8 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'date_published') {
       rowOrderedElements.push(<RowEditorDatePublished key="RowEditorDatePublished" fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'referencefiles') {
+      rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName={fieldName} referenceJsonLive={referenceJsonLive} />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container>
