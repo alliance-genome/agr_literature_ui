@@ -5,7 +5,7 @@ import {
   SEARCH_SET_SEARCH_FACETS_VALUES,
   SEARCH_SET_SEARCH_LOADING, SEARCH_SET_SEARCH_SEARCH,
   SEARCH_SET_SEARCH_RESULTS, SEARCH_SET_SEARCH_RESULTS_PAGE,
-  SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT, SEARCH_SET_AUTHOR_FILTER
+  SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT, SEARCH_SET_AUTHOR_FILTER, SEARCH_SET_FACETS_LOADING
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -19,6 +19,7 @@ const initialState = {
   searchSizeResultsCount: 10,
   searchResultsPage: 0,
   searchLoading: false,
+  facetsLoading: false,
   searchSuccess: false,
   searchFacets: {},
   searchFacetsValues: {},
@@ -66,6 +67,12 @@ export default function(state = initialState, action) {
         searchResults: []
       }
 
+    case SEARCH_SET_FACETS_LOADING:
+      return {
+        ...state,
+        facetsLoading: true
+      }
+
     case SEARCH_SET_SEARCH_ERROR:
       return {
         ...state,
@@ -102,7 +109,8 @@ export default function(state = initialState, action) {
     case SEARCH_SET_SEARCH_FACETS:
       return {
         ...state,
-        searchFacets: action.payload.facets
+        searchFacets: action.payload.facets,
+        facetsLoading: false
       }
 
     case SEARCH_SET_SEARCH_FACETS_VALUES:
