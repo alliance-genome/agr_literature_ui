@@ -271,15 +271,16 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
     cssDisplay = 'Col-editor-disabled';
     cssDisplayLeft = ''; }
   let access = 'No';
-  for (const oktaGroup of oktaGroups) {
-    if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
-      else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
-      else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
-      else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
-      else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
-      else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
-      else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
-      else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } }
+  if (oktaGroups) {
+    for (const oktaGroup of oktaGroups) {
+      if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
+        else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
+        else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
+        else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
+        else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
+        else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
+        else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
+        else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } } }
   if ('referencefiles' in referenceJsonLive && referenceJsonLive['referencefiles'] !== null) {
     const rowReferencefileElements = []
     for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries()) {
