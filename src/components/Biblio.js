@@ -20,6 +20,7 @@ import { queryId, setReferenceCurie } from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 import { setUpdateCitationFlag } from '../actions/biblioActions';
+import { changeBiblioSupplementExpandToggler } from '../actions/biblioActions';
 
 import { changeBiblioActionToggler } from '../actions/biblioActions';
 import { updateButtonBiblio } from '../actions/biblioActions';
@@ -263,13 +264,16 @@ const BiblioTagging = () => {
 } // const BiblioTagging
 
 export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEditor}) => {
+  const dispatch = useDispatch();
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const supplementExpand = useSelector(state => state.biblio.supplementExpand);
   let cssDisplayLeft = 'Col-display Col-display-left';
   let cssDisplay = 'Col-display';
+  let cssDisplayRight = 'Col-display Col-display-right';
   if (displayOrEditor === 'editor') {
     cssDisplay = 'Col-editor-disabled';
-    cssDisplayLeft = ''; }
+    cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled'; }
   let access = 'No';
   if (oktaGroups) {
     for (const oktaGroup of oktaGroups) {
@@ -282,8 +286,14 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
         else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
         else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } } }
   if ('referencefiles' in referenceJsonLive && referenceJsonLive['referencefiles'] !== null) {
+    let tarballChecked = ''; let listChecked = '';
+    if (supplementExpand === 'tarball') { tarballChecked = 'checked'; }
+      else if (supplementExpand === 'list') { listChecked = 'checked'; }
     const rowReferencefileElements = []
-    for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries()) {
+
+    // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
+    const rowReferencefileSupplementElements = []
+    for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].entries()) {
       let is_ok = false;
       let allowed_mods = [];
       for (const rfm of referencefileDict['referencefile_mods']) {
@@ -296,11 +306,31 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
       if (is_ok) {
         referencefileValue = (<div><button className='button-to-link' onClick={ () => downloadActionReferenceFileUrlDownload(accessToken, filename, referencefileDict['referencefile_id']) } >{filename}</button></div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
-        rowReferencefileElements.push(
-          <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className={`Col-general ${cssDisplayLeft} `}>{fieldName}</Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 10 }}>{referencefileValue}</Col>
-          </Row>); }
+        const referencefileRow = (
+            <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+              <Col className={`Col-general ${cssDisplayLeft} `}>{fieldName}</Col>
+              <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>{referencefileValue}</Col>
+            </Row>);
+        if (referencefileDict['file_class'] === 'main') {
+          rowReferencefileElements.push( referencefileRow ); }
+        else {
+          rowReferencefileSupplementElements.push( referencefileRow ); } }
+
+    rowReferencefileElements.push(
+      <Row key="supplementExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
+        <Col className={`Col-general ${cssDisplayLeft} `}>referencefiles</Col>
+        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>supplements</Col>
+        <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 8}}>
+          <Form.Check inline type='radio' label='tarball' checked={tarballChecked}
+            id='biblio-supplement-expand-toggler-tarball'
+            onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
+          <Form.Check inline type='radio' label='list' checked={listChecked}
+            id='biblio-supplement-expand-toggler-list'
+            onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
+        </Col>
+      </Row>);
+      if (supplementExpand === 'list') {
+        rowReferencefileElements.push(...rowReferencefileSupplementElements); }
     return (<>{rowReferencefileElements}</>); }
   else { return null; } }
 

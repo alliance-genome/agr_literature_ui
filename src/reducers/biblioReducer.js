@@ -34,6 +34,7 @@ const initialState = {
   getReferenceCurieFlag: true,
   meshExpand: 'short',
   authorExpand: 'first',
+  supplementExpand: 'tarball',
   hasPmid: false,
   updateAlert: 0,
   updateFailure: 0,
@@ -787,6 +788,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         authorExpand: action.payload
+      }
+    case 'CHANGE_BIBLIO_SUPPLEMENT_EXPAND_TOGGLER':
+      // console.log(action.payload);
+      return {
+        ...state,
+        supplementExpand: action.payload
       }
     case 'CHANGE_BIBLIO_ACTION_TOGGLER':
       // console.log(action.payload);

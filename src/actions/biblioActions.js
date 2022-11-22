@@ -607,6 +607,17 @@ export const changeBiblioAuthorExpandToggler = (e) => {
   };
 };
 
+export const changeBiblioSupplementExpandToggler = (e) => {
+  console.log('action change biblio supplement expand toggler radio ' + e.target.id + ' to ' + e.target.value);
+  let biblioSupplementExpandTogglerSelected = 'tarball';
+  if (e.target.id === 'biblio-supplement-expand-toggler-list') { biblioSupplementExpandTogglerSelected = 'list'; }
+    else if (e.target.id === 'biblio-supplement-expand-toggler-detailed') { biblioSupplementExpandTogglerSelected = 'detailed'; }
+  return {
+    type: 'CHANGE_BIBLIO_SUPPLEMENT_EXPAND_TOGGLER',
+    payload: biblioSupplementExpandTogglerSelected
+  };
+};
+
 export const changeBiblioActionToggler = (e, biblioActionTogglerSelected) => {
   console.log('action change biblio action toggler radio ' + e.target.id + ' to ' + biblioActionTogglerSelected);
   return {
