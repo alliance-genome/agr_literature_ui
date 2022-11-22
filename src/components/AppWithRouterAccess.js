@@ -1,5 +1,7 @@
 // import logo from './logo.svg';
 
+import { useEffect } from 'react';
+
 //import { BrowserRouter, Route } from 'react-router-dom'
 //import history from "../history";
 // console.log('Router is needed in AppWithRouterAccess.js or pages like https://dev3001.alliancegenome.org/Biblio?action=editor&referenceCurie=AGR:AGR-Reference-0000829611 will not display')
@@ -45,6 +47,12 @@ console.log(oktaAuth)
 
 const AppWithRouterAccess = () => {
     const history = useHistory();
+
+    const devOrProd = process.env.REACT_APP_DEV_OR_PROD;
+    var stageOrProd = (devOrProd === 'dev') ? "Stage-Literature" : "Literature";
+    useEffect(() => {
+        document.title = stageOrProd + " AGRKB";
+    }, []);
 
     const customAuthHandler = () => {
         history.replace('/loginRequired');
