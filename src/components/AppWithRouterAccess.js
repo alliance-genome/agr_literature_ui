@@ -48,10 +48,15 @@ console.log(oktaAuth)
 const AppWithRouterAccess = () => {
     const history = useHistory();
 
-    const devOrProd = process.env.REACT_APP_DEV_OR_PROD;
-    var stageOrProd = (devOrProd === 'dev') ? "Stage-Literature" : "Literature";
+    const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
+    let documentTitle = 'Literature AGRKB';
+    if (devOrStageOrProd === 'prod') { }
+      else if (devOrStageOrProd === 'stage') { documentTitle = 'Stage-' + documentTitle; }
+      else { documentTitle = devOrStageOrProd + '-' + documentTitle; }
+    console.log('documentTitle');
+    console.log(documentTitle);
     useEffect(() => {
-        document.title = stageOrProd + " AGRKB";
+        document.title = documentTitle;
     }, []);
 
     const customAuthHandler = () => {

@@ -39,6 +39,11 @@
   color: white;
 }
 
+.Navbar-stage {
+  background-color: var(--nav-green);
+  color: white;
+}
+
 .Navbar-dev {
   background-color: var(--nav-green);
   color: white;

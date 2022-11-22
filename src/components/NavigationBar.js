@@ -12,9 +12,12 @@ import OktaHelp from './OktaHelp'
 import {oktaSignInConfig} from "../config";
 
 
-const devOrProd = process.env.REACT_APP_DEV_OR_PROD;
-var navClass = (devOrProd === 'dev') ? "Navbar-dev" : "Navbar";
-var homeLabel = (devOrProd === 'dev') ? "Stage" : "Prod";
+const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
+let navClass = "Navbar";
+let homeLabel = "Prod";
+if (devOrStageOrProd === 'prod') { }
+  else if (devOrStageOrProd === 'stage') { navClass = "Navbar-stage"; homeLabel = "Stage"; }
+  else { navClass = "Navbar-dev"; homeLabel = devOrStageOrProd; }
 
 const NavigationBar = () => {
   return (
