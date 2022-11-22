@@ -6,7 +6,6 @@
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import NavigationBar from './NavigationBar'
 import NotLoggedInBar from './NotLoggedInBar'
-import Home from './Home'
 import Search from './Search'
 import Biblio from './Biblio'
 import Sort from './Sort'
@@ -65,7 +64,7 @@ const AppWithRouterAccess = () => {
                 <NavigationBar />
                 <NotLoggedInBar />
                 <br />
-                <Route path='/' exact={true} component={Home}/>
+                <Route path='/' exact={true} component={Search}/>
                 <Route path='/search' component={Search} />
                 <Route path='/biblio' component={Biblio} />
                 <Route path='/sort' component={Sort} />
