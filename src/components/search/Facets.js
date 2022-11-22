@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
+import LoadingOverlay from 'react-loading-overlay';
 import {
     addFacetValue,
     fetchInitialFacets,
@@ -7,7 +8,8 @@ import {
     searchReferences,
     setSearchFacetsLimits,
     setSearchResultsPage,
-    setAuthorFilter
+    setAuthorFilter,
+    filterFacets
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse} from 'react-bootstrap';
@@ -49,6 +51,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                             <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
                                 <div>
                                     <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
+                                    {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
                                     {value.buckets.map(bucket =>
                                         <Container key={bucket.key}>
                                             <Row>
@@ -85,6 +88,38 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     )
 }
 
+const AuthorFilter = () => {
+  const searchQuery = useSelector(state => state.search.searchQuery);
+  const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+  const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
+  const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+  const authorFilter = useSelector(state => state.search.authorFilter);
+  const searchResultsPage  = useSelector(state => state.search.searchResultsPage);
+  const dispatch = useDispatch();
+
+  return (
+    <InputGroup size="sm" className="mb-3" style ={{width: "85%"}}>
+    <Form.Control inline="true" type="text" id="authorFilter" name="authorFilter" placeholder="Filter Authors (case sensitive)" value={authorFilter}
+                  onChange={(e) => dispatch(setAuthorFilter(e.target.value))}
+                  onKeyPress={(event) => {
+                      if (event.charCode === 13) {
+                          dispatch(filterFacets(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter))
+                      }
+                  }}
+    />
+    <Button inline="true" style={{width: "4em"}} size="sm"
+      onClick={() => {
+        dispatch(filterFacets(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter))
+      }}>Filter</Button>
+      <Button variant="danger" size = "sm"
+        onClick={() => {
+          dispatch(setAuthorFilter(''));
+          dispatch(filterFacets(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,searchResultsPage,"")
+      )}}>X</Button></InputGroup>
+  )
+}
+
+
 const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 
     const searchQuery = useSelector(state => state.search.searchQuery);
@@ -95,15 +130,6 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
     const searchResultsPage  = useSelector(state => state.search.searchResultsPage);
     const dispatch = useDispatch();
 
-    const searchOrSetInitialFacets = (newSearchFacetsLimits) => {
-        if (searchQuery !== null || Object.keys(searchFacetsValues).length !== 0) {
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,0,authorFilter))
-        } else {
-            dispatch(fetchInitialFacets(newSearchFacetsLimits));
-        }
-    }
-
     return (
         <div style={{paddingLeft: "1em"}}>
             {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ?
@@ -111,7 +137,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] * 2;
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
-                    searchOrSetInitialFacets(newSearchFacetsLimits);
+                    dispatch(filterFacets(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter));
                 }}>+Show More</button> : null
             }
             {searchFacetsLimits[facetLabel] > INITIAL_FACETS_LIMIT ?
@@ -119,7 +145,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = INITIAL_FACETS_LIMIT;
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
-                    searchOrSetInitialFacets(newSearchFacetsLimits);
+                    dispatch(filterFacets(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter));
                 }}>-Show Less</button></span> : null
             }
             {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -127,16 +153,8 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
-                    searchOrSetInitialFacets(newSearchFacetsLimits);
+                    dispatch(filterFacets(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter));
                 }}>+Show All</button></span> : null }
-            {facetLabel === 'authors.name.keyword' ?
-              <InputGroup size="sm" className="mb-2" style ={{width: "85%"}}>
-              <Form.Control inline="true" type="text" id="authorFilter" name="authorFilter" placeholder="Filter Authors (case sensitive)" value={authorFilter}
-                onChange={(e) => dispatch(setAuthorFilter(e.target.value))}/>
-              <Button inline="true" style={{width: "4em"}} size="sm"
-                onClick={() => {
-                  dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter))
-                }}>Filter</Button></InputGroup> : null}
             </div>
     )
 }
@@ -150,6 +168,7 @@ const Facets = () => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchQuery = useSelector(state => state.search.searchQuery);
+    const facetsLoading = useSelector(state => state.search.facetsLoading);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const dispatch = useDispatch();
 
@@ -169,7 +188,8 @@ const Facets = () => {
         } else {
             if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0) {
                 dispatch(setSearchResultsPage(0));
-                dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount, 0));
+                dispatch(setAuthorFilter(""));
+                dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount, 0, ""));
             }
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -187,7 +207,9 @@ const Facets = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-        <div>
+
+
+        <LoadingOverlay active={facetsLoading} spinner text='Loading...'>
             {
                 Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
                     <div style={{textAlign: "left"}}>
@@ -202,7 +224,7 @@ const Facets = () => {
                     </div>
                 )
             }
-        </div>
+        </LoadingOverlay>
     )
 }
 
