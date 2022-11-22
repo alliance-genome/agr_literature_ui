@@ -53,8 +53,6 @@ const AppWithRouterAccess = () => {
     if (devOrStageOrProd === 'prod') { }
       else if (devOrStageOrProd === 'stage') { documentTitle = 'Stage-' + documentTitle; }
       else { documentTitle = devOrStageOrProd + '-' + documentTitle; }
-    console.log('documentTitle');
-    console.log(documentTitle);
     useEffect(() => {
         document.title = documentTitle;
     }, []);
