@@ -13,6 +13,7 @@
   --medium-blue: #0069d9;
   --nav-blue: #2598c5;
   --nav-green: #16a085;
+  --nav-cyan: #02bdde;
   --font-black: #282c34;
   --updated-purple: #e6deff;
   --updated-purple-hover: #d5d1ff;
@@ -45,7 +46,7 @@
 }
 
 .Navbar-dev {
-  background-color: var(--nav-green);
+  background-color: var(--nav-cyan);
   color: white;
 }
 
