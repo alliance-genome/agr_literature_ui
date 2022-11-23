@@ -308,29 +308,31 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
         const referencefileRow = (
             <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className={`Col-general ${cssDisplayLeft} `}>{fieldName}</Col>
-              <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}>{referencefileValue}</Col>
+              <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}>{fieldName}</Col>
+              <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>{referencefileDict['file_class']}</Col>
+              <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 8 }}>{referencefileValue}</Col>
             </Row>);
         if (referencefileDict['file_class'] === 'main') {
           rowReferencefileElements.push( referencefileRow ); }
         else {
           rowReferencefileSupplementElements.push( referencefileRow ); } }
 
-    rowReferencefileElements.push(
-      <Row key="supplementExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
-        <Col className={`Col-general ${cssDisplayLeft} `}>referencefiles</Col>
-        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>supplements</Col>
-        <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 8}}>
-          <Form.Check inline type='radio' label='tarball' checked={tarballChecked}
-            id='biblio-supplement-expand-toggler-tarball'
-            onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
-          <Form.Check inline type='radio' label='list' checked={listChecked}
-            id='biblio-supplement-expand-toggler-list'
-            onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
-        </Col>
-      </Row>);
-      if (supplementExpand === 'list') {
-        rowReferencefileElements.push(...rowReferencefileSupplementElements); }
+    if (rowReferencefileSupplementElements.length > 0) {
+      rowReferencefileElements.push(
+        <Row key="supplementExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
+          <Col className={`Col-general ${cssDisplayLeft} `}>referencefiles</Col>
+          <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>additional files</Col>
+          <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 8}}>
+            <Form.Check inline type='radio' label='tarball' checked={tarballChecked}
+              id='biblio-supplement-expand-toggler-tarball'
+              onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
+            <Form.Check inline type='radio' label={`list (${rowReferencefileSupplementElements.length})`} checked={listChecked}
+              id='biblio-supplement-expand-toggler-list'
+              onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
+          </Col>
+        </Row>);
+        if (supplementExpand === 'list') {
+          rowReferencefileElements.push(...rowReferencefileSupplementElements); } }
     return (<>{rowReferencefileElements}</>); }
   else { return null; } }
 
