@@ -22,7 +22,7 @@ import Download from './Download'
 import About from './About'
 // import Login from './Login'
 import LoginRequired from './LoginRequired'
-import SwaggerComp from './SwaggerUI'
+//import SwaggerComp from './SwaggerUI'
 //import Logout from "./Logout";
 // import ListGroup from 'react-bootstrap/ListGroup';
 // import Navbar from 'react-bootstrap/Navbar';
@@ -55,7 +55,7 @@ const AppWithRouterAccess = () => {
       else { documentTitle = devOrStageOrProd + '-' + documentTitle; }
     useEffect(() => {
         document.title = documentTitle;
-    }, []);
+    }, [documentTitle]);
 
     const customAuthHandler = () => {
         history.replace('/loginRequired');
@@ -88,7 +88,7 @@ const AppWithRouterAccess = () => {
                 <Route path='/merge' component={Merge} />
                 <Route path='/download' component={Download} />
                 <Route path='/about' component={About} />
-                <Route path = '/swaggerUI' component={SwaggerComp} />
+                {/*<Route path = '/swaggerUI' component={SwaggerComp} />*/}
                 <Route path = '/loginRequired' component={LoginRequired} />
             </div>
         </Security>
