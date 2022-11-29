@@ -300,9 +300,10 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
         if (rfm['mod_abbreviation'] !== null) { allowed_mods.push(rfm['mod_abbreviation']); }
         if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === access) { is_ok = true; }
       }
-      if (access === 'developer') { is_ok = true; }
       let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
       let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
+      if (access === 'developer') { is_ok = true; }
+        else if (access === 'No') { is_ok = false; referencefileValue = (<div>{filename}</div>); }
       if (is_ok) {
         referencefileValue = (<div><button className='button-to-link' onClick={ () => downloadActionReferenceFileUrlDownload(accessToken, filename, referencefileDict['referencefile_id']) } >{filename}</button></div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
