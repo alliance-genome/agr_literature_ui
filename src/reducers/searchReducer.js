@@ -2,10 +2,11 @@ import {
   SEARCH_ADD_FACET_VALUE, SEARCH_REMOVE_FACET_VALUE,
   SEARCH_SET_SEARCH_ERROR,
   SEARCH_SET_SEARCH_FACETS, SEARCH_SET_SEARCH_FACETS_LIMITS,
-  SEARCH_SET_SEARCH_FACETS_VALUES,
+  SEARCH_SET_SEARCH_FACETS_VALUES, SEARCH_SET_DATE_PUBMED_ADDED,
   SEARCH_SET_SEARCH_LOADING, SEARCH_SET_SEARCH_SEARCH,
   SEARCH_SET_SEARCH_RESULTS, SEARCH_SET_SEARCH_RESULTS_PAGE,
-  SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT, SEARCH_SET_AUTHOR_FILTER, SEARCH_SET_FACETS_LOADING
+  SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT, SEARCH_SET_AUTHOR_FILTER,
+  SEARCH_SET_FACETS_LOADING, SEARCH_SET_DATE_PUBMED_MODIFIED
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -32,6 +33,8 @@ const initialState = {
   searchFacetsShowMore: {},
   searchQuery: "",
   authorFilter: "",
+  datePubmedAdded: "",
+  datePubmedModified: "",
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -104,6 +107,18 @@ export default function(state = initialState, action) {
       return {
         ...state,
         authorFilter: action.payload.authorFilter
+      }
+
+    case SEARCH_SET_DATE_PUBMED_ADDED:
+      return {
+        ...state,
+        datePubmedAdded: action.payload.datePubmedAdded
+      }
+
+    case SEARCH_SET_DATE_PUBMED_MODIFIED:
+      return {
+        ...state,
+        datePubmedModified: action.payload.datePubmedModified
       }
 
     case SEARCH_SET_SEARCH_FACETS:
