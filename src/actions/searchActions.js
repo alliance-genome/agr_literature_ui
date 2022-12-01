@@ -14,6 +14,8 @@ export const SEARCH_ADD_FACET_VALUE = 'SEARCH_ADD_FACET_VALUE';
 export const SEARCH_REMOVE_FACET_VALUE = 'SEARCH_REMOVE_FACET_VALUE';
 export const SEARCH_SET_AUTHOR_FILTER = 'SEARCH_SET_AUTHOR_FILTER';
 export const SEARCH_SET_FACETS_LOADING = 'SEARCH_SET_FACETS_LOADING';
+export const SEARCH_SET_DATE_PUBMED_ADDED = 'SEARCH_SET_DATE_PUBMED_ADDED';
+export const SEARCH_SET_DATE_PUBMED_MODIFIED = 'SEARCH_SET_DATE_PUBMED_MODIFIED';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -45,20 +47,29 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter) => {
+export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter,datePubmedAdded,datePubmedModified) => {
   return dispatch => {
     dispatch(setSearchLoading());
     dispatch(setSearchQuery(query));
     dispatch(setSearchFacetsValues(facetsValues));
     dispatch(setSearchFacetsLimits(facetsLimits));
-    axios.post(restUrl + '/search/references', {
+
+    let params = {
       query: query,
       size_result_count: sizeResultsCount,
       page: searchResultsPage,
       facets_values: facetsValues,
       facets_limits: facetsLimits,
       author_filter: authorFilter
-    })
+    }
+    if(datePubmedModified){
+      params.date_pubmed_modified = datePubmedModified;
+    }
+    if(datePubmedAdded){
+      params.date_pubmed_arrive = datePubmedAdded;
+    }
+    axios.post(restUrl + '/search/references', params )
+
         .then(res => {
           dispatch(setSearchResults(res.data.hits, res.data.return_count));
           dispatch(setSearchFacets(res.data.aggregations));
@@ -67,17 +78,24 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
   }
 }
 
-export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter) => {
+export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified) => {
   return dispatch => {
     dispatch(setFacetsLoading());
-    axios.post(restUrl + '/search/references', {
+    let params = {
       query: query,
       size_result_count: sizeResultsCount,
       page: searchResultsPage,
       facets_values: facetsValues,
       facets_limits: facetsLimits,
       author_filter: authorFilter
-    })
+    }
+    if(datePubmedModified){
+      params.date_pubmed_modified = datePubmedModified;
+    }
+    if(datePubmedAdded){
+      params.date_pubmed_arrive = datePubmedAdded;
+    }
+    axios.post(restUrl + '/search/references', params)
         .then(res => {
           dispatch(setSearchFacets(res.data.aggregations));
         })
@@ -182,5 +200,19 @@ export const setAuthorFilter = (authorFilter) => ({
   type: SEARCH_SET_AUTHOR_FILTER,
   payload: {
     authorFilter : authorFilter
+  }
+});
+
+export const setDatePubmedAdded = (datePubmed) => ({
+  type: SEARCH_SET_DATE_PUBMED_ADDED,
+  payload: {
+      datePubmedAdded : datePubmed
+    }
+});
+
+export const setDatePubmedModified = (datePubmed) => ({
+  type: SEARCH_SET_DATE_PUBMED_MODIFIED,
+  payload: {
+    datePubmedModified : datePubmed
   }
 });
