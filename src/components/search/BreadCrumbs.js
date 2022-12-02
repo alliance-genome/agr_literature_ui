@@ -28,7 +28,7 @@ const BreadCrumbs = () => {
                                 </span>)}
                         </span>
                     )}
-                    <Button onClick={() => dispatch(resetFacetValues())}>Clear All</Button>&nbsp;&nbsp;
+                    { Object.keys(searchFacetsValues).length > 0 && <Button onClick={() => dispatch(resetFacetValues())}>Clear All</Button> }
                 </Col>
             </Row>
         </Container>
