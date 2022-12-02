@@ -1,6 +1,6 @@
 import {
   SEARCH_ADD_FACET_VALUE, SEARCH_REMOVE_FACET_VALUE,
-  SEARCH_SET_SEARCH_ERROR,
+  SEARCH_RESET_FACET_VALUES, SEARCH_SET_SEARCH_ERROR,
   SEARCH_SET_SEARCH_FACETS, SEARCH_SET_SEARCH_FACETS_LIMITS,
   SEARCH_SET_SEARCH_FACETS_VALUES, SEARCH_SET_DATE_PUBMED_ADDED,
   SEARCH_SET_SEARCH_LOADING, SEARCH_SET_SEARCH_SEARCH,
@@ -143,6 +143,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         searchFacetsValues: addSearchFacetsValues
+      }
+
+    case SEARCH_RESET_FACET_VALUES:
+      return {
+        ...state,
+        searchFacetsValues: {}
       }
 
     case SEARCH_REMOVE_FACET_VALUE:
