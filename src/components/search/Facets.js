@@ -38,6 +38,8 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
 
 }
 
+LoadingOverlay.propTypes = undefined;
+
 const DateFacet = ({facetsToInclude}) => {
 
   const searchState = useSelector(state => state.search);
