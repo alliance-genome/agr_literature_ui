@@ -261,8 +261,8 @@ const Facets = () => {
         <LoadingOverlay active={facetsLoading} spinner text='Loading...'>
             {
                 Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
-                    <div style={{textAlign: "left"}}>
-                        <Button variant="light" size="lg" eventKey="0" onClick={() => toggleFacetGroup(facetCategory)}>
+                    <div key={facetCategory} style={{textAlign: "left"}}>
+                        <Button variant="light" size="lg" eventkey="0" onClick={() => toggleFacetGroup(facetCategory)}>
                             {openFacets.has(facetCategory) ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} {facetCategory}
                         </Button>
                         <Collapse in={openFacets.has(facetCategory)}>
