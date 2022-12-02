@@ -39,7 +39,7 @@ const SearchResults = () => {
                               <div className="searchRow-xref">
                                 <ul><li><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></li>
                                 {reference.cross_references ? reference.cross_references.map((xref, i) => (
-                                  <XrefElement xref={xref}/>
+                                  <XrefElement key={`${xref} ${i}`} xref={xref}/>
                                 )) : null}
                                 </ul>
                               </div>
