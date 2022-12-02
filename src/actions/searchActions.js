@@ -10,6 +10,7 @@ export const SEARCH_SET_SEARCH_SEARCH = 'SEARCH_SET_SEARCH_SEARCH';
 export const SEARCH_SET_SEARCH_FACETS_VALUES = 'SEARCH_SET_SEARCH_FACETS_VALUES';
 export const SEARCH_SET_SEARCH_FACETS_LIMITS = 'SEARCH_SET_SEARCH_FACETS_LIMITS';
 export const SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT = 'SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT';
+export const SEARCH_RESET_FACET_VALUES = 'SEARCH_RESET_FACET_VALUES';
 export const SEARCH_ADD_FACET_VALUE = 'SEARCH_ADD_FACET_VALUE';
 export const SEARCH_REMOVE_FACET_VALUE = 'SEARCH_REMOVE_FACET_VALUE';
 export const SEARCH_SET_AUTHOR_FILTER = 'SEARCH_SET_AUTHOR_FILTER';
@@ -194,6 +195,10 @@ export const removeFacetValue = (facet, value) => ({
     facet: facet,
     value: value
   }
+});
+
+export const resetFacetValues = () => ({
+  type: SEARCH_RESET_FACET_VALUES
 });
 
 export const setAuthorFilter = (authorFilter) => ({

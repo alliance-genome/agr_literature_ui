@@ -5,7 +5,7 @@ import Col from "react-bootstrap/Col";
 import {useDispatch, useSelector} from "react-redux";
 import Button from "react-bootstrap/Button";
 import {RiCloseFill} from "react-icons/ri";
-import {removeFacetValue} from "../../actions/searchActions";
+import {removeFacetValue, resetFacetValues} from "../../actions/searchActions";
 import {RENAME_FACETS} from "./Facets";
 
 
@@ -28,6 +28,7 @@ const BreadCrumbs = () => {
                                 </span>)}
                         </span>
                     )}
+                    { Object.keys(searchFacetsValues).length > 0 && <Button onClick={() => dispatch(resetFacetValues())}>Clear All</Button> }
                 </Col>
             </Row>
         </Container>
