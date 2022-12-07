@@ -796,7 +796,8 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         rowAuthorsElements.push(
           <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general ">first author</Col>
-            <Col className="Col-general Col-editor-disabled" lg={{ span: 10 }}><div>{orderedAuthors[0]['name']}</div></Col>
+            <Col className="Col-general Col-editor-disabled" lg={{ span: 10 }}>
+              <div><span dangerouslySetInnerHTML={{__html: orderedAuthors[0]['name']}} /></div></Col>
           </Row>); } }
 
     else if (authorExpand === 'list') {
@@ -804,7 +805,8 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
       rowAuthorsElements.push(
         <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
           <Col className="Col-general ">all authors</Col>
-          <Col className="Col-general Col-editor-disabled" lg={{ span: 10 }}><div>{authorNames}</div></Col>
+          <Col className="Col-general Col-editor-disabled" lg={{ span: 10 }}>
+            <div><span dangerouslySetInnerHTML={{__html: authorNames}} /></div></Col>
         </Row>); }
 
     else if (authorExpand === 'detailed') {
