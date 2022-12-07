@@ -336,31 +336,44 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
               id='biblio-supplement-expand-toggler-list'
               onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
           </Col>
-          {tarballChecked ? <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 4 }}>{hasAccessToTarball ? <div><button className='button-to-link' onClick={ () =>
-          {
-              setIsLoadingTarball(true);
-              axios({
-                url: process.env.REACT_APP_RESTAPI + '/reference/referencefile/additional_files_tarball/' + referenceJsonLive["reference_id"],
-                method: "GET",
-                headers: {
-                  'content-type': 'application/json',
-                  'authorization': 'Bearer ' + accessToken
-                },
-                responseType: "blob" // important
-              }).then(response => {
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement("a");
-                link.href = url;
-                link.setAttribute(
-                    "download",
-                    referenceJsonLive.curie.replace(":", "_") + "_additional_files.tar.gz"
-                );
-                document.body.appendChild(link);
-                link.click();
-              }).finally(() => {
-                setIsLoadingTarball(false);
-              })
-          }}>Download tarball</button>&nbsp;{isLoadingtarball ? <Spinner animation="border" size="sm"/>: null}</div>: <span>No Access to tarball</span>}</Col> : null}
+          {tarballChecked ?
+              <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 4 }}>
+                {hasAccessToTarball ?
+                    <div><button className='button-to-link' onClick={ () => {
+                      setIsLoadingTarball(true);
+                      axios({
+                        url: process.env.REACT_APP_RESTAPI + '/reference/referencefile/additional_files_tarball/' + referenceJsonLive["reference_id"],
+                        method: "GET",
+                        headers: {
+                          'content-type': 'application/json',
+                          'authorization': 'Bearer ' + accessToken
+                        },
+                        responseType: "blob" // important
+                      }).then(response => {
+                        const url = window.URL.createObjectURL(new Blob([response.data]));
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.setAttribute(
+                            "download",
+                            referenceJsonLive.curie.replace(":", "_") + "_additional_files.tar.gz"
+                        );
+                        document.body.appendChild(link);
+                        link.click();
+                      }).finally(() => {
+                        setIsLoadingTarball(false);
+                      })
+                    }}>
+                      Download tarball
+                    </button>&nbsp;
+                      {isLoadingtarball ? <Spinner animation="border" size="sm"/> : null }
+                    </div>
+                    :
+                    <span>No Access to tarball</span>
+                }
+              </Col>
+              :
+              null
+          }
         </Row>);
         if (supplementExpand === 'list') {
           rowReferencefileElements.push(...rowReferencefileSupplementElements); } }
