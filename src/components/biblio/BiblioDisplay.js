@@ -295,14 +295,16 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
         rowAuthorElements.push(
           <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general Col-display Col-display-left">first author</Col>
-            <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{orderedAuthorsLive[0]['name']}</div></Col>
+            <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
+              <div><span dangerouslySetInnerHTML={{__html: orderedAuthorsLive[0]['name']}} /></div></Col>
           </Row>); } }
     else if (authorExpand === 'list') {
       let authorNames = orderedAuthorsLive.map((dict, index) => ( dict['name'] )).join('; ');
       rowAuthorElements.push(
         <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
           <Col className="Col-general Col-display Col-display-left">all authors</Col>
-          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}><div>{authorNames}</div></Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
+            <div><span dangerouslySetInnerHTML={{__html: authorNames}} /></div></Col>
         </Row>); }
     else if (authorExpand === 'detailed') {
       for (const [index, value]  of orderedAuthorsLive.entries()) {
@@ -320,7 +322,7 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
         if ('affiliations' in value && value['affiliations'] !== null) {
           affiliationsJoined = (value['affiliations'].length > 0) ? value['affiliations'].join('') : '';
           for (const index_aff in value['affiliations']) {
-            affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- {value['affiliations'][index_aff]}</div>); } }
+            affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- <span dangerouslySetInnerHTML={{__html: value['affiliations'][index_aff]}} /></div>); } }
         let orcid_link = (orcid_url === '') ? (<span>{orcid_curie}</span>) : (<a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>)
 
         if (orderedAuthorsDb[index] !== undefined) {
@@ -333,7 +335,10 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
         rowAuthorElements.push(
           <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
             <Col className="Col-general Col-display Col-display-left">author {value['order']}</Col>
-            <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} {orcid_link}{affiliations}</div></Col>
+            <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}>
+              <div key={`author ${index}`}>
+                <span dangerouslySetInnerHTML={{__html: value['name']}} />
+                  {orcid_link}{affiliations}</div></Col>
           </Row>); } }
     return (<>{rowAuthorElements}</>); }
   else { return null; }
