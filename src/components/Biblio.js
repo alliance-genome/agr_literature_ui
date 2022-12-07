@@ -37,6 +37,8 @@ import Button from 'react-bootstrap/Button'
 import InputGroup from 'react-bootstrap/InputGroup';
 
 import loading_gif from '../images/loading_cat.gif';
+import axios from "axios";
+import Spinner from "react-bootstrap/Spinner";
 
 // https://stage-literature.alliancegenome.org/Biblio/?action=topic&referenceCurie=AGRKB:101000000163587
 
@@ -268,6 +270,7 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const supplementExpand = useSelector(state => state.biblio.supplementExpand);
+  const [isLoadingtarball, setIsLoadingTarball] = useState(false);
   let cssDisplayLeft = 'Col-display Col-display-left';
   let cssDisplay = 'Col-display';
   let cssDisplayRight = 'Col-display Col-display-right';
@@ -293,6 +296,7 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
 
     // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
     const rowReferencefileSupplementElements = []
+    let hasAccessToTarball = false;
     for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].entries()) {
       let is_ok = false;
       let allowed_mods = [];
@@ -305,6 +309,7 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
       if (access === 'developer') { is_ok = true; }
         else if (access === 'No') { is_ok = false; referencefileValue = (<div>{filename}</div>); }
       if (is_ok) {
+        hasAccessToTarball = true;
         referencefileValue = (<div><button className='button-to-link' onClick={ () => downloadActionReferenceFileUrlDownload(accessToken, filename, referencefileDict['referencefile_id']) } >{filename}</button></div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
         const referencefileRow = (
@@ -323,7 +328,7 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
         <Row key="supplementExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
           <Col className={`Col-general ${cssDisplayLeft} `}>referencefiles</Col>
           <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>additional files</Col>
-          <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 8}}>
+          <Col className={`Col-general ${tarballChecked ? cssDisplay : cssDisplayRight} `} lg={{ span: tarballChecked ? 4 : 8}}>
             <Form.Check inline type='radio' label='tarball' checked={tarballChecked}
               id='biblio-supplement-expand-toggler-tarball'
               onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
@@ -331,6 +336,31 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
               id='biblio-supplement-expand-toggler-list'
               onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
           </Col>
+          {tarballChecked ? <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 4 }}>{hasAccessToTarball ? <div><button className='button-to-link' onClick={ () =>
+          {
+              setIsLoadingTarball(true);
+              axios({
+                url: process.env.REACT_APP_RESTAPI + '/reference/referencefile/additional_files_tarball/' + referenceJsonLive["reference_id"],
+                method: "GET",
+                headers: {
+                  'content-type': 'application/json',
+                  'authorization': 'Bearer ' + accessToken
+                },
+                responseType: "blob" // important
+              }).then(response => {
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement("a");
+                link.href = url;
+                link.setAttribute(
+                    "download",
+                    referenceJsonLive.curie.replace(":", "_") + "_additional_files.tar.gz"
+                );
+                document.body.appendChild(link);
+                link.click();
+              }).finally(() => {
+                setIsLoadingTarball(false);
+              })
+          }}>Download tarball</button>&nbsp;{isLoadingtarball ? <Spinner animation="border" size="sm"/>: null}</div>: <span>No Access to tarball</span>}</Col> : null}
         </Row>);
         if (supplementExpand === 'list') {
           rowReferencefileElements.push(...rowReferencefileSupplementElements); } }
