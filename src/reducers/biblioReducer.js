@@ -38,7 +38,8 @@ const initialState = {
   hasPmid: false,
   updateAlert: 0,
   updateFailure: 0,
-  updateMessages: []
+  updateMessages: [],
+  loadingFileNames: new Set()
 };
 
 const deriveEntitiesToMap = (referenceJson) => {
@@ -930,6 +931,22 @@ export default function(state = initialState, action) {
           isLoading: false
           // loadingQuery: false
         }
+      }
+
+    case 'ADD_LOADING_FILE_NAME':
+      let newLoadingFileNames = _.cloneDeep(state.loadingFileNames);
+      newLoadingFileNames.add(action.payload);
+      return {
+        ...state,
+        loadingFileNames: newLoadingFileNames
+      }
+
+    case 'REMOVE_LOADING_FILE_NAME':
+      let newLoadingFileNames2 = _.cloneDeep(state.loadingFileNames);
+      newLoadingFileNames2.delete(action.payload);
+      return {
+        ...state,
+        loadingFileNames: newLoadingFileNames2
       }
 
 //     case 'QUERY_BUTTON':
