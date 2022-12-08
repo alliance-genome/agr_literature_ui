@@ -9,6 +9,19 @@ import {Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 
+const MatchingTextBox = (highlight) => {
+  console.log(Object.keys(highlight.matches));
+  return (
+    <div className="searchRow-other"> Matching Text:
+      <table><tbody>
+        {Object.keys(highlight.matches).map((match,index) => (
+          <tr><td class="highlight-label">{match}</td><td class="highlight-value" dangerouslySetInnerHTML={{__html: highlight.matches[match]}} /></tr>
+        ))}
+      </tbody></table>
+    </div>
+  )
+}
+
 const XrefElement = (xref) => {
     const [url, setUrl] = useState(null);
     useEffect(() => {
@@ -24,7 +37,6 @@ const SearchResults = () => {
     const searchResults = useSelector(state => state.search.searchResults);
     const searchSuccess = useSelector(state => state.search.searchSuccess);
     const searchError = useSelector(state => state.search.searchError);
-
     const dispatch = useDispatch();
 
     return (
@@ -46,6 +58,7 @@ const SearchResults = () => {
                               <div className="searchRow-other">Authors : {reference.authors ? reference.authors.map((author, i) => ((i ? ', ' : '') + author.name)) : ''}</div>
                               <div className="searchRow-other">Publication Date: {reference.date_published}</div>
                               <div className="searchRow-other">Abstract: <p>{reference.abstract == null || reference.abstract.length<500 ? reference.abstract : reference.abstract.substring(0,500)+'...'}</p></div>
+                              {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}
                             </Col>
                         </Row>))
                     }
