@@ -10,7 +10,6 @@ import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 
 const MatchingTextBox = (highlight) => {
-  console.log(Object.keys(highlight.matches));
   return (
     <div className="searchRow-other"> Matching Text:
       <table><tbody>
