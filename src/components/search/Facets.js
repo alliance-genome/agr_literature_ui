@@ -32,9 +32,9 @@ export const RENAME_FACETS = {
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
+    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed"],
     "Alliance Metadata": ["mods in corpus", "mods needs review"],
-    "Bibliographic Data": ["pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed"]
+    "Bibliographic Data": ["pubmed types", "category", "pubmed publication status", "authors.name"]
 
 }
 
