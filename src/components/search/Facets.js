@@ -254,6 +254,9 @@ const Facets = () => {
                 }
             })
         );
+        if (datePubmedAdded || datePubmedModified) {
+            newOpenFacets.add('Date Range');
+        }
         setOpenFacets(newOpenFacets);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
