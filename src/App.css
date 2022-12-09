@@ -282,6 +282,11 @@
 }
 .searchRow-other{
   line-height: 150%;
+  padding-block: 2px;
+}
+
+.searchRow-other p{
+  font-size: 0.8em;
 }
 .searchRow-xref ul{
   list-style-type: none;
@@ -309,6 +314,27 @@
 .Row-general {
   background-color: white;
   color: var(--font-black);
+}
+
+em {
+  background-color: yellow;
+  font-style: normal;
+}
+
+.highlight-label{
+  font-weight: 600;
+  border-right: 1px;
+  border-right-style: solid;
+  padding-right: 0.5em;
+  padding-top: 0.15em;
+  font-size: 0.8em;
+  text-transform: capitalize;
+}
+
+.highlight-value{
+  padding-top:0.15em;
+  padding-left:0.5em;
+  font-size:0.8em;
 }
 /*
   background-color: #bbeffd;
