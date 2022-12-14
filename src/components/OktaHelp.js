@@ -30,6 +30,8 @@ const OktaHelp = () => {
             <Row><Col>Chris Grove</Col><Col>WB</Col><Col>A-Team</Col></Row>
             <Row><Col>Todd Harris</Col><Col>WB</Col><Col></Col></Row>
             <Row><Col>Adam Wright</Col><Col>WB</Col><Col>Specialist</Col></Row>
+            <Row><Col>Ryan Martin</Col><Col>ZFIN</Col><Col></Col></Row>
+            <Row><Col>Ryan Taylor</Col><Col>ZFIN</Col><Col></Col></Row>
           </Container>
         </Modal.Body>
       </Modal>
