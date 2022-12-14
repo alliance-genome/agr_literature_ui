@@ -777,6 +777,20 @@ export const setGetReferenceCurieFlag = (true_false) => {
   };
 };
 
+export const addLoadingFileName = (fileName) => {
+  return {
+    type: 'ADD_LOADING_FILE_NAME',
+    payload: fileName
+  }
+}
+
+export const removeLoadingFileName = (fileName) => {
+  return {
+    type: 'REMOVE_LOADING_FILE_NAME',
+    payload: fileName
+  }
+}
+
 export const queryId = (id) => {
   return dispatch => {
     if (id.startsWith('AGR:') || id.startsWith('AGRKB:')) {
@@ -805,27 +819,35 @@ export const queryId = (id) => {
   }
 };
 
-export const downloadActionReferenceFileUrlDownload = (accessToken, filename, referencefileId) => {
-    // console.log('in downloadActionReferenceFileUrlDownload action');
-    // console.log(accessToken);
-    // console.log(restUrl + '/reference/referencefile/file_url/' + referencefileId);
-
+export const downloadReferencefile = (referencefileId, filename, accessToken, referenceId) => {
+  return dispatch => {
+    dispatch(addLoadingFileName(filename));
+    let url = process.env.REACT_APP_RESTAPI;
+    if (referenceId !== undefined) {
+      url += '/reference/referencefile/additional_files_tarball/' + referenceId
+    } else {
+      url += '/reference/referencefile/download_file/' + referencefileId
+    }
     axios({
-        url: restUrl + '/reference/referencefile/file_url/' + referencefileId,
-        method: "GET",
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer ' + accessToken
-        },
+      url: url,
+      method: "GET",
+      headers: {
+        'content-type': 'application/octet-stream',
+        'authorization': 'Bearer ' + accessToken
+      },
+      responseType: "blob" // important
     }).then(response => {
-        const link = document.createElement("a");
-        link.href = response.data;
-        link.setAttribute(
-            "download",
-            filename
-        );
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode.removeChild(link);
-    }).catch(error => { alert(error); });
-};
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+          "download",
+          filename
+      );
+      document.body.appendChild(link);
+      link.click();
+    }).finally(() => {
+      dispatch(removeLoadingFileName(filename));
+    })
+  }
+}

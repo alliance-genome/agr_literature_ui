@@ -16,7 +16,11 @@ import { RowDisplaySimple } from './biblio/BiblioDisplay';
 
 import { splitCurie } from './biblio/BiblioEditor';
 
-import { queryId, setReferenceCurie } from '../actions/biblioActions';
+import {
+  downloadReferencefile,
+  queryId,
+  setReferenceCurie
+} from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 import { setUpdateCitationFlag } from '../actions/biblioActions';
@@ -27,8 +31,6 @@ import { updateButtonBiblio } from '../actions/biblioActions';
 
 import { ateamLookupEntityList } from '../actions/biblioActions';
 
-import { downloadActionReferenceFileUrlDownload } from '../actions/biblioActions';
-
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -37,7 +39,6 @@ import Button from 'react-bootstrap/Button'
 import InputGroup from 'react-bootstrap/InputGroup';
 
 import loading_gif from '../images/loading_cat.gif';
-import axios from "axios";
 import Spinner from "react-bootstrap/Spinner";
 
 // https://stage-literature.alliancegenome.org/Biblio/?action=topic&referenceCurie=AGRKB:101000000163587
@@ -270,7 +271,7 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const supplementExpand = useSelector(state => state.biblio.supplementExpand);
-  const [isLoadingtarball, setIsLoadingTarball] = useState(false);
+  const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
   let cssDisplayLeft = 'Col-display Col-display-left';
   let cssDisplay = 'Col-display';
   let cssDisplayRight = 'Col-display Col-display-right';
@@ -310,7 +311,9 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
         else if (access === 'No') { is_ok = false; referencefileValue = (<div>{filename}</div>); }
       if (is_ok) {
         hasAccessToTarball = true;
-        referencefileValue = (<div><button className='button-to-link' onClick={ () => downloadActionReferenceFileUrlDownload(accessToken, filename, referencefileDict['referencefile_id']) } >{filename}</button></div>); }
+        referencefileValue = (<div><button className='button-to-link' onClick={ () =>
+            dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken))
+        } >{filename}</button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}</div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
         const referencefileRow = (
             <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
@@ -339,33 +342,16 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
           {tarballChecked ?
               <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 4 }}>
                 {hasAccessToTarball ?
-                    <div><button className='button-to-link' onClick={ () => {
-                      setIsLoadingTarball(true);
-                      axios({
-                        url: process.env.REACT_APP_RESTAPI + '/reference/referencefile/additional_files_tarball/' + referenceJsonLive["reference_id"],
-                        method: "GET",
-                        headers: {
-                          'content-type': 'application/json',
-                          'authorization': 'Bearer ' + accessToken
-                        },
-                        responseType: "blob" // important
-                      }).then(response => {
-                        const url = window.URL.createObjectURL(new Blob([response.data]));
-                        const link = document.createElement("a");
-                        link.href = url;
-                        link.setAttribute(
-                            "download",
-                            referenceJsonLive.curie.replace(":", "_") + "_additional_files.tar.gz"
-                        );
-                        document.body.appendChild(link);
-                        link.click();
-                      }).finally(() => {
-                        setIsLoadingTarball(false);
-                      })
-                    }}>
+                    <div><button className='button-to-link' onClick={ () =>
+                      dispatch(downloadReferencefile(undefined,
+                          referenceJsonLive.curie.replace(":", "_") + "_additional_files.tar.gz",
+                          accessToken, referenceJsonLive["reference_id"]))}>
                       Download tarball
                     </button>&nbsp;
-                      {isLoadingtarball ? <Spinner animation="border" size="sm"/> : null }
+                      {loadingFileNames.has(referenceJsonLive.curie.replace(":", "_") + "_additional_files.tar.gz") ?
+                          <Spinner animation="border" size="sm"/>
+                          :
+                          null }
                     </div>
                     :
                     <span>No Access to tarball</span>
