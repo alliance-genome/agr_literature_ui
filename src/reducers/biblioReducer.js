@@ -12,7 +12,7 @@ const initialState = {
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
   entityAdd: {},
-  entityAddInit: { 'taxonSelect': '', 'genetextarea': '', 'notetextarea': '', 'tetprioritySelect': '', 'geneResultList': '' },
+  entityAddInit: { 'taxonSelect': '', 'genetextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'geneResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
   entityEntitiesToMap: {},
@@ -185,7 +185,7 @@ export default function(state = initialState, action) {
     case 'CHANGE_FIELD_ENTITY_EDITOR_PRIORITY':
       console.log('action CHANGE_FIELD_ENTITY_EDITOR_PRIORITY');
       console.log(action.payload);
-      // changes which value to display, but does not update database. ideally this would update the database without reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new priority where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated
+      // changes which value to display, but does not update database. ideally this would update the database without reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated
       let entityEditorPriorityArray = action.payload.field.split(" ");
       // let fieldEntityEditorPriority = entityEditorPriorityArray[0];
       let indexTetEntityEditorPriority = entityEditorPriorityArray[1];

@@ -31,7 +31,7 @@ const BiblioEntity = () => {
 const EntityEditor = () => {
   const dispatch = useDispatch();
   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
-  const priorityList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
+  const qualifierList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -51,20 +51,20 @@ const EntityEditor = () => {
       <Col className="div-grey-border" sm="1">species (taxon)</Col>
       <Col className="div-grey-border" sm="2">entity name</Col>
       <Col className="div-grey-border" sm="2">entity curie</Col>
-      <Col className="div-grey-border" sm="1">priority</Col>
+      <Col className="div-grey-border" sm="1">qualifier</Col>
       <Col className="div-grey-border" sm="3">notes</Col>
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
     { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
-      let priorityValue = ''; let priorityId = ''; let priorityIndex = '';
+      let qualifierValue = ''; let qualifierId = ''; let qualifierIndex = '';
       // UI only allows display/selection of one priority qualifier, but someone could connect in the database multiple priority qualifier in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
       if ('props' in tetDict && tetDict['props'].length > 0) {
         // for (const tetpDict of tetDict['props'].values())
         for (const[indexPriority, tetpDict] of tetDict['props'].entries()) {
-          if ('qualifier' in tetpDict && tetpDict['qualifier'] !== '' && priorityList.includes(tetpDict['qualifier'])) {
-            priorityId = tetpDict['topic_entity_tag_prop_id'];
-            priorityIndex = indexPriority;
-            priorityValue = tetpDict['qualifier']; } } }
+          if ('qualifier' in tetpDict && tetpDict['qualifier'] !== '' && qualifierList.includes(tetpDict['qualifier'])) {
+            qualifierId = tetpDict['topic_entity_tag_prop_id'];
+            qualifierIndex = indexPriority;
+            qualifierValue = tetpDict['qualifier']; } } }
       const entityName = (tetDict.entity_type in entityEntityMappings && tetDict.taxon in entityEntityMappings[tetDict.entity_type] &&
                           tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
                           entityEntityMappings[tetDict.entity_type][tetDict.taxon][tetDict.alliance_entity] : 'unknown';
@@ -80,10 +80,10 @@ const EntityEditor = () => {
             <Col className="div-grey-border" sm="2">{tetDict.alliance_entity}</Col>
 
             <Col sm="1">
-              {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new priority where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
-              <Form.Control as="select" id={`priority ${index} ${priorityIndex} ${priorityId}`} type="tetprioritySelect" disabled="disabled" value={priorityValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
-                { priorityList.map((optionValue, index) => (
-                  <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
+              {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
+              <Form.Control as="select" id={`qualifier ${index} ${qualifierIndex} ${qualifierId}`} type="tetqualifierSelect" disabled="disabled" value={qualifierValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
+                { qualifierList.map((optionValue, index) => (
+                  <option key={`tetqualifierSelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
                 ))}
               </Form.Control>
             </Col>
@@ -145,7 +145,7 @@ const EntityCreate = () => {
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const geneText = useSelector(state => state.biblio.entityAdd.genetextarea);
   const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
-  const tetprioritySelect = useSelector(state => state.biblio.entityAdd.tetprioritySelect);
+  const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const geneResultList = useSelector(state => state.biblio.entityAdd.geneResultList);
 //   let geneStringListDash = [];
@@ -175,8 +175,8 @@ const EntityCreate = () => {
           // updateJson['taxon'] = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
           updateJson['taxon'] = taxonSelect;
           updateJson['note'] = noteText;
-          if (tetprioritySelect && tetprioritySelect !== '') {
-            updateJson['props'] = [ { 'qualifier': tetprioritySelect } ]; }
+          if (tetqualifierSelect && tetqualifierSelect !== '') {
+            updateJson['props'] = [ { 'qualifier': tetqualifierSelect } ]; }
           // console.log(updateJson);
           let subPath = 'topic_entity_tag/';
           let method = 'POST';
@@ -198,10 +198,11 @@ const EntityCreate = () => {
   }
 
   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
-  const priorityList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
+  const qualifierList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
 
-  const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans', '': '' };
-  const taxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239' ];
+  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
+  const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:559292': 'Saccharomyces cerevisiae', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
+  const taxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:559292', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
 
   // const taxonSelect = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
   // const taxonSelect = 'NCBITaxon:6239';	// to hardcode if they don't want a dropdown
@@ -222,7 +223,7 @@ const EntityCreate = () => {
       <Col className="div-grey-border" sm="1">species</Col>
       <Col className="div-grey-border" sm="2">entity list</Col>
       <Col className="div-grey-border" sm="2">entity validation</Col>
-      <Col className="div-grey-border" sm="1">priority</Col>
+      <Col className="div-grey-border" sm="1">qualifier</Col>
       <Col className="div-grey-border" sm="3">notes</Col>
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
@@ -255,9 +256,9 @@ const EntityCreate = () => {
         </Container>
       </Col>
       <Col sm="1">
-        <Form.Control as="select" id="tetprioritySelect" type="tetprioritySelect" value={tetprioritySelect} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
-          { priorityList.map((optionValue, index) => (
-            <option key={`tetprioritySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
+        <Form.Control as="select" id="tetqualifierSelect" type="tetqualifierSelect" value={tetqualifierSelect} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
+          { qualifierList.map((optionValue, index) => (
+            <option key={`tetqualifierSelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
           ))}
         </Form.Control>
       </Col>
