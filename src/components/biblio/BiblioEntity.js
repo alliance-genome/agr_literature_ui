@@ -16,6 +16,8 @@ import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
 
+import { getOktaModAccess } from '../Biblio';
+
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -139,6 +141,7 @@ const EntityEditor = () => {
 const EntityCreate = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
@@ -201,8 +204,18 @@ const EntityCreate = () => {
   const qualifierList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
 
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
-  const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:559292': 'Saccharomyces cerevisiae', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
-  const taxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:559292', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+  const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
+  const taxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+
+  const access = getOktaModAccess(oktaGroups);
+//       if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
+//         else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
+//         else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
+//         else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
+//         else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
+//         else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
+//         else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
+//         else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } } }
 
   // const taxonSelect = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
   // const taxonSelect = 'NCBITaxon:6239';	// to hardcode if they don't want a dropdown

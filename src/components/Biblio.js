@@ -266,6 +266,21 @@ const BiblioTagging = () => {
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging
 
+export function getOktaModAccess(oktaGroups) {
+  let access = 'No';
+  if (oktaGroups) {
+    for (const oktaGroup of oktaGroups) {
+      if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
+        else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
+        else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
+        else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
+        else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
+        else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
+        else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
+        else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } } }
+  return access;
+}
+
 export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEditor}) => {
   const dispatch = useDispatch();
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
@@ -278,17 +293,7 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
   if (displayOrEditor === 'editor') {
     cssDisplay = 'Col-editor-disabled';
     cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled'; }
-  let access = 'No';
-  if (oktaGroups) {
-    for (const oktaGroup of oktaGroups) {
-      if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
-        else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
-        else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
-        else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
-        else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
-        else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
-        else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
-        else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } } }
+  const access = getOktaModAccess(oktaGroups);
   if ('referencefiles' in referenceJsonLive && referenceJsonLive['referencefiles'] !== null) {
     let tarballChecked = ''; let listChecked = '';
     if (supplementExpand === 'tarball') { tarballChecked = 'checked'; }
