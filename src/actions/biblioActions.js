@@ -321,7 +321,7 @@ export const ateamLookupEntityList = (accessToken, entityType, taxon, entityCuri
     .then(res => {
       if (res.data.results) {
         for (const geneResult of res.data.results) {
-          if (geneResult.curie && geneResult.symbol) { entityMappings[geneResult.curie] = geneResult.symbol; }
+          if (geneResult.curie && geneResult.geneSymbol.displayText) { entityMappings[geneResult.curie] = geneResult.geneSymbol.displayText; }
       } }
       dispatch(addEntityMappings(entityType, taxon, entityMappings));
     })
@@ -362,11 +362,13 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
     const searchGeneJson = 
       {"searchFilters": {
         "nameFilters": {
-          "symbol_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"},
+          "geneSymbol.displayText_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"},
           "curie_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"}
         },
         "taxonFilters": { "taxon.curie_keyword":{"queryString":taxon,"tokenOperator":"AND"} }
       } }
+    // MarkQT : although formatText may be more appropriate than displayText for your needs - I think the LinkML model explains the differences
+    // if you wanted to add full names/systematic names/synonyms to your search then the appropriate fields would be geneFullName.displayText, geneSystematicName.displayText, and geneSynonyms.displayText
   
     // try GET1, SGD:S000001766, MGM1
     axios.post(aGeneApiUrl, searchGeneJson, {
@@ -380,9 +382,9 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
       const searchMap = {};
       if (res.data.results) {
         for (const geneResult of res.data.results) {
-          if (geneResult.curie && geneResult.symbol) {
+          if (geneResult.curie && geneResult.geneSymbol.displayText) {
             searchMap[geneResult.curie] = geneResult.curie;
-            searchMap[geneResult.symbol] = geneResult.curie; }
+            searchMap[geneResult.geneSymbol.displayText] = geneResult.curie; }
           // geneResultList.push(geneResult.symbol + " " + geneResult.curie);
           // console.log(geneResult.curie);
           // console.log(geneResult.symbol);
