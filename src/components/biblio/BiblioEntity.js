@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldEntityGeneList } from '../../actions/biblioActions';
 import { changeFieldEntityAddGeneralField } from '../../actions/biblioActions';
+import { changeFieldEntityAddTaxonSelect } from '../../actions/biblioActions';
 import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../../actions/biblioActions';
 import { updateButtonBiblioEntityEditEntity } from '../../actions/biblioActions';
@@ -212,6 +213,10 @@ const EntityCreate = () => {
   if (access in modToTaxon) {
     let filteredTaxonList = taxonList.filter((x) => !modToTaxon[access].includes(x));
     taxonList = modToTaxon[access].concat(filteredTaxonList); }
+  useEffect( () => {
+    if (access in modToTaxon) {
+      dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[access][0])) }
+  }, [access]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // const taxonSelect = 'NCBITaxon:4932';	// to hardcode if they don't want a dropdown
   // const taxonSelect = 'NCBITaxon:6239';	// to hardcode if they don't want a dropdown

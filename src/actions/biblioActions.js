@@ -425,6 +425,11 @@ export const changeFieldEntityAddGeneralField = (e) => ({
   payload: { field: e.target.id, value: e.target.value }
 });
 
+export const changeFieldEntityAddTaxonSelect = (taxon) => ({
+  type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',
+  payload: { field: 'taxonSelect', value: taxon }
+});
+
 const setGeneResultList = (geneResultList) => ({
   type: 'SET_GENE_RESULT_LIST',
   payload: { geneResultList: geneResultList }
