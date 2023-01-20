@@ -345,12 +345,14 @@ export default function(state = initialState, action) {
       let getReferenceCurieFlagUpdateButtonEntityAdd = false;			// redirect to a reference if all updates successful
       let entityModalTextUpdateButtonEntityAdd = state.entityModalText;
       let entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAdd);
+      const origTaxonSelect = entityAddUpdateButtonEntityAdd.taxonSelect;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO_ENTITY_ADD ' + action.payload.responseMessage);
         console.log('state.biblioUpdatingEntityAdd ' + state.biblioUpdatingEntityAdd);
         if (state.biblioUpdatingEntityAdd === 1) {
           entityModalTextUpdateButtonEntityAdd = '';
           entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInit);
+          entityAddUpdateButtonEntityAdd.taxonSelect = origTaxonSelect;
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
       } else {
         entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
