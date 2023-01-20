@@ -519,8 +519,10 @@ export default function(state = initialState, action) {
         hasChangeAuthorField[action.payload.field] = 'diff' }
       if (subfieldAuthorInfo === 'orcid') {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = {}
-        newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['url'] = null;
-        newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['curie'] = authorInfoNewValue; }
+        // if author orcid has object instead of string
+        // newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['url'] = null;
+        // newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['curie'] = authorInfoNewValue;
+        newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = authorInfoNewValue; }
       else if (subfieldAuthorInfo === 'affiliations') {
 //         let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] = authorInfoNewValue; }

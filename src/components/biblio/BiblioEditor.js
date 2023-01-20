@@ -255,10 +255,15 @@ const BiblioSubmitUpdateButton = () => {
               updateJson[field] = authorDict[field]
               if (field === 'orcid') {		// orcids just pass the orcid string, not the whole dict
                 let orcidValue = null;
-                if ( (authorDict['orcid'] !== null) && ('curie' in authorDict['orcid']) &&
-                     (authorDict['orcid']['curie'] !== null) && (authorDict['orcid']['curie'] !== '') ) {
-                  orcidValue = authorDict['orcid']['curie'].toUpperCase();
-                  if (!( orcidValue.match(/^ORCID:(.*)$/) ) ) {
+                // if author orcid has object instead of string
+                // if ( (authorDict['orcid'] !== null) && ('curie' in authorDict['orcid']) &&
+                //      (authorDict['orcid']['curie'] !== null) && (authorDict['orcid']['curie'] !== '') ) {
+                //   orcidValue = authorDict['orcid']['curie'].toUpperCase();
+                //   if (!( orcidValue.match(/^ORCID:(.*)$/) ) ) {
+                //     orcidValue = 'ORCID:' + orcidValue; } }
+                if (authorDict['orcid'] !== null) {
+                  orcidValue = authorDict['orcid'].toUpperCase();
+                  if ( (orcidValue !== '') && (!( orcidValue.match(/^ORCID:(.*)$/) ) ) ) {
                     orcidValue = 'ORCID:' + orcidValue; } }
                 updateJson['orcid'] = orcidValue; } } }
           let subPath = 'author/';
@@ -836,9 +841,13 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
             authorDict['name'] = authorDict['last_name'] } }
 
         let orcidValue = ''
-        if ('orcid' in authorDict && authorDict['orcid'] !== null && 'curie' in authorDict['orcid'] && authorDict['orcid']['curie'] !== null) {
-          const orcidId = splitCurie(authorDict['orcid']['curie'], 'id');
-          orcidValue = (orcidId) ? orcidId : authorDict['orcid']['curie']; }
+        if ('orcid' in authorDict && authorDict['orcid'] !== null) {
+          const orcidId = splitCurie(authorDict['orcid'], 'id');
+          orcidValue = (orcidId) ? orcidId : authorDict['orcid']; }
+        // if author orcid has object instead of string
+        // if ('orcid' in authorDict && authorDict['orcid'] !== null && 'curie' in authorDict['orcid'] && authorDict['orcid']['curie'] !== null) {
+        //   const orcidId = splitCurie(authorDict['orcid']['curie'], 'id');
+        //   orcidValue = (orcidId) ? orcidId : authorDict['orcid']['curie']; }
 
         // map author dom index to live store index to author id to db store index, to compare live values to store values
         let indexStoreAuthorLive = getStoreAuthorIndexFromDomIndex(index, referenceJsonLive[fieldName])
@@ -864,11 +873,17 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
             let valueDb = ''; let updatedFlag = ''; let valueLive = authorDict[updatableField];
             if (updatableField === 'orcid') {
               valueLive = orcidValue;
+              // if author orcid has object instead of string
+              // if ( (typeof referenceJsonDb[fieldName][indexStoreAuthorDb] !== 'undefined') &&
+              //      (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') &&
+              //      (referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== null) &&
+              //      (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'] !== 'undefined') ) {
+              //        valueDb = splitCurie(referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'], 'id'); }
               if ( (typeof referenceJsonDb[fieldName][indexStoreAuthorDb] !== 'undefined') &&
                    (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') &&
                    (referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== null) &&
-                   (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'] !== 'undefined') ) {
-                     valueDb = splitCurie(referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField]['curie'], 'id'); } }
+                   (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') ) {
+                     valueDb = splitCurie(referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField], 'id'); } }
             else {
               if ( (typeof referenceJsonDb[fieldName][indexStoreAuthorDb] !== 'undefined') &&
                    (typeof referenceJsonDb[fieldName][indexStoreAuthorDb][updatableField] !== 'undefined') ) {
