@@ -17,6 +17,7 @@ export const SEARCH_SET_AUTHOR_FILTER = 'SEARCH_SET_AUTHOR_FILTER';
 export const SEARCH_SET_FACETS_LOADING = 'SEARCH_SET_FACETS_LOADING';
 export const SEARCH_SET_DATE_PUBMED_ADDED = 'SEARCH_SET_DATE_PUBMED_ADDED';
 export const SEARCH_SET_DATE_PUBMED_MODIFIED = 'SEARCH_SET_DATE_PUBMED_MODIFIED';
+export const SEARCH_SET_DATE_PUBLISHED = 'SEARCH_SET_DATE_PUBLISHED';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -48,7 +49,7 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter,datePubmedAdded,datePubmedModified) => {
+export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter,datePubmedAdded,datePubmedModified,datePublished) => {
   return dispatch => {
     dispatch(setSearchLoading());
     dispatch(setSearchQuery(query));
@@ -69,6 +70,9 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
     if(datePubmedAdded){
       params.date_pubmed_arrive = datePubmedAdded;
     }
+    if(datePublished){
+      params.date_published = datePublished;
+    }
     axios.post(restUrl + '/search/references', params )
 
         .then(res => {
@@ -79,7 +83,7 @@ export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsC
   }
 }
 
-export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified) => {
+export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified, datePublished) => {
   return dispatch => {
     dispatch(setFacetsLoading());
     let params = {
@@ -96,6 +100,10 @@ export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount
     if(datePubmedAdded){
       params.date_pubmed_arrive = datePubmedAdded;
     }
+    if(datePublished){
+      params.date_published = datePublished;
+    }
+
     axios.post(restUrl + '/search/references', params)
         .then(res => {
           dispatch(setSearchFacets(res.data.aggregations));
@@ -219,5 +227,12 @@ export const setDatePubmedModified = (datePubmed) => ({
   type: SEARCH_SET_DATE_PUBMED_MODIFIED,
   payload: {
     datePubmedModified : datePubmed
+  }
+});
+
+export const setDatePublished = (datePubmed) => ({
+  type: SEARCH_SET_DATE_PUBLISHED,
+  payload: {
+    datePublished : datePubmed
   }
 });
