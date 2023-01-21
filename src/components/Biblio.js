@@ -88,7 +88,6 @@ const BiblioActionToggler = () => {
   let displayChecked = '';
   let editorChecked = '';
   let entityChecked = '';
-  let topicChecked = '';
   let workflowChecked = '';
   let radioFormDisplayClassname = 'radio-form';
   let radioFormEditorClassname = 'radio-form';
@@ -104,10 +103,6 @@ const BiblioActionToggler = () => {
       radioFormEntityClassname += ' underlined';
       entityChecked = 'checked';
       biblioActionTogglerSelected = 'entity'; }
-    else if (biblioAction === 'topic') {
-      radioFormTopicClassname += ' underlined';
-      topicChecked = 'checked';
-      biblioActionTogglerSelected = 'topic'; }
     else if (biblioAction === 'workflow') {
       radioFormWorkflowClassname += ' underlined';
       workflowChecked = 'checked';
@@ -165,20 +160,9 @@ const BiblioActionToggler = () => {
           className={radioFormEntityClassname}
           checked={entityChecked}
           type='radio'
-          label='entity editor'
+          label='entity and topic editor'
           id='biblio-toggler-entity'
           onChange={(e) => dispatch(changeBiblioActionToggler(e, 'entity'))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormTopicClassname}
-          checked={topicChecked}
-          type='radio'
-          label='topic editor'
-          id='biblio-toggler-topic'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'topic'))}
         />
       </div>
       <div className='radio-span'>
@@ -205,8 +189,6 @@ const BiblioActionRouter = () => {
     case 'editor':
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioEditor /></Container>);
     case 'entity':
-      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
-    case 'topic':
       return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
     case 'workflow':
       return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);

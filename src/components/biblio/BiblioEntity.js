@@ -51,7 +51,7 @@ const EntityEditor = () => {
     <Container fluid>
     <RowDivider />
     <Row className="form-group row" >
-      <Col className="form-label col-form-label" sm="3"><h3>{biblioAction.charAt(0).toUpperCase() + biblioAction.slice(1)} Editor</h3></Col></Row>
+      <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Editor</h3></Col></Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
@@ -76,7 +76,7 @@ const EntityEditor = () => {
                           tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
                           entityEntityMappings[tetDict.entity_type][tetDict.taxon][tetDict.alliance_entity] : 'unknown';
       if ( (biblioAction === 'entity') && (tetDict.topic !== 'ATP:0000122') ) { return ""; }
-      else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return ""; }
+      // else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return ""; } // topic no longer a separate section
       else {
         return (
           <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
@@ -230,7 +230,7 @@ const EntityCreate = () => {
                   genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
     <Row className="form-group row" >
-      <Col className="form-label col-form-label" sm="3"><h3>{biblioAction.charAt(0).toUpperCase() + biblioAction.slice(1)} Addition</h3></Col></Row>
+      <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col></Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
