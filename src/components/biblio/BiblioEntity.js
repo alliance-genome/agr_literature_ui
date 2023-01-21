@@ -244,7 +244,7 @@ const EntityCreate = () => {
     </Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">
-        <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} >
+        <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => {} } >
           <option key={`topicSelect ${topicSelect}`} value={topicSelect}>{topicSelect}</option>
         </Form.Control>
       </Col>

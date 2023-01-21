@@ -92,7 +92,6 @@ const BiblioActionToggler = () => {
   let radioFormDisplayClassname = 'radio-form';
   let radioFormEditorClassname = 'radio-form';
   let radioFormEntityClassname = 'radio-form';
-  let radioFormTopicClassname = 'radio-form';
   let radioFormWorkflowClassname = 'radio-form';
   let biblioActionTogglerSelected = 'display';
   if (biblioAction === 'editor') {
