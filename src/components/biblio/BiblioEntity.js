@@ -156,6 +156,7 @@ const EntityCreate = () => {
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const geneResultList = useSelector(state => state.biblio.entityAdd.geneResultList);
+  const topicSelect = 'entity type ATP:0000122';
 //   let geneStringListDash = [];
 //   let geneStringListParen = [];
 //   if (geneResultList) {
@@ -243,9 +244,9 @@ const EntityCreate = () => {
     </Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">
-        { biblioAction === 'entity' ?
-          'entity type ATP:0000122' :
-          'insert topic here'}
+        <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} >
+          <option key={`topicSelect ${topicSelect}`} value={topicSelect}>{topicSelect}</option>
+        </Form.Control>
       </Col>
       <Col className="div-grey-border" sm="1">gene ATP:0000005</Col>
       <Col sm="1">
