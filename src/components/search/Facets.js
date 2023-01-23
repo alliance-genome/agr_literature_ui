@@ -53,27 +53,26 @@ const DateFacet = ({facetsToInclude}) => {
         <DateRangePicker value={datePubmedModified} onChange= {(newDateRangeArr) => {
           if (newDateRangeArr === null) {
             dispatch(setDatePubmedModified(''));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences());
           }
           else {
             dispatch(setDatePubmedModified(newDateRangeArr));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences());}
-          }}/>
+          }
+          dispatch(setSearchResultsPage(0));
+          dispatch(searchReferences());
+        }}/>
       </div>
       <div key={facetsToInclude[1]} style={{textAlign: "left", paddingLeft: "2em"}}>
       <h5>{facetsToInclude[1]}</h5>
         <DateRangePicker value={datePubmedAdded} onChange= {(newDateRangeArr) => {
           if (newDateRangeArr === null) {
             dispatch(setDatePubmedAdded(''));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences());}
+          }
           else {
             dispatch(setDatePubmedAdded(newDateRangeArr));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences());}
-          }}/>
+          }
+          dispatch(setSearchResultsPage(0));
+          dispatch(searchReferences());
+        }}/>
       </div>
     </div>
   )
