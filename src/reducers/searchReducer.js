@@ -6,7 +6,8 @@ import {
   SEARCH_SET_SEARCH_LOADING, SEARCH_SET_SEARCH_SEARCH,
   SEARCH_SET_SEARCH_RESULTS, SEARCH_SET_SEARCH_RESULTS_PAGE,
   SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT, SEARCH_SET_AUTHOR_FILTER,
-  SEARCH_SET_FACETS_LOADING, SEARCH_SET_DATE_PUBMED_MODIFIED
+  SEARCH_SET_FACETS_LOADING, SEARCH_SET_DATE_PUBMED_MODIFIED,
+  SEARCH_SET_SEARCH_QUERY_FIELDS
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -35,6 +36,7 @@ const initialState = {
   authorFilter: "",
   datePubmedAdded: "",
   datePubmedModified: "",
+  query_fields:"All"
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -149,6 +151,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         searchFacetsValues: {}
+      }
+
+    case SEARCH_SET_SEARCH_QUERY_FIELDS:
+      return {
+        ...state,
+        query_fields: action.payload.query_fields
       }
 
     case SEARCH_REMOVE_FACET_VALUE:
