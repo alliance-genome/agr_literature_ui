@@ -10,11 +10,11 @@ const SearchBar = () => {
 
     const [fieldToSearch, setFieldToSearch] = useState('All');
     const searchLoading = useSelector(state => state.search.searchLoading);
-    const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
-    const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
-    const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
+    //const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    //const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+    //const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const searchQuery = useSelector(state => state.search.searchQuery);
-    const searchState = useSelector(state => state.search);
+    //const searchState = useSelector(state => state.search);
 
     const dispatch = useDispatch();
 
@@ -45,7 +45,7 @@ const SearchBar = () => {
                                       if (event.charCode === 13) {
                                         dispatch(setSearchResultsPage(0));
                                         dispatch(setAuthorFilter(''));
-                                        dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,0));
+                                        dispatch(searchReferences());
                                       }
                                   }}
                     />
@@ -53,7 +53,7 @@ const SearchBar = () => {
                             onClick={() => {
                               dispatch(setSearchResultsPage(0));
                               dispatch(setAuthorFilter(''));
-                              dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,0))
+                              dispatch(searchReferences());
                             }}>
                         {searchLoading ? <Spinner animation="border" size="sm"/> : <span>Search</span>  }
                     </Button>

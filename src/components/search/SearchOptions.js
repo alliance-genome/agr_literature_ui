@@ -11,9 +11,9 @@ import Pagination from 'react-bootstrap/Pagination';
 
 const SearchOptions = () => {
 
-    const searchQuery = useSelector(state => state.search.searchQuery);
-    const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
-    const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+    //const searchQuery = useSelector(state => state.search.searchQuery);
+    //const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    //const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchResultsCount = useSelector(state => state.search.searchResultsCount);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const searchResultsPage  = useSelector(state => state.search.searchResultsPage);
@@ -52,7 +52,7 @@ const SearchOptions = () => {
 
       }
       dispatch(setSearchResultsPage(page));
-      dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount,page));
+      dispatch(searchReferences());
     }
 
 
@@ -70,7 +70,7 @@ const SearchOptions = () => {
                                       const intSizeResultsCount = parseInt(e.target.value.replace('Results per page ', ''));
                                       dispatch(setSearchSizeResultsCount(intSizeResultsCount));
                                       dispatch(setSearchResultsPage(0));
-                                      dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, intSizeResultsCount,0));
+                                      dispatch(searchReferences());
                                   } }>
                         <option>Results per page 10</option>
                         <option>Results per page 25</option>

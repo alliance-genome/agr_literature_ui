@@ -50,14 +50,13 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter,datePubmedAdded,datePubmedModified) => {
+export const searchReferences = () => {
   return (dispatch,getState) => {
     const state = getState();
     dispatch(setSearchLoading());
     //dispatch(setSearchQuery(query));
     //dispatch(setSearchFacetsValues(facetsValues));
     //dispatch(setSearchFacetsLimits(facetsLimits));
-    console.log(state.search.facetsValues, facetsValues);
     console.log(state.search);
 
     let params = {
