@@ -10,11 +10,7 @@ const SearchBar = () => {
 
     const [fieldToSearch, setFieldToSearch] = useState('All');
     const searchLoading = useSelector(state => state.search.searchLoading);
-    //const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
-    //const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
-    //const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const searchQuery = useSelector(state => state.search.searchQuery);
-    //const searchState = useSelector(state => state.search);
 
     const dispatch = useDispatch();
 

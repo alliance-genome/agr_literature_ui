@@ -54,10 +54,6 @@ export const searchReferences = () => {
   return (dispatch,getState) => {
     const state = getState();
     dispatch(setSearchLoading());
-    //dispatch(setSearchQuery(query));
-    //dispatch(setSearchFacetsValues(facetsValues));
-    //dispatch(setSearchFacetsLimits(facetsLimits));
-    console.log(state.search);
 
     let params = {
       query: state.search.searchQuery,

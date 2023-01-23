@@ -11,9 +11,6 @@ import Pagination from 'react-bootstrap/Pagination';
 
 const SearchOptions = () => {
 
-    //const searchQuery = useSelector(state => state.search.searchQuery);
-    //const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
-    //const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchResultsCount = useSelector(state => state.search.searchResultsCount);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const searchResultsPage  = useSelector(state => state.search.searchResultsPage);

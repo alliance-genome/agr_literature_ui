@@ -219,7 +219,6 @@ const Facets = () => {
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchQuery = useSelector(state => state.search.searchQuery);
     const facetsLoading = useSelector(state => state.search.facetsLoading);
-    //const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const dispatch = useDispatch();
