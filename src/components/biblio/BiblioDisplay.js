@@ -313,11 +313,16 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
         let orcid_curie = '';
         let orcid_url = '';
         if ('orcid' in value && value['orcid'] !== null) {
-          if (value['orcid']['curie'] && value['orcid']['curie'] !== null) {
-            orcid_curie = value['orcid']['curie'].toUpperCase();
-            if (!( orcid_curie.match(/^ORCID:(.*)$/) ) ) {
-              orcid_curie = 'ORCID:' + orcid_curie; } }
-          orcid_url = value['orcid']['url'] || ''; }
+          orcid_curie = value['orcid'].toUpperCase();
+          if ( (orcid_curie !== '') && (!( orcid_curie.match(/^ORCID:(.*)$/) ) ) ) {
+            orcid_curie = 'ORCID:' + orcid_curie; }
+          orcid_url = 'https://orcid.org/' + orcid_curie; }
+          // if author orcid has object instead of string
+          // if (value['orcid']['curie'] && value['orcid']['curie'] !== null) {
+          //   orcid_curie = value['orcid']['curie'].toUpperCase();
+          //   if (!( orcid_curie.match(/^ORCID:(.*)$/) ) ) {
+          //     orcid_curie = 'ORCID:' + orcid_curie; } }
+          // orcid_url = value['orcid']['url'] || ''; }
         let affiliations = []; let affiliationsJoined = '';
         if ('affiliations' in value && value['affiliations'] !== null) {
           affiliationsJoined = (value['affiliations'].length > 0) ? value['affiliations'].join('') : '';
@@ -326,8 +331,11 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
         let orcid_link = (orcid_url === '') ? (<span>{orcid_curie}</span>) : (<a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>)
 
         if (orderedAuthorsDb[index] !== undefined) {
-          if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== null && 'curie' in orderedAuthorsDb[index]['orcid'] &&
-              'ORCID:' + splitCurie(orderedAuthorsDb[index]['orcid']['curie'], 'id') !== orcid_curie) { updatedFlagAuthor = 'updated'; }
+          // if author orcid has object instead of string
+          // if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== null && 'curie' in orderedAuthorsDb[index]['orcid'] &&
+          //     'ORCID:' + splitCurie(orderedAuthorsDb[index]['orcid']['curie'], 'id') !== orcid_curie) { updatedFlagAuthor = 'updated'; }
+          if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== null && orderedAuthorsDb[index]['orcid'] !== '' &&
+              'ORCID:' + splitCurie(orderedAuthorsDb[index]['orcid'], 'id') !== orcid_curie) { updatedFlagAuthor = 'updated'; }
           if ('name' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['name'] !== value['name']) { updatedFlagAuthor = 'updated'; }
           if ('affiliations' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['affiliations'] &&
               orderedAuthorsDb[index]['affiliations'].join('') !== affiliationsJoined) { updatedFlagAuthor = 'updated'; }
@@ -338,7 +346,7 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
             <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}>
               <div key={`author ${index}`}>
                 <span dangerouslySetInnerHTML={{__html: value['name']}} />
-                  {orcid_link}{affiliations}</div></Col>
+                  &nbsp;{orcid_link}{affiliations}</div></Col>
           </Row>); } }
     return (<>{rowAuthorElements}</>); }
   else { return null; }

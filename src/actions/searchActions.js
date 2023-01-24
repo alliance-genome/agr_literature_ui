@@ -1,4 +1,5 @@
 import axios from "axios";
+//import {useDispatch, useSelector} from 'react-redux';
 
 export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
 export const SEARCH_SET_SEARCH_RESULTS_PAGE = 'SEARCH_SET_SEARCH_RESULTS_PAGE';
@@ -18,6 +19,7 @@ export const SEARCH_SET_FACETS_LOADING = 'SEARCH_SET_FACETS_LOADING';
 export const SEARCH_SET_DATE_PUBMED_ADDED = 'SEARCH_SET_DATE_PUBMED_ADDED';
 export const SEARCH_SET_DATE_PUBMED_MODIFIED = 'SEARCH_SET_DATE_PUBMED_MODIFIED';
 export const SEARCH_SET_DATE_PUBLISHED = 'SEARCH_SET_DATE_PUBLISHED';
+export const SEARCH_SET_SEARCH_QUERY_FIELDS = 'SEARCH_SET_SEARCH_QUERY_FIELDS';
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -49,26 +51,25 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-export const searchReferences = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter,datePubmedAdded,datePubmedModified,datePublished) => {
-  return dispatch => {
+export const searchReferences = () => {
+  return (dispatch,getState) => {
+    const state = getState();
     dispatch(setSearchLoading());
-    dispatch(setSearchQuery(query));
-    dispatch(setSearchFacetsValues(facetsValues));
-    dispatch(setSearchFacetsLimits(facetsLimits));
 
     let params = {
-      query: query,
-      size_result_count: sizeResultsCount,
-      page: searchResultsPage,
-      facets_values: facetsValues,
-      facets_limits: facetsLimits,
-      author_filter: authorFilter
+      query: state.search.searchQuery,
+      size_result_count: state.search.sizeResultsCount,
+      page: state.search.searchResultsPage,
+      facets_values: state.search.searchFacetsValues,
+      facets_limits: state.search.searchFacetsLimits,
+      author_filter: state.search.authorFilter,
+      query_fields: state.search.query_fields
     }
-    if(datePubmedModified){
-      params.date_pubmed_modified = datePubmedModified;
+    if(state.search.datePubmedModified){
+      params.date_pubmed_modified = state.search.datePubmedModified;
     }
-    if(datePubmedAdded){
-      params.date_pubmed_arrive = datePubmedAdded;
+    if(state.search.datePubmedAdded){
+      params.date_pubmed_arrive = state.search.datePubmedAdded;
     }
     if(datePublished){
       params.date_published = datePublished;
@@ -156,6 +157,13 @@ export const setSearchFacetsLimits = (facetsLimits) => ({
   type: SEARCH_SET_SEARCH_FACETS_LIMITS,
   payload: {
     facetsLimits
+  }
+});
+
+export const setQueryFields = (query_fields) => ({
+  type: SEARCH_SET_SEARCH_QUERY_FIELDS,
+  payload: {
+    query_fields: query_fields
   }
 });
 

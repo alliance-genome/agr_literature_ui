@@ -33,13 +33,13 @@ const BiblioEntity = () => {
 
   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
   const qualifierList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
-  const curieToNameTaxon = { 'NCBITaxon:4932': 'Saccharomyces cerevisiae', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
+  const curieToNameTaxon = { 'NCBITaxon:559292': 'Saccharomyces cerevisiae', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
 
 const EntityEditor = () => {
   const dispatch = useDispatch();
 //   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
 //   const qualifierList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
-//   const curieToNameTaxon = { 'NCBITaxon:4932': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans' };
+//   const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans' };
 
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -51,7 +51,7 @@ const EntityEditor = () => {
     <Container fluid>
     <RowDivider />
     <Row className="form-group row" >
-      <Col className="form-label col-form-label" sm="3"><h3>{biblioAction.charAt(0).toUpperCase() + biblioAction.slice(1)} Editor</h3></Col></Row>
+      <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Editor</h3></Col></Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
@@ -76,7 +76,7 @@ const EntityEditor = () => {
                           tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
                           entityEntityMappings[tetDict.entity_type][tetDict.taxon][tetDict.alliance_entity] : 'unknown';
       if ( (biblioAction === 'entity') && (tetDict.topic !== 'ATP:0000122') ) { return ""; }
-      else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return ""; }
+      // else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return ""; } // topic no longer a separate section
       else {
         return (
           <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
@@ -156,6 +156,7 @@ const EntityCreate = () => {
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const geneResultList = useSelector(state => state.biblio.entityAdd.geneResultList);
+  const topicSelect = 'entity type ATP:0000122';
 //   let geneStringListDash = [];
 //   let geneStringListParen = [];
 //   if (geneResultList) {
@@ -180,7 +181,7 @@ const EntityCreate = () => {
           updateJson['topic'] = biblioAction === 'entity' ? 'ATP:0000122' : 'insert topic here';
           updateJson['entity_type'] = 'ATP:0000005';
           updateJson['alliance_entity'] = geneResult.curie;
-          // updateJson['taxon'] = 'NCBITaxon:4932';	// to hardcode if they don't want a dropdown
+          // updateJson['taxon'] = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
           updateJson['taxon'] = taxonSelect;
           updateJson['note'] = noteText;
           if (tetqualifierSelect && tetqualifierSelect !== '') {
@@ -205,8 +206,8 @@ const EntityCreate = () => {
     }
   }
 
-  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:4932'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
-  const unsortedTaxonList = [ '', 'NCBITaxon:4932', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
+  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const access = getOktaModAccess(oktaGroups);
   // const access = 'WB';	// uncomment if you have developer okta access and need to test a specific mod
@@ -230,7 +231,7 @@ const EntityCreate = () => {
                   genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
     <Row className="form-group row" >
-      <Col className="form-label col-form-label" sm="3"><h3>{biblioAction.charAt(0).toUpperCase() + biblioAction.slice(1)} Addition</h3></Col></Row>
+      <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col></Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
@@ -243,9 +244,9 @@ const EntityCreate = () => {
     </Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="1">
-        { biblioAction === 'entity' ?
-          'entity type ATP:0000122' :
-          'insert topic here'}
+        <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => {} } >
+          <option key={`topicSelect ${topicSelect}`} value={topicSelect}>{topicSelect}</option>
+        </Form.Control>
       </Col>
       <Col className="div-grey-border" sm="1">gene ATP:0000005</Col>
       <Col sm="1">
