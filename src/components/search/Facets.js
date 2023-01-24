@@ -42,37 +42,37 @@ LoadingOverlay.propTypes = undefined;
 
 const DateFacet = ({facetsToInclude}) => {
 
-  const searchState = useSelector(state => state.search);
+  const datePubmedModified = useSelector(state => state.search.datePubmedModified);
+  const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
   const dispatch = useDispatch();
 
   return (
     <div>
       <div key={facetsToInclude[0]} style={{textAlign: "left", paddingLeft: "2em"}}>
       <h5>{facetsToInclude[0]}</h5>
-        <DateRangePicker value={searchState.datePubmedModified} onChange= {(newDateRangeArr) => {
+        <DateRangePicker value={datePubmedModified} onChange= {(newDateRangeArr) => {
           if (newDateRangeArr === null) {
             dispatch(setDatePubmedModified(''));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,searchState.datePubmedAdded,newDateRangeArr));
           }
           else {
             dispatch(setDatePubmedModified(newDateRangeArr));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,searchState.datePubmedAdded,newDateRangeArr));}
-          }}/>
+          }
+          dispatch(setSearchResultsPage(0));
+          dispatch(searchReferences());
+        }}/>
       </div>
       <div key={facetsToInclude[1]} style={{textAlign: "left", paddingLeft: "2em"}}>
       <h5>{facetsToInclude[1]}</h5>
-        <DateRangePicker value={searchState.datePubmedAdded} onChange= {(newDateRangeArr) => {
+        <DateRangePicker value={datePubmedAdded} onChange= {(newDateRangeArr) => {
           if (newDateRangeArr === null) {
             dispatch(setDatePubmedAdded(''));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,newDateRangeArr,searchState.datePubmedModified));}
+          }
           else {
             dispatch(setDatePubmedAdded(newDateRangeArr));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,newDateRangeArr,searchState.datePubmedModified));}
-          }}/>
+          }
+          dispatch(setSearchResultsPage(0));
+          dispatch(searchReferences());
+        }}/>
       </div>
     </div>
   )
@@ -218,7 +218,6 @@ const Facets = () => {
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchQuery = useSelector(state => state.search.searchQuery);
     const facetsLoading = useSelector(state => state.search.facetsLoading);
-    const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const dispatch = useDispatch();
@@ -240,7 +239,7 @@ const Facets = () => {
             if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0) {
                 dispatch(setSearchResultsPage(0));
                 dispatch(setAuthorFilter(""));
-                dispatch(searchReferences(searchQuery, searchFacetsValues, searchFacetsLimits, searchSizeResultsCount, 0, "", datePubmedAdded, datePubmedModified));
+                dispatch(searchReferences());
             }
         }
     }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
