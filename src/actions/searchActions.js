@@ -71,8 +71,8 @@ export const searchReferences = () => {
     if(state.search.datePubmedAdded){
       params.date_pubmed_arrive = state.search.datePubmedAdded;
     }
-    if(datePublished){
-      params.date_published = datePublished;
+    if(state.search.datePublished){
+      params.date_published = state.search.datePublished;
     }
     axios.post(restUrl + '/search/references', params )
 

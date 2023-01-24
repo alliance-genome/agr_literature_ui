@@ -45,21 +45,22 @@ const DateFacet = ({facetsToInclude}) => {
 
   const datePubmedModified = useSelector(state => state.search.datePubmedModified);
   const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
+  const datePublished = useSelector(state => state.search.datePublished);
   const dispatch = useDispatch();
 
   return (
     <div>
       <div key={facetsToInclude[2]} style={{textAlign: "left", paddingLeft: "2em"}}>
       <h5>{facetsToInclude[2]}</h5>
-        <DateRangePicker value={searchState.datePublished} onChange= {(newDateRangeArr) => {
+        <DateRangePicker value={datePublished} onChange= {(newDateRangeArr) => {
           if (newDateRangeArr === null) {
             dispatch(setDatePublished(''));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,searchState.datePubmedAdded,searchState.datePubmedModified,newDateRangeArr));}
+          }
           else {
             dispatch(setDatePublished(newDateRangeArr));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,searchState.datePubmedAdded,searchState.datePubmedModified,newDateRangeArr));}
+          }
+          dispatch(setSearchResultsPage(0));
+          dispatch(searchReferences());
           }}/>
       </div>
       <div key={facetsToInclude[0]} style={{textAlign: "left", paddingLeft: "2em"}}>
