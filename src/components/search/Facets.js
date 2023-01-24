@@ -48,6 +48,19 @@ const DateFacet = ({facetsToInclude}) => {
 
   return (
     <div>
+      <div key={facetsToInclude[2]} style={{textAlign: "left", paddingLeft: "2em"}}>
+      <h5>{facetsToInclude[2]}</h5>
+        <DateRangePicker value={searchState.datePublished} onChange= {(newDateRangeArr) => {
+          if (newDateRangeArr === null) {
+            dispatch(setDatePublished(''));
+            dispatch(setSearchResultsPage(0));
+            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,searchState.datePubmedAdded,searchState.datePubmedModified,newDateRangeArr));}
+          else {
+            dispatch(setDatePublished(newDateRangeArr));
+            dispatch(setSearchResultsPage(0));
+            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,searchState.datePubmedAdded,searchState.datePubmedModified,newDateRangeArr));}
+          }}/>
+      </div>
       <div key={facetsToInclude[0]} style={{textAlign: "left", paddingLeft: "2em"}}>
       <h5>{facetsToInclude[0]}</h5>
         <DateRangePicker value={searchState.datePubmedModified} onChange= {(newDateRangeArr) => {
@@ -73,19 +86,6 @@ const DateFacet = ({facetsToInclude}) => {
             dispatch(setDatePubmedAdded(newDateRangeArr));
             dispatch(setSearchResultsPage(0));
             dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,newDateRangeArr,searchState.datePubmedModified, searchState.datePublished));}
-          }}/>
-      </div>
-      <div key={facetsToInclude[2]} style={{textAlign: "left", paddingLeft: "2em"}}>
-      <h5>{facetsToInclude[2]}</h5>
-        <DateRangePicker value={searchState.datePublished} onChange= {(newDateRangeArr) => {
-          if (newDateRangeArr === null) {
-            dispatch(setDatePublished(''));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,searchState.datePubmedAdded,searchState.datePubmedModified,newDateRangeArr));}
-          else {
-            dispatch(setDatePublished(newDateRangeArr));
-            dispatch(setSearchResultsPage(0));
-            dispatch(searchReferences(searchState.searchQuery, searchState.searchFacetsValues, searchState.searchFacetsLimits, searchState.searchSizeResultsCount,0,searchState.authorFilter,searchState.datePubmedAdded,searchState.datePubmedModified,newDateRangeArr));}
           }}/>
       </div>
     </div>
