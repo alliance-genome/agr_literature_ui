@@ -383,7 +383,7 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
       if (res.data.results) {
         for (const geneResult of res.data.results) {
           if (geneResult.curie && geneResult.geneSymbol.displayText) {
-            searchMap[geneResult.curie] = geneResult.curie;
+            searchMap[geneResult.curie.toLowerCase()] = geneResult.curie;
             searchMap[geneResult.geneSymbol.displayText.toLowerCase()] = geneResult.curie; }
           // geneResultList.push(geneResult.symbol + " " + geneResult.curie);
           // console.log(geneResult.curie);
