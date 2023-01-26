@@ -214,6 +214,13 @@ const BiblioTagging = () => {
   const allowedTaxons = new Set();
   allowedTaxons.add('NCBITaxon:559292');
   allowedTaxons.add('NCBITaxon:6239');
+  allowedTaxons.add('NCBITaxon:7227');
+  allowedTaxons.add('NCBITaxon:7955');
+  allowedTaxons.add('NCBITaxon:10116');
+  allowedTaxons.add('NCBITaxon:10090');
+  allowedTaxons.add('NCBITaxon:8355');
+  allowedTaxons.add('NCBITaxon:8364');
+  allowedTaxons.add('NCBITaxon:9606');
 
   for (const [entityType, entityTypeValue] of Object.entries(entityEntitiesToMap)) {
     if (allowedEntityTypes.has(entityType)) {
