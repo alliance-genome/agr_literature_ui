@@ -59,7 +59,7 @@ const EntityEditor = () => {
       <Col className="div-grey-border" sm="2">entity name</Col>
       <Col className="div-grey-border" sm="2">entity curie</Col>
       <Col className="div-grey-border" sm="1">qualifier</Col>
-      <Col className="div-grey-border" sm="3">notes</Col>
+      <Col className="div-grey-border" sm="3">internal notes</Col>
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
     { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
@@ -236,10 +236,10 @@ const EntityCreate = () => {
       <Col className="div-grey-border" sm="1">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
       <Col className="div-grey-border" sm="1">species</Col>
-      <Col className="div-grey-border" sm="2">entity list</Col>
+      <Col className="div-grey-border" sm="2">entity list (one per line, case insensitive)</Col>
       <Col className="div-grey-border" sm="2">entity validation</Col>
       <Col className="div-grey-border" sm="1">qualifier</Col>
-      <Col className="div-grey-border" sm="3">notes</Col>
+      <Col className="div-grey-border" sm="3">internal notes</Col>
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
     <Row className="form-group row" >
@@ -262,10 +262,11 @@ const EntityCreate = () => {
       <Col className="form-label col-form-label" sm="2" >
         <Container>
           { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
+            const colDisplayClass = (geneResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
             return (
               <Row key={`geneEntityContainerrows ${index}`}>
-                <Col className="Col-general Col-display Col-display-left" sm="5">{geneResult.geneSymbol}</Col>
-                <Col className="Col-general Col-display Col-display-right" sm="7">{geneResult.curie}</Col>
+                <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{geneResult.geneSymbol}</Col>
+                <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">{geneResult.curie}</Col>
               </Row>)
           } ) }
         </Container>

@@ -205,6 +205,10 @@
   background-color: var(--light-blue);
 }
 
+.Col-display-warn {
+  background-color: var(--light-red);
+}
+
 .updated-biblio-button:hover {
   background-color: var(--updated-purple-hover) !important;
 }

@@ -344,7 +344,7 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
     // console.log('action change field entity gene list ' + geneText);
     let splitList = [];
     if (geneText && geneText !== '') {
-      splitList = geneText.split(',').map(element => { return element.trim(); }).filter(item => item);
+      splitList = geneText.split('\n').map(element => { return element.trim(); }).filter(item => item);
     }
     const geneQueryString = splitList.join(" ");
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
@@ -384,15 +384,15 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
         for (const geneResult of res.data.results) {
           if (geneResult.curie && geneResult.geneSymbol.displayText) {
             searchMap[geneResult.curie] = geneResult.curie;
-            searchMap[geneResult.geneSymbol.displayText] = geneResult.curie; }
+            searchMap[geneResult.geneSymbol.displayText.toLowerCase()] = geneResult.curie; }
           // geneResultList.push(geneResult.symbol + " " + geneResult.curie);
           // console.log(geneResult.curie);
           // console.log(geneResult.symbol);
       } }
       let geneResultList = [];
       for (const geneSymbol of splitList) {
-        if (geneSymbol in searchMap) {
-          geneResultList.push( { 'geneSymbol': geneSymbol, 'curie': searchMap[geneSymbol] } ); }
+        if (geneSymbol.toLowerCase() in searchMap) {
+          geneResultList.push( { 'geneSymbol': geneSymbol, 'curie': searchMap[geneSymbol.toLowerCase()] } ); }
         else { 
           geneResultList.push( { 'geneSymbol': geneSymbol, 'curie': 'no Alliance curie' } ); } }
       dispatch(setGeneResultList(geneResultList));
