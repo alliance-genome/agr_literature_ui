@@ -339,19 +339,20 @@ const addEntityMappings = (entityType, taxon, entityMappings) => ({
   payload: { entityType: entityType, taxon: taxon, entityMappings: entityMappings }
 });
 
-export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
+export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType) => {
   return dispatch => {
-    // console.log('action change field entity gene list ' + geneText);
+    // console.log('action change field entity list ' + entityText + ' entityType ' + entityType);
     let splitList = [];
-    if (geneText && geneText !== '') {
-      splitList = geneText.split('\n').map(element => { return element.trim(); }).filter(item => item);
+    if (entityText && entityText !== '') {
+      splitList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item);
     }
-    const geneQueryString = splitList.join(" ");
+    const entityQueryString = splitList.join(" ");
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
-    const aGeneApiUrl = ateamApiBaseUrl + 'api/gene/search?limit=10&page=0';
+    const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityType + '/search?limit=10&page=0';
+    const entityTypeSymbolField = entityType + 'Symbol';
   
-    // console.log(aGeneApiUrl);
+    // console.log(ateamApiUrl);
     // console.log(accessToken);
     // const geneSymbol = e.target.value;
 
@@ -359,43 +360,45 @@ export const changeFieldEntityGeneList = (geneText, accessToken, taxon) => {
     //   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
   
     // search by taxon + exact symbol keyword or exact curie keyword
-    const searchGeneJson = 
+    const searchEntityJson =
       {"searchFilters": {
         "nameFilters": {
-          "geneSymbol.displayText_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"},
-          "curie_keyword":{"queryString":geneQueryString,"tokenOperator":"OR"}
+          [entityTypeSymbolField + ".displayText_keyword"]:{"queryString":entityQueryString,"tokenOperator":"OR"},
+          "curie_keyword":{"queryString":entityQueryString,"tokenOperator":"OR"}
         },
         "taxonFilters": { "taxon.curie_keyword":{"queryString":taxon,"tokenOperator":"AND"} }
       } }
+
     // MarkQT : although formatText may be more appropriate than displayText for your needs - I think the LinkML model explains the differences
     // if you wanted to add full names/systematic names/synonyms to your search then the appropriate fields would be geneFullName.displayText, geneSystematicName.displayText, and geneSynonyms.displayText
   
     // try GET1, SGD:S000001766, MGM1
-    axios.post(aGeneApiUrl, searchGeneJson, {
+    axios.post(ateamApiUrl, searchEntityJson, {
       headers: {
         'content-type': 'application/json',
         'authorization': 'Bearer ' + accessToken
       }
     })
     .then(res => {
+      // console.log('res.data.results');
       // console.log(res.data.results);
       const searchMap = {};
       if (res.data.results) {
-        for (const geneResult of res.data.results) {
-          if (geneResult.curie && geneResult.geneSymbol.displayText) {
-            searchMap[geneResult.curie.toLowerCase()] = geneResult.curie;
-            searchMap[geneResult.geneSymbol.displayText.toLowerCase()] = geneResult.curie; }
-          // geneResultList.push(geneResult.symbol + " " + geneResult.curie);
-          // console.log(geneResult.curie);
-          // console.log(geneResult.symbol);
+        for (const entityResult of res.data.results) {
+          if (entityResult.curie && entityResult[entityTypeSymbolField].displayText) {
+            searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
+            searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.curie; }
+          // entityResultList.push(entityResult.symbol + " " + entityResult.curie);
+          // console.log(entityResult.curie);
+          // console.log(entityResult.symbol);
       } }
-      let geneResultList = [];
-      for (const geneSymbol of splitList) {
-        if (geneSymbol.toLowerCase() in searchMap) {
-          geneResultList.push( { 'geneSymbol': geneSymbol, 'curie': searchMap[geneSymbol.toLowerCase()] } ); }
+      let entityResultList = [];
+      for (const entityTypeSymbol of splitList) {
+        if (entityTypeSymbol.toLowerCase() in searchMap) {
+          entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); }
         else { 
-          geneResultList.push( { 'geneSymbol': geneSymbol, 'curie': 'no Alliance curie' } ); } }
-      dispatch(setGeneResultList(geneResultList));
+          entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' } ); } }
+      dispatch(setEntityResultList(entityResultList));
     })
     .catch(err =>
       dispatch({
@@ -430,9 +433,9 @@ export const changeFieldEntityAddTaxonSelect = (taxon) => ({
   payload: { field: 'taxonSelect', value: taxon }
 });
 
-const setGeneResultList = (geneResultList) => ({
-  type: 'SET_GENE_RESULT_LIST',
-  payload: { geneResultList: geneResultList }
+const setEntityResultList = (entityResultList) => ({
+  type: 'SET_ENTITY_RESULT_LIST',
+  payload: { entityResultList: entityResultList }
 });
 
 

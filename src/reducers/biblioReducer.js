@@ -11,8 +11,8 @@ const initialState = {
   biblioAction: '',
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
-  entityAdd: {},
-  entityAddInit: { 'taxonSelect': '', 'genetextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'geneResultList': '' },
+  entityAdd: { 'entityTypeSelect': 'ATP:0000005' },
+  entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': 'ATP:0000005', 'entitytextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'entityResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
   entityEntitiesToMap: {},
@@ -225,13 +225,13 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
-    case 'SET_GENE_RESULT_LIST':
+    case 'SET_ENTITY_RESULT_LIST':
       // console.log(action.payload);
       return {
         ...state,
         entityAdd: {
           ...state.entityAdd,
-          geneResultList: action.payload.geneResultList
+          entityResultList: action.payload.entityResultList
         }
       }
 

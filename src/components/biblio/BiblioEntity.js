@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
-import { changeFieldEntityGeneList } from '../../actions/biblioActions';
+import { changeFieldEntityEntityList } from '../../actions/biblioActions';
 import { changeFieldEntityAddGeneralField } from '../../actions/biblioActions';
 import { changeFieldEntityAddTaxonSelect } from '../../actions/biblioActions';
 import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
@@ -152,12 +152,12 @@ const EntityCreate = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
-  const geneText = useSelector(state => state.biblio.entityAdd.genetextarea);
+  const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
   const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
-  const geneResultList = useSelector(state => state.biblio.entityAdd.geneResultList);
+  const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
   const topicSelect = 'entity type ATP:0000122';
 //   let geneStringListDash = [];
 //   let geneStringListParen = [];
@@ -168,22 +168,22 @@ const EntityCreate = () => {
 
   useEffect( () => {
     if (!(taxonSelect === '' || taxonSelect === undefined)) {
-      dispatch(changeFieldEntityGeneList(geneText, accessToken, taxonSelect)) }
-  }, [geneText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
+  }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function createEntities(refCurie) {
     const forApiArray = []
-    if ( geneResultList && geneResultList.length > 0 ) {
-      for (const geneResult of geneResultList.values()) {
-        console.log(geneResult);
-        console.log(geneResult.curie);
-        if (geneResult.curie !== 'no Alliance curie') {
+    if ( entityResultList && entityResultList.length > 0 ) {
+      for (const entityResult of entityResultList.values()) {
+        console.log(entityResult);
+        console.log(entityResult.curie);
+        if (entityResult.curie !== 'no Alliance curie') {
           let updateJson = {};
           updateJson['reference_curie'] = refCurie;
           updateJson['topic'] = biblioAction === 'entity' ? 'ATP:0000122' : 'insert topic here';
           // updateJson['entity_type'] = 'ATP:0000005';
           updateJson['entity_type'] = entityTypeSelect;
-          updateJson['alliance_entity'] = geneResult.curie;
+          updateJson['alliance_entity'] = entityResult.curie;
           // updateJson['taxon'] = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
           updateJson['taxon'] = taxonSelect;
           updateJson['note'] = noteText;
@@ -267,16 +267,16 @@ const EntityCreate = () => {
         </Form.Control>
       </Col>
       <Col className="form-label col-form-label" sm="2" >
-        <Form.Control as="textarea" id="genetextarea" type="genetextarea" value={geneText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
+        <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Container>
-          { geneResultList && geneResultList.length > 0 && geneResultList.map( (geneResult, index) => {
-            const colDisplayClass = (geneResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
+          { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
+            const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
             return (
-              <Row key={`geneEntityContainerrows ${index}`}>
-                <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{geneResult.geneSymbol}</Col>
-                <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">{geneResult.curie}</Col>
+              <Row key={`entityEntityContainerrows ${index}`}>
+                <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{entityResult.entityTypeSymbol}</Col>
+                <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">{entityResult.curie}</Col>
               </Row>)
           } ) }
         </Container>
