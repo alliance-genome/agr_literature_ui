@@ -27,14 +27,15 @@ import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
 
 
+export const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
+
 const BiblioEntity = () => {
   return (<><EntityCreate key="entityCreate" />
             <EntityEditor key="entityEditor" /></>); }
 
-  const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
+  const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
   const qualifierList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
   const curieToNameTaxon = { 'NCBITaxon:559292': 'Saccharomyces cerevisiae', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
-  const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
 const EntityEditor = () => {
   const dispatch = useDispatch();
@@ -247,7 +248,7 @@ const EntityCreate = () => {
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
     <Row className="form-group row" >
-      <Col className="div-grey-border" sm="1">
+      <Col sm="1">
         <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => {} } >
           <option key={`topicSelect ${topicSelect}`} value={topicSelect}>{topicSelect}</option>
         </Form.Control>

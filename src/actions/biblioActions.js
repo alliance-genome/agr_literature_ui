@@ -4,6 +4,8 @@
 
 import axios from "axios";
 
+import { curieToNameEntityType } from '../components/biblio/BiblioEntity';
+
 const restUrl = process.env.REACT_APP_RESTAPI;
 // const restUrl = 'stage-literature-rest.alliancegenome.org';
 // const port = 11223;
@@ -303,16 +305,18 @@ export const ateamLookupEntityList = (accessToken, entityType, taxon, entityCuri
     // const entityMappings = { 'SGD:S000005737': 'one', 'SGD:S000001855': 'two' }
     // dispatch(addEntityMappings(entityType, taxon, entityMappings));
 
+    const entityTypeName = curieToNameEntityType[entityType];
+    const entityTypeSymbolField = entityTypeName + 'Symbol';
     const entityMappings = {};
-    // right now always look for gene, entityType === ATP:0000005, if using others, change aGeneApiUrl
-    const aGeneApiUrl = ateamApiBaseUrl + 'api/gene/search?limit=10&page=0';
+    // const ateamApiUrl = ateamApiBaseUrl + 'api/gene/search?limit=10&page=0';
+    const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityTypeName + '/search?limit=10&page=0';
 
     const searchEntityJson =
       {"searchFilters": {
         "nameFilters": { "curie_keyword":{"queryString":entityCurieLookupString,"tokenOperator":"OR"} }
       } }
 
-    axios.post(aGeneApiUrl, searchEntityJson, {
+    axios.post(ateamApiUrl, searchEntityJson, {
       headers: {
         'content-type': 'application/json',
         'authorization': 'Bearer ' + accessToken
@@ -320,8 +324,8 @@ export const ateamLookupEntityList = (accessToken, entityType, taxon, entityCuri
     })
     .then(res => {
       if (res.data.results) {
-        for (const geneResult of res.data.results) {
-          if (geneResult.curie && geneResult.geneSymbol.displayText) { entityMappings[geneResult.curie] = geneResult.geneSymbol.displayText; }
+        for (const entityResult of res.data.results) {
+          if (entityResult.curie && entityResult[entityTypeSymbolField].displayText) { entityMappings[entityResult.curie] = entityResult[entityTypeSymbolField].displayText; }
       } }
       dispatch(addEntityMappings(entityType, taxon, entityMappings));
     })
