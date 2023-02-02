@@ -346,6 +346,7 @@ export default function(state = initialState, action) {
       let entityModalTextUpdateButtonEntityAdd = state.entityModalText;
       let entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAdd);
       const origTaxonSelect = entityAddUpdateButtonEntityAdd.taxonSelect;
+      const origEntityTypeSelect = entityAddUpdateButtonEntityAdd.entityTypeSelect;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO_ENTITY_ADD ' + action.payload.responseMessage);
         console.log('state.biblioUpdatingEntityAdd ' + state.biblioUpdatingEntityAdd);
@@ -353,6 +354,7 @@ export default function(state = initialState, action) {
           entityModalTextUpdateButtonEntityAdd = '';
           entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInit);
           entityAddUpdateButtonEntityAdd.taxonSelect = origTaxonSelect;
+          entityAddUpdateButtonEntityAdd.entityTypeSelect = origEntityTypeSelect;
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
       } else {
         entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
