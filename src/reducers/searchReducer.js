@@ -7,6 +7,7 @@ import {
   SEARCH_SET_SEARCH_RESULTS, SEARCH_SET_SEARCH_RESULTS_PAGE,
   SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT, SEARCH_SET_AUTHOR_FILTER,
   SEARCH_SET_FACETS_LOADING, SEARCH_SET_DATE_PUBMED_MODIFIED,
+  SEARCH_SET_DATE_PUBLISHED,
   SEARCH_SET_SEARCH_QUERY_FIELDS,
   SEARCH_SET_SORT_BY_PUBLISHED_DATE
 } from '../actions/searchActions';
@@ -37,6 +38,7 @@ const initialState = {
   authorFilter: "",
   datePubmedAdded: "",
   datePubmedModified: "",
+  datePublished: "",
   query_fields:"All",
   sort_by_published_date_order:"relevance"
 };
@@ -125,6 +127,12 @@ export default function(state = initialState, action) {
         datePubmedModified: action.payload.datePubmedModified
       }
 
+    case SEARCH_SET_DATE_PUBLISHED:
+      return {
+        ...state,
+        datePublished: action.payload.datePublished
+      }
+
     case SEARCH_SET_SEARCH_FACETS:
       return {
         ...state,
@@ -180,7 +188,7 @@ export default function(state = initialState, action) {
         ...state,
         searchFacetsLimits: action.payload.facetsLimits
       }
-  
+
     case SEARCH_SET_SORT_BY_PUBLISHED_DATE:
       return {
         ...state,

@@ -18,6 +18,7 @@ export const SEARCH_SET_AUTHOR_FILTER = 'SEARCH_SET_AUTHOR_FILTER';
 export const SEARCH_SET_FACETS_LOADING = 'SEARCH_SET_FACETS_LOADING';
 export const SEARCH_SET_DATE_PUBMED_ADDED = 'SEARCH_SET_DATE_PUBMED_ADDED';
 export const SEARCH_SET_DATE_PUBMED_MODIFIED = 'SEARCH_SET_DATE_PUBMED_MODIFIED';
+export const SEARCH_SET_DATE_PUBLISHED = 'SEARCH_SET_DATE_PUBLISHED';
 export const SEARCH_SET_SEARCH_QUERY_FIELDS = 'SEARCH_SET_SEARCH_QUERY_FIELDS';
 export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_DATE';
 
@@ -71,6 +72,9 @@ export const searchReferences = () => {
     if(state.search.datePubmedAdded){
       params.date_pubmed_arrive = state.search.datePubmedAdded;
     }
+    if(state.search.datePublished){
+      params.date_published = state.search.datePublished;
+    }
     axios.post(restUrl + '/search/references', params )
 
         .then(res => {
@@ -81,7 +85,7 @@ export const searchReferences = () => {
   }
 }
 
-export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified, sortByPublishedDate) => {
+export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified, datePublished, sortByPublishedDate) => {
   return dispatch => {
     dispatch(setFacetsLoading());
     let params = {
@@ -99,6 +103,10 @@ export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount
     if(datePubmedAdded){
       params.date_pubmed_arrive = datePubmedAdded;
     }
+    if(datePublished){
+      params.date_published = datePublished;
+    }
+
     axios.post(restUrl + '/search/references', params)
         .then(res => {
           dispatch(setSearchFacets(res.data.aggregations));
@@ -229,6 +237,13 @@ export const setDatePubmedModified = (datePubmed) => ({
   type: SEARCH_SET_DATE_PUBMED_MODIFIED,
   payload: {
     datePubmedModified : datePubmed
+  }
+});
+
+export const setDatePublished = (datePubmed) => ({
+  type: SEARCH_SET_DATE_PUBLISHED,
+  payload: {
+    datePublished : datePubmed
   }
 });
 

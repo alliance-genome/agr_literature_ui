@@ -16,6 +16,8 @@ import { RowDisplaySimple } from './biblio/BiblioDisplay';
 
 import { splitCurie } from './biblio/BiblioEditor';
 
+import { curieToNameEntityType } from './biblio/BiblioEntity';
+
 import {
   downloadReferencefile,
   queryId,
@@ -209,8 +211,6 @@ const BiblioTagging = () => {
   // example data structure
   // const entityEntityMappings = { 'ATP:0000005' : { 'NCBITaxon:559292' : { 'SGD:S000001855' : 'ACT1' } } };
 
-  const allowedEntityTypes = new Set();
-  allowedEntityTypes.add('ATP:0000005');
   const allowedTaxons = new Set();
   allowedTaxons.add('NCBITaxon:559292');
   allowedTaxons.add('NCBITaxon:6239');
@@ -223,7 +223,7 @@ const BiblioTagging = () => {
   allowedTaxons.add('NCBITaxon:9606');
 
   for (const [entityType, entityTypeValue] of Object.entries(entityEntitiesToMap)) {
-    if (allowedEntityTypes.has(entityType)) {
+    if (entityType in curieToNameEntityType) {
       for (const [taxon, entitySet] of Object.entries(entityTypeValue)) {
         if (allowedTaxons.has(taxon)) {
           const entityCurieLookupList = [];

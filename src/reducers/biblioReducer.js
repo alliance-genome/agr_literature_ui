@@ -11,8 +11,8 @@ const initialState = {
   biblioAction: '',
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
-  entityAdd: {},
-  entityAddInit: { 'taxonSelect': '', 'genetextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'geneResultList': '' },
+  entityAdd: { 'entityTypeSelect': 'ATP:0000005' },
+  entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': 'ATP:0000005', 'entitytextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'entityResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
   entityEntitiesToMap: {},
@@ -225,13 +225,13 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
-    case 'SET_GENE_RESULT_LIST':
+    case 'SET_ENTITY_RESULT_LIST':
       // console.log(action.payload);
       return {
         ...state,
         entityAdd: {
           ...state.entityAdd,
-          geneResultList: action.payload.geneResultList
+          entityResultList: action.payload.entityResultList
         }
       }
 
@@ -346,6 +346,7 @@ export default function(state = initialState, action) {
       let entityModalTextUpdateButtonEntityAdd = state.entityModalText;
       let entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAdd);
       const origTaxonSelect = entityAddUpdateButtonEntityAdd.taxonSelect;
+      const origEntityTypeSelect = entityAddUpdateButtonEntityAdd.entityTypeSelect;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO_ENTITY_ADD ' + action.payload.responseMessage);
         console.log('state.biblioUpdatingEntityAdd ' + state.biblioUpdatingEntityAdd);
@@ -353,6 +354,7 @@ export default function(state = initialState, action) {
           entityModalTextUpdateButtonEntityAdd = '';
           entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInit);
           entityAddUpdateButtonEntityAdd.taxonSelect = origTaxonSelect;
+          entityAddUpdateButtonEntityAdd.entityTypeSelect = origEntityTypeSelect;
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
       } else {
         entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
