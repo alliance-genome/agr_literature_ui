@@ -583,6 +583,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
         generateCorrectionsSimple(referenceJson);
       }
       response_payload = referenceJson;
+      response_payload["topic_entity_tags"] = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie)
     }
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
     dispatch({
