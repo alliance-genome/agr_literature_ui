@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldEntityEntityList } from '../../actions/biblioActions';
@@ -25,6 +25,7 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
+import axios from "axios";
 
 
 export const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
@@ -46,8 +47,18 @@ const EntityEditor = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
-  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
+  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+
+  const fetchData = async () => {
+    const result = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie);
+    setTopicEntityTags(result.data);
+  }
+
+  useEffect(() => {
+    fetchData();
+  }, [referenceCurie]);
 
   return (
     <Container fluid>
@@ -64,7 +75,7 @@ const EntityEditor = () => {
       <Col className="div-grey-border" sm="3">internal notes</Col>
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
-    { 'topic_entity_tags' in referenceJsonLive && referenceJsonLive['topic_entity_tags'].length > 0 && referenceJsonLive['topic_entity_tags'].map( (tetDict, index) => {
+    { topicEntityTags.map( (tetDict, index) => {
       let qualifierValue = ''; let qualifierId = ''; let qualifierIndex = '';
       // UI only allows display/selection of one priority qualifier, but someone could connect in the database multiple priority qualifier in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
       if ('props' in tetDict && tetDict['props'].length > 0) {
