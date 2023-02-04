@@ -15,8 +15,6 @@ const initialState = {
   entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': 'ATP:0000005', 'entitytextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'entityResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
-  entityEntitiesToMap: {},
-  entityEntityMappings: {},
   workflowModalText: '',
   isUpdatingWorkflowCuratability: false,
 
@@ -41,23 +39,6 @@ const initialState = {
   updateMessages: [],
   loadingFileNames: new Set()
 };
-
-const deriveEntitiesToMap = (referenceJson) => {
-  let biblioGetReferenceCurieEntityEntitiesToMap = {};
-  if ('topic_entity_tags' in referenceJson && referenceJson['topic_entity_tags'].length > 0) {
-    for (const tet of referenceJson['topic_entity_tags']) {
-      if (('taxon' in tet && tet['taxon'] !== '') &&
-          ('entity_type' in tet && tet['entity_type'] !== '') &&
-          ('alliance_entity' in tet && tet['alliance_entity'] !== '')) {
-            // console.log(tet['taxon'] + " " + tet['entity_type'] + " " + tet['alliance_entity']);
-            if (!(tet['entity_type'] in biblioGetReferenceCurieEntityEntitiesToMap)) {
-              biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']] = {}; }
-            if (!(tet['taxon'] in biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']])) {
-              biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']][tet['taxon']] = new Set(); }
-            biblioGetReferenceCurieEntityEntitiesToMap[tet['entity_type']][tet['taxon']].add(tet['alliance_entity']);
-  } } }
-  return biblioGetReferenceCurieEntityEntitiesToMap;
-}
 
 const deriveCuratability = (referenceJson) => {
   referenceJson['workflow_curatability'] = {};      // parent term in ontology is called reference_type which is not clear
@@ -267,23 +248,6 @@ export default function(state = initialState, action) {
         isUpdatingWorkflowCuratability: false,
       }
 
-    case 'ENTITY_ADD_ENTITY_MAPPINGS':
-      // console.log('reducer ENTITY_ADD_ENTITY_MAPPINGS');
-      // console.log(action.payload);
-      // payload: { entityType: entityType, taxon: taxon, entityMappings: entityMappings }
-      const biblioEntityEntityMappingsAddEntityMappings = state.entityEntityMappings;
-      if (!(action.payload.entityType in biblioEntityEntityMappingsAddEntityMappings)) {
-        biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType] = {}; }
-      if (!(action.payload.taxon in biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType])) {
-        biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType][action.payload.taxon] = {}; }
-      for (const [entityCurie, entityName] of Object.entries(action.payload.entityMappings)) {
-        biblioEntityEntityMappingsAddEntityMappings[action.payload.entityType][action.payload.taxon][entityCurie] = entityName; }
-      // must update referenceJsonLive to trigger rendering it again with new entityEntityMappings giving the entity names
-      return {
-        ...state,
-        referenceJsonLive: _.cloneDeep(state.referenceJsonLive),
-        entityEntityMappings: biblioEntityEntityMappingsAddEntityMappings
-      }
     case 'SET_ENTITY_MODAL_TEXT':
       console.log('SET_ENTITY_MODAL_TEXT reducer ' + action.payload);
       return {
@@ -918,11 +882,7 @@ export default function(state = initialState, action) {
                    action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'outside_corpus'; }
         }
 
-        // const biblioGetReferenceCurieEntityEntitiesToMap = deriveEntitiesToMap(action.payload)
         deriveCuratability(action.payload);
-
-        const biblioGetReferenceCurieEntityEntitiesToMap = deriveEntitiesToMap(action.payload)
-        // console.log(biblioGetReferenceCurieEntityEntitiesToMap);
 
         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
         const dbCopyGetReferenceCurie = _.cloneDeep(action.payload);
@@ -931,7 +891,6 @@ export default function(state = initialState, action) {
           referenceCurie: action.payload.curie,
           referenceJsonLive: action.payload,
           referenceJsonDb: dbCopyGetReferenceCurie,
-          entityEntitiesToMap: biblioGetReferenceCurieEntityEntitiesToMap,
           hasPmid: pmidBool,
           getReferenceCurieFlag: false,
           isLoading: false

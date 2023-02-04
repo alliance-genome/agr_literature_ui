@@ -46,19 +46,37 @@ const EntityEditor = () => {
 
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
+  const [entityEntityMappings, setEntityEntityMappings] = useState({});
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  const [offset, setOffset] = useState(0);
+  const [limit, setLimit] = useState(2);
+
+  const fetchMappings = async () => {
+    let config = {
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + accessToken
+      }
+    };
+    const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
+        config);
+    setEntityEntityMappings(resultMappings.data);
+  }
 
   const fetchData = async () => {
-    const result = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie);
-    setTopicEntityTags(result.data);
+    const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?offset=" + offset + "&limit=" + limit);
+    setTopicEntityTags(resultTags.data);
   }
 
   useEffect(() => {
-    fetchData();
+    fetchMappings();
   }, [referenceCurie]);
+
+  useEffect(() => {
+    fetchData();
+  }, [referenceCurie, offset, limit]);
 
   return (
     <Container fluid>
@@ -85,9 +103,7 @@ const EntityEditor = () => {
             qualifierId = tetpDict['topic_entity_tag_prop_id'];
             qualifierIndex = indexPriority;
             qualifierValue = tetpDict['qualifier']; } } }
-      const entityName = (tetDict.entity_type in entityEntityMappings && tetDict.taxon in entityEntityMappings[tetDict.entity_type] &&
-                          tetDict.alliance_entity in entityEntityMappings[tetDict.entity_type][tetDict.taxon]) ?
-                          entityEntityMappings[tetDict.entity_type][tetDict.taxon][tetDict.alliance_entity] : 'unknown';
+      const entityName = tetDict.alliance_entity in entityEntityMappings ? entityEntityMappings[tetDict.alliance_entity] : 'unknown';
       if ( (biblioAction === 'entity') && (tetDict.topic !== 'ATP:0000122') ) { return ""; }
       // else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return ""; } // topic no longer a separate section
       else {

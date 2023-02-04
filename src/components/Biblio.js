@@ -204,39 +204,9 @@ const BiblioTagging = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
 
-  const accessToken = useSelector(state => state.isLogged.accessToken);
+
   const biblioAction = useSelector(state => state.biblio.biblioAction);
-  const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
-  const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
-  // example data structure
-  // const entityEntityMappings = { 'ATP:0000005' : { 'NCBITaxon:559292' : { 'SGD:S000001855' : 'ACT1' } } };
 
-  const allowedTaxons = new Set();
-  allowedTaxons.add('NCBITaxon:559292');
-  allowedTaxons.add('NCBITaxon:6239');
-  allowedTaxons.add('NCBITaxon:7227');
-  allowedTaxons.add('NCBITaxon:7955');
-  allowedTaxons.add('NCBITaxon:10116');
-  allowedTaxons.add('NCBITaxon:10090');
-  allowedTaxons.add('NCBITaxon:8355');
-  allowedTaxons.add('NCBITaxon:8364');
-  allowedTaxons.add('NCBITaxon:9606');
-
-  for (const [entityType, entityTypeValue] of Object.entries(entityEntitiesToMap)) {
-    if (entityType in curieToNameEntityType) {
-      for (const [taxon, entitySet] of Object.entries(entityTypeValue)) {
-        if (allowedTaxons.has(taxon)) {
-          const entityCurieLookupList = [];
-          entitySet.forEach((entityCurie) => {
-            if (!(entityType in entityEntityMappings && taxon in entityEntityMappings[entityType] &&
-                  entityCurie in entityEntityMappings[entityType][taxon])) {
-              entityCurieLookupList.push(entityCurie); }
-          });
-          if (entityCurieLookupList.length > 0) {
-            const entityCurieLookupString = entityCurieLookupList.join(" ");
-            // console.log('look up ' + entityCurieLookupString);
-            dispatch(ateamLookupEntityList(accessToken, entityType, taxon, entityCurieLookupString))
-  } } } } }
 
   if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';

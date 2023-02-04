@@ -297,52 +297,6 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
 } };
 
 
-export const ateamLookupEntityList = (accessToken, entityType, taxon, entityCurieLookupString) => {
-  return dispatch => {
-    // console.log('looking up ateamLookupEntityList ' + entityCurieLookupString);
-
-    // sample test data
-    // const entityMappings = { 'SGD:S000005737': 'one', 'SGD:S000001855': 'two' }
-    // dispatch(addEntityMappings(entityType, taxon, entityMappings));
-
-    const entityTypeName = curieToNameEntityType[entityType];
-    const entityTypeSymbolField = entityTypeName + 'Symbol';
-    const entityMappings = {};
-    // const ateamApiUrl = ateamApiBaseUrl + 'api/gene/search?limit=10&page=0';
-    const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityTypeName + '/search?limit=10&page=0';
-
-    const searchEntityJson =
-      {"searchFilters": {
-        "nameFilters": { "curie_keyword":{"queryString":entityCurieLookupString,"tokenOperator":"OR"} }
-      } }
-
-    axios.post(ateamApiUrl, searchEntityJson, {
-      headers: {
-        'content-type': 'application/json',
-        'authorization': 'Bearer ' + accessToken
-      }
-    })
-    .then(res => {
-      if (res.data.results) {
-        for (const entityResult of res.data.results) {
-          if (entityResult.curie && entityResult[entityTypeSymbolField].displayText) { entityMappings[entityResult.curie] = entityResult[entityTypeSymbolField].displayText; }
-      } }
-      dispatch(addEntityMappings(entityType, taxon, entityMappings));
-    })
-    .catch(err => {
-      // console.log('axios failure'); console.log(err);
-      dispatch({
-        type: 'SET_ENTITY_MODAL_TEXT',
-        payload: 'Entity lookup API failure' + err
-      })});
-  }
-};
-
-const addEntityMappings = (entityType, taxon, entityMappings) => ({
-  type: 'ENTITY_ADD_ENTITY_MAPPINGS',
-  payload: { entityType: entityType, taxon: taxon, entityMappings: entityMappings }
-});
-
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType) => {
   return dispatch => {
     // console.log('action change field entity list ' + entityText + ' entityType ' + entityType);
@@ -583,9 +537,6 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
         generateCorrectionsSimple(referenceJson);
       }
       response_payload = referenceJson;
-      let resp = await axios.get(restUrl + '/topic_entity_tag/by_reference/' + referenceCurie)
-      response_payload.topic_entity_tags = resp.data
-      console.log(response_payload)
     }
     // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
     dispatch({
