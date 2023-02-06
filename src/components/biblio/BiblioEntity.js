@@ -50,6 +50,7 @@ const EntityEditor = () => {
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
+  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [offset, setOffset] = useState(0);
@@ -79,18 +80,18 @@ const EntityEditor = () => {
 
   useEffect(() => {
     fetchMappings();
-  }, [referenceCurie]);
+  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity]);
 
   useEffect(() => {
     fetchTotalTagsCount();
-  }, [referenceCurie])
+  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity])
 
   useEffect(() => {
     fetchData();
-  }, [referenceCurie, offset, limit]);
+  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, offset, limit]);
 
   const changePage = (action) => {
-      let maxOffset= Math.max(0, totalTagsCount - limit + 1);
+      let maxOffset= Math.max(0, Math.floor(totalTagsCount/limit) * limit);
       switch (action){
         case 'Next':
           setOffset(Math.min(maxOffset, offset + limit));
