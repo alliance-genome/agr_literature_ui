@@ -1,6 +1,6 @@
 import React from 'react';
 import Form from 'react-bootstrap/Form';
-import {searchReferences, setSearchSizeResultsCount, setSearchResultsPage} from '../../actions/searchActions';
+import {searchReferences, setSearchSizeResultsCount, setSearchResultsPage, setSortByPublishedDate} from '../../actions/searchActions';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -14,6 +14,7 @@ const SearchOptions = () => {
     const searchResultsCount = useSelector(state => state.search.searchResultsCount);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const searchResultsPage  = useSelector(state => state.search.searchResultsPage);
+
 
     const dispatch = useDispatch();
 
@@ -72,6 +73,17 @@ const SearchOptions = () => {
                         <option>Results per page 10</option>
                         <option>Results per page 25</option>
                         <option>Results per page 50</option>
+                    </Form.Control>
+                </Col>
+                <Col sm={2}>
+                    <Form.Control as="select" id="sortByPublishedDate" name="sortByPublishedDate"
+                                  onChange={(e) => {
+                                      dispatch(setSortByPublishedDate(e.target.value))
+                                      dispatch(searchReferences());
+                                  } }>
+                        <option value="relevance" selected>Relevance</option>
+                        <option value="desc">Newest first</option>
+                        <option value="asc">Oldest first</option>
                     </Form.Control>
                 </Col>
                 <Col sm={6}>

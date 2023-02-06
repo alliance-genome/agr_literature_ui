@@ -20,7 +20,7 @@ export const SEARCH_SET_DATE_PUBMED_ADDED = 'SEARCH_SET_DATE_PUBMED_ADDED';
 export const SEARCH_SET_DATE_PUBMED_MODIFIED = 'SEARCH_SET_DATE_PUBMED_MODIFIED';
 export const SEARCH_SET_DATE_PUBLISHED = 'SEARCH_SET_DATE_PUBLISHED';
 export const SEARCH_SET_SEARCH_QUERY_FIELDS = 'SEARCH_SET_SEARCH_QUERY_FIELDS';
-
+export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_DATE';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -63,7 +63,8 @@ export const searchReferences = () => {
       facets_values: state.search.searchFacetsValues,
       facets_limits: state.search.searchFacetsLimits,
       author_filter: state.search.authorFilter,
-      query_fields: state.search.query_fields
+      query_fields: state.search.query_fields,
+      sort_by_published_date_order: state.search.sortByPublishedDate
     }
     if(state.search.datePubmedModified){
       params.date_pubmed_modified = state.search.datePubmedModified;
@@ -84,7 +85,7 @@ export const searchReferences = () => {
   }
 }
 
-export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified, datePublished) => {
+export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified, datePublished, sortByPublishedDate) => {
   return dispatch => {
     dispatch(setFacetsLoading());
     let params = {
@@ -93,7 +94,8 @@ export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount
       page: searchResultsPage,
       facets_values: facetsValues,
       facets_limits: facetsLimits,
-      author_filter: authorFilter
+      author_filter: authorFilter,
+      sort_by_published_date_order: sortByPublishedDate
     }
     if(datePubmedModified){
       params.date_pubmed_modified = datePubmedModified;
@@ -242,5 +244,12 @@ export const setDatePublished = (datePubmed) => ({
   type: SEARCH_SET_DATE_PUBLISHED,
   payload: {
     datePublished : datePubmed
+  }
+});
+
+export const setSortByPublishedDate = (sortByPublishedDate) => ({
+  type: SEARCH_SET_SORT_BY_PUBLISHED_DATE,
+  payload: {
+    sortByPublishedDate : sortByPublishedDate
   }
 });
