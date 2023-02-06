@@ -8,7 +8,8 @@ import {
   SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT, SEARCH_SET_AUTHOR_FILTER,
   SEARCH_SET_FACETS_LOADING, SEARCH_SET_DATE_PUBMED_MODIFIED,
   SEARCH_SET_DATE_PUBLISHED,
-  SEARCH_SET_SEARCH_QUERY_FIELDS
+  SEARCH_SET_SEARCH_QUERY_FIELDS,
+  SEARCH_SET_SORT_BY_PUBLISHED_DATE
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -38,7 +39,8 @@ const initialState = {
   datePubmedAdded: "",
   datePubmedModified: "",
   datePublished: "",
-  query_fields:"All"
+  query_fields:"All",
+  sort_by_published_date_order:"relevance"
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -125,12 +127,12 @@ export default function(state = initialState, action) {
         datePubmedModified: action.payload.datePubmedModified
       }
 
-      case SEARCH_SET_DATE_PUBLISHED:
-        return {
-          ...state,
-          datePublished: action.payload.datePublished
-        }
-  
+    case SEARCH_SET_DATE_PUBLISHED:
+      return {
+        ...state,
+        datePublished: action.payload.datePublished
+      }
+
     case SEARCH_SET_SEARCH_FACETS:
       return {
         ...state,
@@ -185,6 +187,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         searchFacetsLimits: action.payload.facetsLimits
+      }
+
+    case SEARCH_SET_SORT_BY_PUBLISHED_DATE:
+      return {
+        ...state,
+        sortByPublishedDate: action.payload.sortByPublishedDate
       }
 
 //     case 'FETCH_POSTS':
