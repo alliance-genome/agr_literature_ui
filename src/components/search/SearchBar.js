@@ -33,6 +33,8 @@ const SearchBar = () => {
                             <Dropdown.Item onClick={() => updateSearchField('Title')}>Title</Dropdown.Item>
                             <Dropdown.Item onClick={() => updateSearchField('Abstract')}>Abstract</Dropdown.Item>
                             <Dropdown.Item onClick={() => updateSearchField('Keyword')}>PubMed Keyword</Dropdown.Item>
+                            <Dropdown.Item onClick={() => updateSearchField('Curie')}>Alliance Curie</Dropdown.Item>
+                            <Dropdown.Item onClick={() => updateSearchField('Xref')}>Cross Reference</Dropdown.Item>
                         </Dropdown.Menu>
                     </Dropdown>
                     <Form.Control inline="true" type="text" id="titleField" name="titleField" value={searchQuery}
