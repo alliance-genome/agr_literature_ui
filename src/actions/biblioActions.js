@@ -4,7 +4,6 @@
 
 import axios from "axios";
 
-import { curieToNameEntityType } from '../components/biblio/BiblioEntity';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 // const restUrl = 'stage-literature-rest.alliancegenome.org';

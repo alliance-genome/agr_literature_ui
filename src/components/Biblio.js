@@ -1,4 +1,3 @@
-// import { useState, useEffect } from 'react';
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
@@ -16,8 +15,6 @@ import { RowDisplaySimple } from './biblio/BiblioDisplay';
 
 import { splitCurie } from './biblio/BiblioEditor';
 
-import { curieToNameEntityType } from './biblio/BiblioEntity';
-
 import {
   downloadReferencefile,
   queryId,
@@ -30,8 +27,6 @@ import { changeBiblioSupplementExpandToggler } from '../actions/biblioActions';
 
 import { changeBiblioActionToggler } from '../actions/biblioActions';
 import { updateButtonBiblio } from '../actions/biblioActions';
-
-import { ateamLookupEntityList } from '../actions/biblioActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -200,13 +195,9 @@ const BiblioActionRouter = () => {
 
 
 const BiblioTagging = () => {
-  const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
-
-
   const biblioAction = useSelector(state => state.biblio.biblioAction);
-
 
   if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
