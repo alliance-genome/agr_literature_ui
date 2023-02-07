@@ -54,40 +54,39 @@ const EntityEditor = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState(10);
+  //const [limit, setLimit] = useState(10);
+  const limit = 10; // fixed limit value for now
 
-  const fetchMappings = async () => {
-    let config = {
-      headers: {
-        'content-type': 'application/json',
-        'authorization': 'Bearer ' + accessToken
-      }
-    };
-    const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
-        config);
-    setEntityEntityMappings(resultMappings.data);
-  }
-
-  const fetchData = async () => {
-    const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?offset=" + offset + "&limit=" + limit);
-    setTopicEntityTags(resultTags.data);
-  }
-
-  const fetchTotalTagsCount = async () => {
-    const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?count_only=true");
-    setTotalTagsCount(resultTags.data);
-  }
 
   useEffect(() => {
-    fetchMappings();
-  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity]);
+    const fetchMappings = async () => {
+      let config = {
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer ' + accessToken
+        }
+      };
+      const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
+          config);
+      setEntityEntityMappings(resultMappings.data);
+    }
+    fetchMappings().then();
+  }, [accessToken, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity]);
 
   useEffect(() => {
-    fetchTotalTagsCount();
+    const fetchTotalTagsCount = async () => {
+      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?count_only=true");
+      setTotalTagsCount(resultTags.data);
+    }
+    fetchTotalTagsCount().then();
   }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity])
 
   useEffect(() => {
-    fetchData();
+    const fetchData = async () => {
+      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?offset=" + offset + "&limit=" + limit);
+      setTopicEntityTags(resultTags.data);
+    }
+    fetchData().then();
   }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, offset, limit]);
 
   const changePage = (action) => {
