@@ -299,11 +299,11 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType) => {
   return dispatch => {
     // console.log('action change field entity list ' + entityText + ' entityType ' + entityType);
-    let splitList = [];
+    let entityInputList = [];
     if (entityText && entityText !== '') {
-      splitList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item);
+      entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item);
     }
-    const entityQueryString = splitList.join(" ").replace(/(?=[()])/g, '\\');
+    const entityQueryString = entityInputList.map(element => { return element.replace(/(?=[() ])/g, '\\'); }).join(" ");
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
     const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityType + '/search?limit=10&page=0';
@@ -350,7 +350,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
           // console.log(entityResult.symbol);
       } }
       let entityResultList = [];
-      for (const entityTypeSymbol of splitList) {
+      for (const entityTypeSymbol of entityInputList) {
         if (entityTypeSymbol.toLowerCase() in searchMap) {
           entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); }
         else { 
