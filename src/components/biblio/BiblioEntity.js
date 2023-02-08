@@ -28,6 +28,8 @@ import Spinner from 'react-bootstrap/Spinner'
 import axios from "axios";
 import Pagination from "react-bootstrap/Pagination";
 
+import { faSort } from '@fortawesome/free-solid-svg-icons'
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 export const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
@@ -54,6 +56,8 @@ const EntityEditor = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [offset, setOffset] = useState(0);
+  const [sortBy, setSortBy] = useState(null);
+  const [descSort, setDescSort] = useState(true);
   //const [limit, setLimit] = useState(10);
   const limit = 10; // fixed limit value for now
 
@@ -83,14 +87,21 @@ const EntityEditor = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?offset=" + offset + "&limit=" + limit);
+      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?offset=" + offset + "&limit=" + limit
+      if (sortBy !== null && sortBy !== undefined) {
+        url += "&sort_by=" + sortBy
+      }
+      if (descSort) {
+        url += "&desc_sort=true"
+      }
+      const resultTags = await axios.get(url);
       setTopicEntityTags(resultTags.data);
     }
     fetchData().then();
-  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, offset, limit]);
+  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, offset, limit]);
 
   const changePage = (action) => {
-      let maxOffset= Math.max(0, Math.floor(totalTagsCount/limit) * limit);
+      let maxOffset = Math.max(0, (Math.ceil(totalTagsCount/limit) - 1) * limit);
       switch (action){
         case 'Next':
           setOffset(Math.min(maxOffset, offset + limit));
@@ -118,7 +129,7 @@ const EntityEditor = () => {
             <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Editor</h3></Col></Row>
           <Row className="form-group row" >
             <Col className="div-grey-border" sm="1">topic</Col>
-            <Col className="div-grey-border" sm="1">entity type</Col>
+            <Col className="div-grey-border" sm="1">entity type <FontAwesomeIcon icon={faSort} style={{color: sortBy === "entity_type" ? '#0069d9' : 'black'}}  onClick={() => {setSortBy("entity_type"); setDescSort(!descSort)}}/></Col>
             <Col className="div-grey-border" sm="1">species (taxon)</Col>
             <Col className="div-grey-border" sm="2">entity name</Col>
             <Col className="div-grey-border" sm="2">entity curie</Col>
