@@ -54,6 +54,8 @@ const EntityEditor = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [offset, setOffset] = useState(0);
+  const sortBy = null;
+  const descSort = false;
   //const [limit, setLimit] = useState(10);
   const limit = 10; // fixed limit value for now
 
@@ -83,14 +85,21 @@ const EntityEditor = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?offset=" + offset + "&limit=" + limit);
+      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?offset=" + offset + "&limit=" + limit
+      if (sortBy !== null && sortBy !== undefined) {
+        url += "&sort_by=" + sortBy
+      }
+      if (descSort) {
+        url += "&desc_sort=true"
+      }
+      const resultTags = await axios.get(url);
       setTopicEntityTags(resultTags.data);
     }
     fetchData().then();
-  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, offset, limit]);
+  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, offset, limit]);
 
   const changePage = (action) => {
-      let maxOffset= Math.max(0, Math.floor(totalTagsCount/limit) * limit);
+      let maxOffset = Math.max(0, (Math.ceil(totalTagsCount/limit) - 1) * limit);
       switch (action){
         case 'Next':
           setOffset(Math.min(maxOffset, offset + limit));
