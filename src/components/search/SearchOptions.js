@@ -65,9 +65,7 @@ const SearchOptions = () => {
                 <Col sm={2}>
                     <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount"
                                   onChange={(e) => {
-                                      //const intSizeResultsCount = parseInt(e.target.value.replace('Results per page ', ''));
-                                      const intSizeResultsCount = parseInt(e.target.value);
-                                      dispatch(setSearchSizeResultsCount(intSizeResultsCount));
+                                      dispatch(setSearchSizeResultsCount(e.target.value));
                                       dispatch(setSearchResultsPage(0));
                                       dispatch(searchReferences());
                                   } }>
