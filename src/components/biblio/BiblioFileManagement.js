@@ -31,6 +31,7 @@ import axios from "axios";
 import Pagination from "react-bootstrap/Pagination";
 
 import {useDropzone} from 'react-dropzone';
+import styled from 'styled-components';
 
 export const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
@@ -43,19 +44,32 @@ const BiblioFileManagement = () => {
             <EntityEditor key="entityEditor" />
           </>); }
 
+
+const Container2 = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  border-width: 2px;
+  border-radius: 2px;
+  border-style: dashed;
+  background-color: #fafafa;
+  color: #bdbdbd;
+  outline: none;
+  transition: border .24s ease-in-out;
+`;
+
+
 const FileUpload = () => {
   const {acceptedFiles, getRootProps, getInputProps} = useDropzone();
   return (
-    <section className="container">
-      <div {...getRootProps({className: 'dropzone'})}>
+    <div>
+      <Container2 {...getRootProps({className: 'dropzone'})}>
         <input {...getInputProps()} />
         <p>Drag 'n' drop some files here, or click to select files</p>
-      </div>
-      <aside>
-        <h4>Files</h4>
-        <ul></ul>
-      </aside>
-    </section>
+      </Container2>
+    </div>
   );
 }
 
