@@ -9,6 +9,7 @@ import BiblioDisplay from './biblio/BiblioDisplay';
 import BiblioEditor from './biblio/BiblioEditor';
 import BiblioEntity from './biblio/BiblioEntity';
 import BiblioWorkflow from './biblio/BiblioWorkflow';
+import BiblioFileManagement from './biblio/BiblioFileManagement';
 
 import { RowDisplayString } from './biblio/BiblioDisplay';
 import { RowDisplaySimple } from './biblio/BiblioDisplay';
@@ -86,10 +87,12 @@ const BiblioActionToggler = () => {
   let editorChecked = '';
   let entityChecked = '';
   let workflowChecked = '';
+  let filemanagementChecked = '';
   let radioFormDisplayClassname = 'radio-form';
   let radioFormEditorClassname = 'radio-form';
   let radioFormEntityClassname = 'radio-form';
   let radioFormWorkflowClassname = 'radio-form';
+  let radioFormFilemanagementClassname = 'radio-form';
   let biblioActionTogglerSelected = 'display';
   if (biblioAction === 'editor') {
       radioFormEditorClassname += ' underlined';
@@ -103,6 +106,10 @@ const BiblioActionToggler = () => {
       radioFormWorkflowClassname += ' underlined';
       workflowChecked = 'checked';
       biblioActionTogglerSelected = 'workflow'; }
+    else if (biblioAction === 'filemanagement') {
+      radioFormFilemanagementClassname += ' underlined';
+      filemanagementChecked = 'checked';
+      biblioActionTogglerSelected = 'filemanagement'; }
     else {
       radioFormDisplayClassname += ' underlined';
       displayChecked = 'checked'; }
@@ -172,6 +179,17 @@ const BiblioActionToggler = () => {
           onChange={(e) => dispatch(changeBiblioActionToggler(e, 'workflow'))}
         />
       </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormFilemanagementClassname}
+          checked={filemanagementChecked}
+          type='radio'
+          label='file management'
+          id='biblio-toggler-filemanagement'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'filemanagement'))}
+        />
+      </div>
     </div>
     </Form>);
 } // const BiblioActionToggler
@@ -188,6 +206,8 @@ const BiblioActionRouter = () => {
       return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
     case 'workflow':
       return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
+    case 'filemanagement':
+      return (<><Container><BiblioActionToggler /></Container><BiblioFileManagement /></>);
     default:
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
   }
