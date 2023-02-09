@@ -1,5 +1,5 @@
 
-import {useEffect, useState} from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldEntityEntityList } from '../../actions/biblioActions';
@@ -31,7 +31,6 @@ import axios from "axios";
 import Pagination from "react-bootstrap/Pagination";
 
 import {useDropzone} from 'react-dropzone';
-import styled from 'styled-components';
 
 export const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
@@ -39,37 +38,40 @@ const BiblioFileManagement = () => {
   return (<>
             <Container>
               <BiblioCitationDisplay key="filemanagementCitationDisplay" />
-              <FileUpload />
+              <FileUpload main_or_supp="main" />
+              <FileUpload main_or_supp="supplemental" />
             </Container>
             <EntityEditor key="entityEditor" />
           </>); }
 
 
-const Container2 = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  border-width: 2px;
-  border-radius: 2px;
-  border-style: dashed;
-  background-color: #fafafa;
-  color: #bdbdbd;
-  outline: none;
-  transition: border .24s ease-in-out;
-`;
+const FileUpload = ({main_or_supp}) => {
+//   const label_type = main_or_supp;
+  const onDrop = useCallback((acceptedFiles) => {
+    acceptedFiles.forEach((file) => {
+      const reader = new FileReader()
 
-
-const FileUpload = () => {
-  const {acceptedFiles, getRootProps, getInputProps} = useDropzone();
+      reader.onabort = () => console.log('file reading was aborted')
+      reader.onerror = () => console.log('file reading has failed')
+      reader.onload = () => {
+      // Do whatever you want with the file contents
+        const binaryStr = reader.result
+        console.log(binaryStr)
+      }
+      reader.readAsArrayBuffer(file)
+    })
+    
+  }, [])
+  const {getRootProps, getInputProps} = useDropzone({onDrop})
   return (
-    <div>
-      <Container2 {...getRootProps({className: 'dropzone'})}>
-        <input {...getInputProps()} />
-        <p>Drag 'n' drop some files here, or click to select files</p>
-      </Container2>
-    </div>
+    <Row key={main_or_supp} >
+      <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>{main_or_supp} file</Col>
+      <Col lg={{ span: 10 }}>
+        <div className="dropzone" {...getRootProps()} >
+          <input {...getInputProps()} />
+          <p>Drag and drop {main_or_supp} files here, or click to select files</p>
+        </div></Col>
+    </Row>
   );
 }
 
