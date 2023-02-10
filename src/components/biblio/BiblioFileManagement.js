@@ -9,7 +9,7 @@ import axios from "axios";
 import { RowDisplayString } from './BiblioDisplay';
 import ModalGeneric from './ModalGeneric';
 
-import { fileUploadResult } from '../../actions/biblioActions';
+import {fileUploadResult, setFileUploadingModalText} from '../../actions/biblioActions';
 import { setFileUploadingCount } from '../../actions/biblioActions';
 import { setFileUploadingShowModal } from '../../actions/biblioActions';
 
@@ -32,20 +32,15 @@ const FileUpload = ({main_or_supp}) => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
+  const fileUploadingModalText = useSelector(state => state.biblio.fileUploadingModalText);
   const fileUploadResultMap = useSelector(state => state.biblio.fileUploadResultMap);
-  const [modalText, setModalText] = useState('');
 
   // https://react-dropzone.js.org/
   const onDrop = useCallback((acceptedFiles) => {
-    if (acceptedFiles.filter( (file) => file.name.split('.').length !== 1).length > 0) {
-console.log('IF');
-      setModalText('Upload files need to have exactly one period');
+    if (acceptedFiles.filter( (file) => file.name.split('.').length !== 2).length > 0) {
+      dispatch(setFileUploadingModalText('Upload files need to have exactly one period'));
       dispatch(setFileUploadingShowModal(true));
     } else {
-console.log('ELSE');
-      setModalText(Object.entries(fileUploadResultMap).filter( ([key, value]) => value !== 'success' ).length > 0 ?
-        Object.entries(fileUploadResultMap).map( ([key, value]) => key + ' ' + value ).join("<br/>") :
-        'All files uploaded');
       dispatch(setFileUploadingCount(acceptedFiles.length));
       acceptedFiles.forEach((file) => {
         const reader = new FileReader()
@@ -66,9 +61,9 @@ console.log('ELSE');
             dispatch(fileUploadResult(file.name, 'success'))
           })
           .catch((error) => {
-            dispatch(fileUploadResult(file.name, error))
+            dispatch(fileUploadResult(file.name, error.response.data.detail))
             console.log(error)
-          })
+          });
         //reader.readAsBinaryString();
       });
     }
@@ -77,8 +72,10 @@ console.log('ELSE');
 
   return (
     <>
-      <ModalGeneric showGenericModal={fileUploadingShowModal} genericModalHeader="File Upload Result"
-                    genericModalBody={modalText} onHideAction={setFileUploadingShowModal(false)} />
+      <ModalGeneric showGenericModal={fileUploadingShowModal}
+                    genericModalHeader="File Upload Result"
+                    genericModalBody={fileUploadingModalText}
+                    onHideAction={setFileUploadingShowModal(false)} />
       <Row key={main_or_supp} >
         <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>{main_or_supp} file</Col>
         <Col lg={{ span: 10 }}>

@@ -21,6 +21,7 @@ const initialState = {
   fileUploadingCount: 0,
   fileUploadResultMap: {},
   fileUploadingShowModal: false,
+  fileUploadingModalText: '',
 
   biblioUpdating: 0,
   biblioEditorModalText: '',
@@ -395,15 +396,20 @@ export default function(state = initialState, action) {
       console.log('reducer FILE_UPLOAD_RESULT ');
       console.log(action.payload);
       let fileUpload_showModal = state.fileUploadingShowModal;
+      let fileUpload_modalText = state.fileUploadingModalText;
       const fileUpload_fileUploadResultMap = _.cloneDeep(state.fileUploadResultMap);
       fileUpload_fileUploadResultMap[action.payload.filename] = action.payload.resultMessage;
       let fileUpload_getReferenceCurieFlag = state.getReferenceCurieFlag;
       if (Object.keys(fileUpload_fileUploadResultMap).length === state.fileUploadingCount) {
         fileUpload_showModal = true;
+        fileUpload_modalText = Object.entries(fileUpload_fileUploadResultMap).filter( ([, value]) => value !== 'success' ).length > 0 ?
+            Object.entries(fileUpload_fileUploadResultMap).map( ([key, value]) => key + ' ' + value ).join("<br/>") :
+            'All files uploaded';
         fileUpload_getReferenceCurieFlag = true;
       }
       return {
         ...state,
+        fileUploadingModalText: fileUpload_modalText,
         fileUploadResultMap: fileUpload_fileUploadResultMap,
         fileUploadingShowModal: fileUpload_showModal,
         getReferenceCurieFlag: fileUpload_getReferenceCurieFlag
@@ -423,6 +429,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         fileUploadingShowModal: action.payload
+      }
+
+    case 'SET_FILE_UPLOADING_MODAL_TEXT':
+      return {
+        ...state,
+        fileUploadingModalText: action.payload
       }
 
     case 'VALIDATE_FORM_UPDATE_BIBLIO':

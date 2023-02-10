@@ -836,3 +836,8 @@ export const setFileUploadingShowModal = (payload) => {
     payload: payload
   };
 };
+
+export const setFileUploadingModalText = (modalText) => ({
+  type: 'SET_FILE_UPLOADING_MODAL_TEXT',
+  payload: modalText
+})
