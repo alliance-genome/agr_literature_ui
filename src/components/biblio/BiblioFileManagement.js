@@ -1,11 +1,17 @@
 
-import { useCallback } from 'react';
-import { useSelector } from 'react-redux';
-import { RowDisplayString } from './BiblioDisplay';
+import { useState, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import axios from "axios";
+
+import { RowDisplayString } from './BiblioDisplay';
+import ModalGeneric from './ModalGeneric';
+
+import { fileUploadResult } from '../../actions/biblioActions';
+import { setFileUploadingCount } from '../../actions/biblioActions';
+import { setFileUploadingShowModal } from '../../actions/biblioActions';
 
 import {useDropzone} from 'react-dropzone';
 
@@ -22,46 +28,66 @@ const BiblioFileManagement = () => {
 
 
 const FileUpload = ({main_or_supp}) => {
+  const dispatch = useDispatch();
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
+  const fileUploadResultMap = useSelector(state => state.biblio.fileUploadResultMap);
+  const [modalText, setModalText] = useState('');
 
-//   const label_type = main_or_supp;
+  // https://react-dropzone.js.org/
   const onDrop = useCallback((acceptedFiles) => {
-    acceptedFiles.forEach((file) => {
-      const reader = new FileReader()
-      reader.onabort = () => console.log('file reading was aborted')
-      reader.onerror = () => console.log('file reading has failed')
-      reader.onload = () => {}
-      reader.readAsBinaryString(file);
-      const formData = new FormData();
-        formData.append("file", file);
-        let url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/file_upload/?reference_curie=" + referenceCurie + "&display_name=" + file.name.split(".").slice(0, -1) + "&file_class=" + main_or_supp + "&file_publication_status=final&file_extension=" + file.name.split(".").pop()+ "&pdf_type=null&is_annotation=false&mod_abbreviation=WB";
-        axios.post(url, formData, {
-          headers: {
-            "Authorization": "Bearer " + accessToken,
-            "Content-Type": "multipart/form-data",
-          }
-        })
-            .then((res) => {
-
-            })
-            .catch((error) => {
-              console.log(error)
-            })
-      //reader.readAsBinaryString();
-    });
-    
+    if (acceptedFiles.filter( (file) => file.name.split('.').length !== 1).length > 0) {
+console.log('IF');
+      setModalText('Upload files need to have exactly one period');
+      dispatch(setFileUploadingShowModal(true));
+    } else {
+console.log('ELSE');
+      setModalText(Object.entries(fileUploadResultMap).filter( ([key, value]) => value !== 'success' ).length > 0 ?
+        Object.entries(fileUploadResultMap).map( ([key, value]) => key + ' ' + value ).join("<br/>") :
+        'All files uploaded');
+      dispatch(setFileUploadingCount(acceptedFiles.length));
+      acceptedFiles.forEach((file) => {
+        const reader = new FileReader()
+        reader.onabort = () => console.log('file reading was aborted')
+        reader.onerror = () => console.log('file reading has failed')
+        reader.onload = () => {}
+        reader.readAsBinaryString(file);
+        const formData = new FormData();
+          formData.append("file", file);
+          let url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/file_upload/?reference_curie=" + referenceCurie + "&display_name=" + file.name.split(".").slice(0, -1) + "&file_class=" + main_or_supp + "&file_publication_status=final&file_extension=" + file.name.split(".").pop()+ "&pdf_type=null&is_annotation=false&mod_abbreviation=WB";
+          axios.post(url, formData, {
+            headers: {
+              "Authorization": "Bearer " + accessToken,
+              "Content-Type": "multipart/form-data",
+            }
+          })
+          .then((res) => {
+            dispatch(fileUploadResult(file.name, 'success'))
+          })
+          .catch((error) => {
+            dispatch(fileUploadResult(file.name, error))
+            console.log(error)
+          })
+        //reader.readAsBinaryString();
+      });
+    }
   }, [])
   const {getRootProps, getInputProps} = useDropzone({onDrop})
+
   return (
-    <Row key={main_or_supp} >
-      <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>{main_or_supp} file</Col>
-      <Col lg={{ span: 10 }}>
-        <div className="dropzone" {...getRootProps()} >
-          <input {...getInputProps()} />
-          <p>Drag and drop {main_or_supp} file here, or click to select files</p>
-        </div></Col>
-    </Row>
+    <>
+      <ModalGeneric showGenericModal={fileUploadingShowModal} genericModalHeader="File Upload Result"
+                    genericModalBody={modalText} onHideAction={setFileUploadingShowModal(false)} />
+      <Row key={main_or_supp} >
+        <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>{main_or_supp} file</Col>
+        <Col lg={{ span: 10 }}>
+          <div className="dropzone" {...getRootProps()} >
+            <input {...getInputProps()} />
+            <p>Drag and drop {main_or_supp} file here, or click to select files</p>
+          </div></Col>
+      </Row>
+    </>
   );
 }
 

@@ -18,6 +18,10 @@ const initialState = {
   workflowModalText: '',
   isUpdatingWorkflowCuratability: false,
 
+  fileUploadingCount: 0,
+  fileUploadResultMap: {},
+  fileUploadingShowModal: false,
+
   biblioUpdating: 0,
   biblioEditorModalText: '',
   updateBiblioFlag: false,
@@ -385,6 +389,40 @@ export default function(state = initialState, action) {
         ...state,
         updateAlert: 0,
         updateMessages: []
+      }
+
+    case 'FILE_UPLOAD_RESULT':
+      console.log('reducer FILE_UPLOAD_RESULT ');
+      console.log(action.payload);
+      let fileUpload_showModal = state.fileUploadingShowModal;
+      const fileUpload_fileUploadResultMap = _.cloneDeep(state.fileUploadResultMap);
+      fileUpload_fileUploadResultMap[action.payload.filename] = action.payload.resultMessage;
+      let fileUpload_getReferenceCurieFlag = state.getReferenceCurieFlag;
+      if (Object.keys(fileUpload_fileUploadResultMap).length === state.fileUploadingCount) {
+        fileUpload_showModal = true;
+        fileUpload_getReferenceCurieFlag = true;
+      }
+      return {
+        ...state,
+        fileUploadResultMap: fileUpload_fileUploadResultMap,
+        fileUploadingShowModal: fileUpload_showModal,
+        getReferenceCurieFlag: fileUpload_getReferenceCurieFlag
+      }
+
+    case 'SET_FILE_UPLOADING_COUNT':
+      console.log("reducer SET_FILE_UPLOADING_COUNT");
+      return {
+        ...state,
+        fileUploadResultMap: {},
+        fileUploadingShowModal: false,
+        fileUploadingCount: action.payload
+      }
+
+    case 'SET_FILE_UPLOADING_SHOW_MODAL':
+      console.log("reducer SET_FILE_UPLOADING_SHOW_MODAL");
+      return {
+        ...state,
+        fileUploadingShowModal: action.payload
       }
 
     case 'VALIDATE_FORM_UPDATE_BIBLIO':
