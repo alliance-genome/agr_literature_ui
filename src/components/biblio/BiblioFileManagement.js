@@ -17,11 +17,7 @@ import ModalGeneric from './ModalGeneric';
 import { fileUploadResult, setFileUploadingModalText } from '../../actions/biblioActions';
 import { setFileUploadingCount } from '../../actions/biblioActions';
 import { setFileUploadingShowModal } from '../../actions/biblioActions';
-import {
-  downloadReferencefile,
-  queryId,
-  setReferenceCurie
-} from '../../actions/biblioActions';
+import { downloadReferencefile } from '../../actions/biblioActions';
 
 import {useDropzone} from 'react-dropzone';
 
@@ -115,7 +111,6 @@ const FileEditor = () => {
   const dispatch = useDispatch();
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const supplementExpand = useSelector(state => state.biblio.supplementExpand);
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
   let cssDisplayLeft = 'Col-display Col-display-left';
   let cssDisplay = 'Col-display';
@@ -125,13 +120,9 @@ const FileEditor = () => {
     cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled'; }
   const access = getOktaModAccess(oktaGroups);
   if ('referencefiles' in referenceJsonLive && referenceJsonLive['referencefiles'] !== null) {
-    let tarballChecked = ''; let listChecked = '';
-    if (supplementExpand === 'tarball') { tarballChecked = 'checked'; }
-      else if (supplementExpand === 'list') { listChecked = 'checked'; }
     const rowReferencefileElements = []
 
     // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
-    let hasAccessToTarball = false;
     for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].entries()) {
       let is_ok = false;
       let allowed_mods = [];
@@ -146,7 +137,6 @@ const FileEditor = () => {
       if (access === 'developer') { is_ok = true; }
         else if (access === 'No') { is_ok = false; referencefileValue = (<div>{filename}</div>); }
       if (is_ok) {
-        hasAccessToTarball = true;
         referencefileValue = (<div><button className='button-to-link' onClick={ () =>
             dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken))
         } >{filename}</button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}</div>); }
