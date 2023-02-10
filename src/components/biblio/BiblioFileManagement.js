@@ -39,8 +39,18 @@ const FileUpload = ({main_or_supp}) => {
   const dispatch = useDispatch();
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
   const fileUploadingModalText = useSelector(state => state.biblio.fileUploadingModalText);
+
+  let access = getOktaModAccess(oktaGroups);
+  if (access === 'developer') {
+    if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
+      access = 'No';
+    } else {
+      access = null;
+    }
+  }
 
   // https://react-dropzone.js.org/
   const onDrop = useCallback((acceptedFiles) => {
@@ -57,24 +67,27 @@ const FileUpload = ({main_or_supp}) => {
         reader.readAsBinaryString(file);
         const formData = new FormData();
         formData.append("file", file);
-        let url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/file_upload/?reference_curie=" + referenceCurie + "&display_name=" + file.name.split(".").slice(0, -1) + "&file_class=" + main_or_supp + "&file_publication_status=final&file_extension=" + file.name.split(".").pop()+ "&pdf_type=null&is_annotation=false&mod_abbreviation=WB";
-        axios.post(url, formData, {
-          headers: {
-            "Authorization": "Bearer " + accessToken,
-            "Content-Type": "multipart/form-data",
-          }
-        })
-            .then((res) => {
-              dispatch(fileUploadResult(file.name, 'success'))
-            })
-            .catch((error) => {
-              dispatch(fileUploadResult(file.name, error.response.data.detail))
-              console.log(error)
-            });
+        let url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/file_upload/?reference_curie=" + referenceCurie + "&display_name=" + file.name.split(".").slice(0, -1) + "&file_class=" + main_or_supp + "&file_publication_status=final&file_extension=" + file.name.split(".").pop()+ "&is_annotation=false";
+        if (access !== null) {
+          url += "&mod_abbreviation=" + access
+        }
+        if (access !== 'No') {
+          axios.post(url, formData, {
+            headers: {
+              "Authorization": "Bearer " + accessToken,
+              "Content-Type": "multipart/form-data",
+            }
+          }).then((res) => {
+            dispatch(fileUploadResult(file.name, 'success'))
+          }).catch((error) => {
+            dispatch(fileUploadResult(file.name, error.response.data.detail))
+            console.log(error)
+          });
+        }
         //reader.readAsBinaryString();
       });
     }
-  }, [dispatch, accessToken, main_or_supp, referenceCurie]);
+  }, [access, dispatch, accessToken, main_or_supp, referenceCurie]);
 
   const {getRootProps, getInputProps} = useDropzone({onDrop})
 
@@ -126,7 +139,7 @@ const FileEditor = () => {
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
-          (mod_abbreviation) => mod_abbreviation === null ? "PMC" : mod_abbreviation).join(", ");
+          (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation).join(", ");
       let filename = referenceFile.display_name + '.' + referenceFile.file_extension;
       let referencefileValue = (<div>{filename}</div>);
       if (hasAccess) {
@@ -142,7 +155,7 @@ const FileEditor = () => {
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 3}}>{referencefileValue}</Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>{source}</Col>
             <Col className={`Col-general ${cssDisplay} `}
-                 lg={{span: 1}}>{referenceFile.pdf_type === 'null' ? 'pdf' : referenceFile.pdf_type}</Col>
+                 lg={{span: 1}}>{referenceFile.pdf_type === null ? 'pdf' : referenceFile.pdf_type}</Col>
             <Col className={`Col-general ${cssDisplay} `}
                  lg={{span: 2}}>{referenceFile.file_publication_status}</Col>
             <Col className={`Col-general ${cssDisplayRight} `} lg={{span: 2}}><Button
