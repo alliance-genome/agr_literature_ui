@@ -66,7 +66,8 @@ const FileUpload = ({main_or_supp}) => {
         //reader.readAsBinaryString();
       });
     }
-  }, [])
+  }, [dispatch, accessToken, main_or_supp, referenceCurie]);
+
   const {getRootProps, getInputProps} = useDropzone({onDrop})
 
   return (
