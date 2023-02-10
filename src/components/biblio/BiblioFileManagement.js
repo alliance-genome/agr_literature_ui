@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -33,7 +33,6 @@ const FileUpload = ({main_or_supp}) => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
   const fileUploadingModalText = useSelector(state => state.biblio.fileUploadingModalText);
-  const fileUploadResultMap = useSelector(state => state.biblio.fileUploadResultMap);
 
   // https://react-dropzone.js.org/
   const onDrop = useCallback((acceptedFiles) => {
