@@ -54,9 +54,9 @@ const SearchResults = () => {
                                 )) : null}
                                 </ul>
                               </div>
-                              <div className="searchRow-other">Authors : {reference.authors ? reference.authors.map((author, i) => ((i ? ', ' : '') + author.name)) : ''}</div>
+                              <div className="searchRow-other">Authors : <span dangerouslySetInnerHTML={{__html: reference.authors ? reference.authors.map((author, i) => ((i ? ' ' : '') + author.name)) : ''}} /></div>
                               <div className="searchRow-other">Publication Date: {reference.date_published}</div>
-                              <div className="searchRow-other">Abstract: <p>{reference.abstract == null || reference.abstract.length<500 ? reference.abstract : reference.abstract.substring(0,500)+'...'}</p></div>
+                              <div className="searchRow-other">Abstract: <p>{reference.abstract == null || reference.abstract.length<500 ? <span dangerouslySetInnerHTML={{__html: reference.abstract}} /> : <span dangerouslySetInnerHTML={{__html: reference.abstract.substring(0,500)+'...'}} />}</p></div>
                               {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}
                             </Col>
                         </Row>))
