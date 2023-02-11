@@ -20,6 +20,7 @@ const initialState = {
 
   fileUploadingCount: 0,
   fileUploadResultMap: {},
+  fileUploadingShowSuccess: false,
   fileUploadingShowModal: false,
   fileUploadingModalText: '',
 
@@ -398,17 +399,20 @@ export default function(state = initialState, action) {
       let fileUpload_showModal = state.fileUploadingShowModal;
       let fileUpload_modalText = state.fileUploadingModalText;
       const fileUpload_fileUploadResultMap = _.cloneDeep(state.fileUploadResultMap);
+      let fileUpload_fileUploadingShowSuccess = state.fileUploadingShowSuccess;
       fileUpload_fileUploadResultMap[action.payload.filename] = action.payload.resultMessage;
       let fileUpload_getReferenceCurieFlag = state.getReferenceCurieFlag;
       if (Object.keys(fileUpload_fileUploadResultMap).length === state.fileUploadingCount) {
-        fileUpload_showModal = true;
-        fileUpload_modalText = Object.entries(fileUpload_fileUploadResultMap).filter( ([, value]) => value !== 'success' ).length > 0 ?
-            Object.entries(fileUpload_fileUploadResultMap).map( ([key, value]) => key + ' ' + value ).join("<br/>") :
-            'All files uploaded';
+        if (Object.entries(fileUpload_fileUploadResultMap).filter( ([, value]) => value !== 'success' ).length > 0) {
+          fileUpload_showModal = true;
+          fileUpload_modalText = Object.entries(fileUpload_fileUploadResultMap).map( ([key, value]) => key + ' ' + value ).join("<br/>") }
+        else {
+          fileUpload_fileUploadingShowSuccess = true; }
         fileUpload_getReferenceCurieFlag = true;
       }
       return {
         ...state,
+        fileUploadingShowSuccess: fileUpload_fileUploadingShowSuccess,
         fileUploadingModalText: fileUpload_modalText,
         fileUploadResultMap: fileUpload_fileUploadResultMap,
         fileUploadingShowModal: fileUpload_showModal,
@@ -422,6 +426,13 @@ export default function(state = initialState, action) {
         fileUploadResultMap: {},
         fileUploadingShowModal: false,
         fileUploadingCount: action.payload
+      }
+
+    case 'SET_FILE_UPLOADING_SHOW_SUCCESS':
+      console.log("reducer SET_FILE_UPLOADING_SHOW_SUCCESS");
+      return {
+        ...state,
+        fileUploadingShowSuccess: action.payload
       }
 
     case 'SET_FILE_UPLOADING_SHOW_MODAL':

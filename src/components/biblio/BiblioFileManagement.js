@@ -5,7 +5,9 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from "react-bootstrap/Spinner";
 import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert'
 import axios from "axios";
+
 import RowDivider from './RowDivider';
 import {RowDisplayString} from './BiblioDisplay';
 import ModalGeneric from './ModalGeneric';
@@ -15,7 +17,8 @@ import {
   fileUploadResult,
   setFileUploadingCount,
   setFileUploadingModalText,
-  setFileUploadingShowModal
+  setFileUploadingShowModal,
+  setFileUploadingShowSuccess
 } from '../../actions/biblioActions';
 
 import {useDropzone} from 'react-dropzone';
@@ -28,6 +31,7 @@ const BiblioFileManagement = () => {
           <FileEditor />
           <RowDivider />
           <BiblioCitationDisplay key="filemanagementCitationDisplay" />
+          <AlertDismissibleFileUploadSuccess />
           <FileUpload main_or_supp="main" />
           <FileUpload main_or_supp="supplement" />
         </Container>
@@ -107,6 +111,21 @@ const FileUpload = ({main_or_supp}) => {
         </Row>
       </>
   );
+}
+
+const AlertDismissibleFileUploadSuccess = () => {
+  const dispatch = useDispatch();
+  const fileUploadingShowSuccess = useSelector(state => state.biblio.fileUploadingShowSuccess);
+  if (fileUploadingShowSuccess) {
+    setTimeout(() => {
+      dispatch(setFileUploadingShowSuccess(false))
+    }, 2000);
+    return (
+      <Alert variant="success" onClose={() => dispatch(setFileUploadingShowSuccess(false))} dismissible>
+        <Alert.Heading>All files uploaded</Alert.Heading>
+      </Alert>
+    );
+  } else { return null; }
 }
 
 const BiblioCitationDisplay = () => {

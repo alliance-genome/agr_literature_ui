@@ -830,6 +830,13 @@ export const fileUploadResult = (filename, resultMessage) => {
         }
 }; };
 
+export const setFileUploadingShowSuccess = (payload) => {
+  return {
+    type: 'SET_FILE_UPLOADING_SHOW_SUCCESS',
+    payload: payload
+  };
+};
+
 export const setFileUploadingShowModal = (payload) => {
   return {
     type: 'SET_FILE_UPLOADING_SHOW_MODAL',
