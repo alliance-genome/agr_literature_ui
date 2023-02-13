@@ -402,8 +402,10 @@ export default function(state = initialState, action) {
       let fileUpload_fileUploadingShowSuccess = state.fileUploadingShowSuccess;
       fileUpload_fileUploadResultMap[action.payload.filename] = action.payload.resultMessage;
       let fileUpload_getReferenceCurieFlag = state.getReferenceCurieFlag;
+      let fileUpload_fileUploadingCount = state.fileUploadingCount;
       if (Object.keys(fileUpload_fileUploadResultMap).length === state.fileUploadingCount) {
-        if (Object.entries(fileUpload_fileUploadResultMap).filter( ([, value]) => value !== 'success' ).length > 0) {
+        fileUpload_fileUploadingCount = 0;
+        if (Object.entries(fileUpload_fileUploadResultMap).filter( ([, value]) => !value.startsWith('success') ).length > 0) {
           fileUpload_showModal = true;
           fileUpload_modalText = Object.entries(fileUpload_fileUploadResultMap).map( ([key, value]) => key + ' ' + value ).join("<br/>") }
         else {
@@ -416,7 +418,8 @@ export default function(state = initialState, action) {
         fileUploadingModalText: fileUpload_modalText,
         fileUploadResultMap: fileUpload_fileUploadResultMap,
         fileUploadingShowModal: fileUpload_showModal,
-        getReferenceCurieFlag: fileUpload_getReferenceCurieFlag
+        getReferenceCurieFlag: fileUpload_getReferenceCurieFlag,
+        fileUploadingCount: fileUpload_fileUploadingCount
       }
 
     case 'SET_FILE_UPLOADING_COUNT':
@@ -425,7 +428,7 @@ export default function(state = initialState, action) {
         ...state,
         fileUploadResultMap: {},
         fileUploadingShowModal: false,
-        fileUploadingCount: action.payload
+        fileUploadingCount: action.payload,
       }
 
     case 'SET_FILE_UPLOADING_SHOW_SUCCESS':
