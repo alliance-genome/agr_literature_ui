@@ -9,6 +9,8 @@ import BiblioDisplay from './biblio/BiblioDisplay';
 import BiblioEditor from './biblio/BiblioEditor';
 import BiblioEntity from './biblio/BiblioEntity';
 import BiblioWorkflow from './biblio/BiblioWorkflow';
+import BiblioFileManagement from './biblio/BiblioFileManagement';
+import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString } from './biblio/BiblioDisplay';
 import { RowDisplaySimple } from './biblio/BiblioDisplay';
@@ -86,10 +88,12 @@ const BiblioActionToggler = () => {
   let editorChecked = '';
   let entityChecked = '';
   let workflowChecked = '';
+  let filemanagementChecked = '';
   let radioFormDisplayClassname = 'radio-form';
   let radioFormEditorClassname = 'radio-form';
   let radioFormEntityClassname = 'radio-form';
   let radioFormWorkflowClassname = 'radio-form';
+  let radioFormFilemanagementClassname = 'radio-form';
   let biblioActionTogglerSelected = 'display';
   if (biblioAction === 'editor') {
       radioFormEditorClassname += ' underlined';
@@ -103,6 +107,10 @@ const BiblioActionToggler = () => {
       radioFormWorkflowClassname += ' underlined';
       workflowChecked = 'checked';
       biblioActionTogglerSelected = 'workflow'; }
+    else if (biblioAction === 'filemanagement') {
+      radioFormFilemanagementClassname += ' underlined';
+      filemanagementChecked = 'checked';
+      biblioActionTogglerSelected = 'filemanagement'; }
     else {
       radioFormDisplayClassname += ' underlined';
       displayChecked = 'checked'; }
@@ -172,6 +180,17 @@ const BiblioActionToggler = () => {
           onChange={(e) => dispatch(changeBiblioActionToggler(e, 'workflow'))}
         />
       </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormFilemanagementClassname}
+          checked={filemanagementChecked}
+          type='radio'
+          label='file management'
+          id='biblio-toggler-filemanagement'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'filemanagement'))}
+        />
+      </div>
     </div>
     </Form>);
 } // const BiblioActionToggler
@@ -179,15 +198,18 @@ const BiblioActionToggler = () => {
 
 const BiblioActionRouter = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
   switch (biblioAction) {
     case 'display':
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
     case 'editor':
-      return (<Container><BiblioActionToggler /><RowDivider /><BiblioEditor /></Container>);
+      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }</>);
     case 'entity':
-      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
+      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     case 'workflow':
-      return (<><Container><BiblioActionToggler /></Container><BiblioTagging /></>);
+      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
+    case 'filemanagement':
+      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioFileManagement /> }</>);
     default:
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
   }

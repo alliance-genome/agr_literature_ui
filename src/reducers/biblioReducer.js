@@ -18,6 +18,12 @@ const initialState = {
   workflowModalText: '',
   isUpdatingWorkflowCuratability: false,
 
+  fileUploadingCount: 0,
+  fileUploadResultMap: {},
+  fileUploadingShowSuccess: false,
+  fileUploadingShowModal: false,
+  fileUploadingModalText: '',
+
   biblioUpdating: 0,
   biblioEditorModalText: '',
   updateBiblioFlag: false,
@@ -385,6 +391,61 @@ export default function(state = initialState, action) {
         ...state,
         updateAlert: 0,
         updateMessages: []
+      }
+
+    case 'FILE_UPLOAD_RESULT':
+      console.log('reducer FILE_UPLOAD_RESULT ');
+      console.log(action.payload);
+      let fileUpload_showModal = state.fileUploadingShowModal;
+      let fileUpload_modalText = state.fileUploadingModalText;
+      const fileUpload_fileUploadResultMap = _.cloneDeep(state.fileUploadResultMap);
+      let fileUpload_fileUploadingShowSuccess = state.fileUploadingShowSuccess;
+      fileUpload_fileUploadResultMap[action.payload.filename] = action.payload.resultMessage;
+      let fileUpload_getReferenceCurieFlag = state.getReferenceCurieFlag;
+      if (Object.keys(fileUpload_fileUploadResultMap).length === state.fileUploadingCount) {
+        if (Object.entries(fileUpload_fileUploadResultMap).filter( ([, value]) => value !== 'success' ).length > 0) {
+          fileUpload_showModal = true;
+          fileUpload_modalText = Object.entries(fileUpload_fileUploadResultMap).map( ([key, value]) => key + ' ' + value ).join("<br/>") }
+        else {
+          fileUpload_fileUploadingShowSuccess = true; }
+        fileUpload_getReferenceCurieFlag = true;
+      }
+      return {
+        ...state,
+        fileUploadingShowSuccess: fileUpload_fileUploadingShowSuccess,
+        fileUploadingModalText: fileUpload_modalText,
+        fileUploadResultMap: fileUpload_fileUploadResultMap,
+        fileUploadingShowModal: fileUpload_showModal,
+        getReferenceCurieFlag: fileUpload_getReferenceCurieFlag
+      }
+
+    case 'SET_FILE_UPLOADING_COUNT':
+      console.log("reducer SET_FILE_UPLOADING_COUNT");
+      return {
+        ...state,
+        fileUploadResultMap: {},
+        fileUploadingShowModal: false,
+        fileUploadingCount: action.payload
+      }
+
+    case 'SET_FILE_UPLOADING_SHOW_SUCCESS':
+      console.log("reducer SET_FILE_UPLOADING_SHOW_SUCCESS");
+      return {
+        ...state,
+        fileUploadingShowSuccess: action.payload
+      }
+
+    case 'SET_FILE_UPLOADING_SHOW_MODAL':
+      console.log("reducer SET_FILE_UPLOADING_SHOW_MODAL");
+      return {
+        ...state,
+        fileUploadingShowModal: action.payload
+      }
+
+    case 'SET_FILE_UPLOADING_MODAL_TEXT':
+      return {
+        ...state,
+        fileUploadingModalText: action.payload
       }
 
     case 'VALIDATE_FORM_UPDATE_BIBLIO':

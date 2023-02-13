@@ -818,3 +818,33 @@ export const downloadReferencefile = (referencefileId, filename, accessToken, re
     })
   }
 }
+
+export const setFileUploadingCount = (payload) => { return { type: 'SET_FILE_UPLOADING_COUNT', payload: payload }; };
+
+export const fileUploadResult = (filename, resultMessage) => { 
+  return { 
+    type: 'FILE_UPLOAD_RESULT',
+        payload: {
+          filename: filename,
+          resultMessage: resultMessage
+        }
+}; };
+
+export const setFileUploadingShowSuccess = (payload) => {
+  return {
+    type: 'SET_FILE_UPLOADING_SHOW_SUCCESS',
+    payload: payload
+  };
+};
+
+export const setFileUploadingShowModal = (payload) => {
+  return {
+    type: 'SET_FILE_UPLOADING_SHOW_MODAL',
+    payload: payload
+  };
+};
+
+export const setFileUploadingModalText = (modalText) => ({
+  type: 'SET_FILE_UPLOADING_MODAL_TEXT',
+  payload: modalText
+})

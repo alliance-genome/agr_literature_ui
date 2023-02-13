@@ -356,6 +356,7 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
 
 
 const BiblioDisplay = () => {
+  const accessToken = useSelector(state => state.isLogged.accessToken);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   if (!('date_created' in referenceJsonLive)) {
@@ -388,7 +389,7 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
-  return (<Container><BiblioSubmitUpdateRouter />{rowOrderedElements}</Container>);
+  return (<Container>{ accessToken !== null && <BiblioSubmitUpdateRouter /> }{rowOrderedElements}</Container>);
 } // const BiblioDisplay
 
 
