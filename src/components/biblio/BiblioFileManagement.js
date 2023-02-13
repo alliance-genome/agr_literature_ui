@@ -28,12 +28,12 @@ const BiblioFileManagement = () => {
   return (
       <>
         <Container>
-          <FileEditor />
-          <RowDivider />
           <BiblioCitationDisplay key="filemanagementCitationDisplay" />
           <AlertDismissibleFileUploadSuccess />
           <FileUpload main_or_supp="main" />
           <FileUpload main_or_supp="supplement" />
+          <RowDivider />
+          <FileEditor />
         </Container>
       </>
   );
