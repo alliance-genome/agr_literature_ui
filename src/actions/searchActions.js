@@ -58,7 +58,7 @@ export const searchReferences = () => {
 
     let params = {
       query: state.search.searchQuery,
-      size_result_count: state.search.sizeResultsCount,
+      size_result_count: state.search.searchSizeResultsCount,
       page: state.search.searchResultsPage,
       facets_values: state.search.searchFacetsValues,
       facets_limits: state.search.searchFacetsLimits,
