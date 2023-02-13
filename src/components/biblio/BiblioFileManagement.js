@@ -52,6 +52,7 @@ const FileUpload = ({main_or_supp}) => {
     if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
       access = 'No';
     } else {
+      // This means that developers upload files with PMC (all) access in dev environment only - no access on prod
       access = null;
     }
   }
