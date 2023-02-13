@@ -28,7 +28,7 @@ import Spinner from 'react-bootstrap/Spinner'
 import axios from "axios";
 import Pagination from "react-bootstrap/Pagination";
 
-import { faSort } from '@fortawesome/free-solid-svg-icons'
+import { faSortAlphaDown, faSortAlphaUp } from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 export const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
@@ -129,7 +129,15 @@ const EntityEditor = () => {
             <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Editor</h3></Col></Row>
           <Row className="form-group row" >
             <Col className="div-grey-border" sm="1">topic</Col>
-            <Col className="div-grey-border" sm="1">entity type <FontAwesomeIcon icon={faSort} style={{color: sortBy === "entity_type" ? '#0069d9' : 'black'}}  onClick={() => {setSortBy("entity_type"); setDescSort(!descSort)}}/></Col>
+            <Col className="div-grey-border" sm="1">entity type <FontAwesomeIcon icon={sortBy !== "entity_type" || !descSort ? faSortAlphaDown : faSortAlphaUp} style={{color: sortBy === "entity_type" ? '#0069d9' : 'black'}}
+                                                                                 onClick={() => {
+                                                                                   if (sortBy === "entity_type" && descSort) {
+                                                                                     setSortBy(null);
+                                                                                     setDescSort(true);
+                                                                                   } else {
+                                                                                     setSortBy("entity_type");
+                                                                                     setDescSort(!descSort)}
+                                                                                 }}/></Col>
             <Col className="div-grey-border" sm="1">species (taxon)</Col>
             <Col className="div-grey-border" sm="2">entity name</Col>
             <Col className="div-grey-border" sm="2">entity curie</Col>
