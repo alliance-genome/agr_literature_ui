@@ -306,7 +306,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
     const entityQueryString = entityInputList.map(element => { return element.replace(/(?=[() ])/g, '\\'); }).join(" ");
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
     // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
-    const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityType + '/search?limit=10&page=0';
+    const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityType + '/search?limit=100&page=0';
     const entityTypeSymbolField = entityType + 'Symbol';
   
     // console.log(ateamApiUrl);
