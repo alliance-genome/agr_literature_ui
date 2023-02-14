@@ -1,0 +1,655 @@
+# For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    client_max_body_size 500M;
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    #keepalive_timeout   44467;
+    types_hash_max_size 4096;
+
+    # Avoid 505 HTTP Timeout Errors
+    proxy_connect_timeout       605;
+    proxy_send_timeout          605;
+    proxy_read_timeout          605;
+    send_timeout                605;
+    keepalive_timeout           605;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+#    include /etc/nginx/conf.d/*.conf;
+
+   map $http_origin $allow_origin {
+        ~^https?://(.*\.)?alliancegenome.org$ $http_origin;
+        ~^https?://(.*\.)?localhost(:\d+)?$ $http_origin;
+        default "";
+    }
+
+#    server {
+#        listen       80;
+#        listen       [::]:80;
+#        server_name  _;
+#        return 301 https://$host$request_uri;
+#        root         /usr/share/nginx/html;
+#
+#        # Load configuration files for the default server block.
+#        include /etc/nginx/default.d/*.conf;
+#
+#        error_page 404 /404.html;
+#        location = /404.html {
+#        }
+#
+#        error_page 500 502 503 504 /50x.html;
+#        location = /50x.html {
+#        }
+#    }
+
+    server {
+       listen 443 ssl;
+       server_name dev.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:8081;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+      }
+
+    }
+
+#   server {
+#      listen 443 ssl;
+#      server_name literature-rest.alliancegenome.org dev4000-literature-rest.alliancegenome.org;
+#
+#      # Load configuration files for the default server block.
+#      #include /etc/nginx/default.d/*.conf;
+#
+#      ssl_certificate          /etc/ssl/certs/agr.crt;
+#      ssl_certificate_key      /etc/ssl/certs/agr.key;
+#      ssl_stapling on;
+#      ssl_stapling_verify on;
+#      ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+#
+#      location / {
+#          proxy_pass http://127.0.0.1:4000;
+#          proxy_http_version 1.1;
+#          proxy_set_header Upgrade $http_upgrade;
+#          proxy_set_header Connection "upgrade";
+#     }
+#
+#  }
+
+  server {
+       listen 443 ssl;
+       server_name stage-literature-rest.alliancegenome.org dev4001-literature-rest.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:4001;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name dev4002-literature-rest.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:4002;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name dev4003-literature-rest.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:4003;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+
+   server {
+       listen 443 ssl;
+       server_name dev4004-literature-rest.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:4004;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name dev4005-literature-rest.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:4005;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+
+   server {
+       listen 443 ssl;
+       server_name dev4006-literature-rest.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:4006;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name dev4007-literature-rest.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:4007;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+#  server {
+#      listen 443 ssl;
+#      server_name literature.alliancegenome.org dev3000.alliancegenome.org;
+#
+#      # Load configuration files for the default server block.
+#      #include /etc/nginx/default.d/*.conf;
+#
+#      ssl_certificate          /etc/ssl/certs/agr.crt;
+#      ssl_certificate_key      /etc/ssl/certs/agr.key;
+#      ssl_stapling on;
+#      ssl_stapling_verify on;
+#      ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+#      add_header "Access-Control-Allow-Origin" $allow_origin;
+#
+#      location / {
+#          proxy_pass http://127.0.0.1:3000;
+#          proxy_http_version 1.1;
+#          proxy_set_header Upgrade $http_upgrade;
+#          proxy_set_header Connection "upgrade";
+#          proxy_hide_header "Access-Control-Allow-Origin";
+#      }
+#
+#  }
+
+   server {
+       listen 443 ssl;
+       server_name stage-literature.alliancegenome.org dev3001.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:3001;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name dev3002.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header Access-Control-Allow-Origin *;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:3002;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name dev3003.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:3003;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name dev3004.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:3004;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+
+   server {
+       listen 443 ssl;
+       server_name dev3005.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:3005;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name dev3006.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:3006;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+
+   server {
+       listen 443 ssl;
+       server_name dev2994.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:2994;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+
+   server {
+       listen 443 ssl;
+       server_name dev-public-ui.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:2994;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name blast-dev.alliancegenome.org blast-wb-dev.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:5001;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name blast-fb-dev.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:5002;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name blast-sgd-dev.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:5003;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+   server {
+       listen 443 ssl;
+       server_name blast-xb-dev.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:5004;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+      }
+
+   }
+
+
+   server {
+       listen 443 ssl;
+       server_name dev-shuai.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+
+       root /home/shuai/public_html;
+       location / {
+
+       }
+
+   }
+
+
+   server {
+       listen 443 ssl;
+       server_name dev-jenkins.alliancegenome.org;
+
+       # Load configuration files for the default server block.
+       #include /etc/nginx/default.d/*.conf;
+
+       ssl_certificate          /etc/ssl/certs/agr.crt;
+       ssl_certificate_key      /etc/ssl/certs/agr.key;
+       ssl_stapling on;
+       ssl_stapling_verify on;
+       ssl_trusted_certificate  /etc/ssl/certs/ca-certs.pem;
+       add_header "Access-Control-Allow-Origin" $allow_origin;
+
+       location / {
+           proxy_pass http://127.0.0.1:49001;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_hide_header "Access-Control-Allow-Origin";
+       }
+
+   }
+
+  # Settings for a TLS enabled server.
+#
+#    server {
+#        listen       443 ssl http2;
+#        listen       [::]:443 ssl http2;
+#        server_name  _;
+#        root         /usr/share/nginx/html;
+#
+#        ssl_certificate "/etc/pki/nginx/server.crt";
+#        ssl_certificate_key "/etc/pki/nginx/private/server.key";
+#        ssl_session_cache shared:SSL:1m;
+#        ssl_session_timeout  10m;
+#        ssl_ciphers HIGH:!aNULL:!MD5;
+#        ssl_prefer_server_ciphers on;
+#
+#        # Load configuration files for the default server block.
+#        include /etc/nginx/default.d/*.conf;
+#
+#        error_page 404 /404.html;
+#            location = /40x.html {
+#        }
+#
+#        error_page 500 502 503 504 /50x.html;
+#            location = /50x.html {
+#        }
+#    }
+
+}
+

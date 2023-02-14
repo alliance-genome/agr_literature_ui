@@ -25,11 +25,14 @@ import {useDropzone} from 'react-dropzone';
 import {getOktaModAccess} from "../Biblio";
 
 const BiblioFileManagement = () => {
+  const fileUploadingIsUploading = useSelector(state => state.biblio.fileUploadingCount) > 0;
+
   return (
       <>
         <Container>
           <BiblioCitationDisplay key="filemanagementCitationDisplay" />
           <AlertDismissibleFileUploadSuccess />
+          {fileUploadingIsUploading ? <Spinner animation={"border"}/> : null}
           <FileUpload main_or_supp="main" />
           <FileUpload main_or_supp="supplement" />
           <RowDivider />
@@ -59,39 +62,44 @@ const FileUpload = ({main_or_supp}) => {
 
   // https://react-dropzone.js.org/
   const onDrop = useCallback((acceptedFiles) => {
-    if (acceptedFiles.filter( (file) => file.name.split('.').length !== 2).length > 0) {
-      dispatch(setFileUploadingModalText('Upload files need to have exactly one period'));
-      dispatch(setFileUploadingShowModal(true));
-    } else {
-      dispatch(setFileUploadingCount(acceptedFiles.length));
-      acceptedFiles.forEach((file) => {
-        const reader = new FileReader()
-        reader.onabort = () => console.log('file reading was aborted')
-        reader.onerror = () => console.log('file reading has failed')
-        reader.onload = () => {}
-        reader.readAsBinaryString(file);
-        const formData = new FormData();
-        formData.append("file", file);
-        let url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/file_upload/?reference_curie=" + referenceCurie + "&display_name=" + file.name.split(".").slice(0, -1) + "&file_class=" + main_or_supp + "&file_publication_status=final&file_extension=" + file.name.split(".").pop()+ "&is_annotation=false";
-        if (access !== null) {
-          url += "&mod_abbreviation=" + access
-        }
-        if (access !== 'No') {
-          axios.post(url, formData, {
-            headers: {
-              "Authorization": "Bearer " + accessToken,
-              "Content-Type": "multipart/form-data",
-            }
-          }).then((res) => {
-            dispatch(fileUploadResult(file.name, 'success'))
-          }).catch((error) => {
-            dispatch(fileUploadResult(file.name, error.response.data.detail))
-            console.log(error)
-          });
-        }
-        //reader.readAsBinaryString();
-      });
-    }
+    dispatch(setFileUploadingCount(acceptedFiles.length));
+
+    acceptedFiles.forEach((file) => {
+      const reader = new FileReader()
+      reader.onabort = () => console.log('file reading was aborted')
+      reader.onerror = () => console.log('file reading has failed')
+      reader.onload = () => {}
+      reader.readAsBinaryString(file);
+      const formData = new FormData();
+      formData.append("file", file);
+      let fileName = "";
+      let fileExtension = "";
+      if (file.name.toLowerCase().endsWith(".tar.gz")) {
+        fileName = file.name.split(".").slice(0, -2).join(".");
+        fileExtension = file.name.split(".").slice(-2).join(".");
+      } else {
+        fileName = file.name.split(".").slice(0, -1).join(".");
+        fileExtension = file.name.split(".").pop();
+      }
+      let url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/file_upload/?reference_curie=" + referenceCurie + "&display_name=" + fileName + "&file_class=" + main_or_supp + "&file_publication_status=final&file_extension=" + fileExtension + "&is_annotation=false";
+      if (access !== null) {
+        url += "&mod_abbreviation=" + access
+      }
+      if (access !== 'No') {
+        axios.post(url, formData, {
+          headers: {
+            "Authorization": "Bearer " + accessToken,
+            "Content-Type": "multipart/form-data",
+          }
+        }).then((res) => {
+          dispatch(fileUploadResult('<strong>' + file.name + '</strong>', 'success<br/>'))
+        }).catch((error) => {
+          dispatch(fileUploadResult('<strong>' + file.name + '</strong><br/>', error.response.data.detail + '<br/>'))
+          console.log(error)
+        });
+      }
+      //reader.readAsBinaryString();
+    });
   }, [access, dispatch, accessToken, main_or_supp, referenceCurie]);
 
   const {getRootProps, getInputProps} = useDropzone({onDrop})
@@ -100,7 +108,7 @@ const FileUpload = ({main_or_supp}) => {
       <>
         <ModalGeneric showGenericModal={fileUploadingShowModal}
                       genericModalHeader="File Upload Result"
-                      genericModalBody={fileUploadingModalText}
+                      genericModalBody={fileUploadingModalText.replaceAll(". ", ".<br/>")}
                       onHideAction={setFileUploadingShowModal(false)} />
         <Row key={main_or_supp} >
           <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>{main_or_supp} file</Col>
@@ -108,7 +116,8 @@ const FileUpload = ({main_or_supp}) => {
             <div className="dropzone" {...getRootProps()} >
               <input {...getInputProps()} />
               <p>Drag and drop {main_or_supp} file here, or click to select files</p>
-            </div></Col>
+            </div>
+          </Col>
         </Row>
       </>
   );
