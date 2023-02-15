@@ -16,7 +16,6 @@ import {
   downloadReferencefile,
   fileUploadResult,
   setFileUploadingCount,
-  setFileUploadingModalText,
   setFileUploadingShowModal,
   setFileUploadingShowSuccess
 } from '../../actions/biblioActions';
