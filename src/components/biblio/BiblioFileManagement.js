@@ -183,7 +183,7 @@ const FileEditor = () => {
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 3}}>{referencefileValue}</Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>{source}</Col>
             <Col className={`Col-general ${cssDisplay} `}
-                 lg={{span: 1}}>{referenceFile.pdf_type === null ? 'pdf' : referenceFile.pdf_type}</Col>
+                 lg={{span: 1}}>{referenceFile.pdf_type === null ? '' : referenceFile.pdf_type}</Col>
             <Col className={`Col-general ${cssDisplay} `}
                  lg={{span: 2}}>{referenceFile.file_publication_status}</Col>
             <Col className={`Col-general ${cssDisplayRight} `} lg={{span: 2}}><Button
@@ -220,7 +220,7 @@ const FileEditor = () => {
             <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}><strong>File Class</strong></Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{ span: 3 }}><strong>File Name</strong></Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>Source</strong></Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 1 }}><strong>Pdf Type</strong></Col>
+            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 1 }}><strong>Special Pdf Type</strong></Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
             <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 2 }}><strong>Delete placeholder</strong></Col>
           </Row>);
