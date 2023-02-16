@@ -191,6 +191,21 @@ const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, 
     return (<>{rowModReferenceTypesElements}</>); }
   else { return null; } }
 
+export const RowDisplayCopyrightLicense = ({fieldIndex, fieldName, referenceJsonLive, displayOrEditor}) => {
+  const name = (referenceJsonLive['copyright_license_name'] !== null) ? referenceJsonLive['copyright_license_name'] : '';
+  const url = (referenceJsonLive['copyright_license_url'] !== null) ? referenceJsonLive['copyright_license_url'] : '';
+  const desc = (referenceJsonLive['copyright_license_description'] !== null) ? referenceJsonLive['copyright_license_description'] : '';
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') {
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
+  return (
+        <Row key="meshTermsText" className="Row-general" xs={2} md={4} lg={6}>
+          <Col className={`Col-general ${cssDisplayLeft}  `}>copyright_license</Col>
+          <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}><a href={url} title={desc} rel="noreferrer noopener" target="_blank">{name}</a></Col>
+        </Row>); }
+
 export const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJsonLive, displayOrEditor}) => {
   const meshExpand = useSelector(state => state.biblio.meshExpand);
   let cssDisplayLeft = 'Col-display Col-display-left';
@@ -385,6 +400,8 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'date_published') {
       rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'copyright_license_name') {
+      rowOrderedElements.push(<RowDisplayCopyrightLicense key="RowDisplayCopyrightLicense" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
     else if (fieldName === 'referencefiles') {
       rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
