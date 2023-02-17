@@ -183,7 +183,7 @@ const FileEditor = () => {
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 3}}>{referencefileValue}</Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>{source}</Col>
             <Col className={`Col-general ${cssDisplay} `}
-                 lg={{span: 1}}>{referenceFile.pdf_type === null ? '' : referenceFile.pdf_type}</Col>
+                 lg={{span: 1}}>{referenceFile.pdf_type === null || referenceFile.pdf_type === 'pdf' ? '' : referenceFile.pdf_type}</Col>
             <Col className={`Col-general ${cssDisplay} `}
                  lg={{span: 2}}>{referenceFile.file_publication_status}</Col>
             <Col className={`Col-general ${cssDisplayRight} `} lg={{span: 2}}><Button
