@@ -127,7 +127,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                                 }}/>
                                                 </Col>
                                                 <Col sm={8}>
-                                                    {bucket.key}
+                                                    <span dangerouslySetInnerHTML={{__html: bucket.key}} />
                                                 </Col>
                                                 <Col>
                                                     <Badge variant="secondary">{bucket.doc_count}</Badge>
