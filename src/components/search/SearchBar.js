@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import {Dropdown, InputGroup, Spinner} from 'react-bootstrap';
-import {searchReferences, setSearchQuery, setSearchResultsPage, setAuthorFilter,setQueryFields} from '../../actions/searchActions';
+import {searchReferences, setSearchQuery, setSearchResultsPage, setAuthorFilter,setQueryFields,setPartialMatch} from '../../actions/searchActions';
 import {useDispatch, useSelector} from 'react-redux';
 
 
@@ -11,6 +11,7 @@ const SearchBar = () => {
     const [fieldToSearch, setFieldToSearch] = useState('All');
     const searchLoading = useSelector(state => state.search.searchLoading);
     const searchQuery = useSelector(state => state.search.searchQuery);
+    const partialMatch = useSelector(state => state.search.partialMatch);
 
     const dispatch = useDispatch();
 
@@ -55,6 +56,13 @@ const SearchBar = () => {
                             }}>
                         {searchLoading ? <Spinner animation="border" size="sm"/> : <span>Search</span>  }
                     </Button>
+                    <InputGroup.Checkbox id="partialMatch"
+                      label = "Include Partial Match"
+                      checked = {partialMatch}
+                      onChange={(evt) => {
+                          dispatch(setPartialMatch(evt.target.checked));
+                      }}/>
+                    <InputGroup.Text>Include Partial Match </InputGroup.Text>
                 </InputGroup>
             </div>
         </>
