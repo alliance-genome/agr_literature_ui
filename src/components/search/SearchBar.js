@@ -26,7 +26,7 @@ const SearchBar = () => {
             <div style={{width: "40em", margin: "auto"}}>
                 <InputGroup className="mb-2">
                     <Dropdown>
-                        <Dropdown.Toggle variant="success" id="dropdown-basic">
+                        <Dropdown.Toggle variant="success" id="dropdown-basic" className="inputGroupLeft">
                             {fieldToSearch}
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
@@ -48,7 +48,7 @@ const SearchBar = () => {
                                       }
                                   }}
                     />
-                    <Button inline="true" style={{width: "5em"}}
+                    <Button inline="true" style={{width: "5em"}} className = "inputGroupCenter"
                             onClick={() => {
                               dispatch(setSearchResultsPage(0));
                               dispatch(setAuthorFilter(''));
@@ -56,13 +56,14 @@ const SearchBar = () => {
                             }}>
                         {searchLoading ? <Spinner animation="border" size="sm"/> : <span>Search</span>  }
                     </Button>
-                    <InputGroup.Checkbox id="partialMatch"
-                      label = "Include Partial Match"
-                      checked = {partialMatch}
-                      onChange={(evt) => {
-                          dispatch(setPartialMatch(evt.target.checked));
+                    <InputGroup.Text className = "inputGroupRight">
+                      Include Partial Match &ensp;
+                      <Form.Check
+                        checked ={partialMatch}
+                        onChange={(evt) => {
+                            dispatch(setPartialMatch(evt.target.checked));
                       }}/>
-                    <InputGroup.Text>Include Partial Match </InputGroup.Text>
+                    </InputGroup.Text>
                 </InputGroup>
             </div>
         </>
