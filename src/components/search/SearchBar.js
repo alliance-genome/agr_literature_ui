@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import {Dropdown, InputGroup, Spinner} from 'react-bootstrap';
-import {searchReferences, setSearchQuery, setSearchResultsPage, setAuthorFilter,setQueryFields} from '../../actions/searchActions';
+import {searchReferences, setSearchQuery, setSearchResultsPage, setAuthorFilter,setQueryFields,setPartialMatch} from '../../actions/searchActions';
 import {useDispatch, useSelector} from 'react-redux';
 
 
@@ -11,6 +11,7 @@ const SearchBar = () => {
     const [fieldToSearch, setFieldToSearch] = useState('All');
     const searchLoading = useSelector(state => state.search.searchLoading);
     const searchQuery = useSelector(state => state.search.searchQuery);
+    const partialMatch = useSelector(state => state.search.partialMatch);
 
     const dispatch = useDispatch();
 
@@ -25,7 +26,7 @@ const SearchBar = () => {
             <div style={{width: "40em", margin: "auto"}}>
                 <InputGroup className="mb-2">
                     <Dropdown>
-                        <Dropdown.Toggle variant="success" id="dropdown-basic">
+                        <Dropdown.Toggle variant="success" id="dropdown-basic" className="inputGroupLeft">
                             {fieldToSearch}
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
@@ -47,7 +48,7 @@ const SearchBar = () => {
                                       }
                                   }}
                     />
-                    <Button inline="true" style={{width: "5em"}}
+                    <Button inline="true" style={{width: "5em"}} className = "inputGroupCenter"
                             onClick={() => {
                               dispatch(setSearchResultsPage(0));
                               dispatch(setAuthorFilter(''));
@@ -55,6 +56,14 @@ const SearchBar = () => {
                             }}>
                         {searchLoading ? <Spinner animation="border" size="sm"/> : <span>Search</span>  }
                     </Button>
+                    <InputGroup.Text className = "inputGroupRight">
+                      Include Partial Match &ensp;
+                      <Form.Check
+                        checked ={partialMatch}
+                        onChange={(evt) => {
+                            dispatch(setPartialMatch(evt.target.checked));
+                      }}/>
+                    </InputGroup.Text>
                 </InputGroup>
             </div>
         </>

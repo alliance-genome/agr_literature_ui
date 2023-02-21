@@ -21,6 +21,7 @@ export const SEARCH_SET_DATE_PUBMED_MODIFIED = 'SEARCH_SET_DATE_PUBMED_MODIFIED'
 export const SEARCH_SET_DATE_PUBLISHED = 'SEARCH_SET_DATE_PUBLISHED';
 export const SEARCH_SET_SEARCH_QUERY_FIELDS = 'SEARCH_SET_SEARCH_QUERY_FIELDS';
 export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_DATE';
+export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -64,7 +65,8 @@ export const searchReferences = () => {
       facets_limits: state.search.searchFacetsLimits,
       author_filter: state.search.authorFilter,
       query_fields: state.search.query_fields,
-      sort_by_published_date_order: state.search.sortByPublishedDate
+      sort_by_published_date_order: state.search.sortByPublishedDate,
+      partial_match: state.search.partialMatch
     }
     if(state.search.datePubmedModified){
       params.date_pubmed_modified = state.search.datePubmedModified;
@@ -251,5 +253,12 @@ export const setSortByPublishedDate = (sortByPublishedDate) => ({
   type: SEARCH_SET_SORT_BY_PUBLISHED_DATE,
   payload: {
     sortByPublishedDate : sortByPublishedDate
+  }
+});
+
+export const setPartialMatch = (partialMatch) => ({
+  type: SEARCH_SET_PARTIAL_MATCH,
+  payload: {
+    partialMatch : partialMatch
   }
 });

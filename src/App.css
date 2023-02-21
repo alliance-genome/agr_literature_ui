@@ -340,6 +340,20 @@ em {
   padding-left:0.5em;
   font-size:0.8em;
 }
+
+.inputGroupRight{
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.inputGroupCenter{
+  border-radius:0 !important;
+}
+
+.inputGroupLeft{
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
 /*
   background-color: #bbeffd;
 */
