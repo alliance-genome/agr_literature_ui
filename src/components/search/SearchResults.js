@@ -38,6 +38,11 @@ const SearchResults = () => {
     const searchError = useSelector(state => state.search.searchError);
     const dispatch = useDispatch();
 
+    function truncateAbstract(abstract, maxLength){
+      if (abstract.length <= maxLength) return abstract;
+      return abstract.substr(0, abstract.lastIndexOf(' ', maxLength));
+    }
+
     return (
         <div>
             {
@@ -56,7 +61,7 @@ const SearchResults = () => {
                               </div>
                               <div className="searchRow-other">Authors : {reference.authors ? reference.authors.map((author, i) => ((i ? ', ' : '') + author.name)) : ''}</div>
                               <div className="searchRow-other">Publication Date: {reference.date_published}</div>
-                              <div className="searchRow-other">Abstract: <p>{reference.abstract == null || reference.abstract.length<500 ? reference.abstract : reference.abstract.substring(0,500)+'...'}</p></div>
+                              <div className="searchRow-other">Abstract: <p>{reference.abstract == null || reference.abstract.length<500 ? reference.abstract : truncateAbstract(reference.abstract,500)+'...'}</p></div>
                               {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}
                             </Col>
                         </Row>))
