@@ -22,7 +22,7 @@ const SearchOptions = () => {
       <Pagination>
         <Pagination.First  onClick={() => changePage('First')} />
         <Pagination.Prev   onClick={() => changePage('Prev')} />
-        <Pagination.Item  disabled>{"Page " + (searchResultsPage+1) + " of " + Math.ceil(searchResultsCount/searchSizeResultsCount)}</Pagination.Item>
+        <Pagination.Item  disabled>{"Page " + (searchResultsPage) + " of " + Math.ceil(searchResultsCount/searchSizeResultsCount)}</Pagination.Item>
         <Pagination.Next   onClick={() => changePage('Next')} />
         <Pagination.Last   onClick={() => changePage('Last')} />
       </Pagination>
@@ -30,22 +30,22 @@ const SearchOptions = () => {
 
     function changePage(action){
       let page = searchResultsPage;
-      let lastPage= Math.ceil(searchResultsCount/searchSizeResultsCount)-1;
+      let lastPage= Math.ceil(searchResultsCount/searchSizeResultsCount);
       switch (action){
         case 'Next':
           page=Math.min(lastPage,page+1);
           break;
         case 'Prev':
-          page=Math.max(0,page-1);
+          page=Math.max(1,page-1);
           break;
         case 'First':
-          page=0;
+          page=1;
           break;
         case 'Last':
           page=lastPage;
           break;
         default:
-          page=0;
+          page=1;
           break;
 
       }
@@ -66,7 +66,7 @@ const SearchOptions = () => {
                     <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount"
                                   onChange={(e) => {
                                       dispatch(setSearchSizeResultsCount(e.target.value));
-                                      dispatch(setSearchResultsPage(0));
+                                      dispatch(setSearchResultsPage(1));
                                       dispatch(searchReferences());
                                   } }>
                         <option value="10" selected>Results per page 10</option>

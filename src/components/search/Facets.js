@@ -59,7 +59,7 @@ const DateFacet = ({facetsToInclude}) => {
           else {
             dispatch(setDatePublished(newDateRangeArr));
           }
-          dispatch(setSearchResultsPage(0));
+          dispatch(setSearchResultsPage(1));
           dispatch(searchReferences());
           }}/>
       </div>
@@ -72,7 +72,7 @@ const DateFacet = ({facetsToInclude}) => {
           else {
             dispatch(setDatePubmedModified(newDateRangeArr));
           }
-          dispatch(setSearchResultsPage(0));
+          dispatch(setSearchResultsPage(1));
           dispatch(searchReferences());
         }}/>
       </div>
@@ -85,7 +85,7 @@ const DateFacet = ({facetsToInclude}) => {
           else {
             dispatch(setDatePubmedAdded(newDateRangeArr));
           }
-          dispatch(setSearchResultsPage(0));
+          dispatch(setSearchResultsPage(1));
           dispatch(searchReferences());
         }}/>
       </div>
@@ -255,7 +255,7 @@ const Facets = () => {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
             if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0) {
-                dispatch(setSearchResultsPage(0));
+                dispatch(setSearchResultsPage(1));
                 dispatch(setAuthorFilter(""));
                 dispatch(searchReferences());
             }
