@@ -85,7 +85,7 @@ const validateXrefPrefixDup = (xrefJsonLive, fieldName) => {
         else { prefixDict[valueLiveCuriePrefix] = [crossRefDict['curie']]; } } }
   let modalTextError = '';
   for (const [prefix, values] of Object.entries(prefixDict)) {
-    if (values.length > 1) {
+    if (values.length > 1 && prefix !== 'CGC') {
       modalTextError += 'Cross Reference validation error: ' + prefix + ' has too many valid values ' + values.join(', ') + '<br/>'; } }
   return modalTextError;
 }
