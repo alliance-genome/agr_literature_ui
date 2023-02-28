@@ -20,7 +20,7 @@ const initialState = {
   searchResults: [],
   searchResultsCount: 0,
   searchSizeResultsCount: 10,
-  searchResultsPage: 0,
+  searchResultsPage: 1,
   searchLoading: false,
   facetsLoading: false,
   searchSuccess: false,

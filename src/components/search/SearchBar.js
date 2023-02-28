@@ -42,7 +42,7 @@ const SearchBar = () => {
                                   onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                                   onKeyPress={(event) => {
                                       if (event.charCode === 13) {
-                                        dispatch(setSearchResultsPage(0));
+                                        dispatch(setSearchResultsPage(1));
                                         dispatch(setAuthorFilter(''));
                                         dispatch(searchReferences());
                                       }
@@ -50,7 +50,7 @@ const SearchBar = () => {
                     />
                     <Button inline="true" style={{width: "5em"}} className = "inputGroupCenter"
                             onClick={() => {
-                              dispatch(setSearchResultsPage(0));
+                              dispatch(setSearchResultsPage(1));
                               dispatch(setAuthorFilter(''));
                               dispatch(searchReferences());
                             }}>
