@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
@@ -39,6 +39,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 
 import loading_gif from '../images/loading_cat.gif';
 import Spinner from "react-bootstrap/Spinner";
+import axios from "axios";
 
 // https://stage-literature.alliancegenome.org/Biblio/?action=topic&referenceCurie=AGRKB:101000000163587
 
@@ -230,7 +231,7 @@ const BiblioTagging = () => {
   // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   // rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);	// curators no longer want this link
-  rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />);
+  rowOrderedElements.push(<RowDisplayReferencefiles key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
   return (<><Container>{rowOrderedElements}</Container>
@@ -252,12 +253,27 @@ export function getOktaModAccess(oktaGroups) {
   return access;
 }
 
-export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEditor}) => {
+export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const supplementExpand = useSelector(state => state.biblio.supplementExpand);
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
+  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  const referenceId = useSelector(state => state.biblio.referenceJsonLive.reference_id)
+  const [referenceFiles, setReferenceFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchReferencefiles = async () => {
+      setIsLoading(true);
+      const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
+      setReferenceFiles(referencefiles.data);
+      setIsLoading(false);
+    }
+    fetchReferencefiles().finally()
+  }, [referenceCurie]);
+
   let cssDisplayLeft = 'Col-display Col-display-left';
   let cssDisplay = 'Col-display';
   let cssDisplayRight = 'Col-display Col-display-right';
@@ -265,66 +281,66 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
     cssDisplay = 'Col-editor-disabled';
     cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled'; }
   const access = getOktaModAccess(oktaGroups);
-  if ('referencefiles' in referenceJsonLive && referenceJsonLive['referencefiles'] !== null) {
+
     let tarballChecked = ''; let listChecked = '';
     if (supplementExpand === 'tarball') { tarballChecked = 'checked'; }
       else if (supplementExpand === 'list') { listChecked = 'checked'; }
     const rowReferencefileElements = []
 
-    // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
-    const rowReferencefileSupplementElements = []
-    let hasAccessToTarball = false;
-    for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].entries()) {
-      let is_ok = false;
-      let allowed_mods = [];
-      for (const rfm of referencefileDict['referencefile_mods']) {
-        if (rfm['mod_abbreviation'] !== null) { allowed_mods.push(rfm['mod_abbreviation']); }
-        if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === access) { is_ok = true; }
-      }
-      let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
-      let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-      if (access === 'developer') { is_ok = true; }
-        else if (access === 'No') { is_ok = false; referencefileValue = (<div>{filename}</div>); }
-      if (is_ok) {
-        hasAccessToTarball = true;
-        referencefileValue = (<div><button className='button-to-link' onClick={ () =>
-            dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken))
-        } >{filename}</button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}</div>); }
+  // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
+  const rowReferencefileSupplementElements = []
+  let hasAccessToTarball = false;
+  for (const[index, referencefileDict] of referenceFiles.entries()) {
+    let is_ok = false;
+    let allowed_mods = [];
+    for (const rfm of referencefileDict['referencefile_mods']) {
+      if (rfm['mod_abbreviation'] !== null) { allowed_mods.push(rfm['mod_abbreviation']); }
+      if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === access) { is_ok = true; }
+    }
+    let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
+    let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
+    if (access === 'developer') { is_ok = true; }
+    else if (access === 'No') { is_ok = false; referencefileValue = (<div>{filename}</div>); }
+    if (is_ok) {
+      hasAccessToTarball = true;
+      referencefileValue = (<div><button className='button-to-link' onClick={ () =>
+          dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken))
+      } >{filename}</button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}</div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
-        const referencefileRow = (
-            <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}>{fieldName}</Col>
-              <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>{referencefileDict['file_class']}</Col>
-              <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 8 }}>{referencefileValue}</Col>
-            </Row>);
-        if (referencefileDict['file_class'] === 'main') {
-          rowReferencefileElements.push( referencefileRow ); }
-        else {
-          rowReferencefileSupplementElements.push( referencefileRow ); } }
+    const referencefileRow = (
+        <Row key={`referencefiles ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}>referencefiles</Col>
+          <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>{referencefileDict['file_class']}</Col>
+          <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 8 }}>{referencefileValue}</Col>
+        </Row>);
+    if (referencefileDict['file_class'] === 'main') {
+      rowReferencefileElements.push( referencefileRow ); }
+    else {
+      rowReferencefileSupplementElements.push( referencefileRow ); } }
 
-    if (rowReferencefileSupplementElements.length > 0) {
-      rowReferencefileElements.push(
+  if (rowReferencefileSupplementElements.length > 0) {
+    rowReferencefileElements.push(
         <Row key="supplementExpandTogglerRow" className="Row-general" xs={2} md={4} lg={6}>
           <Col className={`Col-general ${cssDisplayLeft} `}>referencefiles</Col>
           <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>additional files</Col>
           <Col className={`Col-general ${tarballChecked ? cssDisplay : cssDisplayRight} `} lg={{ span: tarballChecked ? 4 : 8}}>
             <Form.Check inline type='radio' label='tarball' checked={tarballChecked}
-              id='biblio-supplement-expand-toggler-tarball'
-              onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
+                        id='biblio-supplement-expand-toggler-tarball'
+                        onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
             <Form.Check inline type='radio' label={`list (${rowReferencefileSupplementElements.length})`} checked={listChecked}
-              id='biblio-supplement-expand-toggler-list'
-              onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
+                        id='biblio-supplement-expand-toggler-list'
+                        onChange={(e) => dispatch(changeBiblioSupplementExpandToggler(e))} />
           </Col>
           {tarballChecked ?
               <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 4 }}>
                 {hasAccessToTarball ?
                     <div><button className='button-to-link' onClick={ () =>
-                      dispatch(downloadReferencefile(undefined,
-                          referenceJsonLive.curie.replace(":", "_") + "_additional_files.tar.gz",
-                          accessToken, referenceJsonLive["reference_id"]))}>
+                        dispatch(downloadReferencefile(undefined,
+                            referenceCurie.replace(":", "_") + "_additional_files.tar.gz",
+                            accessToken, referenceId))}>
                       Download tarball
                     </button>&nbsp;
-                      {loadingFileNames.has(referenceJsonLive.curie.replace(":", "_") + "_additional_files.tar.gz") ?
+                      {loadingFileNames.has(referenceCurie.replace(":", "_") + "_additional_files.tar.gz") ?
                           <Spinner animation="border" size="sm"/>
                           :
                           null }
@@ -337,10 +353,18 @@ export const RowDisplayReflinks = ({fieldName, referenceJsonLive, displayOrEdito
               null
           }
         </Row>);
-        if (supplementExpand === 'list') {
-          rowReferencefileElements.push(...rowReferencefileSupplementElements); } }
-    return (<>{rowReferencefileElements}</>); }
-  else { return null; } }
+    if (supplementExpand === 'list') {
+      rowReferencefileElements.push(...rowReferencefileSupplementElements); } }
+  return (
+      <>
+        {isLoading ?
+            <Row key="supplementExpandTogglerRow" className="Row-general">
+              <Col className={`Col-general ${cssDisplayLeft} `} lg={2}>referencefiles</Col>
+              <Col className={`Col-general ${cssDisplayRight} `} lg={10}><Spinner animation={"border"}/></Col>
+            </Row>
+            :
+            rowReferencefileElements}
+      </>); }
 
 // curators no longer want this link
 // const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJsonDb}) => {

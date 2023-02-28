@@ -7,7 +7,7 @@ import { BiblioSubmitUpdateRouter } from './BiblioEditor';
 import { AuthorExpandToggler } from './BiblioEditor';
 import { splitCurie } from './BiblioEditor';
 import { aggregateCitation } from './BiblioEditor';
-import { RowDisplayReflinks } from '../Biblio';
+import { RowDisplayReferencefiles } from '../Biblio';
 
 import { changeBiblioMeshExpandToggler } from '../../actions/biblioActions';
 
@@ -403,7 +403,7 @@ const BiblioDisplay = () => {
     else if (fieldName === 'copyright_license_name') {
       rowOrderedElements.push(<RowDisplayCopyrightLicense key="RowDisplayCopyrightLicense" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
     else if (fieldName === 'referencefiles') {
-      rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
+      rowOrderedElements.push(<RowDisplayReferencefiles key="referencefiles" displayOrEditor="display" />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container>{ accessToken !== null && <BiblioSubmitUpdateRouter /> }{rowOrderedElements}</Container>);
