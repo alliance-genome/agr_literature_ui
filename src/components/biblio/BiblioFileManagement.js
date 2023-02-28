@@ -1,12 +1,15 @@
-import {useCallback} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from "react-bootstrap/Spinner";
 import Button from 'react-bootstrap/Button';
-import Alert from 'react-bootstrap/Alert'
+import Alert from 'react-bootstrap/Alert';
+import Form from 'react-bootstrap/Form';
 import axios from "axios";
+
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
 
 import RowDivider from './RowDivider';
 import {RowDisplayString} from './BiblioDisplay';
@@ -22,6 +25,7 @@ import {
 
 import {useDropzone} from 'react-dropzone';
 import {getOktaModAccess} from "../Biblio";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 const BiblioFileManagement = () => {
   const fileUploadingIsUploading = useSelector(state => state.biblio.fileUploadingCount) > 0;
@@ -147,12 +151,32 @@ const BiblioCitationDisplay = () => {
 const FileEditor = () => {
   const displayOrEditor = 'display';
   const fieldName = 'referencefiles';
-  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
 
   const dispatch = useDispatch();
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
+  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  const fileUploadingShowSuccess = useSelector(state => state.biblio.fileUploadingShowSuccess);
+  const [referencefiles, setReferencefiles] = useState([]);
+  const [referencefilesLoading, setReferencefilesLoading] = useState(false);
+
+  const fetchReferencefiles = async () => {
+    setReferencefilesLoading(true);
+    const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
+    setReferencefiles(referencefiles.data);
+    setReferencefilesLoading(false);
+  }
+
+  useEffect(() => {
+    fetchReferencefiles().finally();
+  }, [referenceCurie]);
+
+  useEffect(() => {
+    if (fileUploadingShowSuccess) {
+      fetchReferencefiles().finally();
+    }
+  }, [fileUploadingShowSuccess]);
 
   const compareFn = (a, b) => {
     if (a.file_class + a.display_name + a.file_extension > b.file_class + b.display_name + b.file_extension) {
@@ -162,6 +186,20 @@ const FileEditor = () => {
       return -1;
     }
     return 0;
+  }
+
+  const patchReferencefile = (referencefileId, data, accessToken) => {
+    const url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/" + referencefileId;
+    axios.patch(url, data, {
+      headers: {
+        "Authorization": "Bearer " + accessToken,
+        "Content-Type": "application/json",
+      }
+    }).then((res) => {
+      fetchReferencefiles().finally();
+    }).catch((error) => {
+      console.log(error)
+    });
   }
 
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
@@ -182,12 +220,28 @@ const FileEditor = () => {
             <Col className={`Col-general ${cssDisplayLeft} `} lg={{span: 2}}>{referenceFile.file_class}</Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 3}}>{referencefileValue}</Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>{source}</Col>
-            <Col className={`Col-general ${cssDisplay} `}
-                 lg={{span: 1}}>{referenceFile.pdf_type === null || referenceFile.pdf_type === 'pdf' ? '' : referenceFile.pdf_type}</Col>
-            <Col className={`Col-general ${cssDisplay} `}
-                 lg={{span: 2}}>{referenceFile.file_publication_status}</Col>
-            <Col className={`Col-general ${cssDisplayRight} `} lg={{span: 2}}><Button
-                variant="outline-primary">delete</Button></Col>
+            <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>
+              <Form.Control as="select"
+                            value={referenceFile.pdf_type === null || referenceFile.pdf_type === 'pdf' ? '' : referenceFile.pdf_type}
+                            onChange={(event) => patchReferencefile(referenceFile.referencefile_id, {"pdf_type": event.target.value === "" ? null : event.target.value}, accessToken)}>
+                <option></option>
+                <option>ocr</option>
+                <option>aut</option>
+                <option>html</option>
+              </Form.Control>
+            </Col>
+            <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>
+              <Form.Control as="select"
+                            value={referenceFile.file_publication_status}
+                            onChange={(event) => patchReferencefile(referenceFile.referencefile_id, {"file_publication_status": event.target.value}, accessToken)}>
+                <option>prepub</option>
+                <option>temp</option>
+                <option>final</option>
+                <option>other</option>
+              </Form.Control>
+            </Col>
+            <Col className={`Col-general ${cssDisplayRight} `} lg={{span: 1}}><Button
+                variant="outline-dark"><FontAwesomeIcon icon={faTrash}/></Button></Col>
           </Row>);
     });
   }
@@ -200,33 +254,32 @@ const FileEditor = () => {
   }
   let rowReferencefileElements = [];
   const access = getOktaModAccess(oktaGroups);
-  if ('referencefiles' in referenceJsonLive && referenceJsonLive['referencefiles'] !== null) {
-    let referenceFilesWithAccess = referenceJsonLive['referencefiles']
-        .filter((referenceFile) => access === 'developer' || referenceFile.referencefile_mods
-            .some((mod) => mod.mod_abbreviation === access || mod.mod_abbreviation === null));
+  let referenceFilesWithAccess = referencefiles
+      .filter((referenceFile) => access === 'developer' || referenceFile.referencefile_mods
+          .some((mod) => mod.mod_abbreviation === access || mod.mod_abbreviation === null));
 
-    let referenceFilesNoAccess = referenceJsonLive['referencefiles']
-        .filter((referenceFile) => access !== 'developer' && referenceFile.referencefile_mods
-            .every((mod) => mod.mod_abbreviation !== access && mod.mod_abbreviation !== null));
+  let referenceFilesNoAccess = referencefiles
+      .filter((referenceFile) => access !== 'developer' && referenceFile.referencefile_mods
+          .every((mod) => mod.mod_abbreviation !== access && mod.mod_abbreviation !== null));
 
-    referenceFilesWithAccess.sort(compareFn);
-    referenceFilesNoAccess.sort(compareFn);
-    rowReferencefileElements = [...getDisplayRowsFromReferenceFiles(referenceFilesWithAccess, true),
-        ...getDisplayRowsFromReferenceFiles(referenceFilesNoAccess, false)];
-    }
-    if (rowReferencefileElements.length > 0) {
-      const referencefileHeaderRow = (
-          <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}><strong>File Class</strong></Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 3 }}><strong>File Name</strong></Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>Source</strong></Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 1 }}><strong>Special Pdf Type</strong></Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
-            <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 2 }}><strong>Delete placeholder</strong></Col>
-          </Row>);
-      rowReferencefileElements.unshift( referencefileHeaderRow );
-      return (<>{rowReferencefileElements}</>);
-    } else { return null; }
+  referenceFilesWithAccess.sort(compareFn);
+  referenceFilesNoAccess.sort(compareFn);
+  rowReferencefileElements = [...getDisplayRowsFromReferenceFiles(referenceFilesWithAccess, true),
+    ...getDisplayRowsFromReferenceFiles(referenceFilesNoAccess, false)];
+  const referencefileHeaderRow = (
+      <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={6}>
+        <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}><strong>File Class</strong></Col>
+        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 3 }}><strong>File Name</strong></Col>
+        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>Source</strong></Col>
+        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>Special Pdf Type</strong></Col>
+        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
+        <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 1 }}><strong>Delete</strong></Col>
+      </Row>);
+  rowReferencefileElements.unshift( referencefileHeaderRow );
+  return (
+      <>
+        {referencefilesLoading ? <Spinner animation={"border"}/> : rowReferencefileElements}
+      </>);
 }
 
 export default BiblioFileManagement;

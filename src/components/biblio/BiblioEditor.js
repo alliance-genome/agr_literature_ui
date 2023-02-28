@@ -6,7 +6,7 @@ import ModalGeneric from './ModalGeneric';
 
 import { RowDisplayMeshTerms } from './BiblioDisplay';
 import { RowDisplayCopyrightLicense } from './BiblioDisplay';
-import { RowDisplayReflinks } from '../Biblio';
+import { RowDisplayReferencefiles } from '../Biblio';
 
 import {fetchModReferenceTypes, setBiblioUpdating} from '../../actions/biblioActions';
 import { setUpdateCitationFlag } from '../../actions/biblioActions';
@@ -995,7 +995,7 @@ const BiblioEditor = () => {
     else if (fieldName === 'copyright_license_name') {
       rowOrderedElements.push(<RowDisplayCopyrightLicense key="RowDisplayCopyrightLicense" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
     else if (fieldName === 'referencefiles') {
-      rowOrderedElements.push(<RowDisplayReflinks key="referencefile" fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
+      rowOrderedElements.push(<RowDisplayReferencefiles key="referencefile" fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
   return (<Container>
