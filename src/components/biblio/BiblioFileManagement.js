@@ -221,7 +221,7 @@ const FileEditor = () => {
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 3}}>{referencefileValue}</Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>{source}</Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>
-              <Form.Control as="select"
+              <Form.Control as="select" disabled={!hasAccess}
                             value={referenceFile.pdf_type === null || referenceFile.pdf_type === 'pdf' ? '' : referenceFile.pdf_type}
                             onChange={(event) => patchReferencefile(referenceFile.referencefile_id, {"pdf_type": event.target.value === "" ? null : event.target.value}, accessToken)}>
                 <option></option>
@@ -231,7 +231,7 @@ const FileEditor = () => {
               </Form.Control>
             </Col>
             <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>
-              <Form.Control as="select"
+              <Form.Control as="select" disabled={!hasAccess}
                             value={referenceFile.file_publication_status}
                             onChange={(event) => patchReferencefile(referenceFile.referencefile_id, {"file_publication_status": event.target.value}, accessToken)}>
                 <option>prepub</option>
