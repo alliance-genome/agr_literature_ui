@@ -48,6 +48,12 @@ const DateFacet = ({facetsToInclude}) => {
   const datePublished = useSelector(state => state.search.datePublished);
   const dispatch = useDispatch();
 
+  function formatDateRange(dateRange){
+    let dateStart=dateRange[0].getFullYear()+"-"+parseInt(dateRange[0].getMonth()+1)+"-"+dateRange[0].getDate();
+    let dateEnd=dateRange[1].getFullYear()+"-"+parseInt(dateRange[1].getMonth()+1)+"-"+dateRange[1].getDate();
+    return [dateStart,dateEnd];
+  }
+
   return (
     <div>
       <div key={facetsToInclude[2]} style={{textAlign: "left", paddingLeft: "2em"}}>
@@ -57,7 +63,7 @@ const DateFacet = ({facetsToInclude}) => {
             dispatch(setDatePublished(''));
           }
           else {
-            dispatch(setDatePublished(newDateRangeArr));
+            dispatch(setDatePublished(formatDateRange(newDateRangeArr)));
           }
           dispatch(setSearchResultsPage(1));
           dispatch(searchReferences());
@@ -70,7 +76,7 @@ const DateFacet = ({facetsToInclude}) => {
             dispatch(setDatePubmedModified(''));
           }
           else {
-            dispatch(setDatePubmedModified(newDateRangeArr));
+            dispatch(setDatePubmedModified(formatDateRange(newDateRangeArr)));
           }
           dispatch(setSearchResultsPage(1));
           dispatch(searchReferences());
@@ -83,7 +89,7 @@ const DateFacet = ({facetsToInclude}) => {
             dispatch(setDatePubmedAdded(''));
           }
           else {
-            dispatch(setDatePubmedAdded(newDateRangeArr));
+            dispatch(setDatePubmedAdded(formatDateRange(newDateRangeArr)));
           }
           dispatch(setSearchResultsPage(1));
           dispatch(searchReferences());
