@@ -55,7 +55,7 @@ const EntityEditor = () => {
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
   const [descSort, setDescSort] = useState(true);
   //const [limit, setLimit] = useState(10);
@@ -101,22 +101,22 @@ const EntityEditor = () => {
   }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize]);
 
   const changePage = (action) => {
-      let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize) - 1);
+      let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
       switch (action){
         case 'Next':
           setPage(Math.min(maxPage, page + 1));
           break;
         case 'Prev':
-          setPage(Math.max(0, page - 1));
+          setPage(Math.max(1, page - 1));
           break;
         case 'First':
-          setPage(0);
+          setPage(1);
           break;
         case 'Last':
           setPage(maxPage);
           break;
         default:
-          setPage(0);
+          setPage(1);
           break;
       }
     }
@@ -211,7 +211,7 @@ const EntityEditor = () => {
             <Pagination style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '10vh'}}>
               <Pagination.First  onClick={() => changePage('First')} />
               <Pagination.Prev   onClick={() => changePage('Prev')} />
-              <Pagination.Item  disabled>{"Page " + (page + 1) + " of " + Math.ceil(totalTagsCount/pageSize)}</Pagination.Item>
+              <Pagination.Item  disabled>{"Page " + page + " of " + Math.ceil(totalTagsCount/pageSize)}</Pagination.Item>
               <Pagination.Next   onClick={() => changePage('Next')} />
               <Pagination.Last   onClick={() => changePage('Last')} />
             </Pagination>
