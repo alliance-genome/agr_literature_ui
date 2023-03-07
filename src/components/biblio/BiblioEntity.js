@@ -55,11 +55,11 @@ const EntityEditor = () => {
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
-  const [offset, setOffset] = useState(0);
+  const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
   const [descSort, setDescSort] = useState(true);
   //const [limit, setLimit] = useState(10);
-  const limit = 10; // fixed limit value for now
+  const pageSize = 10; // fixed limit value for now
 
 
   useEffect(() => {
@@ -87,7 +87,7 @@ const EntityEditor = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?offset=" + offset + "&limit=" + limit
+      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize
       if (sortBy !== null && sortBy !== undefined) {
         url += "&sort_by=" + sortBy
       }
@@ -98,25 +98,25 @@ const EntityEditor = () => {
       setTopicEntityTags(resultTags.data);
     }
     fetchData().then();
-  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, offset, limit]);
+  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize]);
 
   const changePage = (action) => {
-      let maxOffset = Math.max(0, (Math.ceil(totalTagsCount/limit) - 1) * limit);
+      let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
       switch (action){
         case 'Next':
-          setOffset(Math.min(maxOffset, offset + limit));
+          setPage(Math.min(maxPage, page + 1));
           break;
         case 'Prev':
-          setOffset(Math.max(0, offset - limit));
+          setPage(Math.max(1, page - 1));
           break;
         case 'First':
-          setOffset(0);
+          setPage(1);
           break;
         case 'Last':
-          setOffset(maxOffset);
+          setPage(maxPage);
           break;
         default:
-          setOffset(0);
+          setPage(1);
           break;
       }
     }
@@ -211,7 +211,7 @@ const EntityEditor = () => {
             <Pagination style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '10vh'}}>
               <Pagination.First  onClick={() => changePage('First')} />
               <Pagination.Prev   onClick={() => changePage('Prev')} />
-              <Pagination.Item  disabled>{"Page " + (offset / limit + 1) + " of " + Math.ceil(totalTagsCount/limit)}</Pagination.Item>
+              <Pagination.Item  disabled>{"Page " + page + " of " + Math.ceil(totalTagsCount/pageSize)}</Pagination.Item>
               <Pagination.Next   onClick={() => changePage('Next')} />
               <Pagination.Last   onClick={() => changePage('Last')} />
             </Pagination>
