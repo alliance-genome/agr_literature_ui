@@ -10,8 +10,8 @@ const restUrl = process.env.REACT_APP_RESTAPI;
 // const port = 11223;
 // const port = 49161;
 
-const ateamApiBaseUrl = 'https://beta-curation.alliancegenome.org/';
-const restUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
+//const ateamApiBaseUrl = 'https://beta-curation.alliancegenome.org/';
+const ateamApiBaseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
 
 export const changeFieldReferenceJson = (e) => {
   console.log('action change field reference json ' + e.target.id + ' to ' + e.target.value);
