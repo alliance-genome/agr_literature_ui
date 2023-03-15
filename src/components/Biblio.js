@@ -260,7 +260,8 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   const supplementExpand = useSelector(state => state.biblio.supplementExpand);
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  const referenceId = useSelector(state => state.biblio.referenceJsonLive.reference_id)
+  const referenceId = useSelector(state => state.biblio.referenceJsonLive.reference_id);
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const [referenceFiles, setReferenceFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -300,6 +301,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
     let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
     let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
     if (access === 'developer') { is_ok = true; }
+    if (referenceJsonLive["copyright_license_open_access"] === true) { is_ok = true }
     else if (access === 'No') { is_ok = false; referencefileValue = (<div>{filename}</div>); }
     if (is_ok) {
       hasAccessToTarball = true;
