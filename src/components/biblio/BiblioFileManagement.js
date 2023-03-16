@@ -158,6 +158,7 @@ const FileEditor = () => {
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const fileUploadingShowSuccess = useSelector(state => state.biblio.fileUploadingShowSuccess);
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const [referencefiles, setReferencefiles] = useState([]);
   const [referencefilesLoading, setReferencefilesLoading] = useState(false);
 
@@ -255,11 +256,11 @@ const FileEditor = () => {
   let rowReferencefileElements = [];
   const access = getOktaModAccess(oktaGroups);
   let referenceFilesWithAccess = referencefiles
-      .filter((referenceFile) => access === 'developer' || referenceFile.referencefile_mods
+      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || access === 'developer' || referenceFile.referencefile_mods
           .some((mod) => mod.mod_abbreviation === access || mod.mod_abbreviation === null));
 
   let referenceFilesNoAccess = referencefiles
-      .filter((referenceFile) => access !== 'developer' && referenceFile.referencefile_mods
+      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] !== true && access !== 'developer' && referenceFile.referencefile_mods
           .every((mod) => mod.mod_abbreviation !== access && mod.mod_abbreviation !== null));
 
   referenceFilesWithAccess.sort(compareFn);
