@@ -203,6 +203,20 @@ const FileEditor = () => {
     });
   }
 
+  const deleteReferencefile = (referencefileId, accessToken) => {
+    const url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/" + referencefileId;
+    axios.delete(url, {
+      headers: {
+        "Authorization": "Bearer " + accessToken,
+        "Content-Type": "application/json",
+      }
+    }).then((res) => {
+      fetchReferencefiles().finally();
+    }).catch((error) => {
+      console.log(error)
+    });
+  }
+
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
@@ -242,7 +256,8 @@ const FileEditor = () => {
               </Form.Control>
             </Col>
             <Col className={`Col-general ${cssDisplayRight} `} lg={{span: 1}}><Button
-                variant="outline-dark"><FontAwesomeIcon icon={faTrash}/></Button></Col>
+                variant="outline-dark" onClick={() => deleteReferencefile(referenceFile.referencefile_id,accessToken)}>
+                <FontAwesomeIcon icon={faTrash}/></Button></Col>
           </Row>);
     });
   }
