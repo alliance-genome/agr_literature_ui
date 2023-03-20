@@ -256,7 +256,7 @@ const FileEditor = () => {
               </Form.Control>
             </Col>
             <Col className={`Col-general ${cssDisplayRight} `} lg={{span: 1}}><Button
-                variant="outline-dark" onClick={() => deleteReferencefile(referenceFile.referencefile_id,accessToken)}>
+                variant="outline-dark" disabled={!hasAccess} onClick={() => deleteReferencefile(referenceFile.referencefile_id,accessToken)}>
                 <FontAwesomeIcon icon={faTrash}/></Button></Col>
           </Row>);
     });
