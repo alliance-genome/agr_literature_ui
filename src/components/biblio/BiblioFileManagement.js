@@ -38,10 +38,93 @@ const BiblioFileManagement = () => {
           {fileUploadingIsUploading ? <Spinner animation={"border"}/> : null}
           <FileUpload main_or_supp="main" />
           <FileUpload main_or_supp="supplement" />
+	  <OpenAccess />
           <RowDivider />
           <FileEditor />
         </Container>
       </>
+  );
+}
+
+const OpenAccess = () => {
+
+  const [licenseData, setLicenseData] = useState([]);
+  const [newLicense, setNewLicense] = useState(''); 
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  let licenseName = '';
+  if (referenceJsonLive["copyright_license_open_access"] === true) {
+    licenseName = referenceJsonLive["copyright_license_name"] + " (open access)"
+  }
+  else if (referenceJsonLive["copyright_license_open_access"] === false) {
+    licenseName = referenceJsonLive["copyright_license_name"]	+ " (not open access)"
+  }
+  let referenceCurie = referenceJsonLive["curie"]
+    
+  const fetchLicenseData = async () => {
+    const result = await axios.get(process.env.REACT_APP_RESTAPI + "/copyright_license/all");
+    setLicenseData(result.data);
+  }
+  
+  useEffect(() => {
+    fetchLicenseData().finally();
+  }, []);
+
+  let license_names = ['Pick a license']
+  for (let x of licenseData) {
+    license_names.push(x['name'])
+  }
+
+  const handleChange = (e) => {
+    setNewLicense(e.target.value);
+  }
+
+  const addLicense = (e) => {
+
+    // console.log("accessToken=", accessToken)
+
+    if (license === '') {
+      return
+    }
+      
+    const license = newLicense.replace(' ', '+')
+    const url = process.env.REACT_APP_RESTAPI + "/reference/add_license/" + referenceCurie + "/" + license;
+    axios.post(url, {
+      headers: {
+	"Authorization": "Bearer " + accessToken,
+        "Content-Type": "application/json",
+      }
+    }).then((res) => {
+      alert("License Added/Updated!") 
+    }).catch((error) => {
+      alert(error)
+    });
+  }
+  
+  const License = () => {
+    const dispatch = useDispatch();
+    let colSize = 10;
+    if (licenseName !== '') {
+      return (<Col sm={colSize}>{licenseName}</Col>);
+    }
+    return (
+      <Col sm={colSize}>
+        <Form.Control as='select' id='license' name='license' value={newLicense} onChange={(e) => handleChange(e)} >
+          {license_names.map((optionValue, index) => (
+            <option value={optionValue} key={index}>{optionValue}</option>
+          ))}
+        </Form.Control>
+        <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)}>Update License Data</div>
+      </Col>);
+  }
+
+  return (
+    <Row key='open_access'>
+      <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
+      <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} >
+	<License />
+      </Col>
+    </Row>
   );
 }
 
