@@ -80,19 +80,19 @@ const OpenAccess = () => {
   }
 
   const addLicense = (e) => {
-
-    // console.log("accessToken=", accessToken)
-
-    if (license === '') {
-      return
-    }
       
+    console.log("accessToken=", accessToken)
+
+    if (newLicense === '' || newLicense === 'Pick a license') {
+      return '';
+    }
     const license = newLicense.replace(' ', '+')
     const url = process.env.REACT_APP_RESTAPI + "/reference/add_license/" + referenceCurie + "/" + license;
     axios.post(url, {
       headers: {
-	"Authorization": "Bearer " + accessToken,
-        "Content-Type": "application/json",
+	'Authorization': 'Bearer ' + accessToken,
+	'mode': 'cors',
+        'Content-Type': 'application/json',
       }
     }).then((res) => {
       alert("License Added/Updated!") 
