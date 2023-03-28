@@ -45,7 +45,7 @@ import axios from "axios";
 
 
 // constants available in BiblioEditor
-// import { 
+// import {
 //   fieldsSimple, fieldsArrayString, fieldsOrdered, fieldsPubmed, fieldsDisplayOnly, fieldsDatePublished,
 //   fieldTypeDict, enumDict
 // } from './biblio/BiblioEditor';
