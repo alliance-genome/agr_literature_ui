@@ -38,10 +38,107 @@ const BiblioFileManagement = () => {
           {fileUploadingIsUploading ? <Spinner animation={"border"}/> : null}
           <FileUpload main_or_supp="main" />
           <FileUpload main_or_supp="supplement" />
+	  <OpenAccess />
           <RowDivider />
           <FileEditor />
         </Container>
       </>
+  );
+}
+
+const OpenAccess = () => {
+
+  const [licenseData, setLicenseData] = useState([]);
+  const [newLicense, setNewLicense] = useState(''); 
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const [alert, setAlert] = useState(false);
+  let [showAlert, setShowAlert] = useState(false);
+  const handleShowAlert = () => {
+    setShowAlert(true);
+    setTimeout(() => {
+      setShowAlert(false);
+    }, 2000); // 2000 ms = 2 seconds
+  };
+
+  let licenseName = '';
+  if (referenceJsonLive["copyright_license_open_access"] === true) {
+    licenseName = referenceJsonLive["copyright_license_name"] + " (open access)"
+  }
+  else if (referenceJsonLive["copyright_license_open_access"] === false) {
+    licenseName = referenceJsonLive["copyright_license_name"]	+ " (not open access)"
+  }
+  let referenceCurie = referenceJsonLive["curie"]
+    
+  const fetchLicenseData = async () => {
+    try {
+      const result = await axios.get(process.env.REACT_APP_RESTAPI + "/copyright_license/all");
+      setLicenseData(result.data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  
+  useEffect(() => {
+    fetchLicenseData().finally();
+  }, []);
+
+  let license_names = ['Pick a license']
+  for (let x of licenseData) {
+    license_names.push(x['name'])
+  }
+
+  const handleChange = (e) => {
+    setNewLicense(e.target.value);
+  }
+
+  const addLicense = (e) => {
+    if (newLicense === '' || newLicense === 'Pick a license') {
+      return '';
+    }
+    const license = newLicense.replace(' ', '+')  
+    const url = process.env.REACT_APP_RESTAPI + "/reference/add_license/" + referenceCurie + "/" + license;
+    axios.post(url, {}, {
+      headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'mode': 'cors',
+        'Content-Type': 'application/json',
+      }
+    }).then((res) => {
+      setAlert("License Added/Updated!");
+      handleShowAlert(); // show the alert and hide it after 2 seconds
+    }).catch((error) => {
+      setAlert(error);
+      setShowAlert(true);
+    });
+  }
+
+  const License = () => {
+    let colSize = 6;
+    if (licenseName !== '') {
+      return (<Col sm={colSize}>{licenseName}</Col>);
+    }
+      return (<Row>
+        <Col sm={colSize}>
+          <Form.Control as='select' id='license' name='license' value={newLicense} onChange={(e) => handleChange(e)} >
+            {license_names.map((optionValue, index) => (
+              <option value={optionValue} key={index}>{optionValue}</option>
+            ))}
+          </Form.Control>
+	</Col>
+	<Col sm={colSize}>
+          <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)}>Update License</div>
+        </Col></Row>);
+  }
+
+  return (
+    <Row key='open_access'>
+      <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
+      <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} >
+	<License />&nbsp; &nbsp; &nbsp;
+	{showAlert && alert}
+      </Col>
+    </Row>
   );
 }
 
