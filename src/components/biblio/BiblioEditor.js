@@ -447,9 +447,10 @@ const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   let valueLive = ''; let valueDb = ''; let updatedFlag = '';
   if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
   if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
-  if (fieldName === 'citation') {
-    valueDb = aggregateCitation(referenceJsonDb)
-    valueLive = aggregateCitation(referenceJsonLive) }
+//   if (fieldName === 'citation') {
+//     valueDb = aggregateCitation(referenceJsonDb)
+//     valueLive = aggregateCitation(referenceJsonLive)
+//   }
   if (valueLive !== valueDb) { updatedFlag = 'updated'; }
   valueLive = valueLive || '';
   let fieldType = 'input';
