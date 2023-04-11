@@ -602,13 +602,14 @@ export const setBiblioAction = (biblioAction) => {
   };
 };
 
-export const setUpdateCitationFlag = (updateCitationFlag) => {
-  console.log("action setUpdateCitationFlag");
-  return {
-    type: 'SET_UPDATE_CITATION_FLAG',
-    payload: updateCitationFlag
-  };
-};
+// citation now updates from database triggers
+// export const setUpdateCitationFlag = (updateCitationFlag) => {
+//   console.log("action setUpdateCitationFlag");
+//   return {
+//     type: 'SET_UPDATE_CITATION_FLAG',
+//     payload: updateCitationFlag
+//   };
+// };
 
 export const setUpdateBiblioFlag = (updateBiblioFlag) => {
   console.log("action setUpdateBiblioFlag");

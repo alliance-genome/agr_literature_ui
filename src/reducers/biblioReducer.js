@@ -27,7 +27,7 @@ const initialState = {
   biblioUpdating: 0,
   biblioEditorModalText: '',
   updateBiblioFlag: false,
-  updateCitationFlag: false,
+//   updateCitationFlag: false,	// citation now updates from database triggers
   referenceCurie: '',
   referenceJsonLive: {},
   referenceJsonDb: {},
@@ -848,12 +848,13 @@ export default function(state = initialState, action) {
         ...state,
         updateBiblioFlag: action.payload
       }
-    case 'SET_UPDATE_CITATION_FLAG':
-      console.log("reducer set update citation flag");
-      return {
-        ...state,
-        updateCitationFlag: action.payload
-      }
+// citation now updates from database triggers
+//     case 'SET_UPDATE_CITATION_FLAG':
+//       console.log("reducer set update citation flag");
+//       return {
+//         ...state,
+//         updateCitationFlag: action.payload
+//       }
     case 'SET_REFERENCE_CURIE':
       console.log("reducer set reference curie, also clear store");
       // also clear store from the previous reference data

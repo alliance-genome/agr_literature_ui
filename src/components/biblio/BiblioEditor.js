@@ -9,7 +9,7 @@ import { RowDisplayCopyrightLicense } from './BiblioDisplay';
 import { RowDisplayReferencefiles } from '../Biblio';
 
 import {fetchModReferenceTypes, setBiblioUpdating} from '../../actions/biblioActions';
-import { setUpdateCitationFlag } from '../../actions/biblioActions';
+// import { setUpdateCitationFlag } from '../../actions/biblioActions';	// citation now updates from database triggers
 import { setUpdateBiblioFlag } from '../../actions/biblioActions';
 import { validateFormUpdateBiblio } from '../../actions/biblioActions';
 
@@ -380,7 +380,7 @@ const BiblioSubmitUpdateButton = () => {
     dispatch(setBiblioUpdating(dispatchCount))
 
     // set flag to update citation once all these api calls are done
-    dispatch(setUpdateCitationFlag(true))
+//     dispatch(setUpdateCitationFlag(true))	// citation now updates from database triggers
 
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken)
