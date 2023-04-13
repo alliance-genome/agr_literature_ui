@@ -7,6 +7,7 @@ import sortReducer from './sortReducer';
 import createReducer from './createReducer';
 import mergeReducer from './mergeReducer';
 import downloadReducer from './downloadReducer';
+import trackerReducer from './trackerReducer';
 
 
 export default combineReducers({
@@ -18,5 +19,6 @@ export default combineReducers({
   sort: sortReducer,
   create: createReducer,
   merge: mergeReducer,
-  download: downloadReducer
+  download: downloadReducer,
+  tracker: trackerReducer
 });

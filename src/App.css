@@ -374,6 +374,17 @@ em {
   transition: border .24s ease-in-out;
 }
 
+.sm-table{
+  font-size: 0.75rem;
+}
+
+.no-pad{
+  padding:0px;
+  text-align: left;
+}
+
+
+
 /*
 .App-header {
   background-color: var(--font-black);

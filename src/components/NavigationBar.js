@@ -27,6 +27,7 @@ const NavigationBar = () => {
       <Nav.Link as={Link} to="/search">Search</Nav.Link>
       <Nav.Link as={Link} to="/biblio">Biblio Edit</Nav.Link>
       <Nav.Link as={Link} to="/sort">Sort</Nav.Link>
+      <Nav.Link as={Link} to="/tracker">Tracker</Nav.Link>
       <Nav.Link as={Link} to="/create">Create</Nav.Link>
       <Nav.Link as={Link} to="/merge">Merge</Nav.Link>
       <Nav.Link as={Link} to="/download">Download</Nav.Link>

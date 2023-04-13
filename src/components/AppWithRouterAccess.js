@@ -20,6 +20,7 @@ import Create from './Create'
 import Merge from './Merge'
 import Download from './Download'
 import About from './About'
+import Tracker from './Tracker'
 // import Login from './Login'
 import LoginRequired from './LoginRequired'
 //import SwaggerComp from './SwaggerUI'
@@ -88,6 +89,7 @@ const AppWithRouterAccess = () => {
                 <Route path='/merge' component={Merge} />
                 <Route path='/download' component={Download} />
                 <Route path='/about' component={About} />
+                <Route path='/tracker' component={Tracker} />
                 {/*<Route path = '/swaggerUI' component={SwaggerComp} />*/}
                 <Route path = '/loginRequired' component={LoginRequired} />
             </div>
