@@ -60,14 +60,21 @@ const OpenAccess = () => {
       setShowAlert(false);
     }, 2000); // 2000 ms = 2 seconds
   };
-
-  let licenseName = '';
+    
+  const licenseName = referenceJsonLive["copyright_license_name"];
+  let licenseToShow = '';
   if (referenceJsonLive["copyright_license_open_access"] === true) {
-    licenseName = referenceJsonLive["copyright_license_name"] + " (open access)"
+    licenseToShow = licenseName + " (open access)"
   }
   else if (referenceJsonLive["copyright_license_open_access"] === false) {
-    licenseName = referenceJsonLive["copyright_license_name"]	+ " (not open access)"
+    licenseToShow = licenseName + " (not open access)"
   }
+
+  let lastUpdatedBy = ''
+  if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
+    lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"]
+  }
+    
   let referenceCurie = referenceJsonLive["curie"]
     
   const fetchLicenseData = async () => {
@@ -82,10 +89,13 @@ const OpenAccess = () => {
   useEffect(() => {
     fetchLicenseData().finally();
   }, []);
-
+  
   let license_names = ['Pick a license']
   for (let x of licenseData) {
     license_names.push(x['name'])
+  }
+  if (licenseName !== '' && lastUpdatedBy !== '') {
+    license_names.push('No license')
   }
 
   const handleChange = (e) => {
@@ -94,9 +104,12 @@ const OpenAccess = () => {
 
   const addLicense = (e) => {
     if (newLicense === '' || newLicense === 'Pick a license') {
-      return '';
+      return false;
     }
-    const license = newLicense.replace(' ', '+')  
+    if (licenseName !== '' && newLicense === licenseName) {
+      return false;
+    }
+    let license = newLicense.replace(' ', '+')
     const url = process.env.REACT_APP_RESTAPI + "/reference/add_license/" + referenceCurie + "/" + license;
     axios.post(url, {}, {
       headers: {
@@ -105,7 +118,7 @@ const OpenAccess = () => {
         'Content-Type': 'application/json',
       }
     }).then((res) => {
-      setAlert("License Added/Updated!");
+      setAlert("License Updated!");
       handleShowAlert(); // show the alert and hide it after 2 seconds
     }).catch((error) => {
       setAlert(error);
@@ -115,10 +128,27 @@ const OpenAccess = () => {
 
   const License = () => {
     let colSize = 6;
-    if (licenseName !== '') {
-      return (<Col sm={colSize}>{licenseName}</Col>);
+    if (licenseToShow !== '') {
+      if (lastUpdatedBy === '') {
+	return (<Col sm={colSize}>{licenseToShow}</Col>);
+      }
+      else {
+        return (<Row>
+          <Col sm={colSize}>
+	    <Form.Control as='select' id='license' name='license' value={newLicense} onChange={(e) => handleChange(e)} >
+	      {license_names.map((optionValue, index) => (
+                <option value={optionValue} defaultValue={licenseName} key={index}>
+                  {optionValue}
+                </option>
+              ))}
+            </Form.Control>
+          </Col>
+          <Col sm={colSize}>
+	    <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '150px' }}>Update License</div>
+          </Col></Row>);
+      }
     }
-      return (<Row>
+    return (<Row>
         <Col sm={colSize}>
           <Form.Control as='select' id='license' name='license' value={newLicense} onChange={(e) => handleChange(e)} >
             {license_names.map((optionValue, index) => (
@@ -127,19 +157,35 @@ const OpenAccess = () => {
           </Form.Control>
 	</Col>
 	<Col sm={colSize}>
-          <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)}>Update License</div>
+          <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '150px' }}>Add License</div>
         </Col></Row>);
   }
 
-  return (
-    <Row key='open_access'>
-      <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
-      <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} >
-	<License />&nbsp; &nbsp; &nbsp;
-	{showAlert && alert}
-      </Col>
-    </Row>
-  );
+  if (lastUpdatedBy !== '') {
+    return (
+      <Row key='open_access'>
+        <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
+        <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '10px' }}>{licenseToShow}</span>
+          updated by <span style={{ margin: '0 10px' }}>{lastUpdatedBy}</span>
+          <License />
+          {showAlert && alert && <span style={{ marginLeft: '10px' }}>{alert}</span>}
+        </Col>
+      </Row>
+    );
+  }
+  else {
+    return (
+      <Row key='open_access'>
+        <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
+        <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <License />
+          {showAlert && alert && <span style={{ marginLeft: '10px' }}>{alert}</span>}
+        </Col>
+      </Row>
+    );
+  }
+    
 }
 
 const FileUpload = ({main_or_supp}) => {
@@ -338,7 +384,6 @@ const FileEditor = () => {
                             onChange={(event) => patchReferencefile(referenceFile.referencefile_id, {"pdf_type": event.target.value === "" ? null : event.target.value}, accessToken)}>
                 <option></option>
                 <option>ocr</option>
-                <option>tif</option>
                 <option>aut</option>
                 <option>html</option>
               </Form.Control>
