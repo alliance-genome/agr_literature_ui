@@ -1,34 +1,57 @@
 import React, {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import Button from 'react-bootstrap/Button';
 import Table from 'react-bootstrap/Table';
 import axios from "axios";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faTimes} from '@fortawesome/free-solid-svg-icons'
+import {searchXref} from '../actions/searchActions';
 import Dropdown from 'react-bootstrap/Dropdown';
+
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
-const searchMissingFiles = (mod_id) => {
+const searchMissingFiles = (mod_abbreviation) => {
   return dispatch => {
-    axios.get(restUrl + '/reference/missing_files/'+mod_id)
+    axios.get(restUrl + '/reference/missing_files/'+mod_abbreviation)
         .then(res => {
-          setMissingFileResults(res.data);
+          dispatch(setMissingFileResults(res.data));
         })
         .catch();
     }
 }
 
-const addWorkflowTag = () => {
+function getOktaModAccess(oktaGroups) {
+  let access = 'No';
+  console.log(oktaGroups);
+  if (oktaGroups) {
+    for (const oktaGroup of oktaGroups) {
+        if (oktaGroup.startsWith('SGD')) { access = 'SGD'; }
+        else if (oktaGroup.startsWith('RGD')) { access = 'RGD'; }
+        else if (oktaGroup.startsWith('MGI')) { access = 'MGI'; }
+        else if (oktaGroup.startsWith('ZFIN')) { access = 'ZFIN'; }
+        else if (oktaGroup.startsWith('Xen')) { access = 'XB'; }
+        else if (oktaGroup.startsWith('Fly')) { access = 'FB'; }
+        else if (oktaGroup.startsWith('Worm')) { access = 'WB'; } } }
+  return access;
+}
+
+const addWorkflowTag = (tag_id,mod_abbreviation,curie,accessToken) => {
   return dispatch => {
-    let mod_id=1;
-    let params = {
-      workflow_tag_id: 1,
-      mod_abbreviation: 1,
-      reference_curie: 1
+    let headers = {
+      'content-type': 'application/json',
+      'mode': 'cors',
+      'authorization': 'Bearer ' + accessToken
     }
-    axios.post(restUrl + '/workflow_tag/',params)
-      .then( )
+    let params = {
+      workflow_tag_id: tag_id,
+      mod_abbreviation: mod_abbreviation,
+      reference_curie: curie
+    }
+    console.log(params);
+    axios.post(restUrl + '/workflow_tag/',params, {headers:headers})
+      .then(res => {
+        dispatch(searchMissingFiles(mod_abbreviation));
+      })
   }
 }
 
@@ -39,38 +62,50 @@ const setMissingFileResults = (payload) => {
   };
 };
 
-const WorkFlowDropdown = () => {
+const WorkFlowDropdown = (workflow) => {
+  const dispatch = useDispatch();
+  //console.log(workflow);
+
   return (
     <Dropdown>
       <Dropdown.Toggle variant="success" id="dropdown-basic">
-        Workflow Tags
+        Add Tags
     </Dropdown.Toggle>
 
    <Dropdown.Menu>
-     <Dropdown.Item href="#/action-1">Files Uploaded</Dropdown.Item>
-     <Dropdown.Item href="#/action-2">No Files Available</Dropdown.Item>
+     <Dropdown.Item onClick= {() => dispatch(addWorkflowTag('ATP:0000134',workflow.access,workflow.curie,workflow.accessToken))}>Files Uploaded</Dropdown.Item>
+     <Dropdown.Item onClick= {() => dispatch(addWorkflowTag('ATP:0000135',workflow.access,workflow.curie,workflow.accessToken))}>No Files Available</Dropdown.Item>
    </Dropdown.Menu>
  </Dropdown>
 )}
+
+const XrefElement = (xref) => {
+  console.log(xref);
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    searchXref(xref.xref, setUrl);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <a href={url} rel="noreferrer noopener" target="_blank">{xref.xref}</a>
+  )
+}
 
 const Tracker = () => {
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const missingFileResults = useSelector(state => state.tracker.missingFileResults);
   const dispatch = useDispatch();
-  console.log(oktaGroups);
-
-
-  //dispatch(searchMissingFiles(mod_id));
-  //console.log(missingFileResults);
+  const access = getOktaModAccess(oktaGroups);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
 
   useEffect(() => {
-    axios.get(restUrl + '/reference/missing_files/'+setModGroup(oktaGroups))
-      .then(res => {
-        console.log(res);
-        dispatch(setMissingFileResults(res.data));
-      })
-      .catch();
-  }, []);
+    if (access === 'No'){
+      //do nothing
+    }
+    else{
+      dispatch(searchMissingFiles(access));
+    }
+
+  },[access,dispatch]);
 
   return (
     <div>
@@ -85,11 +120,11 @@ const Tracker = () => {
         <tbody>
         { missingFileResults.map((reference, index) => (
           <tr>
-            <td>{reference.curie}</td>
-            <td>{reference.mod_curie}</td>
-            <td>{reference.pmid}</td>
+            <td><a href={"http://localhost:3001/Biblio/?action=display&referenceCurie="+reference.curie}>{reference.curie}</a></td>
+            <td><XrefElement xref={reference.mod_curie}/></td>
+            <td><XrefElement xref={reference.pmid}/></td>
             <td className="sm-table">{reference.short_citation}</td>
-            <td><WorkFlowDropdown/></td>
+            <td><WorkFlowDropdown access={access} curie={reference.curie} accessToken={accessToken}/></td>
             <td className="sm-table no-pad">
               {reference.maincount > 0 ? <div><FontAwesomeIcon icon={faCheck}/> Main </div> :  <div> <FontAwesomeIcon icon={faTimes}/> Main </div>}
               {reference.supcount > 0 ? <div><FontAwesomeIcon icon={faCheck}/> Supplemental </div> :  <div> <FontAwesomeIcon icon={faTimes}/>  Supplemental </div> }
@@ -103,20 +138,6 @@ const Tracker = () => {
 
     </div>
   );
-}
-
-function setModGroup(oktaGroups) {
-  let access = 'MGI';
-  if (oktaGroups) {
-    for (const oktaGroup of oktaGroups) {
-        if (oktaGroup.startsWith('SGD')) { access = 'SGD'; }
-        else if (oktaGroup.startsWith('RGD')) { access = 'RGD'; }
-        else if (oktaGroup.startsWith('MGI')) { access = 'MGI'; }
-        else if (oktaGroup.startsWith('ZFIN')) { access = 'ZFIN'; }
-        else if (oktaGroup.startsWith('Xenbase')) { access = 'XB'; }
-        else if (oktaGroup.startsWith('FlyBase')) { access = 'FB'; }
-        else if (oktaGroup.startsWith('WormBase')) { access = 'WB'; } } }
-  return access;
 }
 
 export default Tracker

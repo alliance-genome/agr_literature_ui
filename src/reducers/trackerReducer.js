@@ -3,6 +3,7 @@ const initialState = {
   isLoading: false
 };
 
+// eslint-disable-next-line
 export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
