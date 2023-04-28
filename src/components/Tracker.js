@@ -22,7 +22,6 @@ const searchMissingFiles = (mod_abbreviation) => {
 
 function getOktaModAccess(oktaGroups) {
   let access = 'No';
-  console.log(oktaGroups);
   if (oktaGroups) {
     for (const oktaGroup of oktaGroups) {
         if (oktaGroup.startsWith('SGD')) { access = 'SGD'; }
@@ -47,7 +46,6 @@ const addWorkflowTag = (tag_id,mod_abbreviation,curie,accessToken) => {
       mod_abbreviation: mod_abbreviation,
       reference_curie: curie
     }
-    console.log(params);
     axios.post(restUrl + '/workflow_tag/',params, {headers:headers})
       .then(res => {
         dispatch(searchMissingFiles(mod_abbreviation));
@@ -64,7 +62,6 @@ const setMissingFileResults = (payload) => {
 
 const WorkFlowDropdown = (workflow) => {
   const dispatch = useDispatch();
-  //console.log(workflow);
 
   return (
     <Dropdown>
@@ -80,7 +77,6 @@ const WorkFlowDropdown = (workflow) => {
 )}
 
 const XrefElement = (xref) => {
-  console.log(xref);
   const [url, setUrl] = useState(null);
   useEffect(() => {
     searchXref(xref.xref, setUrl);
