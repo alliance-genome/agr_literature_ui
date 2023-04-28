@@ -384,6 +384,7 @@ const FileEditor = () => {
                             onChange={(event) => patchReferencefile(referenceFile.referencefile_id, {"pdf_type": event.target.value === "" ? null : event.target.value}, accessToken)}>
                 <option></option>
                 <option>ocr</option>
+                <option>tif</option>
                 <option>aut</option>
                 <option>html</option>
               </Form.Control>
