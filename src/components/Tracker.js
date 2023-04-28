@@ -105,6 +105,8 @@ const Tracker = () => {
 
   return (
     <div>
+    <h4>Reference File Tracker</h4>
+    <br/>
       { missingFileResults ?
       //<Button variant="primary" className="download-tracker-button">Download All</Button>
       <Table bordered size="sm">
@@ -122,8 +124,8 @@ const Tracker = () => {
             <td className="sm-table">{reference.short_citation}</td>
             <td><WorkFlowDropdown access={access} curie={reference.curie} accessToken={accessToken}/></td>
             <td className="sm-table no-pad">
-              {reference.maincount > 0 ? <div><FontAwesomeIcon icon={faCheck}/> Main </div> :  <div> <FontAwesomeIcon icon={faTimes}/> Main </div>}
-              {reference.supcount > 0 ? <div><FontAwesomeIcon icon={faCheck}/> Supplemental </div> :  <div> <FontAwesomeIcon icon={faTimes}/>  Supplemental </div> }
+              {reference.maincount > 0 ? <div><FontAwesomeIcon icon={faCheck} style={{color: "#28a745"}}/> Main </div> :  <div> <FontAwesomeIcon icon={faTimes}  style={{color: "#dc3545"}}/> &nbsp;Main </div>}
+              {reference.supcount > 0 ? <div><FontAwesomeIcon icon={faCheck} style={{color: "#28a745"}}/> Supplemental </div> :  <div> <FontAwesomeIcon icon={faTimes}  style={{color: "#dc3545"}}/> &nbsp;Supplemental </div> }
             </td>
             <td>{reference.date_created.split("T")[0]}</td>
           </tr>
