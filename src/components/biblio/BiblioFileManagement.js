@@ -120,6 +120,7 @@ const OpenAccess = () => {
     }).then((res) => {
       setAlert("License Updated!");
       handleShowAlert(); // show the alert and hide it after 2 seconds
+      window.location.reload(); // reload the page after the alert is displayed and hidden
     }).catch((error) => {
       setAlert(error);
       setShowAlert(true);
