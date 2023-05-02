@@ -57,28 +57,6 @@ const OpenAccess = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
   let [showAlert, setShowAlert] = useState(false);
-    
-  const handleShowAlert = () => {
-    setShowAlert(true);
-    setTimeout(() => {
-      setShowAlert(false);
-      dispatch(biblioQueryReferenceCurie(referenceCurie));	
-    }, 2000);
-  };
-    
-  const licenseName = referenceJsonLive["copyright_license_name"];
-  let licenseToShow = '';
-  if (referenceJsonLive["copyright_license_open_access"] === true) {
-    licenseToShow = licenseName + " (open access)"
-  }
-  else if (referenceJsonLive["copyright_license_open_access"] === false) {
-    licenseToShow = licenseName + " (not open access)"
-  }
-
-  let lastUpdatedBy = ''
-  if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
-    lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"]
-  }
 
   const fetchLicenseData = async () => {
     try {
@@ -88,30 +66,26 @@ const OpenAccess = () => {
       console.log(error);
     }
   }
-  
+
   useEffect(() => {
     fetchLicenseData().finally();
   }, []);
-  
-  let license_names = ['Pick a license']
-  for (let x of licenseData) {
-    license_names.push(x['name'])
-  }
-  if (licenseName !== '' && lastUpdatedBy !== '') {
-    license_names.push('No license')
+
+  const licenseName = referenceJsonLive["copyright_license_name"];
+  const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
+
+  let lastUpdatedBy = ''
+  if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
+    lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"];
   }
 
-  const handleChange = (e) => {
-    setNewLicense(e.target.value);
+  let licenseNames = ['Pick a license', ...licenseData.map(x => x.name)]
+  if (licenseName !== '' && lastUpdatedBy !== '') {
+    licenseNames.push('No license');
   }
 
   const addLicense = (e) => {
-    if (newLicense === '' || newLicense === 'Pick a license') {
-      return false;
-    }
-    if (licenseName !== '' && newLicense === licenseName) {
-      return false;
-    }
+    if (!newLicense || newLicense === 'Pick a license' || newLicense === licenseName) return false;
     let license = newLicense.replace(' ', '+')
     const url = process.env.REACT_APP_RESTAPI + "/reference/add_license/" + referenceCurie + "/" + license;
     axios.post(url, {}, {
@@ -122,7 +96,11 @@ const OpenAccess = () => {
       }
     }).then((res) => {
       setAlert("License Updated!");
-      handleShowAlert(); // show the alert and hide it after 2 seconds
+      setShowAlert(true);
+      setTimeout(() => {
+        setShowAlert(false);
+        dispatch(biblioQueryReferenceCurie(referenceCurie));
+      }, 2000);
     }).catch((error) => {
       setAlert(error);
       setShowAlert(true);
@@ -133,7 +111,7 @@ const OpenAccess = () => {
       <>
         <Row key='open_access'>
           <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
-          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={lastUpdatedBy !== '' ? { display: 'flex', alignItems: 'center' } : { display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center'}}>
             {lastUpdatedBy !== '' ?
                 <div>
                   <span style={{ marginRight: '10px' }}>{licenseToShow}</span>
@@ -146,8 +124,8 @@ const OpenAccess = () => {
                 <span>{licenseToShow}</span>
                 :
                 <>
-                  <Form.Control as='select' id='license' name='license' style={{width: "10em"}} value={newLicense} onChange={(e) => handleChange(e)} >
-                    {license_names.map((optionValue, index) => (
+                  <Form.Control as='select' id='license' name='license' style={{width: "10em"}} value={newLicense} onChange={(e) => setNewLicense(e.target.value)} >
+                    {licenseNames.map((optionValue, index) => (
                         <option value={optionValue} defaultValue={licenseToShow !== '' ? licenseName : null} key={index}>{optionValue}</option>
                     ))}
                   </Form.Control>
