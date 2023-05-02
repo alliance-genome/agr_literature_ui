@@ -57,14 +57,12 @@ const OpenAccess = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
   let [showAlert, setShowAlert] = useState(false);
-  const [reloadSection, setReloadSection] = useState(false);
     
   const handleShowAlert = () => {
     setShowAlert(true);
     setTimeout(() => {
       setShowAlert(false);
       dispatch(biblioQueryReferenceCurie(referenceCurie));	
-      setReloadSection(prev => !prev);
     }, 2000);
   };
     
@@ -168,7 +166,7 @@ const OpenAccess = () => {
 
   if (lastUpdatedBy !== '') {
     return (
-      <Row key='open_access' {...(reloadSection ? { key: 'open_access_reload' } : {})}>
+      <Row key='open_access'>
         <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
         <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '10px' }}>{licenseToShow}</span>
@@ -181,7 +179,7 @@ const OpenAccess = () => {
   }
   else {
     return (
-      <Row key='open_access' {...(reloadSection ? { key: 'open_access_reload' } : {})}>
+      <Row key='open_access'>
         <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
         <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <License />
