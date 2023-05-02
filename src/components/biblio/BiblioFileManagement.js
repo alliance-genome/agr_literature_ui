@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from 'react-bootstrap/Container';
+import { biblioQueryReferenceCurie } from '../../actions/biblioActions';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from "react-bootstrap/Spinner";
@@ -48,17 +49,23 @@ const BiblioFileManagement = () => {
 
 const OpenAccess = () => {
 
+  const dispatch = useDispatch();
   const [licenseData, setLicenseData] = useState([]);
-  const [newLicense, setNewLicense] = useState(''); 
+  const [newLicense, setNewLicense] = useState('');
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceCurie = referenceJsonLive["curie"]
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
   let [showAlert, setShowAlert] = useState(false);
+  const [reloadSection, setReloadSection] = useState(false);
+    
   const handleShowAlert = () => {
     setShowAlert(true);
     setTimeout(() => {
       setShowAlert(false);
-    }, 2000); // 2000 ms = 2 seconds
+      dispatch(biblioQueryReferenceCurie(referenceCurie));	
+      setReloadSection(prev => !prev);
+    }, 2000);
   };
     
   const licenseName = referenceJsonLive["copyright_license_name"];
@@ -74,9 +81,7 @@ const OpenAccess = () => {
   if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
     lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"]
   }
-    
-  let referenceCurie = referenceJsonLive["curie"]
-    
+
   const fetchLicenseData = async () => {
     try {
       const result = await axios.get(process.env.REACT_APP_RESTAPI + "/copyright_license/all");
@@ -120,7 +125,6 @@ const OpenAccess = () => {
     }).then((res) => {
       setAlert("License Updated!");
       handleShowAlert(); // show the alert and hide it after 2 seconds
-      window.location.reload(); // reload the page after the alert is displayed and hidden
     }).catch((error) => {
       setAlert(error);
       setShowAlert(true);
@@ -164,7 +168,7 @@ const OpenAccess = () => {
 
   if (lastUpdatedBy !== '') {
     return (
-      <Row key='open_access'>
+      <Row key='open_access' {...(reloadSection ? { key: 'open_access_reload' } : {})}>
         <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
         <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '10px' }}>{licenseToShow}</span>
@@ -177,7 +181,7 @@ const OpenAccess = () => {
   }
   else {
     return (
-      <Row key='open_access'>
+      <Row key='open_access' {...(reloadSection ? { key: 'open_access_reload' } : {})}>
         <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
         <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <License />
