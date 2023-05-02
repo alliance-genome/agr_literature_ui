@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from 'react-bootstrap/Container';
+import { biblioQueryReferenceCurie } from '../../actions/biblioActions';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from "react-bootstrap/Spinner";
@@ -48,35 +49,15 @@ const BiblioFileManagement = () => {
 
 const OpenAccess = () => {
 
+  const dispatch = useDispatch();
   const [licenseData, setLicenseData] = useState([]);
-  const [newLicense, setNewLicense] = useState(''); 
+  const [newLicense, setNewLicense] = useState('');
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceCurie = referenceJsonLive["curie"]
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
   let [showAlert, setShowAlert] = useState(false);
-  const handleShowAlert = () => {
-    setShowAlert(true);
-    setTimeout(() => {
-      setShowAlert(false);
-    }, 2000); // 2000 ms = 2 seconds
-  };
-    
-  const licenseName = referenceJsonLive["copyright_license_name"];
-  let licenseToShow = '';
-  if (referenceJsonLive["copyright_license_open_access"] === true) {
-    licenseToShow = licenseName + " (open access)"
-  }
-  else if (referenceJsonLive["copyright_license_open_access"] === false) {
-    licenseToShow = licenseName + " (not open access)"
-  }
 
-  let lastUpdatedBy = ''
-  if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
-    lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"]
-  }
-    
-  let referenceCurie = referenceJsonLive["curie"]
-    
   const fetchLicenseData = async () => {
     try {
       const result = await axios.get(process.env.REACT_APP_RESTAPI + "/copyright_license/all");
@@ -85,30 +66,26 @@ const OpenAccess = () => {
       console.log(error);
     }
   }
-  
+
   useEffect(() => {
     fetchLicenseData().finally();
   }, []);
-  
-  let license_names = ['Pick a license']
-  for (let x of licenseData) {
-    license_names.push(x['name'])
-  }
-  if (licenseName !== '' && lastUpdatedBy !== '') {
-    license_names.push('No license')
+
+  const licenseName = referenceJsonLive["copyright_license_name"];
+  const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
+
+  let lastUpdatedBy = ''
+  if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
+    lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"];
   }
 
-  const handleChange = (e) => {
-    setNewLicense(e.target.value);
+  let licenseNames = ['Pick a license', ...licenseData.map(x => x.name)]
+  if (licenseName !== '' && lastUpdatedBy !== '') {
+    licenseNames.push('No license');
   }
 
   const addLicense = (e) => {
-    if (newLicense === '' || newLicense === 'Pick a license') {
-      return false;
-    }
-    if (licenseName !== '' && newLicense === licenseName) {
-      return false;
-    }
+    if (!newLicense || newLicense === 'Pick a license' || newLicense === licenseName) return false;
     let license = newLicense.replace(' ', '+')
     const url = process.env.REACT_APP_RESTAPI + "/reference/add_license/" + referenceCurie + "/" + license;
     axios.post(url, {}, {
@@ -119,74 +96,48 @@ const OpenAccess = () => {
       }
     }).then((res) => {
       setAlert("License Updated!");
-      handleShowAlert(); // show the alert and hide it after 2 seconds
-      window.location.reload(); // reload the page after the alert is displayed and hidden
+      setShowAlert(true);
+      setTimeout(() => {
+        setShowAlert(false);
+        dispatch(biblioQueryReferenceCurie(referenceCurie));
+      }, 2000);
     }).catch((error) => {
       setAlert(error);
       setShowAlert(true);
     });
   }
 
-  const License = () => {
-    let colSize = 6;
-    if (licenseToShow !== '') {
-      if (lastUpdatedBy === '') {
-	return (<Col sm={colSize}>{licenseToShow}</Col>);
-      }
-      else {
-        return (<Row>
-          <Col sm={colSize}>
-	    <Form.Control as='select' id='license' name='license' value={newLicense} onChange={(e) => handleChange(e)} >
-	      {license_names.map((optionValue, index) => (
-                <option value={optionValue} defaultValue={licenseName} key={index}>
-                  {optionValue}
-                </option>
-              ))}
-            </Form.Control>
+  return (
+      <>
+        <Row key='open_access'>
+          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center'}}>
+            {lastUpdatedBy !== '' ?
+                <div>
+                  <span style={{ marginRight: '10px' }}>{licenseToShow}</span>
+                  updated by <span style={{ margin: '0 10px' }}>{lastUpdatedBy}</span>
+                </div>
+                :
+                null
+            }
+            {licenseToShow !== '' && lastUpdatedBy === '' ?
+                <span>{licenseToShow}</span>
+                :
+                <>
+                  <Form.Control as='select' id='license' name='license' style={{width: "10em"}} value={newLicense} onChange={(e) => setNewLicense(e.target.value)} >
+                    {licenseNames.map((optionValue, index) => (
+                        <option value={optionValue} defaultValue={licenseToShow !== '' ? licenseName : null} key={index}>{optionValue}</option>
+                    ))}
+                  </Form.Control>
+                  &nbsp;
+                  <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '150px' }}>{licenseToShow !== '' ? "Update" : "Add"} License</div>
+                </>
+            }
           </Col>
-          <Col sm={colSize}>
-	    <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '150px' }}>Update License</div>
-          </Col></Row>);
-      }
-    }
-    return (<Row>
-        <Col sm={colSize}>
-          <Form.Control as='select' id='license' name='license' value={newLicense} onChange={(e) => handleChange(e)} >
-            {license_names.map((optionValue, index) => (
-              <option value={optionValue} key={index}>{optionValue}</option>
-            ))}
-          </Form.Control>
-	</Col>
-	<Col sm={colSize}>
-          <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '150px' }}>Add License</div>
-        </Col></Row>);
-  }
-
-  if (lastUpdatedBy !== '') {
-    return (
-      <Row key='open_access'>
-        <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
-        <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: '10px' }}>{licenseToShow}</span>
-          updated by <span style={{ margin: '0 10px' }}>{lastUpdatedBy}</span>
-          <License />
-          {showAlert && alert && <span style={{ marginLeft: '10px' }}>{alert}</span>}
-        </Col>
-      </Row>
-    );
-  }
-  else {
-    return (
-      <Row key='open_access'>
-        <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>open access</Col>
-        <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <License />
-          {showAlert && alert && <span style={{ marginLeft: '10px' }}>{alert}</span>}
-        </Col>
-      </Row>
-    );
-  }
-    
+        </Row>
+        {showAlert && alert && <Alert variant="success">{alert}</Alert>}
+      </>
+  );
 }
 
 const FileUpload = ({main_or_supp}) => {
