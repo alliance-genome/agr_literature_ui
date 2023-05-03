@@ -23,9 +23,9 @@ import Col from "react-bootstrap/Col";
 import InputGroup from 'react-bootstrap/InputGroup';
 import _ from "lodash";
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
-import Spinner from "react-bootstrap/Spinner";
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
+import LoadingOverlay from "../LoadingOverlay";
 
 export const RENAME_FACETS = {
     "category.keyword": "alliance category",
@@ -285,8 +285,8 @@ const Facets = () => {
 
     return (
         <>
-            {facetsLoading ? <Spinner animation="border"/> :
-
+        {facetsLoading ? <LoadingOverlay /> : null}
+            {
                 Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
                     <div key={facetCategory} style={{textAlign: "left"}}>
                         <Button variant="light" size="lg" eventkey="0" onClick={() => toggleFacetGroup(facetCategory)}>
