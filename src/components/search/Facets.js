@@ -285,7 +285,7 @@ const Facets = () => {
 
     return (
         <>
-        {facetsLoading ? <LoadingOverlay /> : null}
+            <LoadingOverlay active={facetsLoading} />
             {
                 Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
                     <div key={facetCategory} style={{textAlign: "left"}}>
