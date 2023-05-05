@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import LoadingOverlay from 'react-loading-overlay';
 import {
     addFacetValue,
     fetchInitialFacets,
@@ -24,6 +23,9 @@ import Col from "react-bootstrap/Col";
 import InputGroup from 'react-bootstrap/InputGroup';
 import _ from "lodash";
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
+import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
+import 'react-calendar/dist/Calendar.css';
+import LoadingOverlay from "../LoadingOverlay";
 
 export const RENAME_FACETS = {
     "category.keyword": "alliance category",
@@ -38,8 +40,6 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published"]
 
 }
-
-LoadingOverlay.propTypes = undefined;
 
 const DateFacet = ({facetsToInclude}) => {
 
@@ -284,9 +284,8 @@ const Facets = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-
-
-        <LoadingOverlay active={facetsLoading} spinner text='Loading...'>
+        <>
+            <LoadingOverlay active={facetsLoading} />
             {
                 Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
                     <div key={facetCategory} style={{textAlign: "left"}}>
@@ -301,7 +300,7 @@ const Facets = () => {
                     </div>
                 )
             }
-        </LoadingOverlay>
+        </>
     )
 }
 
