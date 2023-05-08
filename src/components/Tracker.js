@@ -4,6 +4,7 @@ import Table from 'react-bootstrap/Table';
 import axios from "axios";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faTimes} from '@fortawesome/free-solid-svg-icons'
+import {Link} from 'react-router-dom';
 import {searchXref} from '../actions/searchActions';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -118,7 +119,7 @@ const Tracker = () => {
         <tbody>
         { missingFileResults.map((reference, index) => (
           <tr>
-            <td><a href={"http://localhost:3001/Biblio/?action=display&referenceCurie="+reference.curie}>{reference.curie}</a></td>
+            <td><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}>{reference.curie}</Link></td>
             <td><XrefElement xref={reference.mod_curie}/></td>
             <td><XrefElement xref={reference.pmid}/></td>
             <td className="sm-table">{reference.short_citation}</td>
