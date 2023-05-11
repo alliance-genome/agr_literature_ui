@@ -25,7 +25,6 @@ import {
 } from '../../actions/biblioActions';
 
 import {useDropzone} from 'react-dropzone';
-import {getOktaModAccess} from "../Biblio";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 const BiblioFileManagement = () => {
@@ -148,7 +147,9 @@ const FileUpload = ({main_or_supp}) => {
   const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
   const fileUploadingModalText = useSelector(state => state.biblio.fileUploadingModalText);
 
-  let access = getOktaModAccess(oktaGroups);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+  let access = (oktaDeveloper ? 'developer' : oktaMod);
   if (access === 'developer') {
     if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
       access = 'No';
@@ -365,7 +366,9 @@ const FileEditor = () => {
     cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled';
   }
   let rowReferencefileElements = [];
-  const access = getOktaModAccess(oktaGroups);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+  let access = (oktaDeveloper ? 'developer' : oktaMod);
   let referenceFilesWithAccess = referencefiles
       .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || access === 'developer' || referenceFile.referencefile_mods
           .some((mod) => mod.mod_abbreviation === access || mod.mod_abbreviation === null));

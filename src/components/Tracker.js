@@ -21,20 +21,6 @@ const searchMissingFiles = (mod_abbreviation) => {
     }
 }
 
-function getOktaModAccess(oktaGroups) {
-  let access = 'No';
-  if (oktaGroups) {
-    for (const oktaGroup of oktaGroups) {
-        if (oktaGroup.startsWith('SGD')) { access = 'SGD'; }
-        else if (oktaGroup.startsWith('RGD')) { access = 'RGD'; }
-        else if (oktaGroup.startsWith('MGI')) { access = 'MGI'; }
-        else if (oktaGroup.startsWith('ZFIN')) { access = 'ZFIN'; }
-        else if (oktaGroup.startsWith('Xen')) { access = 'XB'; }
-        else if (oktaGroup.startsWith('Fly')) { access = 'FB'; }
-        else if (oktaGroup.startsWith('Worm')) { access = 'WB'; } } }
-  return access;
-}
-
 const addWorkflowTag = (tag_id,mod_abbreviation,curie,accessToken) => {
   return dispatch => {
     let headers = {
@@ -88,10 +74,11 @@ const XrefElement = (xref) => {
 }
 
 const Tracker = () => {
-  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const missingFileResults = useSelector(state => state.tracker.missingFileResults);
   const dispatch = useDispatch();
-  const access = getOktaModAccess(oktaGroups);
+  // const access = getOktaModAccess(oktaGroups);	// old way before logging on put values in store
+  const access = useSelector(state => state.isLogged.oktaMod);
+  // const access = 'ZFIN';				// to force a specific MOD
   const accessToken = useSelector(state => state.isLogged.accessToken);
 
   useEffect(() => {
@@ -118,7 +105,7 @@ const Tracker = () => {
         </thead>
         <tbody>
         { missingFileResults.map((reference, index) => (
-          <tr>
+          <tr key={`missingFile ${reference} ${index}`}>
             <td><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}>{reference.curie}</Link></td>
             <td><XrefElement xref={reference.mod_curie}/></td>
             <td><XrefElement xref={reference.pmid}/></td>

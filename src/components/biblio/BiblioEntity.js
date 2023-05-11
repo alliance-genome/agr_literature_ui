@@ -17,8 +17,6 @@ import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
 
-import { getOktaModAccess } from '../Biblio';
-
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -303,7 +301,7 @@ const EntityCreate = () => {
   const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = ['ATP:0000005', 'ATP:0000006'];
-  const access = getOktaModAccess(oktaGroups);
+  const access = useSelector(state => state.isLogged.oktaMod);
   // const access = 'WB';	// uncomment if you have developer okta access and need to test a specific mod
   if (access in modToTaxon) {
     let filteredTaxonList = taxonList.filter((x) => !modToTaxon[access].includes(x));
