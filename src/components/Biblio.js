@@ -13,9 +13,6 @@ import BiblioFileManagement from './biblio/BiblioFileManagement';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString } from './biblio/BiblioDisplay';
-// import { RowDisplaySimple } from './biblio/BiblioDisplay';
-
-// import { splitCurie } from './biblio/BiblioEditor';
 
 import {
   downloadReferencefile,
@@ -28,7 +25,6 @@ import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 import { changeBiblioSupplementExpandToggler } from '../actions/biblioActions';
 
 import { changeBiblioActionToggler } from '../actions/biblioActions';
-// import { updateButtonBiblio } from '../actions/biblioActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -238,21 +234,6 @@ const BiblioTagging = () => {
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging
 
-// export function getOktaModAccess(oktaGroups) {
-//   let access = 'No';
-//   if (oktaGroups) {
-//     for (const oktaGroup of oktaGroups) {
-//       if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
-//         else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
-//         else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
-//         else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
-//         else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
-//         else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
-//         else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
-//         else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } } }
-//   return access;
-// }
-
 export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
@@ -450,7 +431,6 @@ const Biblio = () => {
 //   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
   const isLoading = useSelector(state => state.biblio.isLoading);
 //   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
-//   const accessToken = useSelector(state => state.isLogged.accessToken);
 //   const updateCitationFlag = useSelector(state => state.biblio.updateCitationFlag);	// citation now updates from database triggers
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
