@@ -4,6 +4,10 @@ const INTIAL_STATE = {
   isSignedIn: null,
   userId: null,
   oktaGroups: null,
+  oktaMod: 'No',
+  oktaDeveloper: false,
+  oktaTester: false,
+  oktaPOTester: false,
   accessToken: null
 };
 
@@ -11,9 +15,35 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
   switch (action.type) {
     case 'SIGN_IN':
       const jsonToken = jwt_decode(action.payload.accessToken);
-      return {...state, isSignedIn: true, userId: action.payload.userId, accessToken: action.payload.accessToken, oktaGroups: jsonToken.Groups}
+      let oktaMod = null;
+      let oktaDeveloper = null;
+      let oktaTester = null;
+      let oktaPOTester = null;
+      if (jsonToken.Groups) {
+        for (const oktaGroup of jsonToken.Groups) {
+          if (oktaGroup.endsWith('Developer')) { oktaDeveloper = true; }
+          if (oktaGroup === 'Tester') { oktaTester = true; }
+          if (oktaGroup === 'POTester') { oktaPOTester = true; }
+          if (oktaGroup.startsWith('SGD')) { oktaMod = 'SGD'; }
+            else if (oktaGroup.startsWith('RGD')) { oktaMod = 'RGD'; }
+            else if (oktaGroup.startsWith('MGI')) { oktaMod = 'MGI'; }
+            else if (oktaGroup.startsWith('ZFIN')) { oktaMod = 'ZFIN'; }
+            else if (oktaGroup.startsWith('Xen')) { oktaMod = 'XB'; }
+            else if (oktaGroup.startsWith('Fly')) { oktaMod = 'FB'; }
+            else if (oktaGroup.startsWith('Worm')) { oktaMod = 'WB'; } }
+      }
+      return {
+        ...state,
+        isSignedIn: true,
+        userId: action.payload.userId,
+        accessToken: action.payload.accessToken,
+        oktaMod: oktaMod,
+        oktaDeveloper: oktaDeveloper,
+        oktaTester: oktaTester,
+        oktaPOTester: oktaPOTester,
+        oktaGroups: jsonToken.Groups }
     case 'SIGN_OUT':
-      return {...state, isSignedIn: false, userId: null, oktaGroups: null}
+      return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, oktaPOTester: false}
     default:
       return state;
   }
