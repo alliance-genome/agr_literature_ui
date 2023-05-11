@@ -13,9 +13,9 @@ import BiblioFileManagement from './biblio/BiblioFileManagement';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString } from './biblio/BiblioDisplay';
-import { RowDisplaySimple } from './biblio/BiblioDisplay';
+// import { RowDisplaySimple } from './biblio/BiblioDisplay';
 
-import { splitCurie } from './biblio/BiblioEditor';
+// import { splitCurie } from './biblio/BiblioEditor';
 
 import {
   downloadReferencefile,
@@ -28,7 +28,7 @@ import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 import { changeBiblioSupplementExpandToggler } from '../actions/biblioActions';
 
 import { changeBiblioActionToggler } from '../actions/biblioActions';
-import { updateButtonBiblio } from '../actions/biblioActions';
+// import { updateButtonBiblio } from '../actions/biblioActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -446,7 +446,7 @@ const Biblio = () => {
 //   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
   const isLoading = useSelector(state => state.biblio.isLoading);
 //   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
-  const accessToken = useSelector(state => state.isLogged.accessToken);
+//   const accessToken = useSelector(state => state.isLogged.accessToken);
 //   const updateCitationFlag = useSelector(state => state.biblio.updateCitationFlag);	// citation now updates from database triggers
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
