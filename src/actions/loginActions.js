@@ -10,3 +10,7 @@ export const signOut = () => {
         type: 'SIGN_OUT',
     };
 };
+
+export const setTesterMod = (mod) => {
+    return { type: 'SET_TESTER_MOD', payload: mod };
+};

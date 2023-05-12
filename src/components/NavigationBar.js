@@ -8,6 +8,7 @@ import Nav from 'react-bootstrap/Nav';
 
 import Login from './Login'
 import OktaHelp from './OktaHelp'
+import TesterDropdown from './TesterDropdown'
 
 import {oktaSignInConfig} from "../config";
 
@@ -35,6 +36,7 @@ const NavigationBar = () => {
     </Nav>
     <Nav>
       <OktaHelp />
+      <TesterDropdown />
       <Login config={oktaSignInConfig}/>
     </Nav>
   </Navbar>
