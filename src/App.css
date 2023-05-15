@@ -30,6 +30,11 @@
   text-align: center;
 }
 
+.App-testing {
+  background: repeating-linear-gradient(-45deg, #fdf88d, #fdf88d 10px, #e9e485 10px, #e9e485 20px);
+  /* background-color: red; */
+}
+
 .Alliance-logo {
   height: 50px;
   pointer-events: none;
