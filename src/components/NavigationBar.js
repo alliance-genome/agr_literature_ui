@@ -1,5 +1,6 @@
 import { Link  } from 'react-router-dom';
 // import logo from '../images/alliance_logo.png';
+import { useSelector } from 'react-redux';
 
 
 import Navbar from 'react-bootstrap/Navbar';
@@ -21,6 +22,7 @@ if (devOrStageOrProd === 'prod') { }
   else { navClass = "Navbar-dev"; homeLabel = devOrStageOrProd; }
 
 const NavigationBar = () => {
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
   return (
   <Navbar className={navClass} >
     <Nav className="justify-content-center"  style={{ flex: 1}}>
@@ -35,8 +37,7 @@ const NavigationBar = () => {
       <Nav.Link as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
     </Nav>
     <Nav>
-      <OktaHelp />
-      <TesterDropdown />
+      { (oktaMod === 'No') ? <OktaHelp /> : <TesterDropdown /> }
       <Login config={oktaSignInConfig}/>
     </Nav>
   </Navbar>
