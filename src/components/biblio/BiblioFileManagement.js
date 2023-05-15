@@ -148,14 +148,17 @@ const FileUpload = ({main_or_supp}) => {
   const fileUploadingModalText = useSelector(state => state.biblio.fileUploadingModalText);
 
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  let access = (oktaDeveloper ? 'developer' : oktaMod);
-  if (access === 'developer') {
+  let accessLevel = oktaMod;
+  if (testerMod !== 'No') { accessLevel = testerMod; }
+    else if (oktaDeveloper) { accessLevel = 'developer'; }
+  if (accessLevel === 'developer') {
     if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
-      access = 'No';
+      accessLevel = 'No';
     } else {
       // This means that developers upload files with PMC (all) access in dev environment only - no access on prod
-      access = null;
+      accessLevel = null;
     }
   }
 
@@ -181,10 +184,10 @@ const FileUpload = ({main_or_supp}) => {
         fileExtension = file.name.split(".").pop();
       }
       let url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/file_upload/?reference_curie=" + referenceCurie + "&display_name=" + fileName + "&file_class=" + main_or_supp + "&file_publication_status=final&file_extension=" + fileExtension + "&is_annotation=false";
-      if (access !== null) {
-        url += "&mod_abbreviation=" + access
+      if (accessLevel !== null) {
+        url += "&mod_abbreviation=" + accessLevel
       }
-      if (access !== 'No') {
+      if (accessLevel !== 'No') {
         axios.post(url, formData, {
           headers: {
             "Authorization": "Bearer " + accessToken,
@@ -199,7 +202,7 @@ const FileUpload = ({main_or_supp}) => {
       }
       //reader.readAsBinaryString();
     });
-  }, [access, dispatch, accessToken, main_or_supp, referenceCurie]);
+  }, [accessLevel, dispatch, accessToken, main_or_supp, referenceCurie]);
 
   const {getRootProps, getInputProps} = useDropzone({onDrop})
 
@@ -367,15 +370,18 @@ const FileEditor = () => {
   }
   let rowReferencefileElements = [];
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  let access = (oktaDeveloper ? 'developer' : oktaMod);
+  let accessLevel = oktaMod;
+  if (testerMod !== 'No') { accessLevel = testerMod; }
+    else if (oktaDeveloper) { accessLevel = 'developer'; }
   let referenceFilesWithAccess = referencefiles
-      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || access === 'developer' || referenceFile.referencefile_mods
-          .some((mod) => mod.mod_abbreviation === access || mod.mod_abbreviation === null));
+      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer' || referenceFile.referencefile_mods
+          .some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null));
 
   let referenceFilesNoAccess = referencefiles
-      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] !== true && access !== 'developer' && referenceFile.referencefile_mods
-          .every((mod) => mod.mod_abbreviation !== access && mod.mod_abbreviation !== null));
+      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] !== true && accessLevel !== 'developer' && referenceFile.referencefile_mods
+          .every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null));
 
   referenceFilesWithAccess.sort(compareFn);
   referenceFilesNoAccess.sort(compareFn);

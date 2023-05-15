@@ -30,6 +30,18 @@
   text-align: center;
 }
 
+.App-testing-prod {
+  /* background color for prod when testing */
+  background-color: red;
+  /* background-color: #ffcccb; light red */
+}
+.App-testing-dev {
+  /* background color for not-prod when testing */
+  background-color: #f7f6af;   /* light yellow */
+  /* background-color: #fdf88d;  yellow */
+  /* background: repeating-linear-gradient(-45deg, #fdf88d, #fdf88d 10px, #e9e485 10px, #e9e485 20px);  diagonal yellow dark warning */
+}
+
 .Alliance-logo {
   height: 50px;
   pointer-events: none;

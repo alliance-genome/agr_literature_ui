@@ -37,6 +37,7 @@ import { useHistory } from 'react-router-dom';
 // import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
 import { Security, SecureRoute } from '@okta/okta-react';
 import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
+import { useSelector } from 'react-redux';
 
 // import { oktaAuthConfig, oktaSignInConfig } from '../config';
 import { oktaAuthConfig } from '../config';
@@ -66,13 +67,18 @@ const AppWithRouterAccess = () => {
         history.replace(toRelativeUrl(originalUri, window.location.origin));
     };
 
+    const oktaMod = useSelector(state => state.isLogged.oktaMod);
+    const oktaTester = useSelector(state => state.isLogged.oktaTester);
+    const testerMod = useSelector(state => state.isLogged.testerMod);
+    const classTesterString = (devOrStageOrProd === 'prod') ? 'App App-testing-prod' : 'App App-testing-dev';
+    const className = (oktaMod !== testerMod && testerMod != 'No' && oktaTester) ? classTesterString : 'App';
     return (
         <Security
             oktaAuth={oktaAuth}
             onAuthRequired={customAuthHandler}
             restoreOriginalUri={restoreOriginalUri}
         >
-            <div className="App">
+            <div className={className}>
                 <NavigationBar />
                 <NotLoggedInBar />
                 <br />
