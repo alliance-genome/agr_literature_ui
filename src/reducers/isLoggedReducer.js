@@ -7,26 +7,25 @@ const INTIAL_STATE = {
   oktaMod: 'No',
   oktaDeveloper: false,
   oktaTester: false,
-  oktaPOTester: false,
   testerMod: 'No',
   accessToken: null
 };
 
 const loggedReducer = (state = INTIAL_STATE, action) => {
+  const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
   switch (action.type) {
     case 'SET_TESTER_MOD':
       return { ...state, testerMod: action.payload }
     case 'SIGN_IN':
       const jsonToken = jwt_decode(action.payload.accessToken);
-      let oktaMod = null;
-      let oktaDeveloper = null;
-      let oktaTester = null;
-      let oktaPOTester = null;
+      let oktaMod = 'No';
+      let oktaDeveloper = false;
+      let oktaTester = false;
       if (jsonToken.Groups) {
         for (const oktaGroup of jsonToken.Groups) {
           if (oktaGroup.endsWith('Developer')) { oktaDeveloper = true; }
-          if (oktaGroup === 'Tester') { oktaTester = true; }
-          if (oktaGroup === 'POTester') { oktaPOTester = true; }
+          if (oktaGroup === 'Tester' && devOrStageOrProd !== 'prod') { oktaTester = true; }
+            else if (oktaGroup === 'POTester' && devOrStageOrProd === 'prod') { oktaTester = true; }
           if (oktaGroup.startsWith('SGD')) { oktaMod = 'SGD'; }
             else if (oktaGroup.startsWith('RGD')) { oktaMod = 'RGD'; }
             else if (oktaGroup.startsWith('MGI')) { oktaMod = 'MGI'; }
@@ -44,10 +43,9 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         oktaMod: oktaMod,
         oktaDeveloper: oktaDeveloper,
         oktaTester: oktaTester,
-        oktaPOTester: oktaPOTester,
         oktaGroups: jsonToken.Groups }
     case 'SIGN_OUT':
-      return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, oktaPOTester: false, testerMod: 'No'}
+      return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, testerMod: 'No'}
     default:
       return state;
   }
