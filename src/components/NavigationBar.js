@@ -23,6 +23,7 @@ if (devOrStageOrProd === 'prod') { }
 
 const NavigationBar = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const oktaTester = useSelector(state => state.isLogged.oktaTester);
   return (
   <Navbar className={navClass} >
     <Nav className="justify-content-center"  style={{ flex: 1}}>
@@ -37,7 +38,7 @@ const NavigationBar = () => {
       <Nav.Link as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
     </Nav>
     <Nav>
-      { (oktaMod === 'No') ? <OktaHelp /> : <TesterDropdown /> }
+      { (oktaMod === 'No' || oktaTester === false) ? <OktaHelp /> : <TesterDropdown /> }
       <Login config={oktaSignInConfig}/>
     </Nav>
   </Navbar>
