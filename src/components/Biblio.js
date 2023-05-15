@@ -262,11 +262,14 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   if (displayOrEditor === 'editor') {
     cssDisplay = 'Col-editor-disabled';
     cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled'; }
-  // const access = getOktaModAccess(oktaGroups);	// old way to get access before logging on put values in store 
+  // const accessLevel = getOktaModAccess(oktaGroups);	// old way to get access before logging on put values in store
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  const access = (oktaDeveloper ? 'developer' : oktaMod);
-  // const access = 'WB';	// for development to force access to a specific mod
+  let accessLevel = oktaMod;
+  if (testerMod !== 'No') { accessLevel = testerMod; }
+    else if (oktaDeveloper) { accessLevel = 'developer'; }
+  // accessLevel = 'WB';	// for development to force accessLevel to a specific mod
   let tarballChecked = ''; let listChecked = '';
   if (supplementExpand === 'tarball') { tarballChecked = 'checked'; }
     else if (supplementExpand === 'list') { listChecked = 'checked'; }
@@ -280,13 +283,13 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
     let allowed_mods = [];
     for (const rfm of referencefileDict['referencefile_mods']) {
       if (rfm['mod_abbreviation'] !== null) { allowed_mods.push(rfm['mod_abbreviation']); }
-      if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === access) { is_ok = true; }
+      if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) { is_ok = true; }
     }
     let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
     let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-    if (referenceJsonLive["copyright_license_open_access"] === true || access === 'developer') {
+    if (referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer') {
       is_ok = true;
-    } else if (access === 'No') {
+    } else if (accessLevel === 'No') {
         is_ok = false;
         referencefileValue = (<div>{filename}</div>);
     }
