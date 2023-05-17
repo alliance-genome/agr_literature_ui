@@ -38,26 +38,6 @@ import axios from "axios";
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
-export function getOpenAccess(curie){
-  const [licenseData, setLicenseData] = useState([]);
-  const fetchLicenseData = async () => {
-    try {
-      const result = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/" + curie);
-      setLicenseData(result.data);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  useEffect(() => {
-    fetchLicenseData().finally();
-  }, []);
-
-  if (licenseData !== null && licenseData["copyright_license_open_access"] === true){
-    return true;
-  }
-  else {return false;}
-}
-
 
 const Sort = () => {
   const modsField = useSelector(state => state.sort.modsField);
@@ -68,7 +48,6 @@ const Sort = () => {
   const getPapersToSortFlag = useSelector(state => state.sort.getPapersToSortFlag);
   const isLoading = useSelector(state => state.sort.isLoading);
   const dispatch = useDispatch();
-  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
 
   let buttonFindDisabled = 'disabled'
   if (modsField) { buttonFindDisabled = ''; }
@@ -88,6 +67,21 @@ const Sort = () => {
     const [referenceFiles, setReferenceFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
+    const oktaMod = useSelector(state => state.isLogged.oktaMod);
+    const testerMod = useSelector(state => state.isLogged.testerMod);
+    const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+    const [copyrightLicenseOpenAccess, setCopyrightLicenseOpenAccess] = useState(false);
+    const modsField = useSelector(state => state.sort.modsField);
+
+    const getOpenAccess = async (curie) => {
+      try {
+        const result = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/" + curie);
+        setCopyrightLicenseOpenAccess(result.data !== null && result.data["copyright_license_open_access"] === true);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
     useEffect(() => {
       const fetchReferencefiles = async () => {
       setIsLoading(true);
@@ -95,22 +89,19 @@ const Sort = () => {
         setReferenceFiles(referencefiles.data);
         setIsLoading(false);
       }
-      fetchReferencefiles().finally()
+      fetchReferencefiles().finally();
+
+      getOpenAccess().finally();
     }, [referenceCurie]);
 
-    let cssDisplayLeft = 'Col-display Col-display-left';
     if (referenceFiles === null ) {
       return null;
     }
 
-    const oktaMod = useSelector(state => state.isLogged.oktaMod);
-    const testerMod = useSelector(state => state.isLogged.testerMod);
-    const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
     let accessLevel = oktaMod;
     if (testerMod !== 'No') { accessLevel = testerMod; }
     else if (oktaDeveloper) { accessLevel = 'developer'; }
 
-    const copyright_license_open_access = getOpenAccess(referenceCurie);
     const rowReferencefileElements = []
     for (const[index, referencefileDict] of referenceFiles.entries()) {
        if (referencefileDict['file_class'] !== 'main') {continue;}//only display main file
@@ -123,7 +114,7 @@ const Sort = () => {
        }
        let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
        let referencefileValue = (<div><b>{referencefileDict['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-       if (copyright_license_open_access === true || accessLevel === 'developer') {
+       if (copyrightLicenseOpenAccess === true || accessLevel === 'developer') {
         is_ok = true;
        } else if (accessLevel === 'No') {
          is_ok = false;
@@ -200,7 +191,7 @@ const Sort = () => {
           <Col lg={5} ></Col>
           <Col lg={2} >
             <br/>
-            <Form.Control as="select" name="mods" type="select" htmlSize={mods.length} onChange={(e) => dispatch(changeFieldSortMods(e))} >
+            <Form.Control as="select" name="mods" type="select" htmlSize={mods.length} onChange={(e) => dispatch(changeFieldSortMods(e))} value={modsField !== '' ? modsField : undefined} >
               {mods.map((optionValue, index) => (
                   <option key={`mod ${index} ${optionValue}`}>{optionValue}</option>
               ))}
