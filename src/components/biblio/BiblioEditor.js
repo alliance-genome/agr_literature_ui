@@ -534,7 +534,8 @@ const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
   return (<DateRangePicker value={[dateRangeStart, dateRangeEnd]} disabled={disabled}
             onChange={(newDateRangeArr) => {
               if (newDateRangeArr === null) {
-                dispatch(changeFieldDatePublishedRange([null, null])); }
+                // dispatch(changeFieldDatePublishedRange([null, null]));	// curators don't want to be able to set blank date, but it also causes the page to crash
+                dispatch(setBiblioEditorModalText('Not allowed to set empty date')); }
               else {
                 if (newDateRangeArr[0] !== null) {
                   newDateRangeArr[0] = new Date(newDateRangeArr[0].toDateString()).toISOString().substring(0, 10); }
