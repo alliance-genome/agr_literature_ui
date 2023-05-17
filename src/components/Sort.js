@@ -38,21 +38,6 @@ import axios from "axios";
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
-export function getOktaModAccess(oktaGroups) {
-  let access = 'No';
-  if (oktaGroups) {
-    for (const oktaGroup of oktaGroups) {
-      if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
-        else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
-        else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
-        else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
-        else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
-        else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
-        else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
-        else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } } }
-  return access;
-}
-
 export function getOpenAccess(curie){
   const [licenseData, setLicenseData] = useState([]);
   const fetchLicenseData = async () => {
@@ -98,53 +83,49 @@ const Sort = () => {
     dispatch(sortButtonModsQuery(modsField))
   }
 
-
-  const FileElement = (referenceCurie) => {
+  //component to show the main file if any.
+  const FileElement = ({referenceCurie}) => {
     const [referenceFiles, setReferenceFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
-    const [curie, setCurie] = useState(null);
-    console.log('start to retrieve referencefile:' + referenceCurie.referenceCurie );
-    console.log( referenceCurie );
     useEffect(() => {
       const fetchReferencefiles = async () => {
       setIsLoading(true);
-      setCurie(referenceCurie)
-     const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie.referenceCurie);
-       // const referencefiles = await axios.get("https://stage-literature-rest.alliancegenome.org/reference/referencefile/show_all/"+curie);
-      setReferenceFiles(referencefiles.data);
-      setIsLoading(false);
-    }
+      const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
+        setReferenceFiles(referencefiles.data);
+        setIsLoading(false);
+      }
       fetchReferencefiles().finally()
-  }, [referenceCurie]);
+    }, [referenceCurie]);
 
-    console.log('start to process reference file' + referenceCurie);
     let cssDisplayLeft = 'Col-display Col-display-left';
-    let cssDisplay = 'Col-display';
-    let cssDisplayRight = 'Col-display Col-display-right';
     if (referenceFiles === null ) {
       return null;
     }
 
-    const access = getOktaModAccess(oktaGroups);
-    const copyright_license_open_access = getOpenAccess(referenceCurie.referenceCurie);
+    const oktaMod = useSelector(state => state.isLogged.oktaMod);
+    const testerMod = useSelector(state => state.isLogged.testerMod);
+    const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+    let accessLevel = oktaMod;
+    if (testerMod !== 'No') { accessLevel = testerMod; }
+    else if (oktaDeveloper) { accessLevel = 'developer'; }
+
+    const copyright_license_open_access = getOpenAccess(referenceCurie);
     const rowReferencefileElements = []
     for (const[index, referencefileDict] of referenceFiles.entries()) {
-       console.log('index' + index + 'display_name:'+ referencefileDict['display_name']);
        if (referencefileDict['file_class'] !== 'main') {continue;}//only display main file
 
        let is_ok = false;
        let allowed_mods = [];
        for (const rfm of referencefileDict['referencefile_mods']) {
         if (rfm['mod_abbreviation'] !== null) { allowed_mods.push(rfm['mod_abbreviation']); }
-        if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === access) { is_ok = true; }
+        if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) { is_ok = true; }
        }
        let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
        let referencefileValue = (<div><b>{referencefileDict['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-       if (copyright_license_open_access === true || access === 'developer') {
-      //if (access === 'developer') {
+       if (copyright_license_open_access === true || accessLevel === 'developer') {
         is_ok = true;
-       } else if (access === 'No') {
+       } else if (accessLevel === 'No') {
          is_ok = false;
          referencefileValue = (<div><b>{referencefileDict['file_class']}:&nbsp;</b>{filename}</div>);
        }
