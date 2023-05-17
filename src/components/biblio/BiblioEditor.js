@@ -531,7 +531,8 @@ const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
                           new Date(referenceJsonLive['date_published_start']) : null
   const dateRangeEnd = ('date_published_end' in referenceJsonLive && referenceJsonLive['date_published_end'] !== null) ?
                           new Date(referenceJsonLive['date_published_end']) : null
-  return (<DateRangePicker value={[dateRangeStart, dateRangeEnd]} disabled={disabled}
+  // purposely don't allow clearing the date picker, because curators don't want to allow it to be set back to empty
+  return (<DateRangePicker value={[dateRangeStart, dateRangeEnd]} clearIcon={null} disabled={disabled}
             onChange={(newDateRangeArr) => {
               if (newDateRangeArr === null) {
                 // dispatch(changeFieldDatePublishedRange([null, null]));	// curators don't want to be able to set blank date, but it also causes the page to crash
