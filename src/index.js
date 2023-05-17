@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
@@ -30,11 +30,12 @@ const store = createStore(
 //     applyMiddleware(...middleware),
 //     window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
 
-ReactDOM.render(
+const container = document.getElementById('root');
+const root = createRoot(container);
+root.render(
     <Provider store={store}>
-      <App />
-    </Provider>,
-  document.getElementById('root')
+        <App />
+    </Provider>
 );
 
 // having this wrapped around Provider/App will call a reducer multiple times with the same arguments to test the purity of the reducer (so actions will be dispatched multiple times even though they shouldn't be, which messes with things like an async call to get data, causing it to happen multiple times)

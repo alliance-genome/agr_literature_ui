@@ -21,20 +21,6 @@ const searchMissingFiles = (mod_abbreviation) => {
     }
 }
 
-function getOktaModAccess(oktaGroups) {
-  let access = 'No';
-  if (oktaGroups) {
-    for (const oktaGroup of oktaGroups) {
-        if (oktaGroup.startsWith('SGD')) { access = 'SGD'; }
-        else if (oktaGroup.startsWith('RGD')) { access = 'RGD'; }
-        else if (oktaGroup.startsWith('MGI')) { access = 'MGI'; }
-        else if (oktaGroup.startsWith('ZFIN')) { access = 'ZFIN'; }
-        else if (oktaGroup.startsWith('Xen')) { access = 'XB'; }
-        else if (oktaGroup.startsWith('Fly')) { access = 'FB'; }
-        else if (oktaGroup.startsWith('Worm')) { access = 'WB'; } } }
-  return access;
-}
-
 const addWorkflowTag = (tag_id,mod_abbreviation,curie,accessToken) => {
   return dispatch => {
     let headers = {
@@ -71,8 +57,8 @@ const WorkFlowDropdown = (workflow) => {
     </Dropdown.Toggle>
 
    <Dropdown.Menu>
-     <Dropdown.Item onClick= {() => dispatch(addWorkflowTag('ATP:0000134',workflow.access,workflow.curie,workflow.accessToken))}>Files Uploaded</Dropdown.Item>
-     <Dropdown.Item onClick= {() => dispatch(addWorkflowTag('ATP:0000135',workflow.access,workflow.curie,workflow.accessToken))}>No Files Available</Dropdown.Item>
+     <Dropdown.Item onClick= {() => dispatch(addWorkflowTag('ATP:0000134', workflow.accessLevel, workflow.curie, workflow.accessToken))}>Files Uploaded</Dropdown.Item>
+     <Dropdown.Item onClick= {() => dispatch(addWorkflowTag('ATP:0000135', workflow.accessLevel, workflow.curie, workflow.accessToken))}>No Files Available</Dropdown.Item>
    </Dropdown.Menu>
  </Dropdown>
 )}
@@ -88,21 +74,25 @@ const XrefElement = (xref) => {
 }
 
 const Tracker = () => {
-  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const missingFileResults = useSelector(state => state.tracker.missingFileResults);
   const dispatch = useDispatch();
-  const access = getOktaModAccess(oktaGroups);
+  // const accessLevel = getOktaModAccess(oktaGroups);	// old way before logging on put values in store
+  // const accessLevel = useSelector(state => state.isLogged.oktaMod);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  // const accessLevel = 'ZFIN';				// to force a specific MOD
   const accessToken = useSelector(state => state.isLogged.accessToken);
 
   useEffect(() => {
-    if (access === 'No'){
+    if (accessLevel === 'No'){
       //do nothing
     }
     else{
-      dispatch(searchMissingFiles(access));
+      dispatch(searchMissingFiles(accessLevel));
     }
 
-  },[access,dispatch]);
+  },[accessLevel,dispatch]);
 
   return (
     <div>
@@ -118,12 +108,12 @@ const Tracker = () => {
         </thead>
         <tbody>
         { missingFileResults.map((reference, index) => (
-          <tr>
+          <tr key={`missingFile ${reference} ${index}`}>
             <td><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}>{reference.curie}</Link></td>
             <td><XrefElement xref={reference.mod_curie}/></td>
             <td><XrefElement xref={reference.pmid}/></td>
             <td className="sm-table">{reference.short_citation}</td>
-            <td><WorkFlowDropdown access={access} curie={reference.curie} accessToken={accessToken}/></td>
+            <td><WorkFlowDropdown accessLevel={accessLevel} curie={reference.curie} accessToken={accessToken}/></td>
             <td className="sm-table no-pad">
               {reference.maincount > 0 ? <div><FontAwesomeIcon icon={faCheck} style={{color: "#28a745"}}/> Main </div> :  <div> <FontAwesomeIcon icon={faTimes}  style={{color: "#dc3545"}}/> &nbsp;Main </div>}
               {reference.supcount > 0 ? <div><FontAwesomeIcon icon={faCheck} style={{color: "#28a745"}}/> Supplemental </div> :  <div> <FontAwesomeIcon icon={faTimes}  style={{color: "#dc3545"}}/> &nbsp;Supplemental </div> }

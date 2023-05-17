@@ -13,9 +13,6 @@ import BiblioFileManagement from './biblio/BiblioFileManagement';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString } from './biblio/BiblioDisplay';
-import { RowDisplaySimple } from './biblio/BiblioDisplay';
-
-import { splitCurie } from './biblio/BiblioEditor';
 
 import {
   downloadReferencefile,
@@ -28,7 +25,6 @@ import { biblioQueryReferenceCurie } from '../actions/biblioActions';
 import { changeBiblioSupplementExpandToggler } from '../actions/biblioActions';
 
 import { changeBiblioActionToggler } from '../actions/biblioActions';
-import { updateButtonBiblio } from '../actions/biblioActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -238,21 +234,6 @@ const BiblioTagging = () => {
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging
 
-export function getOktaModAccess(oktaGroups) {
-  let access = 'No';
-  if (oktaGroups) {
-    for (const oktaGroup of oktaGroups) {
-      if (oktaGroup.endsWith('Developer')) { access = 'developer'; }
-        else if (oktaGroup === 'SGDCurator') { access = 'SGD'; }
-        else if (oktaGroup === 'RGDCurator') { access = 'RGD'; }
-        else if (oktaGroup === 'MGICurator') { access = 'MGI'; }
-        else if (oktaGroup === 'ZFINCurator') { access = 'ZFIN'; }
-        else if (oktaGroup === 'XenbaseCurator') { access = 'XB'; }
-        else if (oktaGroup === 'FlyBaseCurator') { access = 'FB'; }
-        else if (oktaGroup === 'WormBaseCurator') { access = 'WB'; } } }
-  return access;
-}
-
 export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
@@ -281,11 +262,18 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   if (displayOrEditor === 'editor') {
     cssDisplay = 'Col-editor-disabled';
     cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled'; }
-  const access = getOktaModAccess(oktaGroups);
-    let tarballChecked = ''; let listChecked = '';
-    if (supplementExpand === 'tarball') { tarballChecked = 'checked'; }
-      else if (supplementExpand === 'list') { listChecked = 'checked'; }
-    const rowReferencefileElements = []
+  // const accessLevel = getOktaModAccess(oktaGroups);	// old way to get access before logging on put values in store
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+  let accessLevel = oktaMod;
+  if (testerMod !== 'No') { accessLevel = testerMod; }
+    else if (oktaDeveloper) { accessLevel = 'developer'; }
+  // accessLevel = 'WB';	// for development to force accessLevel to a specific mod
+  let tarballChecked = ''; let listChecked = '';
+  if (supplementExpand === 'tarball') { tarballChecked = 'checked'; }
+    else if (supplementExpand === 'list') { listChecked = 'checked'; }
+  const rowReferencefileElements = []
 
   // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
   const rowReferencefileSupplementElements = []
@@ -295,13 +283,13 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
     let allowed_mods = [];
     for (const rfm of referencefileDict['referencefile_mods']) {
       if (rfm['mod_abbreviation'] !== null) { allowed_mods.push(rfm['mod_abbreviation']); }
-      if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === access) { is_ok = true; }
+      if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) { is_ok = true; }
     }
     let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
     let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-    if (referenceJsonLive["copyright_license_open_access"] === true || access === 'developer') {
+    if (referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer') {
       is_ok = true;
-    } else if (access === 'No') {
+    } else if (accessLevel === 'No') {
         is_ok = false;
         referencefileValue = (<div>{filename}</div>);
     }
@@ -446,7 +434,6 @@ const Biblio = () => {
 //   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
   const isLoading = useSelector(state => state.biblio.isLoading);
 //   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
-  const accessToken = useSelector(state => state.isLogged.accessToken);
 //   const updateCitationFlag = useSelector(state => state.biblio.updateCitationFlag);	// citation now updates from database triggers
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
