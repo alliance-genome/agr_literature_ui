@@ -141,12 +141,7 @@ const Sort = () => {
        rowReferencefileElements.push( referencefileRow ); }
       return (
         <>
-         {isLoading ?
-            <Row key="supplementExpandTogglerRow" className="Row-general">
-              <Col className={`Col-general ${cssDisplayLeft} `} lg={2}><Spinner animation="border" size="sm"/></Col>
-            </Row>
-            :
-            rowReferencefileElements}
+         {isLoading ?<Spinner animation="border" size="sm"/>: rowReferencefileElements}
         </>);
   }
   function updateSorting() {
