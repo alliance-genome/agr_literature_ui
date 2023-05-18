@@ -218,24 +218,9 @@ const EntityEditor = () => {
 } // const EntityEditor
 
 
-//           <Col className="form-label col-form-label" sm="1"><Button variant="outline-danger" >Remove Entity</Button></Col>
-//           <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
-
-
-// const ModalGeneric = ({showGenericModal, genericModalHeader, genericModalBody, onHideAction}) => {
-//   const dispatch = useDispatch();
-//   if (showGenericModal) {
-//     return (<Modal size="lg" show={showGenericModal} backdrop="static" onHide={() => dispatch(onHideAction)} >
-//              <Modal.Header closeButton><Modal.Title>{genericModalHeader}</Modal.Title></Modal.Header>
-//              <Modal.Body><div dangerouslySetInnerHTML={{__html:`${genericModalBody}`}}/></Modal.Body>
-//             </Modal>); }
-//   return null;
-// }
-
 const EntityCreate = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
@@ -247,17 +232,25 @@ const EntityCreate = () => {
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
   const topicSelect = 'entity type ATP:0000122';
-//   let geneStringListDash = [];
-//   let geneStringListParen = [];
-//   if (geneResultList) {
-//     for (const geneResObject of geneResultList) {
-//       geneStringListParen.push(geneResObject.geneSymbol + " ( " + geneResObject.curie + " ) ");
-//       geneStringListDash.push(geneResObject.geneSymbol + " -- " + geneResObject.curie); } }
+  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
+  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+  let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
+  const entityTypeList = ['ATP:0000005', 'ATP:0000006'];
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  // const accessLevel = 'WB';	// uncomment if you have developer okta access and need to test a specific mod
 
   useEffect( () => {
     if (!(taxonSelect === '' || taxonSelect === undefined)) {
       dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
   }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect( () => {
+    if (accessLevel in modToTaxon) {
+      dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
+  }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   function createEntities(refCurie) {
     const forApiArray = []
@@ -283,12 +276,11 @@ const EntityCreate = () => {
           // let array = [ subPath, updateJson, method, 0, null, null]
           let array = [ subPath, updateJson, method]
           forApiArray.push( array );
-    } } }
+        }
+      }
+    }
 
-    let dispatchCount = forApiArray.length;
-
-    // console.log('dispatchCount ' + dispatchCount)
-    dispatch(setBiblioUpdatingEntityAdd(dispatchCount))
+    dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken);
@@ -297,21 +289,10 @@ const EntityCreate = () => {
     }
   }
 
-  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
-  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
-  let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
-  const entityTypeList = ['ATP:0000005', 'ATP:0000006'];
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-  // const accessLevel = 'WB';	// uncomment if you have developer okta access and need to test a specific mod
+
   if (accessLevel in modToTaxon) {
     let filteredTaxonList = taxonList.filter((x) => !modToTaxon[accessLevel].includes(x));
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList); }
-  useEffect( () => {
-    if (accessLevel in modToTaxon) {
-      dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
-  }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // const taxonSelect = 'NCBITaxon:4932';	// to hardcode if they don't want a dropdown
   // const taxonSelect = 'NCBITaxon:6239';	// to hardcode if they don't want a dropdown
