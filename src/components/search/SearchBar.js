@@ -31,6 +31,7 @@ const SearchBar = () => {
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
                             <Dropdown.Item onClick={() => updateSearchField('All')}>All text fields</Dropdown.Item>
+                            <Dropdown.Item onClick={() => updateSearchField('Citation')}>Citation</Dropdown.Item>
                             <Dropdown.Item onClick={() => updateSearchField('Title')}>Title</Dropdown.Item>
                             <Dropdown.Item onClick={() => updateSearchField('Abstract')}>Abstract</Dropdown.Item>
                             <Dropdown.Item onClick={() => updateSearchField('Keyword')}>PubMed Keyword</Dropdown.Item>
