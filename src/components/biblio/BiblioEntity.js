@@ -222,6 +222,10 @@ const EntityCreate = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
@@ -236,10 +240,6 @@ const EntityCreate = () => {
   const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = ['ATP:0000005', 'ATP:0000006'];
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-  // const accessLevel = 'WB';	// uncomment if you have developer okta access and need to test a specific mod
 
   useEffect( () => {
     if (!(taxonSelect === '' || taxonSelect === undefined)) {
@@ -250,7 +250,6 @@ const EntityCreate = () => {
     if (accessLevel in modToTaxon) {
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
-
 
   function createEntities(refCurie) {
     const forApiArray = []
@@ -264,16 +263,30 @@ const EntityCreate = () => {
           updateJson['topic'] = biblioAction === 'entity' ? 'ATP:0000122' : 'insert topic here';
           // updateJson['entity_type'] = 'ATP:0000005';
           updateJson['entity_type'] = entityTypeSelect;
-          updateJson['alliance_entity'] = entityResult.curie;
-          // updateJson['taxon'] = 'NCBITaxon:559292';	// to hardcode if they don't want a dropdown
-          updateJson['taxon'] = taxonSelect;
-          updateJson['note'] = noteText;
+          updateJson['entity'] = entityResult.curie;
+          updateJson['entity_source'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
+          updateJson['species'] = taxonSelect;
+          // TODO: add entity_published_as field when synonyms are in the A-team system
+          updateJson['sources'] = [
+              {
+                'source': 'manual',
+                'confidence_level': 'positive', // TODO: add negative annotations
+                'mod_abbreviation': accessLevel,
+                'validated': true,
+                'validation_type': 'manual',
+                'note': noteText
+              }];
           if (tetqualifierSelect && tetqualifierSelect !== '') {
-            updateJson['props'] = [ { 'qualifier': tetqualifierSelect } ]; }
-          // console.log(updateJson);
+            updateJson['qualifiers'] = [
+              {
+                'qualifier': tetqualifierSelect,
+                'qualifier_type': 'curation',
+                'mod_abbreviation': accessLevel
+              }
+            ];
+          }
           let subPath = 'topic_entity_tag/';
           let method = 'POST';
-          // let array = [ subPath, updateJson, method, 0, null, null]
           let array = [ subPath, updateJson, method]
           forApiArray.push( array );
         }
@@ -284,11 +297,9 @@ const EntityCreate = () => {
 
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken);
-      console.log(arrayData);
-      dispatch(updateButtonBiblioEntityAdd(arrayData))
+        dispatch(updateButtonBiblioEntityAdd(arrayData))
     }
   }
-
 
   if (accessLevel in modToTaxon) {
     let filteredTaxonList = taxonList.filter((x) => !modToTaxon[accessLevel].includes(x));
