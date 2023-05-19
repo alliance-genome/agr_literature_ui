@@ -1,51 +1,20 @@
 import React, {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import {Link} from 'react-router-dom';
+import Dropdown from 'react-bootstrap/Dropdown';
+import Form from 'react-bootstrap/Form';
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import Table from 'react-bootstrap/Table';
-import axios from "axios";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faTimes} from '@fortawesome/free-solid-svg-icons'
-import {Link} from 'react-router-dom';
 import {searchXref} from '../actions/searchActions';
-import Dropdown from 'react-bootstrap/Dropdown';
+import {searchMissingFiles, addWorkflowTag, setOrder} from '../actions/trackerActions';
+import LoadingOverlay from "./LoadingOverlay";
 
 
-const restUrl = process.env.REACT_APP_RESTAPI;
 
-const searchMissingFiles = (mod_abbreviation) => {
-  return dispatch => {
-    axios.get(restUrl + '/reference/missing_files/'+mod_abbreviation)
-        .then(res => {
-          dispatch(setMissingFileResults(res.data));
-        })
-        .catch();
-    }
-}
-
-const addWorkflowTag = (tag_id,mod_abbreviation,curie,accessToken) => {
-  return dispatch => {
-    let headers = {
-      'content-type': 'application/json',
-      'mode': 'cors',
-      'authorization': 'Bearer ' + accessToken
-    }
-    let params = {
-      workflow_tag_id: tag_id,
-      mod_abbreviation: mod_abbreviation,
-      reference_curie: curie
-    }
-    axios.post(restUrl + '/workflow_tag/',params, {headers:headers})
-      .then(res => {
-        dispatch(searchMissingFiles(mod_abbreviation));
-      })
-  }
-}
-
-const setMissingFileResults = (payload) => {
-  return {
-    type: 'SET_MISSING_FILE_RESULTS',
-    payload: payload
-  };
-};
 
 const WorkFlowDropdown = (workflow) => {
   const dispatch = useDispatch();
@@ -75,6 +44,7 @@ const XrefElement = (xref) => {
 
 const Tracker = () => {
   const missingFileResults = useSelector(state => state.tracker.missingFileResults);
+
   const dispatch = useDispatch();
   // const accessLevel = getOktaModAccess(oktaGroups);	// old way before logging on put values in store
   // const accessLevel = useSelector(state => state.isLogged.oktaMod);
@@ -83,23 +53,40 @@ const Tracker = () => {
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
   // const accessLevel = 'ZFIN';				// to force a specific MOD
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const orderBy = useSelector(state => state.tracker.orderBy);
+  const isLoading = useSelector(state => state.tracker.isLoading);
+
 
   useEffect(() => {
     if (accessLevel === 'No'){
       //do nothing
     }
     else{
-      dispatch(searchMissingFiles(accessLevel));
+      dispatch(searchMissingFiles(accessLevel,orderBy));
     }
 
-  },[accessLevel,dispatch]);
+  },[accessLevel,orderBy,dispatch]);
 
   return (
     <div>
     <h4>Reference File Tracker</h4>
     <br/>
+    <Container fluid>
+        <Row>
+          <Col sm={2}>
+            <Form.Control as="select" id="sortByDate" name="sortByDate"
+                          onChange={(e) => {
+                              dispatch(setOrder(e.target.value));
+                              dispatch(searchMissingFiles(accessLevel,e.target.value));
+                          } }>
+                <option value="desc">Newest first</option>
+                <option value="asc">Oldest first</option>
+            </Form.Control>
+          </Col>
+        </Row>
+      </Container>
+      <LoadingOverlay active={isLoading} />
       { missingFileResults ?
-      //<Button variant="primary" className="download-tracker-button">Download All</Button>
       <Table bordered size="sm">
         <thead>
           <tr>

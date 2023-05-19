@@ -1,6 +1,7 @@
 const initialState = {
   missingFileResults: [],
-  isLoading: false
+  isLoading: false,
+  orderBy: 'desc'
 };
 
 // eslint-disable-next-line
@@ -12,6 +13,18 @@ export default function(state = initialState, action) {
       return {
         ...state,
         missingFileResults: action.payload
+      }
+
+    case 'SET_ORDER_BY':
+      return{
+        ...state,
+        orderBy:action.payload
+      }
+
+    case 'SET_IS_LOADING':
+      return{
+        ...state,
+        isLoading:action.payload
       }
 
     default:
