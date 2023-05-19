@@ -270,7 +270,6 @@ const EntityCreate = () => {
           updateJson['sources'] = [
               {
                 'source': 'manual',
-                'confidence_level': 'positive', // TODO: add negative annotations
                 'mod_abbreviation': accessLevel,
                 'validated': true,
                 'validation_type': 'manual',
