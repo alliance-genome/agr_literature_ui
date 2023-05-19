@@ -13,9 +13,6 @@ import {searchXref} from '../actions/searchActions';
 import {searchMissingFiles, addWorkflowTag, setOrder} from '../actions/trackerActions';
 import LoadingOverlay from "./LoadingOverlay";
 
-
-
-
 const WorkFlowDropdown = (workflow) => {
   const dispatch = useDispatch();
 
@@ -74,7 +71,7 @@ const Tracker = () => {
     <Container fluid>
         <Row>
           <Col sm={2}>
-            <Form.Control as="select" id="sortByDate" name="sortByDate"
+            <Form.Control as="select" id="sortByDate" name="sortByDate" value={orderBy}
                           onChange={(e) => {
                               dispatch(setOrder(e.target.value));
                               dispatch(searchMissingFiles(accessLevel,e.target.value));
