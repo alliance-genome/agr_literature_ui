@@ -143,7 +143,15 @@ const Tracker = () => {
         )) }
         </tbody>
       </Table>
+
       : null }
+    <Container fluid>
+        <Row>
+          <Col>
+            <TrackerPagination mod={accessLevel}/>
+          </Col>
+        </Row>
+    </Container>
 
     </div>
   );
