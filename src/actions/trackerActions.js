@@ -2,10 +2,11 @@ import axios from "axios";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
-export const searchMissingFiles = (mod_abbreviation, order_by) => {
-  return dispatch => {
+export const searchMissingFiles = (mod_abbreviation) => {
+  return (dispatch,getState) => {
+    const state = getState();
     dispatch(setLoadingState(true));
-    axios.get(restUrl + '/reference/missing_files/'+mod_abbreviation+"?order_by="+order_by)
+    axios.get(restUrl + '/reference/missing_files/'+mod_abbreviation+"?order_by="+state.tracker.orderBy+"&page="+state.tracker.trackerPage)
         .then(res => {
           dispatch(setMissingFileResults(res.data));
           dispatch(setLoadingState(false));
@@ -15,8 +16,7 @@ export const searchMissingFiles = (mod_abbreviation, order_by) => {
 }
 
 export const addWorkflowTag = (tag_id,mod_abbreviation,curie,accessToken) => {
-  return (dispatch,getState) => {
-    const state = getState();
+  return dispatch => {
     let headers = {
       'content-type': 'application/json',
       'mode': 'cors',
@@ -29,7 +29,7 @@ export const addWorkflowTag = (tag_id,mod_abbreviation,curie,accessToken) => {
     }
     axios.post(restUrl + '/workflow_tag/',params, {headers:headers})
       .then(res => {
-        dispatch(searchMissingFiles(mod_abbreviation,state.tracker.orderBy));
+        dispatch(searchMissingFiles(mod_abbreviation));
       })
   }
 }
@@ -51,6 +51,13 @@ export const setOrder = (payload) => {
 export const setLoadingState = (payload) => {
   return {
     type: 'SET_IS_LOADING',
+    payload: payload
+  };
+};
+
+export const setTrackerPage = (payload) => {
+  return {
+    type: 'SET_TRACKER_PAGE',
     payload: payload
   };
 };
