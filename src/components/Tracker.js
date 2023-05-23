@@ -2,15 +2,15 @@ import React, {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {Link} from 'react-router-dom';
 import Dropdown from 'react-bootstrap/Dropdown';
-import Form from 'react-bootstrap/Form';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Table from 'react-bootstrap/Table';
+import Pagination from 'react-bootstrap/Pagination';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheck, faTimes} from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faTimes, faSortNumericDown, faSortNumericUp } from '@fortawesome/free-solid-svg-icons'
 import {searchXref} from '../actions/searchActions';
-import {searchMissingFiles, addWorkflowTag, setOrder} from '../actions/trackerActions';
+import {searchMissingFiles, addWorkflowTag, setOrder, setTrackerPage} from '../actions/trackerActions';
 import LoadingOverlay from "./LoadingOverlay";
 
 const WorkFlowDropdown = (workflow) => {
@@ -39,9 +39,35 @@ const XrefElement = (xref) => {
   )
 }
 
+const TrackerPagination = (mod) => {
+  const dispatch = useDispatch();
+  const trackerPage = useSelector(state => state.tracker.trackerPage);
+  const changePage = (action,page) => {
+    switch (action){
+      case 'Next':
+        page=page+1;
+        break;
+      case 'Prev':
+        page=Math.max(1,page-1);
+        break;
+      default:
+        page=1;
+        break;
+    }
+    dispatch(setTrackerPage(page));
+    dispatch(searchMissingFiles(mod.mod))
+  }
+  return (
+    <Pagination style={{justifyContent: 'center', alignItems: 'center'}}>
+      {trackerPage === 1 ? <Pagination.Prev disabled/> : <Pagination.Prev   onClick={() => changePage('Prev',trackerPage)} /> }
+      <Pagination.Item  disabled>{"Page " + (trackerPage)}</Pagination.Item>
+      <Pagination.Next   onClick={() => changePage('Next',trackerPage)} />
+    </Pagination>
+  )
+}
+
 const Tracker = () => {
   const missingFileResults = useSelector(state => state.tracker.missingFileResults);
-
   const dispatch = useDispatch();
   // const accessLevel = getOktaModAccess(oktaGroups);	// old way before logging on put values in store
   // const accessLevel = useSelector(state => state.isLogged.oktaMod);
@@ -53,13 +79,12 @@ const Tracker = () => {
   const orderBy = useSelector(state => state.tracker.orderBy);
   const isLoading = useSelector(state => state.tracker.isLoading);
 
-
   useEffect(() => {
     if (accessLevel === 'No'){
       //do nothing
     }
     else{
-      dispatch(searchMissingFiles(accessLevel,orderBy));
+      dispatch(searchMissingFiles(accessLevel));
     }
 
   },[accessLevel,orderBy,dispatch]);
@@ -70,15 +95,8 @@ const Tracker = () => {
     <br/>
     <Container fluid>
         <Row>
-          <Col sm={2}>
-            <Form.Control as="select" id="sortByDate" name="sortByDate" value={orderBy}
-                          onChange={(e) => {
-                              dispatch(setOrder(e.target.value));
-                              dispatch(searchMissingFiles(accessLevel,e.target.value));
-                          } }>
-                <option value="desc">Newest first</option>
-                <option value="asc">Oldest first</option>
-            </Form.Control>
+          <Col>
+            <TrackerPagination mod={accessLevel}/>
           </Col>
         </Row>
       </Container>
@@ -87,7 +105,25 @@ const Tracker = () => {
       <Table bordered size="sm">
         <thead>
           <tr>
-            <th>Curie</th><th>MOD Curie</th><th>PMID</th><th>Citation</th><th>File Workflow</th><th>Files Uploaded</th><th>Date Created</th>
+            <th>Curie</th>
+            <th>MOD Curie</th>
+            <th>PMID</th>
+            <th>Citation</th>
+            <th>File Workflow</th>
+            <th>Files Uploaded</th>
+            <th>Date Created &nbsp;
+              <FontAwesomeIcon icon={orderBy === 'desc' ? faSortNumericDown : faSortNumericUp}
+              onClick={() => {
+                if (orderBy === 'desc'){
+                  dispatch(setOrder('asc'));
+                }
+                else{
+                  dispatch(setOrder('desc'));
+                }
+                dispatch(setTrackerPage(1));
+                dispatch(searchMissingFiles(accessLevel));
+              }}/>
+            </th>
           </tr>
         </thead>
         <tbody>

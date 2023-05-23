@@ -1,7 +1,8 @@
 const initialState = {
   missingFileResults: [],
   isLoading: false,
-  orderBy: 'desc'
+  orderBy: 'desc',
+  trackerPage: 1
 };
 
 // eslint-disable-next-line
@@ -25,6 +26,11 @@ export default function(state = initialState, action) {
       return{
         ...state,
         isLoading:action.payload
+      }
+    case 'SET_TRACKER_PAGE':
+      return{
+        ...state,
+        trackerPage:action.payload
       }
 
     default:
