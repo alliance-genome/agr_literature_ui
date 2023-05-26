@@ -14,6 +14,7 @@ import { changeFieldEntityEditor } from '../../actions/biblioActions';
 import { setFieldEntityEditor } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 
+import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
 
@@ -35,7 +36,8 @@ const BiblioEntity = () => {
   return (<><EntityCreate key="entityCreate" />
             <EntityEditor key="entityEditor" /></>); }
 
-  const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
+//   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
+  const curieToNameAtp = { 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
   const qualifierList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
   const curieToNameTaxon = { 'NCBITaxon:559292': 'Saccharomyces cerevisiae', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
 
@@ -58,7 +60,7 @@ const EntityEditor = () => {
   const [descSort, setDescSort] = useState(true);
   //const [limit, setLimit] = useState(10);
   const pageSize = 10; // fixed limit value for now
-
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchMappings = async () => {
@@ -70,8 +72,6 @@ const EntityEditor = () => {
       };
       const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
           config);
-console.log('resultMappings.data');
-console.log(resultMappings.data);
       setEntityEntityMappings(resultMappings.data);
     }
     fetchMappings().then();
@@ -94,10 +94,10 @@ console.log(resultMappings.data);
       if (descSort) {
         url += "&desc_sort=true"
       }
+      setIsLoading(true);
       const resultTags = await axios.get(url);
-console.log('resultTags.data');
-console.log(resultTags.data);
       setTopicEntityTags(resultTags.data);
+      setIsLoading(false);
     }
     fetchData().then();
   }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize]);
@@ -125,6 +125,7 @@ console.log(resultTags.data);
 
   return (
       <div>
+        <LoadingOverlay active={isLoading} />
         <Container fluid>
           <RowDivider />
           <Row className="form-group row" >
@@ -162,8 +163,8 @@ console.log(resultTags.data);
             else {
               return (
                   <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
-                    <Col className="div-grey-border" sm="1">{tetDict.topic in curieToNameAtp ? curieToNameAtp[tetDict.topic] : tetDict.topic }</Col>
-                    <Col className="div-grey-border" sm="1">{tetDict.entity_type in curieToNameAtp ? curieToNameAtp[tetDict.entity_type] : tetDict.entity_type }</Col>
+                    <Col className="div-grey-border" sm="1">{tetDict.topic in entityEntityMappings ? entityEntityMappings[tetDict.topic] : tetDict.topic }</Col>
+                    <Col className="div-grey-border" sm="1">{tetDict.entity_type in entityEntityMappings ? entityEntityMappings[tetDict.entity_type] : tetDict.entity_type }</Col>
                     <Col className="div-grey-border" sm="2">{tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species }</Col>
                     <Col className="div-grey-border" sm="2">{entityName}</Col>
                     <Col className="div-grey-border" sm="2">{tetDict.entity}</Col>
@@ -195,38 +196,6 @@ console.log(resultTags.data);
             : null}
       </div>);
 } // const EntityEditor
-
-//             <Col className="div-grey-border" sm="3">internal notes</Col>
-//             <Col className="div-grey-border" sm="1">button</Col>
-
-//                     <Col className="form-label col-form-label" sm="3" style={{position: 'relative'}}>
-//               <span style={{position: 'absolute', top: '0.2em', right: '1.2em'}}>
-//                 <span style={{color: '#007bff'}}
-//                       onClick={() => {
-//                         dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': tetDict.note || ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >&#10003;</span><br/>
-//                 <span style={{color: '#dc3545'}}
-//                       onClick={() => {
-//                         dispatch(setFieldEntityEditor('note ' + index, ''));
-//                         dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >X</span>
-//               </span>
-//                       <Form.Control as="textarea" id={`note ${index}`} type="note" value={tetDict.note || ''} onChange={(e) => dispatch(changeFieldEntityEditor(e))} />
-//                       <Button variant="outline-primary"
-//                               onClick={() => {
-//                                 dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': tetDict.note || ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >
-//                         Update note</Button>&nbsp;
-//                       <Button variant="outline-danger"
-//                               onClick={() => {
-//                                 dispatch(setFieldEntityEditor('note ' + index, ''));
-//                                 dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, {'note': ''}, 'PATCH', 'UPDATE_BUTTON_BIBLIO_ENTITY_EDIT_NOTE')) } } >
-//                         Remove note</Button>
-//                     </Col>
-//                     <Col className="form-label col-form-label" sm="1">
-//                       <Button variant="outline-danger"
-//                               disabled={biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? 'disabled' : ''}
-//                               onClick={() => {
-//                                 dispatch(setBiblioEntityRemoveEntity(tetDict.topic_entity_tag_id, true));
-//                                 dispatch(updateButtonBiblioEntityEditEntity(accessToken, tetDict.topic_entity_tag_id, null, 'DELETE', 'UPDATE_BUTTON_BIBLIO_ENTITY_REMOVE_ENTITY')) } } >
-//                         {biblioUpdatingEntityRemoveEntity[tetDict.topic_entity_tag_id] === true ? <Spinner animation="border" size="sm"/> : "Remove Entity"}</Button></Col>
 
 const EntityCreate = () => {
   const dispatch = useDispatch();
