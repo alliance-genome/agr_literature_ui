@@ -700,8 +700,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       let aut1 = referenceMeta1['referenceJson'][fieldName][i];
       let aut1Data = {};
       autFields.forEach( (x) => { aut1Data[x] = (aut1[x] !== null && aut1[x] !== '') ? aut1[x] : ''; } );
-      aut1Data['orcid'] = ('orcid' in aut1 && aut1['orcid'] !== null && 'curie' in aut1['orcid'] && aut1['orcid']['curie'] !== null) ?
-        aut1['orcid']['curie'] : '';
+      aut1Data['orcid'] = ('orcid' in aut1 && aut1['orcid'] !== null) ?  aut1['orcid'] : '';
       if ( aut1Data['toggle'] ) { swapColor1 = !swapColor1; }
       keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
       // console.log('toggle1 swapColor1 ' + swapColor1 + ' on index ' + i)
@@ -723,8 +722,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       let aut2 = referenceMeta2['referenceJson'][fieldName][i];
       let aut2Data = {};
       autFields.forEach( (x) => { aut2Data[x] = (aut2[x] !== null && aut2[x] !== '') ? aut2[x] : ''; } );
-      aut2Data['orcid'] = ('orcid' in aut2 && aut2['orcid'] !== null && 'curie' in aut2['orcid'] && aut2['orcid']['curie'] !== null) ?
-        aut2['orcid']['curie'] : '';
+      aut2Data['orcid'] = ('orcid' in aut2 && aut2['orcid'] !== null) ? aut2['orcid'] : '';
       if ( aut2Data['toggle'] ) { swapColor2 = !swapColor2; }
       keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
       // console.log('toggle2 swapColor2 ' + swapColor2 + ' on index ' + i)
