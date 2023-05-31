@@ -28,7 +28,7 @@ const DownloadButton = (mod) => {
       .then(blob => {
         const url = window.URL.createObjectURL(new Blob([blob]));
         const link = document.createElement('a');
-	let filename = `${mod.mod}_`;
+	let filename = `${mod.mod}_file_`;
 	if (trackerFilter == 'default') {
 	  filename = filename + "needed.tsv"
 	}
