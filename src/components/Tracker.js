@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import {Link} from 'react-router-dom';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Container from "react-bootstrap/Container";
+import Form from 'react-bootstrap/Form';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Table from 'react-bootstrap/Table';
@@ -10,7 +11,7 @@ import Pagination from 'react-bootstrap/Pagination';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faTimes, faSortNumericDown, faSortNumericUp } from '@fortawesome/free-solid-svg-icons'
 import {searchXref} from '../actions/searchActions';
-import {searchMissingFiles, addWorkflowTag, setOrder, setTrackerPage} from '../actions/trackerActions';
+import {searchMissingFiles, addWorkflowTag, setOrder, setTrackerPage, setTrackerFilter} from '../actions/trackerActions';
 import LoadingOverlay from "./LoadingOverlay";
 
 const WorkFlowDropdown = (workflow) => {
@@ -78,6 +79,7 @@ const Tracker = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const orderBy = useSelector(state => state.tracker.orderBy);
   const isLoading = useSelector(state => state.tracker.isLoading);
+  const trackerFilter = useSelector(state => state.tracker.trackerFilter);
 
   useEffect(() => {
     if (accessLevel === 'No'){
@@ -95,9 +97,21 @@ const Tracker = () => {
     <br/>
     <Container fluid>
         <Row>
-          <Col>
-            <TrackerPagination mod={accessLevel}/>
-          </Col>
+        <Col sm={2}>
+          <Form.Control as="select" id="filterByTags" name="filterByTags" value={trackerFilter}
+                     onChange={(e) => {
+                       dispatch(setTrackerFilter(e.target.value));
+                       dispatch(searchMissingFiles(accessLevel));
+                     }}>
+           <option value="default">Files Needed</option>
+           <option value="ATP:0000134">Files Uploaded</option>
+           <option value="ATP:0000135">File Unavailable</option>
+          </Form.Control>
+        </Col>
+        <Col>
+          <TrackerPagination mod={accessLevel}/>
+        </Col>
+        <Col sm={2}></Col>
         </Row>
       </Container>
       <LoadingOverlay active={isLoading} />
@@ -121,7 +135,6 @@ const Tracker = () => {
                   dispatch(setOrder('desc'));
                 }
                 dispatch(setTrackerPage(1));
-                dispatch(searchMissingFiles(accessLevel));
               }}/>
             </th>
           </tr>
@@ -133,7 +146,7 @@ const Tracker = () => {
             <td><XrefElement xref={reference.mod_curie}/></td>
             <td><XrefElement xref={reference.pmid}/></td>
             <td className="sm-table">{reference.short_citation}</td>
-            <td><WorkFlowDropdown accessLevel={accessLevel} curie={reference.curie} accessToken={accessToken}/></td>
+            <td>{trackerFilter === 'default' ? <WorkFlowDropdown accessLevel={accessLevel} curie={reference.curie} accessToken={accessToken}/> : trackerFilter}</td>
             <td className="sm-table no-pad">
               {reference.maincount > 0 ? <div><FontAwesomeIcon icon={faCheck} style={{color: "#28a745"}}/> Main </div> :  <div> <FontAwesomeIcon icon={faTimes}  style={{color: "#dc3545"}}/> &nbsp;Main </div>}
               {reference.supcount > 0 ? <div><FontAwesomeIcon icon={faCheck} style={{color: "#28a745"}}/> Supplemental </div> :  <div> <FontAwesomeIcon icon={faTimes}  style={{color: "#dc3545"}}/> &nbsp;Supplemental </div> }
