@@ -31,11 +31,12 @@ export const RENAME_FACETS = {
     "category.keyword": "alliance category",
     "mods_in_corpus.keyword": "corpus - in corpus",
     "mods_needs_review.keyword": "corpus - needs review",
+    "mods_in_corpus_or_needs_review.keyword": "corpus - in corpus or needs review",
     "authors.name.keyword": "Authors"
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
-    "Alliance Metadata": ["mods in corpus", "mods needs review"],
+    "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["pubmed types", "category", "pubmed publication status", "authors.name"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published"]
 
