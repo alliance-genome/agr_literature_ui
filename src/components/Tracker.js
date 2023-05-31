@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {Link} from 'react-router-dom';
+import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Container from "react-bootstrap/Container";
 import Form from 'react-bootstrap/Form';
@@ -13,6 +14,40 @@ import { faCheck, faTimes, faSortNumericDown, faSortNumericUp } from '@fortaweso
 import {searchXref} from '../actions/searchActions';
 import {searchMissingFiles, addWorkflowTag, setOrder, setTrackerPage, setTrackerFilter} from '../actions/trackerActions';
 import LoadingOverlay from "./LoadingOverlay";
+
+const DownloadButton = (mod) => {
+  const [downloading, setDownloading] = useState(false);
+  const orderBy = useSelector(state => state.tracker.orderBy);
+  const trackerFilter = useSelector(state => state.tracker.trackerFilter);
+
+  const handleDownload = () => {
+    setDownloading(true);
+    let apiUrl = `${process.env.REACT_APP_RESTAPI}/reference/download_tracker_table/${mod.mod}?order_by=${orderBy}&filter=${trackerFilter}`;
+    fetch(apiUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${mod.mod}_missing_files.tsv`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+        // window.URL.revokeObjectURL(url);
+        setDownloading(false);
+      })
+      .catch(error => {
+        console.error('Error downloading file:', error);
+      });
+  };
+
+
+  return (
+    <Button onClick={handleDownload} style={{ marginLeft: '10px', border: '1px solid lightgray' }} disabled={downloading}>
+        {downloading ? 'Downloading...' : 'Download Table'}
+    </Button>
+  )
+}
 
 const WorkFlowDropdown = (workflow) => {
   const dispatch = useDispatch();
@@ -111,7 +146,7 @@ const Tracker = () => {
         <Col>
           <TrackerPagination mod={accessLevel}/>
         </Col>
-        <Col sm={2}></Col>
+        <Col sm={2}><DownloadButton mod={accessLevel}/></Col>
         </Row>
       </Container>
       <LoadingOverlay active={isLoading} />
