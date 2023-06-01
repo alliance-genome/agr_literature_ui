@@ -1,5 +1,5 @@
 
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldEntityEntityList } from '../../actions/biblioActions';
@@ -203,13 +203,15 @@ const EntityCreate = () => {
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
   const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
-  const [topicSelect, setTopicSelect] = useState('');
+  const [topicSelect, setTopicSelect] = useState(null);
+  const topicTypeaheadRef = useRef(null);
   const [topicSelectLoading, setTopicSelectLoading] = useState(false);
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
+  const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
   const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
@@ -226,6 +228,9 @@ const EntityCreate = () => {
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function createEntities(refCurie) {
+    if (topicSelect === null) {
+      return
+    }
     const forApiArray = []
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
@@ -234,7 +239,7 @@ const EntityCreate = () => {
         if (entityResult.curie !== 'no Alliance curie') {
           let updateJson = {};
           updateJson['reference_curie'] = refCurie;
-          updateJson['topic'] = topicSelect.split(' ').slice(-1)[0];
+          updateJson['topic'] = topicSelect;
           // updateJson['entity_type'] = 'ATP:0000005';
           updateJson['entity_type'] = entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
@@ -242,13 +247,13 @@ const EntityCreate = () => {
           updateJson['species'] = taxonSelect;
           // TODO: add entity_published_as field when synonyms are in the A-team system
           updateJson['sources'] = [
-              {
-                'source': 'manual',
-                'mod_abbreviation': accessLevel,
-                'validated': true,
-                'validation_type': 'manual',
-                'note': noteText
-              }];
+            {
+              'source': 'manual',
+              'mod_abbreviation': accessLevel,
+              'validated': true,
+              'validation_type': 'manual',
+              'note': noteText
+            }];
           if (tetqualifierSelect && tetqualifierSelect !== '') {
             updateJson['qualifiers'] = [
               {
@@ -260,8 +265,8 @@ const EntityCreate = () => {
           }
           let subPath = 'topic_entity_tag/';
           let method = 'POST';
-          let array = [ subPath, updateJson, method]
-          forApiArray.push( array );
+          let array = [subPath, updateJson, method]
+          forApiArray.push(array);
         }
       }
     }
@@ -273,7 +278,8 @@ const EntityCreate = () => {
         dispatch(updateButtonBiblioEntityAdd(arrayData))
     }
     setTypeaheadOptions([]);
-    setTopicSelect('');
+    setTopicSelect(null);
+    topicTypeaheadRef.current.clear();
   }
 
   if (accessLevel in modToTaxon) {
@@ -305,7 +311,7 @@ const EntityCreate = () => {
     </Row>
     <Row className="form-group row" >
       <Col sm="2">
-        <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
+        <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics" ref={topicTypeaheadRef}
             onSearch={(query) => {
               setTopicSelectLoading(true);
               axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
@@ -329,12 +335,12 @@ const EntityCreate = () => {
                   })
             .then(res => {
               setTopicSelectLoading(false);
-              let options = res.data.results.map(item => item.name + ' ' + item.curie);
-              setTypeaheadOptions(options);
+              setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
+              setTypeaheadOptions(res.data.results.map(item => item.name));
             });
             }}
             onChange={(selected) => {
-              setTopicSelect(selected[0]);
+              setTopicSelect(typeaheadName2CurieMap[selected[0]]);
             }}
             options={typeaheadOptions}
         />
