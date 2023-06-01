@@ -268,12 +268,14 @@ const FileEditor = () => {
 
   useEffect(() => {
     fetchReferencefiles().finally();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [referenceCurie]);
 
   useEffect(() => {
     if (fileUploadingShowSuccess) {
       fetchReferencefiles().finally();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileUploadingShowSuccess]);
 
   const compareFn = (a, b) => {
