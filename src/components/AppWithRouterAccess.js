@@ -71,7 +71,7 @@ const AppWithRouterAccess = () => {
     const oktaTester = useSelector(state => state.isLogged.oktaTester);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const classTesterString = (devOrStageOrProd === 'prod') ? 'App App-testing-prod' : 'App App-testing-dev';
-    const className = (oktaMod !== testerMod && testerMod != 'No' && oktaTester) ? classTesterString : 'App';
+    const className = (oktaMod !== testerMod && testerMod !== 'No' && oktaTester) ? classTesterString : 'App';
     return (
         <Security
             oktaAuth={oktaAuth}

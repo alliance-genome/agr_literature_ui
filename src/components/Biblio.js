@@ -236,7 +236,6 @@ const BiblioTagging = () => {
 
 export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   const dispatch = useDispatch();
-  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const supplementExpand = useSelector(state => state.biblio.supplementExpand);
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
@@ -262,7 +261,6 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   if (displayOrEditor === 'editor') {
     cssDisplay = 'Col-editor-disabled';
     cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled'; }
-  // const accessLevel = getOktaModAccess(oktaGroups);	// old way to get access before logging on put values in store
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
