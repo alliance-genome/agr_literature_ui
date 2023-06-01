@@ -45,7 +45,6 @@ const EntityEditor = () => {
 //   const qualifierList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 //   const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans' };
 
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
@@ -200,7 +199,6 @@ const EntityCreate = () => {
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
 
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);

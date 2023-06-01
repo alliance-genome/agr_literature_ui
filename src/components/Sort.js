@@ -23,7 +23,6 @@ import { setSortUpdating } from '../actions/sortActions';
 import { sortButtonSetRadiosAll } from '../actions/sortActions';
 import {Spinner} from "react-bootstrap";
 import React, {useEffect, useState} from "react";
-import {searchXref} from "../actions/searchActions";
 import axios from "axios";
 
 // DONE
@@ -71,7 +70,6 @@ const Sort = () => {
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
     const [copyrightLicenseOpenAccess, setCopyrightLicenseOpenAccess] = useState(false);
-    const modsField = useSelector(state => state.sort.modsField);
 
     const getOpenAccess = async (curie) => {
       try {
@@ -124,12 +122,8 @@ const Sort = () => {
         referencefileValue = (<div><b>{referencefileDict['file_class']}:&nbsp;</b><button className='button-to-link' onClick={ () =>
           dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken))
         } >{filename}</button></div>); }
-        const referencefileRow = (
-         <div>
-           {referencefileValue}
-        </div>);
-
-       rowReferencefileElements.push( referencefileRow ); }
+      const referencefileRow = (<div key={`referencefileRow ${index}`}>{referencefileValue}</div>);
+      rowReferencefileElements.push( referencefileRow ); }
       return (
         <>
          {isLoading ?<Spinner animation="border" size="sm"/>: rowReferencefileElements}
