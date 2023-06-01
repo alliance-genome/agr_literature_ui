@@ -311,7 +311,8 @@ const EntityCreate = () => {
     </Row>
     <Row className="form-group row" >
       <Col sm="2">
-        <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics" ref={topicTypeaheadRef}
+        <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
+                        ref={topicTypeaheadRef} id="topicTypeahead"
             onSearch={(query) => {
               setTopicSelectLoading(true);
               axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
