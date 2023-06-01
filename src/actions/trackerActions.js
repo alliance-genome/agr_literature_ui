@@ -5,8 +5,9 @@ const restUrl = process.env.REACT_APP_RESTAPI;
 export const searchMissingFiles = (mod_abbreviation) => {
   return (dispatch,getState) => {
     const state = getState();
+    dispatch(setMissingFileResults(''));
     dispatch(setLoadingState(true));
-    axios.get(restUrl + '/reference/missing_files/'+mod_abbreviation+"?order_by="+state.tracker.orderBy+"&page="+state.tracker.trackerPage)
+    axios.get(restUrl + '/reference/missing_files/'+mod_abbreviation+"?order_by="+state.tracker.orderBy+"&page="+state.tracker.trackerPage+"&filter="+state.tracker.trackerFilter)
         .then(res => {
           dispatch(setMissingFileResults(res.data));
           dispatch(setLoadingState(false));
@@ -58,6 +59,13 @@ export const setLoadingState = (payload) => {
 export const setTrackerPage = (payload) => {
   return {
     type: 'SET_TRACKER_PAGE',
+    payload: payload
+  };
+};
+
+export const setTrackerFilter = (payload) => {
+  return {
+    type: 'SET_TRACKER_FILTER',
     payload: payload
   };
 };
