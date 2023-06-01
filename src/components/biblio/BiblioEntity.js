@@ -273,6 +273,7 @@ const EntityCreate = () => {
         dispatch(updateButtonBiblioEntityAdd(arrayData))
     }
     setTypeaheadOptions([]);
+    setTopicSelect('');
   }
 
   if (accessLevel in modToTaxon) {
