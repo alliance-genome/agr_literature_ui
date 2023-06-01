@@ -29,13 +29,13 @@ const DownloadButton = (mod) => {
         const url = window.URL.createObjectURL(new Blob([blob]));
         const link = document.createElement('a');
 	let filename = `${mod.mod}_file_`;
-	if (trackerFilter == 'default') {
+	if (trackerFilter === 'default') {
 	  filename = filename + "needed.tsv"
 	}
-	else if (trackerFilter == 'ATP:0000134') {
+	else if (trackerFilter === 'ATP:0000134') {
 	  filename = filename	+ "uploaded.tsv"
 	}
-	else if (trackerFilter == 'ATP:0000135') {
+	else if (trackerFilter === 'ATP:0000135') {
           filename = filename + "unobtainable.tsv"
 	}
         link.href = url;
