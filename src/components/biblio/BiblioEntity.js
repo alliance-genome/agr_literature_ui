@@ -270,13 +270,13 @@ const EntityCreate = () => {
         if (entityResult.curie !== 'no Alliance curie') {
           let updateJson = initializeUpdateJson(refCurie);
           // updateJson['entity_type'] = 'ATP:0000005';
-          updateJson['entity_type'] = entityTypeSelect;
+          updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]
           forApiArray.push(array); } } }
     else if (taxonSelect !== '' && taxonSelect !== undefined) {
       let updateJson = initializeUpdateJson(refCurie);
-      updateJson['entity_type'] = entityTypeSelect;
+      updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
       let array = [subPath, updateJson, method]
       forApiArray.push(array); }
 
