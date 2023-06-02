@@ -76,19 +76,25 @@ const Sort = () => {
       const copyrightLicenseOpenAccess =  (reference['copyright_license_open_access'] !==null && reference['copyright_license_open_access'] === 'True') ? true : false;
       let is_ok = false;
       let allowed_mods = [];
-      if ('referencefile_mods' in reference && reference['referencefile_mods'].length > 0) {
-        for (const rfm of reference['referencefile_mods'].values()) {
-          if (rfm['mod_abbreviation'] !== null) {
-            allowed_mods.push(rfm['mod_abbreviation']);
+      if ('main_filename' in reference &&  'referencefiles' in reference && reference['referencefiles'].length > 0) {
+          for (const referencefile of reference['referencefiles'].values()) {
+              if ('referencefile_mods' in referencefile && referencefile['referencefile_mods'].length > 0) {
+                  //console.log('referencefile_mod for ' + referenceCurie);
+                  for (const rfm of referencefile['referencefile_mods'].values()) {
+                      if (rfm['mod_abbreviation'] !== null) {
+                          allowed_mods.push(rfm['mod_abbreviation']);
+                          console.log("referencefile_mod for " + referenceCurie + " " + rfm['mod_abbreviation']);
+                      }
+                      if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) {
+                          is_ok = true;
+                      }
+                  }
+              }
           }
-          if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) {
-            is_ok = true;
-          }
-        }
       }
       let filename = reference["main_filename"];
       if (filename == null) {continue;}
-      console.log("file_name:" + filename);
+      //console.log("file_name:" + filename);
        let referencefileValue = (<div><b>{reference['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
        if (copyrightLicenseOpenAccess   || accessLevel === 'developer') {
          is_ok = true;
