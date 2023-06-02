@@ -11,8 +11,8 @@ const initialState = {
   biblioAction: '',
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
-  entityAdd: { 'entityTypeSelect': 'ATP:0000005' },
-  entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': 'ATP:0000005', 'entitytextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'entityResultList': '' },
+  entityAdd: { 'entityTypeSelect': '' },
+  entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': '', 'entitytextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'entityResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
   workflowModalText: '',
@@ -316,7 +316,7 @@ export default function(state = initialState, action) {
       let entityModalTextUpdateButtonEntityAdd = state.entityModalText;
       let entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAdd);
       const origTaxonSelect = entityAddUpdateButtonEntityAdd.taxonSelect;
-      const origEntityTypeSelect = entityAddUpdateButtonEntityAdd.entityTypeSelect;
+      // const origEntityTypeSelect = entityAddUpdateButtonEntityAdd.entityTypeSelect;	// no longer keep selected entity type when adding
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO_ENTITY_ADD ' + action.payload.responseMessage);
         console.log('state.biblioUpdatingEntityAdd ' + state.biblioUpdatingEntityAdd);
@@ -324,7 +324,7 @@ export default function(state = initialState, action) {
           entityModalTextUpdateButtonEntityAdd = '';
           entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInit);
           entityAddUpdateButtonEntityAdd.taxonSelect = origTaxonSelect;
-          entityAddUpdateButtonEntityAdd.entityTypeSelect = origEntityTypeSelect;
+          // entityAddUpdateButtonEntityAdd.entityTypeSelect = origEntityTypeSelect;
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
       } else {
         entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
