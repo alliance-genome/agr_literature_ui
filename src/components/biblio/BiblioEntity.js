@@ -1,5 +1,5 @@
 
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldEntityEntityList } from '../../actions/biblioActions';
@@ -7,11 +7,7 @@ import { changeFieldEntityAddGeneralField } from '../../actions/biblioActions';
 import { changeFieldEntityAddTaxonSelect } from '../../actions/biblioActions';
 import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../../actions/biblioActions';
-import { updateButtonBiblioEntityEditEntity } from '../../actions/biblioActions';
-import { setBiblioEntityRemoveEntity } from '../../actions/biblioActions';
 import { setEntityModalText } from '../../actions/biblioActions';
-import { changeFieldEntityEditor } from '../../actions/biblioActions';
-import { setFieldEntityEditor } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 
 import LoadingOverlay from "../LoadingOverlay";
@@ -30,6 +26,8 @@ import Pagination from "react-bootstrap/Pagination";
 import { faSortAlphaDown, faSortAlphaUp } from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
+import { AsyncTypeahead } from "react-bootstrap-typeahead";
+
 export const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
 const BiblioEntity = () => {
@@ -47,7 +45,6 @@ const EntityEditor = () => {
 //   const qualifierList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
 //   const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans' };
 
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
@@ -158,32 +155,29 @@ const EntityEditor = () => {
                   qualifierIndex = indexPriority;
                   qualifierValue = tetpDict['qualifier']; } } }
             const entityName = tetDict.entity in entityEntityMappings ? entityEntityMappings[tetDict.entity] : 'unknown';
-            if ( (biblioAction === 'entity') && (tetDict.topic !== 'ATP:0000122') ) { return ""; }
-            // else if ( (biblioAction === 'topic') && (tetDict.topic === 'ATP:0000122') ) { return ""; } // topic no longer a separate section
-            else {
-              return (
-                  <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
-                    <Col className="div-grey-border" sm="1">{tetDict.topic in entityEntityMappings ? entityEntityMappings[tetDict.topic] : tetDict.topic }</Col>
-                    <Col className="div-grey-border" sm="1">{tetDict.entity_type in entityEntityMappings ? entityEntityMappings[tetDict.entity_type] : tetDict.entity_type }</Col>
-                    <Col className="div-grey-border" sm="2">{tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species }</Col>
-                    <Col className="div-grey-border" sm="2">{entityName}</Col>
-                    <Col className="div-grey-border" sm="2">{tetDict.entity}</Col>
+            return (
+                <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
+                  <Col className="div-grey-border" sm="1">{tetDict.topic in entityEntityMappings ? entityEntityMappings[tetDict.topic] : tetDict.topic }</Col>
+                  <Col className="div-grey-border" sm="1">{tetDict.entity_type in entityEntityMappings ? entityEntityMappings[tetDict.entity_type] : tetDict.entity_type }</Col>
+                  <Col className="div-grey-border" sm="2">{tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species }</Col>
+                  <Col className="div-grey-border" sm="2">{entityName}</Col>
+                  <Col className="div-grey-border" sm="2">{tetDict.entity}</Col>
 
-                    <Col sm="1">
-                      {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
-                      <Form.Control as="select" id={`qualifier ${index} ${qualifierIndex} ${qualifierId}`} type="tetqualifierSelect" disabled="disabled" value={qualifierValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
-                        { qualifierList.map((optionValue, index) => (
-                            <option key={`tetqualifierSelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
-                        ))}
-                      </Form.Control>
-                    </Col>
-                    <Col sm="1">
-                      <Form.Control as="select" id={`manualSelect ${index}`} type="manualSelect" disabled="disabled" value="manual" onChange={(e) => {} } >
-                        <option key={`manual ${index}`} value="manual">positive</option>
-                      </Form.Control>
-                    </Col>
-                  </Row> ) }
-          } ) }
+                  <Col sm="1">
+                    {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
+                    <Form.Control as="select" id={`qualifier ${index} ${qualifierIndex} ${qualifierId}`} type="tetqualifierSelect" disabled="disabled" value={qualifierValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
+                      { qualifierList.map((optionValue, index) => (
+                          <option key={`tetqualifierSelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
+                      ))}
+                    </Form.Control>
+                  </Col>
+                  <Col sm="1">
+                    <Form.Control as="select" id={`manualSelect ${index}`} type="manualSelect" disabled="disabled" value="manual" onChange={(e) => {} } >
+                      <option key={`manual ${index}`} value="manual">positive</option>
+                    </Form.Control>
+                  </Col>
+                </Row> ) }
+          ) }
         </Container>
         {totalTagsCount > 0 ?
             <Pagination style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '10vh'}}>
@@ -205,16 +199,19 @@ const EntityCreate = () => {
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
 
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
   const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
+  const [topicSelect, setTopicSelect] = useState(null);
+  const [topicSelectLoading, setTopicSelectLoading] = useState(false);
+  const topicTypeaheadRef = useRef(null);
+  const [typeaheadOptions, setTypeaheadOptions] = useState([]);
+  const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
-  const topicSelect = 'entity type ATP:0000122';
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
   const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
@@ -231,6 +228,9 @@ const EntityCreate = () => {
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function createEntities(refCurie) {
+    if (topicSelect === null) {
+      return
+    }
     const forApiArray = []
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
@@ -239,7 +239,7 @@ const EntityCreate = () => {
         if (entityResult.curie !== 'no Alliance curie') {
           let updateJson = {};
           updateJson['reference_curie'] = refCurie;
-          updateJson['topic'] = biblioAction === 'entity' ? 'ATP:0000122' : 'insert topic here';
+          updateJson['topic'] = topicSelect;
           // updateJson['entity_type'] = 'ATP:0000005';
           updateJson['entity_type'] = entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
@@ -247,13 +247,13 @@ const EntityCreate = () => {
           updateJson['species'] = taxonSelect;
           // TODO: add entity_published_as field when synonyms are in the A-team system
           updateJson['sources'] = [
-              {
-                'source': 'manual',
-                'mod_abbreviation': accessLevel,
-                'validated': true,
-                'validation_type': 'manual',
-                'note': noteText
-              }];
+            {
+              'source': 'manual',
+              'mod_abbreviation': accessLevel,
+              'validated': true,
+              'validation_type': 'manual',
+              'note': noteText
+            }];
           if (tetqualifierSelect && tetqualifierSelect !== '') {
             updateJson['qualifiers'] = [
               {
@@ -265,8 +265,8 @@ const EntityCreate = () => {
           }
           let subPath = 'topic_entity_tag/';
           let method = 'POST';
-          let array = [ subPath, updateJson, method]
-          forApiArray.push( array );
+          let array = [subPath, updateJson, method]
+          forApiArray.push(array);
         }
       }
     }
@@ -277,6 +277,9 @@ const EntityCreate = () => {
       arrayData.unshift(accessToken);
         dispatch(updateButtonBiblioEntityAdd(arrayData))
     }
+    setTypeaheadOptions([]);
+    setTopicSelect(null);
+    topicTypeaheadRef.current.clear();
   }
 
   if (accessLevel in modToTaxon) {
@@ -297,20 +300,51 @@ const EntityCreate = () => {
     <Row className="form-group row" >
       <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col></Row>
     <Row className="form-group row" >
-      <Col className="div-grey-border" sm="1">topic</Col>
+      <Col className="div-grey-border" sm="2">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
       <Col className="div-grey-border" sm="1">species</Col>
       <Col className="div-grey-border" sm="2">entity list (one per line, case insensitive)</Col>
       <Col className="div-grey-border" sm="2">entity validation</Col>
       <Col className="div-grey-border" sm="1">qualifier</Col>
-      <Col className="div-grey-border" sm="3">internal notes</Col>
+      <Col className="div-grey-border" sm="2">internal notes</Col>
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
     <Row className="form-group row" >
-      <Col sm="1">
-        <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => {} } >
-          <option key={`topicSelect ${topicSelect}`} value={topicSelect}>{topicSelect}</option>
-        </Form.Control>
+      <Col sm="2">
+        <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
+                        ref={topicTypeaheadRef} id="topicTypeahead"
+            onSearch={(query) => {
+              setTopicSelectLoading(true);
+              axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
+                  {
+                    "searchFilters": {
+                      "nameFilter": {
+                        "name": {
+                          "queryString": query,
+                          "tokenOperator": "AND"
+                        }
+                      }
+                    },
+                    "sortOrders": [],
+                    "aggregations": [],
+                    "nonNullFieldsTable": []
+                  },
+                  { headers: {
+                      'content-type': 'application/json',
+                      'authorization': 'Bearer ' + accessToken
+                    }
+                  })
+              .then(res => {
+                setTopicSelectLoading(false);
+                setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
+                setTypeaheadOptions(res.data.results.map(item => item.name));
+              });
+            }}
+            onChange={(selected) => {
+              setTopicSelect(typeaheadName2CurieMap[selected[0]]);
+            }}
+            options={typeaheadOptions}
+        />
       </Col>
       <Col sm="1">
         <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
@@ -348,7 +382,7 @@ const EntityCreate = () => {
           ))}
         </Form.Control>
       </Col>
-      <Col className="form-label col-form-label" sm="3">
+      <Col className="form-label col-form-label" sm="2">
         <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
       </Col>
       <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>

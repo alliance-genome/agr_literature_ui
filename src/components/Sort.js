@@ -23,7 +23,6 @@ import { setSortUpdating } from '../actions/sortActions';
 import { sortButtonSetRadiosAll } from '../actions/sortActions';
 import {Spinner} from "react-bootstrap";
 import React, {useEffect, useState} from "react";
-import {searchXref} from "../actions/searchActions";
 import axios from "axios";
 
 // DONE
@@ -64,6 +63,7 @@ const Sort = () => {
 
   //setup referencefile element
   const FileElement = ({referenceCurie}) => {
+
      const oktaMod = useSelector(state => state.isLogged.oktaMod);
      const testerMod = useSelector(state => state.isLogged.testerMod);
      const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
@@ -113,6 +113,7 @@ const Sort = () => {
 
        rowReferencefileElements.push( referencefileRow );
      }
+
       return (
         <>
          {rowReferencefileElements}

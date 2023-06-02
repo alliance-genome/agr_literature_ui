@@ -2,7 +2,8 @@ const initialState = {
   missingFileResults: [],
   isLoading: false,
   orderBy: 'desc',
-  trackerPage: 1
+  trackerPage: 1,
+  trackerFilter: 'default'
 };
 
 // eslint-disable-next-line
@@ -31,6 +32,11 @@ export default function(state = initialState, action) {
       return{
         ...state,
         trackerPage:action.payload
+      }
+    case 'SET_TRACKER_FILTER':
+      return{
+        ...state,
+        trackerFilter:action.payload
       }
 
     default:

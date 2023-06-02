@@ -143,7 +143,6 @@ const FileUpload = ({main_or_supp}) => {
   const dispatch = useDispatch();
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
   const fileUploadingModalText = useSelector(state => state.biblio.fileUploadingModalText);
 
@@ -252,7 +251,6 @@ const FileEditor = () => {
   const fieldName = 'referencefiles';
 
   const dispatch = useDispatch();
-  const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
@@ -270,12 +268,14 @@ const FileEditor = () => {
 
   useEffect(() => {
     fetchReferencefiles().finally();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [referenceCurie]);
 
   useEffect(() => {
     if (fileUploadingShowSuccess) {
       fetchReferencefiles().finally();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileUploadingShowSuccess]);
 
   const compareFn = (a, b) => {

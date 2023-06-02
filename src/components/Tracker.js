@@ -1,8 +1,10 @@
 import React, {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {Link} from 'react-router-dom';
+import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Container from "react-bootstrap/Container";
+import Form from 'react-bootstrap/Form';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Table from 'react-bootstrap/Table';
@@ -10,8 +12,52 @@ import Pagination from 'react-bootstrap/Pagination';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faTimes, faSortNumericDown, faSortNumericUp } from '@fortawesome/free-solid-svg-icons'
 import {searchXref} from '../actions/searchActions';
-import {searchMissingFiles, addWorkflowTag, setOrder, setTrackerPage} from '../actions/trackerActions';
+import {searchMissingFiles, addWorkflowTag, setOrder, setTrackerPage, setTrackerFilter} from '../actions/trackerActions';
 import LoadingOverlay from "./LoadingOverlay";
+
+const DownloadButton = (mod) => {
+  const [downloading, setDownloading] = useState(false);
+  const orderBy = useSelector(state => state.tracker.orderBy);
+  const trackerFilter = useSelector(state => state.tracker.trackerFilter);
+
+  const handleDownload = () => {
+    setDownloading(true);
+    let apiUrl = `${process.env.REACT_APP_RESTAPI}/reference/download_tracker_table/${mod.mod}?order_by=${orderBy}&filter=${trackerFilter}`;
+    fetch(apiUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+	let filename = `${mod.mod}_file_`;
+	if (trackerFilter === 'default') {
+	  filename = filename + "needed.tsv"
+	}
+	else if (trackerFilter === 'ATP:0000134') {
+	  filename = filename	+ "uploaded.tsv"
+	}
+	else if (trackerFilter === 'ATP:0000135') {
+          filename = filename + "unobtainable.tsv"
+	}
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+        // window.URL.revokeObjectURL(url);
+        setDownloading(false);
+      })
+      .catch(error => {
+        console.error('Error downloading file:', error);
+      });
+  };
+
+
+  return (
+    <Button onClick={handleDownload} style={{ marginLeft: '10px', border: '1px solid lightgray' }} disabled={downloading}>
+        {downloading ? 'Downloading...' : 'Download Table'}
+    </Button>
+  )
+}
 
 const WorkFlowDropdown = (workflow) => {
   const dispatch = useDispatch();
@@ -78,6 +124,7 @@ const Tracker = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const orderBy = useSelector(state => state.tracker.orderBy);
   const isLoading = useSelector(state => state.tracker.isLoading);
+  const trackerFilter = useSelector(state => state.tracker.trackerFilter);
 
   useEffect(() => {
     if (accessLevel === 'No'){
@@ -95,9 +142,21 @@ const Tracker = () => {
     <br/>
     <Container fluid>
         <Row>
-          <Col>
-            <TrackerPagination mod={accessLevel}/>
-          </Col>
+        <Col sm={2}>
+          <Form.Control as="select" id="filterByTags" name="filterByTags" value={trackerFilter}
+                     onChange={(e) => {
+                       dispatch(setTrackerFilter(e.target.value));
+                       dispatch(searchMissingFiles(accessLevel));
+                     }}>
+           <option value="default">Files Needed</option>
+           <option value="ATP:0000134">Files Uploaded</option>
+           <option value="ATP:0000135">File Unavailable</option>
+          </Form.Control>
+        </Col>
+        <Col>
+          <TrackerPagination mod={accessLevel}/>
+        </Col>
+        <Col sm={2}><DownloadButton mod={accessLevel}/></Col>
         </Row>
       </Container>
       <LoadingOverlay active={isLoading} />
@@ -121,7 +180,6 @@ const Tracker = () => {
                   dispatch(setOrder('desc'));
                 }
                 dispatch(setTrackerPage(1));
-                dispatch(searchMissingFiles(accessLevel));
               }}/>
             </th>
           </tr>
@@ -133,7 +191,7 @@ const Tracker = () => {
             <td><XrefElement xref={reference.mod_curie}/></td>
             <td><XrefElement xref={reference.pmid}/></td>
             <td className="sm-table">{reference.short_citation}</td>
-            <td><WorkFlowDropdown accessLevel={accessLevel} curie={reference.curie} accessToken={accessToken}/></td>
+            <td>{trackerFilter === 'default' ? <WorkFlowDropdown accessLevel={accessLevel} curie={reference.curie} accessToken={accessToken}/> : trackerFilter}</td>
             <td className="sm-table no-pad">
               {reference.maincount > 0 ? <div><FontAwesomeIcon icon={faCheck} style={{color: "#28a745"}}/> Main </div> :  <div> <FontAwesomeIcon icon={faTimes}  style={{color: "#dc3545"}}/> &nbsp;Main </div>}
               {reference.supcount > 0 ? <div><FontAwesomeIcon icon={faCheck} style={{color: "#28a745"}}/> Supplemental </div> :  <div> <FontAwesomeIcon icon={faTimes}  style={{color: "#dc3545"}}/> &nbsp;Supplemental </div> }
