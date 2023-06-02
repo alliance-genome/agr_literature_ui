@@ -64,7 +64,6 @@ const Sort = () => {
 
   //setup referencefile element
   const FileElement = ({referenceCurie}) => {
-     console.log("curie:" + referenceCurie);
      const oktaMod = useSelector(state => state.isLogged.oktaMod);
      const testerMod = useSelector(state => state.isLogged.testerMod);
      const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
@@ -74,10 +73,7 @@ const Sort = () => {
       let accessLevel = oktaMod;
       if (testerMod !== 'No') { accessLevel = testerMod; }
       else if (oktaDeveloper) { accessLevel = 'developer'; }
-      console.log("copyright_open_access:" + reference["copyright_license_open_access"])
       const copyrightLicenseOpenAccess =  (reference['copyright_license_open_access'] !==null && reference['copyright_license_open_access'] === 'True') ? true : false;
-      console.log("curie:" + referenceCurie + " copyright_open_access:" + copyrightLicenseOpenAccess)
-      console.log("accessLevel:" + accessLevel)
       let is_ok = false;
       let allowed_mods = [];
       if ('referencefile_mods' in reference && reference['referencefile_mods'].length > 0) {
