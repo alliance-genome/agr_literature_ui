@@ -204,14 +204,14 @@ const EntityCreate = () => {
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
   const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
   const [topicSelect, setTopicSelect] = useState(null);
-  const topicTypeaheadRef = useRef(null);
   const [topicSelectLoading, setTopicSelectLoading] = useState(false);
+  const topicTypeaheadRef = useRef(null);
+  const [typeaheadOptions, setTypeaheadOptions] = useState([]);
+  const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
-  const [typeaheadOptions, setTypeaheadOptions] = useState([]);
-  const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
   const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
@@ -334,11 +334,11 @@ const EntityCreate = () => {
                       'authorization': 'Bearer ' + accessToken
                     }
                   })
-            .then(res => {
-              setTopicSelectLoading(false);
-              setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
-              setTypeaheadOptions(res.data.results.map(item => item.name));
-            });
+              .then(res => {
+                setTopicSelectLoading(false);
+                setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
+                setTypeaheadOptions(res.data.results.map(item => item.name));
+              });
             }}
             onChange={(selected) => {
               setTopicSelect(typeaheadName2CurieMap[selected[0]]);
