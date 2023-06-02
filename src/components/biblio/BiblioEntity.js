@@ -233,7 +233,6 @@ const EntityCreate = () => {
     let updateJson = {};
     updateJson['reference_curie'] = refCurie;
     updateJson['topic'] = topicSelect;
-    updateJson['entity_source'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
     updateJson['species'] = taxonSelect;
     // TODO: add entity_published_as field when synonyms are in the A-team system
     updateJson['sources'] = [
@@ -270,6 +269,7 @@ const EntityCreate = () => {
         if (entityResult.curie !== 'no Alliance curie') {
           let updateJson = initializeUpdateJson(refCurie);
           // updateJson['entity_type'] = 'ATP:0000005';
+          updateJson['entity_source'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]
