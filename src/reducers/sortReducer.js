@@ -82,6 +82,16 @@ export default function(state = initialState, action) {
               reference['existing_reference_workflow_tag_id_expt_meeting'] = workflowTag.reference_workflow_tag_id;
               reference['workflow'] = 'meeting'; }
         } }
+        //retrieve the main file
+        if ('referencefiles' in reference && reference['referencefiles'].length > 0) {
+          for (const referencefile of reference['referencefiles'].values()) {
+            // initialize radio button workflow values if workflow ATP has those
+            if (referencefile.file_class === 'main') {
+              reference['main_filename'] = referencefile.display_name + '.' + referencefile.file_extension;
+              reference['file_class'] = referencefile.file_class;
+              reference['referencefile_id'] = referencefile.referencefile_id;
+            }
+        } }
         if ('category' in reference && reference['category'] === 'review_article') { reference['workflow'] = 'not_experimental'; }
 
       }
