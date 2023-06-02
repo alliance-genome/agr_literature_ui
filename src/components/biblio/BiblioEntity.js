@@ -276,6 +276,7 @@ const EntityCreate = () => {
           forApiArray.push(array); } } }
     else if (taxonSelect !== '' && taxonSelect !== undefined) {
       let updateJson = initializeUpdateJson(refCurie);
+      // curators can pick an entity_type without adding an entity list, so send that to API so they can get an error message
       updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
       let array = [subPath, updateJson, method]
       forApiArray.push(array); }
