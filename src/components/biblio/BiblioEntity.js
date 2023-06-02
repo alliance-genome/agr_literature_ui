@@ -28,7 +28,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 
-export const curieToNameEntityType = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
+export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
 const BiblioEntity = () => {
   return (<><EntityCreate key="entityCreate" />
@@ -154,7 +154,9 @@ const EntityEditor = () => {
                   qualifierId = tetpDict['topic_entity_tag_prop_id'];
                   qualifierIndex = indexPriority;
                   qualifierValue = tetpDict['qualifier']; } } }
-            const entityName = tetDict.entity in entityEntityMappings ? entityEntityMappings[tetDict.entity] : 'unknown';
+            let entityName = '';
+            if (tetDict.entity !== null) {
+              entityName = tetDict.entity in entityEntityMappings ? entityEntityMappings[tetDict.entity] : 'unknown'; }
             return (
                 <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
                   <Col className="div-grey-border" sm="1">{tetDict.topic in entityEntityMappings ? entityEntityMappings[tetDict.topic] : tetDict.topic }</Col>
@@ -215,10 +217,10 @@ const EntityCreate = () => {
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
   const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
-  const entityTypeList = ['ATP:0000005', 'ATP:0000006'];
+  const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
 
   useEffect( () => {
-    if (!(taxonSelect === '' || taxonSelect === undefined)) {
+    if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
       dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
   }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -227,49 +229,57 @@ const EntityCreate = () => {
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  function initializeUpdateJson(refCurie) {
+    let updateJson = {};
+    updateJson['reference_curie'] = refCurie;
+    updateJson['topic'] = topicSelect;
+    updateJson['species'] = taxonSelect;
+    // TODO: add entity_published_as field when synonyms are in the A-team system
+    updateJson['sources'] = [
+      {
+        'source': 'manual',
+        'mod_abbreviation': accessLevel,
+        'validated': true,
+        'validation_type': 'manual',
+        'note': noteText
+      }];
+    if (tetqualifierSelect && tetqualifierSelect !== '') {
+      updateJson['qualifiers'] = [
+        {
+          'qualifier': tetqualifierSelect,
+          'qualifier_type': 'curation',
+          'mod_abbreviation': accessLevel
+        }
+      ];
+    }
+    return updateJson;
+  }
+
   function createEntities(refCurie) {
     if (topicSelect === null) {
       return
     }
     const forApiArray = []
+    const subPath = 'topic_entity_tag/';
+    const method = 'POST';
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
         console.log(entityResult.curie);
         if (entityResult.curie !== 'no Alliance curie') {
-          let updateJson = {};
-          updateJson['reference_curie'] = refCurie;
-          updateJson['topic'] = topicSelect;
+          let updateJson = initializeUpdateJson(refCurie);
           // updateJson['entity_type'] = 'ATP:0000005';
-          updateJson['entity_type'] = entityTypeSelect;
-          updateJson['entity'] = entityResult.curie;
           updateJson['entity_source'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
-          updateJson['species'] = taxonSelect;
-          // TODO: add entity_published_as field when synonyms are in the A-team system
-          updateJson['sources'] = [
-            {
-              'source': 'manual',
-              'mod_abbreviation': accessLevel,
-              'validated': true,
-              'validation_type': 'manual',
-              'note': noteText
-            }];
-          if (tetqualifierSelect && tetqualifierSelect !== '') {
-            updateJson['qualifiers'] = [
-              {
-                'qualifier': tetqualifierSelect,
-                'qualifier_type': 'curation',
-                'mod_abbreviation': accessLevel
-              }
-            ];
-          }
-          let subPath = 'topic_entity_tag/';
-          let method = 'POST';
+          updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
+          updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]
-          forApiArray.push(array);
-        }
-      }
-    }
+          forApiArray.push(array); } } }
+    else if (taxonSelect !== '' && taxonSelect !== undefined) {
+      let updateJson = initializeUpdateJson(refCurie);
+      // curators can pick an entity_type without adding an entity list, so send that to API so they can get an error message
+      updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
+      let array = [subPath, updateJson, method]
+      forApiArray.push(array); }
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
