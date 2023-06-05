@@ -67,7 +67,8 @@ const Sort = () => {
      const oktaMod = useSelector(state => state.isLogged.oktaMod);
      const testerMod = useSelector(state => state.isLogged.testerMod);
      const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-     const rowReferencefileElements = []
+     const rowReferencefileElements = [];
+
      for (const[index, reference] of referencesToSortLive.entries()) {
       if (referenceCurie  !== reference['curie']) {continue; }
       let accessLevel = oktaMod;
@@ -76,8 +77,19 @@ const Sort = () => {
       const copyrightLicenseOpenAccess =  (reference['copyright_license_open_access'] !==null && reference['copyright_license_open_access'] === 'True') ? true : false;
       let is_ok = false;
       let allowed_mods = [];
-      if ('main_filename' in reference &&  'referencefiles' in reference && reference['referencefiles'].length > 0) {
+
+      if ( 'referencefiles' in reference && reference['referencefiles'].length > 0) {
           for (const referencefile of reference['referencefiles'].values()) {
+              let filename=null;
+              let fileclass=null;
+              let referencefile_id=null;
+              if (referencefile.file_class === 'main') {
+                  filename = referencefile.display_name + '.' + referencefile.file_extension;
+                  fileclass = referencefile.file_class;
+                  referencefile_id = referencefile.referencefile_id;
+              } else {
+                  continue;
+              }
               if ('referencefile_mods' in referencefile && referencefile['referencefile_mods'].length > 0) {
                   //console.log('referencefile_mod for ' + referenceCurie);
                   for (const rfm of referencefile['referencefile_mods'].values()) {
@@ -90,28 +102,31 @@ const Sort = () => {
                       }
                   }
               }
-          }
-      }
-      let filename = reference["main_filename"];
-      if (filename == null) {continue;}
-      //console.log("file_name:" + filename);
-       let referencefileValue = (<div><b>{reference['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-       if (copyrightLicenseOpenAccess   || accessLevel === 'developer') {
-         is_ok = true;
-       } else if (accessLevel === 'No') {
-         is_ok = false;
-         referencefileValue = (<div><b>{reference['file_class']}:&nbsp;</b>{filename}</div>);
-       }
-       if (is_ok) {
-        referencefileValue = (<div><b>{reference['file_class']}:&nbsp;</b><button className='button-to-link' onClick={ () =>
-          dispatch(downloadReferencefile(reference['referencefile_id'], filename, accessToken))
-        } >{filename}</button></div>); }
-        const referencefileRow = (
-         <div>
-           {referencefileValue}
-        </div>);
 
-       rowReferencefileElements.push( referencefileRow );
+              console.log("file_name:" + filename);
+              let referencefileValue = (
+                  <div><b>{reference['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
+              if (copyrightLicenseOpenAccess || accessLevel === 'developer') {
+                  is_ok = true;
+              } else if (accessLevel === 'No') {
+                  is_ok = false;
+                  referencefileValue = (<div><b>{fileclass}:&nbsp;</b>{filename}</div>);
+              }
+              if (is_ok) {
+                  referencefileValue = (<div><b>{fileclass}:&nbsp;</b>
+                      <button className='button-to-link' onClick={() =>
+                          dispatch(downloadReferencefile(referencefile_id, filename, accessToken))
+                      }>{filename}</button>
+                  </div>);
+              }
+              const referencefileRow = (
+                  <div>
+                      {referencefileValue}
+                  </div>);
+              rowReferencefileElements.push( referencefileRow );
+          }
+       }
+
      }
 
       return (
