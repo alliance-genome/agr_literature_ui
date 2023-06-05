@@ -82,6 +82,7 @@ export default function(state = initialState, action) {
               reference['existing_reference_workflow_tag_id_expt_meeting'] = workflowTag.reference_workflow_tag_id;
               reference['workflow'] = 'meeting'; }
         } }
+
         if ('category' in reference && reference['category'] === 'review_article') { reference['workflow'] = 'not_experimental'; }
 
       }
