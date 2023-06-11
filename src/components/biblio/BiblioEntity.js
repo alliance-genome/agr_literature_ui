@@ -262,22 +262,24 @@ const EntityCreate = () => {
       return
     }
 
-    // the following topic require an entity for SGD triaging:
-    // protein containing complex = ATP:0000128
-    // gene ontology = ATP:0000012
-    // Classical phenotype information (internal tag) = ATP:0000079
-    // Headline information (internal tag) = ATP:0000129
-    // const isSGDtopic = topicSelect === 'ATP:0000128' || topicSelect === 'ATP:0000012' || topicSelect === 'ATP:0000079' || topicSelect === 'ATP:0000129';
-    const isSGDtopic = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'].includes(topicSelect);  
-    const isEntityEmpty = !entityText || entityText.trim() === '';
-    if (isSGDtopic && isEntityEmpty) {
-      setWarningMessage(true);
-      setTimeout(() => {
-        setWarningMessage(null);
-      }, 2000);
-      return;
+    if (accessLevel === 'SGD') {
+      // the following topic require an entity for SGD triaging:
+      // protein containing complex = ATP:0000128
+      // gene ontology = ATP:0000012
+      // Classical phenotype information (internal tag) = ATP:0000079
+      // Headline information (internal tag) = ATP:0000129
+      // const isSGDtopic = topicSelect === 'ATP:0000128' || topicSelect === 'ATP:0000012' || topicSelect === 'ATP:0000079' || topicSelect === 'ATP:0000129';
+      const isSGDtopic = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'].includes(topicSelect);  
+      const isEntityEmpty = !entityText || entityText.trim() === '';
+      if (isSGDtopic && isEntityEmpty) {
+        setWarningMessage(true);
+        setTimeout(() => {
+          setWarningMessage(null);
+        }, 2000);
+        return;
+      }
     }
-    
+
     const forApiArray = []
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
