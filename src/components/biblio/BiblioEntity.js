@@ -210,6 +210,8 @@ const EntityCreate = () => {
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
+  const [showWarning, setWarningMessage] = useState(null);
+    
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
@@ -259,6 +261,17 @@ const EntityCreate = () => {
     if (topicSelect === null) {
       return
     }
+
+    const isSGDtopic = topicSelect === 'ATP:0000128' || topicSelect === 'ATP:0000012' || topicSelect === 'ATP:0000079' || topicSelect === 'ATP:0000129';
+    const isEntityEmpty = !entityText || entityText.trim() === '';
+    if (isSGDtopic && isEntityEmpty) {
+      setWarningMessage(true);
+      setTimeout(() => {
+      setWarningMessage(null);
+      }, 2000);
+      return;
+    }
+    
     const forApiArray = []
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
@@ -309,6 +322,15 @@ const EntityCreate = () => {
     <RowDivider />
     <Row className="form-group row" >
       <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col></Row>
+    {showWarning && (
+      <Row className="form-group row">
+        <Col sm="12">
+          <div className="alert alert-warning" role="alert">
+            You need to add a gene or other entity.
+          </div>
+	</Col>
+      </Row>
+    )}	  
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="2">topic</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
