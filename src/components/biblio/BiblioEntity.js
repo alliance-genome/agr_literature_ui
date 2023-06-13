@@ -35,8 +35,9 @@ const BiblioEntity = () => {
             <EntityEditor key="entityEditor" /></>); }
 
 //   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
-  const curieToNameAtp = { 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
-  const qualifierList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
+  const curieToNameAtp = { 'ATP:0000147': 'primary display', 'ATP:0000131': 'other primary display', 'ATP:0000132': 'additional display', 'ATP:0000130': 'review display', 'ATP:0000148': 'OMICs display', '': '' };
+  // const qualifierList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
+  const qualifierList = [ '', 'ATP:0000147', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000148' ];
   const curieToNameTaxon = { 'NCBITaxon:559292': 'Saccharomyces cerevisiae', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
 
 const EntityEditor = () => {
@@ -210,7 +211,7 @@ const EntityCreate = () => {
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
-  const [showWarning, setWarningMessage] = useState(null);
+  const [warningMessage, setWarningMessage] = useState('');
     
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
@@ -256,28 +257,38 @@ const EntityCreate = () => {
     }
     return updateJson;
   }
-
+    
   function createEntities(refCurie) {
     if (topicSelect === null) {
       return
     }
 
     if (accessLevel === 'SGD') {
-      // the following topic require an entity for SGD triaging:
-      // protein containing complex = ATP:0000128
-      // gene ontology = ATP:0000012
-      // Classical phenotype information (internal tag) = ATP:0000079
-      // Headline information (internal tag) = ATP:0000129
-      // const isSGDtopic = topicSelect === 'ATP:0000128' || topicSelect === 'ATP:0000012' || topicSelect === 'ATP:0000079' || topicSelect === 'ATP:0000129';
-      const isSGDtopic = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'].includes(topicSelect);  
+      // following primary topics require an entity 
+      // and must be assigned to a 'primary display' qualifier:
+      // * protein containing complex (ATP:0000128)
+      // * gene ontology (ATP:0000012)
+      // * Classical phenotype information (internal tag) (ATP:0000079)
+      // * Headline information (internal tag) (ATP:0000129)
+      const isPrimaryTopic = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'].includes(topicSelect);
       const isEntityEmpty = !entityText || entityText.trim() === '';
-      if (isSGDtopic && isEntityEmpty) {
-        setWarningMessage(true);
+      let isEntityInvalid = false;	
+      if ( entityResultList && entityResultList.length > 0 ) {
+        for (let entityResult of entityResultList.values()) {
+          if (entityResult.curie === 'no Alliance curie') {
+	    isEntityInvalid = true;
+	  }
+        }
+      }
+
+      if (isPrimaryTopic && (isEntityEmpty || isEntityInvalid)) {
+        setWarningMessage("You need to add a valid gene or other entity.")
         setTimeout(() => {
-          setWarningMessage(null);
-        }, 2000);
+          setWarningMessage('');
+        }, 5000);
         return;
       }
+
     }
 
     const forApiArray = []
@@ -330,11 +341,11 @@ const EntityCreate = () => {
     <RowDivider />
     <Row className="form-group row" >
       <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col></Row>
-    {showWarning && (
+    {warningMessage && (
       <Row className="form-group row">
         <Col sm="12">
           <div className="alert alert-warning" role="alert">
-            You need to add a gene or other entity.
+            {warningMessage}
           </div>
 	</Col>
       </Row>
