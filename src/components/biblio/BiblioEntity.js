@@ -257,6 +257,43 @@ const EntityCreate = () => {
     }
     return updateJson;
   }
+
+  function checkTopicEntityQualifierForSGD() {
+      
+    // following primary topics require an entity
+    // and must be assigned to a 'primary display' qualifier:
+    // * protein containing complex (ATP:0000128)
+    // * gene ontology (ATP:0000012)
+    // * Classical phenotype information (internal tag) (ATP:0000079)
+    // * Headline information (internal tag) (ATP:0000129)         
+    const primaryTopics = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'];
+
+    const isPrimaryTopic = primaryTopics.includes(topicSelect);
+    const isEntityEmpty = !entityText || entityText.trim() === '';
+
+    let isEntityInvalid = false;
+    if ( entityResultList && entityResultList.length > 0 ) {
+      for (let entityResult of entityResultList.values()) {
+        if (entityResult.curie === 'no Alliance curie') {
+          isEntityInvalid = true;
+	  break;
+        }
+      }
+    }
+    
+    const isNotPrimaryQualifier = tetqualifierSelect !== 'ATP:0000147';
+
+    if (isPrimaryTopic) {
+      if (isEntityEmpty || isEntityInvalid) {
+        return "You need to add a valid gene or other entity.";
+      }
+      else if (isNotPrimaryQualifier) {
+        return "You need to pick 'primary display' qualifier for a primary topic.";
+      }
+    }
+    return false
+      
+  }
     
   function createEntities(refCurie) {
     if (topicSelect === null) {
@@ -264,31 +301,14 @@ const EntityCreate = () => {
     }
 
     if (accessLevel === 'SGD') {
-      // following primary topics require an entity 
-      // and must be assigned to a 'primary display' qualifier:
-      // * protein containing complex (ATP:0000128)
-      // * gene ontology (ATP:0000012)
-      // * Classical phenotype information (internal tag) (ATP:0000079)
-      // * Headline information (internal tag) (ATP:0000129)
-      const isPrimaryTopic = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'].includes(topicSelect);
-      const isEntityEmpty = !entityText || entityText.trim() === '';
-      let isEntityInvalid = false;	
-      if ( entityResultList && entityResultList.length > 0 ) {
-        for (let entityResult of entityResultList.values()) {
-          if (entityResult.curie === 'no Alliance curie') {
-	    isEntityInvalid = true;
-	  }
-        }
-      }
-
-      if (isPrimaryTopic && (isEntityEmpty || isEntityInvalid)) {
-        setWarningMessage("You need to add a valid gene or other entity.")
+      const warningMessage = checkTopicEntityQualifierForSGD();
+      if (warningMessage) {
+        setWarningMessage(warningMessage)
         setTimeout(() => {
           setWarningMessage('');
         }, 5000);
         return;
       }
-
     }
 
     const forApiArray = []
