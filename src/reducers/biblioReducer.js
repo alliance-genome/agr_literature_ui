@@ -491,6 +491,29 @@ export default function(state = initialState, action) {
       }
 //       return state.updateIn(['biblio', 'referenceJsonLive'], x => x.set(action.field, action.payload));	// this might work with Immutable.js
 
+    case 'DELETE_FIELD_MOD_REFERENCE_REFERENCE_JSON':
+      console.log(action.payload);
+      let fieldIdModReferenceDelete = action.payload.field.replace(/^delete /, '');
+      let modReferenceArrayDelete = fieldIdModReferenceDelete.split(" ");
+      let fieldModReferenceDelete = modReferenceArrayDelete[0];
+      let indexModReferenceDelete = modReferenceArrayDelete[1];
+
+      let deleteModReferenceChange = state.referenceJsonLive[fieldModReferenceDelete];
+      deleteModReferenceChange[indexModReferenceDelete]['needsChange'] = true;
+      deleteModReferenceChange[indexModReferenceDelete]['deleteMe'] = true;
+
+      let hasChangeModReferenceFieldDelete = state.referenceJsonHasChange
+      hasChangeModReferenceFieldDelete[fieldIdModReferenceDelete] = 'diff'
+
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          referenceJsonHasChange: hasChangeModReferenceFieldDelete,
+          [fieldModReferenceDelete]: deleteModReferenceChange
+        }
+      }
+
     case 'CHANGE_FIELD_MOD_REFERENCE_REFERENCE_JSON':
       console.log(action.payload);
       let modReferenceArray = action.payload.field.split(" ");
@@ -618,6 +641,29 @@ export default function(state = initialState, action) {
         }
       }
 
+    case 'DELETE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON':
+      console.log(action.payload);
+      let fieldIdModAssociationDelete = action.payload.field.replace(/^delete /, '');
+      let modAssociationArrayDelete = fieldIdModAssociationDelete.split(" ");
+      let fieldModAssociationDelete = modAssociationArrayDelete[0];
+      let indexModAssociationDelete = modAssociationArrayDelete[1];
+
+      let deleteModAssociationChange = state.referenceJsonLive[fieldModAssociationDelete];
+      deleteModAssociationChange[indexModAssociationDelete]['needsChange'] = true;
+      deleteModAssociationChange[indexModAssociationDelete]['deleteMe'] = true;
+
+      let hasChangeModAssociationFieldDelete = state.referenceJsonHasChange
+      hasChangeModAssociationFieldDelete[fieldIdModAssociationDelete] = 'diff'
+
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          referenceJsonHasChange: hasChangeModAssociationFieldDelete,
+          [fieldModAssociationDelete]: deleteModAssociationChange
+        }
+      }
+
     case 'CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON':
       console.log(action.payload);
       let modAssociationArray = action.payload.field.split(" ");
@@ -646,6 +692,29 @@ export default function(state = initialState, action) {
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldModAssociation]: newModAssociationChange
+        }
+      }
+
+    case 'DELETE_FIELD_CROSS_REFERENCES_REFERENCE_JSON':
+      console.log(action.payload);
+      let fieldIdCrossReferencesDelete = action.payload.field.replace(/^delete /, '');
+      let crossReferencesArrayDelete = fieldIdCrossReferencesDelete.split(" ");
+      let fieldCrossReferencesDelete = crossReferencesArrayDelete[0];
+      let indexCrossReferencesDelete = crossReferencesArrayDelete[1];
+
+      let deleteCrossReferencesChange = state.referenceJsonLive[fieldCrossReferencesDelete];
+      deleteCrossReferencesChange[indexCrossReferencesDelete]['needsChange'] = true;
+      deleteCrossReferencesChange[indexCrossReferencesDelete]['deleteMe'] = true;
+
+      let hasChangeCrossReferencesFieldDelete = state.referenceJsonHasChange
+      hasChangeCrossReferencesFieldDelete[fieldIdCrossReferencesDelete] = 'diff'
+
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          referenceJsonHasChange: hasChangeCrossReferencesFieldDelete,
+          [fieldCrossReferencesDelete]: deleteCrossReferencesChange
         }
       }
 
