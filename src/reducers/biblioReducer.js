@@ -491,6 +491,29 @@ export default function(state = initialState, action) {
       }
 //       return state.updateIn(['biblio', 'referenceJsonLive'], x => x.set(action.field, action.payload));	// this might work with Immutable.js
 
+    case 'DELETE_FIELD_MOD_REFERENCE_REFERENCE_JSON':
+      console.log(action.payload);
+      let fieldIdModReferenceDelete = action.payload.field.replace(/^delete /, '');
+      let modReferenceArrayDelete = fieldIdModReferenceDelete.split(" ");
+      let fieldModReferenceDelete = modReferenceArrayDelete[0];
+      let indexModReferenceDelete = modReferenceArrayDelete[1];
+
+      let deleteModReferenceChange = state.referenceJsonLive[fieldModReferenceDelete];
+      deleteModReferenceChange[indexModReferenceDelete]['needsChange'] = true;
+      deleteModReferenceChange[indexModReferenceDelete]['deleteMe'] = true;
+
+      let hasChangeModReferenceFieldDelete = state.referenceJsonHasChange
+      hasChangeModReferenceFieldDelete[fieldIdModReferenceDelete] = 'diff'
+
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          referenceJsonHasChange: hasChangeModReferenceFieldDelete,
+          [fieldModReferenceDelete]: deleteModReferenceChange
+        }
+      }
+
     case 'CHANGE_FIELD_MOD_REFERENCE_REFERENCE_JSON':
       console.log(action.payload);
       let modReferenceArray = action.payload.field.split(" ");
