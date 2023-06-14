@@ -9,6 +9,7 @@ import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../../actions/biblioActions';
 import { setEntityModalText } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
+import { fetchQualifierData } from '../../actions/biblioActions';
 
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
@@ -49,6 +50,8 @@ const curieToNameTaxon = {
     '': ''
 };
 
+// TODO: fix this to get qualifier list from A-Team API
+// https://beta-curation.alliancegenome.org/api/atpterm/ATP:0000136/descendants
 const testQualifierData = [
   {
     "obsolete": false,
@@ -79,13 +82,6 @@ const testQualifierData = [
   }
 ];
 
-const qualifierList = testQualifierData.map(option => option.name).sort();
-qualifierList.unshift("");
-const curieToNameAtp = testQualifierData.reduce((dict, option) => {
-  dict[option.curie] = option.name;
-  return dict;
-}, {});
-
 const EntityEditor = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -101,7 +97,16 @@ const EntityEditor = () => {
   //const [limit, setLimit] = useState(10);
   const pageSize = 10; // fixed limit value for now
   const [isLoading, setIsLoading] = useState(false);
-
+  const [qualifierData, setQualifierData] = useState([]);
+ 
+  useEffect(() => {
+     fetchQualifierData(accessToken).then((data) => setQualifierData(data));
+  }, [])
+  
+  const qualifierList = qualifierData.map(option => option.name);
+  // console.table("qualifierData=", qualifierData);
+  // console.table("qualifierList=", qualifierList);
+    
   useEffect(() => {
     const fetchMappings = async () => {
       let config = {
@@ -211,9 +216,14 @@ const EntityEditor = () => {
                   <Col sm="1">
                     {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
                     <Form.Control as="select" id={`qualifier ${index} ${qualifierIndex} ${qualifierId}`} type="tetqualifierSelect" disabled="disabled" value={qualifierValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
-                      { qualifierList.map((optionValue, index) => (
-                          <option key={`tetqualifierSelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
-                      ))}
+		      <option value=""> </option> {/* Empty option */}
+                      {qualifierData
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((option, index) => (
+                          <option key={`tetqualifierSelect-${index}`} value={option.curie}>
+                            {option.name}
+                          </option>
+			))}
                     </Form.Control>
                   </Col>
                   <Col sm="1">
@@ -243,7 +253,8 @@ const EntityCreate = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-
+  const [qualifierData, setQualifierData] = useState([]);
+      
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
@@ -254,17 +265,28 @@ const EntityCreate = () => {
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   const [warningMessage, setWarningMessage] = useState('');
-  const [qualifierData, setQualifierData] = useState({});
-
+  
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
-  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
-  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'],
+		       'FB': ['NCBITaxon:7227'],
+		       'WB': ['NCBITaxon:6239'],
+		       'RGD': ['NCBITaxon:10116'],
+		       'MGI': ['NCBITaxon:10090'],
+		       'SGD': ['NCBITaxon:559292'],
+		       'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
+  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
+			      'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
+			      'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
-    
+
+  useEffect(() => {
+     fetchQualifierData(accessToken).then((data) => setQualifierData(data));
+  }, [])
+
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
       dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
@@ -301,24 +323,6 @@ const EntityCreate = () => {
     return updateJson;
   }
 
-  const fetchQualifierData = async () => {
-    try {
-      const result = await axios.get(process.env.REACT_APP_ATEAM_API_BASE_URL + "api/atpterm/ATP:0000136/descendants", {
-        headers: {
-	  'Authorization': 'Bearer ' + accessToken,
-          'mode': 'cors',
-          'Content-Type': 'application/json'
-        }
-      });
-      setQualifierData(result.data['entities']);
-    } catch (error) {
-      console.log("Getting qualifier data ERROR:" + error.message);
-    }
-  }
-
-  useEffect(() => {
-    fetchQualifierData().finally();
-  }, []);
     
   function checkTopicEntityQualifierForSGD() {
       
@@ -345,6 +349,8 @@ const EntityCreate = () => {
     
     const isNotPrimaryQualifier = tetqualifierSelect !== 'ATP:0000147';
 
+    console.log("primary qualifier=", qualifierData[2].name);
+      
     if (isPrimaryTopic) {
       if (isEntityEmpty || isEntityInvalid) {
         return "You need to add a valid gene or other entity.";
@@ -361,8 +367,6 @@ const EntityCreate = () => {
     if (topicSelect === null) {
       return
     }
-
-    setQualifierData(testQualifierData)
       
     if (accessLevel === 'SGD') {
       const warningMessage = checkTopicEntityQualifierForSGD();
