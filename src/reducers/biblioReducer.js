@@ -618,6 +618,29 @@ export default function(state = initialState, action) {
         }
       }
 
+    case 'DELETE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON':
+      console.log(action.payload);
+      let fieldIdDelete = action.payload.field.replace(/^delete /, '');
+      let modAssociationArrayDelete = fieldIdDelete.split(" ");
+      let fieldModAssociationDelete = modAssociationArrayDelete[0];
+      let indexModAssociationDelete = modAssociationArrayDelete[1];
+
+      let deleteModAssociationChange = state.referenceJsonLive[fieldModAssociationDelete];
+      deleteModAssociationChange[indexModAssociationDelete]['needsChange'] = true;
+      deleteModAssociationChange[indexModAssociationDelete]['deleteMe'] = true;
+
+      let hasChangeModAssociationFieldDelete = state.referenceJsonHasChange
+      hasChangeModAssociationFieldDelete[fieldIdDelete] = 'diff'
+
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          referenceJsonHasChange: hasChangeModAssociationFieldDelete,
+          [fieldModAssociationDelete]: deleteModAssociationChange
+        }
+      }
+
     case 'CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON':
       console.log(action.payload);
       let modAssociationArray = action.payload.field.split(" ");
