@@ -620,8 +620,8 @@ export default function(state = initialState, action) {
 
     case 'DELETE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON':
       console.log(action.payload);
-      let fieldIdDelete = action.payload.field.replace(/^delete /, '');
-      let modAssociationArrayDelete = fieldIdDelete.split(" ");
+      let fieldIdModAssociationDelete = action.payload.field.replace(/^delete /, '');
+      let modAssociationArrayDelete = fieldIdModAssociationDelete.split(" ");
       let fieldModAssociationDelete = modAssociationArrayDelete[0];
       let indexModAssociationDelete = modAssociationArrayDelete[1];
 
@@ -630,7 +630,7 @@ export default function(state = initialState, action) {
       deleteModAssociationChange[indexModAssociationDelete]['deleteMe'] = true;
 
       let hasChangeModAssociationFieldDelete = state.referenceJsonHasChange
-      hasChangeModAssociationFieldDelete[fieldIdDelete] = 'diff'
+      hasChangeModAssociationFieldDelete[fieldIdModAssociationDelete] = 'diff'
 
       return {
         ...state,
@@ -669,6 +669,29 @@ export default function(state = initialState, action) {
         referenceJsonLive: {
           ...state.referenceJsonLive,
           [fieldModAssociation]: newModAssociationChange
+        }
+      }
+
+    case 'DELETE_FIELD_CROSS_REFERENCES_REFERENCE_JSON':
+      console.log(action.payload);
+      let fieldIdCrossReferencesDelete = action.payload.field.replace(/^delete /, '');
+      let crossReferencesArrayDelete = fieldIdCrossReferencesDelete.split(" ");
+      let fieldCrossReferencesDelete = crossReferencesArrayDelete[0];
+      let indexCrossReferencesDelete = crossReferencesArrayDelete[1];
+
+      let deleteCrossReferencesChange = state.referenceJsonLive[fieldCrossReferencesDelete];
+      deleteCrossReferencesChange[indexCrossReferencesDelete]['needsChange'] = true;
+      deleteCrossReferencesChange[indexCrossReferencesDelete]['deleteMe'] = true;
+
+      let hasChangeCrossReferencesFieldDelete = state.referenceJsonHasChange
+      hasChangeCrossReferencesFieldDelete[fieldIdCrossReferencesDelete] = 'diff'
+
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          referenceJsonHasChange: hasChangeCrossReferencesFieldDelete,
+          [fieldCrossReferencesDelete]: deleteCrossReferencesChange
         }
       }
 

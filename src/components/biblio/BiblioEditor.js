@@ -19,6 +19,7 @@ import { changeFieldModReferenceReferenceJson } from '../../actions/biblioAction
 import { changeFieldModAssociationReferenceJson } from '../../actions/biblioActions';
 import { deleteFieldModAssociationReferenceJson } from '../../actions/biblioActions';
 import { changeFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
+import { deleteFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
 import { changeFieldCommentsCorrectionsReferenceJson } from '../../actions/biblioActions';
 import { changeFieldAuthorsReferenceJson } from '../../actions/biblioActions';
 import { biblioAddNewRowString } from '../../actions/biblioActions';
@@ -367,6 +368,9 @@ const BiblioSubmitUpdateButton = () => {
               needsCreate = true
               let array = [ subPath, null, 'DELETE', index, field, null ]
               forApiArray.push( array ); }
+            else if (('deleteMe' in crossRefDict) && (crossRefDict['deleteMe'] === true)) {
+              let array = [ subPath, null, 'DELETE', index, field, null ]
+              forApiArray.push( array ); }
             else {	// xref curie same, update (delete+create async would cause create failure before delete
               let updateJson = generateCrossReferenceUpdateJson(crossRefDict, referenceCurie)
               // console.log('updateJson'); console.log(updateJson)
@@ -701,14 +705,18 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
       let otherColSize = 6;
-//       let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 7; }
+//       let buttonsElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      if ('cross_reference_id' in crossRefDict && crossRefDict['cross_reference_id'] !== 'new') {
+        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
+      if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 7; }
 
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
       let updatedFlagCuriePrefix = ''; let updatedFlagCurieId = '';
       let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
+
+      const crossRefDeleted = (('deleteMe' in crossRefDict) && (crossRefDict['deleteMe'] === true)) ? true : false;
 
       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
@@ -727,14 +735,22 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
              if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { obsoleteChecked = 'checked'; }
              else { obsoleteChecked = ''; } }
 
-      rowCrossReferencesElements.push(
-        <Form.Group as={Row} key={`${fieldName} ${index}`}>
-          <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-          <ColEditorSelect key={`colElement ${fieldName} ${index} curiePrefix`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveCuriePrefix} updatedFlag={updatedFlagCuriePrefix} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie prefix`} enumType="referenceXrefPrefix" dispatchAction={changeFieldCrossReferencesReferenceJson} />
-          <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurieId} updatedFlag={updatedFlagCurieId} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie id`} dispatchAction={changeFieldCrossReferencesReferenceJson} />
-          <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
-          {revertElement}
-        </Form.Group>); } }
+      if (crossRefDeleted) {
+        rowCrossReferencesElements.push(
+          <Form.Group as={Row} key={`${fieldName} ${index}`}>
+            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+            <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSize + 1} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveCuriePrefix}:{valueLiveCurieId} {(obsoleteChecked === 'checked') ? 'obsolete' : ''}</Col>
+            {buttonsElement}
+          </Form.Group>); }
+      else {
+        rowCrossReferencesElements.push(
+          <Form.Group as={Row} key={`${fieldName} ${index}`}>
+            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+            <ColEditorSelect key={`colElement ${fieldName} ${index} curiePrefix`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveCuriePrefix} updatedFlag={updatedFlagCuriePrefix} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie prefix`} enumType="referenceXrefPrefix" dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurieId} updatedFlag={updatedFlagCurieId} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie id`} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            {buttonsElement}
+          </Form.Group>); } } }
   if (disabled === '') {
     rowCrossReferencesElements.push(
       <Row className="form-group row" key={fieldName} >
