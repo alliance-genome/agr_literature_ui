@@ -50,38 +50,6 @@ const curieToNameTaxon = {
     '': ''
 };
 
-// TODO: fix this to get qualifier list from A-Team API
-// https://beta-curation.alliancegenome.org/api/atpterm/ATP:0000136/descendants
-const testQualifierData = [
-  {
-    "obsolete": false,
-    "curie": "ATP:0000147",
-    "name": "primary display",
-    "namespace": "alliance_tag_papers"
-  },
-  {
-    "obsolete": false,
-    "curie": "ATP:0000148",
-    "name": "OMICs display",
-    "namespace": "alliance_tag_papers"
-  },
-  { "obsolete":false,
-    "curie": "ATP:0000130",
-    "name":"review display",
-    "namespace":"alliance_tag_papers"
-  },
-  { "obsolete":false,
-    "curie":"ATP:0000131",
-    "name":"other primary display",
-    "namespace":"alliance_tag_papers"
-  },
-  { "obsolete":false,
-    "curie":"ATP:0000132",
-    "name":"additional display",
-    "namespace":"alliance_tag_papers"
-  }
-];
-
 const EntityEditor = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -589,7 +557,7 @@ const EntityCreate = () => {
       <Col sm="1">
         <Form.Control as="select" id="tetqualifierSelect" type="tetqualifierSelect" value={tetqualifierSelect} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
 	  <option value=""> </option> {/* Empty option */} 
-          {testQualifierData
+          {qualifierData
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((option, index) => (
               <option key={`tetqualifierSelect-${index}`} value={option.curie}>
