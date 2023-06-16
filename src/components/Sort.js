@@ -8,6 +8,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert'
+import "react-bootstrap-typeahead/css/Typeahead.css";
 
 import {downloadReferencefile, setReferenceCurie} from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
@@ -22,8 +23,9 @@ import { closeSortUpdateAlert } from '../actions/sortActions';
 import { setSortUpdating } from '../actions/sortActions';
 import { sortButtonSetRadiosAll } from '../actions/sortActions';
 import {Spinner} from "react-bootstrap";
-import React, {useEffect, useState} from "react";
+import React, {useState, useRef} from "react";
 import axios from "axios";
+import { AsyncTypeahead } from "react-bootstrap-typeahead";
 
 // DONE
 // Find Papers to Sort will need to query data once there's an API
@@ -47,7 +49,11 @@ const Sort = () => {
   const getPapersToSortFlag = useSelector(state => state.sort.getPapersToSortFlag);
   const isLoading = useSelector(state => state.sort.isLoading);
   const dispatch = useDispatch();
-
+  const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
+  const speciesTypeaheadRef = useRef(null);
+  const [speciesSelect, setSpeciesSelect] = useState([]);
+  const [typeaheadOptions, setTypeaheadOptions] = useState([]);
+  const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   let buttonFindDisabled = 'disabled'
   if (modsField) { buttonFindDisabled = ''; }
 
@@ -55,6 +61,8 @@ const Sort = () => {
   if (sortUpdating > 0) { buttonUpdateDisabled = 'disabled'; }
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
+  const mod_to_tax = {'FB': "NCBITaxon:12345"};
+  const mod_to_id = {'FB': 1};
 
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
     console.log('sort DISPATCH sortButtonModsQuery ' + modsField);
@@ -155,6 +163,11 @@ const Sort = () => {
         forApiArray.push( array );
         if (reference['corpus'] === 'inside_corpus') {
           let workflowTagId = null;
+          //
+          // Need to add to topic entity.
+          // updateJson['species'] = speciesSelect;
+          console.log("BOB species:" + speciesSelect + 'Mod: ' + modsField)
+          //
           if      (reference['workflow'] === 'experimental')     { workflowTagId = 'ATP:0000103'; }
           else if (reference['workflow'] === 'not_experimental') { workflowTagId = 'ATP:0000104'; }
           else if (reference['workflow'] === 'meeting')          { workflowTagId = 'ATP:0000106'; }
@@ -163,14 +176,37 @@ const Sort = () => {
               updateJson = { 'workflow_tag_id': workflowTagId }
               subPath = 'workflow_tag/' + reference['existing_reference_workflow_tag_id_expt_meeting'];
               method = 'PATCH';
-              let array = [ subPath, updateJson, method, index, field, subField ]
+              let array = [ subPath, updateJson, method, index, field, subField]
               forApiArray.push( array ); }
             else {
               updateJson = { 'workflow_tag_id': workflowTagId, 'mod_abbreviation': '', 'reference_curie': reference['curie'] }
               subPath = 'workflow_tag/'
               method = 'POST';
-              let array = [ subPath, updateJson, method, index, field, subField ]
+              let array = [ subPath, updateJson, method, index, field, subField]
               forApiArray.push( array ); }
+          if (speciesSelect) {
+            console.log("SPECIES:");
+            console.log(speciesSelect);
+            let sources = [{'source': "manual",
+                            'mod_abbreviation': modsField
+                          }];
+            for ( const item of speciesSelect.values() ){
+                const taxArray = item.split("::");
+                updateJson = {'reference_curie': reference['curie'],
+                              'entity': taxArray[0],
+                              'topic': "ATP:0000142",       // entity
+                              'entity_type': "ATP:0000123", // species
+                              'entity_source': "manual",    // Not sure about this
+                              'sources': sources,
+                              'species': mod_to_tax[modsField] };    // taxonid of species
+                subPath = 'topic_entity_tag/';
+                const field = null;
+                const subField = null;
+                let method = 'POST';
+                let array = [ subPath, updateJson, method, index, field, subField ]
+                forApiArray.push( array ); 
+            }
+          }
     } } } }
     let dispatchCount = forApiArray.length;
 
@@ -221,11 +257,11 @@ const Sort = () => {
           <RowDivider />
           <RowDivider />
           <Row>
-            <Col lg={9}></Col>
+            <Col lg={8}></Col>
             <Col lg={1}>
               <Button variant="outline-primary" as="input" type="button" value="Review" onClick={() => dispatch(sortButtonSetRadiosAll('needs_review'))} />{' '}
             </Col>
-            <Col lg={1}>
+            <Col lg={2}>
               <Button variant="outline-primary" as="input" type="button" value="Inside" onClick={() => dispatch(sortButtonSetRadiosAll('inside_corpus'))} />{' '}
             </Col>
             <Col lg={1}>
@@ -245,7 +281,7 @@ const Sort = () => {
             return (
             <div key={`reference div ${index}`} >
             <Row key={`reference ${index}`} >
-              <Col lg={4} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
+              <Col lg={3} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
                  <div style={{alignSelf: 'flex-start'}} ><b>Title: </b>
                    <span dangerouslySetInnerHTML={{__html: reference['title']}} /></div>
                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
@@ -277,7 +313,7 @@ const Sort = () => {
                   <Row style={{height: '8em'}}><Col></Col></Row>
                 </Container>
               </Col>
-              <Col lg={1} className="Col-general Col-display" >
+              <Col lg={2} className="Col-general Col-display" >
                 <Container style={{height: '100%', padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
                   <Row style={{height: '4em', padding: 0}}>
                   <Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
@@ -323,6 +359,64 @@ const Sort = () => {
                       <option>Not Experimental</option>
                       <option>Meeting Abstract</option>
                     </Form.Control>
+                  </Col></Row>
+
+
+
+                  <Row style={{height: '8em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                  <AsyncTypeahead 
+                        madeup="BOB"
+                        multiple
+                        disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                        isLoading={speciesSelectLoading} 
+                        placeholder="TaxonId:"
+                        ref={speciesTypeaheadRef} // id={`species_select ${index}`} 
+                        id={`species_select ${index}`} 
+                        labelKey={`species_select ${index}`} 
+            onSearch={(query) => {
+              setSpeciesSelectLoading(true);
+              axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
+                  {
+                    "searchFilters": {
+                      "nameFilter": {
+                        "curie": {
+                          "queryString": query,
+                          "tokenOperator": "AND"
+                        }
+                      }
+                    },
+                    "sortOrders": [],
+                    "aggregations": [],
+                    "nonNullFieldsTable": []
+                  },
+                  { headers: {
+                      'content-type': 'application/json',
+                      'authorization': 'Bearer ' + accessToken
+                    }
+                  })
+              .then(res => {
+                console.log("res.data.results are:-")
+                console.log(res.data.results);
+                setSpeciesSelectLoading(false);
+                if (res.data.results) {
+                    setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.curie + "::" + item.name, item.curie])))
+                    setTypeaheadOptions(res.data.results.map(item => item.curie + ':: ' + item.name));
+                }
+              });
+            }}
+            onChange={(selected) => {
+              // setSpeciesSelect(typeaheadName2CurieMap[selected[0]]);
+              // setSpeciesSelect(speciesSelect => selected);
+              setSpeciesSelect(selected);
+              console.log("selected is name:-");
+              console.log(selected);
+              console.log("save:-  AHH asyncronus may not be updated yet!!!!!");
+              console.log(speciesSelect);
+            }}
+            options={typeaheadOptions}
+        />
+
+
                   </Col></Row>
                 </Container>
               </Col>
