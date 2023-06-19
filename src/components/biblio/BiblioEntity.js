@@ -9,6 +9,7 @@ import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../../actions/biblioActions';
 import { setEntityModalText } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
+import { fetchQualifierData } from '../../actions/biblioActions';
 
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
@@ -32,19 +33,57 @@ export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'A
 
 const BiblioEntity = () => {
   return (<><EntityCreate key="entityCreate" />
-            <EntityEditor key="entityEditor" /></>); }
+          <EntityEditor key="entityEditor" /></>);
+}
 
-//   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
-  const curieToNameAtp = { 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
-  const qualifierList = [ '', 'ATP:0000131', 'ATP:0000132', 'ATP:0000130', 'ATP:0000129', 'ATP:0000116' ];
-  const curieToNameTaxon = { 'NCBITaxon:559292': 'Saccharomyces cerevisiae', 'NCBITaxon:6239': 'Caenorhabditis elegans', 'NCBITaxon:7227': 'Drosophila melanogaster', 'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:10116': 'Rattus norvegicus', 'NCBITaxon:10090': 'Mus musculus', 'NCBITaxon:8355': 'Xenopus laevis', 'NCBITaxon:8364': 'Xenopus tropicalis', 'NCBITaxon:9606': 'Homo sapiens', '': '' };
+const curieToNameTaxon = {
+    'NCBITaxon:559292': 'Saccharomyces cerevisiae',
+    'NCBITaxon:6239': 'Caenorhabditis elegans',
+    'NCBITaxon:7227': 'Drosophila melanogaster',
+    'NCBITaxon:7955': 'Danio rerio',
+    'NCBITaxon:10116': 'Rattus norvegicus',
+    'NCBITaxon:10090':
+    'Mus musculus',
+    'NCBITaxon:8355': 'Xenopus laevis',
+    'NCBITaxon:8364': 'Xenopus tropicalis',
+    'NCBITaxon:9606': 'Homo sapiens',
+    '': ''
+};
+
+// TODO: fix this to get qualifier list from A-Team API
+// https://beta-curation.alliancegenome.org/api/atpterm/ATP:0000136/descendants
+const testQualifierData = [
+  {
+    "obsolete": false,
+    "curie": "ATP:0000147",
+    "name": "primary display",
+    "namespace": "alliance_tag_papers"
+  },
+  {
+    "obsolete": false,
+    "curie": "ATP:0000148",
+    "name": "OMICs display",
+    "namespace": "alliance_tag_papers"
+  },
+  { "obsolete":false,
+    "curie": "ATP:0000130",
+    "name":"review display",
+    "namespace":"alliance_tag_papers"
+  },
+  { "obsolete":false,
+    "curie":"ATP:0000131",
+    "name":"other primary display",
+    "namespace":"alliance_tag_papers"
+  },
+  { "obsolete":false,
+    "curie":"ATP:0000132",
+    "name":"additional display",
+    "namespace":"alliance_tag_papers"
+  }
+];
 
 const EntityEditor = () => {
   const dispatch = useDispatch();
-//   const curieToNameAtp = { 'ATP:0000005': 'gene', 'ATP:0000122': 'entity type', 'ATP:0000132': 'additional display', 'ATP:0000129': 'headline display', 'ATP:0000131': 'other primary display', 'ATP:0000130': 'review display', 'ATP:0000116': 'high priority', '': '' };
-//   const qualifierList = [ '', 'ATP:0000132', 'ATP:0000129', 'ATP:0000131', 'ATP:0000130', 'ATP:0000116' ];
-//   const curieToNameTaxon = { 'NCBITaxon:559292': 'S. cerevisiae S288C', 'NCBITaxon:6239': 'Caenorhabditis elegans' };
-
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
@@ -58,7 +97,16 @@ const EntityEditor = () => {
   //const [limit, setLimit] = useState(10);
   const pageSize = 10; // fixed limit value for now
   const [isLoading, setIsLoading] = useState(false);
-
+  const [qualifierData, setQualifierData] = useState([]);
+ 
+  useEffect(() => {
+     fetchQualifierData(accessToken).then((data) => setQualifierData(data));
+  }, [])
+  
+  const qualifierList = qualifierData.map(option => option.name);
+  // console.table("qualifierData=", qualifierData);
+  // console.table("qualifierList=", qualifierList);
+    
   useEffect(() => {
     const fetchMappings = async () => {
       let config = {
@@ -168,9 +216,14 @@ const EntityEditor = () => {
                   <Col sm="1">
                     {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
                     <Form.Control as="select" id={`qualifier ${index} ${qualifierIndex} ${qualifierId}`} type="tetqualifierSelect" disabled="disabled" value={qualifierValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
-                      { qualifierList.map((optionValue, index) => (
-                          <option key={`tetqualifierSelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
-                      ))}
+		      <option value=""> </option> {/* Empty option */}
+                      {qualifierData
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((option, index) => (
+                          <option key={`tetqualifierSelect-${index}`} value={option.curie}>
+                            {option.name}
+                          </option>
+			))}
                     </Form.Control>
                   </Col>
                   <Col sm="1">
@@ -200,7 +253,8 @@ const EntityCreate = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-
+  const [qualifierData, setQualifierData] = useState([]);
+      
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
@@ -210,16 +264,28 @@ const EntityCreate = () => {
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
-  const [showWarning, setWarningMessage] = useState(null);
-    
+  const [warningMessage, setWarningMessage] = useState('');
+  
   const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
-  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'], 'FB': ['NCBITaxon:7227'], 'WB': ['NCBITaxon:6239'], 'RGD': ['NCBITaxon:10116'], 'MGI': ['NCBITaxon:10090'], 'SGD': ['NCBITaxon:559292'], 'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
-  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227', 'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090', 'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+  const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'],
+		       'FB': ['NCBITaxon:7227'],
+		       'WB': ['NCBITaxon:6239'],
+		       'RGD': ['NCBITaxon:10116'],
+		       'MGI': ['NCBITaxon:10090'],
+		       'SGD': ['NCBITaxon:559292'],
+		       'XB': ['NCBITaxon:8355', 'NCBITaxon:8364'] }
+  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
+			      'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
+			      'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
+
+  useEffect(() => {
+     fetchQualifierData(accessToken).then((data) => setQualifierData(data));
+  }, [])
 
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
@@ -257,29 +323,62 @@ const EntityCreate = () => {
     return updateJson;
   }
 
+    
+  function checkTopicEntityQualifierForSGD() {
+      
+    // following primary topics require an entity
+    // and must be assigned to a 'primary display' qualifier:
+    // * protein containing complex (ATP:0000128)
+    // * gene ontology (ATP:0000012)
+    // * Classical phenotype information (internal tag) (ATP:0000079)
+    // * Headline information (internal tag) (ATP:0000129)         
+    const primaryTopics = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'];
+
+    const isPrimaryTopic = primaryTopics.includes(topicSelect);
+    const isEntityEmpty = !entityText || entityText.trim() === '';
+
+    let isEntityInvalid = false;
+    if ( entityResultList && entityResultList.length > 0 ) {
+      for (let entityResult of entityResultList.values()) {
+        if (entityResult.curie === 'no Alliance curie') {
+          isEntityInvalid = true;
+	  break;
+        }
+      }
+    }
+    
+    const isNotPrimaryQualifier = tetqualifierSelect !== 'ATP:0000147';
+
+    console.log("primary qualifier=", qualifierData[2].name);
+      
+    if (isPrimaryTopic) {
+      if (isEntityEmpty || isEntityInvalid) {
+        return "You need to add a valid gene or other entity.";
+      }
+      else if (isNotPrimaryQualifier) {
+        return "You need to pick 'primary display' qualifier for a primary topic.";
+      }
+    }
+    return false
+      
+  }
+    
   function createEntities(refCurie) {
     if (topicSelect === null) {
       return
     }
-
+      
     if (accessLevel === 'SGD') {
-      // the following topic require an entity for SGD triaging:
-      // protein containing complex = ATP:0000128
-      // gene ontology = ATP:0000012
-      // Classical phenotype information (internal tag) = ATP:0000079
-      // Headline information (internal tag) = ATP:0000129
-      // const isSGDtopic = topicSelect === 'ATP:0000128' || topicSelect === 'ATP:0000012' || topicSelect === 'ATP:0000079' || topicSelect === 'ATP:0000129';
-      const isSGDtopic = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'].includes(topicSelect);  
-      const isEntityEmpty = !entityText || entityText.trim() === '';
-      if (isSGDtopic && isEntityEmpty) {
-        setWarningMessage(true);
+      const warningMessage = checkTopicEntityQualifierForSGD();
+      if (warningMessage) {
+        setWarningMessage(warningMessage)
         setTimeout(() => {
-          setWarningMessage(null);
-        }, 2000);
+          setWarningMessage('');
+        }, 5000);
         return;
       }
     }
-
+    
     const forApiArray = []
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
@@ -330,11 +429,11 @@ const EntityCreate = () => {
     <RowDivider />
     <Row className="form-group row" >
       <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col></Row>
-    {showWarning && (
+    {warningMessage && (
       <Row className="form-group row">
         <Col sm="12">
           <div className="alert alert-warning" role="alert">
-            You need to add a gene or other entity.
+            {warningMessage}
           </div>
 	</Col>
       </Row>
@@ -417,9 +516,14 @@ const EntityCreate = () => {
       </Col>
       <Col sm="1">
         <Form.Control as="select" id="tetqualifierSelect" type="tetqualifierSelect" value={tetqualifierSelect} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
-          { qualifierList.map((optionValue, index) => (
-            <option key={`tetqualifierSelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
-          ))}
+	  <option value=""> </option> {/* Empty option */} 
+          {testQualifierData
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((option, index) => (
+              <option key={`tetqualifierSelect-${index}`} value={option.curie}>
+                {option.name}
+              </option>
+            ))}
         </Form.Control>
       </Col>
       <Col className="form-label col-form-label" sm="2">
