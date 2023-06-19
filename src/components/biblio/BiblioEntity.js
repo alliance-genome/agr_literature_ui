@@ -50,38 +50,6 @@ const curieToNameTaxon = {
     '': ''
 };
 
-// TODO: fix this to get qualifier list from A-Team API
-// https://beta-curation.alliancegenome.org/api/atpterm/ATP:0000136/descendants
-const testQualifierData = [
-  {
-    "obsolete": false,
-    "curie": "ATP:0000147",
-    "name": "primary display",
-    "namespace": "alliance_tag_papers"
-  },
-  {
-    "obsolete": false,
-    "curie": "ATP:0000148",
-    "name": "OMICs display",
-    "namespace": "alliance_tag_papers"
-  },
-  { "obsolete":false,
-    "curie": "ATP:0000130",
-    "name":"review display",
-    "namespace":"alliance_tag_papers"
-  },
-  { "obsolete":false,
-    "curie":"ATP:0000131",
-    "name":"other primary display",
-    "namespace":"alliance_tag_papers"
-  },
-  { "obsolete":false,
-    "curie":"ATP:0000132",
-    "name":"additional display",
-    "namespace":"alliance_tag_papers"
-  }
-];
-
 const EntityEditor = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -323,20 +291,24 @@ const EntityCreate = () => {
     return updateJson;
   }
 
-    
-  function checkTopicEntityQualifierForSGD() {
-      
-    // following primary topics require an entity
-    // and must be assigned to a 'primary display' qualifier:
-    // * protein containing complex (ATP:0000128)
-    // * gene ontology (ATP:0000012)
-    // * Classical phenotype information (internal tag) (ATP:0000079)
-    // * Headline information (internal tag) (ATP:0000129)         
+  function checkTopicEntitySetQualifierForSGD() {
+
+    /*
+    -------------------------------------------
+    qualifier = 'primary display', ATP:0000147
+    -------------------------------------------  
+    following primary topics require an entity
+    and must be assigned to a 'primary display' qualifier:
+     * protein containing complex (ATP:0000128)
+     * gene ontology (ATP:0000012)
+     * Classical phenotype information (internal tag) (ATP:0000079)
+     * Headline information (internal tag) (ATP:0000129)
+     TODO: handle other primary topic here, currently it is mapped to Entity topic         
+    */
     const primaryTopics = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'];
-
     const isPrimaryTopic = primaryTopics.includes(topicSelect);
+      
     const isEntityEmpty = !entityText || entityText.trim() === '';
-
     let isEntityInvalid = false;
     if ( entityResultList && entityResultList.length > 0 ) {
       for (let entityResult of entityResultList.values()) {
@@ -346,21 +318,88 @@ const EntityCreate = () => {
         }
       }
     }
-    
-    const isNotPrimaryQualifier = tetqualifierSelect !== 'ATP:0000147';
-
-    console.log("primary qualifier=", qualifierData[2].name);
-      
+ 
     if (isPrimaryTopic) {
       if (isEntityEmpty || isEntityInvalid) {
-        return "You need to add a valid gene or other entity.";
+        return ["You need to add a valid gene or other entity.", false];
       }
-      else if (isNotPrimaryQualifier) {
-        return "You need to pick 'primary display' qualifier for a primary topic.";
-      }
+      return [false, "ATP:0000147"];
     }
-    return false
-      
+
+    /*
+    -----------------------------------------
+    qualifier = 'OMICs display', ATP:0000148
+    -----------------------------------------
+    for HTP phenotype data: ATP:0000085
+    */
+    if (topicSelect === 'ATP:0000085') {
+      if (isEntityEmpty === false) {
+	return ["You don't need to add any entities to a paper with HTP phenotype data", false];
+      }
+      return [false, "ATP:0000148"];
+    }
+
+    /*
+    -----------------------------------------------------------------
+    qualifier = 'additional display', ATP:0000132 if there is entity
+    -----------------------------------------------------------------
+    one of following internal topics (SGD internal curation tags)
+     * disease (Homology/Disease) (ATP:0000011)
+     * post translational modification (ATP:0000088)
+     * regulatory interaction (ATP:0000070)
+     * pathway (ATP:0000022)
+     * metabolic engineering (ATP:0000149)
+    */
+    const otherTopics = ['ATP:0000011', 'ATP:0000088', 'ATP:0000070', 'ATP:0000022', 'ATP:0000149'];
+    const isOtherTopic = otherTopics.includes(topicSelect);
+    if (isOtherTopic) {
+      if (isEntityEmpty) { // no gene/entity => no qualifier
+        return [false, ''];	    
+      }
+      else if (isEntityInvalid) {
+	return ["If you want to add an entity, add a valid one; otherwise remove the entity", false];
+      }
+      return [false, 'ATP:0000132'];
+    }
+
+    /*
+    -------------------------------------------------------------------
+    it is an entity topic ATP:0000142:
+      it can be review or gene model, alleles or has data about entity
+    -------------------------------------------------------------------
+    qualifier can be 'additional display' (ATP:0000132) or 'review display' (ATP:0000130)
+    or no qualifier  
+     * for a review paper, entity is optional => qualifier = 'review display' (ATP:0000130)
+     * for a not-review paper, if there is an entity, qualifier = 'additional display'; 
+       otherwise, no qualifier => qualifier = ''
+    */
+    if (topicSelect === 'ATP:0000142') {
+      // it is a review paper	  
+      if (tetqualifierSelect === 'ATP:0000130') { 	  
+	if (isEntityEmpty) { // no gene/entity
+          return [false, tetqualifierSelect];
+        }
+        else if (isEntityInvalid) {
+          return ["If you want to add an entity, add a valid one; otherwise remove the entity", false];
+        }
+        return [false, tetqualifierSelect];
+      }
+
+      /* it is not a review paper and it has no entity provided so setqualifier to '' */
+      if (isEntityEmpty) {
+	return [false, ''];
+      }		  
+
+      /*
+      it is not a review paper and it has an entity provided
+      then set qualifier = 'ATP:0000132' (additional display) if it a valid entity
+      */
+      if (isEntityInvalid) {
+	return ["If you want to add an entity, add a valid one; otherwise remove the entity and set qualifier to ''", false];
+      }
+      return [false, 'ATP:0000132']
+    }
+    return ['You pick an unknown topic for SGD', false]
   }
     
   function createEntities(refCurie) {
@@ -369,7 +408,7 @@ const EntityCreate = () => {
     }
       
     if (accessLevel === 'SGD') {
-      const warningMessage = checkTopicEntityQualifierForSGD();
+      const [warningMessage, qualifier] = checkTopicEntitySetQualifierForSGD();
       if (warningMessage) {
         setWarningMessage(warningMessage)
         setTimeout(() => {
@@ -377,6 +416,7 @@ const EntityCreate = () => {
         }, 5000);
         return;
       }
+      console.log("qualifier = " + qualifier)	
     }
     
     const forApiArray = []
@@ -393,7 +433,7 @@ const EntityCreate = () => {
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]
-          forApiArray.push(array); } } }
+           forApiArray.push(array); } } }
     else if (taxonSelect !== '' && taxonSelect !== undefined) {
       let updateJson = initializeUpdateJson(refCurie);
       // curators can pick an entity_type without adding an entity list, so send that to API so they can get an error message
@@ -517,7 +557,7 @@ const EntityCreate = () => {
       <Col sm="1">
         <Form.Control as="select" id="tetqualifierSelect" type="tetqualifierSelect" value={tetqualifierSelect} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} >
 	  <option value=""> </option> {/* Empty option */} 
-          {testQualifierData
+          {qualifierData
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((option, index) => (
               <option key={`tetqualifierSelect-${index}`} value={option.curie}>
