@@ -371,7 +371,7 @@ const EntityCreate = () => {
         return [false, ''];
       }
       else if (isEntityInvalid) {
-	return ["If you want to add an entity, please ensure it is valid; otherwise, remove the entity.", false];
+	return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity.", false];
       }
       return [false, additionalDisplay];
     }
@@ -394,7 +394,7 @@ const EntityCreate = () => {
           return [false, reviewDisplay];
         }
         else if (isEntityInvalid) {
-          return ["If you want to add an entity, please ensure it is valid; otherwise, remove the entity.", false];
+          return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity.", false];
         }
         return [false, reviewDisplay];
       }
@@ -409,7 +409,7 @@ const EntityCreate = () => {
        then set qualifier = 'ATP:0000132' (additional display) if it a valid entity
       */
       if (isEntityInvalid) {
-	return ["If you want to add an entity, please ensure it is valid; otherwise, remove the entity and set qualifier to ''", false];
+	return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity and set qualifier to ''", false];
       }
       return [false, additionalDisplay]
     }
