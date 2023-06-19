@@ -256,34 +256,38 @@ const EntityCreate = () => {
    ATP:0000012: gene ontology
    ATP:0000079: Classical phenotype information
    ATP:0000129: Headline information
+   ATP:0000???: place holder for other primary literature
   */
-  const sgdPrimaryTopics = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129'];
+  const sgdPrimaryTopics = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129',
+			    'ATP:0000???'];
   const primaryDisplay = 'ATP:0000147';
     
   /*
    ATP:0000085: high throughput phenotype assay
-   TODO: add another one: other HTP?
+   ATP:00000??: placeholder for Other HTP data (OMICs)’
   */
-  const sgdOmicsTopics = ['ATP:0000085'];
+  const sgdOmicsTopics = ['ATP:0000085', 'ATP:00000??'];
   const omicsDisplay = 'ATP:0000148';
-    
-  /*
-   ATP:0000142: entity (Gene model/Alleles/Reviews/other primary?)
-  */
-  const sgdEntityTopic = 'ATP:0000142';
-    
+      
   /* 
    ATP:0000011: Homology/Disease
    ATP:0000088: post translational modification
    ATP:0000070: regulatory interaction
    ATP:0000022: pathway
    ATP:0000149: metabolic engineering
+   ATP:0000054: gene model
+   ATP:0000006: allele
+   ATP:000000?: placeholder for 'other additional literature'
   */  
   const sgdAdditionalTopics = ['ATP:0000142', 'ATP:0000011', 'ATP:0000088', 'ATP:0000070',
-			       'ATP:0000022', 'ATP:0000149'];
+			       'ATP:0000022', 'ATP:0000149', 'ATP:0000054', 'ATP:0000006',
+			       'ATP:000000?'];
   const additionalDisplay = 'ATP:0000132';
+
+  /* place holder for review topic */
+  const sgdReviewTopic = 'ATP:00?????';  
   const reviewDisplay = 'ATP:0000130';
-    
+  
   useEffect(() => {
      fetchQualifierData(accessToken).then((data) => setQualifierData(data));
   }, [])
@@ -378,40 +382,11 @@ const EntityCreate = () => {
 
     /*
      -------------------------------------------------------------------
-     it is an entity topic ATP:0000142:
-       it can be review or gene model, alleles or has data about entity
+     qualifier = 'review display', ATP:0000130
      -------------------------------------------------------------------
-     qualifier can be 'additional display' (ATP:0000132) or 'review display' (ATP:0000130)
-     or no qualifier  
-     * for a review paper, entity is optional => qualifier = 'review display' (ATP:0000130)
-     * for a not-review paper, if there is an entity, qualifier = 'additional display'; 
-       otherwise, no qualifier => qualifier = ''
     */
-    if (topicSelect === sgdEntityTopic) {
-      // if it is a review paper	  
-      if (tetqualifierSelect === reviewDisplay) { 	  
-	if (isEntityEmpty) { // no gene/entity
-          return [false, reviewDisplay];
-        }
-        else if (isEntityInvalid) {
-          return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity.", false];
-        }
-        return [false, reviewDisplay];
-      }
-
-      /* if it is not a review paper and it has no entity provided so set qualifier to '' */
-      if (isEntityEmpty) {
-	return [false, ''];
-      }		  
-
-      /*
-       if it is not a review paper and it has an entity provided
-       then set qualifier = 'ATP:0000132' (additional display) if it a valid entity
-      */
-      if (isEntityInvalid) {
-	return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity and set qualifier to ''", false];
-      }
-      return [false, additionalDisplay]
+    if (topicSelect === sgdReviewTopic) {
+      return [false, reviewDisplay];
     }
     return ['You select an unknown topic for SGD. Please make the necessary correction.', false]
   }
@@ -427,16 +402,11 @@ const EntityCreate = () => {
     if (sgdOmicsTopics.includes(topicSelect)) {
       return omicsDisplay;
     }
-    if (sgdAdditionalTopics.includes(topicSelect) || topicSelect === sgdEntityTopic) {
-      /* 
-       Set qualifier to 'additional display' first.
-       * curators can also manually change it to 'primary display' if it is an 'entity' topic 
-         and has info about entity
-       * curators can also manually change it to 'review display' if it is an 'entity' topic
-         and it is a review paper
-       * otherwise, it will be reset to '' unless a valid gene/entity is provided
-      */
+    if (sgdAdditionalTopics.includes(topicSelect)) {
       return additionalDisplay;
+    }
+    if (topicSelect === sgdReviewTopic) {
+      return reviewDisplay;
     }
     return '';
   }
