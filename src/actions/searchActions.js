@@ -58,7 +58,7 @@ export const searchReferences = () => {
     dispatch(setSearchLoading());
 
     let params = {
-      query: state.search.searchQuery,
+      query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/OR/g,"|"),
       size_result_count: state.search.searchSizeResultsCount,
       page: state.search.searchResultsPage,
       facets_values: state.search.searchFacetsValues,
