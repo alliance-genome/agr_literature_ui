@@ -36,18 +36,6 @@ export const changeFieldArrayReferenceJson = (e) => {
   };
 };
 
-export const deleteFieldModReferenceReferenceJson = (e) => {
-  console.log('action delete field mod reference json ' + e.target.id + ' to delete');
-//   console.log(e);
-  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
-  return {
-    type: 'DELETE_FIELD_MOD_REFERENCE_REFERENCE_JSON',
-    payload: {
-      field: activeElement.id
-    }
-  };
-};
-
 export const changeFieldModReferenceReferenceJson = (e) => {
   console.log('action change field mod reference json ' + e.target.id + ' to ' + e.target.value);
 //   console.log(e);
@@ -56,18 +44,6 @@ export const changeFieldModReferenceReferenceJson = (e) => {
     payload: {
       field: e.target.id,
       value: e.target.value
-    }
-  };
-};
-
-export const deleteFieldCrossReferencesReferenceJson = (e) => {
-  console.log('action delete field cross references json ' + e.target.id + ' to delete');
-//   console.log(e);
-  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
-  return {
-    type: 'DELETE_FIELD_CROSS_REFERENCES_REFERENCE_JSON',
-    payload: {
-      field: activeElement.id
     }
   };
 };
@@ -85,23 +61,12 @@ export const changeFieldCrossReferencesReferenceJson = (e) => {
   };
 };
 
-export const deleteFieldModAssociationReferenceJson = (e) => {
-  console.log('action delete field mod association json ' + e.target.id + ' to delete');
-//   console.log(e);
-  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
-  return {
-    type: 'DELETE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON',
-    payload: {
-      field: activeElement.id
-    }
-  };
-};
-
+// TODO to make live, add this to biblioActions.js  rename MOCK1_CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON    create reducer action for it
 export const changeFieldModAssociationReferenceJson = (e) => {
   console.log('action change field mod association json ' + e.target.id + ' to ' + e.target.value + ' checked ' + e.target.checked);
 //   console.log(e);
   return {
-    type: 'CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON',
+    type: 'CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON',	// this doesn't do anything yet
     payload: {
       field: e.target.id,
       checked: e.target.checked,
@@ -331,7 +296,6 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
     }));
 } };
 
-
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType) => {
   return dispatch => {
     // console.log('action change field entity list ' + entityText + ' entityType ' + entityType);
@@ -551,6 +515,24 @@ export const fetchModReferenceTypes = async (mods) => {
     }
   }
   return modReferenceTypes
+}
+
+export const fetchQualifierData = async (accessToken) => {
+  try {
+    const response = await axios.get(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/ATP:0000136/descendants`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      mode: 'cors'
+    });
+    return response.data.entities;
+    // const qualifierData = response.data.entities.map(x => ({ curie: x.curie, name: x.name }));
+    // return qualifierData;
+  } catch (error) {
+    console.error('Error occurred:', error);
+    throw error;
+  }
 }
 
 export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
