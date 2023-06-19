@@ -356,7 +356,7 @@ const EntityCreate = () => {
     */
     if (sgdOmicsTopics.includes(topicSelect)) {
       if (isEntityEmpty === false) {
-	return ["You don't need to add any entities to a paper with HTP phenotype data", false];
+	return ["There is no need to include any entities in a paper containing HTP data.", false];
       }
       return [false, omicsDisplay];
     }
@@ -371,7 +371,7 @@ const EntityCreate = () => {
         return [false, ''];
       }
       else if (isEntityInvalid) {
-	return ["If you want to add an entity, add a valid one; otherwise remove the entity", false];
+	return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity.", false];
       }
       return [false, additionalDisplay];
     }
@@ -394,7 +394,7 @@ const EntityCreate = () => {
           return [false, reviewDisplay];
         }
         else if (isEntityInvalid) {
-          return ["If you want to add an entity, add a valid one; otherwise remove the entity", false];
+          return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity.", false];
         }
         return [false, reviewDisplay];
       }
@@ -409,14 +409,18 @@ const EntityCreate = () => {
        then set qualifier = 'ATP:0000132' (additional display) if it a valid entity
       */
       if (isEntityInvalid) {
-	return ["If you want to add an entity, add a valid one; otherwise remove the entity and set qualifier to ''", false];
+	return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity and set qualifier to ''", false];
       }
       return [false, additionalDisplay]
     }
-    return ['You pick an unknown topic for SGD', false]
+    return ['You select an unknown topic for SGD. Please make the necessary correction.', false]
   }
 
   function getQualifierForTopic(topicSelect) {
+
+    if (accessLevel !== 'SGD') {
+      return '';
+    }
     if (sgdPrimaryTopics.includes(topicSelect)) {
       return primaryDisplay;
     }
@@ -425,12 +429,12 @@ const EntityCreate = () => {
     }
     if (sgdAdditionalTopics.includes(topicSelect) || topicSelect === sgdEntityTopic) {
       /* 
-       Set qualifier to 'additional display' first. 
-       * It will be reset to '' if no entity is provided
-       * or changed to 'review display' by curators if it is an 'entity' topic 
-         and is a review paper
-       * or changed to 'other primary display' if it is an 'entity' topic and has info 
-       * about entity (decided by curators)
+       Set qualifier to 'additional display' first.
+       * curators can also manually change it to 'primary display' if it is an 'entity' topic 
+         and has info about entity
+       * curators can also manually change it to 'review display' if it is an 'entity' topic
+         and it is a review paper
+       * otherwise, it will be reset to '' unless a valid gene/entity is provided
       */
       return additionalDisplay;
     }
