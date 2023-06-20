@@ -49,11 +49,11 @@ const Sort = () => {
   const getPapersToSortFlag = useSelector(state => state.sort.getPapersToSortFlag);
   const isLoading = useSelector(state => state.sort.isLoading);
   const dispatch = useDispatch();
-  const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
+  const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
   const speciesTypeaheadRef = useRef(null);
   const [speciesSelect, setSpeciesSelect] = useState([]);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
-  const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
+  // const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   let buttonFindDisabled = 'disabled'
   if (modsField) { buttonFindDisabled = ''; }
 
@@ -61,8 +61,16 @@ const Sort = () => {
   if (sortUpdating > 0) { buttonUpdateDisabled = 'disabled'; }
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
-  const mod_to_tax = {'FB': "NCBITaxon:12345"};
-  const mod_to_id = {'FB': 1};
+  // Hard coding as these are extremely unlikely to change,
+  // plus we can choose the default taxid for those with more than 1. 
+  // Plus mod_taxon table is empty!
+  const mod_to_tax = {'FB': "NCBITaxon:7227",
+                      'MGI': "NCBITaxon:10090", 
+                      'RGD': "NCBITaxon:10117", 
+                      'SGD': "NCBITaxon:4932", 
+                      'WB': "NCBITaxon:6239", 
+                      'XB': "NCBITaxon:1864", 
+                      'ZFIN': "NCBITaxon:7955"};
 
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
     console.log('sort DISPATCH sortButtonModsQuery ' + modsField);
@@ -111,7 +119,7 @@ const Sort = () => {
                   }
               }
 
-              console.log("file_name:" + filename);
+              console.log("file_name:" + filename + 'index:' + index);
               let referencefileValue = (
                   <div><b>{reference['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
               if (copyrightLicenseOpenAccess || accessLevel === 'developer') {
@@ -186,11 +194,11 @@ const Sort = () => {
               forApiArray.push( array ); }
           if (speciesSelect) {
             console.log("SPECIES:");
-            console.log(speciesSelect);
+            console.log(speciesSelect[index]);
             let sources = [{'source': "manual",
                             'mod_abbreviation': modsField
                           }];
-            for ( const item of speciesSelect.values() ){
+            for ( const item of speciesSelect[index].values() ){
                 const taxArray = item.split("::");
                 updateJson = {'reference_curie': reference['curie'],
                               'entity': taxArray[0],
@@ -217,6 +225,9 @@ const Sort = () => {
       arrayData.unshift(accessToken)
       dispatch(updateButtonSort(arrayData))
     }
+    setSpeciesSelect([]);
+    setTypeaheadOptions([]);
+    setSpeciesSelectLoading([]);
   }
 
   return (
@@ -368,13 +379,19 @@ const Sort = () => {
                         madeup="BOB"
                         multiple
                         disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
-                        isLoading={speciesSelectLoading} 
+                        isLoading={speciesSelectLoading[index]} 
                         placeholder="TaxonId:"
                         ref={speciesTypeaheadRef} // id={`species_select ${index}`} 
                         id={`species_select ${index}`} 
-                        labelKey={`species_select ${index}`} 
+                        labelKey={`species_select ${index}`}
+                        useCache={false}
             onSearch={(query) => {
-              setSpeciesSelectLoading(true);
+              let n = speciesSelectLoading.length
+              let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
+              a[index] = true;
+              setSpeciesSelectLoading(a);
+
+              console.log("INDEX: " + index)
               axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
                   {
                     "searchFilters": {
@@ -397,9 +414,10 @@ const Sort = () => {
               .then(res => {
                 console.log("res.data.results are:-")
                 console.log(res.data.results);
-                setSpeciesSelectLoading(false);
+                let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
+                setSpeciesSelectLoading(a);
                 if (res.data.results) {
-                    setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.curie + "::" + item.name, item.curie])))
+                    // setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.curie + "::" + item.name, item.curie])))
                     setTypeaheadOptions(res.data.results.map(item => item.curie + ':: ' + item.name));
                 }
               });
@@ -407,7 +425,9 @@ const Sort = () => {
             onChange={(selected) => {
               // setSpeciesSelect(typeaheadName2CurieMap[selected[0]]);
               // setSpeciesSelect(speciesSelect => selected);
-              setSpeciesSelect(selected);
+              let newArr = [...speciesSelect];
+              newArr[index] = selected;
+              setSpeciesSelect(newArr);
               console.log("selected is name:-");
               console.log(selected);
               console.log("save:-  AHH asyncronus may not be updated yet!!!!!");
