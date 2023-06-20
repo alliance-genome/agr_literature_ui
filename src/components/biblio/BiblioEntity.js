@@ -472,6 +472,123 @@ const EntityCreate = () => {
   const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
   const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
 
+  if (accessLevel === 'SGD') {
+    return (
+      <Container fluid>
+	<ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error"
+                      genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
+        <RowDivider />
+        <Row className="form-group row" style={{ display: 'flex', alignItems: 'center' }}>
+          <Col className="form-label col-form-label" sm="10" align='left'><h3>Entity and Topic Addition</h3></Col></Row>
+        {warningMessage && (
+          <Row className="form-group row">
+            <Col sm="10">
+              <div className="alert alert-warning" role="alert">
+                {warningMessage}
+              </div>
+           </Col>
+          </Row>
+        )}
+	<Row className="form-group row">
+	  <Col sm="3">
+	    <div><label>Topic:</label></div>
+	    <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
+                            ref={topicTypeaheadRef} id="topicTypeahead"
+              onSearch={(query) => {
+                setTopicSelectLoading(true);
+                axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
+                  {
+                    "searchFilters": {
+                      "nameFilter": {
+                        "name": {
+                          "queryString": query,
+                          "tokenOperator": "AND"
+                        }
+                      }
+                    },
+                    "sortOrders": [],
+                    "aggregations": [],
+                    "nonNullFieldsTable": []
+                  },
+                  { headers: {
+                      'content-type': 'application/json',
+                      'authorization': 'Bearer ' + accessToken
+                    }
+                  })
+                .then(res => {
+                  setTopicSelectLoading(false);
+                  setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
+                  setTypeaheadOptions(res.data.results.map(item => item.name));
+                });
+              }}
+	      onChange={(selected) => {
+                setTopicSelect(typeaheadName2CurieMap[selected[0]]);
+                // Set the qualifier value based on the selected topic
+		setNewQualifier(getQualifierForTopic(typeaheadName2CurieMap[selected[0]]));
+              }}
+              options={typeaheadOptions}
+            />
+	  </Col>
+	  <Col sm="3">
+            <div><label>Entity Type:</label></div>
+            <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
+              { entityTypeList.map((optionValue, index) => (
+                <option key={`entityTypeSelect ${optionValue}`} value={optionValue}>{curieToNameEntityType[optionValue]} {optionValue}</option>
+              ))}
+            </Form.Control>
+	  </Col>
+	  <Col sm="3">
+	    <div><label>Species:</label></div>  
+	    <Form.Control as="select" id="taxonSelect" type="taxonSelect" value={taxonSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
+              { taxonList.map((optionValue, index) => (
+                <option key={`taxonSelect ${optionValue}`} value={optionValue}>{curieToNameTaxon[optionValue]}</option>
+              ))}
+            </Form.Control>
+          </Col>
+          <Col sm="2">
+            <div><label>Qualifier:</label></div>
+            <Form.Control as="select" id="tetqualifierSelect" type="tetqualifierSelect" value={newQualifier} onChange={(e) => setNewQualifier(e.target.value)} >
+              <option value=""> </option> {/* Empty option */}
+              {qualifierData
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((option, index) => (
+                  <option key={`tetqualifierSelect-${index}`} value={option.curie}>
+                    {option.name}
+                  </option>
+              ))}
+            </Form.Control>
+          </Col>
+	</Row>
+	<Row>
+          <Col sm="3">
+            <div><label>Entity list(one per line, case insensitive)</label></div>
+            <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
+          </Col>
+          <Col sm="3">
+            <div><label>Entity validation:</label></div>
+            <Container>
+              { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
+                const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
+                return (
+                  <Row key={`entityEntityContainerrows ${index}`}>
+                    <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{entityResult.entityTypeSymbol}</Col>
+                    <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">{entityResult.curie}</Col>
+                  </Row>)
+              })}
+            </Container>
+          </Col>
+	  <Col sm="3">
+	    <div><label>Comment/internal notes:</label></div>  
+            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
+          </Col>   
+	  <Col sm="3" className="d-flex align-items-center justify-content-center">
+	    <div className="mt-3">
+	      <Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button>
+	    </div>
+	  </Col>
+	</Row></Container>);
+  }
+    
   return (
     <Container fluid>
     <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error"
