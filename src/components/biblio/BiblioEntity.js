@@ -250,7 +250,23 @@ const EntityCreate = () => {
 			      'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
-
+  const sgdTopicList = [{'curie': 'ATP:0000012', 'name': 'gene ontology'},
+			{'curie': 'ATP:0000079', 'name': 'classical phenotype information'},
+	                {'curie': 'ATP:0000129', 'name': 'headline information'},
+			{'curie': 'ATP:0000128', 'name': 'protein containing complex'},
+			{'curie': 'ATP:0000???', 'name': 'other primary info(place holder)'},
+			{'curie': 'ATP:0000085', 'name': 'high throughput phenotype assay'},
+			{'curie': 'ATP:00000??', 'name': 'other HTP data (OMICs) (place holder)'},
+			{'curie': 'ATP:00?????', 'name': 'reviews (place holder)'},
+			{'curie': 'ATP:0000011', 'name': 'homology/disease'},
+			{'curie': 'ATP:0000088', 'name': 'post translational modification'},
+			{'curie': 'ATP:0000070', 'name': 'regulation information'},
+			{'curie': 'ATP:0000022', 'name': 'pathways'},
+			{'curie': 'ATP:0000149', 'name': 'metabolic engineering'},
+			{'curie': 'ATP:0000054', 'name': 'gene model'},
+			{'curie': 'ATP:0000006', 'name': 'allele'},
+			{'curie': 'ATP:000000?', 'name': 'other additional literature(place holder)'}];
+			  
   /*
    ATP:0000128: protein containing complex
    ATP:0000012: gene ontology
@@ -348,7 +364,7 @@ const EntityCreate = () => {
     }
     if (isPrimaryTopic) {
       if (isEntityEmpty || isEntityInvalid) {
-        return ["You need to add a valid gene or other entity.", false];
+        return ["This topic requires the inclusion of a valid gene or entity.", false];
       }
       return [false, primaryDisplay];
     }
@@ -360,7 +376,7 @@ const EntityCreate = () => {
     */
     if (sgdOmicsTopics.includes(topicSelect)) {
       if (isEntityEmpty === false) {
-	return ["There is no need to include any entities in a paper containing HTP data.", false];
+	return ["HTP topics do not require genes or entities", false];
       }
       return [false, omicsDisplay];
     }
@@ -375,7 +391,7 @@ const EntityCreate = () => {
         return [false, ''];
       }
       else if (isEntityInvalid) {
-	return ["You are not required to add an entity for this topic, but if you choose to do so, please ensure that it is valid. Otherwise, please omit the entity.", false];
+	return ["The addition of entities are not required for this topic, but if associated they must be valid genes or entities", false];
       }
       return [false, additionalDisplay];
     }
@@ -386,13 +402,22 @@ const EntityCreate = () => {
      -------------------------------------------------------------------
     */
     if (topicSelect === sgdReviewTopic) {
-      return [false, reviewDisplay];
+      if (isEntityEmpty) {
+        return [false, reviewDisplay];
+      }
+      else if (isEntityInvalid) {
+	return ["Entities are optional for papers assigned as reviews, but when associated they must be valid genes or entities", false];
+      }
+      else {
+	return [false, reviewDisplay];
+      }
     }
-    return ['You select an unknown topic for SGD. Please make the necessary correction.', false]
+    //return ['You select an unknown topic for SGD. Please make the necessary correction.', false]
+    return ['Pick a topic!', false]  
   }
 
   function getQualifierForTopic(topicSelect) {
-
+    setTopicSelect(topicSelect)
     if (accessLevel !== 'SGD') {
       return '';
     }
@@ -422,7 +447,7 @@ const EntityCreate = () => {
         setWarningMessage(warningMessage)
         setTimeout(() => {
           setWarningMessage('');
-        }, 5000);
+        }, 8000);
         return;
       }
       setNewQualifier(qualifier);
@@ -492,42 +517,15 @@ const EntityCreate = () => {
 	<Row className="form-group row">
 	  <Col sm="3">
 	    <div><label>Topic:</label></div>
-	    <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
-                            ref={topicTypeaheadRef} id="topicTypeahead"
-              onSearch={(query) => {
-                setTopicSelectLoading(true);
-                axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
-                  {
-                    "searchFilters": {
-                      "nameFilter": {
-                        "name": {
-                          "queryString": query,
-                          "tokenOperator": "AND"
-                        }
-                      }
-                    },
-                    "sortOrders": [],
-                    "aggregations": [],
-                    "nonNullFieldsTable": []
-                  },
-                  { headers: {
-                      'content-type': 'application/json',
-                      'authorization': 'Bearer ' + accessToken
-                    }
-                  })
-                .then(res => {
-                  setTopicSelectLoading(false);
-                  setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
-                  setTypeaheadOptions(res.data.results.map(item => item.name));
-                });
-              }}
-	      onChange={(selected) => {
-                setTopicSelect(typeaheadName2CurieMap[selected[0]]);
-                // Set the qualifier value based on the selected topic
-		setNewQualifier(getQualifierForTopic(typeaheadName2CurieMap[selected[0]]));
-              }}
-              options={typeaheadOptions}
-            />
+            <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => { setNewQualifier(getQualifierForTopic(e.target.value)) }} >
+              <option value=""> Pick a topic </option> {/* Empty option */}
+              {sgdTopicList
+                .map((option, index) => (
+                  <option key={`topicSelect-${index}`} value={option.curie}>
+                    {option.name}
+                  </option>
+              ))}
+            </Form.Control>
 	  </Col>
 	  <Col sm="3">
             <div><label>Entity Type:</label></div>
