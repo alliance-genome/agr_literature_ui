@@ -60,6 +60,18 @@ export const changeFieldModReferenceReferenceJson = (e) => {
   };
 };
 
+export const deleteFieldCrossReferencesReferenceJson = (e) => {
+  console.log('action delete field cross references json ' + e.target.id + ' to delete');
+//   console.log(e);
+  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
+  return {
+    type: 'DELETE_FIELD_CROSS_REFERENCES_REFERENCE_JSON',
+    payload: {
+      field: activeElement.id
+    }
+  };
+};
+
 export const changeFieldCrossReferencesReferenceJson = (e) => {
   console.log('action change field cross references json ' + e.target.id + ' to ' + e.target.value + ' checked ' + e.target.checked);
 //   console.log(e);
@@ -73,12 +85,23 @@ export const changeFieldCrossReferencesReferenceJson = (e) => {
   };
 };
 
-// TODO to make live, add this to biblioActions.js  rename MOCK1_CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON    create reducer action for it
+export const deleteFieldModAssociationReferenceJson = (e) => {
+  console.log('action delete field mod association json ' + e.target.id + ' to delete');
+//   console.log(e);
+  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
+  return {
+    type: 'DELETE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON',
+    payload: {
+      field: activeElement.id
+    }
+  };
+};
+
 export const changeFieldModAssociationReferenceJson = (e) => {
   console.log('action change field mod association json ' + e.target.id + ' to ' + e.target.value + ' checked ' + e.target.checked);
 //   console.log(e);
   return {
-    type: 'CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON',	// this doesn't do anything yet
+    type: 'CHANGE_FIELD_MOD_ASSOCIATION_REFERENCE_JSON',
     payload: {
       field: e.target.id,
       checked: e.target.checked,
@@ -307,6 +330,7 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
       payload: { responseMessage: 'error: ' + subPath + ' ' + err }
     }));
 } };
+
 
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType) => {
   return dispatch => {
@@ -544,7 +568,7 @@ export const fetchQualifierData = async (accessToken) => {
     const qualifierData = response.data.entities
       .filter(x => x.name !== 'other primary display')
       .map(x => ({ curie: x.curie, name: x.name }));
-    return qualifierData; 
+    return qualifierData;
   } catch (error) {
     console.error('Error occurred:', error);
     throw error;
