@@ -526,9 +526,13 @@ export const fetchQualifierData = async (accessToken) => {
       },
       mode: 'cors'
     });
-    return response.data.entities;
+    // return response.data.entities;
     // const qualifierData = response.data.entities.map(x => ({ curie: x.curie, name: x.name }));
     // return qualifierData;
+    const qualifierData = response.data.entities
+      .filter(x => x.name !== 'other primary display')
+      .map(x => ({ curie: x.curie, name: x.name }));
+    return qualifierData; 
   } catch (error) {
     console.error('Error occurred:', error);
     throw error;
