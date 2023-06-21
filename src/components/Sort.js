@@ -66,12 +66,12 @@ const Sort = () => {
   // Plus mod_taxon table is empty!
   const mod_to_tax = {'FB': "NCBITaxon:7227",
                       'MGI': "NCBITaxon:10090", 
-                      'RGD': "NCBITaxon:10117", 
-                      'SGD': "NCBITaxon:4932", 
+                      'RGD': "NCBITaxon:10116", 
+                      'SGD': "NCBITaxon:559292", 
                       'WB': "NCBITaxon:6239", 
-                      'XB': "NCBITaxon:1864", 
+                      'XB': "NCBITaxon:8355", 
                       'ZFIN': "NCBITaxon:7955"};
-
+  
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
     console.log('sort DISPATCH sortButtonModsQuery ' + modsField);
     dispatch(sortButtonModsQuery(modsField))
@@ -199,9 +199,9 @@ const Sort = () => {
                             'mod_abbreviation': modsField
                           }];
             for ( const item of speciesSelect[index].values() ){
-                const taxArray = item.split("::");
+                const taxArray = item.split(" ");
                 updateJson = {'reference_curie': reference['curie'],
-                              'entity': taxArray[0],
+                              'entity': taxArray.pop(),     // taxid last element
                               'topic': "ATP:0000142",       // entity
                               'entity_type': "ATP:0000123", // species
                               'entity_source': "manual",    // Not sure about this
@@ -216,6 +216,20 @@ const Sort = () => {
             }
           }
     } } } }
+
+    console.log("Resetting UseStates")
+    setSpeciesSelect([]);
+    setTypeaheadOptions([]);
+    setSpeciesSelectLoading([]);
+    speciesTypeaheadRef.current.clear();
+    console.log(document);
+    const bob = document.getElementsByClassName("rbt-input-wrapper");
+    for (let i = 0; i < bob.length; i++) {
+      bob[i].reset();
+    }
+    // document.getElementByClassName("rbt-input");
+    // document.getElementByClassName("rbt-input-wrapper");
+
     let dispatchCount = forApiArray.length;
 
     console.log('dispatchCount ' + dispatchCount)
@@ -225,9 +239,7 @@ const Sort = () => {
       arrayData.unshift(accessToken)
       dispatch(updateButtonSort(arrayData))
     }
-    setSpeciesSelect([]);
-    setTypeaheadOptions([]);
-    setSpeciesSelectLoading([]);
+
   }
 
   return (
@@ -380,7 +392,7 @@ const Sort = () => {
                         multiple
                         disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
                         isLoading={speciesSelectLoading[index]} 
-                        placeholder="TaxonId:"
+                        placeholder="species name"
                         ref={speciesTypeaheadRef} // id={`species_select ${index}`} 
                         id={`species_select ${index}`} 
                         labelKey={`species_select ${index}`}
@@ -396,7 +408,7 @@ const Sort = () => {
                   {
                     "searchFilters": {
                       "nameFilter": {
-                        "curie": {
+                        "name": {
                           "queryString": query,
                           "tokenOperator": "AND"
                         }
@@ -418,7 +430,7 @@ const Sort = () => {
                 setSpeciesSelectLoading(a);
                 if (res.data.results) {
                     // setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.curie + "::" + item.name, item.curie])))
-                    setTypeaheadOptions(res.data.results.map(item => item.curie + ':: ' + item.name));
+                    setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
                 }
               });
             }}
@@ -430,8 +442,6 @@ const Sort = () => {
               setSpeciesSelect(newArr);
               console.log("selected is name:-");
               console.log(selected);
-              console.log("save:-  AHH asyncronus may not be updated yet!!!!!");
-              console.log(speciesSelect);
             }}
             options={typeaheadOptions}
         />
