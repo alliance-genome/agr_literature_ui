@@ -171,11 +171,6 @@ const Sort = () => {
         forApiArray.push( array );
         if (reference['corpus'] === 'inside_corpus') {
           let workflowTagId = null;
-          //
-          // Need to add to topic entity.
-          // updateJson['species'] = speciesSelect;
-          console.log("BOB species:" + speciesSelect + 'Mod: ' + modsField)
-          //
           if      (reference['workflow'] === 'experimental')     { workflowTagId = 'ATP:0000103'; }
           else if (reference['workflow'] === 'not_experimental') { workflowTagId = 'ATP:0000104'; }
           else if (reference['workflow'] === 'meeting')          { workflowTagId = 'ATP:0000106'; }
@@ -193,8 +188,6 @@ const Sort = () => {
               let array = [ subPath, updateJson, method, index, field, subField]
               forApiArray.push( array ); }
           if (speciesSelect) {
-            console.log("SPECIES:");
-            console.log(speciesSelect[index]);
             let sources = [{'source': "manual",
                             'mod_abbreviation': modsField
                           }];
@@ -217,18 +210,10 @@ const Sort = () => {
           }
     } } } }
 
-    console.log("Resetting UseStates")
     setSpeciesSelect([]);
     setTypeaheadOptions([]);
     setSpeciesSelectLoading([]);
     speciesTypeaheadRef.current.clear();
-    console.log(document);
-    const bob = document.getElementsByClassName("rbt-input-wrapper");
-    for (let i = 0; i < bob.length; i++) {
-      bob[i].reset();
-    }
-    // document.getElementByClassName("rbt-input");
-    // document.getElementByClassName("rbt-input-wrapper");
 
     let dispatchCount = forApiArray.length;
 
@@ -386,14 +371,13 @@ const Sort = () => {
 
 
 
-                  <Row style={{height: '8em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                  <Row style={{height: '8em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', fontSize: '10px'}}>
                   <AsyncTypeahead 
-                        madeup="BOB"
                         multiple
                         disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
                         isLoading={speciesSelectLoading[index]} 
                         placeholder="species name"
-                        ref={speciesTypeaheadRef} // id={`species_select ${index}`} 
+                        ref={speciesTypeaheadRef}
                         id={`species_select ${index}`} 
                         labelKey={`species_select ${index}`}
                         useCache={false}
@@ -403,7 +387,6 @@ const Sort = () => {
               a[index] = true;
               setSpeciesSelectLoading(a);
 
-              console.log("INDEX: " + index)
               axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
                   {
                     "searchFilters": {
@@ -424,26 +407,20 @@ const Sort = () => {
                     }
                   })
               .then(res => {
-                console.log("res.data.results are:-")
-                console.log(res.data.results);
                 let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
                 setSpeciesSelectLoading(a);
                 if (res.data.results) {
-                    // setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.curie + "::" + item.name, item.curie])))
                     setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
                 }
               });
             }}
             onChange={(selected) => {
-              // setSpeciesSelect(typeaheadName2CurieMap[selected[0]]);
-              // setSpeciesSelect(speciesSelect => selected);
               let newArr = [...speciesSelect];
               newArr[index] = selected;
               setSpeciesSelect(newArr);
-              console.log("selected is name:-");
-              console.log(selected);
             }}
             options={typeaheadOptions}
+            selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
         />
 
 
