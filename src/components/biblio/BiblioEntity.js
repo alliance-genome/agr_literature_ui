@@ -9,7 +9,7 @@ import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
 import { setBiblioUpdatingEntityAdd } from '../../actions/biblioActions';
 import { setEntityModalText } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
-import { fetchQualifierData } from '../../actions/biblioActions';
+import { fetchDisplayTagData } from '../../actions/biblioActions';
 
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
@@ -64,15 +64,15 @@ const EntityEditor = () => {
   //const [limit, setLimit] = useState(10);
   const pageSize = 10; // fixed limit value for now
   const [isLoading, setIsLoading] = useState(false);
-  const [qualifierData, setQualifierData] = useState([]);
+  const [displayTagData, setDisplayTagData] = useState([]);
  
   useEffect(() => {
-     fetchQualifierData(accessToken).then((data) => setQualifierData(data));
+     fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
   }, [])
   
-  const qualifierList = qualifierData.map(option => option.name);
-  // console.table("qualifierData=", qualifierData);
-  // console.table("qualifierList=", qualifierList);
+  const displayTagList = displayTagData.map(option => option.name);
+  // console.table("displayTagData=", displayTagData);
+  // console.table("displayTagList=", displayTagList);
     
   useEffect(() => {
     const fetchMappings = async () => {
@@ -156,19 +156,19 @@ const EntityEditor = () => {
             <Col className="div-grey-border" sm="2">species (taxon)</Col>
             <Col className="div-grey-border" sm="2">entity name</Col>
             <Col className="div-grey-border" sm="2">entity curie</Col>
-            <Col className="div-grey-border" sm="1">qualifier</Col>
+            <Col className="div-grey-border" sm="1">display tag</Col>
             <Col className="div-grey-border" sm="1">manual validation</Col>
           </Row>
           { topicEntityTags.map( (tetDict, index) => {
-            let qualifierValue = ''; let qualifierId = ''; let qualifierIndex = '';
-            // UI only allows display/selection of one priority qualifier, but someone could connect in the database multiple priority qualifier in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
+            let displayTagValue = ''; let displayTagId = ''; let displayTagIndex = '';
+            // UI only allows display/selection of one priority displayTag, but someone could connect in the database multiple priority displayTag in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
             if ('props' in tetDict && tetDict['props'].length > 0) {
               // for (const tetpDict of tetDict['props'].values())
               for (const[indexPriority, tetpDict] of tetDict['props'].entries()) {
-                if ('qualifier' in tetpDict && tetpDict['qualifier'] !== '' && qualifierList.includes(tetpDict['qualifier'])) {
-                  qualifierId = tetpDict['topic_entity_tag_prop_id'];
-                  qualifierIndex = indexPriority;
-                  qualifierValue = tetpDict['qualifier']; } } }
+                if ('displayTag' in tetpDict && tetpDict['displayTag'] !== '' && displayTagList.includes(tetpDict['displayTag'])) {
+                  displayTagId = tetpDict['topic_entity_tag_prop_id'];
+                  displayTagIndex = indexPriority;
+                  displayTagValue = tetpDict['displayTag']; } } }
             let entityName = '';
             if (tetDict.entity !== null) {
               entityName = tetDict.entity in entityEntityMappings ? entityEntityMappings[tetDict.entity] : 'unknown'; }
@@ -181,13 +181,13 @@ const EntityEditor = () => {
                   <Col className="div-grey-border" sm="2">{tetDict.entity}</Col>
 
                   <Col sm="1">
-                    {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
-                    <Form.Control as="select" id={`qualifier ${index} ${qualifierIndex} ${qualifierId}`} type="tetqualifierSelect" disabled="disabled" value={qualifierValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
+                    {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new displayTag where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
+                    <Form.Control as="select" id={`displayTag ${index} ${displayTagIndex} ${displayTagId}`} type="tetdisplayTagSelect" disabled="disabled" value={displayTagValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
 		      <option value=""> </option> {/* Empty option */}
-                      {qualifierData
+                      {displayTagData
                         .sort((a, b) => a.name.localeCompare(b.name))
                         .map((option, index) => (
-                          <option key={`tetqualifierSelect-${index}`} value={option.curie}>
+                          <option key={`tetdisplayTagSelect-${index}`} value={option.curie}>
                             {option.name}
                           </option>
 			))}
@@ -220,8 +220,8 @@ const EntityCreate = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-  const [qualifierData, setQualifierData] = useState([]);
-  const [newQualifier, setNewQualifier] = useState('');
+  const [displayTagData, setDisplayTagData] = useState([]);
+  const [newDisplayTag, setNewDisplayTag] = useState('');
     
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
@@ -234,7 +234,7 @@ const EntityCreate = () => {
   const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   const [warningMessage, setWarningMessage] = useState('');
   
-  const tetqualifierSelect = useSelector(state => state.biblio.entityAdd.tetqualifierSelect);
+  const tetdisplayTagSelect = useSelector(state => state.biblio.entityAdd.tetdisplayTagSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
@@ -305,7 +305,7 @@ const EntityCreate = () => {
   const reviewDisplay = 'ATP:0000130';
   
   useEffect(() => {
-     fetchQualifierData(accessToken).then((data) => setQualifierData(data));
+     fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
   }, [])
 
   useEffect( () => {
@@ -332,11 +332,11 @@ const EntityCreate = () => {
         'validation_type': 'manual',
         'note': noteText
       }];
-    if (tetqualifierSelect && tetqualifierSelect !== '') {
-      updateJson['qualifiers'] = [
+    if (tetdisplayTagSelect && tetdisplayTagSelect !== '') {
+      updateJson['displayTags'] = [
         {
-          'qualifier': tetqualifierSelect,
-          'qualifier_type': 'curation',
+          'displayTag': tetdisplayTagSelect,
+          'displayTag_type': 'curation',
           'mod_abbreviation': accessLevel
         }
       ];
@@ -344,11 +344,11 @@ const EntityCreate = () => {
     return updateJson;
   }
 
-  function checkTopicEntitySetQualifierForSGD() {
+  function checkTopicEntitySetDisplayTagForSGD() {
 
     /*
      -------------------------------------------
-     qualifier = 'primary display', ATP:0000147
+     displayTag = 'primary display', ATP:0000147
      -------------------------------------------  
     */
     const isPrimaryTopic = sgdPrimaryTopics.includes(topicSelect);  
@@ -371,7 +371,7 @@ const EntityCreate = () => {
 
     /*
      -----------------------------------------
-     qualifier = 'OMICs display', ATP:0000148
+     displayTag = 'OMICs display', ATP:0000148
      -----------------------------------------
     */
     if (sgdOmicsTopics.includes(topicSelect)) {
@@ -383,11 +383,11 @@ const EntityCreate = () => {
 
     /*
      -----------------------------------------------------------------
-     qualifier = 'additional display', ATP:0000132 if there is entity
+     displayTag = 'additional display', ATP:0000132 if there is entity
      -----------------------------------------------------------------
     */
     if (sgdAdditionalTopics.includes(topicSelect)) {
-      if (isEntityEmpty) { // no gene/entity => no qualifier
+      if (isEntityEmpty) { // no gene/entity => no displayTag
         return [false, ''];
       }
       else if (isEntityInvalid) {
@@ -398,7 +398,7 @@ const EntityCreate = () => {
 
     /*
      -------------------------------------------------------------------
-     qualifier = 'review display', ATP:0000130
+     displayTag = 'review display', ATP:0000130
      -------------------------------------------------------------------
     */
     if (topicSelect === sgdReviewTopic) {
@@ -416,7 +416,7 @@ const EntityCreate = () => {
     return ['Pick a topic!', false]  
   }
 
-  function getQualifierForTopic(topicSelect) {
+  function getDisplayTagForTopic(topicSelect) {
     setTopicSelect(topicSelect)
     if (accessLevel !== 'SGD') {
       return '';
@@ -442,7 +442,7 @@ const EntityCreate = () => {
     }
       
     if (accessLevel === 'SGD') {
-      const [warningMessage, qualifier] = checkTopicEntitySetQualifierForSGD();
+      const [warningMessage, displayTag] = checkTopicEntitySetDisplayTagForSGD();
       if (warningMessage) {
         setWarningMessage(warningMessage)
         setTimeout(() => {
@@ -450,8 +450,8 @@ const EntityCreate = () => {
         }, 8000);
         return;
       }
-      setNewQualifier(qualifier);
-      console.log("qualifier = " + qualifier);	
+      setNewDisplayTag(displayTag);
+      console.log("displayTag = " + displayTag);	
     }
     
     const forApiArray = []
@@ -517,7 +517,7 @@ const EntityCreate = () => {
 	<Row className="form-group row">
 	  <Col sm="3">
 	    <div><label>Topic:</label></div>
-            <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => { setNewQualifier(getQualifierForTopic(e.target.value)) }} >
+            <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => { setNewDisplayTag(getDisplayTagForTopic(e.target.value)) }} >
               <option value=""> Pick a topic </option> {/* Empty option */}
               {sgdTopicList
                 .map((option, index) => (
@@ -544,13 +544,13 @@ const EntityCreate = () => {
             </Form.Control>
           </Col>
           <Col sm="2">
-            <div><label>Qualifier:</label></div>
-            <Form.Control as="select" id="tetqualifierSelect" type="tetqualifierSelect" value={newQualifier} onChange={(e) => setNewQualifier(e.target.value)} >
+            <div><label>Display Tag:</label></div>
+            <Form.Control as="select" id="tetdisplayTagSelect" type="tetdisplayTagSelect" value={newDisplayTag} onChange={(e) => setNewDisplayTag(e.target.value)} >
               <option value=""> </option> {/* Empty option */}
-              {qualifierData
+              {displayTagData
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((option, index) => (
-                  <option key={`tetqualifierSelect-${index}`} value={option.curie}>
+                  <option key={`tetdisplayTagSelect-${index}`} value={option.curie}>
                     {option.name}
                   </option>
               ))}
@@ -559,11 +559,11 @@ const EntityCreate = () => {
 	</Row>
 	<Row>
           <Col sm="3">
-            <div><label>Entity list(one per line, case insensitive)</label></div>
+            <div><label>Entity List(one per line, case insensitive)</label></div>
             <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
           </Col>
           <Col sm="3">
-            <div><label>Entity validation:</label></div>
+            <div><label>Entity Validation:</label></div>
             <Container>
               { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
                 const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
@@ -609,7 +609,7 @@ const EntityCreate = () => {
       <Col className="div-grey-border" sm="1">species</Col>
       <Col className="div-grey-border" sm="2">entity list (one per line, case insensitive)</Col>
       <Col className="div-grey-border" sm="2">entity validation</Col>
-      <Col className="div-grey-border" sm="1">qualifier</Col>
+      <Col className="div-grey-border" sm="1">display tag</Col>
       <Col className="div-grey-border" sm="2">internal notes</Col>
       <Col className="div-grey-border" sm="1">button</Col>
     </Row>
@@ -646,8 +646,8 @@ const EntityCreate = () => {
             }}
             onChange={(selected) => {
 	      setTopicSelect(typeaheadName2CurieMap[selected[0]]);
-	      // Set the qualifier value based on the selected topic
-	      setNewQualifier(getQualifierForTopic(typeaheadName2CurieMap[selected[0]]));
+	      // Set the displayTag value based on the selected topic
+	      setNewDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]]));
             }}
             options={typeaheadOptions}
         />
@@ -682,12 +682,12 @@ const EntityCreate = () => {
         </Container>
       </Col>
       <Col sm="1">
-        <Form.Control as="select" id="tetqualifierSelect" type="tetqualifierSelect" value={newQualifier} onChange={(e) => setNewQualifier(e.target.value)} >
+        <Form.Control as="select" id="tetdisplayTagSelect" type="tetdisplayTagSelect" value={newDisplayTag} onChange={(e) => setNewDisplayTag(e.target.value)} >
 	  <option value=""> </option> {/* Empty option */} 
-          {qualifierData
+          {displayTagData
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((option, index) => (
-              <option key={`tetqualifierSelect-${index}`} value={option.curie}>
+              <option key={`tetdisplayTagSelect-${index}`} value={option.curie}>
                 {option.name}
               </option>
             ))}

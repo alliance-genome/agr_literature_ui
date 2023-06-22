@@ -553,7 +553,7 @@ export const fetchModReferenceTypes = async (mods) => {
   return modReferenceTypes
 }
 
-export const fetchQualifierData = async (accessToken) => {
+export const fetchDisplayTagData = async (accessToken) => {
   try {
     const response = await axios.get(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/ATP:0000136/descendants`, {
       headers: {
@@ -563,12 +563,12 @@ export const fetchQualifierData = async (accessToken) => {
       mode: 'cors'
     });
     // return response.data.entities;
-    // const qualifierData = response.data.entities.map(x => ({ curie: x.curie, name: x.name }));
-    // return qualifierData;
-    const qualifierData = response.data.entities
+    // const displayTagData = response.data.entities.map(x => ({ curie: x.curie, name: x.name }));
+    // return displayTagData;
+    const displayTagData = response.data.entities
       .filter(x => x.name !== 'other primary display')
       .map(x => ({ curie: x.curie, name: x.name }));
-    return qualifierData;
+    return displayTagData;
   } catch (error) {
     console.error('Error occurred:', error);
     throw error;
