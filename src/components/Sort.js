@@ -375,66 +375,67 @@ const Sort = () => {
 
 
                   <Row style={{height: '8em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                  <AsyncTypeahead 
-                        madeup="BOB"
-                        multiple
-                        disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
-                        isLoading={speciesSelectLoading[index]} 
-                        placeholder="TaxonId:"
-                        ref={speciesTypeaheadRef} // id={`species_select ${index}`} 
-                        id={`species_select ${index}`} 
-                        labelKey={`species_select ${index}`}
-                        useCache={false}
-            onSearch={(query) => {
-              let n = speciesSelectLoading.length
-              let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
-              a[index] = true;
-              setSpeciesSelectLoading(a);
+                  <AsyncTypeahead
+                      madeup="BOB"
+                      multiple
+                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      isLoading={speciesSelectLoading[index]}
+                      placeholder="TaxonId:"
+                      ref={speciesTypeaheadRef} // id={`species_select ${index}`}
+                      id={`species_select ${index}`}
+                      labelKey={`species_select ${index}`}
+                      useCache={false}
+                      onSearch={(query) => {
+                          let n = speciesSelectLoading.length
+                          let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
+                          a[index] = true;
+                          setSpeciesSelectLoading(a);
 
-              console.log("INDEX: " + index)
-              axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
-                  {
-                    "searchFilters": {
-                      "nameFilter": {
-                        "curie": {
-                          "queryString": query,
-                          "tokenOperator": "AND"
-                        }
-                      }
-                    },
-                    "sortOrders": [],
-                    "aggregations": [],
-                    "nonNullFieldsTable": []
-                  },
-                  { headers: {
-                      'content-type': 'application/json',
-                      'authorization': 'Bearer ' + accessToken
-                    }
-                  })
-              .then(res => {
-                console.log("res.data.results are:-")
-                console.log(res.data.results);
-                let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
-                setSpeciesSelectLoading(a);
-                if (res.data.results) {
-                    // setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.curie + "::" + item.name, item.curie])))
-                    setTypeaheadOptions(res.data.results.map(item => item.curie + ':: ' + item.name));
-                }
-              });
-            }}
-            onChange={(selected) => {
-              // setSpeciesSelect(typeaheadName2CurieMap[selected[0]]);
-              // setSpeciesSelect(speciesSelect => selected);
-              let newArr = [...speciesSelect];
-              newArr[index] = selected;
-              setSpeciesSelect(newArr);
-              console.log("selected is name:-");
-              console.log(selected);
-              console.log("save:-  AHH asyncronus may not be updated yet!!!!!");
-              console.log(speciesSelect);
-            }}
-            options={typeaheadOptions}
-        />
+                          console.log("INDEX: " + index)
+                          axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
+                              {
+                                  "searchFilters": {
+                                      "nameFilter": {
+                                          "curie": {
+                                              "queryString": query,
+                                              "tokenOperator": "AND"
+                                          }
+                                      }
+                                  },
+                                  "sortOrders": [],
+                                  "aggregations": [],
+                                  "nonNullFieldsTable": []
+                              },
+                              { headers: {
+                                      'content-type': 'application/json',
+                                      'authorization': 'Bearer ' + accessToken
+                                  }
+                              })
+                              .then(res => {
+                                  console.log("res.data.results are:-")
+                                  console.log(res.data.results);
+                                  let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
+                                  setSpeciesSelectLoading(a);
+                                  if (res.data.results) {
+                                      // setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.curie + "::" + item.name, item.curie])))
+                                      setTypeaheadOptions(res.data.results.map(item => item.curie + ':: ' + item.name));
+                                  }
+                              });
+                      }}
+                      onChange={(selected) => {
+                          // setSpeciesSelect(typeaheadName2CurieMap[selected[0]]);
+                          // setSpeciesSelect(speciesSelect => selected);
+                          let newArr = [...speciesSelect];
+                          newArr[index] = selected;
+                          setSpeciesSelect(newArr);
+                          console.log("selected is name:-");
+                          console.log(selected);
+                          console.log("save:-  AHH asyncronus may not be updated yet!!!!!");
+                          console.log(speciesSelect);
+                      }}
+                      options={typeaheadOptions}
+                      selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
+                  />
 
 
                   </Col></Row>
