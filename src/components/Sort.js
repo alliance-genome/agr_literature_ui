@@ -8,6 +8,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert'
+import "react-bootstrap-typeahead/css/Typeahead.css";
 
 import {downloadReferencefile, setReferenceCurie} from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
@@ -22,8 +23,9 @@ import { closeSortUpdateAlert } from '../actions/sortActions';
 import { setSortUpdating } from '../actions/sortActions';
 import { sortButtonSetRadiosAll } from '../actions/sortActions';
 import {Spinner} from "react-bootstrap";
-import React, {useEffect, useState} from "react";
+import React, {useState, useRef} from "react";
 import axios from "axios";
+import { AsyncTypeahead } from "react-bootstrap-typeahead";
 
 // DONE
 // Find Papers to Sort will need to query data once there's an API
@@ -47,7 +49,11 @@ const Sort = () => {
   const getPapersToSortFlag = useSelector(state => state.sort.getPapersToSortFlag);
   const isLoading = useSelector(state => state.sort.isLoading);
   const dispatch = useDispatch();
-
+  const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
+  const speciesTypeaheadRef = useRef(null);
+  const [speciesSelect, setSpeciesSelect] = useState([]);
+  const [typeaheadOptions, setTypeaheadOptions] = useState([]);
+  // const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   let buttonFindDisabled = 'disabled'
   if (modsField) { buttonFindDisabled = ''; }
 
@@ -55,7 +61,17 @@ const Sort = () => {
   if (sortUpdating > 0) { buttonUpdateDisabled = 'disabled'; }
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
-
+  // Hard coding as these are extremely unlikely to change,
+  // plus we can choose the default taxid for those with more than 1. 
+  // Plus mod_taxon table is empty!
+  const mod_to_tax = {'FB': "NCBITaxon:7227",
+                      'MGI': "NCBITaxon:10090", 
+                      'RGD': "NCBITaxon:10116", 
+                      'SGD': "NCBITaxon:559292", 
+                      'WB': "NCBITaxon:6239", 
+                      'XB': "NCBITaxon:8355", 
+                      'ZFIN': "NCBITaxon:7955"};
+  
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
     console.log('sort DISPATCH sortButtonModsQuery ' + modsField);
     dispatch(sortButtonModsQuery(modsField))
@@ -103,7 +119,7 @@ const Sort = () => {
                   }
               }
 
-              console.log("file_name:" + filename);
+              console.log("file_name:" + filename + 'index:' + index);
               let referencefileValue = (
                   <div><b>{reference['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
               if (copyrightLicenseOpenAccess || accessLevel === 'developer') {
@@ -163,15 +179,42 @@ const Sort = () => {
               updateJson = { 'workflow_tag_id': workflowTagId }
               subPath = 'workflow_tag/' + reference['existing_reference_workflow_tag_id_expt_meeting'];
               method = 'PATCH';
-              let array = [ subPath, updateJson, method, index, field, subField ]
+              let array = [ subPath, updateJson, method, index, field, subField]
               forApiArray.push( array ); }
             else {
               updateJson = { 'workflow_tag_id': workflowTagId, 'mod_abbreviation': '', 'reference_curie': reference['curie'] }
               subPath = 'workflow_tag/'
               method = 'POST';
-              let array = [ subPath, updateJson, method, index, field, subField ]
+              let array = [ subPath, updateJson, method, index, field, subField]
               forApiArray.push( array ); }
+          if (speciesSelect) {
+            let sources = [{'source': "manual",
+                            'mod_abbreviation': modsField
+                          }];
+            for ( const item of speciesSelect[index].values() ){
+                const taxArray = item.split(" ");
+                updateJson = {'reference_curie': reference['curie'],
+                              'entity': taxArray.pop(),     // taxid last element
+                              'topic': "ATP:0000142",       // entity
+                              'entity_type': "ATP:0000123", // species
+                              'entity_source': "manual",    // Not sure about this
+                              'sources': sources,
+                              'species': mod_to_tax[modsField] };    // taxonid of species
+                subPath = 'topic_entity_tag/';
+                const field = null;
+                const subField = null;
+                let method = 'POST';
+                let array = [ subPath, updateJson, method, index, field, subField ]
+                forApiArray.push( array ); 
+            }
+          }
     } } } }
+
+    setSpeciesSelect([]);
+    setTypeaheadOptions([]);
+    setSpeciesSelectLoading([]);
+    speciesTypeaheadRef.current.clear();
+
     let dispatchCount = forApiArray.length;
 
     console.log('dispatchCount ' + dispatchCount)
@@ -181,6 +224,7 @@ const Sort = () => {
       arrayData.unshift(accessToken)
       dispatch(updateButtonSort(arrayData))
     }
+
   }
 
   return (
@@ -221,11 +265,11 @@ const Sort = () => {
           <RowDivider />
           <RowDivider />
           <Row>
-            <Col lg={9}></Col>
+            <Col lg={8}></Col>
             <Col lg={1}>
               <Button variant="outline-primary" as="input" type="button" value="Review" onClick={() => dispatch(sortButtonSetRadiosAll('needs_review'))} />{' '}
             </Col>
-            <Col lg={1}>
+            <Col lg={2}>
               <Button variant="outline-primary" as="input" type="button" value="Inside" onClick={() => dispatch(sortButtonSetRadiosAll('inside_corpus'))} />{' '}
             </Col>
             <Col lg={1}>
@@ -245,7 +289,7 @@ const Sort = () => {
             return (
             <div key={`reference div ${index}`} >
             <Row key={`reference ${index}`} >
-              <Col lg={4} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
+              <Col lg={3} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
                  <div style={{alignSelf: 'flex-start'}} ><b>Title: </b>
                    <span dangerouslySetInnerHTML={{__html: reference['title']}} /></div>
                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
@@ -277,7 +321,7 @@ const Sort = () => {
                   <Row style={{height: '8em'}}><Col></Col></Row>
                 </Container>
               </Col>
-              <Col lg={1} className="Col-general Col-display" >
+              <Col lg={2} className="Col-general Col-display" >
                 <Container style={{height: '100%', padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
                   <Row style={{height: '4em', padding: 0}}>
                   <Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
@@ -323,6 +367,63 @@ const Sort = () => {
                       <option>Not Experimental</option>
                       <option>Meeting Abstract</option>
                     </Form.Control>
+                  </Col></Row>
+
+
+
+                  <Row style={{height: '8em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', fontSize: '10px'}}>
+                  <AsyncTypeahead 
+                        multiple
+                        disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                        isLoading={speciesSelectLoading[index]} 
+                        placeholder="species name"
+                        ref={speciesTypeaheadRef}
+                        id={`species_select ${index}`} 
+                        labelKey={`species_select ${index}`}
+                        useCache={false}
+            onSearch={(query) => {
+              let n = speciesSelectLoading.length
+              let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
+              a[index] = true;
+              setSpeciesSelectLoading(a);
+
+              axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
+                  {
+                    "searchFilters": {
+                      "nameFilter": {
+                        "name": {
+                          "queryString": query,
+                          "tokenOperator": "AND"
+                        }
+                      }
+                    },
+                    "sortOrders": [],
+                    "aggregations": [],
+                    "nonNullFieldsTable": []
+                  },
+                  { headers: {
+                      'content-type': 'application/json',
+                      'authorization': 'Bearer ' + accessToken
+                    }
+                  })
+              .then(res => {
+                let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
+                setSpeciesSelectLoading(a);
+                if (res.data.results) {
+                    setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
+                }
+              });
+            }}
+            onChange={(selected) => {
+              let newArr = [...speciesSelect];
+              newArr[index] = selected;
+              setSpeciesSelect(newArr);
+            }}
+            options={typeaheadOptions}
+            selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
+        />
+
+
                   </Col></Row>
                 </Container>
               </Col>

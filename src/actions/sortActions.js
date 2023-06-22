@@ -60,6 +60,7 @@ export const sortButtonModsQuery = (payload) => dispatch => {
   sortGetModsQuery()
 };
 
+
 export const changeSortCorpusToggler = (e) => {
   console.log('action change sort corpus toggler radio ' + e.target.id + ' to ' + e.target.value);
   return {
@@ -96,7 +97,6 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
     })
   // to test without updating through api, remove body line and change method to GET
 //       method: 'GET',
-
     let response_message = 'update success';
     if ((method === 'DELETE') && (res.status === 204)) { }      // success of delete has no res.text so can't process like others
     else {
