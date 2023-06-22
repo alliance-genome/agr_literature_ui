@@ -85,8 +85,6 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
   const createUpdateButtonSort = async () => {
     const url = restUrl + '/' + subPath;
     console.log(url);
-    console.log("PAYLOAD: ");
-    console.log(payload);
     // console.log(notGithubVariables.authToken);
     const res = await fetch(url, {
       method: method,
