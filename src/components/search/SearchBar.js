@@ -8,17 +8,15 @@ import {useDispatch, useSelector} from 'react-redux';
 
 const SearchBar = () => {
 
-    const [fieldToSearch, setFieldToSearch] = useState('All');
     const searchLoading = useSelector(state => state.search.searchLoading);
     const searchQuery = useSelector(state => state.search.searchQuery);
     const partialMatch = useSelector(state => state.search.partialMatch);
+    const fieldToSearch = useSelector(state => state.search.query_fields);
 
     const dispatch = useDispatch();
 
     function updateSearchField(text){
-      setFieldToSearch(text);
       dispatch(setQueryFields(text));
-
     }
 
     return (
