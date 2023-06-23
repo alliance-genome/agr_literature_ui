@@ -579,9 +579,15 @@ const EntityCreate = () => {
 	    <div><label>Comment/internal notes:</label></div>  
             <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
           </Col>   
-	  <Col sm="3" className="d-flex align-items-center justify-content-center">
+	  <Col sm="3" className="d-flex align-items-center">
 	    <div className="mt-3">
-	      <Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button>
+	      <Button
+	        variant="outline-primary"
+	        disabled={disabledAddButton}
+	        onClick={() => createEntities(referenceJsonLive.curie)}
+	      >
+	        {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}
+	      </Button>
 	    </div>
 	  </Col>
 	</Row></Container>);
