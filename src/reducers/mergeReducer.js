@@ -13,7 +13,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'PMID:23524264',
+    input: 'CGC:cgc3',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -240,6 +240,10 @@ export default function(state = initialState, action) {
       const mergeQueryHasPmid = (mergeQueryHasPmid1 || mergeQueryHasPmid2) ? true : false;
 
       initializeQueriedData(referenceMeta1Copy.referenceJson, referenceMeta2Copy.referenceJson);
+
+      if (action.payload.swapBool) {
+        referenceMeta1Copy.input = state.referenceMeta2.input;
+        referenceMeta2Copy.input = state.referenceMeta1.input; }
 
       return {
         ...state,

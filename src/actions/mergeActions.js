@@ -39,7 +39,7 @@ export const mergeToggleIndependent = (fieldName, oneOrTwo, index) => {
 //   console.log("action mergeSwapPairSimple " + fieldName);
 // }
 
-export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispatch => {
+export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool) => dispatch => {
   // console.log("ref1 " + referenceInput1);
   // console.log("ref2 " + referenceInput2);
   dispatch({
@@ -109,7 +109,7 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
     return [curieValue, curieFound];
   }
 
-  const queryBothXrefs = async (referenceInput1, referenceInput2) => {
+  const queryBothXrefs = async (referenceInput1, referenceInput2, swapBool) => {
     let promiseXref1 = resolveReferenceCurie(referenceInput1);
     let promiseXref2 = resolveReferenceCurie(referenceInput2);
     let valuesXref = await Promise.allSettled([promiseXref1, promiseXref2]);
@@ -167,11 +167,12 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2) => dispat
         curieValue2: curieValue2,
         referenceJson2: referenceJson2,
         referenceFound2: referenceFound2,
+        swapBool: swapBool,
         blah: 'blah'
     }});
   }
 
-  queryBothXrefs(referenceInput1, referenceInput2);
+  queryBothXrefs(referenceInput1, referenceInput2, swapBool);
 }
 
 export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {

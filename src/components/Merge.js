@@ -135,8 +135,12 @@ const MergeSelectionSection = () => {
       <Row>
         <Col sm="12" >
           {(() => {
-            if (queryDoubleSuccess) { return (<Button variant='warning' onClick={() => dispatch(mergeResetReferences())} >Discard changes and new query</Button>) }
-            return (<Button variant='primary' onClick={(e) => dispatch(mergeQueryReferences(referenceMeta1.input, referenceMeta2.input))} >
+            if (queryDoubleSuccess) { 
+              return (<>
+                        <Button variant='warning' onClick={() => dispatch(mergeResetReferences())} >Discard changes and new query</Button>&nbsp;
+                        <Button variant='warning' onClick={(e) => dispatch(mergeQueryReferences(referenceMeta2.input, referenceMeta1.input, true))} >Swap and Start Over</Button>
+                      </>) }
+            return (<Button variant='primary' onClick={(e) => dispatch(mergeQueryReferences(referenceMeta1.input, referenceMeta2.input, false))} >
               {isLoadingReferences ? <Spinner animation="border" size="sm"/> : "Query for these references"}</Button>);
           })()}
         </Col>
