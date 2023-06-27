@@ -489,6 +489,7 @@ const NewTaxonModal = () => {
         setAteamSuccess(true);
       } else {
         setAteamResponse('unknown failure to create in A-team system');
+        setAteamSuccess(false);
       }
     });
   }
