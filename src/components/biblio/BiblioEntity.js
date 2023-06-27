@@ -254,10 +254,10 @@ const EntityCreate = () => {
 			{'curie': 'ATP:0000079', 'name': 'classical phenotype information'},
 	                {'curie': 'ATP:0000129', 'name': 'headline information'},
 			{'curie': 'ATP:0000128', 'name': 'protein containing complex'},
-			{'curie': 'ATP:0000???', 'name': 'other primary info(place holder)'},
+			{'curie': 'other primary information', 'name': 'other primary information'},
 			{'curie': 'ATP:0000085', 'name': 'high throughput phenotype assay'},
-			{'curie': 'ATP:00000??', 'name': 'other HTP data (OMICs) (place holder)'},
-			{'curie': 'ATP:00?????', 'name': 'reviews (place holder)'},
+			{'curie': 'ATP:0000150', 'name': 'other HTP data (OMICs)'},
+			{'curie': 'review',      'name': 'review'},
 			{'curie': 'ATP:0000011', 'name': 'homology/disease'},
 			{'curie': 'ATP:0000088', 'name': 'post translational modification'},
 			{'curie': 'ATP:0000070', 'name': 'regulation information'},
@@ -265,24 +265,24 @@ const EntityCreate = () => {
 			{'curie': 'ATP:0000149', 'name': 'metabolic engineering'},
 			{'curie': 'ATP:0000054', 'name': 'gene model'},
 			{'curie': 'ATP:0000006', 'name': 'allele'},
-			{'curie': 'ATP:000000?', 'name': 'other additional literature(place holder)'}];
+			{'curie': 'other additional literature', 'name': 'other additional literature'}];
 			  
   /*
    ATP:0000128: protein containing complex
    ATP:0000012: gene ontology
    ATP:0000079: Classical phenotype information
    ATP:0000129: Headline information
-   ATP:0000???: place holder for other primary literature
+   'other primary literature': place holder for other primary literature
   */
   const sgdPrimaryTopics = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129',
-			    'ATP:0000???'];
+			    'other primary information'];
   const primaryDisplay = 'ATP:0000147';
     
   /*
    ATP:0000085: high throughput phenotype assay
-   ATP:00000??: placeholder for Other HTP data (OMICs)’
+   ATP:0000150: Other HTP data (OMICs)’
   */
-  const sgdOmicsTopics = ['ATP:0000085', 'ATP:00000??'];
+  const sgdOmicsTopics = ['ATP:0000085', 'ATP:0000150'];
   const omicsDisplay = 'ATP:0000148';
       
   /* 
@@ -293,15 +293,15 @@ const EntityCreate = () => {
    ATP:0000149: metabolic engineering
    ATP:0000054: gene model
    ATP:0000006: allele
-   ATP:000000?: placeholder for 'other additional literature'
+   'other additional literature': placeholder for 'other additional literature'
   */  
   const sgdAdditionalTopics = ['ATP:0000142', 'ATP:0000011', 'ATP:0000088', 'ATP:0000070',
 			       'ATP:0000022', 'ATP:0000149', 'ATP:0000054', 'ATP:0000006',
-			       'ATP:000000?'];
+			       'other additional literature'];
   const additionalDisplay = 'ATP:0000132';
 
   /* place holder for review topic */
-  const sgdReviewTopic = 'ATP:00?????';  
+  const sgdReviewTopic = 'review';  
   const reviewDisplay = 'ATP:0000130';
   
   useEffect(() => {
