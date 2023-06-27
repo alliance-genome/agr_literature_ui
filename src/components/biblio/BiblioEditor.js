@@ -369,7 +369,7 @@ const BiblioSubmitUpdateButton = () => {
           else if ('curie' in crossRefDict) {			// pre-existing entries need delete or update
             let crossRefCurieDb = referenceJsonDb[field][index]['curie']
             let crossRefCurieLive = crossRefDict['curie']
-            let subPath = 'cross_reference/' + referenceJsonDb[field][index]['curie']
+            let subPath = 'cross_reference/' + referenceJsonDb[field][index]['cross_reference_id']
             if ( crossRefCurieLive !== crossRefCurieDb ) {	// xref curie has changed, delete+create
               needsCreate = true
               let array = [ subPath, null, 'DELETE', index, field, null ]
