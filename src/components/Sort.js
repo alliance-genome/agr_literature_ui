@@ -309,37 +309,28 @@ const Sort = () => {
               </Col>
               <Col lg={5} className="Col-general Col-display" ><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
 
-              <Col lg={1} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                <Container style={{height: '100%', padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                  <Row style={{height: '4em', padding: 0}}>
-                    <Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                      <Form.Check
-                        inline
-                        checked={ (reference['corpus'] === 'needs_review') ? 'checked' : '' }
-                        type='radio'
-                        label='review'
-                        id={`needs_review_toggle ${index}`}
-                        onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                      />
-                  </Col></Row>
-                  <Row style={{height: '8em'}}><Col></Col></Row>
-                </Container>
+              <Col lg={1} className="Col-general Col-display" style={{display: 'block', justifyContent: 'center'}}>
+                  <br/><br/>
+                  <Form.Check
+                      inline
+                      checked={ (reference['corpus'] === 'needs_review') ? 'checked' : '' }
+                      type='radio'
+                      label='review'
+                      id={`needs_review_toggle ${index}`}
+                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+                  />
               </Col>
-              <Col lg={2} className="Col-general Col-display" >
-                <Container style={{height: '100%', padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                  <Row style={{height: '4em', padding: 0}}>
-                  <Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                    <Form.Check
+              <Col lg={2} className="Col-general Col-display" style={{display: 'block'}}>
+                  <br/><br/>
+                  <Form.Check
                       inline
                       checked={ (reference['corpus'] === 'inside_corpus') ? 'checked' : '' }
                       type='radio'
                       label='inside'
                       id={`inside_corpus_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                    />
-                  </Col></Row>
-                  <Row style={{height: '4em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                    <Form.Check
+                  /><br/><br/>
+                  <Form.Check
                       inline
                       disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
                       checked={ (reference['workflow'] === 'experimental') ? 'checked' : '' }
@@ -347,8 +338,8 @@ const Sort = () => {
                       label='expt'
                       id={`experimental_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                    />
-                    <Form.Check
+                  /><br/>
+                  <Form.Check
                       inline
                       disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
                       checked={ (reference['workflow'] === 'not_experimental') ? 'checked' : '' }
@@ -356,8 +347,8 @@ const Sort = () => {
                       label='not expt'
                       id={`not_experimental_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                    />
-                    <Form.Check
+                  /><br/>
+                  <Form.Check
                       inline
                       disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
                       checked={ (reference['workflow'] === 'meeting') ? 'checked' : '' }
@@ -365,87 +356,74 @@ const Sort = () => {
                       label='meeting'
                       id={`meeting_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                    />
-                    <Form.Control as="select" id={`primary_select ${index}`} style={{display: 'none'}}>
+                  /><br/>
+                  <Form.Control as="select" id={`primary_select ${index}`} style={{display: 'none'}}>
                       <option>Experimental</option>
                       <option>Not Experimental</option>
                       <option>Meeting Abstract</option>
-                    </Form.Control>
-                  </Col></Row>
+                  </Form.Control><br/>
+                  <AsyncTypeahead
+                      multiple
+                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      isLoading={speciesSelectLoading[index]}
+                      placeholder="species name"
+                      ref={speciesTypeaheadRef}
+                      id={`species_select ${index}`}
+                      labelKey={`species_select ${index}`}
+                      useCache={false}
+                      onSearch={(query) => {
+                          let n = speciesSelectLoading.length
+                          let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
+                          a[index] = true;
+                          setSpeciesSelectLoading(a);
 
-                  <Row style={{height: '6em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', fontSize: '10px'}}>
-                    <AsyncTypeahead
-                          multiple
-                          disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
-                          isLoading={speciesSelectLoading[index]}
-                          placeholder="species name"
-                          ref={speciesTypeaheadRef}
-                          id={`species_select ${index}`}
-                          labelKey={`species_select ${index}`}
-                          useCache={false}
-                          onSearch={(query) => {
-                            let n = speciesSelectLoading.length
-                            let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
-                            a[index] = true;
-                            setSpeciesSelectLoading(a);
-
-                            axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
-                                {
+                          axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
+                              {
                                   "searchFilters": {
-                                    "nameFilter": {
-                                      "name": {
-                                        "queryString": query,
-                                        "tokenOperator": "AND"
+                                      "nameFilter": {
+                                          "name": {
+                                              "queryString": query,
+                                              "tokenOperator": "AND"
+                                          }
                                       }
-                                    }
                                   },
                                   "sortOrders": [],
                                   "aggregations": [],
                                   "nonNullFieldsTable": []
-                                },
-                                { headers: {
-                                    'content-type': 'application/json',
-                                    'authorization': 'Bearer ' + accessToken
+                              },
+                              { headers: {
+                                      'content-type': 'application/json',
+                                      'authorization': 'Bearer ' + accessToken
                                   }
-                                })
-                            .then(res => {
-                              let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
-                              setSpeciesSelectLoading(a);
-                              if (res.data.results) {
-                                  setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
-                              }
-                            });
-                          }}
-                          onChange={(selected) => {
-                            let newArr = [...speciesSelect];
-                            newArr[index] = selected;
-                            setSpeciesSelect(newArr);
-                          }}
-                          options={typeaheadOptions}
-                          selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
-                      />
-                  </Col></Row>
-                  { (accessLevel === 'WB') &&
-                    (<Row style={{height: '4em'}}><Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', fontSize: '10px'}}>
-                       <NewTaxonModal/>
-                     </Col></Row>) }
-                </Container>
+                              })
+                              .then(res => {
+                                  let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
+                                  setSpeciesSelectLoading(a);
+                                  if (res.data.results) {
+                                      setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
+                                  }
+                              });
+                      }}
+                      onChange={(selected) => {
+                          let newArr = [...speciesSelect];
+                          newArr[index] = selected;
+                          setSpeciesSelect(newArr);
+                      }}
+                      options={typeaheadOptions}
+                      selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
+                  />
+                  { (accessLevel === 'WB') && <NewTaxonModal/> }
               </Col>
-              <Col lg={1} className="Col-general Col-display" >
-                <Container style={{height: '100%', padding: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                  <Row style={{height: '4em', padding: 0}}>
-                    <Col style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                      <Form.Check
-                        inline
-                        checked={ (reference['corpus'] === 'outside_corpus') ? 'checked' : '' }
-                        type='radio'
-                        label='outside'
-                        id={`outside_corpus_toggle ${index}`}
-                        onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                      />
-                   </Col></Row>
-                   <Row style={{height: '8em'}}><Col></Col></Row>
-                </Container>
+              <Col lg={1} className="Col-general Col-display" style={{display: 'block'}}>
+                  <br/><br/>
+                  <Form.Check
+                      inline
+                      checked={ (reference['corpus'] === 'outside_corpus') ? 'checked' : '' }
+                      type='radio'
+                      label='outside'
+                      id={`outside_corpus_toggle ${index}`}
+                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+                  />
               </Col>
             </Row>
 
