@@ -11,7 +11,7 @@ const NotLoggedInBar = () => {
   const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
   return (
     (!isSignedIn) && 
-    <Alert variant='danger'><FontAwesomeIcon icon={faExclamationTriangle} /> You are not signed in. Please sign in if you want to make changes. <FontAwesomeIcon icon={faExclamationTriangle} /></Alert>
+    <Alert style={{position: 'fixed', top: '3.5em', left: '0px', width: '100%', zIndex:9999}} variant='danger'><FontAwesomeIcon icon={faExclamationTriangle} /> You are not signed in. Please sign in if you want to make changes. <FontAwesomeIcon icon={faExclamationTriangle} /></Alert>
   )
 }
 
