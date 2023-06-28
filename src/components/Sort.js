@@ -412,7 +412,7 @@ const Sort = () => {
                       options={typeaheadOptions}
                       selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
                   />
-                  { (accessLevel === 'WB') && <NewTaxonModal/> }
+                  { (accessLevel === 'WB') && <div><br/><NewTaxonModal/></div> }
               </Col>
               <Col lg={1} className="Col-general Col-display" style={{display: 'block'}}>
                   <br/><br/>
