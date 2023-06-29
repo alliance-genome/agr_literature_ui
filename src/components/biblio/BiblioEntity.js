@@ -253,9 +253,11 @@ const EntityCreate = () => {
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
 
   const topicDescendants = useSelector(state => state.biblio.topicDescendants);
-  if ((topicDescendants.size === 0) && (accessToken !== null)) {
-    dispatch(ateamGetTopicDescendants(accessToken));
-  }
+  useEffect(() => {
+    if ((topicDescendants.size === 0) && (accessToken !== null)) {
+      dispatch(ateamGetTopicDescendants(accessToken));
+    }
+  }, [topicDescendants, accessToken])
 
   const sgdTopicList = [{'curie': 'ATP:0000012', 'name': 'gene ontology'},
 			{'curie': 'ATP:0000079', 'name': 'classical phenotype information'},
