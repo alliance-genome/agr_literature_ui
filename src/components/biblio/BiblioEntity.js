@@ -255,8 +255,7 @@ const EntityCreate = () => {
   const topicDescendants = useSelector(state => state.biblio.topicDescendants);
   useEffect(() => {
     if ((topicDescendants.size === 0) && (accessToken !== null)) {
-      dispatch(ateamGetTopicDescendants(accessToken));
-    }
+      dispatch(ateamGetTopicDescendants(accessToken)); }
   }, [topicDescendants, accessToken])
 
   const sgdTopicList = [{'curie': 'ATP:0000012', 'name': 'gene ontology'},
@@ -656,7 +655,7 @@ const EntityCreate = () => {
               .then(res => {
                 setTopicSelectLoading(false);
                 setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
-                setTypeaheadOptions(res.data.results.map(item => item.name));
+                setTypeaheadOptions(res.data.results.filter(item => {return topicDescendants.has(item.curie)}).map(item => item.name));
               });
             }}
             onChange={(selected) => {

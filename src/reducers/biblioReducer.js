@@ -256,21 +256,14 @@ export default function(state = initialState, action) {
       }
 
     case 'ATEAM_GET_TOPIC_DESCENDANTS':
-      console.log('ATEAM_GET_TOPIC_DESCENDANTS reducer');
-      console.log(action.payload.topicDescendants);
+      // console.log('ATEAM_GET_TOPIC_DESCENDANTS reducer');
+      // console.log(action.payload.topicDescendants);
       if (action.payload.error) {
         console.log(action.payload.error); }
-      let newTopicDescendants = _.cloneDeep(action.payload.topicDescendants);
-//       let newTopicDescendants = _.cloneDeep(state.topicDescendants);
-//       let newTopicDescendants = new Set();
-//       action.payload.topicDescendants.forEach(key => newTopicDescendants.add(key))
-//       newTopicDescendants.add(action.payload.topicDescendants);
-//       newTopicDescendants.add('cow');
       return {
         ...state,
-        topicDescendants: newTopicDescendants
+        topicDescendants: action.payload.topicDescendants
       }
-//         topicDescendants: action.payload.topicDescendants
 
     case 'SET_ENTITY_MODAL_TEXT':
       console.log('SET_ENTITY_MODAL_TEXT reducer ' + action.payload);
