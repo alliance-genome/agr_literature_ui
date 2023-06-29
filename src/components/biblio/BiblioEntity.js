@@ -10,6 +10,7 @@ import { setBiblioUpdatingEntityAdd } from '../../actions/biblioActions';
 import { setEntityModalText } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 import { fetchDisplayTagData } from '../../actions/biblioActions';
+import { ateamGetTopicDescendants } from '../../actions/biblioActions';
 
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
@@ -250,6 +251,13 @@ const EntityCreate = () => {
 			      'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
+
+  const topicDescendants = useSelector(state => state.biblio.topicDescendants);
+  useEffect(() => {
+    if ((topicDescendants.size === 0) && (accessToken !== null)) {
+      dispatch(ateamGetTopicDescendants(accessToken)); }
+  }, [topicDescendants, accessToken])
+
   const sgdTopicList = [{'curie': 'ATP:0000012', 'name': 'gene ontology'},
 			{'curie': 'ATP:0000079', 'name': 'classical phenotype information'},
 	                {'curie': 'ATP:0000129', 'name': 'headline information'},
@@ -647,7 +655,7 @@ const EntityCreate = () => {
               .then(res => {
                 setTopicSelectLoading(false);
                 setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
-                setTypeaheadOptions(res.data.results.map(item => item.name));
+                setTypeaheadOptions(res.data.results.filter(item => {return topicDescendants.has(item.curie)}).map(item => item.name));
               });
             }}
             onChange={(selected) => {
