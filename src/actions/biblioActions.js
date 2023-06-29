@@ -401,6 +401,36 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
   }
 };
 
+export const ateamGetTopicDescendants = (accessToken) => {
+  return dispatch => {
+    const ateamApiUrl = ateamApiBaseUrl + 'api/atpterm/ATP:0000002/descendants'
+    axios.get(ateamApiUrl, {
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + accessToken
+      }
+    })
+    .then(res => {
+      // console.log('res.data.entities');
+      // console.log(res.data.entities);
+      let topicDescendants = new Set();
+      if (res.data.entities) {
+        for (const entityResult of res.data.entities) {
+          if (entityResult.curie) {
+            topicDescendants.add(entityResult.curie); } } }
+      dispatch({
+        type: 'ATEAM_GET_TOPIC_DESCENDANTS',
+        payload: { topicDescendants: topicDescendants }
+      });
+    })
+    .catch(err =>
+      dispatch({
+        type: 'ATEAM_GET_TOPIC_DESCENDANTS',
+        payload: { topicDescendants: new Set(), error : 'Entity lookup API failure' + err }
+      }));
+  }
+};
+
 export const setFieldEntityEditor = (id, value) => ({
   type: 'CHANGE_FIELD_ENTITY_EDITOR',
   payload: { field: id, value: value }
