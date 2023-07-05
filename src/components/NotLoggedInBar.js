@@ -9,9 +9,11 @@ import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 
 const NotLoggedInBar = () => {
   const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+  const everSignedIn = useSelector(state => state.isLogged.everSignedIn);
+  const loggedClass = (everSignedIn) ? 'NotLoggedInAlert-everLogged' : '';
   return (
     (!isSignedIn) && 
-    <Alert style={{position: 'fixed', top: '3.5em', left: '0px', width: '100%', zIndex:9999}} variant='danger'><FontAwesomeIcon icon={faExclamationTriangle} /> You are not signed in. Please sign in if you want to make changes. <FontAwesomeIcon icon={faExclamationTriangle} /></Alert>
+    <Alert class={`fade alert alert-danger show ${loggedClass}`} variant='danger'><FontAwesomeIcon icon={faExclamationTriangle} /> You are not signed in. Please sign in if you want to make changes. <FontAwesomeIcon icon={faExclamationTriangle} /></Alert>
   )
 }
 

@@ -2,6 +2,7 @@ import jwt_decode from 'jwt-decode';
 
 const INTIAL_STATE = {
   isSignedIn: null,
+  everSignedIn: null,
   userId: null,
   oktaGroups: null,
   oktaMod: 'No',
@@ -37,6 +38,7 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
       return {
         ...state,
         isSignedIn: true,
+        everSignedIn: true,
         userId: action.payload.userId,
         accessToken: action.payload.accessToken,
         testerMod: 'No',
