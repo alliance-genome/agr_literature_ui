@@ -68,6 +68,14 @@
   margin-left: 20px;
 }
 
+.NotLoggedInAlert-everLogged {
+  position: fixed !important;
+  top: 3.5em !important;
+  left: 0px;
+  width: 100%;
+  z-index: 9999;
+}
+
 .button-to-link {
   background: none!important;
   border: none;
