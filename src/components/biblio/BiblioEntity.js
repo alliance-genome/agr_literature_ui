@@ -322,6 +322,9 @@ const EntityCreate = () => {
   
   useEffect(() => {
      fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
+     if (accessLevel === 'SGD') {
+       dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005'}}));
+     }
   }, [])
 
   useEffect( () => {
