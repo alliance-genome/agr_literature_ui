@@ -153,7 +153,7 @@ const EntityEditor = () => {
           <Row className="form-group row" >
             <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Editor</h3></Col></Row>
           <Row className="form-group row" >
-            <Col className="div-grey-border" sm="1">topic</Col>
+            <Col className="div-grey-border" sm="2">topic</Col>
             <Col className="div-grey-border" sm="1">entity type <FontAwesomeIcon icon={sortBy !== "entity_type" || !descSort ? faSortAlphaDown : faSortAlphaUp} style={{color: sortBy === "entity_type" ? '#0069d9' : 'black'}}
                                                                                  onClick={() => {
                                                                                    if (sortBy === "entity_type" && descSort) {
@@ -164,35 +164,27 @@ const EntityEditor = () => {
                                                                                      setDescSort(!descSort)}
                                                                                  }}/></Col>
             <Col className="div-grey-border" sm="2">species (taxon)</Col>
-            <Col className="div-grey-border" sm="2">entity name</Col>
+            <Col className="div-grey-border" sm="1">entity name</Col>
             <Col className="div-grey-border" sm="2">entity curie</Col>
-            <Col className="div-grey-border" sm="1">display tag</Col>
+            <Col className="div-grey-border" sm="2">display tag</Col>
             <Col className="div-grey-border" sm="1">manual validation</Col>
           </Row>
           { topicEntityTags.map( (tetDict, index) => {
-            let displayTagValue = ''; let displayTagId = ''; let displayTagIndex = '';
-            // UI only allows display/selection of one priority displayTag, but someone could connect in the database multiple priority displayTag in topic_entity_tag_prop to the same topic_entity_tag, even though that would be wrong.
-            if ('props' in tetDict && tetDict['props'].length > 0) {
-              // for (const tetpDict of tetDict['props'].values())
-              for (const[indexPriority, tetpDict] of tetDict['props'].entries()) {
-                if ('displayTag' in tetpDict && tetpDict['displayTag'] !== '' && displayTagList.includes(tetpDict['displayTag'])) {
-                  displayTagId = tetpDict['topic_entity_tag_prop_id'];
-                  displayTagIndex = indexPriority;
-                  displayTagValue = tetpDict['displayTag']; } } }
+            let displayTagValue = tetDict['display_tag'];
             let entityName = '';
             if (tetDict.entity !== null) {
               entityName = tetDict.entity in entityEntityMappings ? entityEntityMappings[tetDict.entity] : 'unknown'; }
             return (
                 <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
-                  <Col className="div-grey-border" sm="1">{tetDict.topic in entityEntityMappings ? entityEntityMappings[tetDict.topic] : tetDict.topic }</Col>
+                  <Col className="div-grey-border" sm="2">{tetDict.topic in entityEntityMappings ? entityEntityMappings[tetDict.topic] : tetDict.topic }</Col>
                   <Col className="div-grey-border" sm="1">{tetDict.entity_type in entityEntityMappings ? entityEntityMappings[tetDict.entity_type] : tetDict.entity_type }</Col>
                   <Col className="div-grey-border" sm="2">{tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species }</Col>
-                  <Col className="div-grey-border" sm="2">{entityName}</Col>
+                  <Col className="div-grey-border" sm="1">{entityName}</Col>
                   <Col className="div-grey-border" sm="2">{tetDict.entity}</Col>
 
-                  <Col sm="1">
+                  <Col sm="2">
                     {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new displayTag where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
-                    <Form.Control as="select" id={`displayTag ${index} ${displayTagIndex} ${displayTagId}`} type="tetdisplayTagSelect" disabled="disabled" value={displayTagValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
+                    <Form.Control as="select" id={`displayTag ${index}`} type="tetdisplayTagSelect" disabled="disabled" value={displayTagValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
 		      <option value=""> </option> {/* Empty option */}
                       {displayTagData
                         .sort((a, b) => a.name.localeCompare(b.name))
