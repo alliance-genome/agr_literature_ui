@@ -92,7 +92,7 @@ const EntityEditor = () => {
       }
     }
     fetchMappings().then();
-  }, [topicEntityTags]);
+  }, [accessToken, referenceCurie, topicEntityTags]);
 
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
