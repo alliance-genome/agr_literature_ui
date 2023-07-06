@@ -64,7 +64,8 @@ const EntityEditor = () => {
   const [descSort, setDescSort] = useState(true);
   //const [limit, setLimit] = useState(10);
   const pageSize = 10; // fixed limit value for now
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingMappings, setIsLoadingMappings] = useState(false);
   const [displayTagData, setDisplayTagData] = useState([]);
  
   useEffect(() => {
@@ -77,18 +78,22 @@ const EntityEditor = () => {
     
   useEffect(() => {
     const fetchMappings = async () => {
-      let config = {
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer ' + accessToken
-        }
-      };
-      const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
-          config);
-      setEntityEntityMappings(resultMappings.data);
+      if (topicEntityTags.length > 0) {
+        let config = {
+          headers: {
+            'content-type': 'application/json',
+            'authorization': 'Bearer ' + accessToken
+          }
+        };
+        setIsLoadingMappings(true);
+        const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
+            config);
+        setEntityEntityMappings(resultMappings.data);
+        setIsLoadingMappings(false)
+      }
     }
     fetchMappings().then();
-  }, [accessToken, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity]);
+  }, [accessToken, referenceCurie, topicEntityTags]);
 
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
@@ -96,7 +101,7 @@ const EntityEditor = () => {
       setTotalTagsCount(resultTags.data);
     }
     fetchTotalTagsCount().then();
-  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity])
+  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,10 +112,12 @@ const EntityEditor = () => {
       if (descSort) {
         url += "&desc_sort=true"
       }
-      setIsLoading(true);
+      setIsLoadingData(true);
       const resultTags = await axios.get(url);
-      setTopicEntityTags(resultTags.data);
-      setIsLoading(false);
+      if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
+        setTopicEntityTags(resultTags.data);
+      }
+      setIsLoadingData(false);
     }
     fetchData().then();
   }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize]);
@@ -138,7 +145,7 @@ const EntityEditor = () => {
 
   return (
       <div>
-        <LoadingOverlay active={isLoading} />
+        <LoadingOverlay active={isLoadingData || isLoadingMappings} />
         <Container fluid>
           <RowDivider />
           <Row className="form-group row" >
@@ -334,17 +341,14 @@ const EntityCreate = () => {
     // TODO: add entity_published_as field when synonyms are in the A-team system
     updateJson['sources'] = [
       {
-        'source': 'manual',
+        'source': 'curator',
         'mod_abbreviation': accessLevel,
-        'validated': true,
-        'validation_type': 'manual',
         'note': noteText
       }];
     if (tetdisplayTagSelect && tetdisplayTagSelect !== '') {
       updateJson['displayTags'] = [
         {
-          'displayTag': tetdisplayTagSelect,
-          'displayTag_type': 'curation',
+          'display_tag': tetdisplayTagSelect,
           'mod_abbreviation': accessLevel
         }
       ];
