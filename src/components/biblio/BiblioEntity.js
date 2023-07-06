@@ -105,19 +105,21 @@ const EntityEditor = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize
-      if (sortBy !== null && sortBy !== undefined) {
-        url += "&sort_by=" + sortBy
+      if (biblioUpdatingEntityAdd === 0) {
+        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize
+        if (sortBy !== null && sortBy !== undefined) {
+          url += "&sort_by=" + sortBy
+        }
+        if (descSort) {
+          url += "&desc_sort=true"
+        }
+        setIsLoadingData(true);
+        const resultTags = await axios.get(url);
+        if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
+          setTopicEntityTags(resultTags.data);
+        }
+        setIsLoadingData(false);
       }
-      if (descSort) {
-        url += "&desc_sort=true"
-      }
-      setIsLoadingData(true);
-      const resultTags = await axios.get(url);
-      if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
-        setTopicEntityTags(resultTags.data);
-      }
-      setIsLoadingData(false);
     }
     fetchData().then();
   }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize]);
