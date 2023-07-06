@@ -12,7 +12,7 @@ const initialState = {
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
   entityAdd: { 'entityTypeSelect': '' },
-  entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': '', 'entitytextarea': '', 'notetextarea': '', 'tetqualifierSelect': '', 'entityResultList': '' },
+  entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': '', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
   workflowModalText: '',

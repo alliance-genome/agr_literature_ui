@@ -456,6 +456,11 @@ export const changeFieldEntityAddTaxonSelect = (taxon) => ({
   payload: { field: 'taxonSelect', value: taxon }
 });
 
+export const changeFieldEntityAddDisplayTag = (displayTag) => ({
+  type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',
+  payload: { field: 'tetdisplayTagSelect', value: displayTag }
+});
+
 const setEntityResultList = (entityResultList) => ({
   type: 'SET_ENTITY_RESULT_LIST',
   payload: { entityResultList: entityResultList }

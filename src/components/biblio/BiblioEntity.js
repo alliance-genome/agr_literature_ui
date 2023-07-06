@@ -2,7 +2,7 @@
 import {useEffect, useRef, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
-import { changeFieldEntityEntityList } from '../../actions/biblioActions';
+import {changeFieldEntityAddDisplayTag, changeFieldEntityEntityList} from '../../actions/biblioActions';
 import { changeFieldEntityAddGeneralField } from '../../actions/biblioActions';
 import { changeFieldEntityAddTaxonSelect } from '../../actions/biblioActions';
 import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
@@ -231,8 +231,7 @@ const EntityCreate = () => {
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
   const [displayTagData, setDisplayTagData] = useState([]);
-  const [newDisplayTag, setNewDisplayTag] = useState('');
-    
+
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
@@ -348,12 +347,7 @@ const EntityCreate = () => {
         'note': noteText
       }];
     if (tetdisplayTagSelect && tetdisplayTagSelect !== '') {
-      updateJson['displayTags'] = [
-        {
-          'display_tag': tetdisplayTagSelect,
-          'mod_abbreviation': accessLevel
-        }
-      ];
+      updateJson['display_tag'] = tetdisplayTagSelect;
     }
     return updateJson;
   }
@@ -464,8 +458,8 @@ const EntityCreate = () => {
         }, 8000);
         return;
       }
-      setNewDisplayTag(displayTag);
-      console.log("displayTag = " + displayTag);	
+      dispatch(changeFieldEntityAddDisplayTag(displayTag));
+      console.log("displayTag = " + displayTag);
     }
     
     const forApiArray = []
@@ -498,7 +492,9 @@ const EntityCreate = () => {
     }
     setTypeaheadOptions([]);
     setTopicSelect(null);
-    topicTypeaheadRef.current.clear();
+    if (topicTypeaheadRef.current !== null) {
+      topicTypeaheadRef.current.clear();
+    }
   }
 
   if (accessLevel in modToTaxon) {
@@ -531,7 +527,7 @@ const EntityCreate = () => {
 	<Row className="form-group row">
 	  <Col sm="3">
 	    <div><label>Topic:</label></div>
-            <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => { setNewDisplayTag(getDisplayTagForTopic(e.target.value)) }} >
+            <Form.Control as="select" id="topicSelect" type="topicSelect" value={topicSelect} onChange={(e) => { dispatch(changeFieldEntityAddDisplayTag(getDisplayTagForTopic(e.target.value))) }} >
               <option value=""> Pick a topic </option> {/* Empty option */}
               {sgdTopicList
                 .map((option, index) => (
@@ -559,7 +555,7 @@ const EntityCreate = () => {
           </Col>
           <Col sm="2">
             <div><label>Display Tag:</label></div>
-            <Form.Control as="select" id="tetdisplayTagSelect" type="tetdisplayTagSelect" value={newDisplayTag} onChange={(e) => setNewDisplayTag(e.target.value)} >
+            <Form.Control as="select" id="tetdisplayTagSelect" type="tetdisplayTagSelect" value={tetdisplayTagSelect} onChange={(e) => dispatch(changeFieldEntityAddDisplayTag(e.target.value))} >
               <option value=""> </option> {/* Empty option */}
               {displayTagData
                 .sort((a, b) => a.name.localeCompare(b.name))
@@ -667,7 +663,7 @@ const EntityCreate = () => {
             onChange={(selected) => {
 	      setTopicSelect(typeaheadName2CurieMap[selected[0]]);
 	      // Set the displayTag value based on the selected topic
-	      setNewDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]]));
+	      dispatch(changeFieldEntityAddDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]])));
             }}
             options={typeaheadOptions}
         />
@@ -702,7 +698,7 @@ const EntityCreate = () => {
         </Container>
       </Col>
       <Col sm="1">
-        <Form.Control as="select" id="tetdisplayTagSelect" type="tetdisplayTagSelect" value={newDisplayTag} onChange={(e) => setNewDisplayTag(e.target.value)} >
+        <Form.Control as="select" id="tetdisplayTagSelect" type="tetdisplayTagSelect" value={tetdisplayTagSelect} onChange={(e) => dispatch(changeFieldEntityAddDisplayTag(e.target.value))} >
 	  <option value=""> </option> {/* Empty option */} 
           {displayTagData
             .sort((a, b) => a.name.localeCompare(b.name))
