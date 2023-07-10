@@ -234,10 +234,11 @@ const EntityCreate = () => {
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   const [warningMessage, setWarningMessage] = useState('');
-  
+
   const tetdisplayTagSelect = useSelector(state => state.biblio.entityAdd.tetdisplayTagSelect);
-  const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
-  const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
+  const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);    
+  // const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
+  const [entityTypeSelect, setEntityTypeSelect] = useState(accessLevel === 'SGD' ? 'ATP:0000005' : null);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'],
 		       'FB': ['NCBITaxon:7227'],
@@ -314,11 +315,11 @@ const EntityCreate = () => {
   
   useEffect(() => {
      fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
-     if (accessLevel === 'SGD') {
-       dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005'}}));
-     }
+     //if (accessLevel === 'SGD') {
+     //  dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005' }}));
+     //}
   }, [])
-
+    
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
       dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
@@ -483,12 +484,18 @@ const EntityCreate = () => {
 
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken);
-        dispatch(updateButtonBiblioEntityAdd(arrayData))
+      dispatch(updateButtonBiblioEntityAdd(arrayData))
     }
-    setTypeaheadOptions([]);
-    setTopicSelect(null);
-    if (topicTypeaheadRef.current !== null) {
-      topicTypeaheadRef.current.clear();
+    if (accessLevel === 'SGD') {
+      setTopicSelect('');
+      setEntityTypeSelect('ATP:0000005');
+    }
+    else {
+      setTypeaheadOptions([]);
+      setTopicSelect(null);
+      if (topicTypeaheadRef.current !== null) {
+        topicTypeaheadRef.current.clear();
+      }
     }
   }
 
@@ -534,7 +541,7 @@ const EntityCreate = () => {
 	  </Col>
 	  <Col sm="3">
             <div><label>Entity Type:</label></div>
-            <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
+            <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => setEntityTypeSelect(e.target.value)} >
               { entityTypeList.map((optionValue, index) => (
                 <option key={`entityTypeSelect ${optionValue}`} value={optionValue}>{curieToNameEntityType[optionValue]} {optionValue}</option>
               ))}
