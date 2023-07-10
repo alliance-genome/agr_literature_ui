@@ -237,8 +237,8 @@ const EntityCreate = () => {
 
   const tetdisplayTagSelect = useSelector(state => state.biblio.entityAdd.tetdisplayTagSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);    
-  // const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
-  const [entityTypeSelect, setEntityTypeSelect] = useState(accessLevel === 'SGD' ? 'ATP:0000005' : null);
+  const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
+//   const [entityTypeSelect, setEntityTypeSelect] = useState(accessLevel === 'SGD' ? 'ATP:0000005' : null);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'],
 		       'FB': ['NCBITaxon:7227'],
@@ -315,9 +315,9 @@ const EntityCreate = () => {
   
   useEffect(() => {
      fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
-     //if (accessLevel === 'SGD') {
-     //  dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005' }}));
-     //}
+     if (accessLevel === 'SGD') {
+       dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005' }}));
+     }
   }, [])
     
   useEffect( () => {
@@ -484,11 +484,11 @@ const EntityCreate = () => {
 
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken);
-      dispatch(updateButtonBiblioEntityAdd(arrayData))
+      dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel))
     }
     if (accessLevel === 'SGD') {
       setTopicSelect('');
-      setEntityTypeSelect('ATP:0000005');
+//       setEntityTypeSelect('ATP:0000005');
     }
     else {
       setTypeaheadOptions([]);
@@ -508,6 +508,8 @@ const EntityCreate = () => {
   // figure out if they want general disabling to work the same for the whole row, in which case combine the next two variables
   const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
   const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
+
+//             <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => setEntityTypeSelect(e.target.value)} >
 
   if (accessLevel === 'SGD') {
     return (
@@ -541,7 +543,7 @@ const EntityCreate = () => {
 	  </Col>
 	  <Col sm="3">
             <div><label>Entity Type:</label></div>
-            <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => setEntityTypeSelect(e.target.value)} >
+            <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
               { entityTypeList.map((optionValue, index) => (
                 <option key={`entityTypeSelect ${optionValue}`} value={optionValue}>{curieToNameEntityType[optionValue]} {optionValue}</option>
               ))}
