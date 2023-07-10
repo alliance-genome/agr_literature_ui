@@ -379,7 +379,7 @@ const MergeSubmitDataTransferUpdateButton = () => {
 
     if ('cross_references' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['cross_references'] !== null) {
       for (const xrefDict of referenceMeta1['referenceJson']['cross_references'].values()) {
-        const subPath = 'cross_reference/' + xrefDict['curie'];
+        const subPath = 'cross_reference/' + xrefDict['cross_reference_id'];
         if ('is_obsolete' in xrefDict && xrefDict['is_obsolete'] !== null) {
           if (xrefDict['is_obsolete'] === false && xrefDict['toggle']) {		// was valid, now toggle, set obsolete
             const updateJsonXref1Obsolete = { 'is_obsolete': true }
@@ -389,7 +389,7 @@ const MergeSubmitDataTransferUpdateButton = () => {
     if ('cross_references' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['cross_references'] !== null) {
       for (const xrefDict of referenceMeta2['referenceJson']['cross_references'].values()) {
         if ('is_obsolete' in xrefDict && xrefDict['is_obsolete'] !== null) {
-          const subPath = 'cross_reference/' + xrefDict['curie'];
+          const subPath = 'cross_reference/' + xrefDict['cross_reference_id'];
           const referenceCurie = referenceMeta1.curie;
           const updateJsonXref2 = { 'reference_curie': referenceCurie }
           if (xrefDict['is_obsolete'] === false) {		// was valid
