@@ -238,7 +238,6 @@ const EntityCreate = () => {
   const tetdisplayTagSelect = useSelector(state => state.biblio.entityAdd.tetdisplayTagSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);    
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
-//   const [entityTypeSelect, setEntityTypeSelect] = useState(accessLevel === 'SGD' ? 'ATP:0000005' : null);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'],
 		       'FB': ['NCBITaxon:7227'],
@@ -319,7 +318,7 @@ const EntityCreate = () => {
        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005' }}));
      }
   }, [])
-    
+
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
       dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
@@ -467,7 +466,6 @@ const EntityCreate = () => {
         console.log(entityResult.curie);
         if (entityResult.curie !== 'no Alliance curie') {
           let updateJson = initializeUpdateJson(refCurie);
-          // updateJson['entity_type'] = 'ATP:0000005';
           updateJson['entity_source'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
@@ -488,7 +486,6 @@ const EntityCreate = () => {
     }
     if (accessLevel === 'SGD') {
       setTopicSelect('');
-//       setEntityTypeSelect('ATP:0000005');
     }
     else {
       setTypeaheadOptions([]);
@@ -508,8 +505,6 @@ const EntityCreate = () => {
   // figure out if they want general disabling to work the same for the whole row, in which case combine the next two variables
   const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
   const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
-
-//             <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => setEntityTypeSelect(e.target.value)} >
 
   if (accessLevel === 'SGD') {
     return (
