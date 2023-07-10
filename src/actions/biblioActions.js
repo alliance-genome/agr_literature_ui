@@ -291,7 +291,7 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
     }));
 } };
 
-export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatch => {
+export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => { return dispatch => {
   // console.log('in updateButtonBiblioEntityAdd action');
   // const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
   const [accessToken, subPath, payload, method] = updateArrayData;
@@ -321,13 +321,13 @@ export const updateButtonBiblioEntityAdd = (updateArrayData) => { return dispatc
     //   newId = parseInt(res.data); }
     dispatch({
       type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-      payload: { responseMessage: response_message }
+      payload: { responseMessage: response_message, accessLevel: accessLevel }
     })
   })
   .catch(err =>
     dispatch({
       type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-      payload: { responseMessage: 'error: ' + subPath + ' ' + err }
+      payload: { responseMessage: 'error: ' + subPath + ' ' + err, accessLevel: accessLevel }
     }));
 } };
 

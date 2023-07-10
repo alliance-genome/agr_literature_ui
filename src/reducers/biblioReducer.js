@@ -13,6 +13,7 @@ const initialState = {
   biblioUpdatingEntityRemoveEntity: {},
   entityAdd: { 'entityTypeSelect': '' },
   entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': '', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
+  entityAddInitSGD: { 'taxonSelect': '', 'entityTypeSelect': 'ATP:0000005', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
   workflowModalText: '',
@@ -333,7 +334,10 @@ export default function(state = initialState, action) {
         console.log('state.biblioUpdatingEntityAdd ' + state.biblioUpdatingEntityAdd);
         if (state.biblioUpdatingEntityAdd === 1) {
           entityModalTextUpdateButtonEntityAdd = '';
-          entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInit);
+          if (action.payload.accessLevel === 'SGD') {
+            entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInitSGD); }
+          else {
+            entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInit); }
           entityAddUpdateButtonEntityAdd.taxonSelect = origTaxonSelect;
           // entityAddUpdateButtonEntityAdd.entityTypeSelect = origEntityTypeSelect;
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
