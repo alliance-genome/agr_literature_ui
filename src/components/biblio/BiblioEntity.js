@@ -1,21 +1,20 @@
-
 import {useEffect, useRef, useState} from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 
 import {
+  ateamGetTopicDescendants,
   changeFieldEntityAddDisplayTag,
+  changeFieldEntityAddGeneralField,
+  changeFieldEntityAddTaxonSelect,
+  changeFieldEntityEditorPriority,
   changeFieldEntityEntityList,
-  setTypeaheadName2CurieMap
+  fetchDisplayTagData,
+  setBiblioUpdatingEntityAdd,
+  setEntityModalText,
+  setTypeaheadName2CurieMap,
+  updateButtonBiblioEntityAdd
 } from '../../actions/biblioActions';
-import { changeFieldEntityAddGeneralField } from '../../actions/biblioActions';
-import { changeFieldEntityAddTaxonSelect } from '../../actions/biblioActions';
-import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
-import { setBiblioUpdatingEntityAdd } from '../../actions/biblioActions';
-import { setEntityModalText } from '../../actions/biblioActions';
-import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
-import { fetchDisplayTagData } from '../../actions/biblioActions';
-import { ateamGetTopicDescendants } from '../../actions/biblioActions';
-import { sgdTopicList, setDisplayTag, checkTopicEntitySetDisplayTag} from './BiblioEntityUtilsSGD';
+import {checkTopicEntitySetDisplayTag, setDisplayTag, sgdTopicList} from './BiblioEntityUtilsSGD';
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -29,10 +28,10 @@ import Spinner from 'react-bootstrap/Spinner'
 import axios from "axios";
 import Pagination from "react-bootstrap/Pagination";
 
-import { faSortAlphaDown, faSortAlphaUp } from '@fortawesome/free-solid-svg-icons'
+import {faSortAlphaDown, faSortAlphaUp} from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
-import { AsyncTypeahead } from "react-bootstrap-typeahead";
+import {AsyncTypeahead} from "react-bootstrap-typeahead";
 
 export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
@@ -286,6 +285,12 @@ const EntityCreate = () => {
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const getMapKeyByValue = (mapObj, value) => {
+    const objEntries = Object.entries(mapObj);
+    const keyByValue = objEntries.filter((e) => e[1] === value);
+    return keyByValue.map(e => e[0])[0];
+  }
+
   function initializeUpdateJson(refCurie) {
     let updateJson = {};
     updateJson['reference_curie'] = refCurie;
@@ -524,7 +529,7 @@ const EntityCreate = () => {
                           dispatch(changeFieldEntityAddDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]])));
                         }}
                         options={typeaheadOptions}
-                        selected={topicSelect !== undefined && topicSelect !== null && topicSelect !== '' ? Object.entries(typeaheadName2CurieMap).filter((e) => e[1] === topicSelect).map(e => e[0]) : []}
+                        selected={topicSelect !== undefined && topicSelect !== null && topicSelect !== '' ? [getMapKeyByValue(typeaheadName2CurieMap, topicSelect)] : []}
         />
       </Col>
       <Col sm="1">
