@@ -11,7 +11,8 @@ import { setEntityModalText } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 import { fetchDisplayTagData } from '../../actions/biblioActions';
 import { ateamGetTopicDescendants } from '../../actions/biblioActions';
-import { sgdTopicList, setDisplayTag, checkTopicEntitySetDisplayTag} from './ChecksForSGD';
+import { sgdTopicList, setDisplayTag, checkTopicEntitySetDisplayTag} from './BiblioEntityUtilsSGD';
+import { pulldownMenu, textArea, entityValidation} from './BiblioEntityUtils';
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -239,6 +240,8 @@ const EntityCreate = () => {
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);    
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
+  // const curieToNameDisplayTag = displayTagData.map(option => {option.curie: option.name});
+    
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'],
 		       'FB': ['NCBITaxon:7227'],
 		       'WB': ['NCBITaxon:6239'],
@@ -263,7 +266,7 @@ const EntityCreate = () => {
      if (accessLevel === 'SGD') {
        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005' }}));
      }
-  }, [])
+  }, [accessLevel])
 
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
@@ -401,19 +404,14 @@ const EntityCreate = () => {
 	  </Col>
 	  <Col sm="3">
             <div><label>Entity Type:</label></div>
-            <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
-              { entityTypeList.map((optionValue, index) => (
-                <option key={`entityTypeSelect ${optionValue}`} value={optionValue}>{curieToNameEntityType[optionValue]} {optionValue}</option>
-              ))}
-            </Form.Control>
+	    {pulldownMenu('entityTypeSelect', entityTypeSelect, entityTypeList,
+			  curieToNameEntityType, dispatch, changeFieldEntityAddGeneralField)}
 	  </Col>
 	  <Col sm="3">
-	    <div><label>Species:</label></div>  
-	    <Form.Control as="select" id="taxonSelect" type="taxonSelect" value={taxonSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
-              { taxonList.map((optionValue, index) => (
-                <option key={`taxonSelect ${optionValue}`} value={optionValue}>{curieToNameTaxon[optionValue]}</option>
-              ))}
-            </Form.Control>
+	    <div><label>Species:</label></div>
+	    { pulldownMenu('taxonSelect', taxonSelect, taxonList, curieToNameTaxon,
+			   dispatch, changeFieldEntityAddGeneralField) }
+			 
           </Col>
           <Col sm="2">
             <div><label>Display Tag:</label></div>
@@ -432,8 +430,9 @@ const EntityCreate = () => {
 	<Row>
           <Col sm="3">
             <div><label>Entity List(one per line, case insensitive)</label></div>
-            <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
-          </Col>
+	    { textArea('entitytextarea', entityText, dispatch,
+		       changeFieldEntityAddGeneralField, disabledEntityList) }
+	  </Col>
           <Col sm="3">
             <div><label>Entity Validation:</label></div>
             <Container>
@@ -448,8 +447,9 @@ const EntityCreate = () => {
             </Container>
           </Col>
 	  <Col sm="3">
-	    <div><label>Comment/internal notes:</label></div>  
-            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
+	    <div><label>Comment/internal notes:</label></div>
+	    { textArea('notetextarea', noteText, dispatch,
+                       changeFieldEntityAddGeneralField, '') }
           </Col>   
 	  <Col sm="3" className="d-flex align-items-center">
 	    <div className="mt-3">
