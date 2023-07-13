@@ -7,13 +7,33 @@ import { splitCurie } from '../components/biblio/BiblioEditor';
 //   biblioEntityDisplayType: 'entity-container-rows',
 //   biblioEntityDisplayType: 'entity-side-by-side',
 //   biblioEntityDisplayType: 'entity-container-rows',
+
+const defaultEntityAdd = {
+  'topicSelect': '',
+  'taxonSelect': '',
+  'entityTypeSelect': '',
+  'entitytextarea': '',
+  'notetextarea': '',
+  'tetdisplayTagSelect': '',
+  'entityResultList': ''
+}
+
+const defaultEntityAddSGD = {
+  'topicSelect': '',
+  'taxonSelect': '',
+  'entityTypeSelect': 'ATP:0000005',
+  'entitytextarea': '',
+  'notetextarea': '',
+  'tetdisplayTagSelect': '',
+  'entityResultList': ''
+}
+
 const initialState = {
   biblioAction: '',
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
-  entityAdd: { 'entityTypeSelect': '' },
-  entityAddInit: { 'topicSelect': '', 'taxonSelect': '', 'entityTypeSelect': '', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
-  entityAddInitSGD: { 'topicSelect': '', 'taxonSelect': '', 'entityTypeSelect': 'ATP:0000005', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
+  entityAdd: defaultEntityAdd,
+  typeaheadName2CurieMap: {},
   isAddingEntity: false,
   entityModalText: '',
   workflowModalText: '',
@@ -215,6 +235,11 @@ export default function(state = initialState, action) {
           [action.payload.field]: action.payload.value
         }
       }
+    case 'SET_TYPEAHEAD_NAME_2_CURIE_MAP':
+      return {
+        ...state,
+        typeaheadName2CurieMap: action.payload
+      }
     case 'SET_ENTITY_RESULT_LIST':
       // console.log(action.payload);
       return {
@@ -336,9 +361,9 @@ export default function(state = initialState, action) {
         if (state.biblioUpdatingEntityAdd === 1) {
           entityModalTextUpdateButtonEntityAdd = '';
           if (action.payload.accessLevel === 'SGD') {
-            entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInitSGD); }
+            entityAddUpdateButtonEntityAdd = _.cloneDeep(defaultEntityAddSGD); }
           else {
-            entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAddInit); }
+            entityAddUpdateButtonEntityAdd = _.cloneDeep(defaultEntityAdd); }
           entityAddUpdateButtonEntityAdd.taxonSelect = origTaxonSelect;
           // entityAddUpdateButtonEntityAdd.entityTypeSelect = origEntityTypeSelect;
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }

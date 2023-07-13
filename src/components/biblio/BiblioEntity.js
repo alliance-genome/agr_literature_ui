@@ -2,7 +2,11 @@
 import {useEffect, useRef, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
-import {changeFieldEntityAddDisplayTag, changeFieldEntityEntityList} from '../../actions/biblioActions';
+import {
+  changeFieldEntityAddDisplayTag,
+  changeFieldEntityEntityList,
+  setTypeaheadName2CurieMap
+} from '../../actions/biblioActions';
 import { changeFieldEntityAddGeneralField } from '../../actions/biblioActions';
 import { changeFieldEntityAddTaxonSelect } from '../../actions/biblioActions';
 import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
@@ -232,7 +236,7 @@ const EntityCreate = () => {
   const [topicSelectLoading, setTopicSelectLoading] = useState(false);
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
-  const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
+  const typeaheadName2CurieMap = useSelector(state => state.biblio.typeaheadName2CurieMap);
   const [warningMessage, setWarningMessage] = useState('');
 
   const tetdisplayTagSelect = useSelector(state => state.biblio.entityAdd.tetdisplayTagSelect);
@@ -487,39 +491,40 @@ const EntityCreate = () => {
       <Col sm="2">
         <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
                         ref={topicTypeaheadRef} id="topicTypeahead"
-            onSearch={(query) => {
-              setTopicSelectLoading(true);
-              axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
-                  {
-                    "searchFilters": {
-                      "nameFilter": {
-                        "name": {
-                          "queryString": query,
-                          "tokenOperator": "AND"
-                        }
-                      }
-                    },
-                    "sortOrders": [],
-                    "aggregations": [],
-                    "nonNullFieldsTable": []
-                  },
-                  { headers: {
-                      'content-type': 'application/json',
-                      'authorization': 'Bearer ' + accessToken
-                    }
-                  })
-              .then(res => {
-                setTopicSelectLoading(false);
-                setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
-                setTypeaheadOptions(res.data.results.filter(item => {return topicDescendants.has(item.curie)}).map(item => item.name));
-              });
-            }}
-            onChange={(selected) => {
-              dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
-	      // Set the displayTag value based on the selected topic
-	      dispatch(changeFieldEntityAddDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]])));
-            }}
-            options={typeaheadOptions}
+                        onSearch={(query) => {
+                          setTopicSelectLoading(true);
+                          axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
+                              {
+                                "searchFilters": {
+                                  "nameFilter": {
+                                    "name": {
+                                      "queryString": query,
+                                      "tokenOperator": "AND"
+                                    }
+                                  }
+                                },
+                                "sortOrders": [],
+                                "aggregations": [],
+                                "nonNullFieldsTable": []
+                              },
+                              { headers: {
+                                  'content-type': 'application/json',
+                                  'authorization': 'Bearer ' + accessToken
+                                }
+                              })
+                              .then(res => {
+                                setTopicSelectLoading(false);
+                                dispatch(setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie]))));
+                                setTypeaheadOptions(res.data.results.filter(item => {return topicDescendants.has(item.curie)}).map(item => item.name));
+                              });
+                        }}
+                        onChange={(selected) => {
+                          dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
+                          // Set the displayTag value based on the selected topic
+                          dispatch(changeFieldEntityAddDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]])));
+                        }}
+                        options={typeaheadOptions}
+                        selected={topicSelect !== undefined && topicSelect !== null && topicSelect !== '' ? Object.entries(typeaheadName2CurieMap).filter((e) => e[1] === topicSelect).map(e => e[0]) : []}
         />
       </Col>
       <Col sm="1">
