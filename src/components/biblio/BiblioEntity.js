@@ -12,7 +12,7 @@ import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 import { fetchDisplayTagData } from '../../actions/biblioActions';
 import { ateamGetTopicDescendants } from '../../actions/biblioActions';
 import { sgdTopicList, setDisplayTag, checkTopicEntitySetDisplayTag} from './BiblioEntityUtilsSGD';
-import { pulldownMenu, textArea, entityValidation} from './BiblioEntityUtils';
+import { tetPulldownMenu, tetTextArea, entityValidation} from './BiblioEntityUtils';
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -409,18 +409,18 @@ const EntityCreate = () => {
 	  </Col>
 	  <Col sm="3">
             <div><label>Entity Type:</label></div>
-	    {pulldownMenu('entityTypeSelect', entityTypeSelect, entityTypeList,
+	    {tetPulldownMenu('entityTypeSelect', entityTypeSelect, entityTypeList,
 			  curieToNameEntityType, dispatch, changeFieldEntityAddGeneralField)}
 	  </Col>
 	  <Col sm="3">
 	    <div><label>Species:</label></div>
-	    { pulldownMenu('taxonSelect', taxonSelect, taxonList, curieToNameTaxon,
+	    { tetPulldownMenu('taxonSelect', taxonSelect, taxonList, curieToNameTaxon,
 			   dispatch, changeFieldEntityAddGeneralField) }
 			 
           </Col>
           <Col sm="2">
             <div><label>Display Tag:</label></div>
-	    { pulldownMenu('tetdisplayTagSelect', tetdisplayTagSelect, displayTagList, curieToNameDisplayTag,
+	    { tetPulldownMenu('tetdisplayTagSelect', tetdisplayTagSelect, displayTagList, curieToNameDisplayTag,
                            dispatch, changeFieldEntityAddDisplayTag) }
           </Col>
 	</Row>
@@ -444,7 +444,7 @@ const EntityCreate = () => {
           </Col>
 	  <Col sm="3">
 	    <div><label>Comment/internal notes:</label></div>
-	    { textArea('notetextarea', noteText, dispatch,
+	    { tetTextArea('notetextarea', noteText, dispatch,
                        changeFieldEntityAddGeneralField, '') }
           </Col>   
 	  <Col sm="3" className="d-flex align-items-center">
@@ -527,10 +527,10 @@ const EntityCreate = () => {
         />
       </Col>
       <Col sm="1">
-        { pulldownMenu('entityTypeSelect', entityTypeSelect, entityTypeList, curieToNameEntityType, dispatch, changeFieldEntityAddGeneralField) }
+        { tetPulldownMenu('entityTypeSelect', entityTypeSelect, entityTypeList, curieToNameEntityType, dispatch, changeFieldEntityAddGeneralField) }
       </Col>
       <Col sm="1">
-        { pulldownMenu('taxonSelect', taxonSelect, taxonList, curieToNameTaxon, dispatch, changeFieldEntityAddGeneralField) }
+        { tetPulldownMenu('taxonSelect', taxonSelect, taxonList, curieToNameTaxon, dispatch, changeFieldEntityAddGeneralField) }
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
@@ -548,7 +548,7 @@ const EntityCreate = () => {
         </Container>
       </Col>
       <Col sm="1">
-        { pulldownMenu('tetdisplayTagSelect', tetdisplayTagSelect, displayTagList, curieToNameDisplayTag,
+        { tetPulldownMenu('tetdisplayTagSelect', tetdisplayTagSelect, displayTagList, curieToNameDisplayTag,
                        dispatch, changeFieldEntityAddDisplayTag) }
       </Col>
       <Col className="form-label col-form-label" sm="2">

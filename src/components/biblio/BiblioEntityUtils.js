@@ -2,7 +2,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 
-export function pulldownMenu(id, value, pdList, curieToName, dispatch, changeFieldEntityAddGeneralField) {
+export function tetPulldownMenu(id, value, pdList, curieToName, dispatch, changeFieldEntityAddGeneralField) {
   return (<div>
     <Form.Control
       as="select"
@@ -19,7 +19,7 @@ export function pulldownMenu(id, value, pdList, curieToName, dispatch, changeFie
   </div>);
 }
 
-export function textArea(id, value, dispatch, changeFieldEntityAddGeneralField, disabledEntityList) {
+export function tetTextArea(id, value, dispatch, changeFieldEntityAddGeneralField, disabledEntityList) {
   return (
     <Form.Control
       as="textarea"
