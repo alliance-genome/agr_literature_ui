@@ -12,8 +12,8 @@ const initialState = {
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
   entityAdd: { 'entityTypeSelect': '' },
-  entityAddInit: { 'taxonSelect': '', 'entityTypeSelect': '', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
-  entityAddInitSGD: { 'taxonSelect': '', 'entityTypeSelect': 'ATP:0000005', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
+  entityAddInit: { 'topicSelect': '', 'taxonSelect': '', 'entityTypeSelect': '', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
+  entityAddInitSGD: { 'topicSelect': '', 'taxonSelect': '', 'entityTypeSelect': 'ATP:0000005', 'entitytextarea': '', 'notetextarea': '', 'tetdisplayTagSelect': '', 'entityResultList': '' },
   isAddingEntity: false,
   entityModalText: '',
   workflowModalText: '',
@@ -206,6 +206,7 @@ export default function(state = initialState, action) {
         }
       }
     case 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD':
+      // console.log('CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD');
       // console.log(action.payload);
       return {
         ...state,

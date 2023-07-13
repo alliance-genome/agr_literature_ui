@@ -12,7 +12,6 @@ import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 import { fetchDisplayTagData } from '../../actions/biblioActions';
 import { ateamGetTopicDescendants } from '../../actions/biblioActions';
 import { sgdTopicList, setDisplayTag, checkTopicEntitySetDisplayTag} from './BiblioEntityUtilsSGD';
-import { tetPulldownMenu, tetTextArea, entityValidation} from './BiblioEntityUtils';
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -229,7 +228,7 @@ const EntityCreate = () => {
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
   const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
-  const [topicSelect, setTopicSelect] = useState(null);
+  const topicSelect = useSelector(state => state.biblio.entityAdd.topicSelect);
   const [topicSelectLoading, setTopicSelectLoading] = useState(false);
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
@@ -302,7 +301,7 @@ const EntityCreate = () => {
   }
 
   function getDisplayTagForTopic(topicSelect) {
-    setTopicSelect(topicSelect)
+    dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: topicSelect }}));
     if (accessLevel !== 'SGD') {
       return '';
     }
@@ -356,11 +355,11 @@ const EntityCreate = () => {
       dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel))
     }
     if (accessLevel === 'SGD') {
-      setTopicSelect('');
+      dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: '' }}));
     }
     else {
       setTypeaheadOptions([]);
-      setTopicSelect(null);
+      dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: null }}));
       if (topicTypeaheadRef.current !== null) {
         topicTypeaheadRef.current.clear();
       }
@@ -409,19 +408,15 @@ const EntityCreate = () => {
 	  </Col>
 	  <Col sm="3">
             <div><label>Entity Type:</label></div>
-	    {tetPulldownMenu('entityTypeSelect', entityTypeSelect, entityTypeList,
-			  curieToNameEntityType, dispatch, changeFieldEntityAddGeneralField)}
+            <TetPulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} curieToName={curieToNameEntityType} />
 	  </Col>
 	  <Col sm="3">
 	    <div><label>Species:</label></div>
-	    { tetPulldownMenu('taxonSelect', taxonSelect, taxonList, curieToNameTaxon,
-			   dispatch, changeFieldEntityAddGeneralField) }
-			 
+            <TetPulldownMenu id='taxonSelect' value={taxonSelect} pdList={taxonList} curieToName={curieToNameTaxon} />
           </Col>
           <Col sm="2">
             <div><label>Display Tag:</label></div>
-	    { tetPulldownMenu('tetdisplayTagSelect', tetdisplayTagSelect, displayTagList, curieToNameDisplayTag,
-                           dispatch, changeFieldEntityAddDisplayTag) }
+            <TetPulldownMenu id='tetdisplayTagSelect' value={tetdisplayTagSelect} pdList={displayTagList} curieToName={curieToNameDisplayTag} />
           </Col>
 	</Row>
 	<Row>
@@ -444,8 +439,9 @@ const EntityCreate = () => {
           </Col>
 	  <Col sm="3">
 	    <div><label>Comment/internal notes:</label></div>
-	    { tetTextArea('notetextarea', noteText, dispatch,
-                       changeFieldEntityAddGeneralField, '') }
+            <Form.Control as="textarea" id='notetextarea' type='notetextarea' value={noteText} disabled={disabledEntityList}
+              onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); }}
+            />
           </Col>   
 	  <Col sm="3" className="d-flex align-items-center">
 	    <div className="mt-3">
@@ -519,7 +515,7 @@ const EntityCreate = () => {
               });
             }}
             onChange={(selected) => {
-	      setTopicSelect(typeaheadName2CurieMap[selected[0]]);
+              dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
 	      // Set the displayTag value based on the selected topic
 	      dispatch(changeFieldEntityAddDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]])));
             }}
@@ -527,10 +523,10 @@ const EntityCreate = () => {
         />
       </Col>
       <Col sm="1">
-        { tetPulldownMenu('entityTypeSelect', entityTypeSelect, entityTypeList, curieToNameEntityType, dispatch, changeFieldEntityAddGeneralField) }
+         <TetPulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} curieToName={curieToNameEntityType} />
       </Col>
       <Col sm="1">
-        { tetPulldownMenu('taxonSelect', taxonSelect, taxonList, curieToNameTaxon, dispatch, changeFieldEntityAddGeneralField) }
+         <TetPulldownMenu id='taxonSelect' value={taxonSelect} pdList={taxonList} curieToName={curieToNameTaxon} />
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
@@ -548,14 +544,31 @@ const EntityCreate = () => {
         </Container>
       </Col>
       <Col sm="1">
-        { tetPulldownMenu('tetdisplayTagSelect', tetdisplayTagSelect, displayTagList, curieToNameDisplayTag,
-                       dispatch, changeFieldEntityAddDisplayTag) }
+        <TetPulldownMenu id='tetdisplayTagSelect' value={tetdisplayTagSelect} pdList={displayTagList} curieToName={curieToNameDisplayTag} />
       </Col>
       <Col className="form-label col-form-label" sm="2">
         <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
       </Col>
       <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
     </Row></Container>);
+}
+
+const TetPulldownMenu = ({id, value, pdList, curieToName}) => {
+  const dispatch = useDispatch();
+  return (<div>
+    <Form.Control
+      as="select"
+      id={id}
+      type={id}
+      value={value}
+      onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
+      { pdList.map((optionValue, index) => (
+        <option key={`{id} ${optionValue}`}
+          value={optionValue}>{curieToName[optionValue]}
+        </option>
+      ))}
+    </Form.Control>
+  </div>);
 }
 
 export default BiblioEntity;
