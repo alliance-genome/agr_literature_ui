@@ -65,8 +65,7 @@ const initialState = {
   updateAlert: 0,
   updateFailure: 0,
   updateMessages: [],
-  loadingFileNames: new Set(),
-  ateamApiConnectionStatus: true
+  loadingFileNames: new Set()
 };
 
 const deriveCuratability = (referenceJson) => {
@@ -1119,11 +1118,6 @@ export default function(state = initialState, action) {
 //         items: [action.payload, ...state.items],        // from postActions.js
 //         item: action.payload    // from postActions.js
 //       }
-    case 'SET_ATEAM_API_CONNECTION_STATUS':
-      return {
-        ...state,
-        ateamApiConnectionStatus: action.payload
-      }
 
     default:
       return state;

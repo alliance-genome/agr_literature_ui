@@ -71,8 +71,6 @@ const Sort = () => {
   let buttonUpdateDisabled = ''
   if (sortUpdating > 0) { buttonUpdateDisabled = 'disabled'; }
 
-
-
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   // Hard coding as these are extremely unlikely to change,
   // plus we can choose the default taxid for those with more than 1. 
