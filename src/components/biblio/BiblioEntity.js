@@ -11,7 +11,7 @@ import { setEntityModalText } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 import { fetchDisplayTagData } from '../../actions/biblioActions';
 import { ateamGetTopicDescendants } from '../../actions/biblioActions';
-import { AlertAteamApiDown,testAteamAPI } from '../ATeamAlert';
+import { AlertAteamApiDown} from '../ATeamAlert';
 
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
@@ -94,7 +94,6 @@ const EntityEditor = () => {
         setIsLoadingMappings(false)
       }
     }
-    dispatch(testAteamAPI(accessToken));
     fetchMappings().then();
   }, [accessToken, referenceCurie, topicEntityTags]);
 
