@@ -18,6 +18,7 @@ import {checkTopicEntitySetDisplayTag, setDisplayTag, sgdTopicList} from './Bibl
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
+import {AlertAteamApiDown} from "../ATeamAlert";
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -36,7 +37,8 @@ import {AsyncTypeahead} from "react-bootstrap-typeahead";
 export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
 const BiblioEntity = () => {
-  return (<><EntityCreate key="entityCreate" />
+  return (<><AlertAteamApiDown />
+          <EntityCreate key="entityCreate" />
           <EntityEditor key="entityEditor" /></>);
 }
 

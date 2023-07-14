@@ -1118,6 +1118,7 @@ export default function(state = initialState, action) {
 //         items: [action.payload, ...state.items],        // from postActions.js
 //         item: action.payload    // from postActions.js
 //       }
+
     default:
       return state;
   }

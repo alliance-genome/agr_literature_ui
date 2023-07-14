@@ -28,6 +28,7 @@ import {Spinner} from "react-bootstrap";
 import React, {useState, useRef} from "react";
 import axios from "axios";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
+import {AlertAteamApiDown} from "./ATeamAlert";
 
 // DONE
 // Find Papers to Sort will need to query data once there's an API
@@ -256,6 +257,7 @@ const Sort = () => {
           <Col lg={4} ></Col>
         </Row>
       </Container>
+      <AlertAteamApiDown />
       {
         referencesToSortLive && referencesToSortLive.length === 0 ?
             <div>

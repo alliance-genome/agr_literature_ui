@@ -437,6 +437,10 @@ em {
   visibility: hidden;
 }
 
+.ateam-alert {
+  margin : 5px;
+}
+
 .overlay-on {
   opacity: 1;
   visibility: visible;
