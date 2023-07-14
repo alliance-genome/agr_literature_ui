@@ -1,18 +1,20 @@
-
 import {useEffect, useRef, useState} from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 
-import {changeFieldEntityAddDisplayTag, changeFieldEntityEntityList} from '../../actions/biblioActions';
-import { changeFieldEntityAddGeneralField } from '../../actions/biblioActions';
-import { changeFieldEntityAddTaxonSelect } from '../../actions/biblioActions';
-import { updateButtonBiblioEntityAdd } from '../../actions/biblioActions';
-import { setBiblioUpdatingEntityAdd } from '../../actions/biblioActions';
-import { setEntityModalText } from '../../actions/biblioActions';
-import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
-import { fetchDisplayTagData } from '../../actions/biblioActions';
-import { ateamGetTopicDescendants } from '../../actions/biblioActions';
-import { AlertAteamApiDown} from '../ATeamAlert';
-
+import {
+  ateamGetTopicDescendants,
+  changeFieldEntityAddDisplayTag,
+  changeFieldEntityAddGeneralField,
+  changeFieldEntityAddTaxonSelect,
+  changeFieldEntityEditorPriority,
+  changeFieldEntityEntityList,
+  fetchDisplayTagData,
+  setBiblioUpdatingEntityAdd,
+  setEntityModalText,
+  setTypeaheadName2CurieMap,
+  updateButtonBiblioEntityAdd
+} from '../../actions/biblioActions';
+import {checkTopicEntitySetDisplayTag, setDisplayTag, sgdTopicList} from './BiblioEntityUtilsSGD';
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -26,10 +28,10 @@ import Spinner from 'react-bootstrap/Spinner'
 import axios from "axios";
 import Pagination from "react-bootstrap/Pagination";
 
-import { faSortAlphaDown, faSortAlphaUp } from '@fortawesome/free-solid-svg-icons'
+import {faSortAlphaDown, faSortAlphaUp} from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
-import { AsyncTypeahead } from "react-bootstrap-typeahead";
+import {AsyncTypeahead} from "react-bootstrap-typeahead";
 
 export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
@@ -230,17 +232,24 @@ const EntityCreate = () => {
   const entityModalText = useSelector(state => state.biblio.entityModalText);
   const entityText = useSelector(state => state.biblio.entityAdd.entitytextarea);
   const noteText = useSelector(state => state.biblio.entityAdd.notetextarea);
-  const [topicSelect, setTopicSelect] = useState(null);
+  const topicSelect = useSelector(state => state.biblio.entityAdd.topicSelect);
   const [topicSelectLoading, setTopicSelectLoading] = useState(false);
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
-  const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
+  const typeaheadName2CurieMap = useSelector(state => state.biblio.typeaheadName2CurieMap);
   const [warningMessage, setWarningMessage] = useState('');
 
   const tetdisplayTagSelect = useSelector(state => state.biblio.entityAdd.tetdisplayTagSelect);
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);    
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
+  const curieToNameDisplayTag = displayTagData.reduce((acc, option) => {
+    acc[option.curie] = option.name;
+    return acc;
+  }, {});
+  const displayTagList = displayTagData.map(option=> option.curie);  
+  displayTagList.unshift('');
+    
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'],
 		       'FB': ['NCBITaxon:7227'],
 		       'WB': ['NCBITaxon:6239'],
@@ -259,67 +268,13 @@ const EntityCreate = () => {
     if ((topicDescendants.size === 0) && (accessToken !== null)) {
       dispatch(ateamGetTopicDescendants(accessToken)); }
   }, [topicDescendants, accessToken])
-
-  const sgdTopicList = [{'curie': 'ATP:0000012', 'name': 'gene ontology'},
-			{'curie': 'ATP:0000079', 'name': 'classical phenotype information'},
-	                {'curie': 'ATP:0000129', 'name': 'headline information'},
-			{'curie': 'ATP:0000128', 'name': 'protein containing complex'},
-			{'curie': 'other primary information', 'name': 'other primary information'},
-			{'curie': 'ATP:0000085', 'name': 'high throughput phenotype assay'},
-			{'curie': 'ATP:0000150', 'name': 'other HTP data (OMICs)'},
-			{'curie': 'review',      'name': 'review'},
-			{'curie': 'ATP:0000011', 'name': 'homology/disease'},
-			{'curie': 'ATP:0000088', 'name': 'post translational modification'},
-			{'curie': 'ATP:0000070', 'name': 'regulation information'},
-			{'curie': 'ATP:0000022', 'name': 'pathways'},
-			{'curie': 'ATP:0000149', 'name': 'metabolic engineering'},
-			{'curie': 'ATP:0000054', 'name': 'gene model'},
-			{'curie': 'ATP:0000006', 'name': 'allele'},
-			{'curie': 'other additional literature', 'name': 'other additional literature'}];
-			  
-  /*
-   ATP:0000128: protein containing complex
-   ATP:0000012: gene ontology
-   ATP:0000079: Classical phenotype information
-   ATP:0000129: Headline information
-   'other primary literature': place holder for other primary literature
-  */
-  const sgdPrimaryTopics = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129',
-			    'other primary information'];
-  const primaryDisplay = 'ATP:0000147';
-    
-  /*
-   ATP:0000085: high throughput phenotype assay
-   ATP:0000150: Other HTP data (OMICs)’
-  */
-  const sgdOmicsTopics = ['ATP:0000085', 'ATP:0000150'];
-  const omicsDisplay = 'ATP:0000148';
-      
-  /* 
-   ATP:0000011: Homology/Disease
-   ATP:0000088: post translational modification
-   ATP:0000070: regulatory interaction
-   ATP:0000022: pathway
-   ATP:0000149: metabolic engineering
-   ATP:0000054: gene model
-   ATP:0000006: allele
-   'other additional literature': placeholder for 'other additional literature'
-  */  
-  const sgdAdditionalTopics = ['ATP:0000142', 'ATP:0000011', 'ATP:0000088', 'ATP:0000070',
-			       'ATP:0000022', 'ATP:0000149', 'ATP:0000054', 'ATP:0000006',
-			       'other additional literature'];
-  const additionalDisplay = 'ATP:0000132';
-
-  /* place holder for review topic */
-  const sgdReviewTopic = 'review';  
-  const reviewDisplay = 'ATP:0000130';
   
   useEffect(() => {
      fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
      if (accessLevel === 'SGD') {
        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005' }}));
      }
-  }, [])
+  }, [accessLevel])
 
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
@@ -330,6 +285,12 @@ const EntityCreate = () => {
     if (accessLevel in modToTaxon) {
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const getMapKeyByValue = (mapObj, value) => {
+    const objEntries = Object.entries(mapObj);
+    const keyByValue = objEntries.filter((e) => e[1] === value);
+    return keyByValue.map(e => e[0])[0];
+  }
 
   function initializeUpdateJson(refCurie) {
     let updateJson = {};
@@ -349,105 +310,22 @@ const EntityCreate = () => {
     return updateJson;
   }
 
-  function checkTopicEntitySetDisplayTagForSGD() {
-
-    /*
-     -------------------------------------------
-     displayTag = 'primary display', ATP:0000147
-     -------------------------------------------  
-    */
-    const isPrimaryTopic = sgdPrimaryTopics.includes(topicSelect);  
-    const isEntityEmpty = !entityText || entityText.trim() === '';
-    let isEntityInvalid = false;
-    if ( entityResultList && entityResultList.length > 0 ) {
-      for (let entityResult of entityResultList.values()) {
-        if (entityResult.curie === 'no Alliance curie') {
-          isEntityInvalid = true;
-	  break;
-        }
-      }
-    }
-    if (isPrimaryTopic) {
-      if (isEntityEmpty || isEntityInvalid) {
-        return ["This topic requires the inclusion of a valid gene or entity.", false];
-      }
-      return [false, primaryDisplay];
-    }
-
-    /*
-     -----------------------------------------
-     displayTag = 'OMICs display', ATP:0000148
-     -----------------------------------------
-    */
-    if (sgdOmicsTopics.includes(topicSelect)) {
-      if (isEntityEmpty === false) {
-	return ["HTP topics do not require genes or entities", false];
-      }
-      return [false, omicsDisplay];
-    }
-
-    /*
-     -----------------------------------------------------------------
-     displayTag = 'additional display', ATP:0000132 if there is entity
-     -----------------------------------------------------------------
-    */
-    if (sgdAdditionalTopics.includes(topicSelect)) {
-      if (isEntityEmpty) { // no gene/entity => no displayTag
-        return [false, ''];
-      }
-      else if (isEntityInvalid) {
-	return ["The addition of entities are not required for this topic, but if associated they must be valid genes or entities", false];
-      }
-      return [false, additionalDisplay];
-    }
-
-    /*
-     -------------------------------------------------------------------
-     displayTag = 'review display', ATP:0000130
-     -------------------------------------------------------------------
-    */
-    if (topicSelect === sgdReviewTopic) {
-      if (isEntityEmpty) {
-        return [false, reviewDisplay];
-      }
-      else if (isEntityInvalid) {
-	return ["Entities are optional for papers assigned as reviews, but when associated they must be valid genes or entities", false];
-      }
-      else {
-	return [false, reviewDisplay];
-      }
-    }
-    //return ['You select an unknown topic for SGD. Please make the necessary correction.', false]
-    return ['Pick a topic!', false]  
-  }
-
   function getDisplayTagForTopic(topicSelect) {
-    setTopicSelect(topicSelect)
+    dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: topicSelect }}));
     if (accessLevel !== 'SGD') {
       return '';
     }
-    if (sgdPrimaryTopics.includes(topicSelect)) {
-      return primaryDisplay;
-    }
-    if (sgdOmicsTopics.includes(topicSelect)) {
-      return omicsDisplay;
-    }
-    if (sgdAdditionalTopics.includes(topicSelect)) {
-      return additionalDisplay;
-    }
-    if (topicSelect === sgdReviewTopic) {
-      return reviewDisplay;
-    }
-    return '';
+    return setDisplayTag(topicSelect);
   }
     
   function createEntities(refCurie) {
     if (topicSelect === null) {
       return
     }
-      
     if (accessLevel === 'SGD') {
-      const [warningMessage, displayTag] = checkTopicEntitySetDisplayTagForSGD();
+      const [warningMessage, displayTag] = checkTopicEntitySetDisplayTag(entityText,
+									   entityResultList,
+									   topicSelect);
       if (warningMessage) {
         setWarningMessage(warningMessage)
         setTimeout(() => {
@@ -487,11 +365,11 @@ const EntityCreate = () => {
       dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel))
     }
     if (accessLevel === 'SGD') {
-      setTopicSelect('');
+      dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: '' }}));
     }
     else {
       setTypeaheadOptions([]);
-      setTopicSelect(null);
+      dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: null }}));
       if (topicTypeaheadRef.current !== null) {
         topicTypeaheadRef.current.clear();
       }
@@ -540,43 +418,26 @@ const EntityCreate = () => {
 	  </Col>
 	  <Col sm="3">
             <div><label>Entity Type:</label></div>
-            <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
-              { entityTypeList.map((optionValue, index) => (
-                <option key={`entityTypeSelect ${optionValue}`} value={optionValue}>{curieToNameEntityType[optionValue]} {optionValue}</option>
-              ))}
-            </Form.Control>
+            <TetPulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} curieToName={curieToNameEntityType} />
 	  </Col>
 	  <Col sm="3">
-	    <div><label>Species:</label></div>  
-	    <Form.Control as="select" id="taxonSelect" type="taxonSelect" value={taxonSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
-              { taxonList.map((optionValue, index) => (
-                <option key={`taxonSelect ${optionValue}`} value={optionValue}>{curieToNameTaxon[optionValue]}</option>
-              ))}
-            </Form.Control>
+	    <div><label>Species:</label></div>
+            <TetPulldownMenu id='taxonSelect' value={taxonSelect} pdList={taxonList} curieToName={curieToNameTaxon} />
           </Col>
           <Col sm="2">
             <div><label>Display Tag:</label></div>
-            <Form.Control as="select" id="tetdisplayTagSelect" type="tetdisplayTagSelect" value={tetdisplayTagSelect} onChange={(e) => dispatch(changeFieldEntityAddDisplayTag(e.target.value))} >
-              <option value=""> </option> {/* Empty option */}
-              {displayTagData
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((option, index) => (
-                  <option key={`tetdisplayTagSelect-${index}`} value={option.curie}>
-                    {option.name}
-                  </option>
-              ))}
-            </Form.Control>
+            <TetPulldownMenu id='tetdisplayTagSelect' value={tetdisplayTagSelect} pdList={displayTagList} curieToName={curieToNameDisplayTag} />
           </Col>
 	</Row>
 	<Row>
           <Col sm="3">
             <div><label>Entity List(one per line, case insensitive)</label></div>
-            <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
-          </Col>
+	    <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
+	  </Col>
           <Col sm="3">
             <div><label>Entity Validation:</label></div>
             <Container>
-              { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
+             { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
                 const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
                 return (
                   <Row key={`entityEntityContainerrows ${index}`}>
@@ -587,8 +448,10 @@ const EntityCreate = () => {
             </Container>
           </Col>
 	  <Col sm="3">
-	    <div><label>Comment/internal notes:</label></div>  
-            <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
+	    <div><label>Comment/internal notes:</label></div>
+            <Form.Control as="textarea" id='notetextarea' type='notetextarea' value={noteText} disabled={disabledEntityList}
+              onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); }}
+            />
           </Col>   
 	  <Col sm="3" className="d-flex align-items-center">
 	    <div className="mt-3">
@@ -634,54 +497,47 @@ const EntityCreate = () => {
       <Col sm="2">
         <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
                         ref={topicTypeaheadRef} id="topicTypeahead"
-            onSearch={(query) => {
-              setTopicSelectLoading(true);
-              axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
-                  {
-                    "searchFilters": {
-                      "nameFilter": {
-                        "name": {
-                          "queryString": query,
-                          "tokenOperator": "AND"
-                        }
-                      }
-                    },
-                    "sortOrders": [],
-                    "aggregations": [],
-                    "nonNullFieldsTable": []
-                  },
-                  { headers: {
-                      'content-type': 'application/json',
-                      'authorization': 'Bearer ' + accessToken
-                    }
-                  })
-              .then(res => {
-                setTopicSelectLoading(false);
-                setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie])))
-                setTypeaheadOptions(res.data.results.filter(item => {return topicDescendants.has(item.curie)}).map(item => item.name));
-              });
-            }}
-            onChange={(selected) => {
-	      setTopicSelect(typeaheadName2CurieMap[selected[0]]);
-	      // Set the displayTag value based on the selected topic
-	      dispatch(changeFieldEntityAddDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]])));
-            }}
-            options={typeaheadOptions}
+                        onSearch={(query) => {
+                          setTopicSelectLoading(true);
+                          axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
+                              {
+                                "searchFilters": {
+                                  "nameFilter": {
+                                    "name": {
+                                      "queryString": query,
+                                      "tokenOperator": "AND"
+                                    }
+                                  }
+                                },
+                                "sortOrders": [],
+                                "aggregations": [],
+                                "nonNullFieldsTable": []
+                              },
+                              { headers: {
+                                  'content-type': 'application/json',
+                                  'authorization': 'Bearer ' + accessToken
+                                }
+                              })
+                              .then(res => {
+                                setTopicSelectLoading(false);
+                                dispatch(setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie]))));
+                                setTypeaheadOptions(res.data.results.filter(item => {return topicDescendants.has(item.curie)}).map(item => item.name));
+                              });
+                        }}
+                        onChange={(selected) => {
+                          dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
+                          // Set the displayTag value based on the selected topic
+                          dispatch(changeFieldEntityAddDisplayTag(getDisplayTagForTopic(typeaheadName2CurieMap[selected[0]])));
+                        }}
+                        options={typeaheadOptions}
+                        selected={topicSelect !== undefined && topicSelect !== null && topicSelect !== '' ? [getMapKeyByValue(typeaheadName2CurieMap, topicSelect)] : []}
         />
       </Col>
       <Col sm="1">
-        <Form.Control as="select" id="entityTypeSelect" type="entityTypeSelect" value={entityTypeSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
-          { entityTypeList.map((optionValue, index) => (
-            <option key={`entityTypeSelect ${optionValue}`} value={optionValue}>{curieToNameEntityType[optionValue]} {optionValue}</option>
-          ))}
-        </Form.Control>
+         <TetPulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} curieToName={curieToNameEntityType} />
       </Col>
       <Col sm="1">
-        <Form.Control as="select" id="taxonSelect" type="taxonSelect" value={taxonSelect} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
-          { taxonList.map((optionValue, index) => (
-            <option key={`taxonSelect ${optionValue}`} value={optionValue}>{curieToNameTaxon[optionValue]}</option>
-          ))}
-        </Form.Control>
+         <TetPulldownMenu id='taxonSelect' value={taxonSelect} pdList={taxonList} curieToName={curieToNameTaxon} />
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
@@ -699,22 +555,31 @@ const EntityCreate = () => {
         </Container>
       </Col>
       <Col sm="1">
-        <Form.Control as="select" id="tetdisplayTagSelect" type="tetdisplayTagSelect" value={tetdisplayTagSelect} onChange={(e) => dispatch(changeFieldEntityAddDisplayTag(e.target.value))} >
-	  <option value=""> </option> {/* Empty option */} 
-          {displayTagData
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((option, index) => (
-              <option key={`tetdisplayTagSelect-${index}`} value={option.curie}>
-                {option.name}
-              </option>
-            ))}
-        </Form.Control>
+        <TetPulldownMenu id='tetdisplayTagSelect' value={tetdisplayTagSelect} pdList={displayTagList} curieToName={curieToNameDisplayTag} />
       </Col>
       <Col className="form-label col-form-label" sm="2">
         <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
       </Col>
       <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
     </Row></Container>);
+}
+
+const TetPulldownMenu = ({id, value, pdList, curieToName}) => {
+  const dispatch = useDispatch();
+  return (<div>
+    <Form.Control
+      as="select"
+      id={id}
+      type={id}
+      value={value}
+      onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)) } } >
+      { pdList.map((optionValue, index) => (
+        <option key={`{id} ${optionValue}`}
+          value={optionValue}>{curieToName[optionValue]}
+        </option>
+      ))}
+    </Form.Control>
+  </div>);
 }
 
 export default BiblioEntity;

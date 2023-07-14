@@ -451,6 +451,11 @@ export const changeFieldEntityAddGeneralField = (e) => ({
   payload: { field: e.target.id, value: e.target.value }
 });
 
+export const setTypeaheadName2CurieMap = (typeaheadName2CurieMap) => ({
+  type: 'SET_TYPEAHEAD_NAME_2_CURIE_MAP',
+  payload: typeaheadName2CurieMap
+})
+
 export const changeFieldEntityAddTaxonSelect = (taxon) => ({
   type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',
   payload: { field: 'taxonSelect', value: taxon }
