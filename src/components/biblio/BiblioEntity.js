@@ -11,6 +11,7 @@ import { setEntityModalText } from '../../actions/biblioActions';
 import { changeFieldEntityEditorPriority } from '../../actions/biblioActions';
 import { fetchDisplayTagData } from '../../actions/biblioActions';
 import { ateamGetTopicDescendants } from '../../actions/biblioActions';
+import { AlertAteamApiDown,testAteamAPI } from '../ATeamAlert';
 
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
@@ -33,7 +34,8 @@ import { AsyncTypeahead } from "react-bootstrap-typeahead";
 export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
 
 const BiblioEntity = () => {
-  return (<><EntityCreate key="entityCreate" />
+  return (<><AlertAteamApiDown />
+          <EntityCreate key="entityCreate" />
           <EntityEditor key="entityEditor" /></>);
 }
 
@@ -92,6 +94,7 @@ const EntityEditor = () => {
         setIsLoadingMappings(false)
       }
     }
+    dispatch(testAteamAPI(accessToken));
     fetchMappings().then();
   }, [accessToken, referenceCurie, topicEntityTags]);
 

@@ -942,3 +942,8 @@ export const setFileUploadingModalText = (modalText) => ({
   type: 'SET_FILE_UPLOADING_MODAL_TEXT',
   payload: modalText
 })
+
+export const setAteamApiConnectionStatus = (status) => ({
+  type: 'SET_ATEAM_API_CONNECTION_STATUS',
+  payload: status
+})
