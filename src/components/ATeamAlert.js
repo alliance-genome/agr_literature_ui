@@ -35,11 +35,9 @@ const testAteamAPI = (accessToken, setStatus) => {
         }
     })
         .then(res => {
-            console.log('working');
             setStatus(true);
         })
         .catch(err => {
-            console.log('not working');
             setStatus(false);
         })
 }
