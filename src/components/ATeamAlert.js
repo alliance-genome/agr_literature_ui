@@ -13,8 +13,10 @@ export const AlertAteamApiDown = () => {
     const [status, setStatus] = useState(true);
 
     useEffect(() => {
-        testAteamAPI(accessToken, setStatus);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        if(accessToken) {
+            testAteamAPI(accessToken, setStatus);
+        }
+    }, [accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
     if(!status){
