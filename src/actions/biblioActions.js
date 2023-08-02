@@ -340,64 +340,104 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
       entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item);
     }
     const entityQueryString = entityInputList.map(element => { return element.replace(/(?=[() ])/g, '\\'); }).join(" ");
-    // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
-    // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
-    const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityType + '/search?limit=100&page=0';
-    const entityTypeSymbolField = entityType + 'Symbol';
-  
-    // console.log(ateamApiUrl);
-    // console.log(accessToken);
-    // const geneSymbol = e.target.value;
 
-    // simple search
-    //   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
-  
-    // search by taxon + exact symbol keyword or exact curie keyword
-    const searchEntityJson =
-      {"searchFilters": {
-        "nameFilters": {
-          [entityTypeSymbolField + ".displayText_keyword"]:{"queryString":entityQueryString,"tokenOperator":"OR"},
-          "curie_keyword":{"queryString":entityQueryString,"tokenOperator":"OR"}
-        },
-        "taxonFilters": { "taxon.curie_keyword":{"queryString":taxon,"tokenOperator":"AND"} }
-      } }
+    // a-team search fields are different for species vs gene or allele.
+    // sort uses AND for species because only looking for one value, here using OR and filtering to allow multiple species
+    if (entityType === 'species') {
+      axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
+          {
+             "searchFilters" : {
+                "nameFilter" : {
+                   "name" : {
+                      "queryString" : entityQueryString,
+                      "tokenOperator" : "OR" } } } },
+          { headers: {
+                  'content-type': 'application/json',
+                  'authorization': 'Bearer ' + accessToken
+              }
+          })
+          .then(res => {
+            const searchMap = {};
+            if (res.data.results) {
+              for (const entityResult of res.data.results) {
+                if (entityResult.curie && entityResult.name) {
+                  searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
+                  searchMap[entityResult.name.toLowerCase()] = entityResult.curie; } } }
+            let entityResultList = [];
+            for (const entityTypeSymbol of entityInputList) {
+              if (entityTypeSymbol.toLowerCase() in searchMap) {
+                entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); }
+              else {
+                entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' } ); } }
+            dispatch(setEntityResultList(entityResultList));
+          })
+          .catch(err =>
+            dispatch({
+              type: 'SET_ENTITY_MODAL_TEXT',
+              payload: 'Entity lookup API failure' + err
+            })
+          );
+    } else {
+      // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
+      // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
+      const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityType + '/search?limit=100&page=0';
+      const entityTypeSymbolField = entityType + 'Symbol';
 
-    // MarkQT : although formatText may be more appropriate than displayText for your needs - I think the LinkML model explains the differences
-    // if you wanted to add full names/systematic names/synonyms to your search then the appropriate fields would be geneFullName.displayText, geneSystematicName.displayText, and geneSynonyms.displayText
-  
-    // try GET1, SGD:S000001766, MGM1
-    axios.post(ateamApiUrl, searchEntityJson, {
-      headers: {
-        'content-type': 'application/json',
-        'authorization': 'Bearer ' + accessToken
-      }
-    })
-    .then(res => {
-      // console.log('res.data.results');
-      // console.log(res.data.results);
-      const searchMap = {};
-      if (res.data.results) {
-        for (const entityResult of res.data.results) {
-          if (entityResult.curie && entityResult[entityTypeSymbolField].displayText) {
-            searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
-            searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.curie; }
-          // entityResultList.push(entityResult.symbol + " " + entityResult.curie);
-          // console.log(entityResult.curie);
-          // console.log(entityResult.symbol);
-      } }
-      let entityResultList = [];
-      for (const entityTypeSymbol of entityInputList) {
-        if (entityTypeSymbol.toLowerCase() in searchMap) {
-          entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); }
-        else { 
-          entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' } ); } }
-      dispatch(setEntityResultList(entityResultList));
-    })
-    .catch(err =>
-      dispatch({
-        type: 'SET_ENTITY_MODAL_TEXT',
-        payload: 'Entity lookup API failure' + err
-      }));
+      // console.log(ateamApiUrl);
+      // console.log(accessToken);
+      // const geneSymbol = e.target.value;
+
+      // simple search
+      //   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
+
+      // search by taxon + exact symbol keyword or exact curie keyword
+      const searchEntityJson =
+        {"searchFilters": {
+          "nameFilters": {
+            [entityTypeSymbolField + ".displayText_keyword"]:{"queryString":entityQueryString,"tokenOperator":"OR"},
+            "curie_keyword":{"queryString":entityQueryString,"tokenOperator":"OR"}
+          },
+          "taxonFilters": { "taxon.curie_keyword":{"queryString":taxon,"tokenOperator":"AND"} }
+        } }
+
+      // MarkQT : although formatText may be more appropriate than displayText for your needs - I think the LinkML model explains the differences
+      // if you wanted to add full names/systematic names/synonyms to your search then the appropriate fields would be geneFullName.displayText, geneSystematicName.displayText, and geneSynonyms.displayText
+
+      // try GET1, SGD:S000001766, MGM1
+      axios.post(ateamApiUrl, searchEntityJson, {
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer ' + accessToken
+        }
+      })
+      .then(res => {
+        // console.log('res.data.results');
+        // console.log(res.data.results);
+        const searchMap = {};
+        if (res.data.results) {
+          for (const entityResult of res.data.results) {
+            if (entityResult.curie && entityResult[entityTypeSymbolField].displayText) {
+              searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
+              searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.curie; }
+            // entityResultList.push(entityResult.symbol + " " + entityResult.curie);
+            // console.log(entityResult.curie);
+            // console.log(entityResult.symbol);
+        } }
+        let entityResultList = [];
+        for (const entityTypeSymbol of entityInputList) {
+          if (entityTypeSymbol.toLowerCase() in searchMap) {
+            entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); }
+          else {
+            entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' } ); } }
+        dispatch(setEntityResultList(entityResultList));
+      })
+      .catch(err =>
+        dispatch({
+          type: 'SET_ENTITY_MODAL_TEXT',
+          payload: 'Entity lookup API failure' + err
+        })
+      );
+    }
   }
 };
 
