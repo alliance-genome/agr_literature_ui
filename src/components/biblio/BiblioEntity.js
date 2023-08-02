@@ -34,7 +34,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 import {AsyncTypeahead} from "react-bootstrap-typeahead";
 
-export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele' };
+export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000123': 'species' };
 
 const BiblioEntity = () => {
   return (<><AlertAteamApiDown />
@@ -262,7 +262,7 @@ const EntityCreate = () => {
 			      'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
 			      'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
-  const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
+  const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123'];
 
   const topicDescendants = useSelector(state => state.biblio.topicDescendants);
   useEffect(() => {
