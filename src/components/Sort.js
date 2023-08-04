@@ -317,7 +317,7 @@ const Sort = () => {
                       inline
                       checked={ (reference['corpus'] === 'needs_review') ? 'checked' : '' }
                       type='radio'
-                      label='review'
+                      label='needs review'
                       id={`needs_review_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                   />
@@ -328,7 +328,7 @@ const Sort = () => {
                       inline
                       checked={ (reference['corpus'] === 'inside_corpus') ? 'checked' : '' }
                       type='radio'
-                      label='inside'
+                      label='inside corpus'
                       id={`inside_corpus_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                   /><br/><br/>
@@ -422,7 +422,7 @@ const Sort = () => {
                       inline
                       checked={ (reference['corpus'] === 'outside_corpus') ? 'checked' : '' }
                       type='radio'
-                      label='outside'
+                      label='outside corpus'
                       id={`outside_corpus_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                   />
