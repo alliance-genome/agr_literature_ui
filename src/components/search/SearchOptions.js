@@ -69,9 +69,10 @@ const SearchOptions = () => {
                                       dispatch(setSearchResultsPage(1));
                                       dispatch(searchReferences());
                                   } }>
-                        <option value="10" selected>Results per page 10</option>
+                        <option value="10" >Results per page 10</option>
                         <option value="25" >Results per page 25</option>
-                        <option value="50" >Results per page 50</option>
+                        <option value="50" selected>Results per page 50</option>
+                        <option value="100" >Results per page 100</option>
                     </Form.Control>
                 </Col>
                 <Col sm={2}>
