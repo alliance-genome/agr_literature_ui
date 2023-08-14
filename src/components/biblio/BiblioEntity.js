@@ -8,7 +8,7 @@ import {
   changeFieldEntityAddTaxonSelect,
   changeFieldEntityEditorPriority,
   changeFieldEntityEntityList,
-  fetchDisplayTagData,
+  fetchDisplayTagData, getCuratorSourceId,
   setBiblioUpdatingEntityAdd,
   setEntityModalText,
   setTypeaheadName2CurieMap,
@@ -250,6 +250,8 @@ const EntityCreate = () => {
   }, {});
   const displayTagList = displayTagData.map(option=> option.curie);  
   displayTagList.unshift('');
+
+  const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
     
   const modToTaxon = { 'ZFIN': ['NCBITaxon:7955'],
 		       'FB': ['NCBITaxon:7227'],
@@ -263,6 +265,15 @@ const EntityCreate = () => {
 			      'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123'];
+
+  useEffect(() => {
+    const fetchSourceId = async () => {
+      if (accessToken !== null) {
+        setTopicEntitySourceId(await getCuratorSourceId(accessLevel, accessToken));
+      }
+    }
+    fetchSourceId().catch(console.error);
+  }, [accessLevel, accessToken]);
 
   const topicDescendants = useSelector(state => state.biblio.topicDescendants);
   useEffect(() => {
@@ -385,7 +396,7 @@ const EntityCreate = () => {
   // const taxonSelect = 'NCBITaxon:6239';	// to hardcode if they don't want a dropdown
   // figure out if they want general disabling to work the same for the whole row, in which case combine the next two variables
   const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
-  const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
+  const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined || topicEntitySourceId === undefined) ? 'disabled' : '';
 
   if (accessLevel === 'SGD') {
     return (
