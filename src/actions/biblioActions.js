@@ -147,6 +147,34 @@ export const changeFieldDatePublishedRange = (datePublishedRange) => {
   };
 }
 
+export const getCuratorSourceId = async (mod, accessToken) => {
+  try{
+    const res = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source/curator/abc_literature_system/' + mod);
+    return res.data.topic_entity_tag_source_id;
+  } catch (error) {
+    if (error.response.status === 404) {
+      try {
+        const newSourceId = await axios.post(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source', {
+          "source_type": "curator",
+          "source_method": "abc_literature_system",
+          "validation_type": "curator",
+          "evidence": "set_eco_code_here",
+          "description": "describe source here",
+          "mod_abbreviation": mod
+        },{ headers: {
+            'content-type': 'application/json',
+            'mode': 'cors',
+            'authorization': 'Bearer ' + accessToken
+          }
+        });
+        return newSourceId;
+      } catch(error){
+        return undefined;
+      }
+    }
+  }
+}
+
 
 export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIBLIO_UPDATING_ENTITY_ADD', payload: payload }; };
 
