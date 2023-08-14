@@ -310,12 +310,10 @@ const EntityCreate = () => {
     updateJson['topic'] = topicSelect;
     updateJson['species'] = taxonSelect;
     // TODO: add entity_published_as field when synonyms are in the A-team system
-    updateJson['sources'] = [
-      {
-        'source': 'curator',
-        'mod_abbreviation': accessLevel,
-        'note': noteText
-      }];
+    updateJson['note'] = noteText;
+    updateJson['negated'] = false;
+    updateJson['confidence_level'] = null;
+    updateJson['topic_entity_tag_source_id'] = topicEntitySourceId;
     if (tetdisplayTagSelect && tetdisplayTagSelect !== '') {
       updateJson['display_tag'] = tetdisplayTagSelect;
     }
