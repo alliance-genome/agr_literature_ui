@@ -160,7 +160,9 @@ export const getCuratorSourceId = async (mod, accessToken) => {
           "validation_type": "curator",
           "evidence": "set_eco_code_here",
           "description": "describe source here",
-          "mod_abbreviation": mod
+          "mod_abbreviation": mod,
+          "created_by": "default_user",
+          "updated_by": "default_user",
         },{ headers: {
             'content-type': 'application/json',
             'mode': 'cors',
