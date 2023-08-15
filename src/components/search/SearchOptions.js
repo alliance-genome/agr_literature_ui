@@ -5,7 +5,6 @@ import {useDispatch, useSelector} from 'react-redux';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import Pagination from 'react-bootstrap/Pagination';
 import SearchPagination from "./SearchPagination";
 
 

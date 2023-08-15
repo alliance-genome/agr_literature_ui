@@ -1,9 +1,6 @@
 import React from 'react';
-import Form from 'react-bootstrap/Form';
-import {searchReferences, setSearchSizeResultsCount, setSearchResultsPage, setSortByPublishedDate} from '../../actions/searchActions';
+import {searchReferences,  setSearchResultsPage} from '../../actions/searchActions';
 import {useDispatch, useSelector} from 'react-redux';
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Pagination from 'react-bootstrap/Pagination';
 

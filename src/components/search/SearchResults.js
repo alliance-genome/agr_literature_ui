@@ -8,7 +8,7 @@ import {setGetReferenceCurieFlag, setReferenceCurie} from '../../actions/biblioA
 import {Modal} from 'react-bootstrap';
 import {setSearchError, searchXref, setSearchResultsPage, searchReferences} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
-import Pagination from "react-bootstrap/Pagination";
+
 
 const MatchingTextBox = (highlight) => {
   return (
