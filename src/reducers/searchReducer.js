@@ -19,7 +19,7 @@ export const INITIAL_FACETS_LIMIT = 10;
 const initialState = {
   searchResults: [],
   searchResultsCount: 0,
-  searchSizeResultsCount: 10,
+  searchSizeResultsCount: 50,
   searchResultsPage: 1,
   searchLoading: false,
   facetsLoading: false,

@@ -6,8 +6,9 @@ import Col from 'react-bootstrap/Col';
 import {Link} from 'react-router-dom';
 import {setGetReferenceCurieFlag, setReferenceCurie} from '../../actions/biblioActions';
 import {Modal} from 'react-bootstrap';
-import {setSearchError, searchXref} from '../../actions/searchActions';
+import {setSearchError, searchXref, setSearchResultsPage, searchReferences} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
+
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -37,6 +38,8 @@ const SearchResults = () => {
     const searchSuccess = useSelector(state => state.search.searchSuccess);
     const searchError = useSelector(state => state.search.searchError);
     const dispatch = useDispatch();
+
+
 
     function truncateAbstract(abstract, maxLength){
       if (abstract.length <= maxLength) return abstract;

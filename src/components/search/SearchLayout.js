@@ -7,7 +7,7 @@ import Facets from './Facets';
 import SearchResults from "./SearchResults";
 import SearchOptions from "./SearchOptions";
 import BreadCrumbs from "./BreadCrumbs";
-
+import SearchPagination from "./SearchPagination";
 
 const SearchLayout = () => {
     return (
@@ -43,6 +43,7 @@ const SearchLayout = () => {
                         </div>
                     </Col>
                 </Row>
+                <Row ><Col  sm={6}></Col><Col  sm={4}><SearchPagination/></Col></Row>
             </Container>
         </div>
     )
