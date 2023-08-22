@@ -473,7 +473,6 @@ const Biblio = () => {
               <h4>Biblio about this Reference</h4>
               <div align="center" className="task">{referenceCurie}</div>
               {isLoading ? <LoadingElement/> : <BiblioActionRouter/>}
-              <Link to='/'>Go Back</Link>
             </div> : null
         }
       </div>

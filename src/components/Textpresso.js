@@ -5,7 +5,6 @@ const Textpresso = () => {
     <div>
       <h4>Textpresso flags go here</h4>
       <p>Text mining information from Textpresso</p>
-      <Link to='/'>Go Back</Link>
     </div>
   )
 }

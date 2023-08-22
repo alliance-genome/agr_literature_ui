@@ -1349,7 +1349,6 @@ const Biblio = () => {
         <h4>Biblio about this Reference</h4>
         <div align="center" className="task" >{referenceCurie}</div>
         { isLoading ? <LoadingElement /> : <BiblioActionRouter /> }
-        <Link to='/'>Go Back</Link>
       </div>
     ) }
 
@@ -1420,7 +1419,6 @@ const Biblio = () => {
 //     <div>
 //       <h4>Biblio about this Reference</h4>
 //       <div>{crossRefCurieQueryResponseField}</div>
-//       <Link to='/'>Go Back</Link>
 //       {tasks['data'].map((task, index) => (
 //         <div align="left" key={index} className={`task ${task.reminder && 'reminder'}`}><h5>{task.primaryId}</h5>pages : {task.pages}<div>{task.citation}</div></div>
 //       ))}

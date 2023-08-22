@@ -439,7 +439,6 @@ const Sort = () => {
         </Container>
       }
       <hr/>
-      <Link to='/'>Go Back</Link>
     </div>
   )
 }
