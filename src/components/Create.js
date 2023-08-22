@@ -188,6 +188,5 @@ const Create = () => {
     </div>
   )
 }
-//       <Link to='/'>Go Back</Link>
 
 export default Create

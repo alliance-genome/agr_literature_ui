@@ -8,7 +8,6 @@ const Search = () => {
       <h4>Search References<br/></h4>
         <SearchLayout/>
       <hr/>
-      <Link to='/'>Go Back</Link>
     </div>
   )
 }

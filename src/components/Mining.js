@@ -5,7 +5,6 @@ const Mining = () => {
     <div>
       <h4>Mining combined goes here</h4>
       <p>Combined information from text mining goes here</p>
-      <Link to='/'>Go Back</Link>
     </div>
   )
 }
