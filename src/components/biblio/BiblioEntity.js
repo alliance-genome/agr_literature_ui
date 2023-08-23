@@ -39,6 +39,7 @@ export const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'A
 const BiblioEntity = () => {
   return (<><AlertAteamApiDown />
           <EntityCreate key="entityCreate" />
+          <EntityTable key="entityTable" />
           <EntityEditor key="entityEditor" /></>);
 }
 
@@ -54,6 +55,105 @@ const curieToNameTaxon = {
     'NCBITaxon:9606': 'Homo sapiens',
     '': ''
 };
+
+const EntityTable = () => {
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  if (accessLevel === 'ZFIN') { return (<EntityTableZfin key="entityTableZfin" />); }
+} // const EntityTable
+
+const EntityTableZfin = () => {
+  // ugly table view that shows any possible data returned by the API for the main object keys and the topic_entity_tag_source keys, 
+  // in case the API changes.  there is no specific order to keep this working if more or less keys are added.  only show this for ZFIN.
+  const [topicEntityTags, setTopicEntityTags] = useState([]);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
+  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingMappings, setIsLoadingMappings] = useState(false);
+  const [entityEntityMappings, setEntityEntityMappings] = useState({});
+
+  useEffect(() => {
+    const fetchMappings = async () => {
+      if (topicEntityTags.length > 0) {
+        let config = {
+          headers: {
+            'content-type': 'application/json',
+            'authorization': 'Bearer ' + accessToken
+          }
+        };
+        setIsLoadingMappings(true);
+        const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
+            config);
+        setEntityEntityMappings(resultMappings.data);
+        setIsLoadingMappings(false)
+      }
+    }
+    fetchMappings().then();
+  }, [accessToken, referenceCurie, topicEntityTags]);
+
+  useEffect(() => {
+    const page = 0;
+    const pageSize = 1000;
+    const fetchData = async () => {
+      if (biblioUpdatingEntityAdd === 0) {
+        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize
+        setIsLoadingData(true);
+        const resultTags = await axios.get(url);
+        if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
+          setTopicEntityTags(resultTags.data);
+        }
+        setIsLoadingData(false);
+      }
+    }
+    fetchData().then();
+  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity]);
+
+  let headers = [];
+  let source_headers = [];
+  for (const tetDict of topicEntityTags.values()) {
+    // console.log(tetDict);
+    for (const tetDictKey in tetDict) {
+      // console.log(tetDictKey);
+      if (tetDictKey === 'topic_entity_tag_source') {
+        for (const tetSourceKey in tetDict[tetDictKey]) {
+          (source_headers.indexOf(tetSourceKey) === -1) && source_headers.push(tetSourceKey); } }
+      else {
+        (headers.indexOf(tetDictKey) === -1) && headers.push(tetDictKey); }
+    }
+  }
+  // console.log(headers);
+  // console.log(source_headers);
+
+  return (
+      <div>
+        <LoadingOverlay active={isLoadingData || isLoadingMappings} />
+        <b>Ugly Table</b><br/>
+        <table>
+          <thead>
+            <tr>
+            { headers.map( (header, index) => { return (<th key={`tetTableHeader th ${index}`} style={{border: 'solid'}}>{header}</th>) } ) }
+            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} style={{border: 'solid'}}>{header}</th>) } ) }
+            </tr>
+          </thead>
+        <tbody>
+          { topicEntityTags.map( (tetDict, index_1) => {
+            return (
+              <tr key={`tetTableRow ${index_1}`}>
+              { headers.map( (header, index_2) => { return (
+                <td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid'}}>{tetDict[header]}</td>
+              ) } ) }
+              { source_headers.map( (header, index_2) => { return (
+                <td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid'}}>{tetDict['topic_entity_tag_source'][header]}</td>
+              ) } ) }
+              </tr>);
+          } ) }
+        </tbody></table>
+      </div>);
+} // const EntityTableZfin
+
 
 const EntityEditor = () => {
   const dispatch = useDispatch();
