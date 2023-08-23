@@ -75,9 +75,9 @@ const EntityEditor = () => {
  
   useEffect(() => {
      fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
-  }, [])
+  }, [accessToken])
   
-  const displayTagList = displayTagData.map(option => option.name);
+  // const displayTagList = displayTagData.map(option => option.name);
   // console.table("displayTagData=", displayTagData);
   // console.table("displayTagList=", displayTagList);
     
@@ -106,7 +106,7 @@ const EntityEditor = () => {
       setTotalTagsCount(resultTags.data);
     }
     fetchTotalTagsCount().then();
-  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity])
+  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -127,7 +127,7 @@ const EntityEditor = () => {
       }
     }
     fetchData().then();
-  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize]);
+  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags]);
 
   const changePage = (action) => {
       let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
@@ -175,7 +175,7 @@ const EntityEditor = () => {
             <Col className="div-grey-border" sm="1">manual validation</Col>
           </Row>
           { topicEntityTags.map( (tetDict, index) => {
-            let displayTagValue = tetDict['display_tag'];
+            let displayTagValue = tetDict['display_tag'] || '';
             let entityName = '';
             if (tetDict.entity !== null) {
               entityName = tetDict.entity in entityEntityMappings ? entityEntityMappings[tetDict.entity] : 'unknown'; }
@@ -279,14 +279,14 @@ const EntityCreate = () => {
   useEffect(() => {
     if ((topicDescendants.size === 0) && (accessToken !== null)) {
       dispatch(ateamGetTopicDescendants(accessToken)); }
-  }, [topicDescendants, accessToken])
+  }, [topicDescendants, accessToken, dispatch])
   
   useEffect(() => {
      fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
      if (accessLevel === 'SGD') {
        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005' }}));
      }
-  }, [accessLevel])
+  }, [accessLevel, accessToken, dispatch])
 
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
@@ -572,7 +572,7 @@ const EntityCreate = () => {
       </Col>
       <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
     </Row></Container>);
-}
+} // const EntityCreate
 
 const TetPulldownMenu = ({id, value, pdList, curieToName}) => {
   const dispatch = useDispatch();
