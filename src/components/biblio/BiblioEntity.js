@@ -60,7 +60,7 @@ const EntityTable = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-  if (accessLevel !== 'ZFIN') { return (<EntityTableZfin key="entityTableZfin" />); }
+  if (accessLevel === 'ZFIN') { return (<EntityTableZfin key="entityTableZfin" />); }
 } // const EntityTable
 
 const EntityTableZfin = () => {
