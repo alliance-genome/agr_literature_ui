@@ -60,7 +60,7 @@ const EntityTable = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-  if (accessLevel === 'ZFIN') { return (<EntityTableZfin key="entityTableZfin" />); }
+  if (accessLevel !== 'ZFIN') { return (<EntityTableZfin key="entityTableZfin" />); }
 } // const EntityTable
 
 const EntityTableZfin = () => {
@@ -134,20 +134,26 @@ const EntityTableZfin = () => {
         <table>
           <thead>
             <tr>
-            { headers.map( (header, index) => { return (<th key={`tetTableHeader th ${index}`} style={{border: 'solid'}}>{header}</th>) } ) }
-            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} style={{border: 'solid'}}>{header}</th>) } ) }
+            { headers.map( (header, index) => { return (<th key={`tetTableHeader th ${index}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{header}</th>) } ) }
+            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{header}</th>) } ) }
             </tr>
           </thead>
         <tbody>
           { topicEntityTags.map( (tetDict, index_1) => {
             return (
               <tr key={`tetTableRow ${index_1}`}>
-              { headers.map( (header, index_2) => { return (
-                <td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid'}}>{tetDict[header]}</td>
-              ) } ) }
-              { source_headers.map( (header, index_2) => { return (
-                <td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid'}}>{tetDict['topic_entity_tag_source'][header]}</td>
-              ) } ) }
+              { headers.map( (header, index_2) => {
+                let td_value = tetDict[header];
+                if (td_value === true) { td_value = 'True'; }
+                  else if (td_value === false) { td_value = 'False'; }
+                return (<td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{td_value}</td>)
+              } ) }
+              { source_headers.map( (header, index_2) => {
+                let td_value = tetDict['topic_entity_tag_source'][header];
+                if (td_value === true) { td_value = 'True'; }
+                  else if (td_value === false) { td_value = 'False'; }
+                return (<td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{tetDict['topic_entity_tag_source'][header]}</td>)
+              } ) }
               </tr>);
           } ) }
         </tbody></table>
