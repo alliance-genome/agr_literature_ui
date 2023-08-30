@@ -23,6 +23,7 @@ import {AlertAteamApiDown} from "../ATeamAlert";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Table from 'react-bootstrap/Table';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
@@ -57,13 +58,6 @@ const curieToNameTaxon = {
 };
 
 const EntityTable = () => {
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-  if (accessLevel === 'ZFIN') { return (<EntityTableZfin key="entityTableZfin" />); }
-} // const EntityTable
-
-const EntityTableZfin = () => {
   // ugly table view that shows any possible data returned by the API for the main object keys and the topic_entity_tag_source keys, 
   // in case the API changes.  there is no specific order to keep this working if more or less keys are added.  only show this for ZFIN.
   const [topicEntityTags, setTopicEntityTags] = useState([]);
@@ -113,29 +107,28 @@ const EntityTableZfin = () => {
 
   let headers = [];
   let source_headers = [];
+  const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
+  const dateColumnSet = new Set(['date_created', 'date_updated']);
   for (const tetDict of topicEntityTags.values()) {
-    // console.log(tetDict);
     for (const tetDictKey in tetDict) {
       // console.log(tetDictKey);
       if (tetDictKey === 'topic_entity_tag_source') {
         for (const tetSourceKey in tetDict[tetDictKey]) {
-          (source_headers.indexOf(tetSourceKey) === -1) && source_headers.push(tetSourceKey); } }
+          if ( (source_headers.indexOf(tetSourceKey) === -1) && !(excludeColumnSet.has(tetSourceKey)) ) { source_headers.push(tetSourceKey); } } }
       else {
-        (headers.indexOf(tetDictKey) === -1) && headers.push(tetDictKey); }
+        if ( (headers.indexOf(tetDictKey) === -1) && !(excludeColumnSet.has(tetDictKey)) ) { headers.push(tetDictKey); } }
     }
   }
-  // console.log(headers);
-  // console.log(source_headers);
 
   return (
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-        <b>Ugly Table</b><br/>
-        <table>
+        <b>Mockup Table</b><br/>
+        <Table bordered size="sm" responsive>
           <thead>
             <tr>
-            { headers.map( (header, index) => { return (<th key={`tetTableHeader th ${index}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{header}</th>) } ) }
-            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{header}</th>) } ) }
+            { headers.map( (header, index) => { return (<th key={`tetTableHeader th ${index}`} >{header}</th>) } ) }
+            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} >{header}</th>) } ) }
             </tr>
           </thead>
         <tbody>
@@ -146,19 +139,23 @@ const EntityTableZfin = () => {
                 let td_value = tetDict[header];
                 if (td_value === true) { td_value = 'True'; }
                   else if (td_value === false) { td_value = 'False'; }
-                return (<td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{td_value}</td>)
+                if (dateColumnSet.has(header)) {
+                  td_value = new Date(td_value).toLocaleString(); }
+                return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
               } ) }
               { source_headers.map( (header, index_2) => {
                 let td_value = tetDict['topic_entity_tag_source'][header];
                 if (td_value === true) { td_value = 'True'; }
                   else if (td_value === false) { td_value = 'False'; }
-                return (<td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{tetDict['topic_entity_tag_source'][header]}</td>)
+                if (dateColumnSet.has(header)) {
+                  td_value = new Date(td_value).toLocaleString(); }
+                return (<td key={`tetTable ${index_1} td ${index_2}`} >{tetDict['topic_entity_tag_source'][header]}</td>)
               } ) }
               </tr>);
           } ) }
-        </tbody></table>
+        </tbody></Table>
       </div>);
-} // const EntityTableZfin
+} // const EntityTable
 
 
 const EntityEditor = () => {
