@@ -149,7 +149,7 @@ const EntityTable = () => {
                   else if (td_value === false) { td_value = 'False'; }
                 if (dateColumnSet.has(header)) {
                   td_value = new Date(td_value).toLocaleString(); }
-                return (<td key={`tetTable ${index_1} td ${index_2}`} >{tetDict['topic_entity_tag_source'][header]}</td>)
+                return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
               } ) }
               </tr>);
           } ) }
