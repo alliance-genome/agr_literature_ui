@@ -23,6 +23,7 @@ import {AlertAteamApiDown} from "../ATeamAlert";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Table from 'react-bootstrap/Table';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
@@ -40,7 +41,7 @@ const BiblioEntity = () => {
   return (<><AlertAteamApiDown />
           <EntityCreate key="entityCreate" />
           <EntityTable key="entityTable" />
-          <EntityEditor key="entityEditor" /></>);
+          </>);
 }
 
 const curieToNameTaxon = {
@@ -57,111 +58,6 @@ const curieToNameTaxon = {
 };
 
 const EntityTable = () => {
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-  if (accessLevel === 'ZFIN') { return (<EntityTableZfin key="entityTableZfin" />); }
-} // const EntityTable
-
-const EntityTableZfin = () => {
-  // ugly table view that shows any possible data returned by the API for the main object keys and the topic_entity_tag_source keys, 
-  // in case the API changes.  there is no specific order to keep this working if more or less keys are added.  only show this for ZFIN.
-  const [topicEntityTags, setTopicEntityTags] = useState([]);
-  const accessToken = useSelector(state => state.isLogged.accessToken);
-  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
-  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [isLoadingMappings, setIsLoadingMappings] = useState(false);
-  const [entityEntityMappings, setEntityEntityMappings] = useState({});
-
-  useEffect(() => {
-    const fetchMappings = async () => {
-      if (topicEntityTags.length > 0) {
-        let config = {
-          headers: {
-            'content-type': 'application/json',
-            'authorization': 'Bearer ' + accessToken
-          }
-        };
-        setIsLoadingMappings(true);
-        const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
-            config);
-        setEntityEntityMappings(resultMappings.data);
-        setIsLoadingMappings(false)
-      }
-    }
-    fetchMappings().then();
-  }, [accessToken, referenceCurie, topicEntityTags]);
-
-  useEffect(() => {
-    const page = 0;
-    const pageSize = 1000;
-    const fetchData = async () => {
-      if (biblioUpdatingEntityAdd === 0) {
-        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize
-        setIsLoadingData(true);
-        const resultTags = await axios.get(url);
-        if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
-          setTopicEntityTags(resultTags.data);
-        }
-        setIsLoadingData(false);
-      }
-    }
-    fetchData().then();
-  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity]);
-
-  let headers = [];
-  let source_headers = [];
-  for (const tetDict of topicEntityTags.values()) {
-    // console.log(tetDict);
-    for (const tetDictKey in tetDict) {
-      // console.log(tetDictKey);
-      if (tetDictKey === 'topic_entity_tag_source') {
-        for (const tetSourceKey in tetDict[tetDictKey]) {
-          (source_headers.indexOf(tetSourceKey) === -1) && source_headers.push(tetSourceKey); } }
-      else {
-        (headers.indexOf(tetDictKey) === -1) && headers.push(tetDictKey); }
-    }
-  }
-  // console.log(headers);
-  // console.log(source_headers);
-
-  return (
-      <div>
-        <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-        <b>Ugly Table</b><br/>
-        <table>
-          <thead>
-            <tr>
-            { headers.map( (header, index) => { return (<th key={`tetTableHeader th ${index}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{header}</th>) } ) }
-            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{header}</th>) } ) }
-            </tr>
-          </thead>
-        <tbody>
-          { topicEntityTags.map( (tetDict, index_1) => {
-            return (
-              <tr key={`tetTableRow ${index_1}`}>
-              { headers.map( (header, index_2) => {
-                let td_value = tetDict[header];
-                if (td_value === true) { td_value = 'True'; }
-                  else if (td_value === false) { td_value = 'False'; }
-                return (<td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{td_value}</td>)
-              } ) }
-              { source_headers.map( (header, index_2) => {
-                let td_value = tetDict['topic_entity_tag_source'][header];
-                if (td_value === true) { td_value = 'True'; }
-                  else if (td_value === false) { td_value = 'False'; }
-                return (<td key={`tetTable ${index_1} td ${index_2}`} style={{border: 'solid', paddingRight: '10px', paddingLeft: '10px'}}>{tetDict['topic_entity_tag_source'][header]}</td>)
-              } ) }
-              </tr>);
-          } ) }
-        </tbody></table>
-      </div>);
-} // const EntityTableZfin
-
-
-const EntityEditor = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
@@ -178,15 +74,11 @@ const EntityEditor = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
   const [displayTagData, setDisplayTagData] = useState([]);
- 
+
   useEffect(() => {
-     fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
+    fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
   }, [accessToken])
-  
-  // const displayTagList = displayTagData.map(option => option.name);
-  // console.table("displayTagData=", displayTagData);
-  // console.table("displayTagList=", displayTagList);
-    
+
   useEffect(() => {
     const fetchMappings = async () => {
       if (topicEntityTags.length > 0) {
@@ -197,10 +89,13 @@ const EntityEditor = () => {
           }
         };
         setIsLoadingMappings(true);
-        const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
-            config);
-        setEntityEntityMappings(resultMappings.data);
-        setIsLoadingMappings(false)
+        try {
+          const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie + "&token=" + accessToken,
+              config);
+          setEntityEntityMappings(resultMappings.data);
+        } finally {
+          setIsLoadingMappings(false)
+        }
       }
     }
     fetchMappings().then();
@@ -208,7 +103,7 @@ const EntityEditor = () => {
 
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?count_only=true");
+      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&count_only=true");
       setTotalTagsCount(resultTags.data);
     }
     fetchTotalTagsCount().then();
@@ -217,7 +112,7 @@ const EntityEditor = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
-        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize
+        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&page=" + page + "&page_size=" + pageSize
         if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
         }
@@ -236,84 +131,96 @@ const EntityEditor = () => {
   }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags]);
 
   const changePage = (action) => {
-      let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
-      switch (action){
-        case 'Next':
-          setPage(Math.min(maxPage, page + 1));
-          break;
-        case 'Prev':
-          setPage(Math.max(1, page - 1));
-          break;
-        case 'First':
-          setPage(1);
-          break;
-        case 'Last':
-          setPage(maxPage);
-          break;
-        default:
-          setPage(1);
-          break;
-      }
+    let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
+    switch (action){
+      case 'Next':
+        setPage(Math.min(maxPage, page + 1));
+        break;
+      case 'Prev':
+        setPage(Math.max(1, page - 1));
+        break;
+      case 'First':
+        setPage(1);
+        break;
+      case 'Last':
+        setPage(maxPage);
+        break;
+      default:
+        setPage(1);
+        break;
     }
+  }
+
+  let headers = [];
+  let source_headers = [];
+  const headersWithSortability = new Set(['entity_type']);
+  const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
+  const dateColumnSet = new Set(['date_created', 'date_updated']);
+  const headersToEntityMap = new Set(['topic', 'entity_type', 'entity']);
+
+  for (const tetDict of topicEntityTags.values()) {
+    for (const tetDictKey in tetDict) {
+      // console.log(tetDictKey);
+      if (tetDictKey === 'topic_entity_tag_source') {
+        for (const tetSourceKey in tetDict[tetDictKey]) {
+          if ( (source_headers.indexOf(tetSourceKey) === -1) && !(excludeColumnSet.has(tetSourceKey)) ) { source_headers.push(tetSourceKey); } } }
+      else {
+        if ( (headers.indexOf(tetDictKey) === -1) && !(excludeColumnSet.has(tetDictKey)) ) { headers.push(tetDictKey); } }
+    }
+  }
 
   return (
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-        <Container fluid>
-          <RowDivider />
-          <Row className="form-group row" >
-            <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Editor</h3></Col></Row>
-          <Row className="form-group row" >
-            <Col className="div-grey-border" sm="2">topic</Col>
-            <Col className="div-grey-border" sm="1">entity type <FontAwesomeIcon icon={sortBy !== "entity_type" || !descSort ? faSortAlphaDown : faSortAlphaUp} style={{color: sortBy === "entity_type" ? '#0069d9' : 'black'}}
-                                                                                 onClick={() => {
-                                                                                   if (sortBy === "entity_type" && descSort) {
-                                                                                     setSortBy(null);
-                                                                                     setDescSort(true);
-                                                                                   } else {
-                                                                                     setSortBy("entity_type");
-                                                                                     setDescSort(!descSort)}
-                                                                                 }}/></Col>
-            <Col className="div-grey-border" sm="2">species (taxon)</Col>
-            <Col className="div-grey-border" sm="1">entity name</Col>
-            <Col className="div-grey-border" sm="2">entity curie</Col>
-            <Col className="div-grey-border" sm="2">display tag</Col>
-            <Col className="div-grey-border" sm="1">manual validation</Col>
-          </Row>
-          { topicEntityTags.map( (tetDict, index) => {
-            let displayTagValue = tetDict['display_tag'] || '';
-            let entityName = '';
-            if (tetDict.entity !== null) {
-              entityName = tetDict.entity in entityEntityMappings ? entityEntityMappings[tetDict.entity] : 'unknown'; }
+        <Table bordered size="sm" responsive>
+          <thead>
+          <tr>
+            { headers.map( (header, index) => {
+              return (
+                  <th key={`tetTableHeader th ${index}`} >{header} {
+                    headersWithSortability.has(header) ?
+                        <FontAwesomeIcon icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp} style={{color: sortBy === "entity_type" ? '#0069d9' : 'black'}}
+                                         onClick={() => {
+                                           if (sortBy === header && descSort) {
+                                             setSortBy(null);
+                                             setDescSort(true);
+                                           } else {
+                                             setSortBy(header);
+                                             setDescSort(!descSort)}
+                                         }}/> : null}</th>
+              )
+            } ) }
+            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} >{header}</th>) } ) }
+          </tr>
+          </thead>
+          <tbody>
+          { topicEntityTags.map( (tetDict, index_1) => {
             return (
-                <Row key={`geneEntityContainerrows ${tetDict.topic_entity_tag_id}`}>
-                  <Col className="div-grey-border" sm="2">{tetDict.topic in entityEntityMappings ? entityEntityMappings[tetDict.topic] : tetDict.topic }</Col>
-                  <Col className="div-grey-border" sm="1">{tetDict.entity_type in entityEntityMappings ? entityEntityMappings[tetDict.entity_type] : tetDict.entity_type }</Col>
-                  <Col className="div-grey-border" sm="2">{tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species }</Col>
-                  <Col className="div-grey-border" sm="1">{entityName}</Col>
-                  <Col className="div-grey-border" sm="2">{tetDict.entity}</Col>
-
-                  <Col sm="2">
-                    {/* changeFieldEntityEditorPriority changes which value to display, but does not update database. ideally this would update the databasewithout reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new displayTag where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated.  needs to display to patch existing tetp prop, or post to create a new one */}
-                    <Form.Control as="select" id={`displayTag ${index}`} type="tetdisplayTagSelect" disabled="disabled" value={displayTagValue} onChange={(e) => dispatch(changeFieldEntityEditorPriority(e))} >
-		      <option value=""> </option> {/* Empty option */}
-                      {displayTagData
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((option, index) => (
-                          <option key={`tetdisplayTagSelect-${index}`} value={option.curie}>
-                            {option.name}
-                          </option>
-			))}
-                    </Form.Control>
-                  </Col>
-                  <Col sm="1">
-                    <Form.Control as="select" id={`manualSelect ${index}`} type="manualSelect" disabled="disabled" value="manual" onChange={(e) => {} } >
-                      <option key={`manual ${index}`} value="manual">positive</option>
-                    </Form.Control>
-                  </Col>
-                </Row> ) }
-          ) }
-        </Container>
+                <tr key={`tetTableRow ${index_1}`}>
+                  { headers.map( (header, index_2) => {
+                    let td_value = tetDict[header];
+                    if (td_value === true) { td_value = 'True'; }
+                    else if (td_value === false) { td_value = 'False'; }
+                    else if (dateColumnSet.has(header)) {
+                      td_value = new Date(td_value).toLocaleString(); }
+                    else if (headersToEntityMap.has(header)) {
+                      td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]] : tetDict[header];
+                    } else if (header === "species") {
+                      td_value = tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species;
+                    }
+                    return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
+                  } ) }
+                  { source_headers.map( (header, index_2) => {
+                    let td_value = tetDict['topic_entity_tag_source'][header];
+                    if (td_value === true) { td_value = 'True'; }
+                    else if (td_value === false) { td_value = 'False'; }
+                    if (dateColumnSet.has(header)) {
+                      td_value = new Date(td_value).toLocaleString(); }
+                    return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
+                  } ) }
+                </tr>);
+          } ) }
+          </tbody></Table>
         {totalTagsCount > 0 ?
             <Pagination style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '10vh'}}>
               <Pagination.First  onClick={() => changePage('First')} />
@@ -324,7 +231,8 @@ const EntityEditor = () => {
             </Pagination>
             : null}
       </div>);
-} // const EntityEditor
+} // const EntityTable
+
 
 const EntityCreate = () => {
   const dispatch = useDispatch();
