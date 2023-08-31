@@ -156,7 +156,7 @@ const EntityTable = () => {
   const headersWithSortability = new Set(['entity_type']);
   const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
-  const headersToEntityMap = new Set(['topic', 'entity_type', 'entity']);
+  const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
 
   for (const tetDict of topicEntityTags.values()) {
     for (const tetDictKey in tetDict) {
