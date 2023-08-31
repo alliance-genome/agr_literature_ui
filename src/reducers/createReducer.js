@@ -17,6 +17,8 @@ const initialState = {
 //   meshExpand: 'short',
 //   authorExpand: 'first',
 //   hasPmid: false,
+  modIdent: '',
+  modPrefix: '',
   pmid: '',
   pmidTitle: '',
   pmidXml: '',

@@ -22,6 +22,16 @@ export const setCreateActionToggler = (value) => {
   };
 };
 
+export const changeCreateField = (e) => {
+  return {
+    type: 'CREATE_CHANGE_FIELD',
+    payload: {
+      field: e.target.id,
+      value: e.target.value
+    }
+  };
+};
+
 export const changeCreatePmidField = (e) => {
   return {
     type: 'CREATE_CHANGE_PMID_FIELD',
@@ -113,7 +123,7 @@ export const setCreateAllianceCreateLoading = () => ({
   type: 'CREATE_SET_ALLIANCE_CREATE_LOADING'
 });
 
-export const updateButtonCreate = (updateArrayData, pmidOrAlliance) => dispatch => {
+export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) => dispatch => {
   console.log('in updateButtonCreate action');
   const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
   console.log("payload "); console.log(payload);
@@ -122,6 +132,10 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance) => dispatch 
 
   if (pmidOrAlliance === 'alliance') {    dispatch(setCreateAllianceCreateLoading()); }
     else if (pmidOrAlliance === 'pmid') { dispatch(setCreatePmidCreateLoading());     }
+
+  // TODO
+  console.log("check curie " + modCurie + " exists in db");
+  return;
 
   const createUpdateButtonCreate = async () => {
     const url = restUrl + '/' + subPath;

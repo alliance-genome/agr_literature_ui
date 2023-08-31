@@ -1,4 +1,5 @@
 // import { Link } from 'react-router-dom'
+import { useEffect } from 'react';
 import { useHistory } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 
@@ -10,11 +11,13 @@ import { changeCreateActionToggler } from '../actions/createActions';
 import { setCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
-// import { changeCreateField } from '../actions/createActions';
+import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
 import { createQueryPubmed } from '../actions/createActions';
 
 import { useLocation } from 'react-router-dom';
+
+import { enumDict } from './biblio/BiblioEditor';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -35,10 +38,11 @@ const CreatePubmed = () => {
 
   function createPubmedReference(pmid) {
     // alert('In Progress.  Waiting for API to make python calls');
+    const modCurie = 'FIX ME';
     pmid = pmid.replace( /[^\d.]/g, '' );
     const subPath = 'reference/add/' + pmid
     let arrayData = [ accessToken, subPath, null, 'POST', 0, null, null]
-    dispatch(updateButtonCreate(arrayData, 'pmid'))
+    dispatch(updateButtonCreate(arrayData, 'pmid', modCurie))
   }
   return (
     <Container>
@@ -71,15 +75,35 @@ const CreateAlliance = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const createAllianceLoading = useSelector(state => state.create.createAllianceLoading);
-  function createAllianceReference() {
-    const subPath = 'reference/'
+  const modIdent = useSelector(state => state.create.modIdent);
+  const modPrefix = useSelector(state => state.create.modPrefix);
+  const generalClassName = 'Col-general';
+
+  function createAllianceReference(modPrefix, modIdent) {
+    const subPath = 'reference/';
+    const modCurie = modPrefix + ':' + modIdent;
     let updateJson = { 'title': 'placeholder title', 'category': 'other' }
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
-    dispatch(updateButtonCreate(arrayData, 'alliance'))
+    dispatch(updateButtonCreate(arrayData, 'alliance', modCurie))
   }
   return (
     <Container>
-      <Button id={`button create alliance`} variant="outline-secondary" onClick={() => createAllianceReference()} >
+      <Form.Group as={Row} key="modXref" >
+        <Form.Label column sm="2" className={`${generalClassName}`} >MOD ID</Form.Label>
+        <Col sm="2" className={`${generalClassName}`}>
+          <Form.Control as="select" id="modPrefix" type="select" value={modPrefix} className={`form-control`} onChange={(e) => dispatch(changeCreateField(e))} >
+            {'mods' in enumDict && enumDict['mods'].map((optionValue, index) => {
+              (optionValue === 'XB') && (optionValue = 'Xenbase');	// XB is mod, Xenbase is its curie prefix
+              if (optionValue === '') return;
+              else { return (<option key={`modPrefix ${optionValue}`}>{optionValue}</option>); }
+            })}
+          </Form.Control>
+        </Col>
+        <Col sm="6" className={`${generalClassName}`}>
+          <Form.Control as="input" name="modIdent" id="modIdent" type="input" value={modIdent} className={`form-control`} placeholder="12345" onChange={(e) => dispatch(changeCreateField(e))} />
+        </Col>
+      </Form.Group>
+      <Button id={`button create alliance`} variant="outline-secondary" disabled={ (modIdent === '') ? "disabled" : "" } onClick={() => createAllianceReference(modPrefix, modIdent)} >
         {createAllianceLoading ? <Spinner animation="border" size="sm"/> : <span>Create an Alliance reference</span> }
       </Button>
     </Container>);
@@ -139,12 +163,22 @@ const CreateActionToggler = () => {
 const CreateActionRouter = () => {
   const dispatch = useDispatch();
   const createAction = useSelector(state => state.create.createAction);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
   if (createAction === '') {
     let paramAction = query.get('action');
     dispatch(setCreateActionToggler(paramAction));
   }
+
+  useEffect( () => {
+    if (enumDict['mods'].includes(accessLevel)) {
+      const modPrefix = (accessLevel === 'XB') ? 'Xenbase' : accessLevel;
+      dispatch(changeCreateField({target: {id: 'modPrefix', value: modPrefix }})); }
+  }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
   switch (createAction) {
     case 'alliance':
       return (<Container><CreateActionToggler /><RowDivider /><CreateAlliance /></Container>);
