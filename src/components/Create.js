@@ -44,11 +44,13 @@ const CreatePubmed = () => {
   const pmidTitle = useSelector(state => state.create.pmidTitle);
   const searchPmidLoading = useSelector(state => state.create.searchPmidLoading);
   const createPmidLoading = useSelector(state => state.create.createPmidLoading);
+  const modIdent = useSelector(state => state.create.modIdent);
+  const modPrefix = useSelector(state => state.create.modPrefix);
   const generalClassName = 'Col-general';
 
   function createPubmedReference(pmid) {
     // alert('In Progress.  Waiting for API to make python calls');
-    const modCurie = 'FIX ME';
+    const modCurie = modPrefix + ':' + modIdent;
     pmid = pmid.replace( /[^\d.]/g, '' );
     const subPath = 'reference/add/' + pmid
     let arrayData = [ accessToken, subPath, null, 'POST', 0, null, null]
@@ -74,9 +76,12 @@ const CreatePubmed = () => {
       </Col>
     </Form.Group>
     { pmidTitle && (
-      <Button id={`button create pubmed`} variant="outline-secondary" onClick={() => createPubmedReference(pmid)} >
-        {createPmidLoading ? <Spinner animation="border" size="sm"/> : <span>Create a PubMed reference</span> }
-      </Button>
+      <>
+        <ModCurieInput />
+        <Button id={`button create pubmed`} variant="outline-secondary" disabled={ (modIdent === '') ? "disabled" : "" } onClick={() => createPubmedReference(pmid)} >
+          {createPmidLoading ? <Spinner animation="border" size="sm"/> : <span>Create a PubMed reference</span> }
+        </Button>
+      </>
     ) }
     </Container>);
 } // const CreatePubmed
@@ -87,7 +92,6 @@ const CreateAlliance = () => {
   const createAllianceLoading = useSelector(state => state.create.createAllianceLoading);
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
-  const generalClassName = 'Col-general';
   const accessLevel = useGetAccessLevel();
 
   function createAllianceReference(modPrefix, modIdent) {
@@ -102,6 +106,19 @@ const CreateAlliance = () => {
   }
   return (
     <Container>
+      <ModCurieInput />
+      <Button id={`button create alliance`} variant="outline-secondary" disabled={ (modIdent === '') ? "disabled" : "" } onClick={() => createAllianceReference(modPrefix, modIdent)} >
+        {createAllianceLoading ? <Spinner animation="border" size="sm"/> : <span>Create an Alliance reference</span> }
+      </Button>
+    </Container>);
+} // const CreateAlliance
+
+const ModCurieInput = () => {
+  const dispatch = useDispatch();
+  const modIdent = useSelector(state => state.create.modIdent);
+  const modPrefix = useSelector(state => state.create.modPrefix);
+  const generalClassName = 'Col-general';
+  return (
       <Form.Group as={Row} key="modXref" >
         <Form.Label column sm="2" className={`${generalClassName}`} >MOD ID</Form.Label>
         <Col sm="2" className={`${generalClassName}`}>
@@ -116,12 +133,9 @@ const CreateAlliance = () => {
         <Col sm="6" className={`${generalClassName}`}>
           <Form.Control as="input" name="modIdent" id="modIdent" type="input" value={modIdent} className={`form-control`} placeholder="12345" onChange={(e) => dispatch(changeCreateField(e))} />
         </Col>
-      </Form.Group>
-      <Button id={`button create alliance`} variant="outline-secondary" disabled={ (modIdent === '') ? "disabled" : "" } onClick={() => createAllianceReference(modPrefix, modIdent)} >
-        {createAllianceLoading ? <Spinner animation="border" size="sm"/> : <span>Create an Alliance reference</span> }
-      </Button>
-    </Container>);
-} // const CreateAlliance
+      </Form.Group>);
+} // const ModCurieInput
+
 
 const CreateActionToggler = () => {
   const dispatch = useDispatch();
