@@ -6,6 +6,7 @@ const initialState = {
   searchPmidLoading: false,
   createPmidLoading: false,
   createAllianceLoading: false,
+  createModalText: '',
 //   biblioUpdating: 0,
 //   referenceCurie: '',
 //   referenceJsonLive: {},
@@ -57,6 +58,12 @@ export default function(state = initialState, action) {
         ...state,
         searchPmidLoading: true
       }
+    case 'SET_CREATE_MODAL_TEXT':
+      // console.log('SET_CREATE_MODAL_TEXT reducer ' + action.payload);
+      return {
+        ...state,
+        createModalText: action.payload
+      }
     case 'SET_CREATE_ACTION':
       console.log("reducer set create action");
       return {
@@ -96,6 +103,19 @@ export default function(state = initialState, action) {
       return {
         ...state,
         createAllianceLoading: true
+      }
+    case 'UPDATE_BUTTON_CREATE_ALREADY_EXISTS':
+      let createAlreadyPmidLoading = state.createPmidLoading;
+      let createAlreadyAllianceLoading = state.createAllianceLoading;
+      if (action.payload.pmidOrAlliance === "pmid") {
+          createAlreadyPmidLoading = false; }
+        else if (action.payload.pmidOrAlliance === "alliance") {
+          createAlreadyAllianceLoading = false; }
+      return {
+        ...state,
+        createPmidLoading: createAlreadyPmidLoading,
+        createAllianceLoading: createAlreadyAllianceLoading,
+        createModalText: action.payload.responseMessage
       }
     case 'UPDATE_BUTTON_CREATE':
       console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);

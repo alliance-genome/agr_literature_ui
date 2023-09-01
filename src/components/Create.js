@@ -1,7 +1,8 @@
 // import { Link } from 'react-router-dom'
 import { useEffect } from 'react';
-import { useHistory } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
+import { useHistory } from "react-router-dom";
+import { useLocation } from 'react-router-dom';
 
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
@@ -14,8 +15,9 @@ import { resetCreateRedirect } from '../actions/createActions';
 import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
 import { createQueryPubmed } from '../actions/createActions';
+import { setCreateModalText } from '../actions/createActions';
 
-import { useLocation } from 'react-router-dom';
+import ModalGeneric from './biblio/ModalGeneric';
 
 import { enumDict } from './biblio/BiblioEditor';
 
@@ -25,6 +27,14 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
+
+
+function useGetAccessLevel() {
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  return accessLevel;
+}
 
 
 const CreatePubmed = () => {
@@ -78,11 +88,15 @@ const CreateAlliance = () => {
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
   const generalClassName = 'Col-general';
+  const accessLevel = useGetAccessLevel();
 
   function createAllianceReference(modPrefix, modIdent) {
     const subPath = 'reference/';
     const modCurie = modPrefix + ':' + modIdent;
-    let updateJson = { 'title': 'placeholder title', 'category': 'other' }
+    let updateJson = { 'title': 'placeholder title',
+                       'category': 'other',
+                       'mod_corpus_associations': [ { 'mod_abbreviation': accessLevel, 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ],
+                       'cross_references': [ { 'curie': modCurie, 'pages': [ 'reference' ], 'is_obsolete': false } ] }
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
     dispatch(updateButtonCreate(arrayData, 'alliance', modCurie))
   }
@@ -163,9 +177,7 @@ const CreateActionToggler = () => {
 const CreateActionRouter = () => {
   const dispatch = useDispatch();
   const createAction = useSelector(state => state.create.createAction);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  const accessLevel = useGetAccessLevel();
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
   if (createAction === '') {
@@ -196,6 +208,7 @@ const Create = () => {
   const createRedirectCurie = useSelector(state => state.create.redirectCurie);
   const updateMessages = useSelector(state => state.create.updateMessages);
   const updateFailure = useSelector(state => state.create.updateFailure);
+  const createModalText = useSelector(state => state.create.createModalText);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -211,6 +224,8 @@ const Create = () => {
   }
   return (
     <div>
+      <ModalGeneric showGenericModal={createModalText !== '' ? true : false} genericModalHeader="Create reference Error"
+                    genericModalBody={createModalText} onHideAction={setCreateModalText('')} />
       <h4>Create a new Reference</h4>
       <p>Create a new reference from PubMed PMID or manually</p>
       { updateFailure > 0 && 

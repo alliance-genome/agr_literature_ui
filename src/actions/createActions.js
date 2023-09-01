@@ -133,9 +133,33 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) =>
   if (pmidOrAlliance === 'alliance') {    dispatch(setCreateAllianceCreateLoading()); }
     else if (pmidOrAlliance === 'pmid') { dispatch(setCreatePmidCreateLoading());     }
 
-  // TODO
-  console.log("check curie " + modCurie + " exists in db");
-  return;
+  const checkModCurieThenCreate = async () => {
+    const url = restUrl + '/cross_reference/' + modCurie;
+    fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: { 'content-type': 'application/json' }
+    }).then(res => {
+      res.json().then(response => {
+        let response_payload = modCurie;
+        if (response.reference_curie !== undefined) {
+          // console.log(modCurie + ' lookup response not undefined');
+          // console.log(response.reference_curie);
+          response_payload = response.reference_curie;
+          dispatch({
+            type: 'UPDATE_BUTTON_CREATE_ALREADY_EXISTS',
+            payload: {
+              pmidOrAlliance: pmidOrAlliance,
+              responseMessage: modCurie + ' already exists as ' + response_payload + ', click <a href="../Biblio/?action=editor&referenceCurie=' + response_payload + '">here</a> to Edit it.'
+            }
+          })
+        } else {
+          // console.log(modCurie + ' not in ABC');
+          createUpdateButtonCreate();
+        }
+      });
+    })
+  }
 
   const createUpdateButtonCreate = async () => {
     const url = restUrl + '/' + subPath;
@@ -207,7 +231,14 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) =>
       }
     })
   }
-  createUpdateButtonCreate()
+  checkModCurieThenCreate();
+};
+
+export const setCreateModalText = (payload) => {
+  return {
+    type: 'SET_CREATE_MODAL_TEXT',
+    payload: payload
+  };
 };
 
 // export const changeFieldReferenceJson = (e) => {
