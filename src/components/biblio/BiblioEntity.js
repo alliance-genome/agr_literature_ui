@@ -324,7 +324,7 @@ const EntityCreate = () => {
     updateJson['topic'] = topicSelect;
     updateJson['species'] = taxonSelect;
     // TODO: add entity_published_as field when synonyms are in the A-team system
-    updateJson['note'] = noteText;
+    updateJson['note'] = noteText !== "" ? noteText : null;
     updateJson['negated'] = false;
     updateJson['confidence_level'] = null;
     updateJson['topic_entity_tag_source_id'] = topicEntitySourceId;
