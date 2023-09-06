@@ -191,7 +191,7 @@ const EntityTable = () => {
                                          }}/> : null}</th>
               )
             } ) }
-            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} >{header}</th>) } ) }
+            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} >{header.startsWith('source_') ? header : 'source_' + header}</th>) } ) }
           </tr>
           </thead>
           <tbody>
