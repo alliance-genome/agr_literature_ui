@@ -151,23 +151,24 @@ const EntityTable = () => {
     }
   }
 
-  let headers = [];
-  let source_headers = [];
+  let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
+  let source_headers = ['mod_id', 'source_method', 'evidence', 'source_method', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
   const headersWithSortability = new Set(['entity_type']);
-  const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
+  //const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
 
-  for (const tetDict of topicEntityTags.values()) {
-    for (const tetDictKey in tetDict) {
-      // console.log(tetDictKey);
-      if (tetDictKey === 'topic_entity_tag_source') {
-        for (const tetSourceKey in tetDict[tetDictKey]) {
-          if ( (source_headers.indexOf(tetSourceKey) === -1) && !(excludeColumnSet.has(tetSourceKey)) ) { source_headers.push(tetSourceKey); } } }
-      else {
-        if ( (headers.indexOf(tetDictKey) === -1) && !(excludeColumnSet.has(tetDictKey)) ) { headers.push(tetDictKey); } }
-    }
-  }
+  // TODO: use the following code for the 'simple' table
+  // for (const tetDict of topicEntityTags.values()) {
+  //   for (const tetDictKey in tetDict) {
+  //     // console.log(tetDictKey);
+  //     if (tetDictKey === 'topic_entity_tag_source') {
+  //       for (const tetSourceKey in tetDict[tetDictKey]) {
+  //         if ( (source_headers.indexOf(tetSourceKey) === -1) && !(excludeColumnSet.has(tetSourceKey)) ) { source_headers.push(tetSourceKey); } } }
+  //     else {
+  //       if ( (headers.indexOf(tetDictKey) === -1) && !(excludeColumnSet.has(tetDictKey)) ) { headers.push(tetDictKey); } }
+  //   }
+  // }
 
   return (
       <div>
