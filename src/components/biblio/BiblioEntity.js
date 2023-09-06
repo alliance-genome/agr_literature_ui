@@ -152,7 +152,7 @@ const EntityTable = () => {
   }
 
   let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
-  let source_headers = ['mod_id', 'source_method', 'evidence', 'source_method', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
+  let source_headers = ['mod_id', 'source_method', 'evidence', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
   const headersWithSortability = new Set(['entity_type']);
   //const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
