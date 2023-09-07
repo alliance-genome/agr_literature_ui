@@ -46,15 +46,16 @@ const CreatePubmed = () => {
   const createPmidLoading = useSelector(state => state.create.createPmidLoading);
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
+  const accessLevel = useGetAccessLevel();
   const generalClassName = 'Col-general';
 
   function createPubmedReference(pmid) {
-    // alert('In Progress.  Waiting for API to make python calls');
     const modCurie = modPrefix + ':' + modIdent;
+    const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
     pmid = pmid.replace( /[^\d.]/g, '' );
-    const subPath = 'reference/add/' + pmid
-    let arrayData = [ accessToken, subPath, null, 'POST', 0, null, null]
-    dispatch(updateButtonCreate(arrayData, 'pmid', modCurie))
+    const subPath = 'reference/add/' + pmid + '/' + modCurie + '/' + mcaMod + '/';
+    let arrayData = [ accessToken, subPath, null, 'POST', 0, null, null];
+    dispatch(updateButtonCreate(arrayData, 'pmid', modCurie));
   }
   return (
     <Container>
@@ -92,14 +93,14 @@ const CreateAlliance = () => {
   const createAllianceLoading = useSelector(state => state.create.createAllianceLoading);
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
-  const accessLevel = useGetAccessLevel();
+  const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
 
   function createAllianceReference(modPrefix, modIdent) {
     const subPath = 'reference/';
     const modCurie = modPrefix + ':' + modIdent;
     let updateJson = { 'title': 'placeholder title',
                        'category': 'other',
-                       'mod_corpus_associations': [ { 'mod_abbreviation': accessLevel, 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ],
+                       'mod_corpus_associations': [ { 'mod_abbreviation': mcaMod, 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ],
                        'cross_references': [ { 'curie': modCurie, 'pages': [ 'reference' ], 'is_obsolete': false } ] }
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
     dispatch(updateButtonCreate(arrayData, 'alliance', modCurie))

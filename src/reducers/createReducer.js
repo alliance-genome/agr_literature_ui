@@ -153,6 +153,7 @@ export default function(state = initialState, action) {
         ...state,
         createPmidLoading: createPmidLoading,
         createAllianceLoading: createAllianceLoading,
+        modIdent: '',
 //         referenceJsonLive: referenceJsonLive,
         redirectCurie: redirectCurie,
         redirectToBiblio: redirectToBiblio,
