@@ -1,6 +1,8 @@
 // import { Link } from 'react-router-dom'
-import { useHistory } from "react-router-dom";
+import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useHistory } from "react-router-dom";
+import { useLocation } from 'react-router-dom';
 
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
@@ -10,11 +12,14 @@ import { changeCreateActionToggler } from '../actions/createActions';
 import { setCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
-// import { changeCreateField } from '../actions/createActions';
+import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
 import { createQueryPubmed } from '../actions/createActions';
+import { setCreateModalText } from '../actions/createActions';
 
-import { useLocation } from 'react-router-dom';
+import ModalGeneric from './biblio/ModalGeneric';
+
+import { enumDict } from './biblio/BiblioEditor';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -24,6 +29,14 @@ import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
 
 
+function useGetAccessLevel() {
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  return accessLevel;
+}
+
+
 const CreatePubmed = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -31,14 +44,18 @@ const CreatePubmed = () => {
   const pmidTitle = useSelector(state => state.create.pmidTitle);
   const searchPmidLoading = useSelector(state => state.create.searchPmidLoading);
   const createPmidLoading = useSelector(state => state.create.createPmidLoading);
+  const modIdent = useSelector(state => state.create.modIdent);
+  const modPrefix = useSelector(state => state.create.modPrefix);
+  const accessLevel = useGetAccessLevel();
   const generalClassName = 'Col-general';
 
   function createPubmedReference(pmid) {
-    // alert('In Progress.  Waiting for API to make python calls');
+    const modCurie = modPrefix + ':' + modIdent;
+    const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
     pmid = pmid.replace( /[^\d.]/g, '' );
-    const subPath = 'reference/add/' + pmid
-    let arrayData = [ accessToken, subPath, null, 'POST', 0, null, null]
-    dispatch(updateButtonCreate(arrayData, 'pmid'))
+    const subPath = 'reference/add/' + pmid + '/' + modCurie + '/' + mcaMod + '/';
+    let arrayData = [ accessToken, subPath, null, 'POST', 0, null, null];
+    dispatch(updateButtonCreate(arrayData, 'pmid', modCurie));
   }
   return (
     <Container>
@@ -60,9 +77,12 @@ const CreatePubmed = () => {
       </Col>
     </Form.Group>
     { pmidTitle && (
-      <Button id={`button create pubmed`} variant="outline-secondary" onClick={() => createPubmedReference(pmid)} >
-        {createPmidLoading ? <Spinner animation="border" size="sm"/> : <span>Create a PubMed reference</span> }
-      </Button>
+      <>
+        <ModCurieInput />
+        <Button id={`button create pubmed`} variant="outline-secondary" disabled={ (modIdent === '') ? "disabled" : "" } onClick={() => createPubmedReference(pmid)} >
+          {createPmidLoading ? <Spinner animation="border" size="sm"/> : <span>Create a PubMed reference</span> }
+        </Button>
+      </>
     ) }
     </Container>);
 } // const CreatePubmed
@@ -71,19 +91,52 @@ const CreateAlliance = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const createAllianceLoading = useSelector(state => state.create.createAllianceLoading);
-  function createAllianceReference() {
-    const subPath = 'reference/'
-    let updateJson = { 'title': 'placeholder title', 'category': 'other' }
+  const modIdent = useSelector(state => state.create.modIdent);
+  const modPrefix = useSelector(state => state.create.modPrefix);
+  const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
+
+  function createAllianceReference(modPrefix, modIdent) {
+    const subPath = 'reference/';
+    const modCurie = modPrefix + ':' + modIdent;
+    let updateJson = { 'title': 'placeholder title',
+                       'category': 'other',
+                       'mod_corpus_associations': [ { 'mod_abbreviation': mcaMod, 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ],
+                       'cross_references': [ { 'curie': modCurie, 'pages': [ 'reference' ], 'is_obsolete': false } ] }
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
-    dispatch(updateButtonCreate(arrayData, 'alliance'))
+    dispatch(updateButtonCreate(arrayData, 'alliance', modCurie))
   }
   return (
     <Container>
-      <Button id={`button create alliance`} variant="outline-secondary" onClick={() => createAllianceReference()} >
+      <ModCurieInput />
+      <Button id={`button create alliance`} variant="outline-secondary" disabled={ (modIdent === '') ? "disabled" : "" } onClick={() => createAllianceReference(modPrefix, modIdent)} >
         {createAllianceLoading ? <Spinner animation="border" size="sm"/> : <span>Create an Alliance reference</span> }
       </Button>
     </Container>);
 } // const CreateAlliance
+
+const ModCurieInput = () => {
+  const dispatch = useDispatch();
+  const modIdent = useSelector(state => state.create.modIdent);
+  const modPrefix = useSelector(state => state.create.modPrefix);
+  const generalClassName = 'Col-general';
+  return (
+      <Form.Group as={Row} key="modXref" >
+        <Form.Label column sm="2" className={`${generalClassName}`} >MOD ID</Form.Label>
+        <Col sm="2" className={`${generalClassName}`}>
+          <Form.Control as="select" id="modPrefix" type="select" value={modPrefix} className={`form-control`} onChange={(e) => dispatch(changeCreateField(e))} >
+            {'mods' in enumDict && enumDict['mods'].map((optionValue, index) => {
+              (optionValue === 'XB') && (optionValue = 'Xenbase');	// XB is mod, Xenbase is its curie prefix
+              if (optionValue === '') return;
+              else { return (<option key={`modPrefix ${optionValue}`}>{optionValue}</option>); }
+            })}
+          </Form.Control>
+        </Col>
+        <Col sm="6" className={`${generalClassName}`}>
+          <Form.Control as="input" name="modIdent" id="modIdent" type="input" value={modIdent} className={`form-control`} placeholder="12345" onChange={(e) => dispatch(changeCreateField(e))} />
+        </Col>
+      </Form.Group>);
+} // const ModCurieInput
+
 
 const CreateActionToggler = () => {
   const dispatch = useDispatch();
@@ -139,12 +192,20 @@ const CreateActionToggler = () => {
 const CreateActionRouter = () => {
   const dispatch = useDispatch();
   const createAction = useSelector(state => state.create.createAction);
+  const accessLevel = useGetAccessLevel();
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
   if (createAction === '') {
     let paramAction = query.get('action');
     dispatch(setCreateActionToggler(paramAction));
   }
+
+  useEffect( () => {
+    if (enumDict['mods'].includes(accessLevel)) {
+      const modPrefix = (accessLevel === 'XB') ? 'Xenbase' : accessLevel;
+      dispatch(changeCreateField({target: {id: 'modPrefix', value: modPrefix }})); }
+  }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
   switch (createAction) {
     case 'alliance':
       return (<Container><CreateActionToggler /><RowDivider /><CreateAlliance /></Container>);
@@ -162,6 +223,7 @@ const Create = () => {
   const createRedirectCurie = useSelector(state => state.create.redirectCurie);
   const updateMessages = useSelector(state => state.create.updateMessages);
   const updateFailure = useSelector(state => state.create.updateFailure);
+  const createModalText = useSelector(state => state.create.createModalText);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -177,6 +239,8 @@ const Create = () => {
   }
   return (
     <div>
+      <ModalGeneric showGenericModal={createModalText !== '' ? true : false} genericModalHeader="Create reference Error"
+                    genericModalBody={createModalText} onHideAction={setCreateModalText('')} />
       <h4>Create a new Reference</h4>
       <p>Create a new reference from PubMed PMID or manually</p>
       { updateFailure > 0 && 

@@ -6,6 +6,7 @@ const initialState = {
   searchPmidLoading: false,
   createPmidLoading: false,
   createAllianceLoading: false,
+  createModalText: '',
 //   biblioUpdating: 0,
 //   referenceCurie: '',
 //   referenceJsonLive: {},
@@ -17,6 +18,8 @@ const initialState = {
 //   meshExpand: 'short',
 //   authorExpand: 'first',
 //   hasPmid: false,
+  modIdent: '',
+  modPrefix: '',
   pmid: '',
   pmidTitle: '',
   pmidXml: '',
@@ -54,6 +57,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         searchPmidLoading: true
+      }
+    case 'SET_CREATE_MODAL_TEXT':
+      // console.log('SET_CREATE_MODAL_TEXT reducer ' + action.payload);
+      return {
+        ...state,
+        createModalText: action.payload
       }
     case 'SET_CREATE_ACTION':
       console.log("reducer set create action");
@@ -95,6 +104,19 @@ export default function(state = initialState, action) {
         ...state,
         createAllianceLoading: true
       }
+    case 'UPDATE_BUTTON_CREATE_ALREADY_EXISTS':
+      let createAlreadyPmidLoading = state.createPmidLoading;
+      let createAlreadyAllianceLoading = state.createAllianceLoading;
+      if (action.payload.pmidOrAlliance === "pmid") {
+          createAlreadyPmidLoading = false; }
+        else if (action.payload.pmidOrAlliance === "alliance") {
+          createAlreadyAllianceLoading = false; }
+      return {
+        ...state,
+        createPmidLoading: createAlreadyPmidLoading,
+        createAllianceLoading: createAlreadyAllianceLoading,
+        createModalText: action.payload.responseMessage
+      }
     case 'UPDATE_BUTTON_CREATE':
       console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
       console.log('reducer value ' + action.payload.value);
@@ -131,6 +153,7 @@ export default function(state = initialState, action) {
         ...state,
         createPmidLoading: createPmidLoading,
         createAllianceLoading: createAllianceLoading,
+        modIdent: '',
 //         referenceJsonLive: referenceJsonLive,
         redirectCurie: redirectCurie,
         redirectToBiblio: redirectToBiblio,
