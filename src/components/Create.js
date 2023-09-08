@@ -7,6 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
 import { resetBiblioIsLoading } from '../actions/biblioActions';
+import { setBiblioAction } from '../actions/biblioActions';
 
 import { changeCreateActionToggler } from '../actions/createActions';
 import { setCreateActionToggler } from '../actions/createActions';
@@ -229,6 +230,7 @@ const Create = () => {
 
   function pushHistory(referenceCurie) {
     console.log('history push');
+    dispatch(setBiblioAction('editor'));
     dispatch(resetCreateRedirect());
     dispatch(resetBiblioIsLoading());
     // dispatching these 2 actions and their reducers to alter the state from a different component creates a warning, but it's needed for Biblio to set the correct referenceCurie and query the db for its data.
