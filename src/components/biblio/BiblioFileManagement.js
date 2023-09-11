@@ -239,7 +239,7 @@ const AlertDismissibleFileUploadSuccess = () => {
   } else { return null; }
 }
 
-const BiblioCitationDisplay = () => {
+export const BiblioCitationDisplay = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const fieldName = 'citation';
