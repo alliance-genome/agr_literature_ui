@@ -9,6 +9,7 @@ import BiblioEditor from './biblio/BiblioEditor';
 import BiblioEntity from './biblio/BiblioEntity';
 import BiblioWorkflow from './biblio/BiblioWorkflow';
 import BiblioFileManagement from './biblio/BiblioFileManagement';
+import BiblioRawTetData from './biblio/BiblioRawTetData';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString } from './biblio/BiblioDisplay';
@@ -85,11 +86,13 @@ const BiblioActionToggler = () => {
   let entityChecked = '';
   let workflowChecked = '';
   let filemanagementChecked = '';
+  let rawtopicentityChecked = '';
   let radioFormDisplayClassname = 'radio-form';
   let radioFormEditorClassname = 'radio-form';
   let radioFormEntityClassname = 'radio-form';
   let radioFormWorkflowClassname = 'radio-form';
   let radioFormFilemanagementClassname = 'radio-form';
+  let radioFormRawtopicentityClassname = 'radio-form';
   let biblioActionTogglerSelected = 'display';
   if (biblioAction === 'editor') {
       radioFormEditorClassname += ' underlined';
@@ -107,6 +110,10 @@ const BiblioActionToggler = () => {
       radioFormFilemanagementClassname += ' underlined';
       filemanagementChecked = 'checked';
       biblioActionTogglerSelected = 'filemanagement'; }
+    else if (biblioAction === 'rawtopicentity') {
+      radioFormRawtopicentityClassname += ' underlined';
+      rawtopicentityChecked = 'checked';
+      biblioActionTogglerSelected = 'rawtopicentity'; }
     else {
       radioFormDisplayClassname += ' underlined';
       displayChecked = 'checked'; }
@@ -187,6 +194,17 @@ const BiblioActionToggler = () => {
           onChange={(e) => dispatch(changeBiblioActionToggler(e, 'filemanagement'))}
         />
       </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormRawtopicentityClassname}
+          checked={rawtopicentityChecked}
+          type='radio'
+          label='raw entity and topic data'
+          id='biblio-toggler-rawtopicentity'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'rawtopicentity'))}
+        />
+      </div>
     </div>
     </Form>);
 } // const BiblioActionToggler
@@ -206,6 +224,8 @@ const BiblioActionRouter = () => {
       return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     case 'filemanagement':
       return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioFileManagement /> }</>);
+    case 'rawtopicentity':
+      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioRawTetData /> }</>);
     default:
       return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
   }
