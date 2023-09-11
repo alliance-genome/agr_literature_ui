@@ -50,16 +50,16 @@ const RawDataEntityTable = () => {
   // use the following code for the 'simple' table
   let headers = [];
   let source_headers = [];
-  const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
-  const dateColumnSet = new Set(['date_created', 'date_updated']);
+  // const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
+  // const dateColumnSet = new Set(['date_created', 'date_updated']);
   for (const tetDict of topicEntityTags.values()) {
     for (const tetDictKey in tetDict) {
       // console.log(tetDictKey);
       if (tetDictKey === 'topic_entity_tag_source') {
         for (const tetSourceKey in tetDict[tetDictKey]) {
-          if ( (source_headers.indexOf(tetSourceKey) === -1) && !(excludeColumnSet.has(tetSourceKey)) ) { source_headers.push(tetSourceKey); } } }
+          if (source_headers.indexOf(tetSourceKey) === -1) { source_headers.push(tetSourceKey); } } }
       else {
-        if ( (headers.indexOf(tetDictKey) === -1) && !(excludeColumnSet.has(tetDictKey)) ) { headers.push(tetDictKey); } }
+        if (headers.indexOf(tetDictKey) === -1) { headers.push(tetDictKey); } }
     }
   }
 
@@ -81,8 +81,8 @@ const RawDataEntityTable = () => {
                     let td_value = tetDict[header];
                     if (td_value === true) { td_value = 'True'; }
                     else if (td_value === false) { td_value = 'False'; }
-                    else if (dateColumnSet.has(header)) {
-                      td_value = new Date(td_value).toLocaleString(); }
+                    // else if (dateColumnSet.has(header)) {
+                    //   td_value = new Date(td_value).toLocaleString(); }
                     // else if (headersToEntityMap.has(header)) {
                     //   td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]] : tetDict[header]; }
                     // else if (header === "species") {
@@ -93,8 +93,8 @@ const RawDataEntityTable = () => {
                     let td_value = tetDict['topic_entity_tag_source'][header];
                     if (td_value === true) { td_value = 'True'; }
                     else if (td_value === false) { td_value = 'False'; }
-                    if (dateColumnSet.has(header)) {
-                      td_value = new Date(td_value).toLocaleString(); }
+                    // if (dateColumnSet.has(header)) {
+                    //   td_value = new Date(td_value).toLocaleString(); }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                 </tr>);
