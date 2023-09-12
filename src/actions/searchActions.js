@@ -19,6 +19,7 @@ export const SEARCH_SET_FACETS_LOADING = 'SEARCH_SET_FACETS_LOADING';
 export const SEARCH_SET_DATE_PUBMED_ADDED = 'SEARCH_SET_DATE_PUBMED_ADDED';
 export const SEARCH_SET_DATE_PUBMED_MODIFIED = 'SEARCH_SET_DATE_PUBMED_MODIFIED';
 export const SEARCH_SET_DATE_PUBLISHED = 'SEARCH_SET_DATE_PUBLISHED';
+export const SEARCH_SET_DATE_CREATED = 'SEARCH_SET_DATE_CREATED';
 export const SEARCH_SET_SEARCH_QUERY_FIELDS = 'SEARCH_SET_SEARCH_QUERY_FIELDS';
 export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_DATE';
 export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
@@ -76,6 +77,9 @@ export const searchReferences = () => {
     }
     if(state.search.datePublished){
       params.date_published = state.search.datePublished;
+    }
+    if(state.search.dateCreated){
+      params.date_created = state.search.dateCreated;
     }
     axios.post(restUrl + '/search/references', params )
 
@@ -246,6 +250,13 @@ export const setDatePublished = (datePubmed) => ({
   type: SEARCH_SET_DATE_PUBLISHED,
   payload: {
     datePublished : datePubmed
+  }
+});
+
+export const setDateCreated = (dateCreated) => ({
+  type: SEARCH_SET_DATE_CREATED,
+  payload: {
+    dateCreated : dateCreated
   }
 });
 

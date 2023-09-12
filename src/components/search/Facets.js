@@ -11,7 +11,8 @@ import {
     filterFacets,
     setDatePubmedAdded,
     setDatePubmedModified,
-    setDatePublished
+    setDatePublished,
+    setDateCreated
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse} from 'react-bootstrap';
@@ -39,64 +40,63 @@ export const RENAME_FACETS = {
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published"]
+    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
 
 }
 
+const DatePicker = ({facetName,currentValue,setValueFunction}) => {
+    const dispatch = useDispatch();
+
+    function formatDateRange(dateRange){
+            let dateStart=dateRange[0].getFullYear()+"-"+parseInt(dateRange[0].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[0].getDate().toString().padStart(2,'0');
+            let dateEnd=dateRange[1].getFullYear()+"-"+parseInt(dateRange[1].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[1].getDate().toString().padStart(2,'0');
+            return [dateStart,dateEnd];
+    }
+
+    function formatToUTCString(dateRange){
+        if (dateRange !== ''){
+            let dateStart = new Date (dateRange[0]);
+            let offset = dateStart.getTimezoneOffset();
+            let parsedDateStart = Date.parse(dateRange[0])  + (offset * 60000);
+            let parsedDateEnd = Date.parse(dateRange[1]) + (offset * 60000);
+            return [parsedDateStart,parsedDateEnd];
+        }else{
+            return '';
+        }
+    }
+
+    return(
+        <div key={facetName} style={{textAlign: "left", paddingLeft: "2em"}}>
+            <h5>{facetName}</h5>
+            <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {
+                if (newDateRangeArr === null) {
+                    dispatch(setValueFunction(''));
+                    dispatch(setSearchResultsPage(1));
+                    dispatch(searchReferences());
+                }
+                else if(!isNaN(Date.parse(newDateRangeArr[0])) && !isNaN(Date.parse(newDateRangeArr[1]))){
+                    dispatch(setValueFunction(formatDateRange(newDateRangeArr)));
+                    dispatch(setSearchResultsPage(1));
+                    dispatch(searchReferences());
+                }
+
+            }}/>
+        </div>
+    )
+}
 const DateFacet = ({facetsToInclude}) => {
 
   const datePubmedModified = useSelector(state => state.search.datePubmedModified);
   const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
   const datePublished = useSelector(state => state.search.datePublished);
-  const dispatch = useDispatch();
-
-  function formatDateRange(dateRange){
-    let dateStart=dateRange[0].getFullYear()+"-"+parseInt(dateRange[0].getMonth()+1)+"-"+dateRange[0].getDate();
-    let dateEnd=dateRange[1].getFullYear()+"-"+parseInt(dateRange[1].getMonth()+1)+"-"+dateRange[1].getDate();
-    return [dateStart,dateEnd];
-  }
+  const dateCreated = useSelector(state => state.search.dateCreated);
 
   return (
     <div>
-      <div key={facetsToInclude[2]} style={{textAlign: "left", paddingLeft: "2em"}}>
-      <h5>{facetsToInclude[2]}</h5>
-        <DateRangePicker value={datePublished} onChange= {(newDateRangeArr) => {
-          if (newDateRangeArr === null) {
-            dispatch(setDatePublished(''));
-          }
-          else {
-            dispatch(setDatePublished(formatDateRange(newDateRangeArr)));
-          }
-          dispatch(setSearchResultsPage(1));
-          dispatch(searchReferences());
-          }}/>
-      </div>
-      <div key={facetsToInclude[0]} style={{textAlign: "left", paddingLeft: "2em"}}>
-      <h5>{facetsToInclude[0]}</h5>
-        <DateRangePicker value={datePubmedModified} onChange= {(newDateRangeArr) => {
-          if (newDateRangeArr === null) {
-            dispatch(setDatePubmedModified(''));
-          }
-          else {
-            dispatch(setDatePubmedModified(formatDateRange(newDateRangeArr)));
-          }
-          dispatch(setSearchResultsPage(1));
-          dispatch(searchReferences());
-        }}/>
-      </div>
-      <div key={facetsToInclude[1]} style={{textAlign: "left", paddingLeft: "2em"}}>
-      <h5>{facetsToInclude[1]}</h5>
-        <DateRangePicker value={datePubmedAdded} onChange= {(newDateRangeArr) => {
-          if (newDateRangeArr === null) {
-            dispatch(setDatePubmedAdded(''));
-          }
-          else {
-            dispatch(setDatePubmedAdded(formatDateRange(newDateRangeArr)));
-          }
-          dispatch(setSearchResultsPage(1));
-          dispatch(searchReferences());
-        }}/>
-      </div>
+        <DatePicker facetName={facetsToInclude[2]} currentValue={datePublished} setValueFunction={setDatePublished}/>
+        <DatePicker facetName={facetsToInclude[0]} currentValue={datePubmedModified} setValueFunction={setDatePubmedModified}/>
+        <DatePicker facetName={facetsToInclude[1]} currentValue={datePubmedAdded} setValueFunction={setDatePubmedAdded}/>
+        <DatePicker facetName={facetsToInclude[3]} currentValue={dateCreated} setValueFunction={setDateCreated}/>
     </div>
   )
 }
