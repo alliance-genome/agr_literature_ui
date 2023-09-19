@@ -43,7 +43,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'reference_files', 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -560,6 +560,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, hasPm
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(
         <RowDisplayPairPubmedMeshTerms key="RowDisplayPairPubmedMeshTerms" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
+    else if (fieldName === 'reference_files') {
+      rowOrderedElements.push(
+        <RowDisplayPairReferenceFiles key="RowDisplayPairReferenceFiles" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
   }
   return (<Container fluid>{rowOrderedElements}</Container>);
 } // const MergePairsSection
@@ -674,6 +677,107 @@ const RowDisplayPairPubmedMeshTerms = ({fieldName, referenceMeta1, referenceMeta
       </Row>);
 } // const RowDisplayPairPubmedMeshTerms 
 
+const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
+  const dispatch = useDispatch();
+  if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
+       (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
+  const md5sums = {}; const reffile1 = {}; const reffile2 = {};
+  if (referenceMeta1['referenceJson'][fieldName] !== null ) {
+    for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
+      if ('md5sum' in val1 && val1['md5sum'] !== null && val1['md5sum'] !== '') {
+        let reffile1md5sum = val1['md5sum'];
+        if (reffile1md5sum in md5sums) { md5sums[reffile1md5sum] += 1; }
+          else { md5sums[reffile1md5sum] = 1; }
+        reffile1[reffile1md5sum] = JSON.parse(JSON.stringify(val1));
+//         mca1[val1['mod_abbreviation']] = { 'index': index, 'corpus': corpus1, 'toggle': toggle1 };
+        reffile1[reffile1md5sum]['index'] = index;
+        const toggle1 = ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') ? val1['toggle'] : null;
+        reffile1[reffile1md5sum]['toggle'] = toggle1;
+  } } }
+  if (referenceMeta2['referenceJson'][fieldName] !== null ) {
+    for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
+      if ('md5sum' in val2 && val2['md5sum'] !== null && val2['md5sum'] !== '') {
+        let reffile2md5sum = val2['md5sum'];
+        if (reffile2md5sum in md5sums) { md5sums[reffile2md5sum] += 1; }
+          else { md5sums[reffile2md5sum] = 1; }
+        reffile2[reffile2md5sum] = JSON.parse(JSON.stringify(val2));
+        reffile2[reffile2md5sum]['index'] = index;
+        const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
+        reffile2[reffile2md5sum]['toggle'] = toggle2;
+  } } }
+  console.log('reffile1'); console.log('reffile2'); console.log('md5sums');
+  console.log(reffile1); console.log(reffile2); console.log(md5sums);
+
+//   for (let i = 0; i < maxLength; i++) { let element1 = (<div></div>); let element2 = (<div></div>); }
+
+  const sameMd5 = {}; const uniqMd5 = {};
+  const reffile1Elements = []; const reffile2Elements = [];
+  const sortedKeys = Object.keys(md5sums).sort();
+  for (let i = 0; i < sortedKeys.length; i++) {
+    const md5sum = sortedKeys[i];
+    if (md5sums[md5sum] > 1) { sameMd5[md5sum] = true; }
+      else {
+        uniqMd5[md5sum] = true;
+        if (md5sum in reffile1) { reffile1Elements.push(md5sum); }
+          else { reffile2Elements.push(md5sum); } } }
+  console.log('sameMd5'); console.log(sameMd5);
+
+  const rowPairRefFilesElements = [];
+  const maxLength = ( reffile1Elements.length > reffile2Elements.length) ? reffile1Elements.length : reffile2Elements.length;
+
+//   const sortedKeys = Object.keys(md5sums).sort();
+//   if (referenceMeta1['referenceJson'][fieldName] !== null && referenceMeta1['referenceJson'][fieldName].length > maxLength) {
+//     maxLength = referenceMeta1['referenceJson'][fieldName].length; }
+//   if (referenceMeta2['referenceJson'][fieldName] !== null && referenceMeta2['referenceJson'][fieldName].length > maxLength) {
+//     maxLength = referenceMeta2['referenceJson'][fieldName].length; }
+//   const autFields = ['first_name', 'last_name', 'name', 'order', 'corresponding_author', 'first_author', 'toggle'];
+
+  const sortedSameKeys = Object.keys(sameMd5).sort();
+  console.log('sortedSameKeys'); console.log(sortedSameKeys);
+
+  const element0 = GenerateFieldLabel(fieldName, 'unlock');
+  for (let i = 0; i < sortedSameKeys.length; i++) {
+    let element1 = (<div></div>); let element2 = (<div></div>);
+    const md5sum = sortedSameKeys[i];
+    let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+    if (md5sum in reffile1) {
+      if (reffile1[md5sum]['toggle'] !== null && reffile1[md5sum]['toggle'] !== '') { toggle1 = reffile1[md5sum]['toggle']; }
+      if ( toggle1 ) { swapColor1 = !swapColor1; }
+      keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
+      element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => {
+                    dispatch(mergeToggleIndependent(fieldName, 1, reffile1[md5sum]['index']));
+                    if (md5sum in reffile2) { dispatch(mergeToggleIndependent(fieldName, 2, reffile2[md5sum]['index'])) } } }
+                  >{reffile1[md5sum]['display_name']}.{reffile1[md5sum]['file_extension']} {reffile1[md5sum]['file_class']} {reffile1[md5sum]['md5sum']}</div>); }
+    if (md5sum in reffile2) {
+      if (reffile2[md5sum]['toggle'] !== null && reffile2[md5sum]['toggle'] !== '') { toggle2 = reffile2[md5sum]['toggle']; }
+      if ( toggle2 ) { swapColor2 = !swapColor2; }
+      keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
+      element2 = (<div className={`div-merge ${keepClass2}`}  onClick={() => {
+                    if (md5sum in reffile1) { dispatch(mergeToggleIndependent(fieldName, 1, reffile1[md5sum]['index'])); }
+                    dispatch(mergeToggleIndependent(fieldName, 2, reffile2[md5sum]['index'])) } }
+                  >{reffile2[md5sum]['display_name']}.{reffile2[md5sum]['file_extension']} {reffile2[md5sum]['file_class']} {reffile2[md5sum]['md5sum']}</div>); }
+    rowPairRefFilesElements.push(
+      <Row key={`toggle reffile samemd5 ${i}`}>
+        <Col sm="2" >{element0}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  }
+
+  const element0Lock = GenerateFieldLabel(fieldName, 'lock');
+  for (let i = 0; i < maxLength; i++) {
+    const element1 = (reffile1Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile1[reffile1Elements[i]]['display_name']}.{reffile1[reffile1Elements[i]]['file_extension']} {reffile1[reffile1Elements[i]]['file_class']} {reffile1[reffile1Elements[i]]['md5sum']}</div>) : '';
+    const element2 = (reffile2Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile2[reffile2Elements[i]]['display_name']}.{reffile2[reffile2Elements[i]]['file_extension']} {reffile2[reffile2Elements[i]]['file_class']} {reffile2[reffile2Elements[i]]['md5sum']}</div>) : '';
+    rowPairRefFilesElements.push(
+      <Row key={`toggle reffile uniqmd5 ${i}`}>
+        <Col sm="2" >{element0Lock}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  }
+  return (<>{rowPairRefFilesElements}</>);
+} // const RowDisplayPairReferenceFiles
 
 const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const dispatch = useDispatch();
@@ -708,7 +812,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       if ( aut1Data['toggle'] ) { swapColor1 = !swapColor1; }
       keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
       // console.log('toggle1 swapColor1 ' + swapColor1 + ' on index ' + i)
-      if ( aut1Data['first_name'] !== '' && aut1Data['last_name'] !== '') { 
+      if ( aut1Data['first_name'] !== '' && aut1Data['last_name'] !== '') {
         aut1Data['name'] = aut1Data['first_name'] + ' ' + aut1Data['last_name'] }
       else if ( aut1Data['first_name'] !== '') { aut1Data['name'] = aut1Data['first_name'] }
       else if ( aut1Data['last_name'] !== '') { aut1Data['name'] = aut1Data['last_name'] }
@@ -719,7 +823,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 1, i))} >{string1}
         { (aut1Data['first_author'] === true) && <> <Badge variant="secondary">first</Badge></> }
         { (aut1Data['corresponding_author'] === true) && <> <Badge variant="secondary">corresponding</Badge></> }
-        </div>); 
+        </div>);
       author1Elements[aut1Data['order'] - 1] = element1; }
     if (referenceMeta2['referenceJson'][fieldName] !== null &&
         referenceMeta2['referenceJson'][fieldName][i] !== null && referenceMeta2['referenceJson'][fieldName][i] !== undefined) {
@@ -730,7 +834,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       if ( aut2Data['toggle'] ) { swapColor2 = !swapColor2; }
       keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
       // console.log('toggle2 swapColor2 ' + swapColor2 + ' on index ' + i)
-      if ( aut2Data['first_name'] !== '' && aut2Data['last_name'] !== '') { 
+      if ( aut2Data['first_name'] !== '' && aut2Data['last_name'] !== '') {
         aut2Data['name'] = aut2Data['first_name'] + ' ' + aut2Data['last_name'] }
       else if ( aut2Data['first_name'] !== '') { aut2Data['name'] = aut2Data['first_name'] }
       else if ( aut2Data['last_name'] !== '') { aut2Data['name'] = aut2Data['last_name'] }
@@ -740,7 +844,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       element2 = (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 2, i))} >{string2}
         { (aut2Data['first_author'] === true) && <> <Badge variant="secondary">first</Badge></> }
         { (aut2Data['corresponding_author'] === true) && <> <Badge variant="secondary">corresponding</Badge></> }
-        </div>); 
+        </div>);
       author2Elements[aut2Data['order'] - 1] = element2; }
   }
   for (let i = 0; i < maxOrder; i++) {
@@ -754,7 +858,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
       </Row>);
   }
   return (<>{rowPairAuthorsElements}</>);
-} // const RowDisplayPairAuthors 
+} // const RowDisplayPairAuthors
 
 const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid}) => {
   const dispatch = useDispatch();
