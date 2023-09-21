@@ -735,7 +735,7 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   const sortedSameKeys = Object.keys(sameMd5).sort();
   console.log('sortedSameKeys'); console.log(sortedSameKeys);
 
-  const element0 = GenerateFieldLabel(fieldName, 'unlock');
+  const element0 = GenerateFieldLabel('redundant ' + fieldName, 'unlock');
   for (let i = 0; i < sortedSameKeys.length; i++) {
     let element1 = (<div></div>); let element2 = (<div></div>);
     const md5sum = sortedSameKeys[i];
@@ -765,7 +765,7 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
       </Row>);
   }
 
-  const element0Lock = GenerateFieldLabel(fieldName, 'lock');
+  const element0Lock = GenerateFieldLabel('unique ' + fieldName, 'lock');
   for (let i = 0; i < maxLength; i++) {
     const element1 = (reffile1Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile1[reffile1Elements[i]]['display_name']}.{reffile1[reffile1Elements[i]]['file_extension']} {reffile1[reffile1Elements[i]]['file_class']} {reffile1[reffile1Elements[i]]['md5sum']}</div>) : '';
     const element2 = (reffile2Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile2[reffile2Elements[i]]['display_name']}.{reffile2[reffile2Elements[i]]['file_extension']} {reffile2[reffile2Elements[i]]['file_class']} {reffile2[reffile2Elements[i]]['md5sum']}</div>) : '';
