@@ -21,6 +21,7 @@ const initialState = {
   modIdent: '',
   modPrefix: '',
   pmid: '',
+  doi: '',
   pmidTitle: '',
   pmidXml: '',
   updateAlert: 0,

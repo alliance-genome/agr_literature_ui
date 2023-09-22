@@ -167,6 +167,7 @@ const Tracker = () => {
             <th>Curie</th>
             <th>MOD Curie</th>
             <th>PMID</th>
+            <th>DOI</th>
             <th>Citation</th>
             <th>File Workflow</th>
             <th>Files Uploaded</th>
@@ -190,6 +191,7 @@ const Tracker = () => {
             <td><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}>{reference.curie}</Link></td>
             <td><XrefElement xref={reference.mod_curie}/></td>
             <td><XrefElement xref={reference.pmid}/></td>
+            <td><XrefElement xref={reference.doi}/></td>
             <td className="sm-table">{reference.short_citation}</td>
             <td>{trackerFilter === 'default' ? <WorkFlowDropdown accessLevel={accessLevel} curie={reference.curie} accessToken={accessToken}/> : trackerFilter}</td>
             <td className="sm-table no-pad">
