@@ -510,7 +510,6 @@ const MergeSubmitDataTransferUpdateButton = () => {
       if (md5sums[md5sum] > 1) { sameMd5[md5sum] = true; }
         else {
           uniqMd5[md5sum] = true; } }
-    console.log('sameMd5'); console.log(sameMd5);
 
     if ('reference_files' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['reference_files'] !== null) {
       for (const reffileDict of referenceMeta2['referenceJson']['reference_files'].values()) {
@@ -748,35 +747,6 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
   const [reffile1, reffile2, md5sums] = deriveReffilesMd5sum(referenceMeta1['referenceJson']['reference_files'], referenceMeta2['referenceJson']['reference_files'])
-//   const md5sums = {}; const reffile1 = {}; const reffile2 = {};
-//   if (referenceMeta1['referenceJson'][fieldName] !== null ) {
-//     for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
-//       if ('md5sum' in val1 && val1['md5sum'] !== null && val1['md5sum'] !== '') {
-//         let reffile1md5sum = val1['md5sum'];
-//         if (reffile1md5sum in md5sums) { md5sums[reffile1md5sum] += 1; }
-//           else { md5sums[reffile1md5sum] = 1; }
-//         reffile1[reffile1md5sum] = JSON.parse(JSON.stringify(val1));
-// //         mca1[val1['mod_abbreviation']] = { 'index': index, 'corpus': corpus1, 'toggle': toggle1 };
-//         reffile1[reffile1md5sum]['index'] = index;
-//         const toggle1 = ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') ? val1['toggle'] : null;
-//         reffile1[reffile1md5sum]['toggle'] = toggle1;
-//   } } }
-//   if (referenceMeta2['referenceJson'][fieldName] !== null ) {
-//     for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
-//       if ('md5sum' in val2 && val2['md5sum'] !== null && val2['md5sum'] !== '') {
-//         let reffile2md5sum = val2['md5sum'];
-//         if (reffile2md5sum in md5sums) { md5sums[reffile2md5sum] += 1; }
-//           else { md5sums[reffile2md5sum] = 1; }
-//         reffile2[reffile2md5sum] = JSON.parse(JSON.stringify(val2));
-//         reffile2[reffile2md5sum]['index'] = index;
-//         const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
-//         reffile2[reffile2md5sum]['toggle'] = toggle2;
-//   } } }
-//   console.log('reffile1'); console.log('reffile2'); console.log('md5sums');
-//   console.log(reffile1); console.log(reffile2); console.log(md5sums);
-
-//   for (let i = 0; i < maxLength; i++) { let element1 = (<div></div>); let element2 = (<div></div>); }
-
   const sameMd5 = {}; const uniqMd5 = {};
   const reffile1Elements = []; const reffile2Elements = [];
   const sortedKeys = Object.keys(md5sums).sort();
@@ -787,20 +757,10 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
         uniqMd5[md5sum] = true;
         if (md5sum in reffile1) { reffile1Elements.push(md5sum); }
           else { reffile2Elements.push(md5sum); } } }
-  console.log('sameMd5'); console.log(sameMd5);
 
   const rowPairRefFilesElements = [];
   const maxLength = ( reffile1Elements.length > reffile2Elements.length) ? reffile1Elements.length : reffile2Elements.length;
-
-//   const sortedKeys = Object.keys(md5sums).sort();
-//   if (referenceMeta1['referenceJson'][fieldName] !== null && referenceMeta1['referenceJson'][fieldName].length > maxLength) {
-//     maxLength = referenceMeta1['referenceJson'][fieldName].length; }
-//   if (referenceMeta2['referenceJson'][fieldName] !== null && referenceMeta2['referenceJson'][fieldName].length > maxLength) {
-//     maxLength = referenceMeta2['referenceJson'][fieldName].length; }
-//   const autFields = ['first_name', 'last_name', 'name', 'order', 'corresponding_author', 'first_author', 'toggle'];
-
   const sortedSameKeys = Object.keys(sameMd5).sort();
-  console.log('sortedSameKeys'); console.log(sortedSameKeys);
 
   const element0 = GenerateFieldLabel('redundant ' + fieldName, 'unlock');
   for (let i = 0; i < sortedSameKeys.length; i++) {
