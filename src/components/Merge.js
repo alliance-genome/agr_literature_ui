@@ -290,6 +290,35 @@ const AlertDismissibleMergeUpdate = () => {
   } else { return null; }
 }
 
+function deriveReffilesMd5sum(refMetaReffiles1, refMetaReffiles2) {
+  const md5sums = {}; const reffile1 = {}; const reffile2 = {};
+  if (refMetaReffiles1 !== null ) {
+    for (const [index, val1] of refMetaReffiles1.entries()) {
+      if ('md5sum' in val1 && val1['md5sum'] !== null && val1['md5sum'] !== '') {
+        let reffile1md5sum = val1['md5sum'];
+        if (reffile1md5sum in md5sums) { md5sums[reffile1md5sum] += 1; }
+          else { md5sums[reffile1md5sum] = 1; }
+        reffile1[reffile1md5sum] = JSON.parse(JSON.stringify(val1));
+        reffile1[reffile1md5sum]['index'] = index;
+        const toggle1 = ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') ? val1['toggle'] : null;
+        reffile1[reffile1md5sum]['toggle'] = toggle1;
+  } } }
+  if (refMetaReffiles2 !== null ) {
+    for (const [index, val2] of refMetaReffiles2.entries()) {
+      if ('md5sum' in val2 && val2['md5sum'] !== null && val2['md5sum'] !== '') {
+        let reffile2md5sum = val2['md5sum'];
+        if (reffile2md5sum in md5sums) { md5sums[reffile2md5sum] += 1; }
+          else { md5sums[reffile2md5sum] = 1; }
+        reffile2[reffile2md5sum] = JSON.parse(JSON.stringify(val2));
+        reffile2[reffile2md5sum]['index'] = index;
+        const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
+        reffile2[reffile2md5sum]['toggle'] = toggle2;
+  } } }
+  // console.log('reffile1'); console.log('reffile2'); console.log('md5sums');
+  // console.log(reffile1); console.log(reffile2); console.log(md5sums);
+  return [reffile1, reffile2, md5sums];
+} // function useDeriveReffilesMd5sum()
+
 const MergeSubmitDataTransferUpdateButton = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -471,6 +500,43 @@ const MergeSubmitDataTransferUpdateButton = () => {
           let array = [ subPath, null, 'DELETE', 0, null, null];
           forApiArray.push( array );
     } } }
+
+    const [reffile1, reffile2, md5sums] = deriveReffilesMd5sum(referenceMeta1['referenceJson']['reference_files'], referenceMeta2['referenceJson']['reference_files'])
+
+    const sameMd5 = {}; const uniqMd5 = {};
+    const sortedKeys = Object.keys(md5sums).sort();
+    for (let i = 0; i < sortedKeys.length; i++) {
+      const md5sum = sortedKeys[i];
+      if (md5sums[md5sum] > 1) { sameMd5[md5sum] = true; }
+        else {
+          uniqMd5[md5sum] = true; } }
+    console.log('sameMd5'); console.log(sameMd5);
+
+    if ('reference_files' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['reference_files'] !== null) {
+      for (const reffileDict of referenceMeta2['referenceJson']['reference_files'].values()) {
+        if (reffileDict['md5sum'] in uniqMd5) {
+          console.log('transfer ' + reffileDict['md5sum'] + ' to winning ref');
+          const updateJsonReffile2 = { 'reference_curie': referenceMeta1['referenceJson']['curie'] }
+          let subPath = 'reference/referencefile/' + reffile2[reffileDict['md5sum']]['referencefile_id'];
+          let array = [ subPath, updateJsonReffile2, 'PATCH', 0, null, null];
+          console.log('array');
+          console.log(array);
+          forApiArray.push( array );
+        }
+        else if (reffileDict['md5sum'] in sameMd5) {
+          let swap = false;
+          if (reffileDict['toggle']) { swap = !swap; }
+          if (pmidKeepReference === 2) { swap = !swap; }
+          const winning_reffile_id = (swap) ? reffile2[reffileDict['md5sum']]['referencefile_id'] : reffile1[reffileDict['md5sum']]['referencefile_id']
+          const losing_reffile_id = (swap) ? reffile1[reffileDict['md5sum']]['referencefile_id'] : reffile2[reffileDict['md5sum']]['referencefile_id']
+          console.log('transfer losing ' + losing_reffile_id + ' to winning ' + winning_reffile_id);
+          let subPath = 'reference/referencefile/merge/' + referenceMeta1['referenceJson']['curie'] + '/' + losing_reffile_id + '/' + winning_reffile_id;
+          let array = [ subPath, null, 'POST', 0, null, null]
+          console.log('array');
+          console.log(array);
+          forApiArray.push( array );
+        }
+    } }
 
 
     // TODO  corrections 
@@ -681,32 +747,33 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
-  const md5sums = {}; const reffile1 = {}; const reffile2 = {};
-  if (referenceMeta1['referenceJson'][fieldName] !== null ) {
-    for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
-      if ('md5sum' in val1 && val1['md5sum'] !== null && val1['md5sum'] !== '') {
-        let reffile1md5sum = val1['md5sum'];
-        if (reffile1md5sum in md5sums) { md5sums[reffile1md5sum] += 1; }
-          else { md5sums[reffile1md5sum] = 1; }
-        reffile1[reffile1md5sum] = JSON.parse(JSON.stringify(val1));
-//         mca1[val1['mod_abbreviation']] = { 'index': index, 'corpus': corpus1, 'toggle': toggle1 };
-        reffile1[reffile1md5sum]['index'] = index;
-        const toggle1 = ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') ? val1['toggle'] : null;
-        reffile1[reffile1md5sum]['toggle'] = toggle1;
-  } } }
-  if (referenceMeta2['referenceJson'][fieldName] !== null ) {
-    for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
-      if ('md5sum' in val2 && val2['md5sum'] !== null && val2['md5sum'] !== '') {
-        let reffile2md5sum = val2['md5sum'];
-        if (reffile2md5sum in md5sums) { md5sums[reffile2md5sum] += 1; }
-          else { md5sums[reffile2md5sum] = 1; }
-        reffile2[reffile2md5sum] = JSON.parse(JSON.stringify(val2));
-        reffile2[reffile2md5sum]['index'] = index;
-        const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
-        reffile2[reffile2md5sum]['toggle'] = toggle2;
-  } } }
-  console.log('reffile1'); console.log('reffile2'); console.log('md5sums');
-  console.log(reffile1); console.log(reffile2); console.log(md5sums);
+  const [reffile1, reffile2, md5sums] = deriveReffilesMd5sum(referenceMeta1['referenceJson']['reference_files'], referenceMeta2['referenceJson']['reference_files'])
+//   const md5sums = {}; const reffile1 = {}; const reffile2 = {};
+//   if (referenceMeta1['referenceJson'][fieldName] !== null ) {
+//     for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
+//       if ('md5sum' in val1 && val1['md5sum'] !== null && val1['md5sum'] !== '') {
+//         let reffile1md5sum = val1['md5sum'];
+//         if (reffile1md5sum in md5sums) { md5sums[reffile1md5sum] += 1; }
+//           else { md5sums[reffile1md5sum] = 1; }
+//         reffile1[reffile1md5sum] = JSON.parse(JSON.stringify(val1));
+// //         mca1[val1['mod_abbreviation']] = { 'index': index, 'corpus': corpus1, 'toggle': toggle1 };
+//         reffile1[reffile1md5sum]['index'] = index;
+//         const toggle1 = ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') ? val1['toggle'] : null;
+//         reffile1[reffile1md5sum]['toggle'] = toggle1;
+//   } } }
+//   if (referenceMeta2['referenceJson'][fieldName] !== null ) {
+//     for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
+//       if ('md5sum' in val2 && val2['md5sum'] !== null && val2['md5sum'] !== '') {
+//         let reffile2md5sum = val2['md5sum'];
+//         if (reffile2md5sum in md5sums) { md5sums[reffile2md5sum] += 1; }
+//           else { md5sums[reffile2md5sum] = 1; }
+//         reffile2[reffile2md5sum] = JSON.parse(JSON.stringify(val2));
+//         reffile2[reffile2md5sum]['index'] = index;
+//         const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
+//         reffile2[reffile2md5sum]['toggle'] = toggle2;
+//   } } }
+//   console.log('reffile1'); console.log('reffile2'); console.log('md5sums');
+//   console.log(reffile1); console.log(reffile2); console.log(md5sums);
 
 //   for (let i = 0; i < maxLength; i++) { let element1 = (<div></div>); let element2 = (<div></div>); }
 
@@ -748,7 +815,7 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
       element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => {
                     dispatch(mergeToggleIndependent(fieldName, 1, reffile1[md5sum]['index']));
                     if (md5sum in reffile2) { dispatch(mergeToggleIndependent(fieldName, 2, reffile2[md5sum]['index'])) } } }
-                  >{reffile1[md5sum]['display_name']}.{reffile1[md5sum]['file_extension']} {reffile1[md5sum]['file_class']} {reffile1[md5sum]['md5sum']}</div>); }
+                  >{reffile1[md5sum]['referencefile_id']} {reffile1[md5sum]['display_name']}.{reffile1[md5sum]['file_extension']} {reffile1[md5sum]['file_class']} {reffile1[md5sum]['md5sum']}</div>); }
     if (md5sum in reffile2) {
       if (reffile2[md5sum]['toggle'] !== null && reffile2[md5sum]['toggle'] !== '') { toggle2 = reffile2[md5sum]['toggle']; }
       if ( toggle2 ) { swapColor2 = !swapColor2; }
@@ -756,7 +823,7 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
       element2 = (<div className={`div-merge ${keepClass2}`}  onClick={() => {
                     if (md5sum in reffile1) { dispatch(mergeToggleIndependent(fieldName, 1, reffile1[md5sum]['index'])); }
                     dispatch(mergeToggleIndependent(fieldName, 2, reffile2[md5sum]['index'])) } }
-                  >{reffile2[md5sum]['display_name']}.{reffile2[md5sum]['file_extension']} {reffile2[md5sum]['file_class']} {reffile2[md5sum]['md5sum']}</div>); }
+                  >{reffile2[md5sum]['referencefile_id']} {reffile2[md5sum]['display_name']}.{reffile2[md5sum]['file_extension']} {reffile2[md5sum]['file_class']} {reffile2[md5sum]['md5sum']}</div>); }
     rowPairRefFilesElements.push(
       <Row key={`toggle reffile samemd5 ${i}`}>
         <Col sm="2" >{element0}</Col>
@@ -767,8 +834,8 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
 
   const element0Lock = GenerateFieldLabel('unique ' + fieldName, 'lock');
   for (let i = 0; i < maxLength; i++) {
-    const element1 = (reffile1Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile1[reffile1Elements[i]]['display_name']}.{reffile1[reffile1Elements[i]]['file_extension']} {reffile1[reffile1Elements[i]]['file_class']} {reffile1[reffile1Elements[i]]['md5sum']}</div>) : '';
-    const element2 = (reffile2Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile2[reffile2Elements[i]]['display_name']}.{reffile2[reffile2Elements[i]]['file_extension']} {reffile2[reffile2Elements[i]]['file_class']} {reffile2[reffile2Elements[i]]['md5sum']}</div>) : '';
+    const element1 = (reffile1Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile1[reffile1Elements[i]]['referencefile_id']} {reffile1[reffile1Elements[i]]['display_name']}.{reffile1[reffile1Elements[i]]['file_extension']} {reffile1[reffile1Elements[i]]['file_class']} {reffile1[reffile1Elements[i]]['md5sum']}</div>) : '';
+    const element2 = (reffile2Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile2[reffile2Elements[i]]['referencefile_id']} {reffile2[reffile2Elements[i]]['display_name']}.{reffile2[reffile2Elements[i]]['file_extension']} {reffile2[reffile2Elements[i]]['file_class']} {reffile2[reffile2Elements[i]]['md5sum']}</div>) : '';
     rowPairRefFilesElements.push(
       <Row key={`toggle reffile uniqmd5 ${i}`}>
         <Col sm="2" >{element0Lock}</Col>
