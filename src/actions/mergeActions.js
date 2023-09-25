@@ -66,6 +66,26 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
     return [response_curie, response_success]
   }
 
+  const queryRefFiles = async (referenceCurie) => {
+    const url = restUrl + '/reference/referencefile/show_all/' + referenceCurie;
+    console.log(url);
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
+    const response = await res.json();
+    console.log(response);
+    let response_payload = referenceCurie + ' not found';
+    let response_success = false;
+    if (Array.isArray(response)) {
+      response_success = true;
+      response_payload = response; }
+    return [response_payload, response_success]
+  }
+
   const queryRef = async (referenceCurie) => {
     const url = restUrl + '/reference/' + referenceCurie;
     console.log(url);
@@ -148,6 +168,12 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
       if (referenceJson2.constructor === Object && 'comment_and_corrections' in referenceJson2 &&
           referenceJson2['comment_and_corrections'] !== null) {
         generateCorrectionsSimple(referenceJson2); }
+
+      const promiseRefFile1 = queryRefFiles(curieValue1);
+      const promiseRefFile2 = queryRefFiles(curieValue2);
+      let valuesRefFiles = await Promise.allSettled([promiseRefFile1, promiseRefFile2]);
+      referenceJson1['reference_files'] = valuesRefFiles[0]['value'][0];
+      referenceJson2['reference_files'] = valuesRefFiles[1]['value'][0];
 
       if (curieValue1 === curieValue2) {
         curieValue2 = curieValue2 + ' is the same as the reference curie to keep';
