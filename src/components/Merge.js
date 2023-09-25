@@ -43,7 +43,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'reference_files', 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -832,6 +832,7 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
       </Row>);
   }
 
+  rowPairRefFilesElements.push(<RowDivider key="reffiles_divider" />);
   const element0Lock = GenerateFieldLabel('unique ' + fieldName, 'lock');
   for (let i = 0; i < maxLength; i++) {
     const element1 = (reffile1Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile1[reffile1Elements[i]]['referencefile_id']} {reffile1[reffile1Elements[i]]['display_name']}.{reffile1[reffile1Elements[i]]['file_extension']} {reffile1[reffile1Elements[i]]['file_class']} {reffile1[reffile1Elements[i]]['md5sum']}</div>) : '';
