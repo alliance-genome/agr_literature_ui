@@ -763,9 +763,8 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   const sortedSameKeys = Object.keys(sameMd5).sort();
 
   const element0 = GenerateFieldLabel('redundant ' + fieldName, 'unlock');
-  for (let i = 0; i < sortedSameKeys.length; i++) {
+  sortedSameKeys.forEach((md5sum) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
-    const md5sum = sortedSameKeys[i];
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     if (md5sum in reffile1) {
@@ -783,14 +782,15 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
       element2 = (<div className={`div-merge ${keepClass2}`}  onClick={() => {
                     if (md5sum in reffile1) { dispatch(mergeToggleIndependent(fieldName, 1, reffile1[md5sum]['index'])); }
                     dispatch(mergeToggleIndependent(fieldName, 2, reffile2[md5sum]['index'])) } }
-                  >{reffile2[md5sum]['referencefile_id']} {reffile2[md5sum]['display_name']}.{reffile2[md5sum]['file_extension']} {reffile2[md5sum]['file_class']} {reffile2[md5sum]['md5sum']}</div>); }
+                  >{reffile2[md5sum]['referencefile_id']} {reffile2[md5sum]['display_name']}.{reffile2[md5sum]['file_extension']} {reffile2[md5sum]['file_class']} {reffile2[md5sum]['md5sum']}</div>);
+    }
     rowPairRefFilesElements.push(
-      <Row key={`toggle reffile samemd5 ${i}`}>
+      <Row key={`toggle reffile samemd5 ${md5sum}`}>
         <Col sm="2" >{element0}</Col>
         <Col sm="5" >{element1}</Col>
         <Col sm="5" >{element2}</Col>
       </Row>);
-  }
+  });
 
   rowPairRefFilesElements.push(<RowDivider key="reffiles_divider" />);
   const element0Lock = GenerateFieldLabel('unique ' + fieldName, 'lock');
