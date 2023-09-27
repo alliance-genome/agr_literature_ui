@@ -774,7 +774,7 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
       element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => {
                     dispatch(mergeToggleIndependent(fieldName, 1, reffile1[md5sum]['index']));
                     if (md5sum in reffile2) { dispatch(mergeToggleIndependent(fieldName, 2, reffile2[md5sum]['index'])) } } }
-                  >{reffile1[md5sum]['referencefile_id']} {reffile1[md5sum]['display_name']}.{reffile1[md5sum]['file_extension']} {reffile1[md5sum]['file_class']} {reffile1[md5sum]['md5sum']}</div>); }
+                  >{reffile1[md5sum]['display_name']}.{reffile1[md5sum]['file_extension']} &nbsp;&nbsp; {reffile1[md5sum]['file_class']}</div>); }
     if (md5sum in reffile2) {
       if (reffile2[md5sum]['toggle'] !== null && reffile2[md5sum]['toggle'] !== '') { toggle2 = reffile2[md5sum]['toggle']; }
       if ( toggle2 ) { swapColor2 = !swapColor2; }
@@ -782,7 +782,7 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
       element2 = (<div className={`div-merge ${keepClass2}`}  onClick={() => {
                     if (md5sum in reffile1) { dispatch(mergeToggleIndependent(fieldName, 1, reffile1[md5sum]['index'])); }
                     dispatch(mergeToggleIndependent(fieldName, 2, reffile2[md5sum]['index'])) } }
-                  >{reffile2[md5sum]['referencefile_id']} {reffile2[md5sum]['display_name']}.{reffile2[md5sum]['file_extension']} {reffile2[md5sum]['file_class']} {reffile2[md5sum]['md5sum']}</div>);
+                  >{reffile2[md5sum]['display_name']}.{reffile2[md5sum]['file_extension']} &nbsp;&nbsp; {reffile2[md5sum]['file_class']}</div>);
     }
     rowPairRefFilesElements.push(
       <Row key={`toggle reffile samemd5 ${md5sum}`}>
@@ -795,8 +795,8 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   rowPairRefFilesElements.push(<RowDivider key="reffiles_divider" />);
   const element0Lock = GenerateFieldLabel('unique ' + fieldName, 'lock');
   for (let i = 0; i < maxLength; i++) {
-    const element1 = (reffile1Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile1[reffile1Elements[i]]['referencefile_id']} {reffile1[reffile1Elements[i]]['display_name']}.{reffile1[reffile1Elements[i]]['file_extension']} {reffile1[reffile1Elements[i]]['file_class']} {reffile1[reffile1Elements[i]]['md5sum']}</div>) : '';
-    const element2 = (reffile2Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile2[reffile2Elements[i]]['referencefile_id']} {reffile2[reffile2Elements[i]]['display_name']}.{reffile2[reffile2Elements[i]]['file_extension']} {reffile2[reffile2Elements[i]]['file_class']} {reffile2[reffile2Elements[i]]['md5sum']}</div>) : '';
+    const element1 = (reffile1Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile1[reffile1Elements[i]]['display_name']}.{reffile1[reffile1Elements[i]]['file_extension']} &nbsp;&nbsp; {reffile1[reffile1Elements[i]]['file_class']}</div>) : '';
+    const element2 = (reffile2Elements[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{reffile2[reffile2Elements[i]]['display_name']}.{reffile2[reffile2Elements[i]]['file_extension']} &nbsp;&nbsp; {reffile2[reffile2Elements[i]]['file_class']}</div>) : '';
     rowPairRefFilesElements.push(
       <Row key={`toggle reffile uniqmd5 ${i}`}>
         <Col sm="2" >{element0Lock}</Col>
