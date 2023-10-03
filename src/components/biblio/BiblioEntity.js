@@ -73,16 +73,11 @@ const EntityTable = () => {
   const pageSize = 10; // fixed limit value for now
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
-  const [displayTagData, setDisplayTagData] = useState([]);
-
-
-
-    
+  const [displayTagData, setDisplayTagData] = useState([]); 
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
 
-    
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
     if (headerCell) {
@@ -91,7 +86,7 @@ const EntityTable = () => {
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
       });
-      setShowSpeciesFilter(true);
+      // setShowSpeciesFilter(true);
     }
     setShowSpeciesFilter(!showSpeciesFilter);
   };
@@ -100,10 +95,14 @@ const EntityTable = () => {
     setSelectedSpecies((prevSelected) =>
       prevSelected.includes(curie) ? prevSelected.filter((item) => item !== curie) : [...prevSelected, curie]
     );
+    // Always keep the filter section open when checkboxes are checked
+    setShowSpeciesFilter(true);   
   };
 
   const handleClearButtonClick = () => {
     setSelectedSpecies([]);
+    // Always keep the filter section open when clicking on 'Clear' button                                             
+    setShowSpeciesFilter(true);  
   };
     
   const speciesInResultSet = new Set(topicEntityTags.map((tetDict) => tetDict.species));
@@ -210,7 +209,7 @@ const EntityTable = () => {
 	  <thead>
 	    <tr>
               {headers.map((header, index) => (
-                <th key={`tetTableHeader th ${index}`} onClick={header === 'species' ? handleSpeciesFilterClick : null}>
+                <th key={`tetTableHeader th ${index}`} onClick={header === 'species' ? handleSpeciesFilterClick : null} style={{ whiteSpace: 'nowrap' }}>
                   {header === 'species' ? (
                     <>
                       <span>{header}</span>
@@ -226,21 +225,12 @@ const EntityTable = () => {
                             top: speciesFilterPosition.top + 'px',
                             left: speciesFilterPosition.left + 'px',
                             zIndex: 999,
+			    background: '#EBF4FA', 
+                            padding: '10px',
+                            borderRadius: '5px',
+                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
                           }}
                         >
-                          <div>
-                            <button
-                              style={{
-                                background: 'white',
-                                border: '1px solid #ccc',
-                                padding: '5px',
-                                cursor: 'pointer',
-                              }}
-                              onClick={handleClearButtonClick}
-                            >
-                              Clear
-                            </button>
-                          </div>
                           {Array.from(speciesInResultSet).map((curie) => (
                             <div
                               key={curie}
@@ -270,6 +260,20 @@ const EntityTable = () => {
                               </label>
                             </div>
                           ))}
+			  <div>
+                            <button
+                              style={{
+                                background: 'white',
+                                border: '1px solid #ccc',
+                                padding: '5px',
+                                cursor: 'pointer',
+				textAlign: 'left', 
+                              }}
+                              onClick={handleClearButtonClick}
+                            >
+                              Clear
+                            </button>
+                          </div>
                         </div>
                       )}
                     </>
