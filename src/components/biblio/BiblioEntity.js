@@ -136,7 +136,7 @@ const EntityTable = () => {
 
   useEffect(() => {
     const fetchAllSpecies = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&column_filter=species");
+      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&column_only=species");
       if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
         setAllSpecies(resultTags.data);
       }
@@ -148,7 +148,7 @@ const EntityTable = () => {
     const fetchTotalTagsCount = async () => {
       let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&count_only=true";
       if (selectedSpecies && selectedSpecies.length !== 0) {
-        url = url + "&species=" + selectedSpecies.join(',')
+        url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
       }
       const resultTags = await axios.get(url);
       setTotalTagsCount(resultTags.data);
@@ -161,7 +161,7 @@ const EntityTable = () => {
       if (biblioUpdatingEntityAdd === 0) {
         let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&page=" + page + "&page_size=" + pageSize
 	if (selectedSpecies && selectedSpecies.length !== 0) {
-	  url = url + "&species=" + selectedSpecies.join(',')
+	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
 	}
         if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
