@@ -104,7 +104,12 @@ const EntityTable = () => {
     setSelectedSpecies([]);
     setShowSpeciesFilter(true);  
   };
-    
+
+  const handleMouseLeave = () => {
+    // Hide the species filter when the mouse leaves the filter area
+    setShowSpeciesFilter(false);
+  };
+
   // const speciesInResultSet = new Set(topicEntityTags.map((tetDict) => tetDict.species));
   const speciesInResultSet = new Set(allSpecies);
      
@@ -223,7 +228,11 @@ const EntityTable = () => {
   return (
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-        <Table bordered size="sm" responsive>
+        <Table
+          bordered
+          size="sm"
+          responsive
+	>
 	  <thead>
 	    <tr>
               {headers.map((header, index) => (
@@ -242,6 +251,7 @@ const EntityTable = () => {
 		        optionToName={curieToNameTaxon}
                         onOptionChange={handleCheckboxChange}
                         onClearClick={handleClearButtonClick}
+		        onHideFilter={handleMouseLeave}
                         position={speciesFilterPosition}
                       />
                     </>

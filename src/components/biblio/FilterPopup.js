@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const FilterPopup = ({ show, options, selectedOptions, optionToName, onOptionChange, onClearClick, position }) => {
+export const FilterPopup = ({ show, options, selectedOptions, optionToName, onOptionChange, onClearClick, onHideFilter, position }) => {
   return (
     show && (
       <div
@@ -15,6 +15,7 @@ export const FilterPopup = ({ show, options, selectedOptions, optionToName, onOp
           borderRadius: '5px',
           boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
         }}
+	onMouseLeave={onHideFilter}  
       >
           {Array.from(options).map((option) => (
           <div
