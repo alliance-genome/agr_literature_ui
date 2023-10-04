@@ -77,6 +77,7 @@ const EntityTable = () => {
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
+  const [allSpecies, setAllSpecies] = useState([]);
 
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
@@ -86,7 +87,6 @@ const EntityTable = () => {
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
       });
-      // setShowSpeciesFilter(true);
     }
     setShowSpeciesFilter(!showSpeciesFilter);
   };
@@ -95,18 +95,18 @@ const EntityTable = () => {
     setSelectedSpecies((prevSelected) =>
       prevSelected.includes(curie) ? prevSelected.filter((item) => item !== curie) : [...prevSelected, curie]
     );
-    // Always keep the filter section open when checkboxes are checked
+    // keep the filter section open when checkboxes are checked
     setShowSpeciesFilter(true);   
   };
 
   const handleClearButtonClick = () => {
     setSelectedSpecies([]);
-    // Always keep the filter section open when clicking on 'Clear' button                                             
     setShowSpeciesFilter(true);  
   };
     
-  const speciesInResultSet = new Set(topicEntityTags.map((tetDict) => tetDict.species));
-    
+  // const speciesInResultSet = new Set(topicEntityTags.map((tetDict) => tetDict.species));
+  const speciesInResultSet = new Set(allSpecies);
+     
   useEffect(() => {
     fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
   }, [accessToken])
@@ -134,13 +134,24 @@ const EntityTable = () => {
   }, [accessToken, referenceCurie, topicEntityTags]);
 
   useEffect(() => {
+    const fetchAllSpecies = async () => {
+      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&species_only=true");
+      if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
+        setAllSpecies(resultTags.data);
+      }
+    }
+    fetchAllSpecies().then();
+  }, [accessToken, referenceCurie, topicEntityTags])
+
+  useEffect(() => {
     const fetchTotalTagsCount = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&count_only=true");
+      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&count_only=true";
+      const resultTags = await axios.get(url);
       setTotalTagsCount(resultTags.data);
     }
     fetchTotalTagsCount().then();
-  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie])
-
+  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie, selectedSpecies])
+    
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
@@ -160,7 +171,7 @@ const EntityTable = () => {
       }
     }
     fetchData().then();
-  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags]);
+  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags, selectedSpecies]);
 
   const changePage = (action) => {
     let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
