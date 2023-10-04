@@ -159,6 +159,9 @@ const EntityTable = () => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
         let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&page=" + page + "&page_size=" + pageSize
+	if (selectedSpecies && selectedSpecies.length !== 0) {
+	  url = url + "&species=" + selectedSpecies.join(',')
+	}
         if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
         }
