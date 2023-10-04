@@ -30,7 +30,7 @@ import Spinner from 'react-bootstrap/Spinner'
 import axios from "axios";
 import Pagination from "react-bootstrap/Pagination";
 
-import {faSortAlphaDown, faSortAlphaUp} from '@fortawesome/free-solid-svg-icons'
+import {faSortAlphaDown, faSortAlphaUp, faFilter} from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 import {AsyncTypeahead} from "react-bootstrap-typeahead";
@@ -73,8 +73,40 @@ const EntityTable = () => {
   const pageSize = 10; // fixed limit value for now
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
-  const [displayTagData, setDisplayTagData] = useState([]);
+  const [displayTagData, setDisplayTagData] = useState([]); 
+  const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
+  const [selectedSpecies, setSelectedSpecies] = useState([]);
+  const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
+  const [allSpecies, setAllSpecies] = useState([]);
 
+  const handleSpeciesFilterClick = (e) => {
+    const headerCell = e.target.closest('th');
+    if (headerCell) {
+      const rect = headerCell.getBoundingClientRect();
+      setSpeciesFilterPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+    setShowSpeciesFilter(!showSpeciesFilter);
+  };
+
+  const handleCheckboxChange = (curie) => {
+    setSelectedSpecies((prevSelected) =>
+      prevSelected.includes(curie) ? prevSelected.filter((item) => item !== curie) : [...prevSelected, curie]
+    );
+    // keep the filter section open when checkboxes are checked
+    setShowSpeciesFilter(true);   
+  };
+
+  const handleClearButtonClick = () => {
+    setSelectedSpecies([]);
+    setShowSpeciesFilter(true);  
+  };
+    
+  // const speciesInResultSet = new Set(topicEntityTags.map((tetDict) => tetDict.species));
+  const speciesInResultSet = new Set(allSpecies);
+     
   useEffect(() => {
     fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
   }, [accessToken])
@@ -102,17 +134,34 @@ const EntityTable = () => {
   }, [accessToken, referenceCurie, topicEntityTags]);
 
   useEffect(() => {
+    const fetchAllSpecies = async () => {
+      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&species_only=true");
+      if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
+        setAllSpecies(resultTags.data);
+      }
+    }
+    fetchAllSpecies().then();
+  }, [accessToken, referenceCurie, topicEntityTags])
+
+  useEffect(() => {
     const fetchTotalTagsCount = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&count_only=true");
+      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&count_only=true";
+      if (selectedSpecies && selectedSpecies.length !== 0) {
+        url = url + "&species=" + selectedSpecies.join(',')
+      }
+      const resultTags = await axios.get(url);
       setTotalTagsCount(resultTags.data);
     }
     fetchTotalTagsCount().then();
-  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie])
-
+  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie, selectedSpecies])
+    
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
         let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&page=" + page + "&page_size=" + pageSize
+	if (selectedSpecies && selectedSpecies.length !== 0) {
+	  url = url + "&species=" + selectedSpecies.join(',')
+	}
         if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
         }
@@ -128,7 +177,7 @@ const EntityTable = () => {
       }
     }
     fetchData().then();
-  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags]);
+  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags, selectedSpecies]);
 
   const changePage = (action) => {
     let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
@@ -174,29 +223,116 @@ const EntityTable = () => {
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
         <Table bordered size="sm" responsive>
-          <thead>
-          <tr>
-            { headers.map( (header, index) => {
-              return (
-                  <th key={`tetTableHeader th ${index}`} >{header} {
-                    headersWithSortability.has(header) ?
-                        <FontAwesomeIcon icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp} style={{color: sortBy === "entity_type" ? '#0069d9' : 'black'}}
-                                         onClick={() => {
-                                           if (sortBy === header && descSort) {
-                                             setSortBy(null);
-                                             setDescSort(true);
-                                           } else {
-                                             setSortBy(header);
-                                             setDescSort(!descSort)}
-                                         }}/> : null}</th>
-              )
-            } ) }
-            { source_headers.map( (header, index) => { return (<th key={`tetTableHeaderSource th ${index}`} >{header.startsWith('source_') ? header : 'source_' + header}</th>) } ) }
-          </tr>
+	  <thead>
+	    <tr>
+              {headers.map((header, index) => (
+                <th key={`tetTableHeader th ${index}`} onClick={header === 'species' ? handleSpeciesFilterClick : null} style={{ whiteSpace: 'nowrap' }}>
+                  {header === 'species' ? (
+                    <>
+                      <span>{header}</span>
+                      <FontAwesomeIcon
+                        icon={faFilter}
+                        style={{ marginLeft: '5px', cursor: 'pointer', color: showSpeciesFilter ? '#0069d9' : 'black' }}
+                      />
+                      {showSpeciesFilter && (
+                        <div
+                          className="species-filter-popup"
+                          style={{
+                            position: 'absolute',
+                            top: speciesFilterPosition.top + 'px',
+                            left: speciesFilterPosition.left + 'px',
+                            zIndex: 999,
+			    background: '#EBF4FA', 
+                            padding: '10px',
+                            borderRadius: '5px',
+                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
+                          }}
+                        >
+                          {Array.from(speciesInResultSet).map((curie) => (
+                            <div
+                              key={curie}
+                                style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '5px',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                id={curie}
+                                value={curie}
+                                checked={selectedSpecies.includes(curie)}
+                                onChange={() => handleCheckboxChange(curie)}
+                                style={{ marginRight: '5px', alignSelf: 'flex-start' }}
+                              />
+                              <label
+                                htmlFor={curie}
+                                style={{
+                                  fontWeight: 'normal',
+                                  whiteSpace: 'nowrap',
+                                  display: 'inline-block',
+                                }}
+                              >
+                                {curieToNameTaxon[curie]}
+                              </label>
+                            </div>
+                          ))}
+			  <div>
+                            <button
+                              style={{
+                                background: 'white',
+                                border: '1px solid #ccc',
+                                padding: '5px',
+                                cursor: 'pointer',
+				textAlign: 'left', 
+                              }}
+                              onClick={handleClearButtonClick}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {header}{' '}
+                      {headersWithSortability.has(header) ? (
+                        <FontAwesomeIcon
+                          icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
+                          style={{ color: sortBy === 'entity_type' ? '#0069d9' : 'black' }}
+                          onClick={() => {
+                            if (sortBy === header && descSort) {
+                              setSortBy(null);
+                              setDescSort(true);
+                            } else {
+                              setSortBy(header);
+                              setDescSort(!descSort);
+                            }
+                          }}
+                        />
+                      ) : null}
+                    </>
+                  )}
+                </th>
+              ))}
+              {source_headers.map((header, index) => (
+                <th key={`tetTableHeaderSource th ${index}`}>
+                  {header.startsWith('source_') ? header : 'source_' + header}
+                </th>
+              ))}      
+            </tr>
           </thead>
           <tbody>
-          { topicEntityTags.map( (tetDict, index_1) => {
-            return (
+          { topicEntityTags
+	    .filter((tetDict) => {
+              if (selectedSpecies.length > 0) {
+                return selectedSpecies.includes(tetDict.species);
+              }
+              return true;
+            })
+	    .map( (tetDict, index_1) => {
+              return (
                 <tr key={`tetTableRow ${index_1}`}>
                   { headers.map( (header, index_2) => {
                     let td_value = tetDict[header];
