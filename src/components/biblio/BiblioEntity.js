@@ -146,6 +146,9 @@ const EntityTable = () => {
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
       let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&count_only=true";
+      if (selectedSpecies && selectedSpecies.length !== 0) {
+        url = url + "&species=" + selectedSpecies.join(',')
+      }
       const resultTags = await axios.get(url);
       setTotalTagsCount(resultTags.data);
     }
