@@ -15,7 +15,7 @@ import {
   updateButtonBiblioEntityAdd
 } from '../../actions/biblioActions';
 import {checkTopicEntitySetDisplayTag, setDisplayTag, sgdTopicList} from './BiblioEntityUtilsSGD';
-import {SpeciesFilter} from './SpeciesFilter';
+import {FilterPopup} from './FilterPopup';
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -136,7 +136,7 @@ const EntityTable = () => {
 
   useEffect(() => {
     const fetchAllSpecies = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&species_only=true");
+      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&column_filter=species");
       if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
         setAllSpecies(resultTags.data);
       }
@@ -235,13 +235,13 @@ const EntityTable = () => {
                         icon={faFilter}
                         style={{ marginLeft: '5px', cursor: 'pointer', color: showSpeciesFilter ? '#0069d9' : 'black' }}
 	              />
-		      <SpeciesFilter
+		      <FilterPopup
                         show={showSpeciesFilter}
-                        speciesInResultSet={speciesInResultSet}
-                        selectedSpecies={selectedSpecies}
-		        curieToNameTaxon={curieToNameTaxon}
-                        onCheckboxChange={handleCheckboxChange}
-                        onClearButtonClick={handleClearButtonClick}
+                        options={speciesInResultSet}
+                        selectedOptions={selectedSpecies}
+		        optionToName={curieToNameTaxon}
+                        onOptionChange={handleCheckboxChange}
+                        onClearClick={handleClearButtonClick}
                         position={speciesFilterPosition}
                       />
                     </>
