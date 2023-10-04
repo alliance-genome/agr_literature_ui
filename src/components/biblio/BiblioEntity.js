@@ -15,6 +15,7 @@ import {
   updateButtonBiblioEntityAdd
 } from '../../actions/biblioActions';
 import {checkTopicEntitySetDisplayTag, setDisplayTag, sgdTopicList} from './BiblioEntityUtilsSGD';
+import {SpeciesFilter} from './SpeciesFilter';
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -233,66 +234,16 @@ const EntityTable = () => {
                       <FontAwesomeIcon
                         icon={faFilter}
                         style={{ marginLeft: '5px', cursor: 'pointer', color: showSpeciesFilter ? '#0069d9' : 'black' }}
+	              />
+		      <SpeciesFilter
+                        show={showSpeciesFilter}
+                        speciesInResultSet={speciesInResultSet}
+                        selectedSpecies={selectedSpecies}
+		        curieToNameTaxon={curieToNameTaxon}
+                        onCheckboxChange={handleCheckboxChange}
+                        onClearButtonClick={handleClearButtonClick}
+                        position={speciesFilterPosition}
                       />
-                      {showSpeciesFilter && (
-                        <div
-                          className="species-filter-popup"
-                          style={{
-                            position: 'absolute',
-                            top: speciesFilterPosition.top + 'px',
-                            left: speciesFilterPosition.left + 'px',
-                            zIndex: 999,
-			    background: '#EBF4FA', 
-                            padding: '10px',
-                            borderRadius: '5px',
-                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
-                          }}
-                        >
-                          {Array.from(speciesInResultSet).map((curie) => (
-                            <div
-                              key={curie}
-                                style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                marginBottom: '5px',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                id={curie}
-                                value={curie}
-                                checked={selectedSpecies.includes(curie)}
-                                onChange={() => handleCheckboxChange(curie)}
-                                style={{ marginRight: '5px', alignSelf: 'flex-start' }}
-                              />
-                              <label
-                                htmlFor={curie}
-                                style={{
-                                  fontWeight: 'normal',
-                                  whiteSpace: 'nowrap',
-                                  display: 'inline-block',
-                                }}
-                              >
-                                {curieToNameTaxon[curie]}
-                              </label>
-                            </div>
-                          ))}
-			  <div>
-                            <button
-                              style={{
-                                background: 'white',
-                                border: '1px solid #ccc',
-                                padding: '5px',
-                                cursor: 'pointer',
-				textAlign: 'left', 
-                              }}
-                              onClick={handleClearButtonClick}
-                            >
-                              Clear
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </>
                   ) : (
                     <>
