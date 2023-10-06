@@ -15,6 +15,7 @@ import {
   updateButtonBiblioEntityAdd
 } from '../../actions/biblioActions';
 import {checkTopicEntitySetDisplayTag, setDisplayTag, sgdTopicList} from './BiblioEntityUtilsSGD';
+import {FilterPopup} from './FilterPopup';
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -103,7 +104,12 @@ const EntityTable = () => {
     setSelectedSpecies([]);
     setShowSpeciesFilter(true);  
   };
-    
+
+  const handleMouseLeave = () => {
+    // Hide the species filter when the mouse leaves the filter area
+    setShowSpeciesFilter(false);
+  };
+
   // const speciesInResultSet = new Set(topicEntityTags.map((tetDict) => tetDict.species));
   const speciesInResultSet = new Set(allSpecies);
      
@@ -135,7 +141,7 @@ const EntityTable = () => {
 
   useEffect(() => {
     const fetchAllSpecies = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&species_only=true");
+      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&column_only=species");
       if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
         setAllSpecies(resultTags.data);
       }
@@ -147,7 +153,7 @@ const EntityTable = () => {
     const fetchTotalTagsCount = async () => {
       let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&count_only=true";
       if (selectedSpecies && selectedSpecies.length !== 0) {
-        url = url + "&species=" + selectedSpecies.join(',')
+        url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
       }
       const resultTags = await axios.get(url);
       setTotalTagsCount(resultTags.data);
@@ -160,7 +166,7 @@ const EntityTable = () => {
       if (biblioUpdatingEntityAdd === 0) {
         let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken + "&page=" + page + "&page_size=" + pageSize
 	if (selectedSpecies && selectedSpecies.length !== 0) {
-	  url = url + "&species=" + selectedSpecies.join(',')
+	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
 	}
         if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
@@ -222,7 +228,11 @@ const EntityTable = () => {
   return (
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-        <Table bordered size="sm" responsive>
+        <Table
+          bordered
+          size="sm"
+          responsive
+	>
 	  <thead>
 	    <tr>
               {headers.map((header, index) => (
@@ -233,66 +243,17 @@ const EntityTable = () => {
                       <FontAwesomeIcon
                         icon={faFilter}
                         style={{ marginLeft: '5px', cursor: 'pointer', color: showSpeciesFilter ? '#0069d9' : 'black' }}
+	              />
+		      <FilterPopup
+                        show={showSpeciesFilter}
+                        options={speciesInResultSet}
+                        selectedOptions={selectedSpecies}
+		        optionToName={curieToNameTaxon}
+                        onOptionChange={handleCheckboxChange}
+                        onClearClick={handleClearButtonClick}
+		        onHideFilter={handleMouseLeave}
+                        position={speciesFilterPosition}
                       />
-                      {showSpeciesFilter && (
-                        <div
-                          className="species-filter-popup"
-                          style={{
-                            position: 'absolute',
-                            top: speciesFilterPosition.top + 'px',
-                            left: speciesFilterPosition.left + 'px',
-                            zIndex: 999,
-			    background: '#EBF4FA', 
-                            padding: '10px',
-                            borderRadius: '5px',
-                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
-                          }}
-                        >
-                          {Array.from(speciesInResultSet).map((curie) => (
-                            <div
-                              key={curie}
-                                style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                marginBottom: '5px',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                id={curie}
-                                value={curie}
-                                checked={selectedSpecies.includes(curie)}
-                                onChange={() => handleCheckboxChange(curie)}
-                                style={{ marginRight: '5px', alignSelf: 'flex-start' }}
-                              />
-                              <label
-                                htmlFor={curie}
-                                style={{
-                                  fontWeight: 'normal',
-                                  whiteSpace: 'nowrap',
-                                  display: 'inline-block',
-                                }}
-                              >
-                                {curieToNameTaxon[curie]}
-                              </label>
-                            </div>
-                          ))}
-			  <div>
-                            <button
-                              style={{
-                                background: 'white',
-                                border: '1px solid #ccc',
-                                padding: '5px',
-                                cursor: 'pointer',
-				textAlign: 'left', 
-                              }}
-                              onClick={handleClearButtonClick}
-                            >
-                              Clear
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </>
                   ) : (
                     <>
