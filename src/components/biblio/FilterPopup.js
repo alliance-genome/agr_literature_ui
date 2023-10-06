@@ -32,7 +32,7 @@ export const FilterPopup = ({ show, options, selectedOptions, optionToName, onOp
               value={option}
               checked={selectedOptions.includes(option)}
               onChange={() => onOptionChange(option)}
-              style={{ marginRight: '5px', alignSelf: 'flex-start' }}
+              style={{ marginRight: '5px', alignSelf: 'center' }}
             />
             <label
               htmlFor={option}
@@ -46,7 +46,12 @@ export const FilterPopup = ({ show, options, selectedOptions, optionToName, onOp
             </label>
           </div>
         ))}
-        <div>
+        <div
+            style={{
+              display: 'flex',
+              alignItems: 'left',
+            }}
+          >
           <button
             style={{
               background: 'white',
