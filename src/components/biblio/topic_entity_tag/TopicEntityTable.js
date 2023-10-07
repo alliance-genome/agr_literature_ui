@@ -8,20 +8,7 @@ import {FilterPopup} from "../FilterPopup";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilter, faSortAlphaDown, faSortAlphaUp} from "@fortawesome/free-solid-svg-icons";
 import Pagination from "react-bootstrap/Pagination";
-
-const curieToNameTaxon = {
-    'NCBITaxon:559292': 'Saccharomyces cerevisiae',
-    'NCBITaxon:6239': 'Caenorhabditis elegans',
-    'NCBITaxon:7227': 'Drosophila melanogaster',
-    'NCBITaxon:7955': 'Danio rerio',
-    'NCBITaxon:10116': 'Rattus norvegicus',
-    'NCBITaxon:10090': 'Mus musculus',
-    'NCBITaxon:8355': 'Xenopus laevis',
-    'NCBITaxon:8364': 'Xenopus tropicalis',
-    'NCBITaxon:9606': 'Homo sapiens',
-    '': ''
-};
-
+import {getCurieToNameTaxon} from "./TaxonUtils";
 
 const TopicEntityTable = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -43,7 +30,8 @@ const TopicEntityTable = () => {
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
-
+  const curieToNameTaxon = getCurieToNameTaxon();
+    
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
     if (headerCell) {
