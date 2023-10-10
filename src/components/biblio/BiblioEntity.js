@@ -22,7 +22,7 @@ const BiblioEntity = () => {
   return (
       <>
         <AlertAteamApiDown />
-        <TopicEntityCreateSGD key="entityCreate" />
+        <TopicEntityCreate key="entityCreate" />
         <br/>
         <TopicEntityTable key="entityTable" />
       </>
