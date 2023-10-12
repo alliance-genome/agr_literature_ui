@@ -21,6 +21,10 @@ const TopicEntityTable = () => {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
   const [descSort, setDescSort] = useState(true);
+  //                                                                                                                          
+  const [createdBySort, setCreatedBySort] = useState(null);
+  const [descCreatedBySort, setDescCreatedBySort] = useState(true);
+  //                               
   //const [limit, setLimit] = useState(10);
   const pageSize = 10; // fixed limit value for now
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -120,7 +124,9 @@ const TopicEntityTable = () => {
 	if (selectedSpecies && selectedSpecies.length !== 0) {
 	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
 	}
-        if (sortBy !== null && sortBy !== undefined) {
+	if (sortBy === 'created_by') {
+          url += `&sort_by=created_by`;
+        } else if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
         }
         if (descSort) {
@@ -160,7 +166,7 @@ const TopicEntityTable = () => {
 
   let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
   let source_headers = ['mod_id', 'source_method', 'evidence', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
-  const headersWithSortability = new Set(['entity_type']);
+  const headersWithSortability = new Set(['entity_type', 'created_by']);
   //const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
@@ -188,7 +194,27 @@ const TopicEntityTable = () => {
 	  <thead>
 	    <tr>
               {headers.map((header, index) => (
-                <th key={`tetTableHeader th ${index}`} onClick={header === 'species' ? handleSpeciesFilterClick : null} style={{ whiteSpace: 'nowrap' }}>
+                <th
+		  key={`tetTableHeader th ${index}`}
+		  onClick={
+		    header === 'species'
+		      ? handleSpeciesFilterClick
+	              : () => {
+                          if (headersWithSortability.has(header)) {
+                            if (sortBy === header && descSort) {
+                              setSortBy(null);
+                              setDescSort(true);
+                            } else {
+                              setSortBy(header);
+                              setDescSort(!descSort);
+                              setCreatedBySort(null); // Reset sorting for 'created_by'
+                              setDescCreatedBySort(true);
+                            }
+                           }
+		      }
+		  }
+		  style={{ whiteSpace: 'nowrap' }}
+                >
                   {header === 'species' ? (
                     <>
                       <span>{header}</span>
@@ -213,7 +239,7 @@ const TopicEntityTable = () => {
                       {headersWithSortability.has(header) ? (
                         <FontAwesomeIcon
                           icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
-                          style={{ color: sortBy === 'entity_type' ? '#0069d9' : 'black' }}
+                          style={{ color: sortBy === header ? '#0069d9' : header === 'created_by' ? '#0069d9' : 'black', }}
                           onClick={() => {
                             if (sortBy === header && descSort) {
                               setSortBy(null);
