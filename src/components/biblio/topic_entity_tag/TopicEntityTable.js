@@ -208,13 +208,14 @@ const TopicEntityTable = () => {
 	  <thead>
 	    <tr>
               {headers.map((header, index) => (
-                <th key={`tetTableHeader th ${index}`} onClick={header === 'species' ? handleSpeciesFilterClick : null} style={{ whiteSpace: 'nowrap' }}>
+                <th key={`tetTableHeader th ${index}`} style={{ whiteSpace: 'nowrap' }}>
                   {header === 'species' ? (
                     <>
                       <span>{header}</span>
                       <FontAwesomeIcon
                         icon={faFilter}
                         style={{ marginLeft: '5px', cursor: 'pointer', color: showSpeciesFilter ? '#0069d9' : 'black' }}
+		        onClick={handleSpeciesFilterClick}
 	              />
 		      <FilterPopup
                         show={showSpeciesFilter}
