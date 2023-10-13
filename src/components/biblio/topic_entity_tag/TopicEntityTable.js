@@ -163,11 +163,25 @@ const TopicEntityTable = () => {
     }
   }
 
-  let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
-  let source_headers = ['mod_id', 'source_method', 'evidence', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
-    const headersWithSortability = new Set(['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'display_tag']);
-  
-  //const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
+  let headers = [
+    'topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated',
+    'confidence_level', 'created_by', 'note', 'entity_source', 'date_created',
+    'updated_by', 'date_updated', 'validation_value_author',
+    'validation_value_curator', 'validation_value_curation_tools',
+    'display_tag'
+  ];   
+  let source_headers = [
+    'mod_id', 'source_method', 'evidence', 'validation_type', 'source_type',
+    'description', 'created_by', 'date_updated', 'date_created'
+  ];
+  const headersWithSortability = new Set([
+    'topic', 'entity_type', 'species', 'entity', 
+    'entity_published_as', 'negated', 'confidence_level', 
+    'created_by', 'note', 'entity_source', 'date_created', 
+    'updated_by', 'date_updated', 'display_tag', 
+    'mod_id', 'source_method', 'description', 'evidence',
+    'validation_type', 'source_type'
+  ]);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
 
@@ -238,6 +252,21 @@ const TopicEntityTable = () => {
               {source_headers.map((header, index) => (
                 <th key={`tetTableHeaderSource th ${index}`}>
                   {header.startsWith('source_') ? header : 'source_' + header}
+                  {headersWithSortability.has(header) ? (
+                    <FontAwesomeIcon
+                      icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
+                      style={{ color: sortBy === header ? '#0069d9' : 'black' }}
+                      onClick={() => {
+                        if (sortBy === header && descSort) {
+                          setSortBy(null);
+                          setDescSort(true);
+                        } else {
+                          setSortBy(header);
+                          setDescSort(!descSort);
+                        }
+                      }}
+                    />
+                  ) : null}
                 </th>
               ))}
             </tr>
