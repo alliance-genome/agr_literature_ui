@@ -129,9 +129,13 @@ const TopicEntityTable = () => {
         } else if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
         }
-        if (descSort) {
+	  
+        if (descCreatedBySort) {
           url += "&desc_sort=true"
+        } else if (descSort) {
+          url += `&desc_sort=true`;
         }
+	
         setIsLoadingData(true);
         const resultTags = await axios.get(url);
         if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
@@ -200,18 +204,25 @@ const TopicEntityTable = () => {
 		    header === 'species'
 		      ? handleSpeciesFilterClick
 	              : () => {
-                          if (headersWithSortability.has(header)) {
-                            if (sortBy === header && descSort) {
-                              setSortBy(null);
-                              setDescSort(true);
-                            } else {
-                              setSortBy(header);
-                              setDescSort(!descSort);
-                              setCreatedBySort(null); // Reset sorting for 'created_by'
+                        if (headersWithSortability.has(header)) {
+                          if (header === 'created_by') {
+                            if (createdBySort === header && descCreatedBySort) {
+                              setCreatedBySort(null);
                               setDescCreatedBySort(true);
+                            } else {
+                              setCreatedBySort(header);
+                              setDescCreatedBySort(!descCreatedBySort);
+                              setSortBy(null); // Reset sorting for other columns
+                              setDescSort(true);
                             }
-                           }
-		      }
+                          } else {
+                            setSortBy(header);
+                            setDescSort(!descSort);
+                            setCreatedBySort(null); // Reset sorting for 'created_by'
+                            setDescCreatedBySort(true);
+                          }
+                        }
+                      }	  
 		  }
 		  style={{ whiteSpace: 'nowrap' }}
                 >
@@ -238,17 +249,21 @@ const TopicEntityTable = () => {
                       {header}{' '}
                       {headersWithSortability.has(header) ? (
                         <FontAwesomeIcon
-                          icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
-                          style={{ color: sortBy === header ? '#0069d9' : header === 'created_by' ? '#0069d9' : 'black', }}
-                          onClick={() => {
-                            if (sortBy === header && descSort) {
-                              setSortBy(null);
-                              setDescSort(true);
-                            } else {
-                              setSortBy(header);
-                              setDescSort(!descSort);
-                            }
-                          }}
+                          icon={
+			    header === 'created_by'
+                              ? descCreatedBySort
+                                ? faSortAlphaUp
+                                : faSortAlphaDown
+                              : sortBy === header && !descSort
+                              ? faSortAlphaDown
+		              : faSortAlphaUp
+			  }
+                          style={{
+			    color:
+                              sortBy === header
+                                ? '#0069d9'
+                                : 'black',
+			  }}
                         />
                       ) : null}
                     </>
