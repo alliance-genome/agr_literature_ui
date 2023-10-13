@@ -21,10 +21,6 @@ const TopicEntityTable = () => {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
   const [descSort, setDescSort] = useState(true);
-  //                                                                                                                          
-  const [createdBySort, setCreatedBySort] = useState(null);
-  const [descCreatedBySort, setDescCreatedBySort] = useState(true);
-  //                               
   //const [limit, setLimit] = useState(10);
   const pageSize = 10; // fixed limit value for now
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -124,24 +120,23 @@ const TopicEntityTable = () => {
 	if (selectedSpecies && selectedSpecies.length !== 0) {
 	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
 	}
-	if (sortBy === 'created_by') {
-          url += `&sort_by=created_by`;
-        } else if (sortBy !== null && sortBy !== undefined) {
+        if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
         }
-	  
-        if (descCreatedBySort) {
+        if (descSort) {
           url += "&desc_sort=true"
-        } else if (descSort) {
-          url += `&desc_sort=true`;
         }
-	
         setIsLoadingData(true);
-        const resultTags = await axios.get(url);
-        if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
-          setTopicEntityTags(resultTags.data);
-        }
-        setIsLoadingData(false);
+	try {  
+          const resultTags = await axios.get(url);
+          if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
+            setTopicEntityTags(resultTags.data);
+          }
+	} catch (error) {
+	  console.error("Error fetching data:" + error);
+        } finally { 
+          setIsLoadingData(false);
+	}
       }
     }
     fetchData().then();
@@ -170,7 +165,8 @@ const TopicEntityTable = () => {
 
   let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
   let source_headers = ['mod_id', 'source_method', 'evidence', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
-  const headersWithSortability = new Set(['entity_type', 'created_by']);
+  // const headersWithSortability = new Set(['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag']);
+  const headersWithSortability = new Set(['topic', 'entity_type', 'species', 'created_by', 'display_tag']);
   //const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
@@ -198,34 +194,7 @@ const TopicEntityTable = () => {
 	  <thead>
 	    <tr>
               {headers.map((header, index) => (
-                <th
-		  key={`tetTableHeader th ${index}`}
-		  onClick={
-		    header === 'species'
-		      ? handleSpeciesFilterClick
-	              : () => {
-                        if (headersWithSortability.has(header)) {
-                          if (header === 'created_by') {
-                            if (createdBySort === header && descCreatedBySort) {
-                              setCreatedBySort(null);
-                              setDescCreatedBySort(true);
-                            } else {
-                              setCreatedBySort(header);
-                              setDescCreatedBySort(!descCreatedBySort);
-                              setSortBy(null); // Reset sorting for other columns
-                              setDescSort(true);
-                            }
-                          } else {
-                            setSortBy(header);
-                            setDescSort(!descSort);
-                            setCreatedBySort(null); // Reset sorting for 'created_by'
-                            setDescCreatedBySort(true);
-                          }
-                        }
-                      }	  
-		  }
-		  style={{ whiteSpace: 'nowrap' }}
-                >
+                <th key={`tetTableHeader th ${index}`} onClick={header === 'species' ? handleSpeciesFilterClick : null} style={{ whiteSpace: 'nowrap' }}>
                   {header === 'species' ? (
                     <>
                       <span>{header}</span>
@@ -249,21 +218,17 @@ const TopicEntityTable = () => {
                       {header}{' '}
                       {headersWithSortability.has(header) ? (
                         <FontAwesomeIcon
-                          icon={
-			    header === 'created_by'
-                              ? descCreatedBySort
-                                ? faSortAlphaUp
-                                : faSortAlphaDown
-                              : sortBy === header && !descSort
-                              ? faSortAlphaDown
-		              : faSortAlphaUp
-			  }
-                          style={{
-			    color:
-                              sortBy === header
-                                ? '#0069d9'
-                                : 'black',
-			  }}
+                          icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
+                          style={{ color: sortBy === 'header' ? '#0069d9' : 'black' }}
+                          onClick={() => {
+                            if (sortBy === header && descSort) {
+                              setSortBy(null);
+                              setDescSort(true);
+                            } else {
+                              setSortBy(header);
+                              setDescSort(!descSort);
+                            }
+                          }}
                         />
                       ) : null}
                     </>
