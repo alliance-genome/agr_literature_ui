@@ -211,12 +211,27 @@ const TopicEntityTable = () => {
                 <th key={`tetTableHeader th ${index}`} style={{ whiteSpace: 'nowrap' }}>
                   {header === 'species' ? (
                     <>
-                      <span>{header}</span>
                       <FontAwesomeIcon
                         icon={faFilter}
                         style={{ marginLeft: '5px', cursor: 'pointer', color: showSpeciesFilter ? '#0069d9' : 'black' }}
-		        onClick={handleSpeciesFilterClick}
-	              />
+                        onClick={handleSpeciesFilterClick}
+                      />
+                      <span style={{ marginLeft: '10px' }}>{header}</span>
+                      {headersWithSortability.has(header) ? (
+                        <FontAwesomeIcon
+                          icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
+                          style={{ marginLeft: '5px', color: sortBy === header ? '#0069d9' : 'black' }}
+                          onClick={() => {
+                            if (sortBy === header && descSort) {
+                              setSortBy(null);
+                              setDescSort(true);
+                            } else {
+                              setSortBy(header);
+                              setDescSort(!descSort);
+                            }
+                          }}
+                        />
+                      ) : null}
 		      <FilterPopup
                         show={showSpeciesFilter}
                         options={speciesInResultSet}
