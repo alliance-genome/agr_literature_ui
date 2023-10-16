@@ -127,11 +127,16 @@ const TopicEntityTable = () => {
           url += "&desc_sort=true"
         }
         setIsLoadingData(true);
-        const resultTags = await axios.get(url);
-        if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
-          setTopicEntityTags(resultTags.data);
-        }
-        setIsLoadingData(false);
+	try {  
+          const resultTags = await axios.get(url);
+          if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
+            setTopicEntityTags(resultTags.data);
+          }
+	} catch (error) {
+	  console.error("Error fetching data:" + error);
+        } finally { 
+          setIsLoadingData(false);
+	}
       }
     }
     fetchData().then();
@@ -158,10 +163,25 @@ const TopicEntityTable = () => {
     }
   }
 
-  let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
-  let source_headers = ['mod_id', 'source_method', 'evidence', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
-  const headersWithSortability = new Set(['entity_type']);
-  //const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
+  let headers = [
+    'topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated',
+    'confidence_level', 'created_by', 'note', 'entity_source', 'date_created',
+    'updated_by', 'date_updated', 'validation_value_author',
+    'validation_value_curator', 'validation_value_curation_tools',
+    'display_tag'
+  ];   
+  let source_headers = [
+    'mod_id', 'source_method', 'evidence', 'validation_type', 'source_type',
+    'description', 'created_by', 'date_updated', 'date_created'
+  ];
+  const headersWithSortability = new Set([
+    'topic', 'entity_type', 'species', 'entity', 
+    'entity_published_as', 'negated', 'confidence_level', 
+    'created_by', 'note', 'entity_source', 'date_created', 
+    'updated_by', 'date_updated', 'display_tag', 
+    'mod_id', 'source_method', 'description', 'evidence',
+    'validation_type', 'source_type'
+  ]);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
 
@@ -188,14 +208,30 @@ const TopicEntityTable = () => {
 	  <thead>
 	    <tr>
               {headers.map((header, index) => (
-                <th key={`tetTableHeader th ${index}`} onClick={header === 'species' ? handleSpeciesFilterClick : null} style={{ whiteSpace: 'nowrap' }}>
+                <th key={`tetTableHeader th ${index}`} style={{ whiteSpace: 'nowrap' }}>
                   {header === 'species' ? (
                     <>
-                      <span>{header}</span>
                       <FontAwesomeIcon
                         icon={faFilter}
                         style={{ marginLeft: '5px', cursor: 'pointer', color: showSpeciesFilter ? '#0069d9' : 'black' }}
-	              />
+                        onClick={handleSpeciesFilterClick}
+                      />
+                      <span style={{ marginLeft: '10px' }}>{header}</span>
+                      {headersWithSortability.has(header) ? (
+                        <FontAwesomeIcon
+                          icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
+                          style={{ marginLeft: '5px', color: sortBy === header ? '#0069d9' : 'black' }}
+                          onClick={() => {
+                            if (sortBy === header && descSort) {
+                              setSortBy(null);
+                              setDescSort(true);
+                            } else {
+                              setSortBy(header);
+                              setDescSort(!descSort);
+                            }
+                          }}
+                        />
+                      ) : null}
 		      <FilterPopup
                         show={showSpeciesFilter}
                         options={speciesInResultSet}
@@ -213,7 +249,7 @@ const TopicEntityTable = () => {
                       {headersWithSortability.has(header) ? (
                         <FontAwesomeIcon
                           icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
-                          style={{ color: sortBy === 'entity_type' ? '#0069d9' : 'black' }}
+                          style={{ color: sortBy === header ? '#0069d9' : 'black' }}
                           onClick={() => {
                             if (sortBy === header && descSort) {
                               setSortBy(null);
@@ -232,6 +268,21 @@ const TopicEntityTable = () => {
               {source_headers.map((header, index) => (
                 <th key={`tetTableHeaderSource th ${index}`}>
                   {header.startsWith('source_') ? header : 'source_' + header}
+                  {headersWithSortability.has(header) ? (
+                    <FontAwesomeIcon
+                      icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
+                      style={{ color: sortBy === header ? '#0069d9' : 'black' }}
+                      onClick={() => {
+                        if (sortBy === header && descSort) {
+                          setSortBy(null);
+                          setDescSort(true);
+                        } else {
+                          setSortBy(header);
+                          setDescSort(!descSort);
+                        }
+                      }}
+                    />
+                  ) : null}
                 </th>
               ))}
             </tr>
