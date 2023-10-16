@@ -249,7 +249,7 @@ const TopicEntityTable = () => {
                       {headersWithSortability.has(header) ? (
                         <FontAwesomeIcon
                           icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
-                          style={{ color: sortBy === 'header' ? '#0069d9' : 'black' }}
+                          style={{ color: sortBy === header ? '#0069d9' : 'black' }}
                           onClick={() => {
                             if (sortBy === header && descSort) {
                               setSortBy(null);
