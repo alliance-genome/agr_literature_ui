@@ -2,6 +2,8 @@ import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
     addFacetValue,
+    addExcludedFacetValue,
+    removeExcludedFacetValue,
     fetchInitialFacets,
     removeFacetValue,
     searchReferences,
@@ -27,6 +29,8 @@ import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import LoadingOverlay from "../LoadingOverlay";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faCheckSquare, faMinusSquare, faSquare} from "@fortawesome/free-solid-svg-icons";
 
 export const RENAME_FACETS = {
     "category.keyword": "alliance category",
@@ -105,16 +109,70 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
+
+    console.log(searchFacets);
+    console.log(searchExcludedFacetsValues);
+
+    searchExcludedFacetsValues.forEach(element => {
+        console.log(element);
+    })
+
+    const StandardFacetCheckbox = ({facet, value}) => {
+        return(
+
+                <Form.Check inline type="checkbox"
+                    checked={searchFacetsValues.hasOwnProperty(facet) && searchFacetsValues[facet].includes(value)}
+                    onChange={(evt) => {
+                        if (evt.target.checked) {
+                            dispatch(addFacetValue(facet, value));
+                        } else {
+                            dispatch(removeFacetValue(facet, value));
+                        }
+                }}/>
+        )
+    }
+
+    const NegatedFacetCheckbox = ({facet, value}) => {
+        const includedChecked= searchFacetsValues.hasOwnProperty(facet) && searchFacetsValues[facet].includes(value);
+        const excludedChecked= searchExcludedFacetsValues.hasOwnProperty(facet) && searchExcludedFacetsValues[facet].includes(value);
+
+        const handleClickInclude = () => {
+            if (!includedChecked) {
+                dispatch(addFacetValue(facet, value));
+            } else {
+                dispatch(removeFacetValue(facet, value));
+            }
+        }
+        const handleClickExclude = () => {
+            if (!excludedChecked) {
+                console.log(facet, value);
+                dispatch(addExcludedFacetValue(facet, value));
+            } else {
+                dispatch(removeExcludedFacetValue(facet, value));
+            }
+        }
+
+        return(
+            <span>
+                <FontAwesomeIcon icon={includedChecked ? faCheckSquare : faSquare}
+                    onClick={handleClickInclude}/>
+                &ensp;
+                <FontAwesomeIcon icon={excludedChecked ? faMinusSquare: faSquare}
+                     onClick={handleClickExclude}/>
+            </span>
+        )
+    }
 
     return (
         <div>
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
                     let key = facetToInclude + '.keyword'
+                    console.log(key);
                     key = key.replaceAll(' ', '_');
                     if (key in searchFacets) {
                         let value = searchFacets[key];
-
                         return (
                             <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
                                 <div>
@@ -123,18 +181,10 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                     {value.buckets.map(bucket =>
                                         <Container key={bucket.key}>
                                             <Row>
-                                                <Col sm={1}>
-                                                    <Form.Check inline type="checkbox"
-                                                                checked={searchFacetsValues.hasOwnProperty(key) && searchFacetsValues[key].includes(bucket.key)}
-                                                                onChange={(evt) => {
-                                                                    if (evt.target.checked) {
-                                                                        dispatch(addFacetValue(key, bucket.key));
-                                                                    } else {
-                                                                        dispatch(removeFacetValue(key, bucket.key));
-                                                                    }
-                                                                }}/>
+                                                <Col sm={2}>
+                                                    {facetToInclude === "pubmed publication status" ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
                                                 </Col>
-                                                <Col sm={8}>
+                                                <Col sm={7}>
                                                     <span dangerouslySetInnerHTML={{__html: bucket.key}} />
                                                 </Col>
                                                 <Col>

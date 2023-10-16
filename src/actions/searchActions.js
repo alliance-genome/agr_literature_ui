@@ -14,6 +14,8 @@ export const SEARCH_SET_SEARCH_SIZE_RESULTS_COUNT = 'SEARCH_SET_SEARCH_SIZE_RESU
 export const SEARCH_RESET_FACET_VALUES = 'SEARCH_RESET_FACET_VALUES';
 export const SEARCH_ADD_FACET_VALUE = 'SEARCH_ADD_FACET_VALUE';
 export const SEARCH_REMOVE_FACET_VALUE = 'SEARCH_REMOVE_FACET_VALUE';
+export const SEARCH_ADD_EXCLUDED_FACET_VALUE = 'SEARCH_ADD_EXCLUDED_FACET_VALUE';
+export const SEARCH_REMOVE_EXCLUDED_FACET_VALUE = 'SEARCH_REMOVE_EXCLUDED_FACET_VALUE';
 export const SEARCH_SET_AUTHOR_FILTER = 'SEARCH_SET_AUTHOR_FILTER';
 export const SEARCH_SET_FACETS_LOADING = 'SEARCH_SET_FACETS_LOADING';
 export const SEARCH_SET_DATE_PUBMED_ADDED = 'SEARCH_SET_DATE_PUBMED_ADDED';
@@ -63,6 +65,7 @@ export const searchReferences = () => {
       size_result_count: state.search.searchSizeResultsCount,
       page: state.search.searchResultsPage,
       facets_values: state.search.searchFacetsValues,
+      negated_facets_values: state.search.searchExcludedFacetsValues,
       facets_limits: state.search.searchFacetsLimits,
       author_filter: state.search.authorFilter,
       query_fields: state.search.query_fields,
@@ -215,6 +218,22 @@ export const addFacetValue = (facet, value) => ({
 
 export const removeFacetValue = (facet, value) => ({
   type: SEARCH_REMOVE_FACET_VALUE,
+  payload: {
+    facet: facet,
+    value: value
+  }
+});
+
+export const addExcludedFacetValue = (facet, value) => ({
+  type: SEARCH_ADD_EXCLUDED_FACET_VALUE,
+  payload: {
+    facet: facet,
+    value: value
+  }
+});
+
+export const removeExcludedFacetValue = (facet, value) => ({
+  type: SEARCH_REMOVE_EXCLUDED_FACET_VALUE,
   payload: {
     facet: facet,
     value: value
