@@ -52,8 +52,6 @@ console.log("UI_DSP -> " + process.env.REACT_APP_DEV_OR_STAGE_OR_PROD);
 console.log("UI_ATEAM -> " + process.env.REACT_APP_ATEAM_API_BASE_URL);
 console.log(Router);
 console.log(oktaAuth);
-console.log(Router)
-console.log(oktaAuth)
 
 const AppWithRouterAccess = () => {
     const history = useHistory();

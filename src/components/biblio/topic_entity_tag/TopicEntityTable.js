@@ -99,7 +99,7 @@ const TopicEntityTable = () => {
       }
     }
     fetchAllSpecies().then();
-  }, [accessToken, referenceCurie, topicEntityTags])
+  }, [referenceCurie, topicEntityTags])
 
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
