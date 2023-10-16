@@ -20,7 +20,7 @@ const BiblioRawTetData = () => {
 }
 
 const RawDataEntityTable = () => {
-  const accessToken = useSelector(state => state.isLogged.accessToken);
+  // const accessToken = useSelector(state => state.isLogged.accessToken);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
@@ -29,7 +29,7 @@ const RawDataEntityTable = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
-        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?token=" + accessToken
+        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie
         setIsLoadingData(true);
         const resultTags = await axios.get(url);
         if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
@@ -39,7 +39,7 @@ const RawDataEntityTable = () => {
       }
     }
     fetchData().then();
-  }, [referenceCurie, biblioUpdatingEntityAdd, topicEntityTags, accessToken]);
+  }, [referenceCurie, biblioUpdatingEntityAdd, topicEntityTags]);
 
   // use the following code for the editor view table
   // let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
