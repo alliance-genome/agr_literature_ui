@@ -44,8 +44,14 @@ import { oktaAuthConfig } from '../config';
 
 const oktaAuth = new OktaAuth(oktaAuthConfig);
 
-console.log(Router)
-console.log(oktaAuth)
+// No secrets here so print out for sanity checking.
+console.log("UI_URL -> " + process.env.REACT_APP_UI_URL);
+console.log("UI_RESTAPI-> " + process.env.REACT_APP_RESTAPI);
+console.log("UI_SW -> " + process.env.REACT_APP_SWAGGERUI);
+console.log("UI_DSP -> " + process.env.REACT_APP_DEV_OR_STAGE_OR_PROD);
+console.log("UI_ATEAM -> " + process.env.REACT_APP_ATEAM_API_BASE_URL);
+console.log(Router);
+console.log(oktaAuth);
 
 const AppWithRouterAccess = () => {
     const history = useHistory();
