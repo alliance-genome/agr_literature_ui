@@ -30,7 +30,7 @@ import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import LoadingOverlay from "../LoadingOverlay";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faCheckSquare, faMinusSquare, faSquare} from "@fortawesome/free-solid-svg-icons";
+import {faCheckSquare, faMinusSquare} from "@fortawesome/free-solid-svg-icons";
 
 export const RENAME_FACETS = {
     "category.keyword": "alliance category",
@@ -112,13 +112,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
 
-    console.log(searchFacets);
-    console.log(searchExcludedFacetsValues);
-
-    searchExcludedFacetsValues.forEach(element => {
-        console.log(element);
-    })
-
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
 
@@ -139,15 +132,21 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         const excludedChecked= searchExcludedFacetsValues.hasOwnProperty(facet) && searchExcludedFacetsValues[facet].includes(value);
 
         const handleClickInclude = () => {
-            if (!includedChecked) {
+            if (!includedChecked && excludedChecked) {
+                dispatch(removeExcludedFacetValue(facet, value));
                 dispatch(addFacetValue(facet, value));
-            } else {
+            } else if(!includedChecked){
+                dispatch(addFacetValue(facet, value));
+            }
+            else {
                 dispatch(removeFacetValue(facet, value));
             }
         }
         const handleClickExclude = () => {
-            if (!excludedChecked) {
-                console.log(facet, value);
+            if (!excludedChecked && includedChecked) {
+                dispatch(removeFacetValue(facet, value));
+                dispatch(addExcludedFacetValue(facet, value));
+            } else if (!excludedChecked){
                 dispatch(addExcludedFacetValue(facet, value));
             } else {
                 dispatch(removeExcludedFacetValue(facet, value));
@@ -156,10 +155,10 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
         return(
             <span>
-                <FontAwesomeIcon icon={includedChecked ? faCheckSquare : faSquare}
+                <FontAwesomeIcon icon={faCheckSquare} style= {includedChecked ? {color: "#28a745"} : {color: "#808080"}}
                     onClick={handleClickInclude}/>
                 &ensp;
-                <FontAwesomeIcon icon={excludedChecked ? faMinusSquare: faSquare}
+                <FontAwesomeIcon icon={faMinusSquare} style= {excludedChecked ? {color: "#dc3545"} : {color: "#808080"}}
                      onClick={handleClickExclude}/>
             </span>
         )
@@ -290,6 +289,7 @@ const Facets = () => {
     const searchResults = useSelector(state => state.search.searchResults);
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchQuery = useSelector(state => state.search.searchQuery);
     const facetsLoading = useSelector(state => state.search.facetsLoading);
@@ -312,13 +312,13 @@ const Facets = () => {
         if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
-            if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0) {
+            if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0) {
                 dispatch(setSearchResultsPage(1));
                 dispatch(setAuthorFilter(""));
                 dispatch(searchReferences());
             }
         }
-    }, [searchFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchFacetsValues,searchExcludedFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         let newOpenFacets = new Set([...openFacets]);

@@ -183,7 +183,8 @@ export default function(state = initialState, action) {
     case SEARCH_RESET_FACET_VALUES:
       return {
         ...state,
-        searchFacetsValues: {}
+        searchFacetsValues: {},
+        searchExcludedFacetsValues: {}
       }
 
     case SEARCH_SET_SEARCH_QUERY_FIELDS:

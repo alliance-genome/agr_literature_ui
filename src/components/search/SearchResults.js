@@ -6,7 +6,7 @@ import Col from 'react-bootstrap/Col';
 import {Link} from 'react-router-dom';
 import {setGetReferenceCurieFlag, setReferenceCurie} from '../../actions/biblioActions';
 import {Modal} from 'react-bootstrap';
-import {setSearchError, searchXref, setSearchResultsPage, searchReferences} from '../../actions/searchActions';
+import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 
 
