@@ -54,15 +54,12 @@ export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
     case 'SEARCH_CHANGE_QUERY_FIELD':
-      console.log(action.payload);
       return {
         ...state,
         [action.payload.field]: action.payload.value
       }
 
     case SEARCH_SET_SEARCH_RESULTS:
-      // console.log("reducer SEARCH_SET_SEARCH_RESULTS")
-      // console.log(action.payload.searchResults);
       return {
         ...state,
         searchLoading: false,
@@ -169,7 +166,6 @@ export default function(state = initialState, action) {
       }
 
     case SEARCH_ADD_EXCLUDED_FACET_VALUE:
-      console.log(action.payload);
       let addExcludedSearchFacetsValues = _.cloneDeep(state.searchExcludedFacetsValues);
       if (!addExcludedSearchFacetsValues.hasOwnProperty(action.payload.facet)) {
         addExcludedSearchFacetsValues[action.payload.facet] = [];
@@ -218,8 +214,6 @@ export default function(state = initialState, action) {
       }
 
     case SEARCH_SET_SEARCH_FACETS_LIMITS:
-      // console.log("reducer SEARCH_SET_SEARCH_FACETS_LIMITS")
-      // console.log(action.payload.facetsLimits);
       return {
         ...state,
         searchFacetsLimits: action.payload.facetsLimits

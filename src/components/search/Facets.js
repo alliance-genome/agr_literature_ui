@@ -167,8 +167,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     return (
         <div>
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
-                    let key = facetToInclude + '.keyword'
-                    console.log(key);
+                    let key = facetToInclude + '.keyword';
                     key = key.replaceAll(' ', '_');
                     if (key in searchFacets) {
                         let value = searchFacets[key];
