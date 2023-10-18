@@ -11,6 +11,7 @@ import { splitCurie } from '../components/biblio/BiblioEditor';
 const defaultEntityAdd = {
   'topicSelect': '',
   'taxonSelect': '',
+  'noDataCheckbox': false,
   'entityTypeSelect': '',
   'entitytextarea': '',
   'notetextarea': '',
