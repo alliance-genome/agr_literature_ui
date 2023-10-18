@@ -184,6 +184,7 @@ const TopicEntityTable = () => {
   ]);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
+  const headerToLabelMap = { 'negated': 'no data' };
 
   // TODO: use the following code for the 'simple' table
   // for (const tetDict of topicEntityTags.values()) {
@@ -245,7 +246,7 @@ const TopicEntityTable = () => {
                     </>
                   ) : (
                     <>
-                      {header}{' '}
+                      {(headerToLabelMap[header] !== undefined) ? (headerToLabelMap[header]) : (header) }
                       {headersWithSortability.has(header) ? (
                         <FontAwesomeIcon
                           icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
