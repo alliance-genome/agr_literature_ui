@@ -47,6 +47,7 @@ const TopicEntityCreate = () => {
   const [warningMessage, setWarningMessage] = useState('');
 
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
+  const noDataCheckbox = useSelector(state => state.biblio.entityAdd.noDataCheckbox);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
 
@@ -100,7 +101,7 @@ const TopicEntityCreate = () => {
     updateJson['species'] = taxonSelect;
     // TODO: add entity_published_as field when synonyms are in the A-team system
     updateJson['note'] = noteText !== "" ? noteText : null;
-    updateJson['negated'] = false;
+    updateJson['negated'] = noDataCheckbox;
     updateJson['confidence_level'] = null;
     updateJson['topic_entity_tag_source_id'] = topicEntitySourceId;
     return updateJson;
@@ -123,7 +124,7 @@ const TopicEntityCreate = () => {
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]
-           forApiArray.push(array); } } }
+          forApiArray.push(array); } } }
     else if (taxonSelect !== '' && taxonSelect !== undefined) {
       let updateJson = initializeUpdateJson(refCurie);
       // curators can pick an entity_type without adding an entity list, so send that to API so they can get an error message
@@ -169,6 +170,7 @@ const TopicEntityCreate = () => {
     )}
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="2">topic</Col>
+      <Col className="div-grey-border" sm="1">checkbox</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
       <Col className="div-grey-border" sm="1">species</Col>
       <Col className="div-grey-border" sm="2">entity list (one per line, case insensitive)</Col>
@@ -213,6 +215,13 @@ const TopicEntityCreate = () => {
                         options={typeaheadOptions}
                         selected={topicSelect !== undefined && topicSelect !== null && topicSelect !== '' ? [getMapKeyByValue(typeaheadName2CurieMap, topicSelect)] : []}
         />
+      </Col>
+      <Col sm="1">
+        <Form.Check inline type="checkbox" id="noDataCheckbox"
+                    onChange={(evt) => {
+                       if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: true }})); }
+                       else { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: false }})); } }}/>
+        No Data
       </Col>
       <Col sm="1">
          <PulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} optionToName={curieToNameEntityType} />
