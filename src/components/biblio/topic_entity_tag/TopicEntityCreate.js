@@ -217,7 +217,7 @@ const TopicEntityCreate = () => {
         />
       </Col>
       <Col sm="1">
-        <Form.Check inline type="checkbox" id="noDataCheckbox"
+        <Form.Check inline type="checkbox" id="noDataCheckbox" checked={noDataCheckbox}
                     onChange={(evt) => {
                        if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: true }})); }
                        else { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: false }})); } }}/>
