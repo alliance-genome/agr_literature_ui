@@ -1,5 +1,6 @@
 import {
   SEARCH_ADD_FACET_VALUE, SEARCH_REMOVE_FACET_VALUE,
+  SEARCH_ADD_EXCLUDED_FACET_VALUE, SEARCH_REMOVE_EXCLUDED_FACET_VALUE,
   SEARCH_RESET_FACET_VALUES, SEARCH_SET_SEARCH_ERROR,
   SEARCH_SET_SEARCH_FACETS, SEARCH_SET_SEARCH_FACETS_LIMITS,
   SEARCH_SET_SEARCH_FACETS_VALUES, SEARCH_SET_DATE_PUBMED_ADDED,
@@ -27,6 +28,7 @@ const initialState = {
   searchSuccess: false,
   searchFacets: {},
   searchFacetsValues: {},
+  searchExcludedFacetsValues: {},
   searchFacetsLimits: {
     'pubmed_types.keyword': INITIAL_FACETS_LIMIT,
     'mod_reference_types.keyword': INITIAL_FACETS_LIMIT,
@@ -52,15 +54,12 @@ export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
     case 'SEARCH_CHANGE_QUERY_FIELD':
-      console.log(action.payload);
       return {
         ...state,
         [action.payload.field]: action.payload.value
       }
 
     case SEARCH_SET_SEARCH_RESULTS:
-      // console.log("reducer SEARCH_SET_SEARCH_RESULTS")
-      // console.log(action.payload.searchResults);
       return {
         ...state,
         searchLoading: false,
@@ -166,10 +165,22 @@ export default function(state = initialState, action) {
         searchFacetsValues: addSearchFacetsValues
       }
 
+    case SEARCH_ADD_EXCLUDED_FACET_VALUE:
+      let addExcludedSearchFacetsValues = _.cloneDeep(state.searchExcludedFacetsValues);
+      if (!addExcludedSearchFacetsValues.hasOwnProperty(action.payload.facet)) {
+        addExcludedSearchFacetsValues[action.payload.facet] = [];
+      }
+      addExcludedSearchFacetsValues[action.payload.facet].push(action.payload.value);
+      return {
+        ...state,
+        searchExcludedFacetsValues: addExcludedSearchFacetsValues
+      }
+
     case SEARCH_RESET_FACET_VALUES:
       return {
         ...state,
-        searchFacetsValues: {}
+        searchFacetsValues: {},
+        searchExcludedFacetsValues: {}
       }
 
     case SEARCH_SET_SEARCH_QUERY_FIELDS:
@@ -190,9 +201,19 @@ export default function(state = initialState, action) {
         searchFacetsValues: remSearchFacetsValues
       }
 
+    case SEARCH_REMOVE_EXCLUDED_FACET_VALUE:
+      let remSearchExcludedFacetsValues = _.cloneDeep(state.searchExcludedFacetsValues);
+      remSearchExcludedFacetsValues[action.payload.facet] = remSearchExcludedFacetsValues[action.payload.facet].filter(
+          e => e !== action.payload.value)
+      if (remSearchExcludedFacetsValues[action.payload.facet].length === 0) {
+        delete remSearchExcludedFacetsValues[action.payload.facet];
+      }
+      return {
+        ...state,
+        searchExcludedFacetsValues: remSearchExcludedFacetsValues
+      }
+
     case SEARCH_SET_SEARCH_FACETS_LIMITS:
-      // console.log("reducer SEARCH_SET_SEARCH_FACETS_LIMITS")
-      // console.log(action.payload.facetsLimits);
       return {
         ...state,
         searchFacetsLimits: action.payload.facetsLimits
