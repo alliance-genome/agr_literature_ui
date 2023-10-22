@@ -192,7 +192,7 @@ const Sort = () => {
               method = 'POST';
               let array = [ subPath, updateJson, method, index, field, subField]
               forApiArray.push( array ); }
-          if (speciesSelect) {
+          if (speciesSelect && speciesSelect[index]) {
             let sources = [{'source': "manual",
                             'mod_abbreviation': modsField
                           }];
