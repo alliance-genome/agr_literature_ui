@@ -343,6 +343,7 @@ const BiblioSubmitUpdateButton = () => {
           let field = 'mod_corpus_associations';
           let subField = 'mod_corpus_association_id';
           if (modAssociationDict['mod_corpus_association_id'] !== 'new') {
+            if ('mod_abbreviation' in updateJson) { delete updateJson.mod_abbreviation; }
             subPath = 'reference/mod_corpus_association/' + modAssociationDict['mod_corpus_association_id'];
             field = null;
             subField = null;
