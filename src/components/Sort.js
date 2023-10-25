@@ -13,7 +13,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import "react-bootstrap-typeahead/css/Typeahead.css";
 
 import {downloadReferencefile, setReferenceCurie} from '../actions/biblioActions';
-import { setGetReferenceCurieFlag } from '../actions/biblioActions';
+import { setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioActions';
 
 import { changeFieldSortMods } from '../actions/sortActions';
 import { sortButtonModsQuery } from '../actions/sortActions';
@@ -25,7 +25,7 @@ import { closeSortUpdateAlert } from '../actions/sortActions';
 import { setSortUpdating } from '../actions/sortActions';
 import { sortButtonSetRadiosAll } from '../actions/sortActions';
 import {Spinner} from "react-bootstrap";
-import React, {useState, useRef} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import {AlertAteamApiDown} from "./ATeamAlert";
@@ -60,9 +60,22 @@ const Sort = () => {
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
 
+  const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
+
   let accessLevel = oktaMod;
   if (testerMod !== 'No') { accessLevel = testerMod; }
   else if (oktaDeveloper) { accessLevel = 'developer'; }
+
+  const tetAccessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+
+  useEffect(() => {
+    const fetchSourceId = async () => {
+      if (accessToken !== null) {
+        setTopicEntitySourceId(await getCuratorSourceId(tetAccessLevel, accessToken));
+      }
+    }
+    fetchSourceId().catch(console.error);
+  }, [tetAccessLevel, accessToken]);
 
   // const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   let buttonFindDisabled = 'disabled'
@@ -193,17 +206,14 @@ const Sort = () => {
               let array = [ subPath, updateJson, method, index, field, subField]
               forApiArray.push( array ); }
           if (speciesSelect && speciesSelect[index]) {
-            let sources = [{'source': "manual",
-                            'mod_abbreviation': modsField
-                          }];
             for ( const item of speciesSelect[index].values() ){
                 const taxArray = item.split(" ");
                 updateJson = {'reference_curie': reference['curie'],
                               'entity': taxArray.pop(),     // taxid last element
                               'topic': "ATP:0000142",       // entity
                               'entity_type': "ATP:0000123", // species
-                              'entity_source': "manual",    // Not sure about this
-                              'sources': sources,
+                              'entity_source': "alliance",  // Kimberly said this instead of 'manual'
+                              'topic_entity_tag_source_id': topicEntitySourceId,
                               'species': mod_to_tax[modsField] };    // taxonid of species
                 subPath = 'topic_entity_tag/';
                 const field = null;
