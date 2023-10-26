@@ -57,6 +57,28 @@ const TopicEntityTable = () => {
     setShowSpeciesFilter(true);
   };
 
+  const handleDeleteClick = async (tetDictToDelete) => {
+    try {
+      const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + tetDictToDelete.topic_entity_tag_id;	  
+      const response = await axios.delete(url, {
+        headers: {
+            "Authorization": "Bearer " + accessToken,
+	    "Content-Type": "application/json"
+        }
+      });
+
+      // status_code=status.HTTP_204_NO_CONTENT
+      if (response.status === 204) {
+        // remove the deleted item from the state so that the UI updates
+          setTopicEntityTags(prevTags => prevTags.filter(tag => tag !== tetDictToDelete));
+      } else {
+        console.error("Failed to delete the item:", response.data);
+      }
+    } catch (error) {
+      console.error("Error deleting item:", error);
+    }
+  };
+  
   const handleMouseLeave = () => {
     // Hide the species filter when the mouse leaves the filter area
     setShowSpeciesFilter(false);
@@ -207,7 +229,8 @@ const TopicEntityTable = () => {
           responsive
 	>
 	  <thead>
-	    <tr>
+            <tr>
+	      <th>Actions</th>
               {headers.map((header, index) => (
                 <th key={`tetTableHeader th ${index}`} style={{ whiteSpace: 'nowrap' }}>
                   {header === 'species' ? (
@@ -299,6 +322,7 @@ const TopicEntityTable = () => {
 	    .map( (tetDict, index_1) => {
               return (
                 <tr key={`tetTableRow ${index_1}`}>
+		  <td><button onClick={() => handleDeleteClick(tetDict)}>Delete</button></td>      
                   { headers.map( (header, index_2) => {
                     let td_value = tetDict[header];
                     if (td_value === true) { td_value = 'True'; }
