@@ -62,6 +62,10 @@ const TopicEntityTable = () => {
   };
 
   const handleDeleteClick = async (tetDictToDelete) => {
+    if (tetDictToDelete.topic_entity_tag_source.mod_id !== modID) {
+      console.warn("Permission denied. Cannot delete this row.");
+      return;
+    }
     try {
       const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + tetDictToDelete.topic_entity_tag_id;	  
       const response = await axios.delete(url, {
@@ -74,7 +78,7 @@ const TopicEntityTable = () => {
       // status_code=status.HTTP_204_NO_CONTENT
       if (response.status === 204) {
         // remove the deleted item from the state so that the UI updates
-          setTopicEntityTags(prevTags => prevTags.filter(tag => tag !== tetDictToDelete));
+        setTopicEntityTags(prevTags => prevTags.filter(tag => tag !== tetDictToDelete));
       } else {
         console.error("Failed to delete the item:", response.data);
       }
@@ -130,7 +134,8 @@ const TopicEntityTable = () => {
   useEffect(() => {
     const fetchModID = async () => {
       let url = process.env.REACT_APP_RESTAPI + '/mod/' + accessLevel;
-      const modData = await axios.get(url);
+      const response = await axios.get(url);
+      const modData = response.data;
       setModID(modData['mod_id']);
     }
     fetchModID().then();
@@ -334,8 +339,12 @@ const TopicEntityTable = () => {
             })
 	    .map( (tetDict, index_1) => {
               return (
-                <tr key={`tetTableRow ${index_1}`}>
-		  <td><button onClick={() => handleDeleteClick(tetDict)}>Delete</button></td>      
+                <tr key={`tetTableRow ${index_1}`}>     
+		  <td>
+                    {tetDict.topic_entity_tag_source.mod_id === modID ? (
+                      <button onClick={() => handleDeleteClick(tetDict)}>Delete</button>
+                    ) : null}
+		  </td>
                   { headers.map( (header, index_2) => {
                     let td_value = tetDict[header];
                     if (td_value === true) { td_value = 'True'; }
