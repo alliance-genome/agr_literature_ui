@@ -12,6 +12,9 @@ import {getCurieToNameTaxon} from "./TaxonUtils";
 
 const TopicEntityTable = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;  
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
@@ -28,6 +31,7 @@ const TopicEntityTable = () => {
   const [displayTagData, setDisplayTagData] = useState([]);
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
+  const [modID, setModID] = useState(false);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
   const curieToNameTaxon = getCurieToNameTaxon();
@@ -122,6 +126,15 @@ const TopicEntityTable = () => {
     }
     fetchAllSpecies().then();
   }, [referenceCurie, topicEntityTags])
+
+  useEffect(() => {
+    const fetchModID = async () => {
+      let url = process.env.REACT_APP_RESTAPI + '/mod/' + accessLevel;
+      const modData = await axios.get(url);
+      setModID(modData['mod_id']);
+    }
+    fetchModID().then();
+  }, [accessLevel])
 
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
