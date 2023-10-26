@@ -9,6 +9,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilter, faSortAlphaDown, faSortAlphaUp} from "@fortawesome/free-solid-svg-icons";
 import Pagination from "react-bootstrap/Pagination";
 import {getCurieToNameTaxon} from "./TaxonUtils";
+import Button from "react-bootstrap/Button";
 
 const TopicEntityTable = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -342,7 +343,13 @@ const TopicEntityTable = () => {
                 <tr key={`tetTableRow ${index_1}`}>     
 		  <td>
                     {tetDict.topic_entity_tag_source.mod_id === modID ? (
-                      <button onClick={() => handleDeleteClick(tetDict)}>Delete</button>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => handleDeleteClick(tetDict)}
+                      >
+                        Delete
+		      </Button>	    
                     ) : null}
 		  </td>
                   { headers.map( (header, index_2) => {
