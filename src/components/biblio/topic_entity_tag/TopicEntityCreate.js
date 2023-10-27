@@ -50,9 +50,13 @@ const TopicEntityCreate = () => {
   const noDataCheckbox = useSelector(state => state.biblio.entityAdd.noDataCheckbox);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
-
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
+  // state to track the current view: 'list' or 'autocomplete'
+  const [currentView, setCurrentView] = useState('list');  
+  const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
+  const speciesTypeaheadRef = useRef(null);
+    
   const curieToNameTaxon = getCurieToNameTaxon();
   const modToTaxon = getModToTaxon();
     
@@ -63,6 +67,19 @@ const TopicEntityCreate = () => {
   const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000123': 'species' };
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123'];
 
+  // effect to reset view and other fields when topic changes
+  useEffect(() => {
+    if (topicSelect === 'ATP:0000123') { // 'ATP:0000123' is the curie for species
+      setCurrentView('autocomplete');
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
+      // dispatch novel_topic_data here	
+    } else {
+      setCurrentView('list');
+    }
+  }, [topicSelect]);
+      
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
@@ -230,7 +247,59 @@ const TopicEntityCreate = () => {
          <PulldownMenu id='taxonSelect' value={taxonSelect} pdList={taxonList} optionToName={curieToNameTaxon} />
       </Col>
       <Col className="form-label col-form-label" sm="2" >
-        <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
+        {currentView === 'list' && (
+          <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
+	)}
+	{currentView === 'autocomplete' && (
+          <AsyncTypeahead
+            multiple
+            isLoading={speciesSelectLoading}
+            placeholder="enter species name"
+            ref={speciesTypeaheadRef}
+            id={speciesSelect}
+            labelKey={specieSelect}
+            useCache={false}
+            onSearch={(query) => {
+              let n = speciesSelectLoading.length
+              let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
+              a = true;
+              setSpeciesSelectLoading(a);
+              axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
+                {
+                  "searchFilters": {
+                    "nameFilter": {
+                      "name": {
+                        "queryString": query,
+                        "tokenOperator": "AND"
+                      }
+                    }
+                  },
+                  "sortOrders": [],
+                  "aggregations": [],
+                  "nonNullFieldsTable": []
+                },
+                { headers: {
+                  'content-type': 'application/json',
+                  'authorization': 'Bearer ' + accessToken
+                }
+              })
+              .then(res => {
+                let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
+                setSpeciesSelectLoading(a);
+                if (res.data.results) {
+                  setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
+                }
+              });
+            }}
+            onChange={(selected) => {
+              let newArr = [...speciesSelect];
+              newArr[index] = selected;
+              setSpeciesSelect(newArr);
+            }}
+            options={typeaheadOptions}
+	    selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
+          />            
+        )}
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Container>
