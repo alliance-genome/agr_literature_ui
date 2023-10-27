@@ -1,5 +1,6 @@
 import {useDispatch, useSelector} from "react-redux";
 import React, {useEffect, useRef, useState} from "react";
+import {union} from "lodash"; // to handle arrays
 import {
     ateamGetTopicDescendants,
     changeFieldEntityAddGeneralField,
@@ -56,6 +57,7 @@ const TopicEntityCreate = () => {
   const [currentView, setCurrentView] = useState('list');  
   const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
   const speciesTypeaheadRef = useRef(null);
+  const [selectedSpecies, setSelectedSpecies] = useState([]);
     
   const curieToNameTaxon = getCurieToNameTaxon();
   const modToTaxon = getModToTaxon();
@@ -69,8 +71,10 @@ const TopicEntityCreate = () => {
 
   // effect to reset view and other fields when topic changes
   useEffect(() => {
-    if (topicSelect === 'ATP:0000123') { // 'ATP:0000123' is the curie for species
+    //if (topicSelect === 'ATP:0000123') { // 'ATP:0000123' is the curie for species
+    if (topicSelect === 'ATP:0000053') { // for testing only 
       setCurrentView('autocomplete');
+      setSelectedSpecies([]); // reset species list when topic changes
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
@@ -256,14 +260,8 @@ const TopicEntityCreate = () => {
             isLoading={speciesSelectLoading}
             placeholder="enter species name"
             ref={speciesTypeaheadRef}
-            id={speciesSelect}
-            labelKey={specieSelect}
-            useCache={false}
             onSearch={(query) => {
-              let n = speciesSelectLoading.length
-              let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
-              a = true;
-              setSpeciesSelectLoading(a);
+              setSpeciesSelectLoading(true);
               axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
                 {
                   "searchFilters": {
@@ -284,20 +282,25 @@ const TopicEntityCreate = () => {
                 }
               })
               .then(res => {
-                let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
-                setSpeciesSelectLoading(a);
+                setSpeciesSelectLoading(false);
                 if (res.data.results) {
                   setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
                 }
               });
             }}
             onChange={(selected) => {
-              let newArr = [...speciesSelect];
-              newArr[index] = selected;
-              setSpeciesSelect(newArr);
+	      const extractCurie = specie => {
+                const match = specie.match(/(NCBITaxon:\d+)/);
+		return match ? match[1] : '';
+	      };
+	      const selectedCuries = selected.map(extractCurie);
+	      const combinedCuries = selectedCuries.join('\n');
+              // update entityText state with the extracted curies
+	      setSelectedSpecies(selected);
+	      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: combinedCuries } }));
             }}
             options={typeaheadOptions}
-	    selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
+	    selected={selectedSpecies}
           />            
         )}
       </Col>
