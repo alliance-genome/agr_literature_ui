@@ -68,11 +68,12 @@ const TopicEntityCreate = () => {
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000123': 'species' };
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123'];
-
+  //const speciesATP = 'ATP:0000123';
+  const	speciesATP = 'ATP:0000053';
+    
   // effect to reset view and other fields when topic changes
   useEffect(() => {
-    //if (topicSelect === 'ATP:0000123') { // 'ATP:0000123' is the curie for species
-    if (topicSelect === 'ATP:0000053') { // for testing only 
+    if (topicSelect === speciesATP) { 
       setCurrentView('autocomplete');
       setSelectedSpecies([]); // reset species list when topic changes
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
@@ -288,32 +289,26 @@ const TopicEntityCreate = () => {
                 }
               });
             }}
-            onChange={(selected) => {
-	      const extractCurie = specie => {
-                const match = specie.match(/(NCBITaxon:\d+)/);
-		return match ? match[1] : '';
-	      };
-	      const selectedCuries = selected.map(extractCurie);
-	      const combinedCuries = selectedCuries.join('\n');
+	    onChange={(selected) => {
+              // extract species name and curie from the selected options
+              const extractedData = selected.map(specie => {
+                const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                return match ? {name: match[1], curie: match[2]} : null;
+              }).filter(item => item); // Filter out any null values
 
-              // update entityText state with the extracted curies
-	      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: combinedCuries } }));
-
-	      // Store the selected species' NCBITaxon IDs in the entityResultList state
-              const entityResults = selectedCuries.map(curie => ({ entityTypeSymbol: "Species", curie: curie }));
-	      // dispatch(changeFieldEntityEntityList(combinedCuries, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect]));
-	      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: entityResults } }));
+              // update entityResultList for display in the verification area
+              const entityResults = extractedData.map(data => ({ entityTypeSymbol: data.name, curie: data.curie }));
+              dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: entityResults } }));
             }}
-            options={typeaheadOptions}
-	    selected={selectedSpecies}
+	    options={typeaheadOptions}
+            selected={selectedSpecies}
           />            
         )}
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Container>
           { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
-            //const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
-            const colDisplayClass = (entityResult.curie.startsWith('NCBITaxon') || entityResult.curie !== 'no Alliance curie') ? 'Col-display' : 'Col-display-warn';
+            const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
             return (
               <Row key={`entityEntityContainerrows ${index}`}>
                 <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{entityResult.entityTypeSymbol}</Col>
