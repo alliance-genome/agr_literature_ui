@@ -12,6 +12,7 @@ const defaultEntityAdd = {
   'topicSelect': '',
   'taxonSelect': '',
   'noDataCheckbox': false,
+  'novelCheckbox': false,
   'entityTypeSelect': '',
   'entitytextarea': '',
   'notetextarea': '',

@@ -48,6 +48,7 @@ const TopicEntityCreate = () => {
 
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const noDataCheckbox = useSelector(state => state.biblio.entityAdd.noDataCheckbox);
+  const novelCheckbox = useSelector(state => state.biblio.entityAdd.novelCheckbox);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
 
@@ -102,6 +103,7 @@ const TopicEntityCreate = () => {
     // TODO: add entity_published_as field when synonyms are in the A-team system
     updateJson['note'] = noteText !== "" ? noteText : null;
     updateJson['negated'] = noDataCheckbox;
+    updateJson['novel_topic_data'] = novelCheckbox;
     updateJson['confidence_level'] = null;
     updateJson['topic_entity_tag_source_id'] = topicEntitySourceId;
     return updateJson;
@@ -221,7 +223,13 @@ const TopicEntityCreate = () => {
                     onChange={(evt) => {
                        if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: true }})); }
                        else { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: false }})); } }}/>
-        No Data
+        No Data<br></br>
+
+        <Form.Check inline type="checkbox" id="novelCheckbox" checked={novelCheckbox}
+                    onChange={(evt) => {
+                       if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: true }})); }
+                       else { dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: false }})); } }}/>
+        Novel
       </Col>
       <Col sm="1">
          <PulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} optionToName={curieToNameEntityType} />
