@@ -9,9 +9,13 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilter, faSortAlphaDown, faSortAlphaUp} from "@fortawesome/free-solid-svg-icons";
 import Pagination from "react-bootstrap/Pagination";
 import {getCurieToNameTaxon} from "./TaxonUtils";
+import Button from "react-bootstrap/Button";
 
 const TopicEntityTable = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;  
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
@@ -28,6 +32,7 @@ const TopicEntityTable = () => {
   const [displayTagData, setDisplayTagData] = useState([]);
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
+  const [modID, setModID] = useState(false);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
   const curieToNameTaxon = getCurieToNameTaxon();
@@ -57,6 +62,32 @@ const TopicEntityTable = () => {
     setShowSpeciesFilter(true);
   };
 
+  const handleDeleteClick = async (tetDictToDelete) => {
+    if (tetDictToDelete.topic_entity_tag_source.mod_id !== modID) {
+      console.error("Permission denied. Cannot delete this row.");
+      return;
+    }
+    try {
+      const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + tetDictToDelete.topic_entity_tag_id;	  
+      const response = await axios.delete(url, {
+        headers: {
+            "Authorization": "Bearer " + accessToken,
+	    "Content-Type": "application/json"
+        }
+      });
+
+      // status_code=status.HTTP_204_NO_CONTENT
+      if (response.status === 204) {
+        // remove the deleted item from the state so that the UI updates
+        setTopicEntityTags(prevTags => prevTags.filter(tag => tag !== tetDictToDelete));
+      } else {
+        console.error("Failed to delete the item:", response.data);
+      }
+    } catch (error) {
+      console.error("Error deleting item:", error);
+    }
+  };
+  
   const handleMouseLeave = () => {
     // Hide the species filter when the mouse leaves the filter area
     setShowSpeciesFilter(false);
@@ -100,6 +131,16 @@ const TopicEntityTable = () => {
     }
     fetchAllSpecies().then();
   }, [referenceCurie, topicEntityTags])
+
+  useEffect(() => {
+    const fetchModID = async () => {
+      let url = process.env.REACT_APP_RESTAPI + '/mod/' + accessLevel;
+      const response = await axios.get(url);
+      const modData = response.data;
+      setModID(modData['mod_id']);
+    }
+    fetchModID().then();
+  }, [accessLevel])
 
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
@@ -207,7 +248,8 @@ const TopicEntityTable = () => {
           responsive
 	>
 	  <thead>
-	    <tr>
+            <tr>
+	      <th>Actions</th>
               {headers.map((header, index) => (
                 <th key={`tetTableHeader th ${index}`} style={{ whiteSpace: 'nowrap' }}>
                   {header === 'species' ? (
@@ -298,7 +340,18 @@ const TopicEntityTable = () => {
             })
 	    .map( (tetDict, index_1) => {
               return (
-                <tr key={`tetTableRow ${index_1}`}>
+                <tr key={`tetTableRow ${index_1}`}>     
+		  <td>
+                    {tetDict.topic_entity_tag_source.mod_id === modID ? (
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => handleDeleteClick(tetDict)}
+                      >
+                        Delete
+		      </Button>	    
+                    ) : null}
+		  </td>
                   { headers.map( (header, index_2) => {
                     let td_value = tetDict[header];
                     if (td_value === true) { td_value = 'True'; }
