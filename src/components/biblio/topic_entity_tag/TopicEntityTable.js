@@ -64,7 +64,7 @@ const TopicEntityTable = () => {
 
   const handleDeleteClick = async (tetDictToDelete) => {
     if (tetDictToDelete.topic_entity_tag_source.mod_id !== modID) {
-      console.warn("Permission denied. Cannot delete this row.");
+      console.error("Permission denied. Cannot delete this row.");
       return;
     }
     try {
