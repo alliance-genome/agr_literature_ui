@@ -226,7 +226,7 @@ const TopicEntityTable = () => {
   ]);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
-  const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel' };
+  const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
 
 
   // TODO: use the following code for the 'simple' table

@@ -229,7 +229,7 @@ const TopicEntityCreate = () => {
                     onChange={(evt) => {
                        if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: true }})); }
                        else { dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: false }})); } }}/>
-        Novel
+        Novel Data
       </Col>
       <Col sm="1">
          <PulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} optionToName={curieToNameEntityType} />
