@@ -295,9 +295,14 @@ const TopicEntityCreate = () => {
 	      };
 	      const selectedCuries = selected.map(extractCurie);
 	      const combinedCuries = selectedCuries.join('\n');
+
               // update entityText state with the extracted curies
-	      setSelectedSpecies(selected);
 	      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: combinedCuries } }));
+
+	      // Store the selected species' NCBITaxon IDs in the entityResultList state
+              const entityResults = selectedCuries.map(curie => ({ entityTypeSymbol: "Species", curie: curie }));
+	      // dispatch(changeFieldEntityEntityList(combinedCuries, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect]));
+	      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: entityResults } }));
             }}
             options={typeaheadOptions}
 	    selected={selectedSpecies}
@@ -307,7 +312,8 @@ const TopicEntityCreate = () => {
       <Col className="form-label col-form-label" sm="2" >
         <Container>
           { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
-            const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
+            //const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
+            const colDisplayClass = (entityResult.curie.startsWith('NCBITaxon') || entityResult.curie !== 'no Alliance curie') ? 'Col-display' : 'Col-display-warn';
             return (
               <Row key={`entityEntityContainerrows ${index}`}>
                 <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{entityResult.entityTypeSymbol}</Col>
