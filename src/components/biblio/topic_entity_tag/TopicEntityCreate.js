@@ -291,13 +291,24 @@ const TopicEntityCreate = () => {
             }}
 	    onChange={(selected) => {
               // extract species name and curie from the selected options
-              const extractedData = selected.map(specie => {
+              const extractedStrings = selected.map(specie => {
                 const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-                return match ? {name: match[1], curie: match[2]} : null;
-              }).filter(item => item); // Filter out any null values
+                return match ? `${match[1]} ${match[2]}` : null;
+              }).filter(item => item); // filter out any null values
+
+              setSelectedSpecies(extractedStrings); // set the selected species as strings
 
               // update entityResultList for display in the verification area
-              const entityResults = extractedData.map(data => ({ entityTypeSymbol: data.name, curie: data.curie }));
+	      const entityResults = extractedStrings.map(specie => {
+                const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                if (match) {
+                  return {
+                    entityTypeSymbol: match[1], 
+                    curie: match[2]
+                  };
+                }
+                return null;
+              }).filter(item => item);  // filter out any null values
               dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: entityResults } }));
             }}
 	    options={typeaheadOptions}
