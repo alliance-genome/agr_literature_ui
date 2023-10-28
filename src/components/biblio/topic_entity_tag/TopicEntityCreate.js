@@ -79,6 +79,9 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
+      // automatically set entity type to species
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000123' } }));
+	
       // dispatch novel_topic_data here	
     } else {
       setCurrentView('list');
