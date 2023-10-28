@@ -17,6 +17,7 @@ import {
   getModToTaxon
 } from "./TaxonUtils";
 import {PulldownMenu} from "../PulldownMenu";
+import {FetchTypeaheadOptions} from "../FetchTypeahead";
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
 import RowDivider from "../RowDivider";
@@ -207,33 +208,17 @@ const TopicEntityCreate = () => {
       <Col sm="2">
         <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
                         ref={topicTypeaheadRef} id="topicTypeahead"
-                        onSearch={(query) => {
-                          setTopicSelectLoading(true);
-                          axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
-                              {
-                                "searchFilters": {
-                                  "nameFilter": {
-                                    "name": {
-                                      "queryString": query,
-                                      "tokenOperator": "AND"
-                                    }
-                                  }
-                                },
-                                "sortOrders": [],
-                                "aggregations": [],
-                                "nonNullFieldsTable": []
-                              },
-                              { headers: {
-                                  'content-type': 'application/json',
-                                  'authorization': 'Bearer ' + accessToken
-                                }
-                              })
-                              .then(res => {
-                                setTopicSelectLoading(false);
-                                dispatch(setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie]))));
-                                setTypeaheadOptions(res.data.results.filter(item => {return topicDescendants.has(item.curie)}).map(item => item.name));
-                              });
-                        }}
+			onSearch={async (query) => {
+			    setTopicSelectLoading(true);
+			    const results = await FetchTypeaheadOptions(
+				process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
+				query,
+				accessToken
+			    );
+			    setTopicSelectLoading(false);
+			    dispatch(setTypeaheadName2CurieMap(Object.fromEntries(results.map(item => [item.name, item.curie]))));
+			    setTypeaheadOptions(results.filter(item => { return topicDescendants.has(item.curie) }).map(item => item.name));
+			}}
                         onChange={(selected) => {
                           dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
                         }}
@@ -264,55 +249,39 @@ const TopicEntityCreate = () => {
             isLoading={speciesSelectLoading}
             placeholder="enter species name"
             ref={speciesTypeaheadRef}
-            onSearch={(query) => {
-              setSpeciesSelectLoading(true);
-              axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
-                {
-                  "searchFilters": {
-                    "nameFilter": {
-                      "name": {
-                        "queryString": query,
-                        "tokenOperator": "AND"
-                      }
-                    }
-                  },
-                  "sortOrders": [],
-                  "aggregations": [],
-                  "nonNullFieldsTable": []
-                },
-                { headers: {
-                  'content-type': 'application/json',
-                  'authorization': 'Bearer ' + accessToken
-                }
-              })
-              .then(res => {
-                setSpeciesSelectLoading(false);
-                if (res.data.results) {
-                  setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
-                }
-              });
+	    onSearch={async (query) => {
+		  setSpeciesSelectLoading(true);
+		  const results = await FetchTypeaheadOptions(
+		      process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
+		      query,
+		      accessToken
+		  );
+		  setSpeciesSelectLoading(false);
+		  if (results) {
+		      setTypeaheadOptions(results.map(item => item.name + ' ' + item.curie));
+		  }
             }}
 	    onChange={(selected) => {
-              // extract species name and curie from the selected options
-              const extractedStrings = selected.map(specie => {
-                const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-                return match ? `${match[1]} ${match[2]}` : null;
-              }).filter(item => item); // filter out any null values
+		  // extract species name and curie from the selected options
+		  const extractedStrings = selected.map(specie => {
+                      const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                      return match ? `${match[1]} ${match[2]}` : null;
+		  }).filter(item => item); // filter out any null values
 
-              setSelectedSpecies(extractedStrings); // set the selected species as strings
+		  setSelectedSpecies(extractedStrings); // set the selected species as strings
 
-              // update entityResultList for display in the verification area
-	      const entityResults = extractedStrings.map(specie => {
-                const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-                if (match) {
-                  return {
-                    entityTypeSymbol: match[1], 
-                    curie: match[2]
-                  };
-                }
-                return null;
-              }).filter(item => item);  // filter out any null values
-              dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: entityResults } }));
+		  // update entityResultList for display in the verification area
+		  const entityResults = extractedStrings.map(specie => {
+                      const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                      if (match) {
+			  return {
+			      entityTypeSymbol: match[1], 
+			      curie: match[2]
+			  };
+                      }
+                      return null;
+		  }).filter(item => item);  // filter out any null values
+		  dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: entityResults } }));
             }}
 	    options={typeaheadOptions}
             selected={selectedSpecies}
