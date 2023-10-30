@@ -151,7 +151,7 @@ const CreateActionToggler = () => {
 //   if (createAction === 'alliance') { allianceChecked = 'checked'; createActionTogglerSelected = 'alliance'; }
 //     else { pubmedChecked = 'checked'; }
   let createActionTogglerSelected = 'alliance';
-  if (createAction === 'pubmed') { 
+  if (createAction === 'pubmed') {
       radioFormPubmedClassname += ' underlined';
       pubmedChecked = 'checked';
       createActionTogglerSelected = 'pubmed'; }
