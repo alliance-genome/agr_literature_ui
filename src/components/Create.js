@@ -124,15 +124,7 @@ const ModCurieInput = () => {
   return (
       <Form.Group as={Row} key="modXref" >
         <Form.Label column sm="2" className={`${generalClassName}`} >MOD ID</Form.Label>
-        <Col sm="2" className={`${generalClassName}`}>
-          <Form.Control as="select" id="modPrefix" type="select" value={modPrefix} className={`form-control`} onChange={(e) => dispatch(changeCreateField(e))} >
-            {'mods' in enumDict && enumDict['mods'].map((optionValue, index) => {
-              (optionValue === 'XB') && (optionValue = 'Xenbase');	// XB is mod, Xenbase is its curie prefix
-              if (optionValue === '') return;
-              else { return (<option key={`modPrefix ${optionValue}`}>{optionValue}</option>); }
-            })}
-          </Form.Control>
-        </Col>
+        <Col sm="2" className={`${generalClassName}`}>{modPrefix}</Col>
         <Col sm="6" className={`${generalClassName}`}>
           { (modPrefix === 'WB') ? <div>This will generate a WB:WBPaper ID</div> :
             <Form.Control as="input" name="modIdent" id="modIdent" type="input" value={modIdent} className={`form-control`} placeholder="12345" onChange={(e) => dispatch(changeCreateField(e))} /> }
