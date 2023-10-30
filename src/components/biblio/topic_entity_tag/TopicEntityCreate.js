@@ -50,7 +50,7 @@ const TopicEntityCreate = () => {
 
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const noDataCheckbox = useSelector(state => state.biblio.entityAdd.noDataCheckbox);
-  const novelCheckbox = useSelector(state => state.biblio.entityAdd.novelCheckbox);  
+  const novelCheckbox = useSelector(state => state.biblio.entityAdd.novelCheckbox);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
