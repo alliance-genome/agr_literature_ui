@@ -51,7 +51,7 @@ const CreatePubmed = () => {
   const generalClassName = 'Col-general';
 
   function createPubmedReference(pmid) {
-    const modCurie = modPrefix + ':' + modIdent;
+    const modCurie = (modPrefix === 'WB') ? 'NO_MOD_XREF' : modPrefix + ':' + modIdent;	// this isn't right, need to change API
     const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
     pmid = pmid.replace( /[^\d.]/g, '' );
     const subPath = 'reference/add/' + pmid + '/' + modCurie + '/' + mcaMod + '/';
@@ -80,7 +80,7 @@ const CreatePubmed = () => {
     { pmidTitle && (
       <>
         <ModCurieInput />
-        <Button id={`button create pubmed`} variant="outline-secondary" disabled={ (modIdent === '') ? "disabled" : "" } onClick={() => createPubmedReference(pmid)} >
+        <Button id={`button create pubmed`} variant="outline-secondary" disabled={ ( (modPrefix !== 'WB') && (modIdent === '') ) ? "disabled" : "" } onClick={() => createPubmedReference(pmid)} >
           {createPmidLoading ? <Spinner animation="border" size="sm"/> : <span>Create a PubMed reference</span> }
         </Button>
       </>
@@ -103,13 +103,14 @@ const CreateAlliance = () => {
                        'category': 'other',
                        'mod_corpus_associations': [ { 'mod_abbreviation': mcaMod, 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ],
                        'cross_references': [ { 'curie': modCurie, 'pages': [ 'reference' ], 'is_obsolete': false } ] }
+    if (modPrefix === 'WB') { delete updateJson['cross_references']; }	// do not create an xref for WB, mca will trigger modID creation in xref
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
     dispatch(updateButtonCreate(arrayData, 'alliance', modCurie))
   }
   return (
     <Container>
       <ModCurieInput />
-      <Button id={`button create alliance`} variant="outline-secondary" disabled={ (modIdent === '') ? "disabled" : "" } onClick={() => createAllianceReference(modPrefix, modIdent)} >
+      <Button id={`button create alliance`} variant="outline-secondary" disabled={ ( (modPrefix !== 'WB') && (modIdent === '') ) ? "disabled" : "" } onClick={() => createAllianceReference(modPrefix, modIdent)} >
         {createAllianceLoading ? <Spinner animation="border" size="sm"/> : <span>Create an Alliance reference</span> }
       </Button>
     </Container>);
@@ -133,7 +134,8 @@ const ModCurieInput = () => {
           </Form.Control>
         </Col>
         <Col sm="6" className={`${generalClassName}`}>
-          <Form.Control as="input" name="modIdent" id="modIdent" type="input" value={modIdent} className={`form-control`} placeholder="12345" onChange={(e) => dispatch(changeCreateField(e))} />
+          { (modPrefix === 'WB') ? <div>This will generate a WB:WBPaper ID</div> :
+            <Form.Control as="input" name="modIdent" id="modIdent" type="input" value={modIdent} className={`form-control`} placeholder="12345" onChange={(e) => dispatch(changeCreateField(e))} /> }
         </Col>
       </Form.Group>);
 } // const ModCurieInput
