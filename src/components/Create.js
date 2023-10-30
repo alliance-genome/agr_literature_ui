@@ -50,12 +50,18 @@ const CreatePubmed = () => {
   const accessLevel = useGetAccessLevel();
   const generalClassName = 'Col-general';
 
+
   function createPubmedReference(pmid) {
-    const modCurie = (modPrefix === 'WB') ? 'NO_MOD_XREF' : modPrefix + ':' + modIdent;	// this isn't right, need to change API
+    const modCurie = modPrefix + ':' + modIdent;
     const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
     pmid = pmid.replace( /[^\d.]/g, '' );
-    const subPath = 'reference/add/' + pmid + '/' + modCurie + '/' + mcaMod + '/';
-    let arrayData = [ accessToken, subPath, null, 'POST', 0, null, null];
+    let updateJson = { 'pubmed_id': pmid,
+                       'mod_curie': modCurie,
+                       'mod_mca': mcaMod }
+    if (modPrefix === 'WB') { delete updateJson['mod_curie']; }	// do not create an xref for WB, mca will trigger modID creation in xref
+    // const subPath = 'reference/add/' + pmid + '/' + modCurie + '/' + mcaMod + '/';
+    const subPath = 'reference/add/';
+    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
     dispatch(updateButtonCreate(arrayData, 'pmid', modCurie));
   }
   return (
