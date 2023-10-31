@@ -206,6 +206,7 @@ const TopicEntityTable = () => {
 
   let headers = [
     'topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated',
+    'novel_topic_data',
     'confidence_level', 'created_by', 'note', 'entity_source', 'date_created',
     'updated_by', 'date_updated', 'validation_value_author',
     'validation_value_curator', 'validation_value_curation_tools',
@@ -217,7 +218,7 @@ const TopicEntityTable = () => {
   ];
   const headersWithSortability = new Set([
     'topic', 'entity_type', 'species', 'entity', 
-    'entity_published_as', 'negated', 'confidence_level', 
+    'entity_published_as', 'negated', 'novel_topic_data', 'confidence_level',
     'created_by', 'note', 'entity_source', 'date_created', 
     'updated_by', 'date_updated', 'display_tag', 
     'mod_id', 'source_method', 'description', 'evidence',
@@ -225,7 +226,8 @@ const TopicEntityTable = () => {
   ]);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
-  const headerToLabelMap = { 'negated': 'no data' };
+  const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
+
 
   // TODO: use the following code for the 'simple' table
   // for (const tetDict of topicEntityTags.values()) {
