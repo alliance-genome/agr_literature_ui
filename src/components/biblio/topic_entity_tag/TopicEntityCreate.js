@@ -248,6 +248,7 @@ const TopicEntityCreate = () => {
         />
       </Col>
       <Col sm="1">
+        <div style={{textAlign: "left"}}>
         <Form.Check inline type="checkbox" id="noDataCheckbox" checked={noDataCheckbox}
                     onChange={(evt) => {
                        if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: true }})); }
@@ -259,6 +260,7 @@ const TopicEntityCreate = () => {
                        if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: true }})); }
                        else { dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: false }})); } }}/>
         Novel Data
+        </div>
       </Col>
       <Col sm="1">
          <PulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} optionToName={curieToNameEntityType} />

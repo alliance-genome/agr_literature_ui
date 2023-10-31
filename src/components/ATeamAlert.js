@@ -29,7 +29,7 @@ export const AlertAteamApiDown = () => {
 }
 
 const testAteamAPI = (accessToken, setStatus) => {
-    const ateamApiUrl = ateamApiBaseUrl + 'api/atpterm/ATP:0000002/descendants'
+    const ateamApiUrl = ateamApiBaseUrl + 'health';
     axios.get(ateamApiUrl, {
         headers: {
             'content-type': 'application/json',
@@ -37,7 +37,14 @@ const testAteamAPI = (accessToken, setStatus) => {
         }
     })
         .then(res => {
-            setStatus(true);
+            const esindex = (element) => element.name === "Elasticsearch Indexing health check";
+            const elasticsearch = res.data.checks.find(esindex);
+            if (elasticsearch.status == "UP") {
+                setStatus(true);
+            }
+            else{
+                setStatus(false);
+            }
         })
         .catch(err => {
             setStatus(false);
