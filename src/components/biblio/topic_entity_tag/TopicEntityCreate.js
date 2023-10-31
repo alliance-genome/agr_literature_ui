@@ -16,6 +16,7 @@ import {
   getModToTaxon
 } from "./TaxonUtils";
 import {PulldownMenu} from "../PulldownMenu";
+import {FetchTypeaheadOptions} from "../FetchTypeahead";
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
 import RowDivider from "../RowDivider";
@@ -51,9 +52,18 @@ const TopicEntityCreate = () => {
   const novelCheckbox = useSelector(state => state.biblio.entityAdd.novelCheckbox);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
-
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
+  // state to track the current view: 'list' or 'autocomplete'
+  const [currentView, setCurrentView] = useState('list');  
+  const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
+  const speciesTypeaheadRef = useRef(null);
+  const [selectedSpecies, setSelectedSpecies] = useState([]);
+  const [userSelectedView, setUserSelectedView] = useState(null);
+  const toggleView = () => {
+    setUserSelectedView((prevView) => (prevView === 'list' ? 'autocomplete' : 'list'));
+  };
+   
   const curieToNameTaxon = getCurieToNameTaxon();
   const modToTaxon = getModToTaxon();
     
@@ -63,7 +73,35 @@ const TopicEntityCreate = () => {
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000123': 'species' };
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123'];
-
+  const speciesATP = 'ATP:0000123';
+  
+  // determine which view to render
+  const renderView = () => {
+    // if the topic is "species" or the user has selected a specific view, use that view
+    if (topicSelect === speciesATP || userSelectedView) {
+      return userSelectedView === 'list' ? 'list' : 'autocomplete';
+    }
+    // default to list view for other topics
+    return 'list';
+  };
+    
+  // effect to reset view and other fields when topic changes
+  useEffect(() => {
+    if (topicSelect === speciesATP) { 
+      setCurrentView('autocomplete');
+      setSelectedSpecies([]); // reset species list when topic changes
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
+	
+      // dispatch novel_topic_data here	
+    } else {
+      setCurrentView('list');
+    }
+  }, [topicSelect]);
+      
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
@@ -170,6 +208,13 @@ const TopicEntityCreate = () => {
 	</Col>
       </Row>
     )}
+    <Row className="form-group row">
+      <Col sm="12">
+        <Button variant="outline-secondary" size="sm" onClick={toggleView}>
+          {userSelectedView === 'list' || (!userSelectedView && topicSelect !== speciesATP) ? 'Switch entity_list to Autocomplete' : 'Switch entity_list to Textarea'}
+        </Button>
+      </Col>
+    </Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="2">topic</Col>
       <Col className="div-grey-border" sm="1">checkbox</Col>
@@ -184,33 +229,17 @@ const TopicEntityCreate = () => {
       <Col sm="2">
         <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
                         ref={topicTypeaheadRef} id="topicTypeahead"
-                        onSearch={(query) => {
-                          setTopicSelectLoading(true);
-                          axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
-                              {
-                                "searchFilters": {
-                                  "nameFilter": {
-                                    "name": {
-                                      "queryString": query,
-                                      "tokenOperator": "AND"
-                                    }
-                                  }
-                                },
-                                "sortOrders": [],
-                                "aggregations": [],
-                                "nonNullFieldsTable": []
-                              },
-                              { headers: {
-                                  'content-type': 'application/json',
-                                  'authorization': 'Bearer ' + accessToken
-                                }
-                              })
-                              .then(res => {
-                                setTopicSelectLoading(false);
-                                dispatch(setTypeaheadName2CurieMap(Object.fromEntries(res.data.results.map(item => [item.name, item.curie]))));
-                                setTypeaheadOptions(res.data.results.filter(item => {return topicDescendants.has(item.curie)}).map(item => item.name));
-                              });
-                        }}
+			onSearch={async (query) => {
+			    setTopicSelectLoading(true);
+			    const results = await FetchTypeaheadOptions(
+				process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
+				query,
+				accessToken
+			    );
+			    setTopicSelectLoading(false);
+			    dispatch(setTypeaheadName2CurieMap(Object.fromEntries(results.map(item => [item.name, item.curie]))));
+			    setTypeaheadOptions(results.filter(item => { return topicDescendants.has(item.curie) }).map(item => item.name));
+			}}
                         onChange={(selected) => {
                           dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
                         }}
@@ -238,11 +267,56 @@ const TopicEntityCreate = () => {
          <PulldownMenu id='taxonSelect' value={taxonSelect} pdList={taxonList} optionToName={curieToNameTaxon} />
       </Col>
       <Col className="form-label col-form-label" sm="2" >
-        <Form.Control as="textarea" id="entitytextarea" type="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => { dispatch(changeFieldEntityAddGeneralField(e)); } } />
+        {renderView() === 'list' ? (
+          <Form.Control as="textarea" id="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
+        ) : (
+          <AsyncTypeahead
+              multiple
+              isLoading={speciesSelectLoading}
+              placeholder="enter species name"
+              ref={speciesTypeaheadRef}
+	      onSearch={async (query) => {
+		  setSpeciesSelectLoading(true);
+		  const results = await FetchTypeaheadOptions(
+		      process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
+		      query,
+		      accessToken
+		  );
+		  setSpeciesSelectLoading(false);
+		  if (results) {
+		      setTypeaheadOptions(results.map(item => item.name + ' ' + item.curie));
+		  }
+           }}
+	   onChange={(selected) => {
+		  // extract species name and curie from the selected options
+		  const extractedStrings = selected.map(specie => {
+                      const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                      return match ? `${match[1]} ${match[2]}` : null;
+		  }).filter(item => item); // filter out any null values
+
+		  setSelectedSpecies(extractedStrings); // set the selected species as strings
+
+		  // update entityResultList for display in the verification area
+		  const entityResults = extractedStrings.map(specie => {
+                      const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                      if (match) {
+		  	  return {
+		  	      entityTypeSymbol: match[1], 
+		  	      curie: match[2]
+		  	  };
+                      }
+                      return null;
+		  }).filter(item => item);  // filter out any null values
+		  dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: entityResults } }));
+            }}
+	    options={typeaheadOptions}
+            selected={selectedSpecies}
+          />            
+        )}
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         <Container>
-          { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
+          { renderView() === 'list' && entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
             const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
             return (
               <Row key={`entityEntityContainerrows ${index}`}>
