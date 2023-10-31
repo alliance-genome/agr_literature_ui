@@ -1,6 +1,5 @@
 import {useDispatch, useSelector} from "react-redux";
 import React, {useEffect, useRef, useState} from "react";
-import {union} from "lodash"; // to handle arrays
 import {
     ateamGetTopicDescendants,
     changeFieldEntityAddGeneralField,
