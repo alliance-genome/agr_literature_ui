@@ -29,7 +29,7 @@ const TopicEntityTable = () => {
   const pageSize = 10; // fixed limit value for now
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
-  const [displayTagData, setDisplayTagData] = useState([]);
+  // const [displayTagData, setDisplayTagData] = useState([]);
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [modID, setModID] = useState(false);
@@ -97,7 +97,7 @@ const TopicEntityTable = () => {
   const speciesInResultSet = new Set(allSpecies);
 
   useEffect(() => {
-    fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
+    fetchDisplayTagData(accessToken);
   }, [accessToken])
 
   useEffect(() => {
@@ -130,7 +130,7 @@ const TopicEntityTable = () => {
       }
     }
     fetchAllSpecies().then();
-  }, [referenceCurie, topicEntityTags])
+  }, [referenceCurie, topicEntityTags, allSpecies])
 
   useEffect(() => {
     const fetchModID = async () => {

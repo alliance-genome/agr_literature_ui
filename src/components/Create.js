@@ -47,7 +47,7 @@ const CreatePubmed = () => {
   const createPmidLoading = useSelector(state => state.create.createPmidLoading);
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
-  const accessLevel = useGetAccessLevel();
+  // const accessLevel = useGetAccessLevel();
   const generalClassName = 'Col-general';
 
 
