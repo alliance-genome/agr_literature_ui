@@ -26,7 +26,7 @@ import Form from "react-bootstrap/Form"
 import {AsyncTypeahead} from "react-bootstrap-typeahead";
 import Button from "react-bootstrap/Button"
 import Spinner from "react-bootstrap/Spinner";
-import axios from "axios";
+// import axios from "axios";
 
 const TopicEntityCreate = () => {
   const dispatch = useDispatch();
@@ -45,7 +45,7 @@ const TopicEntityCreate = () => {
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const typeaheadName2CurieMap = useSelector(state => state.biblio.typeaheadName2CurieMap);
-  const [warningMessage, setWarningMessage] = useState('');
+  // const [warningMessage, setWarningMessage] = useState('');
 
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const noDataCheckbox = useSelector(state => state.biblio.entityAdd.noDataCheckbox);
@@ -78,6 +78,7 @@ const TopicEntityCreate = () => {
   // determine which view to render
   const renderView = () => {
     // if the topic is "species" or the user has selected a specific view, use that view
+    console.log("views: currentView=" + currentView + " userSelectedView=" + userSelectedView)
     if (topicSelect === speciesATP || userSelectedView) {
       return userSelectedView === 'list' ? 'list' : 'autocomplete';
     }
@@ -100,7 +101,7 @@ const TopicEntityCreate = () => {
     } else {
       setCurrentView('list');
     }
-  }, [topicSelect]);
+  }, [topicSelect, dispatch]);
       
   useEffect(() => {
     const fetchSourceId = async () => {
@@ -198,16 +199,8 @@ const TopicEntityCreate = () => {
                   genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
     <Row className="form-group row" >
-      <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col></Row>
-    {warningMessage && (
-      <Row className="form-group row">
-        <Col sm="12">
-          <div className="alert alert-warning" role="alert">
-            {warningMessage}
-          </div>
-	</Col>
-      </Row>
-    )}
+      <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col>
+    </Row>
     <Row className="form-group row">
       <Col sm="12">
         <Button variant="outline-secondary" size="sm" onClick={toggleView}>
