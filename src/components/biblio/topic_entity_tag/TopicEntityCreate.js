@@ -55,8 +55,8 @@ const TopicEntityCreate = () => {
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   // state to track the current view: 'list' or 'autocomplete'
-  const [currentView, setCurrentView] = useState('list');  
-  const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
+  //const [currentView, setCurrentView] = useState('list');
+  const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
   const speciesTypeaheadRef = useRef(null);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [userSelectedView, setUserSelectedView] = useState(null);
@@ -78,7 +78,7 @@ const TopicEntityCreate = () => {
   // determine which view to render
   const renderView = () => {
     // if the topic is "species" or the user has selected a specific view, use that view
-    console.log("views: currentView=" + currentView + " userSelectedView=" + userSelectedView)
+    // console.log("views: currentView=" + currentView + " userSelectedView=" + userSelectedView)
     if (topicSelect === speciesATP || userSelectedView) {
       return userSelectedView === 'list' ? 'list' : 'autocomplete';
     }
@@ -88,8 +88,7 @@ const TopicEntityCreate = () => {
     
   // effect to reset view and other fields when topic changes
   useEffect(() => {
-    if (topicSelect === speciesATP) { 
-      setCurrentView('autocomplete');
+    if (topicSelect === speciesATP) {
       setSelectedSpecies([]); // reset species list when topic changes
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
@@ -98,8 +97,6 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
 	
       // dispatch novel_topic_data here	
-    } else {
-      setCurrentView('list');
     }
   }, [topicSelect, dispatch]);
       
@@ -203,7 +200,7 @@ const TopicEntityCreate = () => {
     </Row>
     <Row className="form-group row">
       <Col sm="12">
-        <Button variant="outline-secondary" size="sm" onClick={toggleView}>
+        <Button variant="outline-secondary" size="sm" id="switchautocomp" onClick={toggleView}>
           {userSelectedView === 'list' || (!userSelectedView && topicSelect !== speciesATP) ? 'Switch entity_list to Autocomplete' : 'Switch entity_list to Textarea'}
         </Button>
       </Col>
@@ -267,6 +264,7 @@ const TopicEntityCreate = () => {
         ) : (
           <AsyncTypeahead
               multiple
+              id="species_name"
               isLoading={speciesSelectLoading}
               placeholder="enter species name"
               ref={speciesTypeaheadRef}
