@@ -244,6 +244,9 @@ const TopicEntityTable = () => {
   return (
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
+	{typeof totalTagsCount !== 'undefined' && (
+            <h4 style={{textAlign: 'left', paddingLeft: '15px'}}>Total {totalTagsCount} rows</h4>
+        )}  
         <Table
           bordered
           size="sm"
