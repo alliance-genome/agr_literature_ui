@@ -213,7 +213,7 @@ const TopicEntityTable = () => {
     'display_tag'
   ];   
   let source_headers = [
-    'mod_id', 'source_method', 'evidence', 'validation_type', 'source_type',
+    'mod', 'source_method', 'evidence', 'validation_type', 'source_type',
     'description', 'created_by', 'date_updated', 'date_created'
   ];
   const headersWithSortability = new Set([
@@ -221,7 +221,7 @@ const TopicEntityTable = () => {
     'entity_published_as', 'negated', 'novel_topic_data', 'confidence_level',
     'created_by', 'note', 'entity_source', 'date_created', 
     'updated_by', 'date_updated', 'display_tag', 
-    'mod_id', 'source_method', 'description', 'evidence',
+    'mod', 'source_method', 'description', 'evidence',
     'validation_type', 'source_type'
   ]);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
