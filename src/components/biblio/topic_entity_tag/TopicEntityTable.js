@@ -32,7 +32,6 @@ const TopicEntityTable = () => {
   const [displayTagData, setDisplayTagData] = useState([]);
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
-  const [modID, setModID] = useState(false);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
   const curieToNameTaxon = getCurieToNameTaxon();
@@ -63,7 +62,7 @@ const TopicEntityTable = () => {
   };
 
   const handleDeleteClick = async (tetDictToDelete) => {
-    if (tetDictToDelete.topic_entity_tag_source.mod_id !== modID) {
+    if (tetDictToDelete.topic_entity_tag_source.mod != accessLevel) {
       console.error("Permission denied. Cannot delete this row.");
       return;
     }
@@ -131,16 +130,6 @@ const TopicEntityTable = () => {
     }
     fetchAllSpecies().then();
   }, [referenceCurie, topicEntityTags])
-
-  useEffect(() => {
-    const fetchModID = async () => {
-      let url = process.env.REACT_APP_RESTAPI + '/mod/' + accessLevel;
-      const response = await axios.get(url);
-      const modData = response.data;
-      setModID(modData['mod_id']);
-    }
-    fetchModID().then();
-  }, [accessLevel])
 
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
@@ -213,7 +202,7 @@ const TopicEntityTable = () => {
     'display_tag'
   ];   
   let source_headers = [
-    'mod_id', 'source_method', 'evidence', 'validation_type', 'source_type',
+    'mod', 'source_method', 'evidence', 'validation_type', 'source_type',
     'description', 'created_by', 'date_updated', 'date_created'
   ];
   const headersWithSortability = new Set([
@@ -221,7 +210,7 @@ const TopicEntityTable = () => {
     'entity_published_as', 'negated', 'novel_topic_data', 'confidence_level',
     'created_by', 'note', 'entity_source', 'date_created', 
     'updated_by', 'date_updated', 'display_tag', 
-    'mod_id', 'source_method', 'description', 'evidence',
+    'mod', 'source_method', 'description', 'evidence',
     'validation_type', 'source_type'
   ]);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
@@ -347,7 +336,7 @@ const TopicEntityTable = () => {
               return (
                 <tr key={`tetTableRow ${index_1}`}>     
 		  <td>
-                    {tetDict.topic_entity_tag_source.mod_id === modID ? (
+                    {tetDict.topic_entity_tag_source.mod === accessLevel ? (
                       <Button
                         variant="outline-primary"
                         size="sm"
