@@ -33,6 +33,13 @@ export default function(state = initialState, action) {
         modsField: action.payload.value
       }
 
+    case 'CHANGE_FIELD_SORT_TYPE':
+      console.log(action.payload);
+      return {
+        ...state,
+        sortType: action.payload
+      }
+
     case 'CLOSE_SORT_UPDATE_ALERT':
       console.log('CLOSE_SORT_UPDATE_ALERT reducer');
       return {

@@ -23,6 +23,10 @@ export const sortButtonModsQuery = (mod, sortType) => dispatch => {
     type: 'SORT_SET_IS_LOADING',
     payload: true
   });
+  dispatch({
+    type: 'CHANGE_FIELD_SORT_TYPE',
+    payload: sortType
+  });
   console.log('in sortButtonModsQuery action');
   // console.log("payload " + payload);
   // https://dev4004-literature-rest.alliancegenome.org/search/need_review?mod_abbreviation=RGD&count=2
