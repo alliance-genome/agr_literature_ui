@@ -26,7 +26,7 @@ import Form from "react-bootstrap/Form"
 import {AsyncTypeahead} from "react-bootstrap-typeahead";
 import Button from "react-bootstrap/Button"
 import Spinner from "react-bootstrap/Spinner";
-import axios from "axios";
+// import axios from "axios";
 
 const TopicEntityCreate = () => {
   const dispatch = useDispatch();
@@ -45,7 +45,6 @@ const TopicEntityCreate = () => {
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const typeaheadName2CurieMap = useSelector(state => state.biblio.typeaheadName2CurieMap);
-  const [warningMessage, setWarningMessage] = useState('');
 
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const noDataCheckbox = useSelector(state => state.biblio.entityAdd.noDataCheckbox);
@@ -55,14 +54,10 @@ const TopicEntityCreate = () => {
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   // state to track the current view: 'list' or 'autocomplete'
-  const [currentView, setCurrentView] = useState('list');  
-  const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
+  const [currentView, setCurrentView] = useState('list');
+  const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
   const speciesTypeaheadRef = useRef(null);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
-  //const [userSelectedView, setUserSelectedView] = useState(null);
-  //const toggleView = () => {
-  //  setUserSelectedView((prevView) => (prevView === 'list' ? 'autocomplete' : 'list'));
-  // };
    
   const curieToNameTaxon = getCurieToNameTaxon();
   const modToTaxon = getModToTaxon();
@@ -74,17 +69,7 @@ const TopicEntityCreate = () => {
   const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000123': 'species' };
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123'];
   const speciesATP = 'ATP:0000123';
-  
-  // determine which view to render
-  // const renderView = () => {
-  //  // if the topic is "species" or the user has selected a specific view, use that view
-  //  if (topicSelect === speciesATP || userSelectedView) {
-  //    return userSelectedView === 'list' ? 'list' : 'autocomplete';
-  //  }
-  //  // default to list view for other topics
-  //  return 'list';
-  // };
-    
+      
   const renderView = () => {
     return topicSelect === speciesATP ? 'autocomplete' : 'list';
   };
@@ -102,7 +87,7 @@ const TopicEntityCreate = () => {
     } else {
       setCurrentView('list');
     }
-  }, [topicSelect]);
+  }, [topicSelect], dispatch]);
       
   useEffect(() => {
     const fetchSourceId = async () => {
