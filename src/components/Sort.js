@@ -300,10 +300,11 @@ const Sort = () => {
           <RowDivider /> */}
           {referencesToSortLive.map((reference, index) => {
             // console.log(reference);	// check previous workflow here
+            const backgroundColor = (reference['prepublication_pipeline'] === true) ? '#f8d7da' : '';
             return (
             <div key={`reference div ${index}`} >
             <Row key={`reference ${index}`} >
-              <Col lg={3} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}} >
+              <Col lg={3} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: backgroundColor}} >
                  <div style={{alignSelf: 'flex-start'}} ><b>Title: </b>
                    <span dangerouslySetInnerHTML={{__html: reference['title']}} /></div>
                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
@@ -317,9 +318,9 @@ const Sort = () => {
                    (reference['resource_title']) ? <span dangerouslySetInnerHTML={{__html: reference['resource_title']}} /> : 'N/A' }</div>
                 <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
               </Col>
-              <Col lg={5} className="Col-general Col-display" ><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
+              <Col lg={5} className="Col-general Col-display" style={{backgroundColor: backgroundColor}}><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
 
-              <Col lg={1} className="Col-general Col-display" style={{display: 'block', justifyContent: 'center'}}>
+              <Col lg={1} className="Col-general Col-display" style={{display: 'block', justifyContent: 'center', backgroundColor: backgroundColor}}>
                   <br/><br/>
                   <Form.Check
                       inline
@@ -330,7 +331,7 @@ const Sort = () => {
                       onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                   />
               </Col>
-              <Col lg={2} className="Col-general Col-display" style={{display: 'block'}}>
+              <Col lg={2} className="Col-general Col-display" style={{display: 'block', backgroundColor: backgroundColor}}>
                   <br/><br/>
                   <Form.Check
                       inline
@@ -424,7 +425,7 @@ const Sort = () => {
                   />
                   { (accessLevel === 'WB') && <div><br/><NewTaxonModal/></div> }
               </Col>
-              <Col lg={1} className="Col-general Col-display" style={{display: 'block'}}>
+              <Col lg={1} className="Col-general Col-display" style={{display: 'block', backgroundColor: backgroundColor}}>
                   <br/><br/>
                   <Form.Check
                       inline
