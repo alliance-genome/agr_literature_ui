@@ -48,6 +48,7 @@ const Sort = () => {
   const referencesToSortLive = useSelector(state => state.sort.referencesToSortLive);
   const referencesToSortDb = useSelector(state => state.sort.referencesToSortDb);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const sortType = useSelector(state => state.sort.sortType);
   const sortUpdating = useSelector(state => state.sort.sortUpdating);
   const getPapersToSortFlag = useSelector(state => state.sort.getPapersToSortFlag);
   const isLoading = useSelector(state => state.sort.isLoading);
@@ -97,8 +98,8 @@ const Sort = () => {
                       'ZFIN': "NCBITaxon:7955"};
 
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
-    console.log('sort DISPATCH sortButtonModsQuery ' + modsField);
-    dispatch(sortButtonModsQuery(modsField))
+    console.log('sort DISPATCH sortButtonModsQuery ' + modsField + ' sortType ' + sortType);
+    dispatch(sortButtonModsQuery(modsField, sortType))
   }
 
   //setup referencefile element
@@ -172,22 +173,18 @@ const Sort = () => {
   function updateSorting() {
     const forApiArray = []
     for (const[index, reference] of referencesToSortLive.entries()) {
-      if (referencesToSortDb[index]['corpus'] !== reference['corpus']) {
+      if (reference['mod_corpus_association_corpus'] !== null) {
         // console.log(reference['mod_corpus_association_id']);
         // console.log(reference['corpus']);
         // console.log(referencesToSortDb[index]['corpus']);
-        let corpusBoolean = null;
-        if      (reference['corpus'] === 'needs_review')   { corpusBoolean = null; }
-        else if (reference['corpus'] === 'inside_corpus')  { corpusBoolean = true; }
-        else if (reference['corpus'] === 'outside_corpus') { corpusBoolean = false; }
-        let updateJson = { 'corpus': corpusBoolean }
+        let updateJson = { 'corpus': reference['mod_corpus_association_corpus'] }
         let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
         const field = null;
         const subField = null;
         let method = 'PATCH';
         let array = [ subPath, updateJson, method, index, field, subField ]
         forApiArray.push( array );
-        if (reference['corpus'] === 'inside_corpus') {
+        if (reference['mod_corpus_association_corpus'] === true) {
           let workflowTagId = null;
           if      (reference['workflow'] === 'experimental')     { workflowTagId = 'ATP:0000103'; }
           else if (reference['workflow'] === 'not_experimental') { workflowTagId = 'ATP:0000104'; }
@@ -259,12 +256,13 @@ const Sort = () => {
           <Col lg={5} ></Col>
         </Row>
         <Row>
-          <Col lg={4} ></Col>
-          <Col lg={4} >
+          <Col lg={2} ></Col>
+          <Col lg={8} >
             <br/>
-            <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>
+            <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'needs_review'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>{' '}
+            <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'prepublication'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Prepublication"}</Button>
           </Col>
-          <Col lg={4} ></Col>
+          <Col lg={2} ></Col>
         </Row>
       </Container>
       <AlertAteamApiDown />
@@ -325,7 +323,7 @@ const Sort = () => {
                   <br/><br/>
                   <Form.Check
                       inline
-                      checked={ (reference['corpus'] === 'needs_review') ? 'checked' : '' }
+                      checked={ (reference['mod_corpus_association_corpus'] === null) ? 'checked' : '' }
                       type='radio'
                       label='needs review'
                       id={`needs_review_toggle ${index}`}
@@ -336,7 +334,7 @@ const Sort = () => {
                   <br/><br/>
                   <Form.Check
                       inline
-                      checked={ (reference['corpus'] === 'inside_corpus') ? 'checked' : '' }
+                      checked={ (reference['mod_corpus_association_corpus'] === true) ? 'checked' : '' }
                       type='radio'
                       label='inside corpus'
                       id={`inside_corpus_toggle ${index}`}
@@ -344,7 +342,7 @@ const Sort = () => {
                   /><br/><br/>
                   <Form.Check
                       inline
-                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
                       checked={ (reference['workflow'] === 'experimental') ? 'checked' : '' }
                       type='radio'
                       label='expt'
@@ -353,7 +351,7 @@ const Sort = () => {
                   /><br/>
                   <Form.Check
                       inline
-                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
                       checked={ (reference['workflow'] === 'not_experimental') ? 'checked' : '' }
                       type='radio'
                       label='not expt'
@@ -362,7 +360,7 @@ const Sort = () => {
                   /><br/>
                   <Form.Check
                       inline
-                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
                       checked={ (reference['workflow'] === 'meeting') ? 'checked' : '' }
                       type='radio'
                       label='meeting'
@@ -376,7 +374,7 @@ const Sort = () => {
                   </Form.Control><br/>
                   <AsyncTypeahead
                       multiple
-                      disabled={ (reference['corpus'] !== 'inside_corpus') ? 'disabled' : '' }
+                      disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
                       isLoading={speciesSelectLoading[index]}
                       placeholder="species name"
                       ref={speciesTypeaheadRef}
@@ -430,7 +428,7 @@ const Sort = () => {
                   <br/><br/>
                   <Form.Check
                       inline
-                      checked={ (reference['corpus'] === 'outside_corpus') ? 'checked' : '' }
+                      checked={ (reference['mod_corpus_association_corpus'] === false) ? 'checked' : '' }
                       type='radio'
                       label='outside corpus'
                       id={`outside_corpus_toggle ${index}`}
