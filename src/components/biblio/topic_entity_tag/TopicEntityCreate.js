@@ -26,7 +26,7 @@ import Form from "react-bootstrap/Form"
 import {AsyncTypeahead} from "react-bootstrap-typeahead";
 import Button from "react-bootstrap/Button"
 import Spinner from "react-bootstrap/Spinner";
-import axios from "axios";
+// import axios from "axios";
 
 const TopicEntityCreate = () => {
   const dispatch = useDispatch();
@@ -45,7 +45,7 @@ const TopicEntityCreate = () => {
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const typeaheadName2CurieMap = useSelector(state => state.biblio.typeaheadName2CurieMap);
-  const [warningMessage, setWarningMessage] = useState('');
+  // const [warningMessage, setWarningMessage] = useState('');
 
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
   const noDataCheckbox = useSelector(state => state.biblio.entityAdd.noDataCheckbox);
@@ -55,8 +55,8 @@ const TopicEntityCreate = () => {
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   // state to track the current view: 'list' or 'autocomplete'
-  const [currentView, setCurrentView] = useState('list');  
-  const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
+  //const [currentView, setCurrentView] = useState('list');
+  const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
   const speciesTypeaheadRef = useRef(null);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [userSelectedView, setUserSelectedView] = useState(null);
@@ -78,6 +78,7 @@ const TopicEntityCreate = () => {
   // determine which view to render
   const renderView = () => {
     // if the topic is "species" or the user has selected a specific view, use that view
+    // console.log("views: currentView=" + currentView + " userSelectedView=" + userSelectedView)
     if (topicSelect === speciesATP || userSelectedView) {
       return userSelectedView === 'list' ? 'list' : 'autocomplete';
     }
@@ -87,8 +88,7 @@ const TopicEntityCreate = () => {
     
   // effect to reset view and other fields when topic changes
   useEffect(() => {
-    if (topicSelect === speciesATP) { 
-      setCurrentView('autocomplete');
+    if (topicSelect === speciesATP) {
       setSelectedSpecies([]); // reset species list when topic changes
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
@@ -97,10 +97,8 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
 	
       // dispatch novel_topic_data here	
-    } else {
-      setCurrentView('list');
     }
-  }, [topicSelect]);
+  }, [topicSelect, dispatch]);
       
   useEffect(() => {
     const fetchSourceId = async () => {
@@ -198,19 +196,11 @@ const TopicEntityCreate = () => {
                   genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
     <Row className="form-group row" >
-      <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col></Row>
-    {warningMessage && (
-      <Row className="form-group row">
-        <Col sm="12">
-          <div className="alert alert-warning" role="alert">
-            {warningMessage}
-          </div>
-	</Col>
-      </Row>
-    )}
+      <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col>
+    </Row>
     <Row className="form-group row">
       <Col sm="12">
-        <Button variant="outline-secondary" size="sm" onClick={toggleView}>
+        <Button variant="outline-secondary" size="sm" id="switchautocomp" onClick={toggleView}>
           {userSelectedView === 'list' || (!userSelectedView && topicSelect !== speciesATP) ? 'Switch entity_list to Autocomplete' : 'Switch entity_list to Textarea'}
         </Button>
       </Col>
@@ -274,6 +264,7 @@ const TopicEntityCreate = () => {
         ) : (
           <AsyncTypeahead
               multiple
+              id="species_name"
               isLoading={speciesSelectLoading}
               placeholder="enter species name"
               ref={speciesTypeaheadRef}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   ateamGetTopicDescendants,
@@ -10,7 +10,7 @@ import {
   getCuratorSourceId,
   setBiblioUpdatingEntityAdd,
   setEntityModalText,
-  setTypeaheadName2CurieMap,
+  // setTypeaheadName2CurieMap,
   updateButtonBiblioEntityAdd
 } from "../../../actions/biblioActions";
 import {
@@ -29,7 +29,7 @@ import RowDivider from "../RowDivider";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
-import { AsyncTypeahead } from "react-bootstrap-typeahead";
+// import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
 
@@ -48,12 +48,12 @@ const TopicEntityCreateSGD = () => {
   const entityText = useSelector((state) => state.biblio.entityAdd.entitytextarea);
   const noteText = useSelector((state) => state.biblio.entityAdd.notetextarea);
   const topicSelect = useSelector((state) => state.biblio.entityAdd.topicSelect);
-  const [topicSelectLoading, setTopicSelectLoading] = useState(false);
-  const topicTypeaheadRef = useRef(null);
-  const [typeaheadOptions, setTypeaheadOptions] = useState([]);
-  const typeaheadName2CurieMap = useSelector(
-    (state) => state.biblio.typeaheadName2CurieMap
-  );
+  // const [topicSelectLoading, setTopicSelectLoading] = useState(false);
+  // const topicTypeaheadRef = useRef(null);
+  // const [typeaheadOptions, setTypeaheadOptions] = useState([]);
+  //const typeaheadName2CurieMap = useSelector(
+  //  (state) => state.biblio.typeaheadName2CurieMap
+  // );
   const [warningMessage, setWarningMessage] = useState("");
   const tetdisplayTagSelect = useSelector(
     (state) => state.biblio.entityAdd.tetdisplayTagSelect
@@ -179,11 +179,11 @@ const TopicEntityCreateSGD = () => {
     }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getMapKeyByValue = (mapObj, value) => {
-    const objEntries = Object.entries(mapObj);
-    const keyByValue = objEntries.filter((e) => e[1] === value);
-    return keyByValue.map((e) => e[0])[0];
-  };
+  // const getMapKeyByValue = (mapObj, value) => {
+  //   const objEntries = Object.entries(mapObj);
+  //   const keyByValue = objEntries.filter((e) => e[1] === value);
+  //   return keyByValue.map((e) => e[0])[0];
+  // };
 
   function initializeUpdateJson(refCurie) {
     let updateJson = {};

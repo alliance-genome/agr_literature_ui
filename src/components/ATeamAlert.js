@@ -39,7 +39,7 @@ const testAteamAPI = (accessToken, setStatus) => {
         .then(res => {
             const esindex = (element) => element.name === "Elasticsearch Indexing health check";
             const elasticsearch = res.data.checks.find(esindex);
-            if (elasticsearch.status == "UP") {
+            if (elasticsearch.status === "UP") {
                 setStatus(true);
             }
             else{
