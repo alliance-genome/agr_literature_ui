@@ -87,7 +87,7 @@ const TopicEntityCreate = () => {
     } else {
       setCurrentView('list');
     }
-  }, [topicSelect], dispatch]);
+  }, [topicSelect, dispatch]);
       
   useEffect(() => {
     const fetchSourceId = async () => {
