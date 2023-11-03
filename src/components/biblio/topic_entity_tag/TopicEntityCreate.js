@@ -54,7 +54,7 @@ const TopicEntityCreate = () => {
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   // state to track the current view: 'list' or 'autocomplete'
-  const [currentView, setCurrentView] = useState('list');
+  //const [currentView, setCurrentView] = useState('list');
   const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
   const speciesTypeaheadRef = useRef(null);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
@@ -77,16 +77,17 @@ const TopicEntityCreate = () => {
   // effect to reset view and other fields when topic changes
   useEffect(() => {
     if (topicSelect === speciesATP) { 
-      setCurrentView('autocomplete');
+      //setCurrentView('autocomplete');
       setSelectedSpecies([]); // reset species list when topic changes
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
-    } else {
-      setCurrentView('list');
-    }
+    } // else {
+	
+      // setCurrentView('list');
+    // }
   }, [topicSelect, dispatch]);
       
   useEffect(() => {
