@@ -18,16 +18,22 @@ export const changeFieldSortMods = (e) => {
   };
 };
 
-export const sortButtonModsQuery = (payload) => dispatch => {
+export const sortButtonModsQuery = (mod, sortType) => dispatch => {
   dispatch({
     type: 'SORT_SET_IS_LOADING',
     payload: true
   });
+  dispatch({
+    type: 'CHANGE_FIELD_SORT_TYPE',
+    payload: sortType
+  });
   console.log('in sortButtonModsQuery action');
   // console.log("payload " + payload);
-  // https://dev4004-literature-rest.alliancegenome.org/search/need_review?mod_abbreviation=RGD&count=2
+  // https://dev4004-literature-rest.alliancegenome.org/sort/need_review?mod_abbreviation=RGD&count=2
   const sortGetModsQuery = async () => {
-    const url = restUrl + '/search/need_review?count=20&mod_abbreviation=' + payload;
+    const url = (sortType === 'needs_review') ? 
+                restUrl + '/sort/need_review?count=20&mod_abbreviation=' + mod :
+                restUrl + '/sort/prepublication_pipeline?count=20&mod_abbreviation=' + mod;
     // console.log(url);
     const res = await fetch(url, {
       method: 'GET',
@@ -38,7 +44,7 @@ export const sortButtonModsQuery = (payload) => dispatch => {
     })
     const response = await res.json();
     // console.log(response);
-    let response_payload = payload + ' not found';
+    let response_payload = mod + ' not found';
     let response_found = 'not found';
     if (response !== undefined) {
       // console.log('response not undefined');

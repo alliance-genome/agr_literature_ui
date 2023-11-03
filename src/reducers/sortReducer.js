@@ -4,6 +4,7 @@ const initialState = {
   referencesToSortLive: undefined,
   referencesToSortDb: [],
   getPapersToSortFlag: false,
+  sortType: 'needs_review',
   sortUpdating: 0,
   updateAlert: 0,
   updateFailure: 0,
@@ -30,6 +31,13 @@ export default function(state = initialState, action) {
       return {
         ...state,
         modsField: action.payload.value
+      }
+
+    case 'CHANGE_FIELD_SORT_TYPE':
+      console.log(action.payload);
+      return {
+        ...state,
+        sortType: action.payload
       }
 
     case 'CLOSE_SORT_UPDATE_ALERT':
@@ -103,6 +111,11 @@ export default function(state = initialState, action) {
       let fieldCorpusValue = corpusArray[0].replace(/_toggle$/, '');
       let indexReferenceCorpus = corpusArray[1];
       let sortToggleCorpusReferencesToSortLive = JSON.parse(JSON.stringify(state.referencesToSortLive))
+      let fieldCorpusBoolean = null;
+      if (fieldCorpusValue === 'inside_corpus') { fieldCorpusBoolean = true; }
+        else if (fieldCorpusValue === 'outside_corpus') { fieldCorpusBoolean = false; }
+        else if (fieldCorpusValue === 'needs_review') { fieldCorpusBoolean = null; }
+      sortToggleCorpusReferencesToSortLive[indexReferenceCorpus]['mod_corpus_association_corpus'] = fieldCorpusBoolean;
       sortToggleCorpusReferencesToSortLive[indexReferenceCorpus]['corpus'] = fieldCorpusValue;
       return {
         ...state,
