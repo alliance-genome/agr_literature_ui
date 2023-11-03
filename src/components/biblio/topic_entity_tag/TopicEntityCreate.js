@@ -200,19 +200,21 @@ const TopicEntityCreate = () => {
     </Row>
     <Row className="form-group row" >
       <Col sm="2">
-        <AsyncTypeahead isLoading={topicSelectLoading} placeholder="Start typing to search topics"
+        <AsyncTypeahead isLoading={topicSelectLoading}
+                        useCache={false}
+                        placeholder="Start typing to search topics"
                         ref={topicTypeaheadRef} id="topicTypeahead"
-			onSearch={async (query) => {
-			    setTopicSelectLoading(true);
-			    const results = await FetchTypeaheadOptions(
-				process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
-				query,
-				accessToken
-			    );
-			    setTopicSelectLoading(false);
-			    dispatch(setTypeaheadName2CurieMap(Object.fromEntries(results.map(item => [item.name, item.curie]))));
-			    setTypeaheadOptions(results.filter(item => { return topicDescendants.has(item.curie) }).map(item => item.name));
-			}}
+                        onSearch={async (query) => {
+                          setTopicSelectLoading(true);
+                          const results = await FetchTypeaheadOptions(
+                              process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/atpterm/search?limit=10&page=0',
+                              query,
+                              accessToken
+                          );
+                          setTopicSelectLoading(false);
+                          dispatch(setTypeaheadName2CurieMap(Object.fromEntries(results.map(item => [item.name, item.curie]))));
+                          setTypeaheadOptions(results.filter(item => { return topicDescendants.has(item.curie) }).map(item => item.name));
+                        }}
                         onChange={(selected) => {
                           dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
                         }}
