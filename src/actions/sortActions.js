@@ -29,11 +29,11 @@ export const sortButtonModsQuery = (mod, sortType) => dispatch => {
   });
   console.log('in sortButtonModsQuery action');
   // console.log("payload " + payload);
-  // https://dev4004-literature-rest.alliancegenome.org/search/need_review?mod_abbreviation=RGD&count=2
+  // https://dev4004-literature-rest.alliancegenome.org/sort/need_review?mod_abbreviation=RGD&count=2
   const sortGetModsQuery = async () => {
     const url = (sortType === 'needs_review') ? 
-                restUrl + '/search/need_review?count=20&mod_abbreviation=' + mod :
-                restUrl + '/search/sort_prepublication_pipeline?count=20&mod_abbreviation=' + mod;
+                restUrl + '/sort/need_review?count=20&mod_abbreviation=' + mod :
+                restUrl + '/sort/prepublication_pipeline?count=20&mod_abbreviation=' + mod;
     // console.log(url);
     const res = await fetch(url, {
       method: 'GET',
