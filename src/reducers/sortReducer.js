@@ -57,7 +57,11 @@ export default function(state = initialState, action) {
     case 'SORT_BUTTON_SET_RADIO_ALL':
       console.log('SORT_BUTTON_SET_RADIO_ALL reducer ' + action.payload);
       const referencesToSortSetRadioAll = JSON.parse(JSON.stringify(state.referencesToSortLive))
-      for (let reference of referencesToSortSetRadioAll) { reference['corpus'] = action.payload }
+      let fieldCorpusBooleanSortRadioSetAll = null;
+      if (action.payload === 'inside_corpus') { fieldCorpusBooleanSortRadioSetAll = true; }
+        else if (action.payload === 'outside_corpus') { fieldCorpusBooleanSortRadioSetAll = false; }
+        else if (action.payload === 'needs_review') { fieldCorpusBooleanSortRadioSetAll = null; }
+      for (let reference of referencesToSortSetRadioAll) { reference['mod_corpus_association_corpus'] = fieldCorpusBooleanSortRadioSetAll }
       return {
         ...state,
         referencesToSortLive: referencesToSortSetRadioAll
@@ -72,9 +76,7 @@ export default function(state = initialState, action) {
     case 'SORT_BUTTON_MODS_QUERY':
       console.log('reducer SORT_BUTTON_MODS_QUERY');
       // console.log(action.payload);
-      // The endpoint only returns values that are 'needs_review', so inject those values to the objects
       for (let reference of action.payload) {
-        reference['corpus'] = 'needs_review';
         reference['workflow'] = 'experimental';
         reference['existing_reference_workflow_tag_id_expt_meeting'] = '';	// parent term in ontology is called reference_type which is not clear
         if ('workflow_tags' in reference && reference['workflow_tags'].length > 0) {
@@ -116,7 +118,6 @@ export default function(state = initialState, action) {
         else if (fieldCorpusValue === 'outside_corpus') { fieldCorpusBoolean = false; }
         else if (fieldCorpusValue === 'needs_review') { fieldCorpusBoolean = null; }
       sortToggleCorpusReferencesToSortLive[indexReferenceCorpus]['mod_corpus_association_corpus'] = fieldCorpusBoolean;
-      sortToggleCorpusReferencesToSortLive[indexReferenceCorpus]['corpus'] = fieldCorpusValue;
       return {
         ...state,
         referencesToSortLive: sortToggleCorpusReferencesToSortLive
