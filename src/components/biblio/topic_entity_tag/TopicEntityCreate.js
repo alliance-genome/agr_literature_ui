@@ -78,16 +78,16 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     if (topicSelect === speciesATP) { 
       //setCurrentView('autocomplete');
-      setSelectedSpecies([]); // reset species list when topic changes
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
+      //setSelectedSpecies([]); // reset species list when topic changes
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
-    } // else {
-	
-      // setCurrentView('list');
-    // }
+    } else {
+      setSelectedSpecies([]); // Clear selected species
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
+    }
+    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
+    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
+    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
   }, [topicSelect, dispatch]);
       
   useEffect(() => {
@@ -247,7 +247,9 @@ const TopicEntityCreate = () => {
         {renderView() === 'list' ? (
           <Form.Control as="textarea" id="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
         ) : (
-          <AsyncTypeahead
+	  // the AsyncTypeahead for species will only be shown if species is selected
+          topicSelect === speciesATP && (
+            <AsyncTypeahead
               multiple
               isLoading={speciesSelectLoading}
               placeholder="enter species name"
@@ -263,8 +265,8 @@ const TopicEntityCreate = () => {
 		  if (results) {
 		      setTypeaheadOptions(results.map(item => item.name + ' ' + item.curie));
 		  }
-           }}
-	   onChange={(selected) => {
+             }}
+	     onChange={(selected) => {
 		  // extract species name and curie from the selected options
 		  const extractedStrings = selected.map(specie => {
                       const match = specie.match(/(.+) (NCBITaxon:\d+)/);
@@ -285,10 +287,11 @@ const TopicEntityCreate = () => {
                       return null;
 		  }).filter(item => item);  // filter out any null values
 		  dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: entityResults } }));
-            }}
-	    options={typeaheadOptions}
-            selected={selectedSpecies}
-          />            
+              }}
+	      options={typeaheadOptions}
+              selected={selectedSpecies}
+            />
+          )
         )}
       </Col>
       <Col className="form-label col-form-label" sm="2" >
