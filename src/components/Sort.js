@@ -255,15 +255,26 @@ const Sort = () => {
           </Col>
           <Col lg={5} ></Col>
         </Row>
-        <Row>
-          <Col lg={2} ></Col>
-          <Col lg={8} >
-            <br/>
-            <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'needs_review'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>{' '}
-            <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'prepublication'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Prepublication"}</Button>
-          </Col>
-          <Col lg={2} ></Col>
-        </Row>
+        { (accessLevel === 'WB') ? 
+          <Row>
+            <Col lg={2} ></Col>
+            <Col lg={8} >
+              <br/>
+              <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'needs_review'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>{' '}
+              <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'prepublication'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Prepublication"}</Button>
+            </Col>
+            <Col lg={2} ></Col>
+          </Row>
+          :
+          <Row>
+            <Col lg={4} ></Col>
+            <Col lg={4} >
+              <br/>
+              <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'needs_review'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>
+            </Col>
+            <Col lg={4} ></Col>
+          </Row>
+        }
       </Container>
       <AlertAteamApiDown />
       {
