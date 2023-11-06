@@ -83,6 +83,7 @@ const TopicEntityCreate = () => {
     } else {
       setSelectedSpecies([]); // Clear selected species
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
     }
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
