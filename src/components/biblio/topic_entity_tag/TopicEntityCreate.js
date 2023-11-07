@@ -178,8 +178,8 @@ const TopicEntityCreate = () => {
     let filteredTaxonList = taxonList.filter((x) => !modToTaxon[accessLevel].includes(x));
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList); }
 
-  const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? 'disabled' : '';
-  const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined || topicEntitySourceId === undefined) ? 'disabled' : '';
+  const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? true : false;
+  const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined || topicEntitySourceId === undefined || topicSelect === undefined) ? true : false;
 
   return (
     <Container fluid>

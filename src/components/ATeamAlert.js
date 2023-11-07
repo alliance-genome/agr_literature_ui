@@ -29,11 +29,10 @@ export const AlertAteamApiDown = () => {
 }
 
 const testAteamAPI = (accessToken, setStatus) => {
-    const ateamApiUrl = ateamApiBaseUrl + 'health';
+    const ateamApiUrl = process.env.REACT_APP_RESTAPI + '/check/ateamapi';
     axios.get(ateamApiUrl, {
         headers: {
-            'content-type': 'application/json',
-            'authorization': 'Bearer ' + accessToken
+            'content-type': 'application/json'
         }
     })
         .then(res => {
