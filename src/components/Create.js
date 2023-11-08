@@ -1,4 +1,3 @@
-// import { Link } from 'react-router-dom'
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from "react-router-dom";
@@ -47,7 +46,6 @@ const CreatePubmed = () => {
   const createPmidLoading = useSelector(state => state.create.createPmidLoading);
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
-  // const accessLevel = useGetAccessLevel();
   const generalClassName = 'Col-general';
 
 
@@ -59,7 +57,6 @@ const CreatePubmed = () => {
                        'mod_curie': modCurie,
                        'mod_mca': mcaMod }
     if (modPrefix === 'WB') { delete updateJson['mod_curie']; }	// do not create an xref for WB, mca will trigger modID creation in xref
-    // const subPath = 'reference/add/' + pmid + '/' + modCurie + '/' + mcaMod + '/';
     const subPath = 'reference/add/';
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
     dispatch(updateButtonCreate(arrayData, 'pmid', modCurie));
@@ -146,10 +143,6 @@ const CreateActionToggler = () => {
   let allianceChecked = '';
   let radioFormPubmedClassname = 'radio-form';
   let radioFormAllianceClassname = 'radio-form';
-// to default pubmed
-//   let createActionTogglerSelected = 'pubmed';
-//   if (createAction === 'alliance') { allianceChecked = 'checked'; createActionTogglerSelected = 'alliance'; }
-//     else { pubmedChecked = 'checked'; }
   let createActionTogglerSelected = 'alliance';
   if (createAction === 'pubmed') {
       radioFormPubmedClassname += ' underlined';

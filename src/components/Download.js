@@ -1,15 +1,10 @@
-// import { Link } from 'react-router-dom'
-
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 
 import { downloadActionButtonDownload } from '../actions/downloadActions';
 import { downloadActionButtonGenerate } from '../actions/downloadActions';
 import { changeFieldDownloadMod } from '../actions/downloadActions';
-// import { setDownloadShowDownloading } from '../actions/downloadActions';
-// import { setDownloadShowGenerating } from '../actions/downloadActions';
 import { setDownloadShowGeneric } from '../actions/downloadActions';
-// import { downloadUpdateGenericModal } from '../actions/downloadActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -51,10 +46,6 @@ const Download = () => {
     if (accessToken === null) { 
       // this if is needed because when page loads, the okta accessToken isn't there right away
       notDownloadingMessage = (<Row><Col><h4>Your automated download is not happening because you are not Signed In.</h4><br/></Col></Row>);
-      // const modalHeader = 'Unauthorized';
-      // const modalBody = 'Need to be Signed In to okta.';
-      // dispatch(downloadUpdateGenericModal(modalHeader, modalBody));
-      // console.log('need to be signed on');
     } else {
       // console.log(paramFilename);
       dispatch(downloadActionButtonDownload(accessToken, paramFilename, 'ondemand'));
@@ -62,7 +53,6 @@ const Download = () => {
   }
   // console.log(paramAction);
   // console.log(paramFilename);
-  // download?action=filedownload&filename=20220618
 
   return (
     <Container>
@@ -115,40 +105,4 @@ const ModalGeneric = ({showGenericModal, genericModalHeader, genericModalBody}) 
   return null;
 }
 
-// const ModalDownloading = () => {
-//   const showDownloadingModal = useSelector(state => state.download.showDownloadingModal);
-//   const dispatch = useDispatch();
-//   
-//   return (<Modal size="lg" show={showDownloadingModal} backdrop="static" onHide={() => dispatch(setDownloadShowDownloading(false))} >
-//            <Modal.Header closeButton><Modal.Title>Downloading</Modal.Title></Modal.Header>
-//            <Modal.Body>Your file is getting downloaded and will eventually show up in your downloads, no need to click the download button again</Modal.Body>
-//           </Modal>);
-// }
-
-//             <Button style={{width: "12em"}} disabled={buttonDownloadGenerateDisabled} onClick={() => {
-// 
-//               const modalHeader = 'Generating File';
-//               const modalBody = "Generating a new reference file for " + mod + ". A download link will be emailed to " + userId;
-//               dispatch(downloadUpdateGenericModal(modalHeader, modalBody));
-//               } } >Generate New File</Button>
-//             <Button style={{width: "12em"}} disabled={buttonDownloadGenerateDisabled} onClick={() => dispatch(setDownloadShowGenerating(true))}>Generate New File</Button>
-// TODO replace this once we have an API for generating. replace setDownloadShowGenerating with new action that calls API and returns a message for generic modal
-// const ModalGenerating = () => {
-//   const showGeneratingModal = useSelector(state => state.download.showGeneratingModal);
-//   const mod = useSelector(state => state.download.mod);
-//   const userId = useSelector(state => state.isLogged.userId);
-//   const dispatch = useDispatch();
-//   
-//   return (<Modal size="lg" show={showGeneratingModal} backdrop="static" onHide={() => dispatch(setDownloadShowGenerating(false))} >
-//            <Modal.Header closeButton><Modal.Title>Generating</Modal.Title></Modal.Header>
-//            <Modal.Body>Generating a new reference file for {mod}. A download link will be emailed to {userId}</Modal.Body>
-//           </Modal>);
-// }
-
 export default Download
-
-//             <a
-//               href="https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/miniSGD"
-//               download
-//             >
-//             <Button style={{width: "12em"}} >Download json</Button></a>

@@ -20,7 +20,6 @@ const BiblioRawTetData = () => {
 }
 
 const RawDataEntityTable = () => {
-  // const accessToken = useSelector(state => state.isLogged.accessToken);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
@@ -41,17 +40,9 @@ const RawDataEntityTable = () => {
     fetchData().then();
   }, [referenceCurie, biblioUpdatingEntityAdd, topicEntityTags]);
 
-  // use the following code for the editor view table
-  // let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
-  // let source_headers = ['mod_id', 'source_method', 'evidence', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
-  // const headersWithSortability = new Set(['entity_type']);
-  // const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
-
   // use the following code for the 'simple' table
   let headers = [];
   let source_headers = [];
-  // const excludeColumnSet = new Set(['topic_entity_tag_source_id', 'topic_entity_tag_id', 'reference_id']);
-  // const dateColumnSet = new Set(['date_created', 'date_updated']);
   for (const tetDict of topicEntityTags.values()) {
     for (const tetDictKey in tetDict) {
       // console.log(tetDictKey);
@@ -81,20 +72,12 @@ const RawDataEntityTable = () => {
                     let td_value = tetDict[header];
                     if (td_value === true) { td_value = 'True'; }
                     else if (td_value === false) { td_value = 'False'; }
-                    // else if (dateColumnSet.has(header)) {
-                    //   td_value = new Date(td_value).toLocaleString(); }
-                    // else if (headersToEntityMap.has(header)) {
-                    //   td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]] : tetDict[header]; }
-                    // else if (header === "species") {
-                    //   td_value = tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species; }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                   { source_headers.map( (header, index_2) => {
                     let td_value = tetDict['topic_entity_tag_source'][header];
                     if (td_value === true) { td_value = 'True'; }
                     else if (td_value === false) { td_value = 'False'; }
-                    // if (dateColumnSet.has(header)) {
-                    //   td_value = new Date(td_value).toLocaleString(); }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                 </tr>);

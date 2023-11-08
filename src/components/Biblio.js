@@ -21,7 +21,6 @@ import {
 } from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
-// import { setUpdateCitationFlag } from '../actions/biblioActions';
 import { changeBiblioSupplementExpandToggler } from '../actions/biblioActions';
 
 import { changeBiblioActionToggler } from '../actions/biblioActions';
@@ -36,46 +35,6 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import loading_gif from '../images/loading_cat.gif';
 import Spinner from "react-bootstrap/Spinner";
 import axios from "axios";
-
-// https://stage-literature.alliancegenome.org/Biblio/?action=topic&referenceCurie=AGRKB:101000000163587
-
-
-// constants available in BiblioEditor
-// import {
-//   fieldsSimple, fieldsArrayString, fieldsOrdered, fieldsPubmed, fieldsDisplayOnly, fieldsDatePublished,
-//   fieldTypeDict, enumDict
-// } from './biblio/BiblioEditor';
-
-// if passing an object with <Redirect push to={{ pathname: "/Biblio", state: { pie: "the pie" } }} />, would access new state with
-// const Biblio = ({ appState, someAction, location }) => {
-// console.log(location.state);  }
-
-
-// title
-// cross_references (doi, pmid, modID)
-// authors (collapsed [in a list, or only first author])
-// citation (generated from other fields, curators will decide later)
-// abstract
-//
-// category
-// pubmed_types
-// mod_reference_types
-//
-// resource (resource_curie resource_title ?)
-// volume
-// issue_name
-// page_range
-//
-// editors
-// publisher
-// language
-//
-// date_published
-// date_arrived_in_pubmed
-// date_last_modified_in_pubmed
-//
-// keywords
-// mesh_terms
 
 
 const BiblioActionToggler = () => {
@@ -120,21 +79,6 @@ const BiblioActionToggler = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie
   window.history.replaceState({}, null, newUrl)
-
-// calling below
-//         onChange={(e) => dispatch(toggleBiblioAction(e))}
-// doesn't work because
-//         Error: Actions must be plain objects. Use custom middleware for async actions.
-// still need a way to change history (url)
-//   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-//   const history = useHistory();
-//   function toggleBiblioAction(e) {
-//     let biblioActionTogglerSelected = 'display';
-//     if (e.target.id === 'biblio-toggler-editor') { biblioActionTogglerSelected = 'editor'; }
-//     // console.log(biblioActionTogglerSelected)
-//     dispatch(changeBiblioActionToggler(e))
-//     history.push("/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie);
-//   }
 
   return (
     <Form>
@@ -243,12 +187,9 @@ const BiblioTagging = () => {
     return(<>{message}</>); }
 
   const rowOrderedElements = []
-  // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  // rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);	// curators no longer want this link
   rowOrderedElements.push(<RowDisplayReferencefiles key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
   return (<><Container>{rowOrderedElements}</Container>
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging
@@ -292,7 +233,6 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
     else if (supplementExpand === 'list') { listChecked = 'checked'; }
   const rowReferencefileElements = []
 
-  // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
   const rowReferencefileSupplementElements = []
   let hasAccessToTarball = false;
   for (const[index, referencefileDict] of referenceFiles.entries()) {
@@ -375,38 +315,6 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
             rowReferencefileElements}
       </>); }
 
-// curators no longer want this link
-// const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
-//   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
-//     const rowCrossReferenceElements = []
-//     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
-//       let url = crossRefDict['url'];
-//       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
-//       let valueLiveCuriePrefix = splitCurie(valueLiveCurie, 'prefix');
-//       if (valueLiveCuriePrefix !== 'PMCID') { continue; }
-//       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-//              valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-//       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//              valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
-//       if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
-//       if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
-//       let isObsolete = '';
-//       if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
-//            (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-//              if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
-//              else { isObsolete = ''; } }
-//       let updatedFlag = '';
-//       if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated' }
-//       if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
-//       const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
-//       rowCrossReferenceElements.push(<RowDisplaySimple key={`xref_pmc ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
-//     return (<>{rowCrossReferenceElements}</>); }
-//   else { return null; } }
-
-
 const BiblioIdQuery = () => {
   const dispatch = useDispatch();
   const [idQuery, setIdQuery] = useState('');
@@ -448,10 +356,7 @@ const Biblio = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const getReferenceCurieFlag = useSelector(state => state.biblio.getReferenceCurieFlag);
-//   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
   const isLoading = useSelector(state => state.biblio.isLoading);
-//   const queryFailure = useSelector(state => state.biblio.queryFailure);	// do something when user puts in invalid curie
-//   const updateCitationFlag = useSelector(state => state.biblio.updateCitationFlag);	// citation now updates from database triggers
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
@@ -465,16 +370,8 @@ const Biblio = () => {
     if (paramAction !== null) { dispatch(setBiblioAction(paramAction)); }
   }
 
-  // citation needs to be updated after processing separate biblio api calls. update citation and make flag false
-  // 2023 04 11 citation now updates from database triggers
-//   if (referenceCurie !== '' && (updateCitationFlag === true)) {
-//     console.log('biblio DISPATCH update citation for ' + referenceCurie);
-//     dispatch(updateButtonBiblio( [accessToken, 'reference/citationupdate/' + referenceCurie, null, 'POST', 0, null, null] ));
-//     dispatch(setUpdateCitationFlag(false))
-//   }
 
   // if there's a curie, biblio has stopped updating therefore get curie, and citation has been updated, requery the reference data
-//   if (referenceCurie !== '' && (getReferenceCurieFlag === true) && (updateCitationFlag === false)) {	// citation now updates from database triggers
   if (referenceCurie !== '' && (getReferenceCurieFlag === true)) {
     console.log('biblio DISPATCH biblioQueryReferenceCurie ' + referenceCurie);
     dispatch(biblioQueryReferenceCurie(referenceCurie));

@@ -1,10 +1,4 @@
-// import logo from './logo.svg';
-
 import { useEffect } from 'react';
-
-//import { BrowserRouter, Route } from 'react-router-dom'
-//import history from "../history";
-// console.log('Router is needed in AppWithRouterAccess.js or pages like https://dev3001.alliancegenome.org/Biblio?action=editor&referenceCurie=AGR:AGR-Reference-0000829611 will not display')
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import NavigationBar from './NavigationBar'
 import NotLoggedInBar from './NotLoggedInBar'
@@ -21,25 +15,12 @@ import Merge from './Merge'
 import Download from './Download'
 import About from './About'
 import Tracker from './Tracker'
-// import Login from './Login'
 import LoginRequired from './LoginRequired'
-//import SwaggerComp from './SwaggerUI'
-//import Logout from "./Logout";
-// import ListGroup from 'react-bootstrap/ListGroup';
-// import Navbar from 'react-bootstrap/Navbar';
-// import Nav from 'react-bootstrap/Nav';
-// import NavItem from 'react-bootstrap/NavItem';
-// import NavDropdown from 'react-bootstrap/NavDropdown';
-// import Glyphicon from 'react-bootstrap/Glyphicon';
 import React from 'react';
-// import { useHistory, Switch } from 'react-router-dom';
 import { useHistory } from 'react-router-dom';
-// import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
 import { Security, SecureRoute } from '@okta/okta-react';
 import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
 import { useSelector } from 'react-redux';
-
-// import { oktaAuthConfig, oktaSignInConfig } from '../config';
 import { oktaAuthConfig } from '../config';
 
 const oktaAuth = new OktaAuth(oktaAuthConfig);

@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-// import { useHistory } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 
 import Form from 'react-bootstrap/Form';
@@ -46,7 +45,6 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const Sort = () => {
   const modsField = useSelector(state => state.sort.modsField);
   const referencesToSortLive = useSelector(state => state.sort.referencesToSortLive);
-  const referencesToSortDb = useSelector(state => state.sort.referencesToSortDb);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const sortType = useSelector(state => state.sort.sortType);
   const sortUpdating = useSelector(state => state.sort.sortUpdating);
@@ -78,7 +76,6 @@ const Sort = () => {
     fetchSourceId().catch(console.error);
   }, [tetAccessLevel, accessToken]);
 
-  // const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   let buttonFindDisabled = 'disabled'
   if (modsField) { buttonFindDisabled = ''; }
 

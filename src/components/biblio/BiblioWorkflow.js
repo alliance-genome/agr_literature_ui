@@ -16,11 +16,9 @@ import ModalGeneric from './ModalGeneric';
 const BiblioWorkflow = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-  // const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
+
 
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  // const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
-  // const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
   const isUpdatingWorkflowCuratability = useSelector(state => state.biblio.isUpdatingWorkflowCuratability);
   const workflowModalText = useSelector(state => state.biblio.workflowModalText);
 

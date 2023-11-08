@@ -25,11 +25,9 @@ const TopicEntityTable = () => {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
   const [descSort, setDescSort] = useState(true);
-  //const [limit, setLimit] = useState(10);
   const pageSize = 10; // fixed limit value for now
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
-  // const [displayTagData, setDisplayTagData] = useState([]);
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
@@ -62,7 +60,7 @@ const TopicEntityTable = () => {
   };
 
   const handleDeleteClick = async (tetDictToDelete) => {
-    if (tetDictToDelete.topic_entity_tag_source.mod != accessLevel) {
+    if (tetDictToDelete.topic_entity_tag_source.mod !== accessLevel) {
       console.error("Permission denied. Cannot delete this row.");
       return;
     }
@@ -105,7 +103,6 @@ const TopicEntityTable = () => {
         let config = {
           headers: {
             'content-type': 'application/json',
-            // 'authorization': 'Bearer ' + accessToken
           }
         };
         setIsLoadingMappings(true);
@@ -217,18 +214,6 @@ const TopicEntityTable = () => {
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
   const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
 
-
-  // TODO: use the following code for the 'simple' table
-  // for (const tetDict of topicEntityTags.values()) {
-  //   for (const tetDictKey in tetDict) {
-  //     // console.log(tetDictKey);
-  //     if (tetDictKey === 'topic_entity_tag_source') {
-  //       for (const tetSourceKey in tetDict[tetDictKey]) {
-  //         if ( (source_headers.indexOf(tetSourceKey) === -1) && !(excludeColumnSet.has(tetSourceKey)) ) { source_headers.push(tetSourceKey); } } }
-  //     else {
-  //       if ( (headers.indexOf(tetDictKey) === -1) && !(excludeColumnSet.has(tetDictKey)) ) { headers.push(tetDictKey); } }
-  //   }
-  // }
 
   return (
       <div>

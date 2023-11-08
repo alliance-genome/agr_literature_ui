@@ -26,7 +26,7 @@ import Form from "react-bootstrap/Form"
 import {AsyncTypeahead} from "react-bootstrap-typeahead";
 import Button from "react-bootstrap/Button"
 import Spinner from "react-bootstrap/Spinner";
-// import axios from "axios";
+
 
 const TopicEntityCreate = () => {
   const dispatch = useDispatch();
@@ -54,7 +54,6 @@ const TopicEntityCreate = () => {
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   // state to track the current view: 'list' or 'autocomplete'
-  //const [currentView, setCurrentView] = useState('list');
   const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
   const speciesTypeaheadRef = useRef(null);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
@@ -76,9 +75,7 @@ const TopicEntityCreate = () => {
     
   // effect to reset view and other fields when topic changes
   useEffect(() => {
-    if (topicSelect === speciesATP) { 
-      //setCurrentView('autocomplete');
-      //setSelectedSpecies([]); // reset species list when topic changes
+    if (topicSelect === speciesATP) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
     } else {
       setSelectedSpecies([]); // Clear selected species

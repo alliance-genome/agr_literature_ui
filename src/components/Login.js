@@ -21,13 +21,7 @@ const Login = ({config}) => {
     const loggedInUser = useSelector(state => state.isLogged.userId);
     const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
     const accessToken = useSelector(state => state.isLogged.accessToken);
-    // to have a version of the okta token text wrapped at 60 character, if needed for display
-    // const textWrapAccessToken = (accessToken !== null) ? accessToken.match(/.{1,60}/g).join('\n') : '';
-
-    // const { oktaAuth, authState,authService } = useOktaAuth();
     const { authState, oktaAuth } = useOktaAuth();
-    // const [isSignedIn, setIsSignedIn] = useState(authState.isAuthenticated? true:false);
-    // const [userId, setUserId] = useState('');
     const dispatch = useDispatch();
     useEffect(() => {
         if (!authState.isAuthenticated) {
@@ -37,7 +31,6 @@ const Login = ({config}) => {
             dispatch(signIn(authState.accessToken.claims.sub, authState.accessToken.accessToken))
         }
     }, [dispatch, authState, oktaAuth]);
-    // const location = useLocation();
     const location_fullpath = useLocation().pathname + '?' + (new URLSearchParams(useLocation().search)).toString()
     const onSuccess = (token) => {
         oktaAuth.setOriginalUri(location_fullpath)
