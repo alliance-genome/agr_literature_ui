@@ -1,7 +1,5 @@
 import axios from "axios";
-//import {useDispatch, useSelector} from 'react-redux';
 
-export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
 export const SEARCH_SET_SEARCH_RESULTS_PAGE = 'SEARCH_SET_SEARCH_RESULTS_PAGE';
 export const SEARCH_SET_SEARCH_RESULTS = 'SEARCH_SET_SEARCH_RESULTS';
 export const SEARCH_SET_SEARCH_LOADING = 'SEARCH_SET_SEARCH_LOADING';
@@ -27,17 +25,6 @@ export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_D
 export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
-
-export const changeQueryField = (e) => {
-  console.log('action change field ' + e.target.id + ' to ' + e.target.value);
-  return {
-    type: 'SEARCH_CHANGE_QUERY_FIELD',
-    payload: {
-      field: e.target.id,
-      value: e.target.value
-    }
-  };
-};
 
 export const fetchInitialFacets = (facetsLimits) => {
   return dispatch => {

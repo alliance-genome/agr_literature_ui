@@ -1,7 +1,3 @@
-// import history from "../history";
-
-// import notGithubVariables from './notGithubVariables';
-
 import axios from "axios";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -19,7 +15,6 @@ export const downloadActionButtonDownload = (accessToken, apiFilename, nightlyOr
     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
   else if (nightlyOrOndemand === 'ondemand') {
     dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true }); }
-//   dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: true });
   dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: modalBody } });
 
   const downloadFile = async () => {
@@ -30,7 +25,6 @@ export const downloadActionButtonDownload = (accessToken, apiFilename, nightlyOr
           urlBase = urlBase + 'latest/'
       }
       const url = urlBase + apiFilename;
-    // const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/' + mod;
 
     axios({
         url: url,
@@ -56,8 +50,7 @@ export const downloadActionButtonDownload = (accessToken, apiFilename, nightlyOr
         else if (nightlyOrOndemand === 'ondemand') {
           dispatch({ type: 'DOWNLOAD_SET_AUTO_DOWNLOAD_ONDEMAND', payload: false });
           dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: false }); }
-        // dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: false });	// do not make this go away, awkward if fast download
-        // Clean up and remove the link
+         // Clean up and remove the link
         link.parentNode.removeChild(link);
     });
 
@@ -103,21 +96,6 @@ export const changeFieldDownloadMod = (e) => {
   };
 };
 
-// export const setDownloadShowDownloading = (value) => {
-//   console.log('action change download show download to ' + value);
-//   return {
-//     type: 'DOWNLOAD_SET_SHOW_DOWNLOADING',
-//     payload: value
-//   };
-// };
-
-// export const setDownloadShowGenerating = (value) => {
-//   console.log('action change download show generating to ' + value);
-//   return {
-//     type: 'DOWNLOAD_SET_SHOW_GENERATING',
-//     payload: value
-//   };
-// };
 
 export const setDownloadShowGeneric = (value) => {
   console.log('action change download show generic to ' + value);

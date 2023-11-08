@@ -1,7 +1,3 @@
-// import history from "../history";
-
-// import notGithubVariables from './notGithubVariables';
-
 import { generateCorrectionsSimple } from './biblioActions';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -35,9 +31,6 @@ export const mergeToggleIndependent = (fieldName, oneOrTwo, index) => {
   return { type: 'MERGE_TOGGLE_INDEPENDENT',
            payload: { fieldName: fieldName, oneOrTwo: oneOrTwo, index: index } }; };
 
-// export const mergeSwapPairSimple = (fieldName) => dispatch => {
-//   console.log("action mergeSwapPairSimple " + fieldName);
-// }
 
 export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool) => dispatch => {
   // console.log("ref1 " + referenceInput1);
@@ -110,15 +103,11 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
   const resolveReferenceCurie = async (referenceInput) => {
     let curieValue = '';
     let curieFound = false;
-    // let successXref = false;
-    // const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
     const regexMatch = referenceInput.toLowerCase().match(/(AGRKB:101\d{12})/i);
     // console.log('regexMatch');
     // console.log( regexMatch);
     if (regexMatch !== null) {
       curieFound = true;
-      // const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
-      // curieValue = regexMatch[0].replace('agr:agr-reference', 'AGR:AGR-Reference');
       const regexMatch = referenceInput.toLowerCase().match(/(AGRKB:101\d{12})/i);
       curieValue = regexMatch[0].replace('agrkb:', 'AGRKB:'); }
     else {
@@ -209,7 +198,7 @@ export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
   let newId = null;
   const createUpdateButtonMerge = async () => {
     const url = restUrl + '/' + subPath;
-    console.log(url);
+    // console.log(url);
     const res = await fetch(url, {
       method: method,
       mode: 'cors',
@@ -286,13 +275,6 @@ export const setShowDataTransferModal = (payload) => {
     payload: payload
   };
 };
-
-// export const setCompletionMergeHappened = (payload) => {
-//   return {
-//     type: 'SET_COMPLETION_MERGE_HAPPENED',
-//     payload: payload
-//   };
-// };
 
 export const closeMergeUpdateAlert = () => {
   console.log("action closeMergeUpdateAlert");

@@ -1,16 +1,6 @@
-// import history from "../history";
-
-// import notGithubVariables from './notGithubVariables';
-
 import axios from "axios";
 
-
 const restUrl = process.env.REACT_APP_RESTAPI;
-// const restUrl = 'stage-literature-rest.alliancegenome.org';
-// const port = 11223;
-// const port = 49161;
-
-//const ateamApiBaseUrl = 'https://beta-curation.alliancegenome.org/';
 const ateamApiBaseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
 
 export const changeFieldReferenceJson = (e) => {
@@ -180,65 +170,6 @@ export const getCuratorSourceId = async (mod, accessToken) => {
 
 export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIBLIO_UPDATING_ENTITY_ADD', payload: payload }; };
 
-// export const updateButtonBiblioEntityAdd_NOTAXIOS = (updateArrayData) => dispatch => {
-//   // console.log('in updateButtonBiblioEntityAdd action');
-//   const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
-//   // const post_json = JSON.stringify(payload);
-//   // console.log("payload " + post_json);
-//   // console.log("payload " + payload);
-//   // console.log("payload "); console.log(updateArrayData);
-//   let newId = null;
-//   const createUpdateButtonBiblioEntityAdd = async () => {
-//     const url = restUrl + '/' + subPath;
-//     console.log(url);
-//     // console.log(notGithubVariables.authToken);
-//     const res = await fetch(url, {
-//       method: method,
-//       mode: 'cors',
-//       headers: {
-//         'content-type': 'application/json',
-//         'authorization': 'Bearer ' + accessToken
-//       },
-//       body: JSON.stringify( payload )
-//     })
-// 
-//     let response_message = 'update success';
-//     if ((method === 'DELETE') && (res.status === 204)) { }	// success of delete has no res.text so can't process like others
-//     else {
-//       const response_text = await res.text();
-//       const response = JSON.parse(response_text);
-//       if ( ((method === 'PATCH') && (res.status !== 202)) || 
-//            ((method === 'DELETE') && (res.status !== 204)) || 
-//            ((method === 'POST') && (res.status !== 201)) ) {
-//         console.log('updateButtonBiblioEntityAdd action response not updated');
-//         if (typeof(response.detail) !== 'object') {
-//             response_message = response.detail; }
-//           else if (typeof(response.detail[0].msg) !== 'object') {
-//             response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
-//           else {
-//             response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
-//       }
-//       if ((method === 'POST') && (res.status === 201)) {
-//         newId = parseInt(response_text); }
-//       // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-//       console.log('dispatch UPDATE_BUTTON_BIBLIO_ENTITY_ADD');
-//     }
-//     setTimeout(() => {
-//       dispatch({
-//         type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-//         payload: {
-//           responseMessage: response_message,
-//           index: index,
-//           value: newId,
-//           field: field,
-//           subField: subField
-//         }
-//       })
-//     }, 500);
-//   }
-//   createUpdateButtonBiblioEntityAdd()
-// };
-
 
 export const setBiblioWorkflowCuratability = (value) => ({
   type: 'SET_BIBLIO_WORKFLOW_CURATABILITY',
@@ -249,8 +180,8 @@ export const updateSelectBiblioWorkflowCuratability = (accessToken, workflowTagI
   // console.log(subPath);
   // console.log(method);
   const url = (workflowTagId) ? restUrl + '/workflow_tag/' + workflowTagId : restUrl + '/workflow_tag/';
-  console.log(payload);
-  console.log(url);
+  // console.log(payload);
+  // console.log(url);
   let response_message = 'update success';
 
   axios({
@@ -323,11 +254,9 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
 
 export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => { return dispatch => {
   // console.log('in updateButtonBiblioEntityAdd action');
-  // const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
   const [accessToken, subPath, payload, method] = updateArrayData;
   // console.log("payload " + payload);
   // console.log("payload "); console.log(updateArrayData);
-  // let newId = null;
   const url = restUrl + '/' + subPath;
   let response_message = 'update success';
 
@@ -408,17 +337,8 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
             })
           );
     } else {
-      // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
-      // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
       const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityType + '/search?limit=100&page=0';
       const entityTypeSymbolField = entityType + 'Symbol';
-
-      // console.log(ateamApiUrl);
-      // console.log(accessToken);
-      // const geneSymbol = e.target.value;
-
-      // simple search
-      //   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
 
       // search by taxon + exact symbol keyword or exact curie keyword
       const searchEntityJson =
@@ -449,7 +369,6 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
             if (entityResult.curie && entityResult[entityTypeSymbolField].displayText) {
               searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
               searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.curie; }
-            // entityResultList.push(entityResult.symbol + " " + entityResult.curie);
             // console.log(entityResult.curie);
             // console.log(entityResult.symbol);
         } }
@@ -672,9 +591,7 @@ export const fetchDisplayTagData = async (accessToken) => {
       },
       mode: 'cors'
     });
-    // return response.data.entities;
-    // const displayTagData = response.data.entities.map(x => ({ curie: x.curie, name: x.name }));
-    // return displayTagData;
+
     const displayTagData = response.data.entities
       .filter(x => x.name !== 'other primary display')
       .map(x => ({ curie: x.curie, name: x.name }));
@@ -769,15 +686,6 @@ export const setBiblioAction = (biblioAction) => {
   };
 };
 
-// citation now updates from database triggers
-// export const setUpdateCitationFlag = (updateCitationFlag) => {
-//   console.log("action setUpdateCitationFlag");
-//   return {
-//     type: 'SET_UPDATE_CITATION_FLAG',
-//     payload: updateCitationFlag
-//   };
-// };
-
 export const setUpdateBiblioFlag = (updateBiblioFlag) => {
   console.log("action setUpdateBiblioFlag");
   return {
@@ -801,9 +709,6 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
   // console.log("payload "); console.log(updateArrayData);
   let newId = null;
   const createUpdateButtonBiblio = async () => {
-//     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
-//     const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
-//     const url = 'https://' + restUrl + '/' + subPath;
     const url = restUrl + '/' + subPath;
     console.log(url);
     // console.log(notGithubVariables.authToken);
@@ -816,12 +721,10 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
       },
       body: JSON.stringify( payload )
     })
-//         'authorization': 'Bearer ' + notGithubVariables.authToken
 
     let response_message = 'update success';
     if ((method === 'DELETE') && (res.status === 204)) { }	// success of delete has no res.text so can't process like others
     else {
-      // const response = await res.json();	// successful POST to related table (e.g. mod_reference_types) returns an id that is not in json format
       const response_text = await res.text();
       const response = JSON.parse(response_text);
       if ( ((method === 'PATCH') && (res.status !== 202)) || 
@@ -862,12 +765,6 @@ export const resetBiblioIsLoading = () => {
   };
 };
 
-// replaced by setReferenceCurie + setGetReferenceCurieFlag
-// export const resetBiblioReferenceCurie = () => {
-//   return {
-//     type: 'RESET_BIBLIO_REFERENCE_CURIE'
-//   };
-// };
 
 export const setWorkflowModalText = (payload) => {
   return {
