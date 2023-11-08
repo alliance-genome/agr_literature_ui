@@ -42,7 +42,7 @@ export const changeQueryField = (e) => {
 export const fetchInitialFacets = (facetsLimits) => {
   return dispatch => {
     dispatch(setSearchFacetsLimits(facetsLimits));
-    axios.post(restUrl + '/search/references', {
+    axios.post(restUrl + '/search/references/', {
       query: null,
       facets_values: null,
       facets_limits: facetsLimits,
@@ -84,7 +84,7 @@ export const searchReferences = () => {
     if(state.search.dateCreated){
       params.date_created = state.search.dateCreated;
     }
-    axios.post(restUrl + '/search/references', params )
+    axios.post(restUrl + '/search/references/', params )
 
         .then(res => {
           dispatch(setSearchResults(res.data.hits, res.data.return_count));
@@ -116,7 +116,7 @@ export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount
       params.date_published = datePublished;
     }
 
-    axios.post(restUrl + '/search/references', params)
+    axios.post(restUrl + '/search/references/', params)
         .then(res => {
           dispatch(setSearchFacets(res.data.aggregations));
         })
