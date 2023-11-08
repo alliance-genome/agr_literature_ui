@@ -22,6 +22,19 @@ const initialState = {
     disableInput: '',
     blah: ''
   },
+  // input: 'AGR:AGR-Reference-0000569189',
+  //     input: 'AGR:AGR-Reference-0000852278',
+  //     input: 'PMID:23524264',	-> reference 1
+  //     input: 'PMID:29664630',	-> orcid
+  //     input: 'PMID:28049701',  -> keywords
+  //     input: 'PMID:24699224',  -> more keywords
+  //     input: 'PMID:10704882',  -> corrections
+  //     input: 'PMID:10025402',	-> mesh terms
+  //     input: 'PMID:24699224',  -> mesh terms
+  //     input: 'AGR:AGR-Reference-0000869188',	-> empty paper in lit-4002
+  //     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
+  //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
+  //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
   referenceMeta2: {
     input: 'PMID:28049701',
     curie: '',
