@@ -45,7 +45,7 @@ const initialState = {
   dateCreated: "",
   query_fields:"All",
   sort_by_published_date_order:"relevance",
-  partialMatch:"true"
+  partialMatch:true
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
