@@ -26,7 +26,7 @@ const SearchOptions = () => {
                     </div>
                 </Col>
                 <Col sm={2}>
-                    <Form.Control as="select" id="selectSizeResultsCount" value="50" name="selectSizeResultsCount"
+                    <Form.Control as="select" id="selectSizeResultsCount" defaultValue="50" name="selectSizeResultsCount"
                                   onChange={(e) => {
                                       dispatch(setSearchSizeResultsCount(e.target.value));
                                       dispatch(setSearchResultsPage(1));
