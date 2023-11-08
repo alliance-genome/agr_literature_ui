@@ -7,17 +7,6 @@ const initialState = {
   createPmidLoading: false,
   createAllianceLoading: false,
   createModalText: '',
-//   biblioUpdating: 0,
-//   referenceCurie: '',
-//   referenceJsonLive: {},
-//   referenceJsonDb: {},
-//   referenceJsonHasChange: {},
-//   loadingQuery: true,
-//   queryFailure: false,
-//   getReferenceCurieFlag: true,
-//   meshExpand: 'short',
-//   authorExpand: 'first',
-//   hasPmid: false,
   modIdent: '',
   modPrefix: '',
   pmid: '',
@@ -131,39 +120,27 @@ export default function(state = initialState, action) {
           createPmidLoading = false; }
         else if (action.payload.pmidOrAlliance === "alliance") {
           createAllianceLoading = false; }
-       
-//       let getReferenceCurieFlagUpdateButton = false;
-//       let hasChangeUpdateButton = state.referenceJsonHasChange;
+
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
         newArrayUpdateMessages = [];
         redirectToBiblio = true;
         redirectCurie = action.payload.value;
-//         getReferenceCurieFlagUpdateButton = true;
-//         hasChangeUpdateButton = {};
       } else {
         newArrayUpdateMessages.push(action.payload.responseMessage);
         newUpdateFailure = 1;
         console.log('Update failure ' + action.payload.responseMessage);
       }
-//       let referenceJsonLive = state.referenceJsonLive;
-//       if ((action.payload.field !== null) && 		// POST to a field, assign its db id to redux store
-//           (action.payload.subField !== null)) {		// but only for related tables that create a dbid, not for cross_references
-//         referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
       return {
         ...state,
         createPmidLoading: createPmidLoading,
         createAllianceLoading: createAllianceLoading,
         modIdent: '',
-//         referenceJsonLive: referenceJsonLive,
         redirectCurie: redirectCurie,
         redirectToBiblio: redirectToBiblio,
         updateAlert: state.updateAlert + 1,
         updateFailure: state.updateFailure + newUpdateFailure,
         updateMessages: newArrayUpdateMessages
-//         getReferenceCurieFlag: getReferenceCurieFlagUpdateButton,
-//         referenceJsonHasChange: hasChangeUpdateButton,
-//         biblioUpdating: state.biblioUpdating - 1
       }
     default:
       return state;

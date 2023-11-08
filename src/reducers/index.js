@@ -13,7 +13,6 @@ import trackerReducer from './trackerReducer';
 export default combineReducers({
   counter: counterReducer,
   isLogged: loggedReducer,
-  //login: isLoggedReducer
   search: searchReducer,
   biblio: biblioReducer,
   sort: sortReducer,

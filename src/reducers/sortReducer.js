@@ -12,14 +12,6 @@ const initialState = {
   isLoading: false
 };
 
-// const initialState = {
-//   queryField: '',
-//   querySuccess: false,
-//   responseColor: 'black',
-//   responseField: 'unknown reference',
-//   redirectToBiblio: false
-// };
-
 // to ignore a warning about Unexpected default export of anonymous function
 // eslint-disable-next-line
 export default function(state = initialState, action) {
@@ -104,7 +96,6 @@ export default function(state = initialState, action) {
         referencesToSortLive: action.payload,
         referencesToSortDb: referencesToSortDb
       }
-//         referencesToSort: [{'title': "A conserved serine residue regulates the stability of Drosophila Salvador and human WW domain-containing adaptor 45 through proteasomal degradation.", 'abstract': "The abstract one goes here" }, {'title': "Phylogenetic-based propagation of functional annotations within the Gene Ontology consortium.", 'abstract': "The abstract two goes here" }]
 
     case 'CHANGE_SORT_CORPUS_TOGGLER':
       console.log('reducer CHANGE_SORT_CORPUS_TOGGLER');
@@ -142,11 +133,9 @@ export default function(state = initialState, action) {
       let newUpdateFailure = 0;
       let newArrayUpdateMessages = state.updateMessages;
       let getPapersToSortFlagUpdateButton = false;
-//       let hasChangeUpdateButton = state.referenceJsonHasChange;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_SORT ' + action.payload.responseMessage);
         getPapersToSortFlagUpdateButton = true;
-//         hasChangeUpdateButton = {};
       } else {
         newArrayUpdateMessages.push(action.payload.responseMessage);
         newUpdateFailure = 1;
@@ -169,7 +158,6 @@ export default function(state = initialState, action) {
         updateMessages: newArrayUpdateMessages,
         sortUpdating: state.sortUpdating - 1
       }
-//         referenceJsonHasChange: hasChangeUpdateButton,
 
     default:
       return state;

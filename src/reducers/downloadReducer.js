@@ -4,7 +4,6 @@ const initialState = {
   showGenericModal: false,
   genericModalHeader: '',
   genericModalBody: '',
-//   showDownloadingModal: false,
   showGeneratingModal: false,
   autoDownloadOndemand: true,
   isRequestingGeneration: false,
@@ -61,20 +60,6 @@ export default function(state = initialState, action) {
         genericModalHeader: action.payload.modalHeader,
         genericModalBody: action.payload.modalBody
       }
-
-//     case 'DOWNLOAD_SET_SHOW_DOWNLOADING':
-//       // console.log(action.payload);
-//       return {
-//         ...state,
-//         showDownloadingModal: action.payload
-//       }
-
-//     case 'DOWNLOAD_SET_SHOW_GENERATING':
-//       // console.log(action.payload);
-//       return {
-//         ...state,
-//         showGeneratingModal: action.payload
-//       }
 
     case 'CHANGE_FIELD_DOWNLOAD_MOD':
       // console.log(action.payload);

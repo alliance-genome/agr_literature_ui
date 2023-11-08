@@ -2,11 +2,6 @@
 import _ from "lodash";
 import { splitCurie } from '../components/biblio/BiblioEditor';
 
-//   biblioEntityDisplayType: 'textarea-disabled',
-//   biblioEntityDisplayType: 'div-line-breaks',
-//   biblioEntityDisplayType: 'entity-container-rows',
-//   biblioEntityDisplayType: 'entity-side-by-side',
-//   biblioEntityDisplayType: 'entity-container-rows',
 
 const defaultEntityAdd = {
   'topicSelect': '',
@@ -51,12 +46,10 @@ const initialState = {
   biblioUpdating: 0,
   biblioEditorModalText: '',
   updateBiblioFlag: false,
-//   updateCitationFlag: false,	// citation now updates from database triggers
   referenceCurie: '',
   referenceJsonLive: {},
   referenceJsonDb: {},
   referenceJsonHasChange: {},
-  // loadingQuery: true,
   isLoading: true,
   queryFailure: false,
   getReferenceCurieFlag: true,
@@ -196,7 +189,12 @@ export default function(state = initialState, action) {
     case 'CHANGE_FIELD_ENTITY_EDITOR_PRIORITY':
       console.log('action CHANGE_FIELD_ENTITY_EDITOR_PRIORITY');
       console.log(action.payload);
-      // changes which value to display, but does not update database. ideally this would update the database without reloading referenceJsonLive, because API would return entities in a different order, so things would jump. but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created, and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it, but it starts to get more complicated
+      // changes which value to display, but does not update database.
+      // ideally this would update the database without reloading referenceJsonLive,
+      // because API would return entities in a different order, so things would jump.
+      // but if creating a new qualifier where there wasn't any, there wouldn't be a tetpId until created,
+      // and it wouldn't be in the prop when changing again. could get the tetpId from the post and inject it,
+      // but it starts to get more complicated
       let entityEditorPriorityArray = action.payload.field.split(" ");
       // let fieldEntityEditorPriority = entityEditorPriorityArray[0];
       let indexTetEntityEditorPriority = entityEditorPriorityArray[1];
@@ -597,12 +595,6 @@ export default function(state = initialState, action) {
 
       let newAuthorInfoChange = state.referenceJsonLive[fieldAuthorInfo];
 
-//       // indexDomAuthorInfo is the index of the author info in the DOM
-//       // indexAuthorInfo is the index of the author info in the redux store, for updating non-order info
-//       let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']	// replace placeholder with index from store order value matches dom
-//       for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
-//         if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) { 
-//           indexAuthorInfo = authorReorderIndexDictIndex } }
       let indexAuthorInfo = getStoreAuthorIndexFromDomIndex(indexDomAuthorInfo, newAuthorInfoChange)
 
       let hasChangeAuthorField = state.referenceJsonHasChange
@@ -615,12 +607,8 @@ export default function(state = initialState, action) {
         hasChangeAuthorField[action.payload.field] = 'diff' }
       if (subfieldAuthorInfo === 'orcid') {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = {}
-        // if author orcid has object instead of string
-        // newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['url'] = null;
-        // newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo]['curie'] = authorInfoNewValue;
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = authorInfoNewValue; }
       else if (subfieldAuthorInfo === 'affiliations') {
-//         let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] = authorInfoNewValue; }
       else if (subfieldAuthorInfo === 'order') {
         let oldAuthorOrder = indexDomAuthorInfo + 1
@@ -960,13 +948,6 @@ export default function(state = initialState, action) {
         ...state,
         updateBiblioFlag: action.payload
       }
-// citation now updates from database triggers
-//     case 'SET_UPDATE_CITATION_FLAG':
-//       console.log("reducer set update citation flag");
-//       return {
-//         ...state,
-//         updateCitationFlag: action.payload
-//       }
     case 'SET_REFERENCE_CURIE':
       console.log("reducer set reference curie, also clear store");
       // also clear store from the previous reference data
@@ -985,56 +966,12 @@ export default function(state = initialState, action) {
         ...state,
         getReferenceCurieFlag: action.payload
       }
-//     case 'SET_LOADING_QUERY':	// replaced by RESET_BIBLIO_IS_LOADING
-//       console.log("reducer set loading query");
-//       return {
-//         ...state,
-//         loadingQuery: action.payload
-//       }
     case 'RESET_BIBLIO_IS_LOADING':
       console.log("biblio reducer reset isLoading");
       return {
         ...state,
         isLoading: true
       }
-// replaced by setReferenceCurie + setGetReferenceCurieFlag
-//     // case 'RESET_QUERY_STATE':
-//     case 'RESET_BIBLIO_REFERENCE_CURIE':
-//       console.log("reducer biblio reset reference curie");
-//       return {
-//         ...state,
-//         referenceCurie: '',
-//         getReferenceCurieFlag: true,
-//         // isLoading: true
-//         // loadingQuery: true
-//       }
-
-//     case 'BIBLIO_GET_REFERENCE_CURIE':
-//       console.log("reducer biblio get reference curie");
-//       if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {
-//         return {
-//           ...state,
-//           referenceCurie: action.payload.detail,
-//           queryFailure: true,
-//           getReferenceCurieFlag: false,
-//           isLoading: false
-//           // loadingQuery: false
-//         }
-//       } else {  
-//         const pmidBool = checkHasPmid(action.payload)
-//         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
-//         const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
-//         return {
-//           ...state,
-//           referenceCurie: action.payload.curie,
-//           referenceJsonLive: action.payload,
-//           referenceJsonDb: dbCopyGetReferenceCurie,
-//           hasPmid: pmidBool,
-//           getReferenceCurieFlag: false,
-//           isLoading: false
-//           // loadingQuery: false
-//         }
-//       }
 
     // TODO to make live, rename this case to appropriate name, remove action that assigns prepopulated corpus and source
     case 'BIBLIO_GET_REFERENCE_CURIE':
@@ -1046,7 +983,6 @@ export default function(state = initialState, action) {
           queryFailure: true,
           getReferenceCurieFlag: false,
           isLoading: false
-          // loadingQuery: false
         }
       } else {  
         const pmidBool = checkHasPmid(action.payload)
@@ -1071,7 +1007,6 @@ export default function(state = initialState, action) {
           hasPmid: pmidBool,
           getReferenceCurieFlag: false,
           isLoading: false
-          // loadingQuery: false
         }
       }
 
@@ -1091,52 +1026,7 @@ export default function(state = initialState, action) {
         loadingFileNames: newLoadingFileNames2
       }
 
-//     case 'QUERY_BUTTON':
-//       console.log("query button reducer set " + action.payload);
-//       let responseField = action.payload;
-//       let responseColor = 'blue';
-//       let redirectToBiblio = false;
-//       let querySuccess = false;
-//       if (responseField === 'not found') { responseColor = 'red'; }
-//         else { redirectToBiblio = true; querySuccess = true; }
-//       return {
-//         ...state,
-//         responseColor: responseColor,
-//         responseField: responseField,
-//         redirectToBiblio: redirectToBiblio,
-//         querySuccess: querySuccess
-//       }
-
-//     case 'FETCH_POSTS':
-//       console.log('in postReducer case FETCH_POSTS');
-//       return {
-//         ...state,
-//         items: action.payload   // from postActions.js
-//       }
-//     case 'NEW_POSTS':
-//       console.log('in postReducer case NEW_POSTS');
-//       return {
-//         ...state,
-//         items: [action.payload, ...state.items],        // from postActions.js
-//         item: action.payload    // from postActions.js
-//       }
-
     default:
       return state;
   }
 }
-  
-
-// const crossRefCurieQueryFieldReducer = (state = 'ab', action) => {
-//   switch (action.type) {
-//     case 'CHANGE_FIELD':
-//       // console.log(action.payload);
-//       return action.payload;
-//     case 'QUERY_BUTTON':
-//       console.log("query button reducer set " + action.payload);
-//       return action.payload;
-//     default:
-//       return state;
-//   }
-// }
-// export default crossRefCurieQueryFieldReducer;

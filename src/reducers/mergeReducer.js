@@ -22,19 +22,6 @@ const initialState = {
     disableInput: '',
     blah: ''
   },
-//     input: 'AGR:AGR-Reference-0000569189',
-//     input: 'AGR:AGR-Reference-0000852278',
-//     input: 'PMID:23524264',	-> reference 1
-//     input: 'PMID:29664630',	-> orcid
-//     input: 'PMID:28049701',  -> keywords
-//     input: 'PMID:24699224',  -> more keywords
-//     input: 'PMID:10704882',  -> corrections
-//     input: 'PMID:10025402',	-> mesh terms
-//     input: 'PMID:24699224',  -> mesh terms
-//     input: 'AGR:AGR-Reference-0000869188',	-> empty paper in lit-4002
-//     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
-//     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
-//     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
   referenceMeta2: {
     input: 'PMID:28049701',
     curie: '',
@@ -55,9 +42,6 @@ const initialState = {
   pmidKeepReference: 1,
   referenceQuerySuccess1: '',
   referenceQuerySuccess2: '',
-//   referenceMessageDefault: 'Enter a Reference Agr ID or cross reference curie',
-//   referenceMessage1: 'Enter a Reference Agr ID or cross reference curie',
-//   referenceMessage2: 'Enter a Reference Agr ID or cross reference curie',
   queryDoubleSuccess: false,
 
   mergeTransferringCount: 0,
@@ -137,7 +121,6 @@ export default function(state = initialState, action) {
         swapReferenceMeta1Copy = JSON.parse(JSON.stringify(state.referenceDb1));
         swapReferenceMeta2Copy = JSON.parse(JSON.stringify(state.referenceDb2));
         newKeepValue = 1; }
-      // const newKeepValue = (state.keepReference === 1) ? 2 : 1;
       
       return {
         ...state,
@@ -287,24 +270,13 @@ export default function(state = initialState, action) {
         showDataTransferModal: action.payload
       }
 
-//     case 'SET_COMPLETION_MERGE_HAPPENED':
-//       console.log('SET_COMPLETION_MERGE_HAPPENED reducer ' + action.payload);
-//       return {
-//         ...state,
-//         completionMergeHappened: action.payload
-//       }
-
     case 'MERGE_BUTTON_API_DISPATCH':
       console.log('reducer MERGE_BUTTON_API_DISPATCH ' + action.payload.responseMessage);
       console.log('action.payload'); console.log(action.payload);
       let newUpdateFailure = 0;
       let newArrayUpdateMessages = state.updateMessages;
-      // let getReferenceCurieFlagUpdateButton = false;			// biblio redirect to biblio 
-      // let hasChangeUpdateButton = state.referenceJsonHasChange;	// biblio set update button color if any changes
       if (action.payload.responseMessage === "update success") {
         console.log('reducer MERGE_BUTTON_API_DISPATCH ' + action.payload.responseMessage);
-        // getReferenceCurieFlagUpdateButton = true;
-        // hasChangeUpdateButton = {};
       } else {
         newArrayUpdateMessages.push(action.payload.responseMessage);
         newUpdateFailure = 1;
@@ -326,8 +298,6 @@ export default function(state = initialState, action) {
         updateAlert: state.updateAlert + 1,
         updateFailure: state.updateFailure + newUpdateFailure,
         updateMessages: newArrayUpdateMessages,
-        // getReferenceCurieFlag: getReferenceCurieFlagUpdateButton,
-        // referenceJsonHasChange: hasChangeUpdateButton,
         mergeCompletingCount: mergeCompletingCountApiDispatch,
         mergeTransferringCount: mergeTransferringCountApiDispatch
       }
@@ -338,51 +308,8 @@ export default function(state = initialState, action) {
         updateAlert: 0
       }
 
-//     case 'QUERY_CHANGE_QUERY_FIELD':
-//       // console.log(action.payload);
-//       return {
-//         ...state,
-//         queryField: action.payload
-//       }
-//     case 'RESET_QUERY_REDIRECT':
-//       console.log("reset query redirect");
-//       return {
-//         ...state,
-//         redirectToBiblio: false
-//       }
-// 
-//     case 'QUERY_BUTTON':
-//       console.log("query button reducer set " + action.payload);
-//       let responseField = action.payload;
-//       let responseFound = action.responseFound;
-//       let responseColor = 'blue';
-//       let redirectToBiblio = false;
-//       let querySuccess = false;
-//       if (responseFound === 'not found') { responseColor = 'red'; }
-//         else { redirectToBiblio = true; querySuccess = true; }
-//       return {
-//         ...state,
-//         responseColor: responseColor,
-//         responseField: responseField,
-//         redirectToBiblio: redirectToBiblio,
-//         querySuccess: querySuccess
-//       }
     default:
       return state;
   }
 }
-  
 
-// const crossRefCurieQueryFieldReducer = (state = 'ab', action) => {
-//   switch (action.type) {
-//     case 'CHANGE_FIELD':
-//       // console.log(action.payload);
-//       return action.payload;
-//     case 'QUERY_BUTTON':
-//       console.log("query button reducer set " + action.payload);
-//       return action.payload;
-//     default:
-//       return state;
-//   }
-// }
-// export default crossRefCurieQueryFieldReducer;

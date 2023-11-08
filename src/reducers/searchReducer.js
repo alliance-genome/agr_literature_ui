@@ -230,36 +230,7 @@ export default function(state = initialState, action) {
         ...state,
         partialMatch: action.payload.partialMatch
       }
-
-//     case 'FETCH_POSTS':
-//       console.log('in postReducer case FETCH_POSTS');
-//       return {
-//         ...state,
-//         items: action.payload   // from postActions.js
-//       }
-//     case 'NEW_POSTS':
-//       console.log('in postReducer case NEW_POSTS');
-//       return {
-//         ...state,
-//         items: [action.payload, ...state.items],        // from postActions.js
-//         item: action.payload    // from postActions.js
-//       }
     default:
       return state;
   }
 }
-
-
-// const crossRefCurieQueryFieldReducer = (state = 'ab', action) => {
-//   switch (action.type) {
-//     case 'CHANGE_FIELD':
-//       // console.log(action.payload);
-//       return action.payload;
-//     case 'SEARCH_BUTTON':
-//       console.log("query button reducer set " + action.payload);
-//       return action.payload;
-//     default:
-//       return state;
-//   }
-// }
-// export default crossRefCurieQueryFieldReducer;
