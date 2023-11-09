@@ -15,7 +15,7 @@ const MatchingTextBox = (highlight) => {
     <div className="searchRow-other"> Matching Text:
       <table><tbody>
         {Object.keys(highlight.matches).map((match,index) => (
-          <tr><td class="highlight-label">{match}</td><td class="highlight-value" dangerouslySetInnerHTML={{__html: highlight.matches[match]}} /></tr>
+          <tr key={`matchbox-table-row ${index}`}><td className="highlight-label">{match}</td><td className="highlight-value" dangerouslySetInnerHTML={{__html: highlight.matches[match]}} /></tr>
         ))}
       </tbody></table>
     </div>
