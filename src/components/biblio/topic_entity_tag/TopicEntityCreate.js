@@ -250,6 +250,7 @@ const TopicEntityCreate = () => {
             <AsyncTypeahead
               multiple
               isLoading={speciesSelectLoading}
+              id="entityTypeahead"
               placeholder="enter species name"
               ref={speciesTypeaheadRef}
 	      onSearch={async (query) => {
