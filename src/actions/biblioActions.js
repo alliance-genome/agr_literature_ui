@@ -955,7 +955,36 @@ export const queryId = (id) => {
   }
 };
 
+export const downloadPDFfile = (referencefileId, filename, accessToken, referenceId) => {
+  return dispatch => {
+    dispatch(addLoadingFileName(filename));
+    let url = process.env.REACT_APP_RESTAPI + '/reference/referencefile/download_file/' + referencefileId
+     
+    axios({
+      url: url,
+      method: "GET",
+      headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/pdf' // or leave this out if the server sets it
+      },
+      responseType: 'blob' // important for handling binary data
+    }).then(response => {
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const pdfUrl = window.URL.createObjectURL(blob);
+      window.open(pdfUrl, '_blank');
+    }).finally(() => {
+      dispatch(removeLoadingFileName(filename));
+    });
+      
+  }
+}
+    
 export const downloadReferencefile = (referencefileId, filename, accessToken, referenceId) => {
+
+  if (filename.endsWith('.pdf')) {
+      return downloadPDFfile(referencefileId, filename, accessToken, referenceId);
+  }
+    
   return dispatch => {
     dispatch(addLoadingFileName(filename));
     let url = process.env.REACT_APP_RESTAPI;
@@ -966,7 +995,7 @@ export const downloadReferencefile = (referencefileId, filename, accessToken, re
     }
     axios({
       url: url,
-      method: "GET",
+      method: "GET",	
       headers: {
         'content-type': 'application/octet-stream',
         'authorization': 'Bearer ' + accessToken
