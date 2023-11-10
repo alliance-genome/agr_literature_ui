@@ -22,19 +22,10 @@ const MatchingTextBox = (highlight) => {
   )
 }
 
-const XrefElement = (xref) => {
-    const [url, setUrl] = useState(null);
-    useEffect(() => {
-      searchXref(xref.xref.curie, setUrl);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-    return (
-      <li><span className="obsolete">{xref.xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span><a href={url} rel="noreferrer noopener" target="_blank">{xref.xref.curie}</a></li>
-    )
-}
-
 const SearchResults = () => {
 
     const searchResults = useSelector(state => state.search.searchResults);
+    const crossReferenceResults = useSelector(state => state.search.crossReferenceResults);
     const searchSuccess = useSelector(state => state.search.searchSuccess);
     const searchError = useSelector(state => state.search.searchError);
     const dispatch = useDispatch();
@@ -58,7 +49,7 @@ const SearchResults = () => {
                               <div className="searchRow-xref">
                                 <ul><li><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></li>
                                 {reference.cross_references ? reference.cross_references.map((xref, i) => (
-                                  <XrefElement key={`${xref} ${i}`} xref={xref}/>
+                                  <li><span className="obsolete">{xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span><a href={crossReferenceResults[xref.curie].url} rel="noreferrer noopener" target="_blank">{xref.curie}</a></li>
                                 )) : null}
                                 </ul>
                               </div>
