@@ -4,6 +4,7 @@ import axios from "axios";
 export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
 export const SEARCH_SET_SEARCH_RESULTS_PAGE = 'SEARCH_SET_SEARCH_RESULTS_PAGE';
 export const SEARCH_SET_SEARCH_RESULTS = 'SEARCH_SET_SEARCH_RESULTS';
+export const SEARCH_SET_CROSS_REFERENCE_RESULTS = 'SEARCH_SET_CROSS_REFERENCE_RESULTS';
 export const SEARCH_SET_SEARCH_LOADING = 'SEARCH_SET_SEARCH_LOADING';
 export const SEARCH_SET_SEARCH_ERROR = 'SEARCH_SET_SEARCH_ERROR';
 export const SEARCH_SET_SEARCH_FACETS = 'SEARCH_SET_SEARCH_FACETS';
@@ -87,8 +88,20 @@ export const searchReferences = () => {
     axios.post(restUrl + '/search/references/', params )
 
         .then(res => {
-          dispatch(setSearchResults(res.data.hits, res.data.return_count));
-          dispatch(setSearchFacets(res.data.aggregations));
+          const curieValues = res.data.hits.flatMap(hit =>
+              hit.cross_references.map(cross_reference => cross_reference.curie)
+          );
+          axios.post(restUrl + '/cross_reference/show_all', curieValues)
+              .then(resXref => {
+                let curieToCrossRefMap = resXref.data.reduce((accumulatedHashTable, currentObject) => {
+                  accumulatedHashTable[currentObject.curie] = currentObject;
+                  return accumulatedHashTable;
+                }, {});
+                dispatch(setCrossReferenceResults(curieToCrossRefMap));
+                dispatch(setSearchResults(res.data.hits, res.data.return_count));
+                dispatch(setSearchFacets(res.data.aggregations));
+              })
+              .catch(err => dispatch(setSearchError(true)));
         })
         .catch(err => dispatch(setSearchError(true)));
   }
@@ -198,6 +211,13 @@ export const setSearchResults = (searchResults, searchResultsCount) => ({
   payload: {
     searchResultsCount: searchResultsCount,
     searchResults: searchResults
+  }
+});
+
+export const setCrossReferenceResults = (crossReferenceResults) => ({
+  type: SEARCH_SET_CROSS_REFERENCE_RESULTS,
+  payload: {
+    crossReferenceResults: crossReferenceResults
   }
 });
 

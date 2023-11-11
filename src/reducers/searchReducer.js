@@ -10,7 +10,7 @@ import {
   SEARCH_SET_FACETS_LOADING, SEARCH_SET_DATE_PUBMED_MODIFIED,
   SEARCH_SET_DATE_PUBLISHED, SEARCH_SET_SEARCH_QUERY_FIELDS,
   SEARCH_SET_SORT_BY_PUBLISHED_DATE, SEARCH_SET_PARTIAL_MATCH,
-  SEARCH_SET_DATE_CREATED
+  SEARCH_SET_DATE_CREATED, SEARCH_SET_CROSS_REFERENCE_RESULTS
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -20,6 +20,7 @@ export const INITIAL_FACETS_LIMIT = 10;
 
 const initialState = {
   searchResults: [],
+  crossReferenceResults: {},
   searchResultsCount: 0,
   searchSizeResultsCount: 50,
   searchResultsPage: 1,
@@ -67,6 +68,12 @@ export default function(state = initialState, action) {
         searchError: false,
         searchResultsCount: action.payload.searchResultsCount,
         searchResults: action.payload.searchResults
+      }
+
+    case SEARCH_SET_CROSS_REFERENCE_RESULTS:
+      return {
+        ...state,
+        crossReferenceResults: action.payload.crossReferenceResults
       }
 
     case SEARCH_SET_SEARCH_LOADING:
