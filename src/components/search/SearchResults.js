@@ -56,10 +56,10 @@ const SearchResultItem = ({ reference }) => {
               ? <span dangerouslySetInnerHTML={{ __html: reference.abstract }} />
               : <span dangerouslySetInnerHTML={{ __html: truncateAbstract(reference.abstract, 500) }} />
             }
-          </p>
-          <p style={{color: 'blue', textDecoration: 'underline', cursor: 'pointer'}} onClick={toggleAbstract}>
-            {isExpanded ? 'Show Less' : 'Show More'}
-          </p>
+            <span style={{color: 'blue', textDecoration: 'underline', cursor: 'pointer'}} onClick={toggleAbstract}>
+		{isExpanded ? 'Show Less' : 'Show More'}
+            </span>
+	  </p>
         </div>
         {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}                                       
       </Col>                                                                                                                  
