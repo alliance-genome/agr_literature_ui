@@ -51,12 +51,12 @@ const SearchResultItem = ({ reference }) => {
         <div className="searchRow-other">Publication Date: {reference.date_published}</div>	
         <div className="searchRow-other">
           Abstract: 
-          <p onClick={toggleAbstract} style={{cursor: 'pointer'}}>
+          <p onClick={toggleAbstract} style={{cursor: 'pointer', marginBottom: 0}}>
             {isExpanded || !reference.abstract || reference.abstract.length < 500
               ? <span dangerouslySetInnerHTML={{ __html: reference.abstract }} />
               : <span dangerouslySetInnerHTML={{ __html: truncateAbstract(reference.abstract, 500) }} />
             }
-            <span style={{color: 'blue', textDecoration: 'underline', cursor: 'pointer'}} onClick={toggleAbstract}>
+            <span style={{color: 'blue', textDecoration: 'underline', marginLeft: '10px'}} onClick={toggleAbstract}>
 		{isExpanded ? 'Show Less' : 'Show More'}
             </span>
 	  </p>
