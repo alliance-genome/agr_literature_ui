@@ -64,7 +64,10 @@ const Sort = () => {
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   let accessLevel = oktaMod;
-  if (testerMod !== 'No') { accessLevel = testerMod; }
+  let activeMod = oktaMod;
+  if (testerMod !== 'No') {
+    activeMod = testerMod;
+    accessLevel = testerMod; }
   else if (oktaDeveloper) { accessLevel = 'developer'; }
 
   const tetAccessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
@@ -87,14 +90,14 @@ const Sort = () => {
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   // Hard coding as these are extremely unlikely to change,
-  // plus we can choose the default taxid for those with more than 1. 
+  // plus we can choose the default taxid for those with more than 1.
   // Plus mod_taxon table is empty!
   const mod_to_tax = {'FB': "NCBITaxon:7227",
-                      'MGI': "NCBITaxon:10090", 
-                      'RGD': "NCBITaxon:10116", 
-                      'SGD': "NCBITaxon:559292", 
-                      'WB': "NCBITaxon:6239", 
-                      'XB': "NCBITaxon:8355", 
+                      'MGI': "NCBITaxon:10090",
+                      'RGD': "NCBITaxon:10116",
+                      'SGD': "NCBITaxon:559292",
+                      'WB': "NCBITaxon:6239",
+                      'XB': "NCBITaxon:8355",
                       'ZFIN': "NCBITaxon:7955"};
 
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
@@ -105,70 +108,65 @@ const Sort = () => {
   //setup referencefile element
   const FileElement = ({referenceCurie}) => {
 
-     const rowReferencefileElements = [];
+    const rowReferencefileElements = [];
 
-     for (const[index, reference] of referencesToSortLive.entries()) {
-      if (referenceCurie  !== reference['curie']) {continue; }
-      const copyrightLicenseOpenAccess =  (reference['copyright_license_open_access'] !==null && reference['copyright_license_open_access'] === 'True') ? true : false;
-      let is_ok = false;
-      let allowed_mods = [];
+    for (const[index, reference] of referencesToSortLive.entries()) {
+     if (referenceCurie  !== reference['curie']) {continue; }
+     const copyrightLicenseOpenAccess =  (reference['copyright_license_open_access'] !==null && reference['copyright_license_open_access'] === 'True') ? true : false;
+     let is_ok = false;
+     let allowed_mods = [];
 
-      if ( 'referencefiles' in reference && reference['referencefiles'].length > 0) {
-          for (const referencefile of reference['referencefiles'].values()) {
-              let filename=null;
-              let fileclass=null;
-              let referencefile_id=null;
-              if (referencefile.file_class === 'main') {
-                  filename = referencefile.display_name + '.' + referencefile.file_extension;
-                  fileclass = referencefile.file_class;
-                  referencefile_id = referencefile.referencefile_id;
-              } else {
-                  continue;
-              }
-              if ('referencefile_mods' in referencefile && referencefile['referencefile_mods'].length > 0) {
-                  //console.log('referencefile_mod for ' + referenceCurie);
-                  for (const rfm of referencefile['referencefile_mods'].values()) {
-                      if (rfm['mod_abbreviation'] !== null) {
-                          allowed_mods.push(rfm['mod_abbreviation']);
-                          console.log("referencefile_mod for " + referenceCurie + " " + rfm['mod_abbreviation']);
-                      }
-                      if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) {
-                          is_ok = true;
-                      }
-                  }
-              }
+     if ( 'referencefiles' in reference && reference['referencefiles'].length > 0) {
+         for (const referencefile of reference['referencefiles'].values()) {
+             let filename=null;
+             let fileclass=null;
+             let referencefile_id=null;
+             if (referencefile.file_class === 'main') {
+                 filename = referencefile.display_name + '.' + referencefile.file_extension;
+                 fileclass = referencefile.file_class;
+                 referencefile_id = referencefile.referencefile_id;
+             } else {
+                 continue;
+             }
+             if ('referencefile_mods' in referencefile && referencefile['referencefile_mods'].length > 0) {
+                 //console.log('referencefile_mod for ' + referenceCurie);
+                 for (const rfm of referencefile['referencefile_mods'].values()) {
+                     if (rfm['mod_abbreviation'] !== null) {
+                         allowed_mods.push(rfm['mod_abbreviation']);
+                         console.log("referencefile_mod for " + referenceCurie + " " + rfm['mod_abbreviation']);
+                     }
+                     if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) {
+                         is_ok = true;
+                     }
+                 }
+             }
 
-              console.log("file_name:" + filename + 'index:' + index);
-              let referencefileValue = (
-                  <div><b>{reference['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-              if (copyrightLicenseOpenAccess || accessLevel === 'developer') {
-                  is_ok = true;
-              } else if (accessLevel === 'No') {
-                  is_ok = false;
-                  referencefileValue = (<div><b>{fileclass}:&nbsp;</b>{filename}</div>);
-              }
-              if (is_ok) {
-                  referencefileValue = (<div><b>{fileclass}:&nbsp;</b>
-                      <button className='button-to-link' onClick={() =>
-                          dispatch(downloadReferencefile(referencefile_id, filename, accessToken))
-                      }>{filename}</button>
-                  </div>);
-              }
-              const referencefileRow = (
-                  <div>
-                      {referencefileValue}
-                  </div>);
-              rowReferencefileElements.push( referencefileRow );
-          }
-       }
-
-     }
-
-      return (
-        <>
-         {rowReferencefileElements}
-        </>);
-   }
+             console.log("file_name:" + filename + 'index:' + index);
+             let referencefileValue = (
+                 <div><b>{reference['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
+             if (copyrightLicenseOpenAccess || accessLevel === 'developer') {
+                 is_ok = true;
+             } else if (accessLevel === 'No') {
+                 is_ok = false;
+                 referencefileValue = (<div><b>{fileclass}:&nbsp;</b>{filename}</div>);
+             }
+             if (is_ok) {
+                 referencefileValue = (<div><b>{fileclass}:&nbsp;</b>
+                     <button className='button-to-link' onClick={() =>
+                         dispatch(downloadReferencefile(referencefile_id, filename, accessToken))
+                     }>{filename}</button>
+                 </div>);
+             }
+             const referencefileRow = (
+                 <div key={filename}>
+                     {referencefileValue}
+                 </div>);
+             rowReferencefileElements.push( referencefileRow );
+         }
+      }
+    }
+    return (<>{rowReferencefileElements}</>);
+  }
 
   function updateSorting() {
     const forApiArray = []
@@ -197,7 +195,7 @@ const Sort = () => {
               let array = [ subPath, updateJson, method, index, field, subField]
               forApiArray.push( array ); }
             else {
-              updateJson = { 'workflow_tag_id': workflowTagId, 'mod_abbreviation': '', 'reference_curie': reference['curie'] }
+              updateJson = { 'workflow_tag_id': workflowTagId, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] }
               subPath = 'workflow_tag/'
               method = 'POST';
               let array = [ subPath, updateJson, method, index, field, subField]
@@ -255,7 +253,7 @@ const Sort = () => {
           </Col>
           <Col lg={5} ></Col>
         </Row>
-        { (accessLevel === 'WB') ? 
+        { (activeMod === 'WB') ?
           <Row>
             <Col lg={2} ></Col>
             <Col lg={8} >
@@ -352,33 +350,37 @@ const Sort = () => {
                       id={`inside_corpus_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                   /><br/><br/>
-                  <Form.Check
-                      inline
-                      disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
-                      checked={ (reference['workflow'] === 'experimental') ? 'checked' : '' }
-                      type='radio'
-                      label='expt'
-                      id={`experimental_toggle ${index}`}
-                      onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                  /><br/>
-                  <Form.Check
-                      inline
-                      disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
-                      checked={ (reference['workflow'] === 'not_experimental') ? 'checked' : '' }
-                      type='radio'
-                      label='not expt'
-                      id={`not_experimental_toggle ${index}`}
-                      onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                  /><br/>
-                  <Form.Check
-                      inline
-                      disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
-                      checked={ (reference['workflow'] === 'meeting') ? 'checked' : '' }
-                      type='radio'
-                      label='meeting'
-                      id={`meeting_toggle ${index}`}
-                      onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                  /><br/>
+                  { (activeMod === 'WB') &&
+                    <>
+                      <Form.Check
+                          inline
+                          disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
+                          checked={ (reference['workflow'] === 'experimental') ? 'checked' : '' }
+                          type='radio'
+                          label='expt'
+                          id={`experimental_toggle ${index}`}
+                          onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+                      /><br/>
+                      <Form.Check
+                          inline
+                          disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
+                          checked={ (reference['workflow'] === 'not_experimental') ? 'checked' : '' }
+                          type='radio'
+                          label='not expt'
+                          id={`not_experimental_toggle ${index}`}
+                          onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+                      /><br/>
+                      <Form.Check
+                          inline
+                          disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
+                          checked={ (reference['workflow'] === 'meeting') ? 'checked' : '' }
+                          type='radio'
+                          label='meeting'
+                          id={`meeting_toggle ${index}`}
+                          onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+                      /><br/>
+                    </>
+                  }
                   <Form.Control as="select" id={`primary_select ${index}`} style={{display: 'none'}}>
                       <option>Experimental</option>
                       <option>Not Experimental</option>
@@ -434,7 +436,7 @@ const Sort = () => {
                       options={typeaheadOptions}
                       selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
                   />
-                  { (accessLevel === 'WB') && <div><br/><NewTaxonModal/></div> }
+                  { (activeMod === 'WB') && <div><br/><NewTaxonModal/></div> }
               </Col>
               <Col lg={1} className="Col-general Col-display" style={{display: 'block', backgroundColor: backgroundColor}}>
                   <br/><br/>

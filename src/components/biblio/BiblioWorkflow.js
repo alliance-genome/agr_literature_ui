@@ -18,6 +18,10 @@ const BiblioWorkflow = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   // const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
 
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+
   const accessToken = useSelector(state => state.isLogged.accessToken);
   // const entityEntitiesToMap = useSelector(state => state.biblio.entityEntitiesToMap);
   // const entityEntityMappings = useSelector(state => state.biblio.entityEntityMappings);
@@ -45,15 +49,18 @@ const BiblioWorkflow = () => {
       <Col className="form-label col-form-label" sm="3"><h3>Workflow Editor</h3></Col></Row>
     <Row className="form-group row" >
       <Col sm="1"></Col>
+      <Col className="div-grey-border" sm="1">MOD</Col>
       <Col className="div-grey-border" sm="2">Reference Type (curatability)</Col>
       <Col className="div-grey-border" sm="2">Date Updated</Col>
       <Col className="div-grey-border" sm="2">Updater</Col>
       <Col className="div-grey-border" sm="2">Date Created</Col>
       <Col className="div-grey-border" sm="2">Creator</Col>
-      <Col sm="1"></Col>
     </Row>
     <Row className="form-group row" >
       <Col sm="1"></Col>
+      <Col sm="1">
+        {'mod_abbreviation' in referenceJsonLive['workflow_curatability'] ? referenceJsonLive['workflow_curatability']['mod_abbreviation'] : ''}
+      </Col>
       <Col sm="2">
         <Form.Control as="select" id="curatabilitySelect" type="curatabilitySelect" value={curatabilityValue} 
           disabled={isUpdatingWorkflowCuratability === true ? 'disabled' : ''}
@@ -69,7 +76,7 @@ const BiblioWorkflow = () => {
                 dispatch(updateSelectBiblioWorkflowCuratability(accessToken, referenceJsonLive['workflow_curatability']['reference_workflow_tag_id'], {'workflow_tag_id': e.target.value}, 'PATCH')) } }
             else {
               // console.log('new');
-              dispatch(updateSelectBiblioWorkflowCuratability(accessToken, null, {'workflow_tag_id': e.target.value, 'reference_curie': referenceJsonLive['curie'], 'mod_abbreviation': '' }, 'POST')); }
+              dispatch(updateSelectBiblioWorkflowCuratability(accessToken, null, {'workflow_tag_id': e.target.value, 'reference_curie': referenceJsonLive['curie'], 'mod_abbreviation': accessLevel }, 'POST')); }
           } } >
           { curatabilityList.map((optionValue, index) => (
             <option key={`curatabilitySelect ${optionValue}`} value={optionValue}>{curieToNameAtp[optionValue]}</option>
