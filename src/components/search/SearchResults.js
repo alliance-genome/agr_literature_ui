@@ -32,8 +32,11 @@ const SearchResultItem = ({ reference }) => {
   }
 
   function truncateAbstract(abstract, maxLength) {
-    if (abstract.length <= maxLength) return abstract;
-    return abstract.substr(0, abstract.lastIndexOf(' ', maxLength)) + '...';
+    // remove specific HTML tags
+    const cleanedAbstract = abstract.replace(/<\/?(strong|p)>/g, '');
+
+    if (cleanedAbstract.length <= maxLength) return abstract;
+    return cleanedAbstract.substr(0, cleanedAbstract.lastIndexOf(' ', maxLength)) + '...';
   }
 
   return (
