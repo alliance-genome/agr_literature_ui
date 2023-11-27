@@ -32,10 +32,21 @@ const SearchResultItem = ({ reference }) => {
   }
 
   function truncateAbstract(abstract, maxLength) {
-    if (abstract.length <= maxLength) return abstract;
-    return abstract.substr(0, abstract.lastIndexOf(' ', maxLength)) + '...';
+    // remove specific HTML tags
+    const cleanedAbstract = abstract.replace(/<\/?(strong|p)>/g, '');
+
+    if (cleanedAbstract.length <= maxLength) return cleanedAbstract;
+    return cleanedAbstract.substr(0, cleanedAbstract.lastIndexOf(' ', maxLength)) + '...';
   }
 
+  function formatAbstract(abstract) {
+    // ff <strong> tags are present, replace <p> with <br> and remove </p>
+    if (abstract.includes('<strong>')) {
+      return abstract.replace(/<p>/g, '<br>').replace(/<\/p>/g, '');
+    }
+    return abstract;
+  }
+  
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" > 
@@ -51,15 +62,12 @@ const SearchResultItem = ({ reference }) => {
         <div className="searchRow-other">Publication Date: {reference.date_published}</div>	
         <div className="searchRow-other">
           Abstract: 
-          <p onClick={toggleAbstract} style={{cursor: 'pointer', marginBottom: 0}}>
-            {isExpanded || !reference.abstract || reference.abstract.length < 500
-              ? <span dangerouslySetInnerHTML={{ __html: reference.abstract }} />
-              : <span dangerouslySetInnerHTML={{ __html: truncateAbstract(reference.abstract, 500) }} />
-            }
-            <span style={{color: 'blue', textDecoration: 'underline', marginLeft: '10px'}} onClick={toggleAbstract}>
-		{isExpanded ? 'Show Less' : 'Show More'}
+          <div style={{ cursor: 'pointer' }} onClick={toggleAbstract}>
+            <span dangerouslySetInnerHTML={{ __html: isExpanded ? formatAbstract(reference.abstract) : truncateAbstract(reference.abstract, 500) }} />
+            <span style={{ color: 'blue', textDecoration: 'underline', marginLeft: '10px' }}>
+              {isExpanded ? 'Show Less' : 'Show More'}
             </span>
-	  </p>
+          </div>
         </div>
         {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}                                       
       </Col>                                                                                                                  
