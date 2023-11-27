@@ -39,6 +39,14 @@ const SearchResultItem = ({ reference }) => {
     return cleanedAbstract.substr(0, cleanedAbstract.lastIndexOf(' ', maxLength)) + '...';
   }
 
+  function removeTrailingPTag(abstract) {
+    return abstract.replace(/<\/p>\s*$/, ''); // remove a closing </p> tag at the end
+  }
+
+  function hasFormattingTags(abstract) {
+    return /<\/?(strong|em|b|i)>/.test(abstract);
+  }
+  
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" > 
@@ -56,11 +64,15 @@ const SearchResultItem = ({ reference }) => {
           Abstract: 
           <p onClick={toggleAbstract} style={{cursor: 'pointer', marginBottom: 0}}>
             {isExpanded || !reference.abstract || reference.abstract.length < 500
-              ? <span dangerouslySetInnerHTML={{ __html: reference.abstract }} />
+              ? <span dangerouslySetInnerHTML={{ __html: removeTrailingPTag(reference.abstract) }} />
               : <span dangerouslySetInnerHTML={{ __html: truncateAbstract(reference.abstract, 500) }} />
             }
-            <span style={{color: 'blue', textDecoration: 'underline', marginLeft: '10px'}} onClick={toggleAbstract}>
-		{isExpanded ? 'Show Less' : 'Show More'}
+	    <span style={{
+              color: 'blue', 
+              textDecoration: 'underline', 
+              marginLeft: hasFormattingTags(reference.abstract) ? '0px' : '10px'
+            }}>
+              {isExpanded ? 'Show Less' : 'Show More'}
             </span>
 	  </p>
         </div>
