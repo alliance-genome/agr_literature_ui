@@ -662,9 +662,10 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 	  const justDisplayData =
 	      referenceJsonLive[fieldName] &&
 	      referenceJsonLive[fieldName][index] && 
-              referenceJsonLive[fieldName][index]['mod_abbreviation'] !== accessLevel &&
-              (referenceJsonLive[fieldName][index]['corpus'] === 'inside_corpus' ||
-	       referenceJsonLive[fieldName][index]['corpus'] === 'outside_corpus');
+              referenceJsonLive[fieldName][index]['mod_abbreviation'] !== accessLevel
+//  &&
+//               (referenceJsonLive[fieldName][index]['corpus'] === 'inside_corpus' ||
+// 	       referenceJsonLive[fieldName][index]['corpus'] === 'outside_corpus');
 	
 	  let otherColSize = 3;
 	  let otherColSizeB = 4;
@@ -754,16 +755,19 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 		  <Col className="Col-general form-label col-form-label" sm="2" >
 		    {fieldName}
 		  </Col>
-		  <Col sm="2">
-		    <Form.Control
-		      as="input"
-		      id={`${fieldName} ${index} mod_abbreviation`}
-		      type={fieldName}
-		      value={valueLiveMod}
-		      className="form-control"
-		      disabled="disabled"
-		    />
-		  </Col>
+	          <ColEditorSelect
+		    key={`colElement ${fieldName} ${index} mod_abbreviation`}
+		    fieldType="select"
+		    fieldName={fieldName}
+		    colSize="2"
+		    value={valueLiveMod}
+		    updatedFlag={updatedFlagMod}
+		    placeholder="mod_abbreviation"
+		    disabled={disabled}
+		    fieldKey={`${fieldName} ${index} mod_abbreviation`}
+		    enumType="mods"
+		    dispatchAction={changeFieldModAssociationReferenceJson}
+		  />
 	          <Col sm="4">
 		    <Form.Control
 		      as="input"
