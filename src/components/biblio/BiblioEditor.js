@@ -79,7 +79,7 @@ enumDict['personXrefPrefix'] = ['', 'ORCID']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'Xenbase', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN', 'CGC', 'WBG', 'WM']
 enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor']
 enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
-enumDict['limitedCorpusOptions'] = ['needs_review']
+// enumDict['limitedCorpusOptions'] = ['needs_review']
 enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'automated_alliance', 'assigned_for_review']
 
 // title
@@ -649,12 +649,12 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 
   const initializeDict = {'mod_abbreviation': '',
 			  'corpus': 'needs_review',
-			  'mod_corpus_sort_source':
-			  'assigned_for_review', 'mod_corpus_association_id': 'new'}
+			  'mod_corpus_sort_source': 'assigned_for_review',
+			  'mod_corpus_association_id': 'new'}
   let disabled = ''
   const rowModAssociationElements = []
 
-  let isDifferentMod = false;
+  //let isDifferentMod = false;
     
   if ('mod_corpus_associations' in referenceJsonLive && referenceJsonLive['mod_corpus_associations'] !== null) {
     for (const[index, modAssociationDict] of referenceJsonLive['mod_corpus_associations'].entries()) {
@@ -662,11 +662,6 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
             referenceJsonLive[fieldName][index]['mod_abbreviation'] !== accessLevel &&
             (referenceJsonLive[fieldName][index]['corpus'] === 'inside_corpus' ||
 	     referenceJsonLive[fieldName][index]['corpus'] === 'outside_corpus');
-
-      if (justDisplayData === true) {
-	 isDifferentMod = true;
-      }
-      // let corpusDropdownType = justDisplayData ? "limitedCorpusOptions" : "modAssociationCorpus";
 	
       let otherColSize = 3;
       let otherColSizeB = 4;
@@ -696,13 +691,14 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
       if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
 
       if (justDisplayData) {
+	//isDifferentMod = true;
         rowModAssociationElements.push(
-          <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-display Col-display-left">mod_corpus_associations</Col>
-            <Col className={`Col-general Col-display ${updatedFlagMod}`} lg={{ span: 2 }}>{valueLiveMod}</Col>
-            <Col className={`Col-general Col-display ${updatedFlagCorpus}`} lg={{ span: 4 }}>{valueLiveCorpus}</Col>
-            <Col className={`Col-general Col-display Col-display-right ${updatedFlagSource}`} lg={{ span: 4 }}>{valueLiveSource}</Col>
-          </Row>
+	  <Form.Group as={Row} key={`${fieldName} ${index}`}>
+	    <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+	    <Col sm="2"><Form.Control as="input" id={`${fieldName} ${index} mod_abbreviation`} type={fieldName} value={valueLiveMod} className="form-control" disabled="disabled"  /></Col>
+	    <Col sm="4"><Form.Control as="input" id={`${fieldName} ${index} corpus`} type={fieldName} value={valueLiveCorpus} className="form-control" disabled="disabled"  /></Col>
+	    <Col sm="4"><Form.Control as="input" id={`${fieldName} ${index} mod_corpus_sort_source`} type={fieldName} value={valueLiveSource} className="form-control" disabled="disabled"  /></Col>
+          </Form.Group>
         );
       } else {
 	if (mcaDeleted) {
@@ -729,19 +725,23 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
       }
     }
   }
-  if (disabled === '') {
-    let addRowCorpusValue = isDifferentMod ? "needs_review" : "needs_review"; 
-    let addRowInitializeDict = isDifferentMod ? { ...initializeDict, 'corpus': addRowCorpusValue } : initializeDict;
 
+  if (disabled === '') {
+    //let addRowInitializeDict = isDifferentMod ? 
+    //	{ ...initializeDict, 'corpus': 'needs_review' } : 
+    //	initializeDict;
     rowModAssociationElements.push(
-        <Row className="form-group row" key={fieldName} >
-            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
-            <Col sm="10" >
-                <div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, addRowInitializeDict))} >add {fieldName}</div>
-            </Col>
-        </Row>
+      <Row className="form-group row" key={fieldName} >
+        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
+        <Col sm="10" >
+            <div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >
+            add {fieldName}
+          </div>
+        </Col>
+      </Row>
     );
-  }	
+  }
+    
   return (<>{rowModAssociationElements}</>);
 
 }
