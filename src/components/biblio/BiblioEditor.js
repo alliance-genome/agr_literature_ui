@@ -653,88 +653,225 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 			  'mod_corpus_association_id': 'new'}
   let disabled = ''
   const rowModAssociationElements = []
-
-  //let isDifferentMod = false;
     
-  if ('mod_corpus_associations' in referenceJsonLive && referenceJsonLive['mod_corpus_associations'] !== null) {
-    for (const[index, modAssociationDict] of referenceJsonLive['mod_corpus_associations'].entries()) {
-      const justDisplayData = referenceJsonLive[fieldName] && referenceJsonLive[fieldName][index] && 
-            referenceJsonLive[fieldName][index]['mod_abbreviation'] !== accessLevel &&
-            (referenceJsonLive[fieldName][index]['corpus'] === 'inside_corpus' ||
-	     referenceJsonLive[fieldName][index]['corpus'] === 'outside_corpus');
+  if ('mod_corpus_associations' in referenceJsonLive &&
+      referenceJsonLive['mod_corpus_associations'] !== null) {
+      for (const[index, modAssociationDict] of referenceJsonLive[
+	  'mod_corpus_associations'
+      ].entries()) {
+	  const justDisplayData =
+	      referenceJsonLive[fieldName] &&
+	      referenceJsonLive[fieldName][index] && 
+              referenceJsonLive[fieldName][index]['mod_abbreviation'] !== accessLevel &&
+              (referenceJsonLive[fieldName][index]['corpus'] === 'inside_corpus' ||
+	       referenceJsonLive[fieldName][index]['corpus'] === 'outside_corpus');
 	
-      let otherColSize = 3;
-      let otherColSizeB = 4;
-      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      if ('mod_corpus_association_id' in modAssociationDict && modAssociationDict['mod_corpus_association_id'] !== 'new') {
-        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldModAssociationReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
-      if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 8; }
+	  let otherColSize = 3;
+	  let otherColSizeB = 4;
+	  let buttonsElement = (
+	    <Col className="Col-editor-buttons" sm="1">
+              <Button
+	        id={`revert ${fieldName} ${index}`}
+	        variant="outline-secondary"
+	        onClick={(e) => dispatch(biblioRevertFieldArray(e))}
+	      >
+		<FontAwesomeIcon icon={faUndo} />
+              </Button>{' '}
+	    </Col>
+	  );
+	  if ('mod_corpus_association_id' in modAssociationDict &&
+	      modAssociationDict['mod_corpus_association_id'] !== 'new') {
+            buttonsElement = (
+	      <Col className="Col-editor-buttons" sm="1">
+		<Button
+		  id={`revert ${fieldName} ${index}`}
+		  variant="outline-secondary"
+		  onClick={(e) => dispatch(biblioRevertFieldArray(e))}
+		>
+		  <FontAwesomeIcon icon={faUndo} />
+		</Button>{' '}
+		<Button
+		  id={`delete ${fieldName} ${index}`}
+		  variant="outline-secondary"
+		  onClick={(e) => dispatch(deleteFieldModAssociationReferenceJson(e))}
+		>
+		  <FontAwesomeIcon icon={faTrashAlt} />
+		</Button>{' '}
+              </Col>
+	    );
+	  }
+	  if (disabled === 'disabled') {
+	    buttonsElement = (<></>);
+	    otherColSize = 8;
+	  }
 
-      const valueLiveMod = modAssociationDict['mod_abbreviation']; let valueDbMod = ''; let updatedFlagMod = '';
-      const valueLiveCorpus = modAssociationDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
-      const valueLiveSource = modAssociationDict['mod_corpus_sort_source']; let valueDbSource = ''; let updatedFlagSource = '';
-      const valueLiveMcaId = modAssociationDict['mod_corpus_association_id'];
+	  const valueLiveMod = modAssociationDict['mod_abbreviation'];
+	  let valueDbMod = '';
+	  let updatedFlagMod = '';
+	  const valueLiveCorpus = modAssociationDict['corpus'];
+	  let valueDbCorpus = '';
+	  let updatedFlagCorpus = '';
+	  const valueLiveSource = modAssociationDict['mod_corpus_sort_source'];
+	  let valueDbSource = '';
+	  let updatedFlagSource = '';
+	  const valueLiveMcaId = modAssociationDict['mod_corpus_association_id'];
 
-      const mcaDeleted = (('deleteMe' in modAssociationDict) && (modAssociationDict['deleteMe'] === true)) ? true : false;
+	  const mcaDeleted =
+	    'deleteMe' in modAssociationDict && modAssociationDict['deleteMe'] === true
+	      ? true
+	      : false;
+	  
+	  if (typeof referenceJsonDb[fieldName][index] !== 'undefined' &&
+	      typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') {
+              valueDbMod = referenceJsonDb[fieldName][index]['mod_abbreviation']
+	  }
+	  
+	  if (typeof referenceJsonDb[fieldName][index] !== 'undefined' &&
+              typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') {
+              valueDbCorpus = referenceJsonDb[fieldName][index]['corpus']
+	  }
 
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') ) {
-             valueDbMod = referenceJsonDb[fieldName][index]['mod_abbreviation'] }
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') ) {
-             valueDbCorpus = referenceJsonDb[fieldName][index]['corpus'] }
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] !== 'undefined') ) {
-             valueDbSource = referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] }
-      if (valueLiveMod !== valueDbMod) { updatedFlagMod = 'updated'; }
-      if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
-      if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
+	  if (typeof referenceJsonDb[fieldName][index] !== 'undefined' &&
+              typeof referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] !== 'undefined') {
+              valueDbSource = referenceJsonDb[fieldName][index]['mod_corpus_sort_source']
+	  }
 
-      if (justDisplayData) {
-	//isDifferentMod = true;
-        rowModAssociationElements.push(
-	  <Form.Group as={Row} key={`${fieldName} ${index}`}>
-	    <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-	    <Col sm="2"><Form.Control as="input" id={`${fieldName} ${index} mod_abbreviation`} type={fieldName} value={valueLiveMod} className="form-control" disabled="disabled"  /></Col>
-	    <Col sm="4"><Form.Control as="input" id={`${fieldName} ${index} corpus`} type={fieldName} value={valueLiveCorpus} className="form-control" disabled="disabled"  /></Col>
-	    <Col sm="4"><Form.Control as="input" id={`${fieldName} ${index} mod_corpus_sort_source`} type={fieldName} value={valueLiveSource} className="form-control" disabled="disabled"  /></Col>
-          </Form.Group>
-        );
-      } else {
-	if (mcaDeleted) {
-          rowModAssociationElements.push(
-            <Form.Group as={Row} key={`${fieldName} ${index}`}>
-              <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-              <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSize + otherColSizeB} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveMod} {valueLiveCorpus} {valueLiveSource}</Col>
-              {buttonsElement}
-            </Form.Group>);
-        } else {
-          rowModAssociationElements.push(
-            <Form.Group as={Row} key={`${fieldName} ${index}`}>
-              <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-              { valueLiveMcaId === 'new' ?
-                <ColEditorSelect key={`colElement ${fieldName} ${index} mod_abbreviation`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveMod} updatedFlag={updatedFlagMod} placeholder="mod_abbreviation" disabled={disabled} fieldKey={`${fieldName} ${index} mod_abbreviation`} enumType="mods" dispatchAction={changeFieldModAssociationReferenceJson} /> :
-                <Col sm="2"><Form.Control as="input" id={`${fieldName} ${index} mod_abbreviation`} type={fieldName} value={valueLiveMod} className="form-control" disabled="disabled"  /></Col>
+	  if (valueLiveMod !== valueDbMod) {
+	      updatedFlagMod = 'updated';
+	  }
+
+	  if (valueLiveCorpus !== valueDbCorpus) {
+	      updatedFlagCorpus = 'updated';
+	  }
+
+	  if (valueLiveSource !== valueDbSource) {
+	      updatedFlagSource = 'updated';
+	  }
+
+	  if (justDisplayData) {
+              rowModAssociationElements.push(
+		<Form.Group as={Row} key={`${fieldName} ${index}`}>
+		  <Col className="Col-general form-label col-form-label" sm="2" >
+		    {fieldName}
+		  </Col>
+		  <Col sm="2">
+		    <Form.Control
+		      as="input"
+		      id={`${fieldName} ${index} mod_abbreviation`}
+		      type={fieldName}
+		      value={valueLiveMod}
+		      className="form-control"
+		      disabled="disabled"
+		    />
+		  </Col>
+	          <Col sm="4">
+		    <Form.Control
+		      as="input"
+		      id={`${fieldName} ${index} corpus`}
+		      type={fieldName}
+		      value={valueLiveCorpus}
+		      className="form-control"
+		      disabled="disabled"
+		    />
+		  </Col>
+	          <Col sm="4">
+		    <Form.Control
+		      as="input"
+		      id={`${fieldName} ${index} mod_corpus_sort_source`}
+		      type={fieldName}
+		      value={valueLiveSource}
+		      className="form-control"
+		      disabled="disabled"
+		    />
+		  </Col>
+                </Form.Group>
+              );
+	  } else {
+	      if (mcaDeleted) {
+		rowModAssociationElements.push(
+	          <Form.Group as={Row} key={`${fieldName} ${index}`}>
+                    <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+                    <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSize + otherColSizeB} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveMod} {valueLiveCorpus} {valueLiveSource}</Col>
+                    {buttonsElement}
+                  </Form.Group>);
+              } else {
+	        rowModAssociationElements.push(
+	          <Form.Group as={Row} key={`${fieldName} ${index}`}>
+	            <Col className="Col-general form-label col-form-label" sm="2" >
+		      {fieldName}
+		    </Col>
+		    {valueLiveMcaId === 'new' ? (
+	              <ColEditorSelect
+		        key={`colElement ${fieldName} ${index} mod_abbreviation`}
+		        fieldType="select"
+		        fieldName={fieldName}
+		        colSize="2"
+		        value={valueLiveMod}
+		        updatedFlag={updatedFlagMod}
+		        placeholder="mod_abbreviation"
+		        disabled={disabled}
+		        fieldKey={`${fieldName} ${index} mod_abbreviation`}
+		        enumType="mods"
+		        dispatchAction={changeFieldModAssociationReferenceJson}
+		      />
+		    ) : (
+		      <Col sm="2">
+			<Form.Control
+			  as="input"
+			  id={`${fieldName} ${index} mod_abbreviation`}
+			  type={fieldName}
+			  value={valueLiveMod}
+			  className="form-control"
+			  disabled="disabled"
+			/>
+		      </Col>
+                    )}
+		    <ColEditorSelect
+		      key={`colElement ${fieldName} ${index} corpus`}
+		      fieldType="select"
+		      fieldName={fieldName}
+		      colSize={otherColSize}
+		      value={valueLiveCorpus}
+		      updatedFlag={updatedFlagCorpus}
+		      placeholder="corpus"
+		      disabled={disabled}
+		      fieldKey={`${fieldName} ${index} corpus`}
+		      enumType="modAssociationCorpus"
+		      dispatchAction={changeFieldModAssociationReferenceJson}
+		    />
+		    <ColEditorSelect
+		      key={`colElement ${fieldName} ${index} mod_corpus_sort_source`}
+		      fieldType="select"
+		      fieldName={fieldName}
+		      colSize={otherColSizeB}
+		      value={valueLiveSource}
+		      updatedFlag={updatedFlagSource}
+		      placeholder="mod_corpus_sort_source"
+		      disabled={disabled}
+		      fieldKey={`${fieldName} ${index} mod_corpus_sort_source`}
+		      enumType="modAssociationSource"
+		      dispatchAction={changeFieldModAssociationReferenceJson}
+		    />
+	            {buttonsElement}
+		  </Form.Group>
+		); 
               }
-              <ColEditorSelect key={`colElement ${fieldName} ${index} corpus`} fieldType="select" fieldName={fieldName} colSize={otherColSize} value={valueLiveCorpus} updatedFlag={updatedFlagCorpus} placeholder="corpus" disabled={disabled} fieldKey={`${fieldName} ${index} corpus`} enumType="modAssociationCorpus" dispatchAction={changeFieldModAssociationReferenceJson} />
-              <ColEditorSelect key={`colElement ${fieldName} ${index} mod_corpus_sort_source`} fieldType="select" fieldName={fieldName} colSize={otherColSizeB} value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="mod_corpus_sort_source" disabled={disabled} fieldKey={`${fieldName} ${index} mod_corpus_sort_source`} enumType="modAssociationSource" dispatchAction={changeFieldModAssociationReferenceJson} />
-              {buttonsElement}
-            </Form.Group>
-	  ); 
-        }
+	  }
       }
-    }
   }
 
   if (disabled === '') {
-    //let addRowInitializeDict = isDifferentMod ? 
-    //	{ ...initializeDict, 'corpus': 'needs_review' } : 
-    //	initializeDict;
     rowModAssociationElements.push(
       <Row className="form-group row" key={fieldName} >
-        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
+        <Col className="Col-general form-label col-form-label" sm="2" >
+	  {fieldName}
+	</Col>
         <Col sm="10" >
-            <div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >
+          <div
+	    id={fieldName}
+	    className="form-control biblio-button"
+	    onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))}
+	  >
             add {fieldName}
           </div>
         </Col>
