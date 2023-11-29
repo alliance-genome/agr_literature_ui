@@ -78,8 +78,6 @@ const TopicEntityCreate = () => {
   // effect to reset view and other fields when topic changes
   useEffect(() => {
     if (topicSelect === speciesATP) { 
-      //setCurrentView('autocomplete');
-	//setSelectedSpecies([]); // reset species list when topic changes
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: '' } }));
       setIsSpeciesSelected(true); // reset when topic changes
@@ -148,8 +146,8 @@ const TopicEntityCreate = () => {
     const method = 'POST';
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
-        console.log("entityResult=" + entityResult);
-        console.log("entityResult.curie=" + entityResult.curie);
+        console.log(entityResult);
+        console.log(entityResult.curie);
         if (entityResult.curie !== 'no Alliance curie') {
           let updateJson = initializeUpdateJson(refCurie);
           updateJson['entity_source'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
@@ -183,8 +181,6 @@ const TopicEntityCreate = () => {
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList); }
 
   const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? true : false;
-  // const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined || topicEntitySourceId === undefined || topicSelect === undefined) ? true : false;
-
   const disabledAddButton = 
     (topicSelect === speciesATP && !isSpeciesSelected) ||
     (topicSelect !== speciesATP && (taxonSelect === '' || taxonSelect === undefined)) ||
