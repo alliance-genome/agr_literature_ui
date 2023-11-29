@@ -58,7 +58,8 @@ const TopicEntityCreate = () => {
   const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
   const speciesTypeaheadRef = useRef(null);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
-   
+  const [isSpeciesSelected, setIsSpeciesSelected] = useState(false);
+    
   const curieToNameTaxon = getCurieToNameTaxon();
   const modToTaxon = getModToTaxon();
     
@@ -78,8 +79,10 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     if (topicSelect === speciesATP) { 
       //setCurrentView('autocomplete');
-      //setSelectedSpecies([]); // reset species list when topic changes
+	//setSelectedSpecies([]); // reset species list when topic changes
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: '' } }));
+      setIsSpeciesSelected(true); // reset when topic changes
     } else {
       setSelectedSpecies([]); // Clear selected species
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
@@ -145,12 +148,13 @@ const TopicEntityCreate = () => {
     const method = 'POST';
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
-        console.log(entityResult);
-        console.log(entityResult.curie);
+        console.log("entityResult=" + entityResult);
+        console.log("entityResult.curie=" + entityResult.curie);
         if (entityResult.curie !== 'no Alliance curie') {
           let updateJson = initializeUpdateJson(refCurie);
           updateJson['entity_source'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
+	  updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
           updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]
           forApiArray.push(array); } } }
@@ -179,8 +183,13 @@ const TopicEntityCreate = () => {
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList); }
 
   const disabledEntityList = (taxonSelect === '' || taxonSelect === undefined) ? true : false;
-  const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined || topicEntitySourceId === undefined || topicSelect === undefined) ? true : false;
+  // const disabledAddButton = (taxonSelect === '' || taxonSelect === undefined || topicEntitySourceId === undefined || topicSelect === undefined) ? true : false;
 
+  const disabledAddButton = 
+    (topicSelect === speciesATP && !isSpeciesSelected) ||
+    (topicSelect !== speciesATP && (taxonSelect === '' || taxonSelect === undefined)) ||
+    (topicEntitySourceId === undefined || topicSelect === undefined) ? true : false;
+      
   return (
     <Container fluid>
     <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error"
@@ -213,6 +222,8 @@ const TopicEntityCreate = () => {
                               accessToken
                           );
                           setTopicSelectLoading(false);
+			  // ensure results is an array
+                          // results = Array.isArray(results) ? results : []; 
                           dispatch(setTypeaheadName2CurieMap(Object.fromEntries(results.map(item => [item.name, item.curie]))));
                           setTypeaheadOptions(results.filter(item => { return topicDescendants.has(item.curie) }).map(item => item.name));
                         }}
@@ -275,7 +286,7 @@ const TopicEntityCreate = () => {
 		  }).filter(item => item); // filter out any null values
 
 		  setSelectedSpecies(extractedStrings); // set the selected species as strings
-
+		  setIsSpeciesSelected(selected.length > 0);
 		  // update entityResultList for display in the verification area
 		  const entityResults = extractedStrings.map(specie => {
                       const match = specie.match(/(.+) (NCBITaxon:\d+)/);
