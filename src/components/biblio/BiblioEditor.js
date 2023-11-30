@@ -802,7 +802,7 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 	          value={valueLiveSource}
 	          updatedFlag={updatedFlagSource}
 	          placeholder="mod_corpus_sort_source"
-	          disabled={(valueLiveMod !== accessLevel && valueLiveMcaId === 'new') ? 'disable' : ''}
+	          disabled={(valueLiveMod !== accessLevel) ? 'disable' : ''}
 	          fieldKey={`${fieldName} ${index} mod_corpus_sort_source`}
 	          enumType="modAssociationSource"
 	          dispatchAction={changeFieldModAssociationReferenceJson}
