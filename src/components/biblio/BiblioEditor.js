@@ -641,77 +641,201 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
   return (<>{rowModReferenceTypesElements}</>); }
 
 const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
-//   const xrefFieldName = fieldName;
-//   fieldName = 'mod_corpus_associations';
   const dispatch = useDispatch();
-//   const hasPmid = useSelector(state => state.biblio.hasPmid);
-//   const revertDictFields = 'curie prefix, curie id, is_obsolete'
-  const initializeDict = {'mod_abbreviation': '', 'corpus': 'needs_review', 'mod_corpus_sort_source': 'assigned_for_review', 'mod_corpus_association_id': 'new'}
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;  
+
+  const initializeDict = {'mod_abbreviation': '',
+			  'corpus': 'needs_review',
+			  'mod_corpus_sort_source': 'assigned_for_review',
+			  'mod_corpus_association_id': 'new'}
   let disabled = ''
 //   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
 //   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowModAssociationElements = []
+    
+  if ('mod_corpus_associations' in referenceJsonLive &&
+      referenceJsonLive['mod_corpus_associations'] !== null) {
+      for (const[index, modAssociationDict] of referenceJsonLive[
+	  'mod_corpus_associations'
+      ].entries()) {
+	  let otherColSize = 3;
+	  let otherColSizeB = 4;
+	  let buttonsElement = (
+	    <Col className="Col-editor-buttons" sm="1">
+              <Button
+	        id={`revert ${fieldName} ${index}`}
+	        variant="outline-secondary"
+	        onClick={(e) => dispatch(biblioRevertFieldArray(e))}
+	      >
+		<FontAwesomeIcon icon={faUndo} />
+              </Button>{' '}
+	    </Col>
+	  );
+	  if ('mod_corpus_association_id' in modAssociationDict &&
+	      modAssociationDict['mod_corpus_association_id'] !== 'new') {
+            buttonsElement = (
+	      <Col className="Col-editor-buttons" sm="1">
+		<Button
+		  id={`revert ${fieldName} ${index}`}
+		  variant="outline-secondary"
+		  onClick={(e) => dispatch(biblioRevertFieldArray(e))}
+		>
+		  <FontAwesomeIcon icon={faUndo} />
+		</Button>{' '}
+		<Button
+		  id={`delete ${fieldName} ${index}`}
+		  variant="outline-secondary"
+		  onClick={(e) => dispatch(deleteFieldModAssociationReferenceJson(e))}
+		>
+		  <FontAwesomeIcon icon={faTrashAlt} />
+		</Button>{' '}
+              </Col>
+	    );
+	  }
 
-  if ('mod_corpus_associations' in referenceJsonLive && referenceJsonLive['mod_corpus_associations'] !== null) {
-    for (const[index, modAssociationDict] of referenceJsonLive['mod_corpus_associations'].entries()) {
-      let otherColSize = 3;
-      let otherColSizeB = 4;
-//       let buttonsElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      if ('mod_corpus_association_id' in modAssociationDict && modAssociationDict['mod_corpus_association_id'] !== 'new') {
-        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldModAssociationReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
-      if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 8; }
+// 	  if (disabled === 'disabled') {
+// 	    buttonsElement = (<></>);
+// 	    otherColSize = 8;
+// 	  }
 
-      const valueLiveMod = modAssociationDict['mod_abbreviation']; let valueDbMod = ''; let updatedFlagMod = '';
-      const valueLiveCorpus = modAssociationDict['corpus']; let valueDbCorpus = ''; let updatedFlagCorpus = '';
-      const valueLiveSource = modAssociationDict['mod_corpus_sort_source']; let valueDbSource = ''; let updatedFlagSource = '';
-      const valueLiveMcaId = modAssociationDict['mod_corpus_association_id'];
+	  const valueLiveMod = modAssociationDict['mod_abbreviation'];
+	  let valueDbMod = '';
+	  let updatedFlagMod = '';
+	  const valueLiveCorpus = modAssociationDict['corpus'];
+	  let valueDbCorpus = '';
+	  let updatedFlagCorpus = '';
+	  const valueLiveSource = modAssociationDict['mod_corpus_sort_source'];
+	  let valueDbSource = '';
+	  let updatedFlagSource = '';
+	  const valueLiveMcaId = modAssociationDict['mod_corpus_association_id'];
 
-      const mcaDeleted = (('deleteMe' in modAssociationDict) && (modAssociationDict['deleteMe'] === true)) ? true : false;
+	  const mcaDeleted =
+	    'deleteMe' in modAssociationDict && modAssociationDict['deleteMe'] === true
+	      ? true
+	      : false;
+	  
+	  if (typeof referenceJsonDb[fieldName][index] !== 'undefined' &&
+	      typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') {
+              valueDbMod = referenceJsonDb[fieldName][index]['mod_abbreviation']
+	  }
+	  
+	  if (typeof referenceJsonDb[fieldName][index] !== 'undefined' &&
+              typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') {
+              valueDbCorpus = referenceJsonDb[fieldName][index]['corpus']
+	  }
 
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') ) {
-             valueDbMod = referenceJsonDb[fieldName][index]['mod_abbreviation'] }
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['corpus'] !== 'undefined') ) {
-             valueDbCorpus = referenceJsonDb[fieldName][index]['corpus'] }
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] !== 'undefined') ) {
-             valueDbSource = referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] }
-      if (valueLiveMod !== valueDbMod) { updatedFlagMod = 'updated'; }
-      if (valueLiveCorpus !== valueDbCorpus) { updatedFlagCorpus = 'updated'; }
-      if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
+	  if (typeof referenceJsonDb[fieldName][index] !== 'undefined' &&
+              typeof referenceJsonDb[fieldName][index]['mod_corpus_sort_source'] !== 'undefined') {
+              valueDbSource = referenceJsonDb[fieldName][index]['mod_corpus_sort_source']
+	  }
 
-      if (mcaDeleted) {
-        rowModAssociationElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-            <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSize + otherColSizeB} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveMod} {valueLiveCorpus} {valueLiveSource}</Col>
-            {buttonsElement}
-          </Form.Group>); }
-      else {
-        rowModAssociationElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-            { valueLiveMcaId === 'new' ?
-              <ColEditorSelect key={`colElement ${fieldName} ${index} mod_abbreviation`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveMod} updatedFlag={updatedFlagMod} placeholder="mod_abbreviation" disabled={disabled} fieldKey={`${fieldName} ${index} mod_abbreviation`} enumType="mods" dispatchAction={changeFieldModAssociationReferenceJson} /> :
-              <Col sm="2"><Form.Control as="input" id={`${fieldName} ${index} mod_abbreviation`} type={fieldName} value={valueLiveMod} className="form-control" disabled="disabled"  /></Col>
-            }
-            <ColEditorSelect key={`colElement ${fieldName} ${index} corpus`} fieldType="select" fieldName={fieldName} colSize={otherColSize} value={valueLiveCorpus} updatedFlag={updatedFlagCorpus} placeholder="corpus" disabled={disabled} fieldKey={`${fieldName} ${index} corpus`} enumType="modAssociationCorpus" dispatchAction={changeFieldModAssociationReferenceJson} />
-            <ColEditorSelect key={`colElement ${fieldName} ${index} mod_corpus_sort_source`} fieldType="select" fieldName={fieldName} colSize={otherColSizeB} value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="mod_corpus_sort_source" disabled={disabled} fieldKey={`${fieldName} ${index} mod_corpus_sort_source`} enumType="modAssociationSource" dispatchAction={changeFieldModAssociationReferenceJson} />
-            {buttonsElement}
-          </Form.Group>); } } }
-   
-//             <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurieId} updatedFlag={updatedFlagCurieId} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie id`} dispatchAction={changeFieldModAssociationReferenceJson} />
-//             <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldModAssociationReferenceJson} />
+	  if (valueLiveMod !== valueDbMod) {
+	      updatedFlagMod = 'updated';
+	  }
+
+	  if (valueLiveCorpus !== valueDbCorpus) {
+	      updatedFlagCorpus = 'updated';
+	  }
+
+	  if (valueLiveSource !== valueDbSource) {
+	      updatedFlagSource = 'updated';
+	  }
+
+	  if (mcaDeleted) {
+	    rowModAssociationElements.push(
+	      <Form.Group as={Row} key={`${fieldName} ${index}`}>
+                <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+                <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSize + otherColSizeB} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveMod} {valueLiveCorpus} {valueLiveSource}</Col>
+                {buttonsElement}
+              </Form.Group>);
+          } else {
+	    rowModAssociationElements.push(
+	      <Form.Group as={Row} key={`${fieldName} ${index}`}>
+	        <Col className="Col-general form-label col-form-label" sm="2" >
+	          {fieldName}
+	        </Col>
+	        {valueLiveMcaId === 'new' ? (
+                  <Col sm="2">
+                    <Form.Control as="select" id={`${fieldName} ${index} mod_abbreviation`} type="{fieldName}" value={valueLiveMod} className={`form-control ${updatedFlagMod}`} disabled="" placeholder="mod_abbreviation" onChange={ (e) => { 
+                      dispatch(changeFieldModAssociationReferenceJson(e));
+                      if (e.target.value !== accessLevel) {
+                        dispatch(changeFieldModAssociationReferenceJson({target: {id: 'mod_corpus_associations ' + index + ' corpus', value: 'needs_review' }}));
+                        dispatch(changeFieldModAssociationReferenceJson({target: {id: 'mod_corpus_associations ' + index + ' mod_corpus_sort_source', value: 'assigned_for_review' }})); }
+                      } } >
+                      {"mods" in enumDict && enumDict["mods"].map((optionValue, index) => (
+                        <option key={`${fieldName} ${index} corpus ${optionValue}`}>{optionValue}</option>
+                      ))}
+                    </Form.Control>
+                  </Col>
+	        ) : (
+	          <Col sm="2">
+	    	<Form.Control
+	    	  as="input"
+	    	  id={`${fieldName} ${index} mod_abbreviation`}
+	    	  type={fieldName}
+	    	  value={valueLiveMod}
+	    	  className="form-control"
+	    	  disabled="disabled"
+	    	/>
+	          </Col>
+                )}
+	        <ColEditorSelect
+	          key={`colElement ${fieldName} ${index} corpus`}
+	          fieldType="select"
+	          fieldName={fieldName}
+	          colSize={otherColSize}
+	          value={valueLiveCorpus}
+	          updatedFlag={updatedFlagCorpus}
+	          placeholder="corpus"
+	          disabled={(valueLiveMod !== accessLevel) ? 'disable' : ''}
+	          fieldKey={`${fieldName} ${index} corpus`}
+	          enumType="modAssociationCorpus"
+	          dispatchAction={changeFieldModAssociationReferenceJson}
+	        />
+	        <ColEditorSelect
+	          key={`colElement ${fieldName} ${index} mod_corpus_sort_source`}
+	          fieldType="select"
+	          fieldName={fieldName}
+	          colSize={otherColSizeB}
+	          value={valueLiveSource}
+	          updatedFlag={updatedFlagSource}
+	          placeholder="mod_corpus_sort_source"
+	          disabled={(valueLiveMod !== accessLevel && valueLiveMcaId === 'new') ? 'disable' : ''}
+	          fieldKey={`${fieldName} ${index} mod_corpus_sort_source`}
+	          enumType="modAssociationSource"
+	          dispatchAction={changeFieldModAssociationReferenceJson}
+	        />
+	        {buttonsElement}
+	      </Form.Group>
+	    ); 
+	  }
+      }
+  }
+
   if (disabled === '') {
     rowModAssociationElements.push(
       <Row className="form-group row" key={fieldName} >
-        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
-        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
-      </Row>);
+        <Col className="Col-general form-label col-form-label" sm="2" >
+	  {fieldName}
+	</Col>
+        <Col sm="10" >
+          <div
+	    id={fieldName}
+	    className="form-control biblio-button"
+	    onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))}
+	  >
+            add {fieldName}
+          </div>
+        </Col>
+      </Row>
+    );
   }
-  return (<>{rowModAssociationElements}</>); }
+    
+  return (<>{rowModAssociationElements}</>);
+
+}
 
 
 const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
