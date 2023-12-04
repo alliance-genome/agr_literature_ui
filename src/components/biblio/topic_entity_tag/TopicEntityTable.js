@@ -35,7 +35,10 @@ const TopicEntityTable = () => {
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
   const curieToNameTaxon = getCurieToNameTaxon();
-    
+  const ecoToName = {
+      'ECO:0000302': 'author statement used in manual assertion'
+  };
+      
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
     if (headerCell) {
