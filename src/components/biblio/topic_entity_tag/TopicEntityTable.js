@@ -364,10 +364,15 @@ const TopicEntityTable = () => {
                   } ) }
                   { source_headers.map( (header, index_2) => {
                     let td_value = tetDict['topic_entity_tag_source'][header];
-                    if (td_value === true) { td_value = 'True'; }
-                    else if (td_value === false) { td_value = 'False'; }
-                    if (dateColumnSet.has(header)) {
-                      td_value = new Date(td_value).toLocaleString(); }
+		    if (header === 'evidence') {
+		       td_value = ecoToName[td_value] || td_value;
+		    } else {
+                       if (td_value === true) { td_value = 'True'; }
+                       else if (td_value === false) { td_value = 'False'; }
+                       if (dateColumnSet.has(header)) {
+                         td_value = new Date(td_value).toLocaleString();
+		       }
+	            }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                 </tr>);
