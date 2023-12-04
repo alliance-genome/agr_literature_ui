@@ -149,20 +149,21 @@ export const changeFieldDatePublishedRange = (datePublishedRange) => {
 
 export const getCuratorSourceId = async (mod, accessToken) => {
   try{
-    const res = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source/curator/abc_literature_system/' + mod);
+    // /source/{source_type}/{source_method}/{mod_abbreviation}	
+    const res = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source/professional_biocurator/abc_literature_system/' + mod);
     return res.data.topic_entity_tag_source_id;
   } catch (error) {
     if (error.response.status === 404) {
       try {
         const newSourceId = await axios.post(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source', {
-          "source_type": "curator",
+          "source_type": "professional_biocurator",
           "source_method": "abc_literature_system",
           "validation_type": "curator",
-          "evidence": "set_eco_code_here",
-          "description": "describe source here",
+          "evidence": "ECO:0000302",
+          "description": "Trained professional biocurator specializing in curation of model organism data using the ABC data entry form.",
           "mod_abbreviation": mod,
-          "created_by": "default_user",
-          "updated_by": "default_user",
+          "created_by": "Blue Team",
+          "updated_by": "Blue Team",
         },{ headers: {
             'content-type': 'application/json',
             'mode': 'cors',
