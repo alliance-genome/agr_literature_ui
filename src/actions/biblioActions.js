@@ -162,8 +162,8 @@ export const getCuratorSourceId = async (mod, accessToken) => {
           "evidence": "ECO:0000302",
           "description": "Trained professional biocurator specializing in curation of model organism data using the ABC data entry form.",
           "mod_abbreviation": mod,
-          "created_by": "Blue Team",
-          "updated_by": "Blue Team",
+          "created_by": "ABC",
+          "updated_by": "ABC",
         },{ headers: {
             'content-type': 'application/json',
             'mode': 'cors',
