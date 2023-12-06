@@ -32,20 +32,26 @@ const SearchResultItem = ({ reference }) => {
   }
 
   function truncateAbstract(abstract, maxLength) {
-    // remove specific HTML tags
+    if (abstract === null) {
+        return abstract
+    }
+      // remove specific HTML tags
     const cleanedAbstract = abstract.replace(/<\/?(strong|p)>/g, '');
 
     if (cleanedAbstract.length <= maxLength) return cleanedAbstract;
     return cleanedAbstract.substr(0, cleanedAbstract.lastIndexOf(' ', maxLength)) + '...';
   }
 
-  function formatAbstract(abstract) {
-    // ff <strong> tags are present, replace <p> with <br> and remove </p>
-    if (abstract.includes('<strong>')) {
-      return abstract.replace(/<p>/g, '<br>').replace(/<\/p>/g, '');
+    function formatAbstract(abstract) {
+        if (abstract === null) {
+            return abstract
+        }
+        // ff <strong> tags are present, replace <p> with <br> and remove </p>
+        if (abstract.includes('<strong>')) {
+            return abstract.replace(/<p>/g, '<br>').replace(/<\/p>/g, '');
+        }
+        return abstract;
     }
-    return abstract;
-  }
   
   return (
     <Row>
