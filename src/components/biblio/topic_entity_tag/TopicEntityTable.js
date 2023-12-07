@@ -26,11 +26,8 @@ const TopicEntityTable = () => {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
   const [descSort, setDescSort] = useState(true);
-  //const [limit, setLimit] = useState(10);
-  //const pageSize = 10; // fixed limit value for now
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
-  // const [displayTagData, setDisplayTagData] = useState([]);
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
@@ -254,7 +251,7 @@ const TopicEntityTable = () => {
           )}
           {/* Page Size Selection */}
           <Form.Group controlId="pageSizeSelect" style={{ marginRight: '15px' }}>
-          <Form.Label>Rows per page:</Form.Label>
+          <Form.Label style={{ marginRight: '10px' }}>Rows per page:</Form.Label>
             <Form.Control as="select" value={pageSize} onChange={handlePageSizeChange} style={{ display: 'inline-block', width: 'auto' }}>
               {[10, 25, 50, 100, 500].map(size => (
                 <option key={size} value={size}>{size}</option>
