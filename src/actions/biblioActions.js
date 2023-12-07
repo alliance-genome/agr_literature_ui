@@ -928,34 +928,6 @@ export const removeLoadingFileName = (fileName) => {
   }
 }
 
-export const queryId = (id) => {
-  return dispatch => {
-    if (id.startsWith('AGR:') || id.startsWith('AGRKB:')) {
-      dispatch(setReferenceCurie(id));
-    } else {
-      console.log('in queryId action');
-      console.log("payload " + id);
-      const url = restUrl + '/cross_reference/' + id;
-      fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-          'content-type': 'application/json'
-        }
-      }).then(res => {
-        res.json().then(response => {
-          let response_payload = id;
-          if (response.reference_curie !== undefined) {
-            console.log('response not undefined');
-            response_payload = response.reference_curie;
-          }
-          dispatch(setReferenceCurie(response_payload));
-        });
-      })
-    }
-  }
-};
-
 export const downloadPDFfile = (referencefileId, filename, accessToken, referenceId) => {
   return dispatch => {
     dispatch(addLoadingFileName(filename));
