@@ -42,7 +42,7 @@ const SearchResultItem = ({ reference }) => {
     return cleanedAbstract.substr(0, cleanedAbstract.lastIndexOf(' ', maxLength)) + '...';
   }
 
-    function formatAbstract(abstract) {
+  function formatAbstract(abstract) {
         if (abstract === null) {
             return abstract
         }
@@ -51,17 +51,47 @@ const SearchResultItem = ({ reference }) => {
             return abstract.replace(/<p>/g, '<br>').replace(/<\/p>/g, '');
         }
         return abstract;
-    }
-  
+  }
+
+  const determineUrl = (xref) => {
+      // always use the URL privided by mod - through DQM submission
+      // that is stored in cross_reference.pages
+      // check if 'pages' is an array and not empty
+      if (Array.isArray(crossReferenceResults[xref.curie].pages) && crossReferenceResults[xref.curie].pages.length > 0) {
+	  // use the URL from the first item in the 'pages' array
+	  return crossReferenceResults[xref.curie].pages[0].url;
+      }
+      // if 'pages' is not an array or is empty, fall back to the main URL
+      return crossReferenceResults[xref.curie].url;
+  };
+    
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" > 
         <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
         <div className="searchRow-xref">
-          <ul><li><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}>{reference.curie}</Link></li>
-          {reference.cross_references ? reference.cross_references.map((xref, i) => (
-            <li><span className="obsolete">{xref.is_obsolete === 'false' ?  '' : 'obsolete '}</span><a href={crossReferenceResults[xref.curie].url} rel="noreferrer noopener" target="_blank">{xref.curie}</a></li>
-          )) : null}
+          <ul>
+            <li>
+              <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
+                onClick={() => {
+                  dispatch(setReferenceCurie(reference.curie));
+                  dispatch(setGetReferenceCurieFlag(true));
+                }}>
+                {reference.curie}
+              </Link>
+            </li>
+            {reference.cross_references ? (
+              reference.cross_references.map((xref, i) => (
+                <li key={i}>
+                  <span className="obsolete">
+                    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
+                  </span>
+                  <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
+                    {xref.curie}
+                  </a>
+                </li>
+              ))
+            ) : null}
           </ul>
         </div>
         <div className="searchRow-other">Authors : <span dangerouslySetInnerHTML={{__html: reference.authors ? reference.authors.map((author, i) => ((i ? ' ' : '') + author.name)) : ''}} /></div>
