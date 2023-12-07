@@ -10,6 +10,7 @@ import {faFilter, faSortAlphaDown, faSortAlphaUp} from "@fortawesome/free-solid-
 import Pagination from "react-bootstrap/Pagination";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
 
 const TopicEntityTable = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -26,7 +27,7 @@ const TopicEntityTable = () => {
   const [sortBy, setSortBy] = useState(null);
   const [descSort, setDescSort] = useState(true);
   //const [limit, setLimit] = useState(10);
-  const pageSize = 10; // fixed limit value for now
+  //const pageSize = 10; // fixed limit value for now
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
   // const [displayTagData, setDisplayTagData] = useState([]);
@@ -34,6 +35,9 @@ const TopicEntityTable = () => {
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
+  // set the initial pageSize state to 25
+  const [pageSize, setPageSize] = useState(25);
+    
   const curieToNameTaxon = getCurieToNameTaxon();
   const ecoToName = {
       'ECO:0000302': 'author statement used in manual assertion'
@@ -175,6 +179,11 @@ const TopicEntityTable = () => {
     fetchData().then();
   }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags, selectedSpecies]);
 
+  const handlePageSizeChange = (event) => {
+    setPageSize(Number(event.target.value));
+    setPage(1); // reset to first page when page size changes
+  };
+
   const changePage = (action) => {
     let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
     switch (action){
@@ -236,9 +245,23 @@ const TopicEntityTable = () => {
   return (
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-	{typeof totalTagsCount !== 'undefined' && (
-            <h4 style={{textAlign: 'left', paddingLeft: '15px'}}>Total {totalTagsCount} rows</h4>
-        )}  
+	{/* Flex container for total rows and page size selection */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+	  {typeof totalTagsCount !== 'undefined' && (
+            <h4 style={{textAlign: 'left', paddingLeft: '15px'}}>
+              Total {totalTagsCount} rows
+	    </h4>
+          )}
+          {/* Page Size Selection */}
+          <Form.Group controlId="pageSizeSelect" style={{ marginRight: '15px' }}>
+          <Form.Label>Rows per page:</Form.Label>
+            <Form.Control as="select" value={pageSize} onChange={handlePageSizeChange} style={{ display: 'inline-block', width: 'auto' }}>
+              {[10, 25, 50, 100, 500].map(size => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+	</div>
         <Table
           bordered
           size="sm"
