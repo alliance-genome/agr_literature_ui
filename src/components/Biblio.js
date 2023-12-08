@@ -409,35 +409,31 @@ const BiblioIdQuery = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const history = useHistory();
   const [idQuery, setIdQuery] = useState('');
-  const [curie, setCurie] = useState('');
 
-  useEffect(() => {
-    if (curie !== '') {
-      let biblioActionTogglerSelected = 'display';
-      if (biblioAction === 'editor') {
-        biblioActionTogglerSelected = 'editor'; }
-      else if (biblioAction === 'entity') {
-        biblioActionTogglerSelected = 'entity'; }
-      else if (biblioAction === 'workflow') {
-        biblioActionTogglerSelected = 'workflow'; }
-      else if (biblioAction === 'filemanagement') {
-        biblioActionTogglerSelected = 'filemanagement'; }
-      else if (biblioAction === 'rawtopicentity') {
-        biblioActionTogglerSelected = 'rawtopicentity'; }
-      let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + curie
-      setIdQuery('');
-      setCurie('');
-      history.push(newUrl);
-    }
-  }, [curie]);
+  const loadReference = (refCurie) => {
+    let biblioActionTogglerSelected = 'display';
+    if (biblioAction === 'editor') {
+      biblioActionTogglerSelected = 'editor'; }
+    else if (biblioAction === 'entity') {
+      biblioActionTogglerSelected = 'entity'; }
+    else if (biblioAction === 'workflow') {
+      biblioActionTogglerSelected = 'workflow'; }
+    else if (biblioAction === 'filemanagement') {
+      biblioActionTogglerSelected = 'filemanagement'; }
+    else if (biblioAction === 'rawtopicentity') {
+      biblioActionTogglerSelected = 'rawtopicentity'; }
+    let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + refCurie
+    setIdQuery('');
+    history.push(newUrl);
+  }
 
-  const queryIdToCurie = (refId) => {
+  const queryIdAndLoadReference = (refId) => {
     if (refId.startsWith('AGR:') || refId.startsWith('AGRKB:')) {
-      setCurie(refId);
+      loadReference(refId);
     } else {
       const url = restUrl + '/cross_reference/' + refId;
       axios.get(url).then(res => {
-        setCurie(res.data.reference_curie);
+        loadReference(res.data.reference_curie)
       });
     }
   }
@@ -451,11 +447,11 @@ const BiblioIdQuery = () => {
                           onChange={(e) => setIdQuery(e.target.value)}
                           onKeyPress={(event) => {
                             if (event.charCode === 13) {
-                              queryIdToCurie(idQuery);
+                              queryIdAndLoadReference(idQuery);
                             }
                           }}
             />
-            <Button type="submit" size="sm" onClick={() => queryIdToCurie(idQuery)}>Query exact ID</Button>
+            <Button type="submit" size="sm" onClick={() => queryIdAndLoadReference(idQuery)}>Query exact ID</Button>
           </InputGroup>
         </div>
       </div>
