@@ -25,7 +25,6 @@ const TopicEntityTable = () => {
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const storedPageSize = useSelector(state => state.biblio.pageSize);
-  const [previousReferenceCurie, setPreviousReferenceCurie] = useState(referenceCurie);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
@@ -101,12 +100,11 @@ const TopicEntityTable = () => {
     setShowSpeciesFilter(false);
   };
 
-  // const speciesInResultSet = new Set(topicEntityTags.map((tetDict) => tetDict.species));
   const speciesInResultSet = new Set(allSpecies);
-
+	    
   useEffect(() => {
     fetchDisplayTagData(accessToken);
-  }, [accessToken])
+  }, [accessToken]);
 
   useEffect(() => {
     const fetchMappings = async () => {
@@ -180,13 +178,6 @@ const TopicEntityTable = () => {
     }
     fetchData().then();
   }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags, selectedSpecies]);
-
-  useEffect(() => {
-    if (referenceCurie !== previousReferenceCurie) {
-      dispatch(setPageSizeAction(defaultPageSize)); // update Redux store
-      setPreviousReferenceCurie(referenceCurie);
-    }
-  }, [referenceCurie, previousReferenceCurie, dispatch]);
     
   const handlePageSizeChange = (event) => {
     const newSize = Number(event.target.value);
@@ -251,6 +242,7 @@ const TopicEntityTable = () => {
   //   }
   // }
 
+   
   return (
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
