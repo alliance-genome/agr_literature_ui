@@ -8,6 +8,8 @@ import { splitCurie } from '../components/biblio/BiblioEditor';
 //   biblioEntityDisplayType: 'entity-side-by-side',
 //   biblioEntityDisplayType: 'entity-container-rows',
 
+const defaultPageSize = 25;
+
 const defaultEntityAdd = {
   'topicSelect': '',
   'taxonSelect': '',
@@ -977,6 +979,7 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
+	pageSize: defaultPageSize,
         getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
