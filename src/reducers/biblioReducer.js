@@ -1091,6 +1091,18 @@ export default function(state = initialState, action) {
         loadingFileNames: newLoadingFileNames2
       }
 
+    case 'SET_PAGE_NUMBER':
+      return {
+        ...state,
+        pageNumber: action.payload 
+      };
+
+    case 'SET_PAGE_SIZE':
+      return {
+        ...state,
+        pageSize: action.payload 
+      };
+     
 //     case 'QUERY_BUTTON':
 //       console.log("query button reducer set " + action.payload);
 //       let responseField = action.payload;
