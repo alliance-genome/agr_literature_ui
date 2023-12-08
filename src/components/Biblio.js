@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import {useHistory, useLocation} from 'react-router-dom';
 
 import RowDivider from './biblio/RowDivider';
 
@@ -16,7 +16,6 @@ import { RowDisplayString } from './biblio/BiblioDisplay';
 
 import {
   downloadReferencefile,
-  queryId,
   setReferenceCurie
 } from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
@@ -36,6 +35,9 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import loading_gif from '../images/loading_cat.gif';
 import Spinner from "react-bootstrap/Spinner";
 import axios from "axios";
+
+
+const restUrl = process.env.REACT_APP_RESTAPI;
 
 // https://stage-literature.alliancegenome.org/Biblio/?action=topic&referenceCurie=AGRKB:101000000163587
 
@@ -93,33 +95,29 @@ const BiblioActionToggler = () => {
   let radioFormWorkflowClassname = 'radio-form';
   let radioFormFilemanagementClassname = 'radio-form';
   let radioFormRawtopicentityClassname = 'radio-form';
-  let biblioActionTogglerSelected = 'display';
   if (biblioAction === 'editor') {
-      radioFormEditorClassname += ' underlined';
-      editorChecked = 'checked';
-      biblioActionTogglerSelected = 'editor'; }
+    radioFormEditorClassname += ' underlined';
+    editorChecked = 'checked';
+  }
     else if (biblioAction === 'entity') {
       radioFormEntityClassname += ' underlined';
       entityChecked = 'checked';
-      biblioActionTogglerSelected = 'entity'; }
+    }
     else if (biblioAction === 'workflow') {
       radioFormWorkflowClassname += ' underlined';
       workflowChecked = 'checked';
-      biblioActionTogglerSelected = 'workflow'; }
+    }
     else if (biblioAction === 'filemanagement') {
       radioFormFilemanagementClassname += ' underlined';
       filemanagementChecked = 'checked';
-      biblioActionTogglerSelected = 'filemanagement'; }
+    }
     else if (biblioAction === 'rawtopicentity') {
       radioFormRawtopicentityClassname += ' underlined';
       rawtopicentityChecked = 'checked';
-      biblioActionTogglerSelected = 'rawtopicentity'; }
+    }
     else {
       radioFormDisplayClassname += ' underlined';
       displayChecked = 'checked'; }
-  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie
-  window.history.replaceState({}, null, newUrl)
 
 // calling below
 //         onChange={(e) => dispatch(toggleBiblioAction(e))}
@@ -408,8 +406,38 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
 
 
 const BiblioIdQuery = () => {
-  const dispatch = useDispatch();
+  const biblioAction = useSelector(state => state.biblio.biblioAction);
+  const history = useHistory();
   const [idQuery, setIdQuery] = useState('');
+
+  const loadReference = (refCurie) => {
+    let biblioActionTogglerSelected = 'display';
+    if (biblioAction === 'editor') {
+      biblioActionTogglerSelected = 'editor'; }
+    else if (biblioAction === 'entity') {
+      biblioActionTogglerSelected = 'entity'; }
+    else if (biblioAction === 'workflow') {
+      biblioActionTogglerSelected = 'workflow'; }
+    else if (biblioAction === 'filemanagement') {
+      biblioActionTogglerSelected = 'filemanagement'; }
+    else if (biblioAction === 'rawtopicentity') {
+      biblioActionTogglerSelected = 'rawtopicentity'; }
+    let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + refCurie
+    setIdQuery('');
+    history.push(newUrl);
+  }
+
+  const queryIdAndLoadReference = (refId) => {
+    if (refId.startsWith('AGR:') || refId.startsWith('AGRKB:')) {
+      loadReference(refId);
+    } else {
+      const url = restUrl + '/cross_reference/' + refId;
+      axios.get(url).then(res => {
+        loadReference(res.data.reference_curie)
+      });
+    }
+  }
+
   return (
       <div>
         <div style={{width: "28em", margin: "auto"}}>
@@ -419,11 +447,11 @@ const BiblioIdQuery = () => {
                           onChange={(e) => setIdQuery(e.target.value)}
                           onKeyPress={(event) => {
                             if (event.charCode === 13) {
-                              dispatch(queryId(idQuery));
+                              queryIdAndLoadReference(idQuery);
                             }
                           }}
             />
-            <Button type="submit" size="sm" onClick={() => dispatch(queryId(idQuery))}>Query exact ID</Button>
+            <Button type="submit" size="sm" onClick={() => queryIdAndLoadReference(idQuery)}>Query exact ID</Button>
           </InputGroup>
         </div>
       </div>
@@ -432,6 +460,7 @@ const BiblioIdQuery = () => {
 
 const Biblio = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
 
   const crossRefCurieQueryRedirectToBiblio = useSelector(state => state.search.redirectToBiblio);
 //   console.log("biblio crossRefCurieQueryRedirectToBiblio " + crossRefCurieQueryRedirectToBiblio);
@@ -445,7 +474,6 @@ const Biblio = () => {
     dispatch(setReferenceCurie(crossRefCurieQueryResponseField));
   }
 
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const getReferenceCurieFlag = useSelector(state => state.biblio.getReferenceCurieFlag);
 //   const loadingQuery = useSelector(state => state.biblio.loadingQuery);
@@ -455,7 +483,8 @@ const Biblio = () => {
 
   const useQuery = () => { return new URLSearchParams(useLocation().search); }
   let query = useQuery();
-  if (referenceCurie === '' || biblioAction === '') {
+
+  useEffect(() => {
     // console.log(query);
     let paramAction = query.get('action');
     let paramReferenceCurie = query.get('referenceCurie');
@@ -463,7 +492,8 @@ const Biblio = () => {
     // console.log("biblio urlParam paramReferenceCurie", paramReferenceCurie);
     if (paramReferenceCurie !== null) { dispatch(setReferenceCurie(paramReferenceCurie)); }
     if (paramAction !== null) { dispatch(setBiblioAction(paramAction)); }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, location.pathname]);
 
   // citation needs to be updated after processing separate biblio api calls. update citation and make flag false
   // 2023 04 11 citation now updates from database triggers
