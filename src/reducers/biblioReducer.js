@@ -8,7 +8,7 @@ import { splitCurie } from '../components/biblio/BiblioEditor';
 //   biblioEntityDisplayType: 'entity-side-by-side',
 //   biblioEntityDisplayType: 'entity-container-rows',
 
-const defaultPageSize = 25;
+const defaultTetPageSize = 25;
 
 const defaultEntityAdd = {
   'topicSelect': '',
@@ -979,7 +979,7 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
-	pageSize: defaultPageSize,
+	tetPageSize: defaultTetPageSize,
         getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
@@ -1094,16 +1094,16 @@ export default function(state = initialState, action) {
         loadingFileNames: newLoadingFileNames2
       }
 
-    case 'SET_PAGE_NUMBER':
+    case 'SET_TET_PAGE_NUMBER':
       return {
         ...state,
-        pageNumber: action.payload 
+        tetPageNumber: action.payload 
       };
 
-    case 'SET_PAGE_SIZE':
+    case 'SET_TET_PAGE_SIZE':
       return {
         ...state,
-        pageSize: action.payload 
+        tetPageSize: action.payload 
       };
      
 //     case 'QUERY_BUTTON':
