@@ -24,7 +24,7 @@ const TopicEntityTable = () => {
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  const storedPageSize = useSelector(state => state.biblio.tetPageSize);
+  const pageSize = useSelector(state => state.biblio.tetPageSize);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
@@ -35,9 +35,6 @@ const TopicEntityTable = () => {
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
-  //const defaultPageSize = 25;
-  //const pageSize = storedPageSize || defaultPageSize;
-  const pageSize = storedPageSize;
   const curieToNameTaxon = getCurieToNameTaxon();
   const ecoToName = {
       'ECO:0000302': 'author statement used in manual assertion'
