@@ -1020,3 +1020,12 @@ export const setFileUploadingModalText = (modalText) => ({
   payload: modalText
 })
 
+export const setTetPageNumber = (pageNumber) => ({
+  type: 'SET_TET_PAGE_NUMBER',
+  payload: pageNumber
+});
+
+export const setTetPageSize = (pageSize) => ({
+  type: 'SET_TET_PAGE_SIZE',
+  payload: pageSize
+});

@@ -8,6 +8,8 @@ import { splitCurie } from '../components/biblio/BiblioEditor';
 //   biblioEntityDisplayType: 'entity-side-by-side',
 //   biblioEntityDisplayType: 'entity-container-rows',
 
+const defaultTetPageSize = 25;
+
 const defaultEntityAdd = {
   'topicSelect': '',
   'taxonSelect': '',
@@ -977,6 +979,7 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
+	tetPageSize: defaultTetPageSize,
         getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
@@ -1091,6 +1094,18 @@ export default function(state = initialState, action) {
         loadingFileNames: newLoadingFileNames2
       }
 
+    case 'SET_TET_PAGE_NUMBER':
+      return {
+        ...state,
+        tetPageNumber: action.payload 
+      };
+
+    case 'SET_TET_PAGE_SIZE':
+      return {
+        ...state,
+        tetPageSize: action.payload 
+      };
+     
 //     case 'QUERY_BUTTON':
 //       console.log("query button reducer set " + action.payload);
 //       let responseField = action.payload;

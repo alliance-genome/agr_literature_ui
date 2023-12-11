@@ -1,6 +1,7 @@
-import {useSelector} from "react-redux";
+import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState} from "react";
 import {fetchDisplayTagData} from "../../../actions/biblioActions";
+import { setTetPageSize as setPageSizeAction } from "../../../actions/biblioActions";
 import axios from "axios";
 import LoadingOverlay from "../../LoadingOverlay";
 import Table from "react-bootstrap/Table";
@@ -13,6 +14,7 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 
 const TopicEntityTable = () => {
+  const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
@@ -22,6 +24,7 @@ const TopicEntityTable = () => {
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  const pageSize = useSelector(state => state.biblio.tetPageSize);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
@@ -32,9 +35,6 @@ const TopicEntityTable = () => {
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
-  // set the initial pageSize state to 25
-  const [pageSize, setPageSize] = useState(25);
-    
   const curieToNameTaxon = getCurieToNameTaxon();
   const ecoToName = {
       'ECO:0000302': 'author statement used in manual assertion'
@@ -96,12 +96,11 @@ const TopicEntityTable = () => {
     setShowSpeciesFilter(false);
   };
 
-  // const speciesInResultSet = new Set(topicEntityTags.map((tetDict) => tetDict.species));
   const speciesInResultSet = new Set(allSpecies);
-
+	    
   useEffect(() => {
     fetchDisplayTagData(accessToken);
-  }, [accessToken])
+  }, [accessToken]);
 
   useEffect(() => {
     const fetchMappings = async () => {
@@ -175,12 +174,12 @@ const TopicEntityTable = () => {
     }
     fetchData().then();
   }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags, selectedSpecies]);
-
+    
   const handlePageSizeChange = (event) => {
-    setPageSize(Number(event.target.value));
-    setPage(1); // reset to first page when page size changes
+    const newSize = Number(event.target.value);
+    dispatch(setPageSizeAction(newSize)); // update Redux store with new pageSize
   };
-
+    
   const changePage = (action) => {
     let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
     switch (action){
@@ -239,6 +238,7 @@ const TopicEntityTable = () => {
   //   }
   // }
 
+   
   return (
       <div>
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
