@@ -37,9 +37,26 @@ const TopicEntityTable = () => {
   const [allSpecies, setAllSpecies] = useState([]);
   const curieToNameTaxon = getCurieToNameTaxon();
   const ecoToName = {
-      'ECO:0000302': 'author statement used in manual assertion'
+    'ECO:0000302': 'author statement used in manual assertion'
   };
-      
+  const [selectedCurie, setSelectedCurie] = useState(null);
+
+  const CuriePopup = ({ curieToShow, onClose }) => {
+    console.log("curieToShow in 'CuriePopup'=", curieToShow);
+    return (
+      <div style={{ position: 'absolute', minWidth: '250px', maxWidth: '80%', border: '1px solid black', padding: '10px', background: '#E0F7FA', zIndex: 100 }}>
+        <div>{curieToShow}</div>
+        <button onClick={onClose}>Close</button>
+      </div>
+    );
+  };
+
+  const handleCurieClick = (curie) => {
+    console.log("curie in 'handleCurieClick'=", curie);
+    setSelectedCurie(curie);
+    console.log("selectedCurie in 'handleCurieClick'=", selectedCurie);
+  };
+    
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
     if (headerCell) {
@@ -225,22 +242,9 @@ const TopicEntityTable = () => {
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
   const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
 
-
-  // TODO: use the following code for the 'simple' table
-  // for (const tetDict of topicEntityTags.values()) {
-  //   for (const tetDictKey in tetDict) {
-  //     // console.log(tetDictKey);
-  //     if (tetDictKey === 'topic_entity_tag_source') {
-  //       for (const tetSourceKey in tetDict[tetDictKey]) {
-  //         if ( (source_headers.indexOf(tetSourceKey) === -1) && !(excludeColumnSet.has(tetSourceKey)) ) { source_headers.push(tetSourceKey); } } }
-  //     else {
-  //       if ( (headers.indexOf(tetDictKey) === -1) && !(excludeColumnSet.has(tetDictKey)) ) { headers.push(tetDictKey); } }
-  //   }
-  // }
-
-   
   return (
-      <div>
+    <div>
+	{selectedCurie && <CuriePopup curie={selectedCurie} onClose={() => setSelectedCurie(null)} />}
         <LoadingOverlay active={isLoadingData || isLoadingMappings} />
 	{/* Flex container for total rows and page size selection */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
@@ -380,6 +384,16 @@ const TopicEntityTable = () => {
                     } else if (header === "species") {
                       td_value = tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species;
                     }
+		    if (header === "entity") {
+		      const name = entityEntityMappings[tetDict[header]] || tetDict[header];
+	              const curie = tetDict[header];
+		      const curieToShow = name + ": " + curie;
+                      td_value = (
+                        <span onClick={() => handleCurieClick(curieToShow)} style={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                          {name}
+                        </span>
+                      );
+                    }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                   { source_headers.map( (header, index_2) => {
@@ -397,7 +411,7 @@ const TopicEntityTable = () => {
                 </tr>);
           } ) }
           </tbody></Table>
-        {totalTagsCount > 0 ?
+          {totalTagsCount > 0 ?
             <Pagination style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '10vh'}}>
               <Pagination.First  onClick={() => changePage('First')} />
               <Pagination.Prev   onClick={() => changePage('Prev')} />
@@ -405,7 +419,7 @@ const TopicEntityTable = () => {
               <Pagination.Next   onClick={() => changePage('Next')} />
               <Pagination.Last   onClick={() => changePage('Last')} />
             </Pagination>
-            : null}
+           : null}
       </div>);
 } // const EntityTable
 
