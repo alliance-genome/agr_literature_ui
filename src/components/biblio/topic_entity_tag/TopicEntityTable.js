@@ -40,22 +40,6 @@ const TopicEntityTable = () => {
     'ECO:0000302': 'author statement used in manual assertion'
   };
   const [selectedCurie, setSelectedCurie] = useState(null);
-
-  const CuriePopup = ({ curieToShow, onClose }) => {
-    console.log("curieToShow in 'CuriePopup'=", curieToShow);
-    return (
-      <div style={{ position: 'absolute', minWidth: '250px', maxWidth: '80%', border: '1px solid black', padding: '10px', background: '#E0F7FA', zIndex: 100 }}>
-        <div>{curieToShow}</div>
-        <button onClick={onClose}>Close</button>
-      </div>
-    );
-  };
-
-  const handleCurieClick = (curie) => {
-    console.log("curie in 'handleCurieClick'=", curie);
-    setSelectedCurie(curie);
-    console.log("selectedCurie in 'handleCurieClick'=", selectedCurie);
-  };
     
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
@@ -195,6 +179,20 @@ const TopicEntityTable = () => {
   const handlePageSizeChange = (event) => {
     const newSize = Number(event.target.value);
     dispatch(setPageSizeAction(newSize)); // update Redux store with new pageSize
+  };
+
+  const handleCurieClick = (curie) => {
+    console.log("curie in 'handleCurieClick'=", curie);
+    setSelectedCurie(curie);
+  };
+
+  const CuriePopup = ({ curie, onClose }) => {
+    return (
+      <div style={{ position: 'absolute', minWidth: '250px', maxWidth: '80%', border: '1px solid black', padding: '10px', background: '#E0F7FA', zIndex: 100 }}>
+        <div>{curie}</div>
+        <button onClick={onClose}>Close</button>
+      </div>
+    );
   };
     
   const changePage = (action) => {
