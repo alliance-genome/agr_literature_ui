@@ -189,10 +189,13 @@ const TopicEntityTable = () => {
   const CuriePopup = ({ curie, onClose }) => {
     return (
       <div style={{
-        flex: 1, // Take available space
-        textAlign: 'center', // Center content
-        background: '#E0F7FA', // Light blue background
-        padding: '10px'
+        flex: 1, // flex property to take available space
+        maxWidth: '400px', // maximum width of the popup
+        margin: '0 auto', // center the popup in the available flex space
+        textAlign: 'center', // center text inside the popup
+        background: '#E0F7FA', // light blue background
+        padding: '10px',
+        zIndex: 100 // ensure it's above other elements
       }}>
         <div>{curie}</div>
         <button onClick={onClose}>Close</button>
