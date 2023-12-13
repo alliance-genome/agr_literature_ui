@@ -188,7 +188,12 @@ const TopicEntityTable = () => {
 
   const CuriePopup = ({ curie, onClose }) => {
     return (
-      <div style={{ position: 'absolute', minWidth: '250px', maxWidth: '80%', border: '1px solid black', padding: '10px', background: '#E0F7FA', zIndex: 100 }}>
+      <div style={{
+        flex: 1, // Take available space
+        textAlign: 'center', // Center content
+        background: '#E0F7FA', // Light blue background
+        padding: '10px'
+      }}>
         <div>{curie}</div>
         <button onClick={onClose}>Close</button>
       </div>
@@ -242,25 +247,32 @@ const TopicEntityTable = () => {
 
   return (
     <div>
-	{selectedCurie && <CuriePopup curie={selectedCurie} onClose={() => setSelectedCurie(null)} />}
-        <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-	{/* Flex container for total rows and page size selection */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-	  {typeof totalTagsCount !== 'undefined' && (
-            <h4 style={{textAlign: 'left', paddingLeft: '15px'}}>
+       {/* container for total rows, popup, and page size selection */}
+       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+         
+          {/* total Rows */}
+          {typeof totalTagsCount !== 'undefined' && (
+            <h4 style={{ textAlign: 'left', paddingLeft: '15px' }}>
               Total {totalTagsCount} rows
-	    </h4>
+            </h4>
           )}
+
+          {/* Curie Popup */}
+          {selectedCurie && (
+            <CuriePopup curie={selectedCurie} onClose={() => setSelectedCurie(null)} />
+          )}
+	  
           {/* Page Size Selection */}
           <Form.Group controlId="pageSizeSelect" style={{ marginRight: '15px' }}>
-          <Form.Label style={{ marginRight: '10px' }}>Rows per page:</Form.Label>
+            <Form.Label style={{ marginRight: '10px' }}>Rows per page:</Form.Label>
             <Form.Control as="select" value={pageSize} onChange={handlePageSizeChange} style={{ display: 'inline-block', width: 'auto' }}>
               {[10, 25, 50, 100, 500].map(size => (
                 <option key={size} value={size}>{size}</option>
               ))}
             </Form.Control>
           </Form.Group>
-	</div>
+        </div>
+	  
         <Table
           bordered
           size="sm"
