@@ -12,6 +12,7 @@ import Pagination from "react-bootstrap/Pagination";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
+import Modal from 'react-bootstrap/Modal';
 
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
@@ -40,6 +41,7 @@ const TopicEntityTable = () => {
     'ECO:0000302': 'author statement used in manual assertion'
   };
   const [selectedCurie, setSelectedCurie] = useState(null);
+  const [showModal, setShowModal] = useState(false);
     
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
@@ -182,24 +184,19 @@ const TopicEntityTable = () => {
   };
 
   const handleCurieClick = (curie) => {
-    console.log("curie in 'handleCurieClick'=", curie);
+    // console.log("curie in 'handleCurieClick'=", curie);
     setSelectedCurie(curie);
+    setShowModal(true);
   };
 
-  const CuriePopup = ({ curie, onClose }) => {
+  const CuriePopup = ({ curie, show, onHide }) => {
     return (
-      <div style={{
-        flex: 1, // flex property to take available space
-        maxWidth: '400px', // maximum width of the popup
-        margin: '0 auto', // center the popup in the available flex space
-        textAlign: 'center', // center text inside the popup
-        background: '#E0F7FA', // light blue background
-        padding: '10px',
-        zIndex: 100 // ensure it's above other elements
-      }}>
-        <div>{curie}</div>
-        <button onClick={onClose}>Close</button>
-      </div>
+      <Modal show={show} onHide={onHide} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>CURIE Information</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{curie}</Modal.Body>
+      </Modal>
     );
   };
     
@@ -262,7 +259,7 @@ const TopicEntityTable = () => {
 
           {/* Curie Popup */}
           {selectedCurie && (
-            <CuriePopup curie={selectedCurie} onClose={() => setSelectedCurie(null)} />
+            <CuriePopup curie={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
           )}
 	  
           {/* Page Size Selection */}
