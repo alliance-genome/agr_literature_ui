@@ -205,8 +205,8 @@ const TopicEntityTable = () => {
     'topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated',
     'novel_topic_data',
     'confidence_level', 'created_by', 'note', 'entity_source', 'date_created',
-    'updated_by', 'date_updated', 'validation_value_author',
-    'validation_value_curator', 'validation_value_curation_tools',
+    'updated_by', 'date_updated', 'validation_by_author',
+    'validation_by_curator', 'validation_by_data_curation',
     'display_tag'
   ];   
   let source_headers = [
