@@ -19,7 +19,7 @@ const defaultEntityAdd = {
   'entitytextarea': '',
   'notetextarea': '',
   'tetdisplayTagSelect': '',
-  'entityResultList': ''
+  'entityResultList': []
 }
 
 const defaultEntityAddSGD = {
@@ -29,7 +29,7 @@ const defaultEntityAddSGD = {
   'entitytextarea': '',
   'notetextarea': '',
   'tetdisplayTagSelect': '',
-  'entityResultList': ''
+  'entityResultList': []
 }
 
 const initialState = {
@@ -232,12 +232,11 @@ export default function(state = initialState, action) {
     case 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD':
       // console.log('CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD');
       // console.log(action.payload);
+      const changeFieldEntityAddGeneralFieldEntityAdd = _.cloneDeep(state.entityAdd);
+      changeFieldEntityAddGeneralFieldEntityAdd[action.payload.field] = action.payload.value;
       return {
         ...state,
-        entityAdd: {
-          ...state.entityAdd,
-          [action.payload.field]: action.payload.value
-        }
+        entityAdd: changeFieldEntityAddGeneralFieldEntityAdd
       }
     case 'SET_TYPEAHEAD_NAME_2_CURIE_MAP':
       return {
@@ -246,12 +245,11 @@ export default function(state = initialState, action) {
       }
     case 'SET_ENTITY_RESULT_LIST':
       // console.log(action.payload);
+      const setEntityResultListEntityAdd = _.cloneDeep(state.entityAdd);
+      setEntityResultListEntityAdd['entityResultList'] = action.payload.entityResultList;
       return {
         ...state,
-        entityAdd: {
-          ...state.entityAdd,
-          entityResultList: action.payload.entityResultList
-        }
+        entityAdd: setEntityResultListEntityAdd
       }
 
     case 'SET_WORKFLOW_MODAL_TEXT':
@@ -972,6 +970,7 @@ export default function(state = initialState, action) {
     case 'SET_REFERENCE_CURIE':
       console.log("reducer set reference curie, also clear store");
       // also clear store from the previous reference data
+      const setRefCurieDefaultEntityAdd = _.cloneDeep(defaultEntityAdd);
       return {
         ...state,
         isLoading: true,
@@ -979,6 +978,7 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
+        entityAdd: setRefCurieDefaultEntityAdd,
 	tetPageSize: defaultTetPageSize,
         getReferenceCurieFlag: true
       }
