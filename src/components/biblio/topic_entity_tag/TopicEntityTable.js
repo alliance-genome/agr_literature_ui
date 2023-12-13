@@ -392,21 +392,25 @@ const TopicEntityTable = () => {
                     else if (td_value === false) { td_value = 'False'; }
                     else if (dateColumnSet.has(header)) {
                       td_value = new Date(td_value).toLocaleString(); }
-                    else if (headersToEntityMap.has(header)) {
-                      td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]] : tetDict[header];
-                    } else if (header === "species") {
-                      td_value = tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species;
+                    else if (["topic", "entity_type", "species", "entity"].includes(header)) {
+			let displayValue = '';
+			if (header === "species") {
+                            displayValue = tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species;
+			} else if (header === 'entity') {
+			    displayValue = entityEntityMappings[tetDict[header]] || tetDict[header];
+                        } else {
+			    displayValue = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]] : tetDict[header]; 
+		        }
+                        const curieToShow = displayValue + ": " + tetDict[header]; 
+                        td_value = (
+                          <span onClick={() => handleCurieClick(curieToShow)} style={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                             {displayValue}
+                          </span>
+                        );
                     }
-		    if (header === "entity") {
-		      const name = entityEntityMappings[tetDict[header]] || tetDict[header];
-	              const curie = tetDict[header];
-		      const curieToShow = name + ": " + curie;
-                      td_value = (
-                        <span onClick={() => handleCurieClick(curieToShow)} style={{ cursor: 'pointer', textDecoration: 'underline' }}>
-                          {name}
-                        </span>
-                      );
-                    }
+		    else if (headersToEntityMap.has(header)) {
+                        td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]]
+ : tetDict[header]; }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                   { source_headers.map( (header, index_2) => {
