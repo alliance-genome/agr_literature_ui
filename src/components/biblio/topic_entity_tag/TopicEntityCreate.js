@@ -67,8 +67,18 @@ const TopicEntityCreate = () => {
 			      'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
 			      'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
-  const curieToNameEntityType = { '': 'no value', 'ATP:0000005': 'gene', 'ATP:0000006': 'allele', 'ATP:0000123': 'species' };
-  const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123'];
+  const curieToNameEntityType = {
+      '': 'no value',
+      'ATP:0000005': 'gene',
+      'ATP:0000006': 'allele',
+      'ATP:0000123': 'species',
+      'ATP:0000014': 'AGMs',
+      'ATP:0000027': 'strain',
+      'ATP:0000025': 'genotypes',
+      'ATP:0000026': 'fish'
+  };
+  const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123',
+			  'ATP:0000014', 'ATP:0000027', 'ATP:0000025', 'ATP:0000026'];
   const speciesATP = 'ATP:0000123';
       
   const renderView = () => {
