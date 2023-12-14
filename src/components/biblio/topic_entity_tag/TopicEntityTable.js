@@ -247,6 +247,7 @@ const TopicEntityTable = () => {
 
   return (
     <div>
+       <LoadingOverlay active={isLoadingData || isLoadingMappings} />
        {/* container for total rows, popup, and page size selection */}
        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
          
