@@ -6,6 +6,9 @@ import ModalGeneric from './ModalGeneric';
 
 import { RowDisplayMeshTerms } from './BiblioDisplay';
 import { RowDisplayCopyrightLicense } from './BiblioDisplay';
+import { RowDisplayBooleanDisplayOnly } from './BiblioDisplay';
+import { RowDisplayPubmedPublicationStatusDateArrivedInPubmed } from './BiblioDisplay';
+import { RowDisplayDateLastModifiedInPubmedDateCreated } from './BiblioDisplay';
 import { RowDisplayReferencefiles } from '../Biblio';
 
 import {fetchModReferenceTypes, setBiblioUpdating} from '../../actions/biblioActions';
@@ -59,7 +62,8 @@ import {useEffect, useState} from "react";
 
 export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'resource_curie', 'resource_title' ];
 export const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
-export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'corrections', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
+export const fieldsBooleanDisplayOnly = ['prepublication_pipeline' ];
+export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'corrections', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
 export const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'pubmed_publication_status', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 export const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
@@ -515,26 +519,6 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
       </Row>);
   }
   return (<>{rowArrayStringElements}</>); }
-
-const RowEditorPubmedPublicationStatusDateArrivedInPubmed = ({referenceJsonLive}) => {
-  return ( <Form.Group as={Row} key="PubmedPublicationStatusDateArrivedInPubmed" >
-             <Form.Label column sm="2" className={`Col-general`} >pubmed_publication_status</Form.Label>
-             <Col sm="4"><Form.Control as="input" id="pubmed_publication_status" type="input" value={referenceJsonLive['pubmed_publication_status'] || ''} className={`form-control`} disabled="disabled" /></Col>
-             <Form.Label column sm="2" className={`Col-general`} >date_arrived_in_pubmed</Form.Label>
-             <Col sm="4"><Form.Control as="input" id="date_arrived_in_pubmed" type="input" value={referenceJsonLive['date_arrived_in_pubmed'] || ''} className={`form-control`} disabled="disabled" /></Col>
-           </Form.Group>);
-} // const RowEditorPubmedPublicationStatusDateArrivedInPubmed
-
-const RowEditorDateLastModifiedInPubmedDateCreated = ({referenceJsonLive}) => {
-  const date_created_object = new Date(referenceJsonLive['date_created']);
-  const date_created = date_created_object.toLocaleDateString("fr-CA");
-  return ( <Form.Group as={Row} key="DateLastModifiedInPubmedDateCreated" >
-             <Form.Label column sm="2" className={`Col-general`} >date_last_modified_in_pubmed</Form.Label>
-             <Col sm="4"><Form.Control as="input" id="date_last_modified_in_pubmed" type="input" value={referenceJsonLive['date_last_modified_in_pubmed'] || ''} className={`form-control`} disabled="disabled" /></Col>
-             <Form.Label column sm="2" className={`Col-general`} >date_created</Form.Label>
-             <Col sm="4"><Form.Control as="input" id="date_created" type="input" value={date_created} className={`form-control`} disabled="disabled" /></Col>
-           </Form.Group>);
-} // const RowEditorDateLastModifiedInPubmedDateCreated
 
 const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
@@ -1180,6 +1164,8 @@ const BiblioEditor = () => {
         rowOrderedElements.push(<RowEditorString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowEditorArrayString key={`RowEditorArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldsBooleanDisplayOnly.includes(fieldName)) {
+      rowOrderedElements.push(<RowDisplayBooleanDisplayOnly key={`RowDisplayBooleanDisplayOnly ${fieldName}`} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
     else if (fieldName === 'mod_corpus_associations') {
       rowOrderedElements.push(<RowEditorModAssociation key={`RowEditorModAssociation ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
@@ -1195,9 +1181,9 @@ const BiblioEditor = () => {
     else if (fieldName === 'date_published') {
       rowOrderedElements.push(<RowEditorDatePublished key="RowEditorDatePublished" fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'pubmed_publication_status') {
-      rowOrderedElements.push(<RowEditorPubmedPublicationStatusDateArrivedInPubmed key="RowEditorPubmedPublicationStatusDateArrivedInPubmed" referenceJsonLive={referenceJsonLive} />); }
+      rowOrderedElements.push(<RowDisplayPubmedPublicationStatusDateArrivedInPubmed key="RowDisplayPubmedPublicationStatusDateArrivedInPubmed" referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
     else if (fieldName === 'date_last_modified_in_pubmed') {
-      rowOrderedElements.push(<RowEditorDateLastModifiedInPubmedDateCreated key="RowEditorDateLastModifiedInPubmedDateCreated" referenceJsonLive={referenceJsonLive} />); }
+      rowOrderedElements.push(<RowDisplayDateLastModifiedInPubmedDateCreated key="RowDisplayDateLastModifiedInPubmedDateCreated" referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
     else if (fieldName === 'copyright_license_name') {
       rowOrderedElements.push(<RowDisplayCopyrightLicense key="RowDisplayCopyrightLicense" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
     else if (fieldName === 'referencefiles') {
