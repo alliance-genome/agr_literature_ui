@@ -400,7 +400,7 @@ const TopicEntityTable = () => {
 		        }
                         const curieToShow = displayValue + ": " + tetDict[header]; 
                         td_value = (
-                          <span onClick={() => handleCurieClick(curieToShow)} style={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                          <span onClick={() => handleCurieClick(curieToShow)} style={{ cursor: 'pointer' }}>
                              {displayValue}
                           </span>
                         );
@@ -413,13 +413,19 @@ const TopicEntityTable = () => {
                   { source_headers.map( (header, index_2) => {
                     let td_value = tetDict['topic_entity_tag_source'][header];
 		    if (header === 'evidence') {
-		       td_value = ecoToName[td_value] || td_value;
+		      const ecoID = td_value;	  
+		      const displayValue = ecoToName[td_value] || td_value;
+		      td_value = (
+			<span onClick={() => handleCurieClick(displayValue + ': ' + ecoID)} style={{ cursor: 'pointer' }}>
+			  {displayValue}
+			</span>
+	              );
 		    } 
                     else if (td_value === true) { td_value = 'True'; }
                     else if (td_value === false) { td_value = 'False'; }
                     if (dateColumnSet.has(header)) {
                        td_value = new Date(td_value).toLocaleString();
-		    }
+		    }   
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                 </tr>);
