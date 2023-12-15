@@ -111,11 +111,11 @@ export const changeFieldModAssociationReferenceJson = (e) => {
 };
 
 
-export const changeFieldCommentsCorrectionsReferenceJson = (e) => {
-  console.log('action change field comments corrections json ' + e.target.id + ' to ' + e.target.value);
+export const changeFieldReferenceRelationsJson = (e) => {
+  console.log('action change field reference relations json ' + e.target.id + ' to ' + e.target.value);
 //   console.log(e);
   return {
-    type: 'CHANGE_FIELD_COMMENTS_CORRECTIONS_REFERENCE_JSON',
+    type: 'CHANGE_FIELD_REFERENCE_RELATIONS_JSON',
     payload: {
       field: e.target.id,
       value: e.target.value
@@ -633,18 +633,20 @@ export function generateCorrectionsSimple(referenceJson) {
   comcorMapping['RepublishedFrom'] = 'RepublishedIn'
   comcorMapping['RetractionOf'] = 'HasRetraction'
   comcorMapping['UpdateOf'] = 'HasUpdate'
+  //comcorMapping['hasChapter'] = 'ChapterIn'
   const comcorDirections = ['to_references', 'from_references']
   referenceJson['corrections'] = []
   for (const direction of comcorDirections) {
-    for (const comcorDict of referenceJson['comment_and_corrections'][direction].values()) {
+    for (const comcorDict of referenceJson['reference_relations'][direction].values()) {
       let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
       let curie = comcorDict[curieFieldInDict]
-      let dbid = comcorDict['reference_comment_and_correction_id']
-      let type = comcorDict['reference_comment_and_correction_type']
+      let dbid = comcorDict['reference_relation_id']
+      let type = comcorDict['reference_relation_type']
+      if (type === 'hasChapter' || type === 'ChapterIn'){continue }
       if (direction === 'from_references') {
         if (type in comcorMapping) { type = comcorMapping[type] } }
       let newComcorDict = {}
-      newComcorDict['reference_comment_and_correction_id'] = dbid
+      newComcorDict['reference_relation_id'] = dbid
       newComcorDict['type'] = type
       newComcorDict['curie'] = curie
       referenceJson['corrections'].push(newComcorDict)
@@ -701,7 +703,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
     let response_payload = 'not found';
     if (response !== undefined) {
       const referenceJson = response;
-      if ('comment_and_corrections' in referenceJson && referenceJson['comment_and_corrections'] !== null) {
+      if ('reference_relations' in referenceJson && referenceJson['reference_relations'] !== null) {
         generateCorrectionsSimple(referenceJson);
       }
       response_payload = referenceJson;

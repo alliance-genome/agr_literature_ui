@@ -21,7 +21,7 @@ import { changeFieldModAssociationReferenceJson } from '../../actions/biblioActi
 import { deleteFieldModAssociationReferenceJson } from '../../actions/biblioActions';
 import { changeFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
 import { deleteFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
-import { changeFieldCommentsCorrectionsReferenceJson } from '../../actions/biblioActions';
+import { changeFieldReferenceRelationsJson } from '../../actions/biblioActions';
 import { changeFieldAuthorsReferenceJson } from '../../actions/biblioActions';
 import { biblioAddNewRowString } from '../../actions/biblioActions';
 import { biblioAddNewAuthorAffiliation } from '../../actions/biblioActions';
@@ -304,17 +304,18 @@ const BiblioSubmitUpdateButton = () => {
           let fromCurie = referenceCurie
           let toCurie = comcorDict['curie']
           let comcorType = comcorDict['type']
+          if (comcorType === 'hasChapter' || comcorType === 'ChapterIn' ){continue }
           if (comcorType in comcorMapping) {
             toCurie = referenceCurie
             fromCurie = comcorDict['curie']
             comcorType = comcorMapping[comcorType] }
-          let apiJson = {'reference_curie_from': fromCurie, 'reference_curie_to': toCurie, 'reference_comment_and_correction_type': comcorType}
+          let apiJson = {'reference_curie_from': fromCurie, 'reference_curie_to': toCurie, 'reference_relation_type': comcorType}
           let method = 'POST'
-          let subPath = 'reference_comment_and_correction/'
-          if (('reference_comment_and_correction_id' in comcorDict) &&
-              (comcorDict['reference_comment_and_correction_id'] !== 'new')) {	// whole new entries needs create
+          let subPath = 'reference_relation/'
+          if (('reference_relation_id' in comcorDict) &&
+              (comcorDict['reference_relation_id'] !== 'new')) {	// whole new entries needs create
             method = 'PATCH'
-            subPath = 'reference_comment_and_correction/' + comcorDict['reference_comment_and_correction_id'] }
+            subPath = 'reference_relation/' + comcorDict['reference_relation_id'] }
           if (comcorType === '') {
             method = 'DELETE'
             apiJson = null }
@@ -926,15 +927,15 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   }
   return (<>{rowCrossReferencesElements}</>); }
 
-const RowEditorCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+const RowEditorReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const revertDictFields = 'curie prefix, curie id, is_obsolete'
-  const initializeDict = {'curie': '', 'type': '', 'reference_comment_and_correction_id': 'new'}
+  const initializeDict = {'curie': '', 'type': '', 'reference_relation_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
-  const rowCommentsCorrectionsElements = []
+  const rowReferenceRelationsElements = []
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
     for (const[index, comcorDict] of referenceJsonLive[fieldName].entries()) {
       let otherColSize = 6;
@@ -951,21 +952,21 @@ const RowEditorCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive,
              valueDbType = referenceJsonDb[fieldName][index]['type'] }
       if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
       if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
-      rowCommentsCorrectionsElements.push(
+      rowReferenceRelationsElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
-          <ColEditorSelect key={`colElement ${fieldName} ${index} comcorType`} fieldType="select" fieldName={fieldName} colSize="3" value={valueLiveType} updatedFlag={updatedFlagType} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} type`} enumType="referenceComcorType" dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
-          <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurie} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie`} dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
+          <ColEditorSelect key={`colElement ${fieldName} ${index} comcorType`} fieldType="select" fieldName={fieldName} colSize="3" value={valueLiveType} updatedFlag={updatedFlagType} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} type`} enumType="referenceComcorType" dispatchAction={changeFieldReferenceRelationsJson} />
+          <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurie} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie`} dispatchAction={changeFieldReferenceRelationsJson} />
           {revertElement}
         </Form.Group>); } }
   if (disabled === '') {
-    rowCommentsCorrectionsElements.push(
+    rowReferenceRelationsElements.push(
       <Row className="form-group row" key={fieldName} >
         <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
         <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
       </Row>);
   }
-  return (<>{rowCommentsCorrectionsElements}</>); }
+  return (<>{rowReferenceRelationsElements}</>); }
 
 const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   // author editing is complicated.  There's the author order of the array in the browser dom.  The author order of the array in the redux store.  The order field in the author store entry (should be 1 more than the order in the dom).  The author_id field in the author store entry, used for comparing what was in the db.  The copy of author values in the store that reflect the db value (with its array order, order field, and author_id field).
@@ -1185,7 +1186,7 @@ const BiblioEditor = () => {
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'corrections') {
-      rowOrderedElements.push(<RowEditorCommentsCorrections key={`RowEditorCommentsCorrections ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+      rowOrderedElements.push(<RowEditorReferenceRelations key={`RowEditorReferenceRelations ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
