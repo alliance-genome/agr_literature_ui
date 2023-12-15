@@ -28,7 +28,7 @@ const initialState = {
 //     input: 'PMID:29664630',	-> orcid
 //     input: 'PMID:28049701',  -> keywords
 //     input: 'PMID:24699224',  -> more keywords
-//     input: 'PMID:10704882',  -> corrections
+//     input: 'PMID:10704882',  -> relations
 //     input: 'PMID:10025402',	-> mesh terms
 //     input: 'PMID:24699224',  -> mesh terms
 //     input: 'AGR:AGR-Reference-0000869188',	-> empty paper in lit-4002

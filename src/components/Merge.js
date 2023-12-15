@@ -43,16 +43,16 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files' ];
-// const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
-// const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'corrections', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'relations', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files' ];
+// const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'relations', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
+// const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'relations', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
-// const fieldsPubmed = [ 'title', 'corrections', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+// const fieldsPubmed = [ 'title', 'relations', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 const fieldsNoLock = [ 'mod_corpus_associations', 'cross_references', 'mod_reference_types' ];
 const fieldsPubmedUnlocked = [ 'authors', 'category', 'resource_curie', 'date_published' ];
 const fieldsPubmedLocked = [ 'title', 'abstract', 'volume', 'issue_name', 'page_range', 'publisher', 'language' ];
-const fieldsPubmedOnly = [ 'correction', 'pubmed_types', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'keywords', 'corrections' ];
+const fieldsPubmedOnly = [ 'correction', 'pubmed_types', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'keywords', 'relations' ];
 // const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 
 const GenerateFieldLabel = (fieldName, isLocked) => {
@@ -213,7 +213,7 @@ const MergeDataTransferredModal = () => {
                     <Modal.Body>Data has been merged from {referenceMeta2.curie} into {referenceMeta1.curie} but something went wrong, <a href="/merge" target="_blank" rel="noreferrer noopener">try again in a new browser tab</a>.</Modal.Body> :
                     <Modal.Body>Selected data has been transferred from {referenceMeta2.curie} into {referenceMeta1.curie}.<br/><br/>
                     If you wish, you may verify the winning reference information <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> and losing information to be removed from <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a>.<br/><br/>
-                    Note that merged corrections will only be viewable on merge completion.<br/><br/>
+                    Note that merged relations will only be viewable on merge completion.<br/><br/>
                     To finish, click Complete Merge below.<br/><br/>
                     <MergeSubmitCompleteMergeUpdateButton /></Modal.Body>
   const modalHeader = updateFailure ? 
@@ -538,10 +538,10 @@ const MergeSubmitDataTransferUpdateButton = () => {
     } }
 
 
-    // TODO  corrections 
-// need to figure out how to know which direction .  editing corrections is also broken, but creating works.  
-//     if ('corrections' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['corrections'] !== null) {
-//       for (const corrDict of referenceMeta2['referenceJson']['corrections'].values()) {
+    // TODO  relations
+// need to figure out how to know which direction .  editing relations is also broken, but creating works.
+//     if ('relations' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['relations'] !== null) {
+//       for (const corrDict of referenceMeta2['referenceJson']['relations'].values()) {
 //         if (corrDict['toggle']) {
 //           const type = corrDict['type'];
 //           const corrCurie = corrDict['curie'];
@@ -613,9 +613,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, hasPm
     else if (fieldName === 'mod_corpus_associations') {
       rowOrderedElements.push(
         <RowDisplayPairModCorpusAssociations key="RowDisplayPairModCorpusAssociations" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} /> ); }
-    else if (fieldName === 'corrections') {
+    else if (fieldName === 'relations') {
       rowOrderedElements.push(
-        <RowDisplayPairCorrections key="RowDisplayPairCorrections" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
+        <RowDisplayPairRelations key="RowDisplayPairRelations" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(
         <RowDisplayPairCrossReferencesValid key="RowDisplayPairCrossReferencesValid" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} /> );
@@ -1116,11 +1116,11 @@ const RowDisplayPairCrossReferencesObsolete = ({fieldName, referenceMeta1, refer
   return (<>{rowPairCrossReferencesElements}</>);
 } // const RowDisplayPairCrossReferencesObsolete
   
-const RowDisplayPairCorrections = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
+const RowDisplayPairRelations = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   // const dispatch = useDispatch();
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
-  const rowPairCorrectionsElements = []
+  const rowPairRelationsElements = []
 
   const maxLength = (referenceMeta1['referenceJson'][fieldName].length > referenceMeta2['referenceJson'][fieldName].length) ?  referenceMeta1['referenceJson'][fieldName].length : referenceMeta2['referenceJson'][fieldName].length;
   const corFields = ['type', 'curie', 'toggle'];
@@ -1152,15 +1152,15 @@ const RowDisplayPairCorrections = ({fieldName, referenceMeta1, referenceMeta2, r
       // element2 = (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 2, i))} >{cor2Data['type']} {cor2Data['curie']
       element2 = (<div className={`div-merge ${keepClass}`} >{cor2Data['type']} {cor2Data['curie']}
         </div>); }
-    rowPairCorrectionsElements.push(
+    rowPairRelationsElements.push(
       <Row key={`toggle cor ${i}`}>
         <Col sm="2" >{element0}</Col>
         <Col sm="5" >{element1}</Col>
         <Col sm="5" >{element2}</Col>
       </Row>);
   }
-  return (<>{rowPairCorrectionsElements}</>);
-} // const RowDisplayPairCorrections
+  return (<>{rowPairRelationsElements}</>);
+} // const RowDisplayPairRelations
 
 
 const Merge = () => {

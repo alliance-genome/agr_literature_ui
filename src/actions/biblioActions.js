@@ -624,7 +624,7 @@ export const biblioAddNewRowDict = (e, initializeDict) => {
   };
 };
 
-export function generateCorrectionsSimple(referenceJson) {
+export function generateRelationsSimple(referenceJson) {
   let comcorMapping = {}
   comcorMapping['CommentOn'] = 'HasComment'
   comcorMapping['ErratumFor'] = 'HasErratum'
@@ -633,23 +633,23 @@ export function generateCorrectionsSimple(referenceJson) {
   comcorMapping['RepublishedFrom'] = 'RepublishedIn'
   comcorMapping['RetractionOf'] = 'HasRetraction'
   comcorMapping['UpdateOf'] = 'HasUpdate'
-  //comcorMapping['hasChapter'] = 'ChapterIn'
+  comcorMapping['hasChapter'] = 'ChapterIn'
   const comcorDirections = ['to_references', 'from_references']
-  referenceJson['corrections'] = []
+  referenceJson['relations'] = []
   for (const direction of comcorDirections) {
     for (const comcorDict of referenceJson['reference_relations'][direction].values()) {
       let curieFieldInDict = (direction === 'to_references') ? 'reference_curie_to' : 'reference_curie_from';
       let curie = comcorDict[curieFieldInDict]
       let dbid = comcorDict['reference_relation_id']
       let type = comcorDict['reference_relation_type']
-      if (type === 'hasChapter' || type === 'ChapterIn'){continue }
+      //if (type === 'hasChapter' || type === 'ChapterIn'){continue }
       if (direction === 'from_references') {
         if (type in comcorMapping) { type = comcorMapping[type] } }
       let newComcorDict = {}
       newComcorDict['reference_relation_id'] = dbid
       newComcorDict['type'] = type
       newComcorDict['curie'] = curie
-      referenceJson['corrections'].push(newComcorDict)
+      referenceJson['relations'].push(newComcorDict)
   } }
 }
 
@@ -704,7 +704,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
     if (response !== undefined) {
       const referenceJson = response;
       if ('reference_relations' in referenceJson && referenceJson['reference_relations'] !== null) {
-        generateCorrectionsSimple(referenceJson);
+        generateRelationsSimple(referenceJson);
       }
       response_payload = referenceJson;
     }

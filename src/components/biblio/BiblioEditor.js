@@ -59,7 +59,7 @@ import {useEffect, useState} from "react";
 
 export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'resource_curie', 'resource_title' ];
 export const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
-export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'corrections', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
+export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'relations', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
 export const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'pubmed_publication_status', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 export const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
@@ -77,7 +77,7 @@ enumDict['category'] = ['research_article', 'review_article', 'thesis', 'book', 
 enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 enumDict['personXrefPrefix'] = ['', 'ORCID']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'Xenbase', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN', 'CGC', 'WBG', 'WM']
-enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor']
+enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor', 'hasChapter', 'ChapterIn']
 enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
 enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'automated_alliance', 'assigned_for_review']
 
@@ -289,8 +289,8 @@ const BiblioSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
-    if ('corrections' in referenceJsonLive && referenceJsonLive['corrections'] !== null) {
-      let field = 'corrections';
+    if ('relations' in referenceJsonLive && referenceJsonLive['relations'] !== null) {
+      let field = 'relations';
       let comcorMapping = {}
       comcorMapping['HasComment'] = 'CommentOn'
       comcorMapping['HasErratum'] = 'ErratumFor'
@@ -299,12 +299,13 @@ const BiblioSubmitUpdateButton = () => {
       comcorMapping['RepublishedIn'] = 'RepublishedFrom'
       comcorMapping['HasRetraction'] = 'RetractionOf'
       comcorMapping['HasUpdate'] = 'UpdateOf'
-      for (const[index, comcorDict] of referenceJsonLive['corrections'].entries()) {
+      comcorMapping['hasChapter'] = 'ChapterIn'
+      for (const[index, comcorDict] of referenceJsonLive['relations'].entries()) {
         if ('needsChange' in comcorDict) {
           let fromCurie = referenceCurie
           let toCurie = comcorDict['curie']
           let comcorType = comcorDict['type']
-          if (comcorType === 'hasChapter' || comcorType === 'ChapterIn' ){continue }
+          //if (comcorType === 'hasChapter' || comcorType === 'ChapterIn' ){continue }
           if (comcorType in comcorMapping) {
             toCurie = referenceCurie
             fromCurie = comcorDict['curie']
@@ -1185,7 +1186,7 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorModAssociation key={`RowEditorModAssociation ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-    else if (fieldName === 'corrections') {
+    else if (fieldName === 'relations') {
       rowOrderedElements.push(<RowEditorReferenceRelations key={`RowEditorReferenceRelations ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }

@@ -2,7 +2,7 @@
 
 // import notGithubVariables from './notGithubVariables';
 
-import { generateCorrectionsSimple } from './biblioActions';
+import { generateRelationsSimple } from './biblioActions';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -157,7 +157,7 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
 
       if (referenceJson1.constructor === Object && 'reference_relations' in referenceJson1 &&
           referenceJson1['reference_relations'] !== null) {
-        generateCorrectionsSimple(referenceJson1); }
+        generateRelationsSimple(referenceJson1); }
 
       referenceJson2 = valuesRef[1]['value'][0];
       referenceFound2 = valuesRef[1]['value'][1];
@@ -167,7 +167,7 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
 
       if (referenceJson2.constructor === Object && 'reference_relations' in referenceJson2 &&
           referenceJson2['reference_relations'] !== null) {
-        generateCorrectionsSimple(referenceJson2); }
+        generateRelationsSimple(referenceJson2); }
 
       const promiseRefFile1 = queryRefFiles(curieValue1);
       const promiseRefFile2 = queryRefFiles(curieValue2);
