@@ -74,7 +74,7 @@ const TopicEntityCreate = () => {
       'ATP:0000123': 'species',
       'ATP:0000014': 'AGMs',
       'ATP:0000027': 'strain',
-      'ATP:0000025': 'genotypes',
+      'ATP:0000025': 'genotype',
       'ATP:0000026': 'fish'
   };
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123',
