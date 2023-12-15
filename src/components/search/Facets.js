@@ -14,7 +14,8 @@ import {
     setDatePubmedAdded,
     setDatePubmedModified,
     setDatePublished,
-    setDateCreated
+    setDateCreated,
+    setModPreferencesLoaded
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse} from 'react-bootstrap';
@@ -295,6 +296,8 @@ const Facets = () => {
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const datePublished= useSelector(state => state.search.datePublished);
+    const oktaMod = useSelector(state => state.isLogged.oktaMod);
+    const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const dispatch = useDispatch();
 
     const toggleFacetGroup = (facetGroupLabel) => {
@@ -333,6 +336,13 @@ const Facets = () => {
         }
         setOpenFacets(newOpenFacets);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(()=> {
+        if(modPreferencesLoaded === 'false' && oktaMod !== 'No'){
+            dispatch(setModPreferencesLoaded(true));
+            dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
+        }
+    }, [oktaMod]) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <>

@@ -26,6 +26,7 @@ export const SEARCH_SET_DATE_CREATED = 'SEARCH_SET_DATE_CREATED';
 export const SEARCH_SET_SEARCH_QUERY_FIELDS = 'SEARCH_SET_SEARCH_QUERY_FIELDS';
 export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_DATE';
 export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
+export const SEARCH_SET_MOD_PREFERENCES_LOADED = 'SEARCH_SET_MOD_PREFERENCES_LOADED';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -310,5 +311,12 @@ export const setPartialMatch = (partialMatch) => ({
   type: SEARCH_SET_PARTIAL_MATCH,
   payload: {
     partialMatch : partialMatch
+  }
+});
+
+export const setModPreferencesLoaded = (modPreferencesLoaded) => ({
+  type: SEARCH_SET_MOD_PREFERENCES_LOADED,
+  payload: {
+    modPreferencesLoaded : modPreferencesLoaded
   }
 });
