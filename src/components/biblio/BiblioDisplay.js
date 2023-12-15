@@ -16,7 +16,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 
-import { fieldsSimple, fieldsArrayString, fieldsOrdered } from './BiblioEditor';
+import { fieldsSimple, fieldsArrayString, fieldsBooleanDisplayOnly, fieldsOrdered } from './BiblioEditor';
 
 
 // constants available in BiblioEditor
@@ -206,23 +206,41 @@ export const RowDisplayCopyrightLicense = ({fieldIndex, fieldName, referenceJson
           <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 10 }}><a href={url} title={desc} rel="noreferrer noopener" target="_blank">{name}</a></Col>
         </Row>); }
 
-const RowDisplayPubmedPublicationStatusDateArrivedInPubmed = ({referenceJsonLive}) => {
+export const RowDisplayPairDataDisplayOnly = ({fieldOne, valueOne, fieldTwo, valueTwo, displayOrEditor}) => {
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplay = 'Col-display';
+  let cssDisplayClear = 'Col-display';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') {
+    cssDisplay = 'Col-editor-disabled';
+    cssDisplayClear = '';
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
   return (<Row key="RowDisplayPubmedPublicationStatusDateArrivedInPubmed" className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-display Col-display-left">pubmed_publication_status</Col>
-            <Col className={"Col-general Col-display"} lg={{ span: 4 }}>{referenceJsonLive['pubmed_publication_status'] || ''}</Col>
-            <Col className={"Col-general Col-display"} lg={{ span: 2 }}>date_arrived_in_pubmed</Col>
-            <Col className={"Col-general Col-display Col-display-right"} lg={{ span: 4 }}>{referenceJsonLive['date_arrived_in_pubmed'] || ''}</Col>
+            <Col className={`Col-general ${cssDisplayLeft}`} >{fieldOne}</Col>
+            <Col className={`Col-general ${cssDisplay}`} lg={{ span: 4 }}>{valueOne}</Col>
+            <Col className={`Col-general ${cssDisplayClear}`} lg={{ span: 2 }}>{fieldTwo}</Col>
+            <Col className={`Col-general ${cssDisplayRight}`} lg={{ span: 4 }}>{valueTwo}</Col>
           </Row>); }
 
-const RowDisplayDateLastModifiedInPubmedDateCreated = ({referenceJsonLive}) => {
+export const RowDisplayPubmedPublicationStatusDateArrivedInPubmed = ({referenceJsonLive, displayOrEditor}) => {
+  return(<RowDisplayPairDataDisplayOnly key="RowDisplayPairDataPubmedPublicationStatusDateArrivedInPubmed" fieldOne="pubmed_publication_status" valueOne={referenceJsonLive['pubmed_publication_status'] || ''} fieldTwo="date_arrived_in_pubmed" valueTwo={referenceJsonLive['date_arrived_in_pubmed'] || ''} displayOrEditor={displayOrEditor} />); }
+
+export const RowDisplayBooleanDisplayOnly = ({fieldName, referenceJsonLive, displayOrEditor}) => {
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') {
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = ''; }
+  return (<Row key="RowDisplayPubmedPublicationStatusDateArrivedInPubmed" className="Row-general" xs={2} md={4} lg={6}>
+            <Col className={`Col-general ${cssDisplayLeft}`}>{fieldName}</Col>
+            <Col className={`Col-general ${cssDisplayRight}`} lg={{ span: 10 }}>{referenceJsonLive[fieldName] === true ? fieldName : ''}</Col>
+          </Row>); }
+
+export const RowDisplayDateLastModifiedInPubmedDateCreated = ({referenceJsonLive, displayOrEditor}) => {
   const date_created_object = new Date(referenceJsonLive['date_created']);
   const date_created = date_created_object.toLocaleDateString("fr-CA");
-  return (<Row key="RowDisplayDateLastModifiedInPubmedDateCreated" className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-display Col-display-left">date_last_modified_in_pubmed</Col>
-            <Col className={"Col-general Col-display"} lg={{ span: 4 }}>{referenceJsonLive['date_last_modified_in_pubmed'] || ''}</Col>
-            <Col className={"Col-general Col-display"} lg={{ span: 2 }}>date_created</Col>
-            <Col className={"Col-general Col-display Col-display-right"} lg={{ span: 4 }}>{date_created}</Col>
-          </Row>); }
+  return(<RowDisplayPairDataDisplayOnly key="RowDisplayPairDataPubmedPublicationStatusDateArrivedInPubmed" fieldOne="date_last_modified_in_pubmed" valueOne={referenceJsonLive['date_last_modified_in_pubmed'] || ''} fieldTwo="date_created" valueTwo={date_created} displayOrEditor={displayOrEditor} />); }
 
 export const RowDisplayMeshTerms = ({fieldIndex, fieldName, referenceJsonLive, displayOrEditor}) => {
   const meshExpand = useSelector(state => state.biblio.meshExpand);
@@ -404,6 +422,8 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
       rowOrderedElements.push(<RowDisplayArrayString key={`RowDisplayArrayString ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldsBooleanDisplayOnly.includes(fieldName)) {
+      rowOrderedElements.push(<RowDisplayBooleanDisplayOnly key={`RowDisplayBooleanDisplayOnly ${fieldName}`} fieldName={fieldName} referenceJsonLive={referenceJsonLive} />); }
     else if (fieldName === 'mod_corpus_associations') {
       rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
@@ -419,9 +439,9 @@ const BiblioDisplay = () => {
     else if (fieldName === 'date_published') {
       rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'pubmed_publication_status') {
-      rowOrderedElements.push(<RowDisplayPubmedPublicationStatusDateArrivedInPubmed referenceJsonLive={referenceJsonLive} />); }
+      rowOrderedElements.push(<RowDisplayPubmedPublicationStatusDateArrivedInPubmed key="RowDisplayPubmedPublicationStatusDateArrivedInPubmed" referenceJsonLive={referenceJsonLive} />); }
     else if (fieldName === 'date_last_modified_in_pubmed') {
-      rowOrderedElements.push(<RowDisplayDateLastModifiedInPubmedDateCreated referenceJsonLive={referenceJsonLive} />); }
+      rowOrderedElements.push(<RowDisplayDateLastModifiedInPubmedDateCreated key="RowDisplayDateLastModifiedInPubmedDateCreated" referenceJsonLive={referenceJsonLive} />); }
     else if (fieldName === 'copyright_license_name') {
       rowOrderedElements.push(<RowDisplayCopyrightLicense key="RowDisplayCopyrightLicense" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
     else if (fieldName === 'referencefiles') {

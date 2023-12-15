@@ -12,6 +12,7 @@ import Pagination from "react-bootstrap/Pagination";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
+import Modal from 'react-bootstrap/Modal';
 
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
@@ -37,9 +38,11 @@ const TopicEntityTable = () => {
   const [allSpecies, setAllSpecies] = useState([]);
   const curieToNameTaxon = getCurieToNameTaxon();
   const ecoToName = {
-      'ECO:0000302': 'author statement used in manual assertion'
+    'ECO:0000302': 'author statement used in manual assertion'
   };
-      
+  const [selectedCurie, setSelectedCurie] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+    
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
     if (headerCell) {
@@ -179,6 +182,23 @@ const TopicEntityTable = () => {
     const newSize = Number(event.target.value);
     dispatch(setPageSizeAction(newSize)); // update Redux store with new pageSize
   };
+
+  const handleCurieClick = (curie) => {
+    // console.log("curie in 'handleCurieClick'=", curie);
+    setSelectedCurie(curie);
+    setShowModal(true);
+  };
+
+  const CuriePopup = ({ curie, show, onHide }) => {
+    return (
+      <Modal show={show} onHide={onHide} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>CURIE Information</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{curie}</Modal.Body>
+      </Modal>
+    );
+  };
     
   const changePage = (action) => {
     let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
@@ -225,40 +245,35 @@ const TopicEntityTable = () => {
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
   const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
 
-
-  // TODO: use the following code for the 'simple' table
-  // for (const tetDict of topicEntityTags.values()) {
-  //   for (const tetDictKey in tetDict) {
-  //     // console.log(tetDictKey);
-  //     if (tetDictKey === 'topic_entity_tag_source') {
-  //       for (const tetSourceKey in tetDict[tetDictKey]) {
-  //         if ( (source_headers.indexOf(tetSourceKey) === -1) && !(excludeColumnSet.has(tetSourceKey)) ) { source_headers.push(tetSourceKey); } } }
-  //     else {
-  //       if ( (headers.indexOf(tetDictKey) === -1) && !(excludeColumnSet.has(tetDictKey)) ) { headers.push(tetDictKey); } }
-  //   }
-  // }
-
-   
   return (
-      <div>
-        <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-	{/* Flex container for total rows and page size selection */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-	  {typeof totalTagsCount !== 'undefined' && (
-            <h4 style={{textAlign: 'left', paddingLeft: '15px'}}>
+    <div>
+       <LoadingOverlay active={isLoadingData || isLoadingMappings} />
+       {/* container for total rows, popup, and page size selection */}
+       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+         
+          {/* total Rows */}
+          {typeof totalTagsCount !== 'undefined' && (
+            <h4 style={{ textAlign: 'left', paddingLeft: '15px' }}>
               Total {totalTagsCount} rows
-	    </h4>
+            </h4>
           )}
+
+          {/* Curie Popup */}
+          {selectedCurie && (
+            <CuriePopup curie={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
+          )}
+	  
           {/* Page Size Selection */}
           <Form.Group controlId="pageSizeSelect" style={{ marginRight: '15px' }}>
-          <Form.Label style={{ marginRight: '10px' }}>Rows per page:</Form.Label>
+            <Form.Label style={{ marginRight: '10px' }}>Rows per page:</Form.Label>
             <Form.Control as="select" value={pageSize} onChange={handlePageSizeChange} style={{ display: 'inline-block', width: 'auto' }}>
               {[10, 25, 50, 100, 500].map(size => (
                 <option key={size} value={size}>{size}</option>
               ))}
             </Form.Control>
           </Form.Group>
-	</div>
+        </div>
+	  
         <Table
           bordered
           size="sm"
@@ -375,29 +390,49 @@ const TopicEntityTable = () => {
                     else if (td_value === false) { td_value = 'False'; }
                     else if (dateColumnSet.has(header)) {
                       td_value = new Date(td_value).toLocaleString(); }
-                    else if (headersToEntityMap.has(header)) {
-                      td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]] : tetDict[header];
-                    } else if (header === "species") {
-                      td_value = tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species;
+                    else if (["topic", "entity_type", "species", "entity"].includes(header)) {
+			let displayValue = '';
+			if (header === "species") {
+                            displayValue = tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species;
+			} else if (header === 'entity') {
+			    displayValue = entityEntityMappings[tetDict[header]] || tetDict[header];
+                        } else {
+			    displayValue = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]] : tetDict[header]; 
+		        }
+                        const curieToShow = displayValue + ": " + tetDict[header]; 
+                        td_value = (
+                          <span onClick={() => handleCurieClick(curieToShow)} style={{ cursor: 'pointer' }}>
+                             {displayValue}
+                          </span>
+                        );
                     }
+		    else if (headersToEntityMap.has(header)) {
+                        td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]]
+ : tetDict[header]; }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                   { source_headers.map( (header, index_2) => {
                     let td_value = tetDict['topic_entity_tag_source'][header];
 		    if (header === 'evidence') {
-		       td_value = ecoToName[td_value] || td_value;
+		      const ecoID = td_value;	  
+		      const displayValue = ecoToName[td_value] || td_value;
+		      td_value = (
+			<span onClick={() => handleCurieClick(displayValue + ': ' + ecoID)} style={{ cursor: 'pointer' }}>
+			  {displayValue}
+			</span>
+	              );
 		    } 
                     else if (td_value === true) { td_value = 'True'; }
                     else if (td_value === false) { td_value = 'False'; }
                     if (dateColumnSet.has(header)) {
                        td_value = new Date(td_value).toLocaleString();
-		    }
+		    }   
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                 </tr>);
           } ) }
           </tbody></Table>
-        {totalTagsCount > 0 ?
+          {totalTagsCount > 0 ?
             <Pagination style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '10vh'}}>
               <Pagination.First  onClick={() => changePage('First')} />
               <Pagination.Prev   onClick={() => changePage('Prev')} />
@@ -405,7 +440,7 @@ const TopicEntityTable = () => {
               <Pagination.Next   onClick={() => changePage('Next')} />
               <Pagination.Last   onClick={() => changePage('Last')} />
             </Pagination>
-            : null}
+           : null}
       </div>);
 } // const EntityTable
 
