@@ -411,7 +411,10 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
             })
           );
     } else if (validAGMTypes.includes(entityType)) {
-
+	let subType = '';
+	if (entityType !== 'AGMs') {
+	    subType = entityType
+	}
 	const ateamApiUrl = ateamApiBaseUrl + 'api/agm/search?limit=100&page=0';
 	
 	let searchEntityJson = {
@@ -434,7 +437,26 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
 		}
 	    }
 	};
-	console.log("searchEntityJson=", JSON.stringify(searchEntityJson));
+	if (subType !== '') {
+	    searchEntityJson["searchFilters"]["subtypeFilters"] = {
+		"subtype.name": {
+		    "queryString": subType,
+		    "tokenOperator": "OR"
+		}
+	    };
+	}
+	/*
+	 1. between filters = AND
+	    between nameFilters and taxonFilters (also subtypeFilters) are AND 
+	 2. within same filters = OR
+	    between name and curie are OR (match 'name' OR match 'curie')
+	 3. each query can be OR or AND
+	    "tokenOperator": "OR" in "taxonFilters" means "taxon.curie_keyword" must match
+	    "NCBITaxon:123" OR match "NCBITaxon:124" if querystring
+	    taxon = "NCBITaxon:123 NCBITaxon:124"
+	 4. filter name can be anything. For example, we can change "subtypeFilters" 
+	    to "subtypeNameFilters"
+	*/
 	axios.post(ateamApiUrl, searchEntityJson, {
             headers: {
 		'content-type': 'application/json',
