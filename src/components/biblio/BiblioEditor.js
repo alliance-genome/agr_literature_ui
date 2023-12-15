@@ -305,7 +305,6 @@ const BiblioSubmitUpdateButton = () => {
           let fromCurie = referenceCurie
           let toCurie = comcorDict['curie']
           let comcorType = comcorDict['type']
-          //if (comcorType === 'hasChapter' || comcorType === 'ChapterIn' ){continue }
           if (comcorType in comcorMapping) {
             toCurie = referenceCurie
             fromCurie = comcorDict['curie']
