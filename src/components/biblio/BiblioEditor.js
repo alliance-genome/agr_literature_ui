@@ -24,7 +24,7 @@ import { changeFieldModAssociationReferenceJson } from '../../actions/biblioActi
 import { deleteFieldModAssociationReferenceJson } from '../../actions/biblioActions';
 import { changeFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
 import { deleteFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
-import { changeFieldCommentsCorrectionsReferenceJson } from '../../actions/biblioActions';
+import { changeFieldReferenceRelationsJson } from '../../actions/biblioActions';
 import { changeFieldAuthorsReferenceJson } from '../../actions/biblioActions';
 import { biblioAddNewRowString } from '../../actions/biblioActions';
 import { biblioAddNewAuthorAffiliation } from '../../actions/biblioActions';
@@ -62,8 +62,10 @@ import {useEffect, useState} from "react";
 
 export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'resource_curie', 'resource_title' ];
 export const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
+ 
 export const fieldsBooleanDisplayOnly = ['prepublication_pipeline' ];
-export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'corrections', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
+export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'relations', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
+ 
 
 export const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'pubmed_publication_status', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 export const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
@@ -81,7 +83,7 @@ enumDict['category'] = ['research_article', 'review_article', 'thesis', 'book', 
 enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 enumDict['personXrefPrefix'] = ['', 'ORCID']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'Xenbase', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN', 'CGC', 'WBG', 'WM']
-enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor']
+enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor', 'hasChapter', 'ChapterIn']
 enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
 enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'automated_alliance', 'assigned_for_review']
 
@@ -293,8 +295,8 @@ const BiblioSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
-    if ('corrections' in referenceJsonLive && referenceJsonLive['corrections'] !== null) {
-      let field = 'corrections';
+    if ('relations' in referenceJsonLive && referenceJsonLive['relations'] !== null) {
+      let field = 'relations';
       let comcorMapping = {}
       comcorMapping['HasComment'] = 'CommentOn'
       comcorMapping['HasErratum'] = 'ErratumFor'
@@ -303,7 +305,8 @@ const BiblioSubmitUpdateButton = () => {
       comcorMapping['RepublishedIn'] = 'RepublishedFrom'
       comcorMapping['HasRetraction'] = 'RetractionOf'
       comcorMapping['HasUpdate'] = 'UpdateOf'
-      for (const[index, comcorDict] of referenceJsonLive['corrections'].entries()) {
+      comcorMapping['hasChapter'] = 'ChapterIn'
+      for (const[index, comcorDict] of referenceJsonLive['relations'].entries()) {
         if ('needsChange' in comcorDict) {
           let fromCurie = referenceCurie
           let toCurie = comcorDict['curie']
@@ -312,13 +315,13 @@ const BiblioSubmitUpdateButton = () => {
             toCurie = referenceCurie
             fromCurie = comcorDict['curie']
             comcorType = comcorMapping[comcorType] }
-          let apiJson = {'reference_curie_from': fromCurie, 'reference_curie_to': toCurie, 'reference_comment_and_correction_type': comcorType}
+          let apiJson = {'reference_curie_from': fromCurie, 'reference_curie_to': toCurie, 'reference_relation_type': comcorType}
           let method = 'POST'
-          let subPath = 'reference_comment_and_correction/'
-          if (('reference_comment_and_correction_id' in comcorDict) &&
-              (comcorDict['reference_comment_and_correction_id'] !== 'new')) {	// whole new entries needs create
+          let subPath = 'reference_relation/'
+          if (('reference_relation_id' in comcorDict) &&
+              (comcorDict['reference_relation_id'] !== 'new')) {	// whole new entries needs create
             method = 'PATCH'
-            subPath = 'reference_comment_and_correction/' + comcorDict['reference_comment_and_correction_id'] }
+            subPath = 'reference_relation/' + comcorDict['reference_relation_id'] }
           if (comcorType === '') {
             method = 'DELETE'
             apiJson = null }
@@ -910,15 +913,15 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   }
   return (<>{rowCrossReferencesElements}</>); }
 
-const RowEditorCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+const RowEditorReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const revertDictFields = 'curie prefix, curie id, is_obsolete'
-  const initializeDict = {'curie': '', 'type': '', 'reference_comment_and_correction_id': 'new'}
+  const initializeDict = {'curie': '', 'type': '', 'reference_relation_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
-  const rowCommentsCorrectionsElements = []
+  const rowReferenceRelationsElements = []
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
     for (const[index, comcorDict] of referenceJsonLive[fieldName].entries()) {
       let otherColSize = 6;
@@ -935,21 +938,21 @@ const RowEditorCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive,
              valueDbType = referenceJsonDb[fieldName][index]['type'] }
       if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
       if (valueLiveType !== valueDbType) { updatedFlagType = 'updated'; }
-      rowCommentsCorrectionsElements.push(
+      rowReferenceRelationsElements.push(
         <Form.Group as={Row} key={`${fieldName} ${index}`}>
           <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
-          <ColEditorSelect key={`colElement ${fieldName} ${index} comcorType`} fieldType="select" fieldName={fieldName} colSize="3" value={valueLiveType} updatedFlag={updatedFlagType} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} type`} enumType="referenceComcorType" dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
-          <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurie} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie`} dispatchAction={changeFieldCommentsCorrectionsReferenceJson} />
+          <ColEditorSelect key={`colElement ${fieldName} ${index} comcorType`} fieldType="select" fieldName={fieldName} colSize="3" value={valueLiveType} updatedFlag={updatedFlagType} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} type`} enumType="referenceComcorType" dispatchAction={changeFieldReferenceRelationsJson} />
+          <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurie} updatedFlag={updatedFlagCurie} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie`} dispatchAction={changeFieldReferenceRelationsJson} />
           {revertElement}
         </Form.Group>); } }
   if (disabled === '') {
-    rowCommentsCorrectionsElements.push(
+    rowReferenceRelationsElements.push(
       <Row className="form-group row" key={fieldName} >
         <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
         <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
       </Row>);
   }
-  return (<>{rowCommentsCorrectionsElements}</>); }
+  return (<>{rowReferenceRelationsElements}</>); }
 
 const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   // author editing is complicated.  There's the author order of the array in the browser dom.  The author order of the array in the redux store.  The order field in the author store entry (should be 1 more than the order in the dom).  The author_id field in the author store entry, used for comparing what was in the db.  The copy of author values in the store that reflect the db value (with its array order, order field, and author_id field).
@@ -1170,8 +1173,8 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorModAssociation key={`RowEditorModAssociation ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-    else if (fieldName === 'corrections') {
-      rowOrderedElements.push(<RowEditorCommentsCorrections key={`RowEditorCommentsCorrections ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'relations') {
+      rowOrderedElements.push(<RowEditorReferenceRelations key={`RowEditorReferenceRelations ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowEditorModReferenceTypes key="RowEditorModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {

@@ -2,7 +2,7 @@
 
 // import notGithubVariables from './notGithubVariables';
 
-import { generateCorrectionsSimple } from './biblioActions';
+import { generateRelationsSimple } from './biblioActions';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -155,9 +155,9 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
       referenceJson1 = valuesRef[0]['value'][0];
       referenceFound1 = valuesRef[0]['value'][1];
 
-      if (referenceJson1.constructor === Object && 'comment_and_corrections' in referenceJson1 &&
-          referenceJson1['comment_and_corrections'] !== null) {
-        generateCorrectionsSimple(referenceJson1); }
+      if (referenceJson1.constructor === Object && 'reference_relations' in referenceJson1 &&
+          referenceJson1['reference_relations'] !== null) {
+        generateRelationsSimple(referenceJson1); }
 
       referenceJson2 = valuesRef[1]['value'][0];
       referenceFound2 = valuesRef[1]['value'][1];
@@ -165,9 +165,9 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
       curieValue1 = (referenceFound1) ? referenceJson1['curie'] : curieValue1 + ' not found';
       curieValue2 = (referenceFound2) ? referenceJson2['curie'] : curieValue2 + ' not found';
 
-      if (referenceJson2.constructor === Object && 'comment_and_corrections' in referenceJson2 &&
-          referenceJson2['comment_and_corrections'] !== null) {
-        generateCorrectionsSimple(referenceJson2); }
+      if (referenceJson2.constructor === Object && 'reference_relations' in referenceJson2 &&
+          referenceJson2['reference_relations'] !== null) {
+        generateRelationsSimple(referenceJson2); }
 
       const promiseRefFile1 = queryRefFiles(curieValue1);
       const promiseRefFile2 = queryRefFiles(curieValue2);

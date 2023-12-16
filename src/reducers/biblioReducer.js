@@ -655,32 +655,32 @@ export default function(state = initialState, action) {
         }
       }
 
-    case 'CHANGE_FIELD_COMMENTS_CORRECTIONS_REFERENCE_JSON':
+    case 'CHANGE_FIELD_REFERENCE_RELATIONS_JSON':
       console.log(action.payload);
-      let commentsCorrectionsArray = action.payload.field.split(" ");
-      console.log(commentsCorrectionsArray);
-      let fieldCommentsCorrections = commentsCorrectionsArray[0];
-      let indexCommentsCorrections = commentsCorrectionsArray[1];
-      let typeOrCurieCommentsCorrections = commentsCorrectionsArray[2];
-      let commentsCorrectionsNewValue = action.payload.value;
+      let referenceRelationsArray = action.payload.field.split(" ");
+      console.log(referenceRelationsArray);
+      let fieldReferenceRelations = referenceRelationsArray[0];
+      let indexReferenceRelations = referenceRelationsArray[1];
+      let typeOrCurieReferenceRelations = referenceRelationsArray[2];
+      let referenceRelationsNewValue = action.payload.value;
 
-      let newCommentsCorrectionsChange = state.referenceJsonLive[fieldCommentsCorrections];
-      newCommentsCorrectionsChange[indexCommentsCorrections]['needsChange'] = true;
-      newCommentsCorrectionsChange[indexCommentsCorrections][typeOrCurieCommentsCorrections] = commentsCorrectionsNewValue;
+      let newReferenceRelationsChange = state.referenceJsonLive[fieldReferenceRelations];
+      newReferenceRelationsChange[indexReferenceRelations]['needsChange'] = true;
+      newReferenceRelationsChange[indexReferenceRelations][typeOrCurieReferenceRelations] = referenceRelationsNewValue;
 
-      let hasChangeCommentsCorrectionsField = state.referenceJsonHasChange
-      if (state.referenceJsonDb[fieldCommentsCorrections][indexCommentsCorrections][typeOrCurieCommentsCorrections] === commentsCorrectionsNewValue) {
-        if (action.payload.field in hasChangeCommentsCorrectionsField) {
-          delete hasChangeCommentsCorrectionsField[action.payload.field] } }
+      let hasChangeReferenceRelationsField = state.referenceJsonHasChange
+      if (state.referenceJsonDb[fieldReferenceRelations][indexReferenceRelations][typeOrCurieReferenceRelations] === referenceRelationsNewValue) {
+        if (action.payload.field in hasChangeReferenceRelationsField) {
+          delete hasChangeReferenceRelationsField[action.payload.field] } }
       else {
-        hasChangeCommentsCorrectionsField[action.payload.field] = 'diff' }
+        hasChangeReferenceRelationsField[action.payload.field] = 'diff' }
 
       return {
         ...state,
-        referenceJsonHasChange: hasChangeCommentsCorrectionsField,
+        referenceJsonHasChange: hasChangeReferenceRelationsField,
         referenceJsonLive: {
           ...state.referenceJsonLive,
-          [fieldCommentsCorrections]: newCommentsCorrectionsChange
+          [fieldReferenceRelations]: newReferenceRelationsChange
         }
       }
 

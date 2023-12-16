@@ -88,7 +88,7 @@ export const searchReferences = () => {
     axios.post(restUrl + '/search/references/', params )
 
         .then(res => {
-          const curieValues = res.data.hits.flatMap(hit =>
+          const curieValues = res.data.hits.filter(hit => hit.cross_references !== null).flatMap(hit =>
               hit.cross_references.map(cross_reference => cross_reference.curie)
           );
           axios.post(restUrl + '/cross_reference/show_all', curieValues)

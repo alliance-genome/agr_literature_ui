@@ -149,9 +149,9 @@ const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, re
     return (<>{rowCrossReferenceElements}</>); }
   else { return null; } }
 
-const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+const RowDisplayReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
-    const rowCommentsCorrectionsElements = []
+    const rowReferenceRelationsElements = []
     for (const[index, comcorDict] of referenceJsonLive[fieldName].entries()) {
       let valueLiveCurie = comcorDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
       const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
@@ -167,8 +167,8 @@ const RowDisplayCommentsCorrections = ({fieldIndex, fieldName, referenceJsonLive
       let updatedFlag = '';
       if ( (updatedFlagCurie === 'updated') || (updatedFlagType === 'updated') ) { updatedFlag = 'updated' }
       const comcorValue = (<div>{valueLiveType} <a href={url} rel="noreferrer noopener">{valueLiveCurie}</a></div>);
-      rowCommentsCorrectionsElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={comcorValue} updatedFlag={updatedFlag} />); }
-    return (<>{rowCommentsCorrectionsElements}</>); }
+      rowReferenceRelationsElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={comcorValue} updatedFlag={updatedFlag} />); }
+    return (<>{rowReferenceRelationsElements}</>); }
   else { return null; } }
 
 
@@ -428,8 +428,8 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
-    else if (fieldName === 'corrections') {
-      rowOrderedElements.push(<RowDisplayCommentsCorrections key="RowDisplayCommentsCorrections" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'relations') {
+      rowOrderedElements.push(<RowDisplayReferenceRelations key="RowDisplayReferenceRelations" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(<RowDisplayModReferenceTypes key="RowDisplayModReferenceTypes" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mesh_terms') {
