@@ -633,7 +633,7 @@ export function generateRelationsSimple(referenceJson) {
   comcorMapping['RepublishedFrom'] = 'RepublishedIn'
   comcorMapping['RetractionOf'] = 'HasRetraction'
   comcorMapping['UpdateOf'] = 'HasUpdate'
-  comcorMapping['hasChapter'] = 'ChapterIn'
+  comcorMapping['ChapterIn'] = 'hasChapter'
   const comcorDirections = ['to_references', 'from_references']
   referenceJson['relations'] = []
   for (const direction of comcorDirections) {
