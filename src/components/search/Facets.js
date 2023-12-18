@@ -340,7 +340,15 @@ const Facets = () => {
     useEffect(()=> {
         if(modPreferencesLoaded === 'false' && oktaMod !== 'No'){
             dispatch(setModPreferencesLoaded(true));
-            dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
+            if(searchFacetsValues["mods_in_corpus_or_needs_review.keyword"]){
+                if(!searchFacetsValues["mods_in_corpus_or_needs_review.keyword"].includes(oktaMod)) {
+                    dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
+                }
+            }
+            else{
+                dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
+            }
+
         }
     }, [oktaMod]) // eslint-disable-line react-hooks/exhaustive-deps
 
