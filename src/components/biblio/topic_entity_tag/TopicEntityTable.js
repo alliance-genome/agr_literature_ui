@@ -404,6 +404,7 @@ const TopicEntityTable = () => {
                     let td_value = tetDict[header];
                     if (td_value === true) { td_value = 'True'; }
                     else if (td_value === false) { td_value = 'False'; }
+                    else if (td_value === null && header === "negated") {td_value = "N/A"}
                     else if (dateColumnSet.has(header)) {
                       td_value = new Date(td_value).toLocaleString(); }
                     else if (["topic", "entity_type", "species", "entity"].includes(header)) {
