@@ -192,30 +192,19 @@ const TopicEntityTable = () => {
     setShowNoteModal(true);
   };
 
-  const NoteModal = ({ fullNote, show, onHide }) => {
-    return (
-      <Modal show={show} onHide={onHide} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Full Note</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>{fullNote}</Modal.Body>
-      </Modal>
-    );
-  };
-
   const handleCurieClick = (curie) => {
     // console.log("curie in 'handleCurieClick'=", curie);
     setSelectedCurie(curie);
     setShowModal(true);
   };
 
-  const CuriePopup = ({ curie, show, onHide }) => {
+  const GenericTetTableModal = ({ title, body, show, onHide }) => {
     return (
       <Modal show={show} onHide={onHide} centered>
         <Modal.Header closeButton>
-          <Modal.Title>CURIE Information</Modal.Title>
+          <Modal.Title>{title}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>{curie}</Modal.Body>
+        <Modal.Body>{body}</Modal.Body>
       </Modal>
     );
   };
@@ -280,12 +269,12 @@ const TopicEntityTable = () => {
 
           {/* Curie Popup */}
           {selectedCurie && (
-            <CuriePopup curie={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
+            <GenericTetTableModal title="CURIE Information" body={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
           )}
 
           {/* Note Popup */}
           {showNoteModal && (
-            <NoteModal fullNote={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
+            <GenericTetTableModal title="Full Note" body={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
           )}
 	  
           {/* Page Size Selection */}
