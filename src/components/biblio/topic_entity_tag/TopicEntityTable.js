@@ -42,7 +42,10 @@ const TopicEntityTable = () => {
   };
   const [selectedCurie, setSelectedCurie] = useState(null);
   const [showModal, setShowModal] = useState(false);
-    
+
+  const [fullNote, setFullNote] = useState('');
+  const [showNoteModal, setShowNoteModal] = useState(false);
+
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
     if (headerCell) {
@@ -183,6 +186,23 @@ const TopicEntityTable = () => {
     dispatch(setPageSizeAction(newSize)); // update Redux store with new pageSize
   };
 
+  const handleNoteClick = (fullNote) => {
+    // console.log("fullNote in 'handleNoteClick'=", fullNote);
+    setFullNote(fullNote);
+    setShowNoteModal(true);
+  };
+
+  const NoteModal = ({ fullNote, show, onHide }) => {
+    return (
+      <Modal show={show} onHide={onHide} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Full Note</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{fullNote}</Modal.Body>
+      </Modal>
+    );
+  };
+
   const handleCurieClick = (curie) => {
     // console.log("curie in 'handleCurieClick'=", curie);
     setSelectedCurie(curie);
@@ -262,6 +282,11 @@ const TopicEntityTable = () => {
           {selectedCurie && (
             <CuriePopup curie={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
           )}
+
+          {/* Note Popup */}
+          {showNoteModal && (
+            <NoteModal fullNote={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
+          )}
 	  
           {/* Page Size Selection */}
           <Form.Group controlId="pageSizeSelect" style={{ marginRight: '15px' }}>
@@ -282,8 +307,10 @@ const TopicEntityTable = () => {
 	  <thead>
             <tr>
 	      <th>Actions</th>
-              {headers.map((header, index) => (
-                <th key={`tetTableHeader th ${index}`} style={{ whiteSpace: 'nowrap' }}>
+              {headers.map((header, index) => {
+                const thMinWidth = (header === 'note') ? '16em' : '';
+                return (
+                <th key={`tetTableHeader th ${index}`} style={{ whiteSpace: 'nowrap', minWidth: thMinWidth }}>
                   {header === 'species' ? (
                     <>
                       <FontAwesomeIcon
@@ -339,7 +366,7 @@ const TopicEntityTable = () => {
                     </>
                   )}
                 </th>
-              ))}
+              )} )}
               {source_headers.map((header, index) => (
                 <th key={`tetTableHeaderSource th ${index}`}>
                   {header.startsWith('source_') ? header : 'source_' + header}
@@ -409,6 +436,13 @@ const TopicEntityTable = () => {
 		    else if (headersToEntityMap.has(header)) {
                         td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]]
  : tetDict[header]; }
+		    else if (header === 'note') {
+                        let truncatedNote = tetDict[header] || '';
+                        let maxNoteCharLength = 100;
+                        if (truncatedNote.length >= maxNoteCharLength) {
+                          truncatedNote = truncatedNote.substr(0, truncatedNote.lastIndexOf(' ', maxNoteCharLength));
+                          td_value = (<>{truncatedNote}<span onClick={() => handleNoteClick(tetDict[header])} style={{ cursor: 'pointer', color: 'blue' }}>... </span></>); }
+                    }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
                   { source_headers.map( (header, index_2) => {
