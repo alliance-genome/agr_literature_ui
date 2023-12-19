@@ -1,17 +1,20 @@
 import {useDispatch, useSelector} from "react-redux";
 import React, {useEffect, useRef, useState} from "react";
 import {
-  ateamGetTopicDescendants,
-  changeFieldEntityAddGeneralField,
-  changeFieldEntityAddTaxonSelect,
-  changeFieldEntityEntityList,
-  getCuratorSourceId,
-  setBiblioUpdatingEntityAdd,
-  setEntityModalText,
-  setTypeaheadName2CurieMap,
-  updateButtonBiblioEntityAdd
+    ateamGetTopicDescendants,
+    changeFieldEntityAddGeneralField,
+    changeFieldEntityAddTaxonSelect,
+    changeFieldEntityEntityList,
+    getCuratorSourceId,
+    setBiblioUpdatingEntityAdd,
+    setEntityModalText,
+    setTypeaheadName2CurieMap,
+    updateButtonBiblioEntityAdd
 } from "../../../actions/biblioActions";
-import {getCurieToNameTaxon, getModToTaxon} from "./TaxonUtils";
+import {
+  getCurieToNameTaxon,
+  getModToTaxon
+} from "./TaxonUtils";
 import {PulldownMenu} from "../PulldownMenu";
 import {FetchTypeaheadOptions} from "../FetchTypeahead";
 import Container from "react-bootstrap/Container";
@@ -203,7 +206,7 @@ const TopicEntityCreate = () => {
     </Row>
     <Row className="form-group row" >
       <Col className="div-grey-border" sm="2">topic</Col>
-      <Col className="div-grey-border" sm="1">Data presence</Col>
+      <Col className="div-grey-border" sm="1">checkbox</Col>
       <Col className="div-grey-border" sm="1">entity type</Col>
       <Col className="div-grey-border" sm="1">species</Col>
       <Col className="div-grey-border" sm="2">entity list (one per line, case insensitive)</Col>
@@ -239,34 +242,21 @@ const TopicEntityCreate = () => {
       </Col>
       <Col sm="1">
         <div style={{textAlign: "left"}}>
-          <Form.Control as="select" id="noDataSelect"
-                        value={noDataCheckbox}
-                        onChange={(e) => {
-                          dispatch(changeFieldEntityAddGeneralField({
-                            target: {
-                              id: 'noDataCheckbox',
-                              value: e.target.value === 'false' ? false : e.target.value === 'true' ? true : null
-                            }
-                          }));
-                        }}>
-            <option value={'false'}>Present</option>
-            <option value={'true'}>Not present</option>
-            <option value={'null'}>N/A</option>
-          </Form.Control>
-          <br></br>
-          <Form.Check inline type="checkbox" id="novelCheckbox" checked={novelCheckbox}
-                      onChange={(evt) => {
-                        if (evt.target.checked) {
-                          dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: true}}));
-                        } else {
-                          dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: false}}));
-                        }
-                      }}/>
-          Novel Data
+        <Form.Check inline type="checkbox" id="noDataCheckbox" checked={noDataCheckbox}
+                    onChange={(evt) => {
+                       if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: true }})); }
+                       else { dispatch(changeFieldEntityAddGeneralField({target: {id: 'noDataCheckbox', value: false }})); } }}/>
+        No Data<br></br>
+
+        <Form.Check inline type="checkbox" id="novelCheckbox" checked={novelCheckbox}
+                    onChange={(evt) => {
+                       if (evt.target.checked) { dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: true }})); }
+                       else { dispatch(changeFieldEntityAddGeneralField({target: {id: 'novelCheckbox', value: false }})); } }}/>
+        Novel Data
         </div>
       </Col>
       <Col sm="1">
-        <PulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} optionToName={curieToNameEntityType} />
+         <PulldownMenu id='entityTypeSelect' value={entityTypeSelect} pdList={entityTypeList} optionToName={curieToNameEntityType} />
       </Col>
       <Col sm="1">
          <PulldownMenu id='taxonSelect' value={taxonSelect} pdList={taxonList} optionToName={curieToNameTaxon} />
