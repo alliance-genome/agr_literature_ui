@@ -39,7 +39,7 @@ const SearchResultItem = ({ reference }) => {
     const cleanedAbstract = abstract.replace(/<\/?(strong|p)>/g, '');
 
     if (cleanedAbstract.length <= maxLength) return cleanedAbstract;
-    return cleanedAbstract.substr(0, cleanedAbstract.lastIndexOf(' ', maxLength)) + '...';
+    return cleanedAbstract.substr(0, cleanedAbstract.lastIndexOf(' ', maxLength)) + ' ...';
   }
 
   function formatAbstract(abstract) {

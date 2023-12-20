@@ -430,8 +430,8 @@ const TopicEntityTable = () => {
                         let truncatedNote = tetDict[header] || '';
                         let maxNoteCharLength = 100;
                         if (truncatedNote.length >= maxNoteCharLength) {
-                          truncatedNote = truncatedNote.substr(0, truncatedNote.lastIndexOf(' ', maxNoteCharLength));
-                          td_value = (<>{truncatedNote}<span onClick={() => handleNoteClick(tetDict[header])} style={{ cursor: 'pointer', color: 'blue' }}>... </span></>); }
+                          truncatedNote = truncatedNote.substr(0, truncatedNote.lastIndexOf(' ', maxNoteCharLength)) + ' ...';
+                          td_value = (<><span onClick={() => handleNoteClick(tetDict[header])} style={{ cursor: 'pointer' }}>{truncatedNote}</span></>); }
                     }
                     return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
                   } ) }
