@@ -86,11 +86,13 @@ const TopicEntityCreate = () => {
   };
     
   // effect to reset view and other fields when topic changes
-  useEffect(() => {
-    if (topicSelect === speciesATP) { 
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: speciesATP } }));
+    useEffect(() => {
+    if (entityTypeList.includes(topicSelect)) {
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: '' } }));
-      setIsSpeciesSelected(true); // reset when topic changes
+      if (topicSelect === speciesATP) { 
+          setIsSpeciesSelected(true); // reset when topic changes
+      }
     } else {
       setSelectedSpecies([]); // Clear selected species
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
