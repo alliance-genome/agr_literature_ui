@@ -160,7 +160,7 @@ const TopicEntityCreate = () => {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
         console.log(entityResult.curie);
-        if (entityResult.curie !== 'no Alliance curie') {
+        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'duplicate') ) {
           let updateJson = initializeUpdateJson(refCurie);
           updateJson['entity_source'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
@@ -317,7 +317,9 @@ const TopicEntityCreate = () => {
       <Col className="form-label col-form-label" sm="2" >
         <Container>
           { renderView() === 'list' && entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
-            const colDisplayClass = (entityResult.curie === 'no Alliance curie') ? 'Col-display-warn' : 'Col-display';
+            let colDisplayClass = 'Col-display';
+            if (entityResult.curie === 'no Alliance curie') { colDisplayClass = 'Col-display-warn'; }
+              else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
             return (
               <Row key={`entityEntityContainerrows ${index}`}>
                 <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{entityResult.entityTypeSymbol}</Col>

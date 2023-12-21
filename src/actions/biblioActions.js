@@ -535,9 +535,14 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
             // console.log(entityResult.symbol);
         } }
         let entityResultList = [];
+        let uniqueEntityInput = new Set();
         for (const entityTypeSymbol of entityInputList) {
           if (entityTypeSymbol.toLowerCase() in searchMap) {
-            entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); }
+            if (uniqueEntityInput.has(entityTypeSymbol.toLowerCase())) {
+              entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'duplicate' } ); }
+            else {
+              uniqueEntityInput.add(entityTypeSymbol.toLowerCase());
+              entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); } }
           else {
             entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' } ); } }
         dispatch(setEntityResultList(entityResultList));

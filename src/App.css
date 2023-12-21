@@ -229,6 +229,10 @@
   background-color: var(--light-red);
 }
 
+.Col-display-grey {
+  background-color: var(--light-grey);
+}
+
 .updated-biblio-button:hover {
   background-color: var(--updated-purple-hover) !important;
 }
