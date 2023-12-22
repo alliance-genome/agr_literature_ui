@@ -302,11 +302,11 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
     }
     let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
     let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-    if (referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer') {
+    if (accessLevel === 'No') {
+      is_ok = false;
+      referencefileValue = (<div>{filename}</div>);
+    } else if (referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer') {
       is_ok = true;
-    } else if (accessLevel === 'No') {
-        is_ok = false;
-        referencefileValue = (<div>{filename}</div>);
     }
     if (is_ok) {
       hasAccessToTarball = true;
