@@ -2,6 +2,7 @@ import {useDispatch, useSelector} from "react-redux";
 import React, {useEffect, useRef, useState} from "react";
 import {
     ateamGetTopicDescendants,
+    getDescendantATPIds,
     changeFieldEntityAddGeneralField,
     changeFieldEntityAddTaxonSelect,
     changeFieldEntityEntityList,
@@ -59,6 +60,8 @@ const TopicEntityCreate = () => {
   const speciesTypeaheadRef = useRef(null);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [isSpeciesSelected, setIsSpeciesSelected] = useState(false);
+  const [geneDescendants, setGeneDescendants] = useState([]);
+  const [alleleDescendants, setAlleleDescendants] = useState([]);
     
   const curieToNameTaxon = getCurieToNameTaxon();
   const modToTaxon = getModToTaxon();
@@ -80,19 +83,27 @@ const TopicEntityCreate = () => {
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123',
 			  'ATP:0000014', 'ATP:0000027', 'ATP:0000025', 'ATP:0000026'];
   const speciesATP = 'ATP:0000123';
-      
   const renderView = () => {
     return topicSelect === speciesATP ? 'autocomplete' : 'list';
   };
-    
+
+  useEffect(() => {
+    getDescendantATPIds(accessToken, 'ATP:0000005').then((data) => setGeneDescendants(data));
+    getDescendantATPIds(accessToken, 'ATP:0000006').then((data) => setAlleleDescendants(data));
+  }, [accessLevel, accessToken, dispatch]);
+
   // effect to reset view and other fields when topic changes
   useEffect(() => {
     if (entityTypeList.includes(topicSelect)) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));	
-	if (topicSelect === speciesATP) {
+      if (topicSelect === speciesATP) {
 	  dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: '' } }));
           setIsSpeciesSelected(true); // reset when topic changes
       }
+    } else if (geneDescendants.includes(topicSelect)) {
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000005' } }));
+    } else if (alleleDescendants.includes(topicSelect)) {
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000006' } }));
     } else {
       setSelectedSpecies([]); // Clear selected species
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
