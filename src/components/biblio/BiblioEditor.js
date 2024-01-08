@@ -620,7 +620,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
           <Form.Group as={Row} key={`${fieldName} ${index}`}>
             <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
             <Col sm={4}>
-              <Form.Control as="select" id={`${fieldName} ${index} source`} value={valueLiveModAbbreviation} placeholder="source" className={`form-control ${updatedFlagModAbbreviation}`} disabled={disabled} key={`${fieldName} ${index} source`} onChange={(e) => {
+              <Form.Control as="select" id={`${fieldName} ${index} mod_abbreviation`} value={valueLiveModAbbreviation} placeholder="mod_abbreviation" className={`form-control ${updatedFlagModAbbreviation}`} disabled={disabled} key={`${fieldName} ${index} mod_abbreviation`} onChange={(e) => {
                 dispatch(changeFieldModReferenceReferenceJson(e));
                 dispatch(changeFieldModReferenceReferenceJson({target: {id: `${fieldName} ${index} reference_type`, value: ''}}));
               }}>
