@@ -751,6 +751,22 @@ export const fetchModReferenceTypes = async (mods) => {
   return modReferenceTypes
 }
 
+export const getDescendantATPIds = async (accessToken, atpID) => {
+  const url = `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/${atpID}/descendants`;
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data.entities.map(x => x.curie);
+  } catch (error) {
+    console.error('Error occurred:', error);
+    throw error;
+  }
+}
+
 export const fetchDisplayTagData = async (accessToken) => {
   try {
     const response = await axios.get(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/ATP:0000136/descendants`, {
