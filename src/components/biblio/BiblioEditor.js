@@ -236,7 +236,7 @@ const BiblioSubmitUpdateButton = () => {
     forApiArray.push( array );
 
     if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
-      const modRefFields = [ 'reference_type', 'source' ];
+      const modRefFields = [ 'reference_type', 'mod_abbreviation' ];
       for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
         if (('needsChange' in modRefDict) && ('mod_reference_type_id' in modRefDict)) {
           let updateJson = { 'reference_curie': referenceCurie }
@@ -581,8 +581,8 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
 
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
-//   const revertDictFields = 'source, reference_type'
-  const initializeDict = {'source': '', 'reference_type': '', 'mod_reference_type_id': 'new'}
+//   const revertDictFields = 'mod_abbreviation, reference_type'
+  const initializeDict = {'mod_abbreviation': '', 'reference_type': '', 'mod_reference_type_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
@@ -597,22 +597,22 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
       if ('mod_reference_type_id' in modRefDict && modRefDict['mod_reference_type_id'] !== 'new') {
         buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldModReferenceReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
       if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 6; }
-      let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
+      let valueLiveModAbbreviation = modRefDict['mod_abbreviation']; let valueDbModAbbreviation = ''; let updatedFlagModAbbreviation = '';
       let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
       const mrtDeleted = (('deleteMe' in modRefDict) && (modRefDict['deleteMe'] === true)) ? true : false;
       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') ) {
-             valueDbSource = referenceJsonDb[fieldName][index]['source'] }
+           (typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') ) {
+             valueDbModAbbreviation = referenceJsonDb[fieldName][index]['mod_abbreviation'] }
       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
            (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') ) {
              valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
-      if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
+      if (valueLiveModAbbreviation !== valueDbModAbbreviation) { updatedFlagModAbbreviation = 'updated'; }
       if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
       if (mrtDeleted) {
         rowModReferenceTypesElements.push(
           <Form.Group as={Row} key={`${fieldName} ${index}`}>
             <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-            <Col className="Col-general form-label col-form-label updated" sm={4 + otherColSize} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveSource} {valueLiveReferenceType}</Col>
+            <Col className="Col-general form-label col-form-label updated" sm={4 + otherColSize} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveModAbbreviation} {valueLiveReferenceType}</Col>
             {buttonsElement}
           </Form.Group>); }
       else {
@@ -620,7 +620,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
           <Form.Group as={Row} key={`${fieldName} ${index}`}>
             <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
             <Col sm={4}>
-              <Form.Control as="select" id={`${fieldName} ${index} source`} value={valueLiveSource} placeholder="source" className={`form-control ${updatedFlagSource}`} disabled={disabled} key={`${fieldName} ${index} source`} onChange={(e) => {
+              <Form.Control as="select" id={`${fieldName} ${index} mod_abbreviation`} value={valueLiveModAbbreviation} placeholder="mod_abbreviation" className={`form-control ${updatedFlagModAbbreviation}`} disabled={disabled} key={`${fieldName} ${index} mod_abbreviation`} onChange={(e) => {
                 dispatch(changeFieldModReferenceReferenceJson(e));
                 dispatch(changeFieldModReferenceReferenceJson({target: {id: `${fieldName} ${index} reference_type`, value: ''}}));
               }}>
@@ -631,7 +631,7 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
             </Col>
             <Col sm={otherColSize}>
               <Form.Control as="select" id={`${fieldName} ${index} reference_type`} type={fieldName} value={valueLiveReferenceType} className={`form-control ${updatedFlagReferenceType}`} disabled={disabled} placeholder="reference_type" onChange={(e) => dispatch(changeFieldModReferenceReferenceJson(e))} >
-              {valueLiveSource in modReferenceTypes ? modReferenceTypes[valueLiveSource].map((optionValue, index) => (
+              {valueLiveModAbbreviation in modReferenceTypes ? modReferenceTypes[valueLiveModAbbreviation].map((optionValue, index) => (
                     <option key={`${fieldName} ${index} reference_type ${optionValue}`}>{optionValue}</option>
                 )) : null}
               </Form.Control>

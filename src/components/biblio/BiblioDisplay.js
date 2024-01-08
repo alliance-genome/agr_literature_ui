@@ -176,16 +176,16 @@ const RowDisplayModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, 
   if ('mod_reference_types' in referenceJsonLive && referenceJsonLive['mod_reference_types'] !== null) {
     const rowModReferenceTypesElements = []
     for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
-      let valueLiveSource = modRefDict['source']; let valueDbSource = ''; let updatedFlagSource = '';
+      let valueLiveModAbbreviation = modRefDict['mod_abbreviation']; let valueDbModAbbreviation = ''; let updatedFlagModAbbreviation = '';
       let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
-      if (typeof referenceJsonDb[fieldName][index]['source'] !== 'undefined') { valueDbSource = referenceJsonDb[fieldName][index]['source'] }
+      if (typeof referenceJsonDb[fieldName][index]['mod_abbreviation'] !== 'undefined') { valueDbModAbbreviation = referenceJsonDb[fieldName][index]['mod_abbreviation'] }
       if (typeof referenceJsonDb[fieldName][index]['reference_type'] !== 'undefined') { valueDbReferenceType = referenceJsonDb[fieldName][index]['reference_type'] }
-      if (valueLiveSource !== valueDbSource) { updatedFlagSource = 'updated'; }
+      if (valueLiveModAbbreviation !== valueDbModAbbreviation) { updatedFlagModAbbreviation = 'updated'; }
       if (valueLiveReferenceType !== valueDbReferenceType) { updatedFlagReferenceType = 'updated'; }
       rowModReferenceTypesElements.push(
         <Row key={`${fieldIndex} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
           <Col className="Col-general Col-display Col-display-left">mod_reference_types</Col>
-          <Col className={`Col-general Col-display ${updatedFlagSource} `} lg={{ span: 2 }}>{valueLiveSource}</Col>
+          <Col className={`Col-general Col-display ${updatedFlagModAbbreviation} `} lg={{ span: 2 }}>{valueLiveModAbbreviation}</Col>
           <Col className={`Col-general Col-display Col-display-right ${updatedFlagReferenceType} `} lg={{ span: 8 }}>{valueLiveReferenceType}</Col>
         </Row>); }
     return (<>{rowModReferenceTypesElements}</>); }
