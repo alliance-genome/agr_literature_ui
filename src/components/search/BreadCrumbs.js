@@ -8,7 +8,6 @@ import {RiCloseFill} from "react-icons/ri";
 import {removeFacetValue, resetFacetValues, removeExcludedFacetValue} from "../../actions/searchActions";
 import {RENAME_FACETS} from "./Facets";
 
-
 const BreadCrumbs = () => {
 
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
@@ -33,7 +32,7 @@ const BreadCrumbs = () => {
                         <span key={facet + "_group"}>
                             {values.map(value =>
                                 <span key={value + "_breadcrumb"}>
-                                    <Button variant="outline-secondary">{(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value} &nbsp;
+                                    <Button variant="outline-danger">Exclude&nbsp;{(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value} &nbsp;
                                         <RiCloseFill onClick={() => dispatch(removeExcludedFacetValue(facet, value))}/>
                                     </Button>&nbsp;&nbsp;
                                 </span>)}

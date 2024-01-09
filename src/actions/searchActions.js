@@ -108,7 +108,7 @@ export const searchReferences = () => {
   }
 }
 
-export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified, datePublished, sortByPublishedDate) => {
+export const filterFacets = (query, facetsValues, excludedFacetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified, datePublished, sortByPublishedDate) => {
   return dispatch => {
     dispatch(setFacetsLoading());
     let params = {
@@ -116,6 +116,7 @@ export const filterFacets = (query, facetsValues, facetsLimits, sizeResultsCount
       size_result_count: sizeResultsCount,
       page: searchResultsPage,
       facets_values: facetsValues,
+      negated_facets_values: excludedFacetsValues,
       facets_limits: facetsLimits,
       author_filter: authorFilter,
       sort_by_published_date_order: sortByPublishedDate
