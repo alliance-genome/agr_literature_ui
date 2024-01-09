@@ -112,6 +112,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
+    const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
 
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
@@ -181,7 +182,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                         <Container key={bucket.key}>
                                             <Row>
                                                 <Col sm={2}>
-                                                    {facetToInclude === "pubmed publication status" ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
+                                                    {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
                                                 </Col>
                                                 <Col sm={7}>
                                                     <span dangerouslySetInnerHTML={{__html: bucket.key}} />
@@ -246,6 +247,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchSizeResultsCount = useSelector(state => state.search.searchSizeResultsCount);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
+    const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const authorFilter = useSelector(state => state.search.authorFilter);
     const searchResultsPage  = useSelector(state => state.search.searchResultsPage);
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
@@ -260,7 +262,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] * 2;
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
-                    dispatch(filterFacets(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter,datePubmedAdded,datePubmedModified,datePublished));
+                    dispatch(filterFacets(searchQuery, searchFacetsValues, searchExcludedFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter,datePubmedAdded,datePubmedModified,datePublished));
                 }}>+Show More</button> : null
             }
             {searchFacetsLimits[facetLabel] > INITIAL_FACETS_LIMIT ?
@@ -268,7 +270,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = INITIAL_FACETS_LIMIT;
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
-                    dispatch(filterFacets(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter,datePubmedAdded,datePubmedModified,datePublished));
+                    dispatch(filterFacets(searchQuery, searchFacetsValues, searchExcludedFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter,datePubmedAdded,datePubmedModified,datePublished));
                 }}>-Show Less</button></span> : null
             }
             {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -276,7 +278,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
-                    dispatch(filterFacets(searchQuery, searchFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter,datePubmedAdded,datePubmedModified,datePublished));
+                    dispatch(filterFacets(searchQuery, searchFacetsValues, searchExcludedFacetsValues, newSearchFacetsLimits, searchSizeResultsCount,searchResultsPage,authorFilter,datePubmedAdded,datePubmedModified,datePublished));
                 }}>+Show All</button></span> : null }
             </div>
     )
