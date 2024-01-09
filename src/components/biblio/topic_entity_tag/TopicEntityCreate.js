@@ -95,7 +95,7 @@ const TopicEntityCreate = () => {
   // effect to reset view and other fields when topic changes
   useEffect(() => {
     if (entityTypeList.includes(topicSelect)) {
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));	
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));
       if (topicSelect === speciesATP) {
 	  dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: '' } }));
           setIsSpeciesSelected(true); // reset when topic changes
@@ -108,6 +108,10 @@ const TopicEntityCreate = () => {
       setSelectedSpecies([]); // Clear selected species
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
+    }
+    if (topicSelect !== speciesATP) {
+      // console.log("defaultTaxon="+modToTaxon[accessLevel][0]);
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
     }
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
