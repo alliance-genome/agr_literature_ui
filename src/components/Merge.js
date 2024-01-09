@@ -910,7 +910,7 @@ const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMe
         referenceMeta1['referenceJson'][fieldName][i] !== null && referenceMeta1['referenceJson'][fieldName][i] !== undefined) {
       let mrt1 = referenceMeta1['referenceJson'][fieldName][i];
       let src1 = ''; let rt1 = ''; let toggle1 = false;
-      if (mrt1['source'] !== null && mrt1['source'] !== '') { src1 = mrt1['source']; }
+      if (mrt1['mod_abbreviation'] !== null && mrt1['mod_abbreviation'] !== '') { src1 = mrt1['mod_abbreviation']; }
       if (mrt1['reference_type'] !== null && mrt1['reference_type'] !== '') { rt1 = mrt1['reference_type']; }
       if (mrt1['toggle'] !== null && mrt1['toggle'] !== '') { toggle1 = mrt1['toggle']; }
       if ( toggle1 ) { swapColor1 = !swapColor1; }
@@ -922,7 +922,7 @@ const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMe
         referenceMeta2['referenceJson'][fieldName][i] !== null && referenceMeta2['referenceJson'][fieldName][i] !== undefined) {
       let mrt2 = referenceMeta2['referenceJson'][fieldName][i];
       let src2 = ''; let rt2 = ''; let toggle2 = false;
-      if (mrt2['source'] !== null && mrt2['source'] !== '') { src2 = mrt2['source']; }
+      if (mrt2['mod_abbreviation'] !== null && mrt2['mod_abbreviation'] !== '') { src2 = mrt2['mod_abbreviation']; }
       if (mrt2['reference_type'] !== null && mrt2['reference_type'] !== '') { rt2 = mrt2['reference_type']; }
       if (mrt2['toggle'] !== null && mrt2['toggle'] !== '') { toggle2 = mrt2['toggle']; }
       if ( toggle2 ) { swapColor2 = !swapColor2; }
