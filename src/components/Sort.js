@@ -62,7 +62,8 @@ const Sort = () => {
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
 
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
-
+  const [modToTax, setModToTax] = useState({});
+    
   let accessLevel = oktaMod;
   let activeMod = oktaMod;
   if (testerMod !== 'No') {
@@ -72,6 +73,49 @@ const Sort = () => {
 
   const tetAccessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
 
+  const fetchModToTax = async () => {
+    const url = process.env.REACT_APP_RESTAPI + '/mod/taxons/default';
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const response = await axios.get(url, { headers });
+      if (!Array.isArray(response.data)) {
+        console.error('Unexpected response format:', response.data);
+        return {};
+      }
+      const data = response.data.reduce((acc, item) => {
+        if (item.mod_abbreviation && item.taxon_id) {
+          acc[item.mod_abbreviation] = item.taxon_id;
+        }
+        return acc;
+      }, {});
+      setModToTax(data);
+    } catch (error) {
+      console.error('Failed to fetch mod to tax data', error);
+      return {};
+    }
+  };
+    
+  useEffect(() => {
+    fetchModToTax();
+  }, []);
+
+  useEffect(() => {
+    console.log("modToTax updated =", JSON.stringify(modToTax));
+  }, [modToTax]);
+
+  /*
+  modToTax updated = {}
+  modToTax updated = {"ZFIN":"NCBITaxon:7955",
+                      "FB":"NCBITaxon:7227",
+                      "WB":"NCBITaxon:6239",
+                      "RGD":"NCBITaxon:10116",
+                      "MGI":"NCBITaxon:10090",
+                      "SGD":"NCBITaxon:559292",
+                      "XB":"NCBITaxon:8355"}
+  */
+    
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
@@ -89,16 +133,6 @@ const Sort = () => {
   if (sortUpdating > 0) { buttonUpdateDisabled = 'disabled'; }
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
-  // Hard coding as these are extremely unlikely to change,
-  // plus we can choose the default taxid for those with more than 1.
-  // Plus mod_taxon table is empty!
-  const mod_to_tax = {'FB': "NCBITaxon:7227",
-                      'MGI': "NCBITaxon:10090",
-                      'RGD': "NCBITaxon:10116",
-                      'SGD': "NCBITaxon:559292",
-                      'WB': "NCBITaxon:6239",
-                      'XB': "NCBITaxon:8355",
-                      'ZFIN': "NCBITaxon:7955"};
 
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
     console.log('sort DISPATCH sortButtonModsQuery ' + modsField + ' sortType ' + sortType);
@@ -209,7 +243,7 @@ const Sort = () => {
                               'entity_type': "ATP:0000123", // species
                               'entity_source': "alliance",  // Kimberly said this instead of 'manual'
                               'topic_entity_tag_source_id': topicEntitySourceId,
-                              'species': mod_to_tax[modsField] };    // taxonid of species
+                              'species': modToTax[modsField] };    // taxonid of species
                 subPath = 'topic_entity_tag/';
                 const field = null;
                 const subField = null;
