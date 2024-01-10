@@ -62,7 +62,7 @@ const Sort = () => {
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
 
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
-
+    
   let accessLevel = oktaMod;
   let activeMod = oktaMod;
   if (testerMod !== 'No') {
@@ -71,7 +71,7 @@ const Sort = () => {
   else if (oktaDeveloper) { accessLevel = 'developer'; }
 
   const tetAccessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-
+    
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
@@ -89,16 +89,6 @@ const Sort = () => {
   if (sortUpdating > 0) { buttonUpdateDisabled = 'disabled'; }
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
-  // Hard coding as these are extremely unlikely to change,
-  // plus we can choose the default taxid for those with more than 1.
-  // Plus mod_taxon table is empty!
-  const mod_to_tax = {'FB': "NCBITaxon:7227",
-                      'MGI': "NCBITaxon:10090",
-                      'RGD': "NCBITaxon:10116",
-                      'SGD': "NCBITaxon:559292",
-                      'WB': "NCBITaxon:6239",
-                      'XB': "NCBITaxon:8355",
-                      'ZFIN': "NCBITaxon:7955"};
 
   if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
     console.log('sort DISPATCH sortButtonModsQuery ' + modsField + ' sortType ' + sortType);
@@ -205,11 +195,10 @@ const Sort = () => {
                 const taxArray = item.split(" ");
                 updateJson = {'reference_curie': reference['curie'],
                               'entity': taxArray.pop(),     // taxid last element
-                              'topic': "ATP:0000142",       // entity
+                              'topic': "ATP:0000123",       // species
                               'entity_type': "ATP:0000123", // species
                               'entity_source': "alliance",  // Kimberly said this instead of 'manual'
-                              'topic_entity_tag_source_id': topicEntitySourceId,
-                              'species': mod_to_tax[modsField] };    // taxonid of species
+                              'topic_entity_tag_source_id': topicEntitySourceId};    
                 subPath = 'topic_entity_tag/';
                 const field = null;
                 const subField = null;

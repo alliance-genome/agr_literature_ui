@@ -63,13 +63,28 @@ const TopicEntityCreate = () => {
   const [geneDescendants, setGeneDescendants] = useState([]);
   const [alleleDescendants, setAlleleDescendants] = useState([]);
     
-  const curieToNameTaxon = getCurieToNameTaxon();
-  const modToTaxon = getModToTaxon();
+  const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
+  const [modToTaxon, setModToTaxon] = useState({});
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const taxonData = await getCurieToNameTaxon(accessToken);
+      const modData = await getModToTaxon();
+      setCurieToNameTaxon(taxonData);
+      setModToTaxon(modData);
+    };
+    fetchData();
+  }, [accessToken]);
+
+  // const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
+  //                            'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',                                                                                  //                            'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+
+  let unsortedTaxonList = Object.values(modToTaxon).flat();
+  unsortedTaxonList.push('');
+  unsortedTaxonList.push('NCBITaxon:9606');
     
-  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
-			      'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
-			      'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
-  let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
+  let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));    
+    
   const curieToNameEntityType = {
       '': 'no value',
       'ATP:0000005': 'gene',
@@ -110,8 +125,9 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
     }
     if (topicSelect !== speciesATP) {
-      // console.log("defaultTaxon="+modToTaxon[accessLevel][0]);
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
+      if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
+          dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
+      }
     }
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
