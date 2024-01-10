@@ -81,12 +81,26 @@ const TopicEntityCreateSGD = () => {
     'ATP:0000006': 'allele'
   };
 
-  const curieToNameTaxon = getCurieToNameTaxon();
-  const modToTaxon = getModToTaxon();
+  const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
+  const [modToTaxon, setModToTaxon] = useState({});
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const taxonData = await getCurieToNameTaxon(accessToken);
+      const modData = await getModToTaxon();
+      setCurieToNameTaxon(taxonData);
+      setModToTaxon(modData);
+    };
+    fetchData();
+  }, [accessToken]);
     
-  const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
-                              'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
-                              'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+  //const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
+  //                            'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
+  //                            'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+
+  let unsortedTaxonList = Object.values(modToTaxon).flat();
+  unsortedTaxonList.push('');
+  unsortedTaxonList.push('NCBITaxon:9606');  
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
 
@@ -104,6 +118,12 @@ const TopicEntityCreateSGD = () => {
     (state) => state.biblio.topicDescendants
   );
 
+  useEffect(() => {
+    if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
+    }
+  }, [modToTaxon, accessLevel, dispatch]);
+    
   useEffect(() => {
     if (topicDescendants.size === 0 && accessToken !== null) {
       dispatch(ateamGetTopicDescendants(accessToken));

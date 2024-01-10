@@ -36,7 +36,6 @@ const TopicEntityTable = () => {
   const [selectedSpecies, setSelectedSpecies] = useState([]);
   const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
-  const curieToNameTaxon = getCurieToNameTaxon();
   const ecoToName = {
     'ECO:0000302': 'author statement used in manual assertion'
   };
@@ -46,6 +45,16 @@ const TopicEntityTable = () => {
   const [fullNote, setFullNote] = useState('');
   const [showNoteModal, setShowNoteModal] = useState(false);
 
+  const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
+    
+  useEffect(() => {
+    const fetchData = async () => {
+      const taxonData = await getCurieToNameTaxon(accessToken);
+      setCurieToNameTaxon(taxonData);
+    };
+    fetchData();
+  }, [accessToken]); 
+    
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
     if (headerCell) {
