@@ -55,6 +55,8 @@ const TopicEntityCreateSGD = () => {
   //  (state) => state.biblio.typeaheadName2CurieMap
   // );
   const [warningMessage, setWarningMessage] = useState("");
+  const [tagExistingMessage, setTagExistingMessage] = useState("");
+    
   const tetdisplayTagSelect = useSelector(
     (state) => state.biblio.entityAdd.tetdisplayTagSelect
   );
@@ -199,12 +201,6 @@ const TopicEntityCreateSGD = () => {
     }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // const getMapKeyByValue = (mapObj, value) => {
-  //   const objEntries = Object.entries(mapObj);
-  //   const keyByValue = objEntries.filter((e) => e[1] === value);
-  //   return keyByValue.map((e) => e[0])[0];
-  // };
-
   function initializeUpdateJson(refCurie) {
     let updateJson = {};
     updateJson["reference_curie"] = refCurie;
@@ -229,7 +225,7 @@ const TopicEntityCreateSGD = () => {
     return setDisplayTag(topicSelect);
   }
 
-  function createEntities(refCurie) {
+  async function createEntities(refCurie) {
     if (topicSelect === null) {
       return;
     }
@@ -244,7 +240,7 @@ const TopicEntityCreateSGD = () => {
       return;
     }
     dispatch(changeFieldEntityAddDisplayTag(displayTag));
-    console.log("displayTag = " + displayTag);
+    // console.log("displayTag = " + displayTag);
 
     const forApiArray = []
     const subPath = 'topic_entity_tag/';
@@ -270,10 +266,23 @@ const TopicEntityCreateSGD = () => {
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
     for (const arrayData of forApiArray.values()) {
-      arrayData.unshift(accessToken);
-      dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
-    }
-
+	arrayData.unshift(accessToken);
+	try {
+	    const response = await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
+	    console.log("responsee:", response.data);
+	    if (response.status === 'exists') {
+		const tagExistingMessage = "The following tag already exists in the database:\n" +
+                                       JSON.stringify(response.data, null, 2);
+		setTagExistingMessage(tagExistingMessage);
+		setTimeout(() => {
+		    setTagExistingMessage('');
+		}, 10000);
+	    }
+	} catch (error) {
+	    console.error("Error processing entry: ", error);
+	}
+    }  
+    
     dispatch(
       changeFieldEntityAddGeneralField({
         target: { id: "topicSelect", value: "" },
@@ -320,6 +329,15 @@ const TopicEntityCreateSGD = () => {
           </Col>
         </Row>
       )}
+      {tagExistingMessage && (
+        <Row className="form-group row">       
+          <Col sm="10">
+	    <div className="alert alert-warning" role="alert">
+		<pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap' }}>{tagExistingMessage}</pre>
+            </div>                                                                                                                                                                                                
+          </Col>                                                                                                                                                                                                  
+        </Row>
+      )}     
       <Row className="form-group row">
         <Col sm="3">
           <div>
