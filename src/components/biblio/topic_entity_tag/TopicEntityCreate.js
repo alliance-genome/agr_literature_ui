@@ -12,6 +12,7 @@ import {
     setTypeaheadName2CurieMap,
     updateButtonBiblioEntityAdd
 } from "../../../actions/biblioActions";
+import { checkForExistingTags } from './TopicEntityUtils';
 import {
   getCurieToNameTaxon,
   getModToTaxon
@@ -209,25 +210,15 @@ const TopicEntityCreate = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
-
-    for (const arrayData of forApiArray.values()) {
-        arrayData.unshift(accessToken);
-        try {
-            const response = await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
-            console.log("responsee:", response.data);
-            if (response.status === 'exists') {
-                const tagExistingMessage = "The following tag already exists in the database:\n" +
-                                       JSON.stringify(response.data, null, 2);
-                setTagExistingMessage(tagExistingMessage);
-                setTimeout(() => {
-                    setTagExistingMessage('');
-                }, 8000);
-            }
-        } catch (error) {
-            console.error("Error processing entry: ", error);
-        }
+    const message = await checkForExistingTags(forApiArray, accessToken, accessLevel,
+                         dispatch, updateButtonBiblioEntityAdd);
+    if (message) {
+      setTagExistingMessage(message);
+      setTimeout(() => {
+        setTagExistingMessage('');
+      }, 8000);
     }
-      
+
     setTypeaheadOptions([]);
     dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: null }}));
     if (topicTypeaheadRef.current !== null) {
