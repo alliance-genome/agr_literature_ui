@@ -95,10 +95,6 @@ const TopicEntityCreateSGD = () => {
     };
     fetchData();
   }, [accessToken]);
-    
-  //const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
-  //                            'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
-  //                            'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
 
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push('');
@@ -240,8 +236,6 @@ const TopicEntityCreateSGD = () => {
       return;
     }
     dispatch(changeFieldEntityAddDisplayTag(displayTag));
-    // console.log("displayTag = " + displayTag);
-
     const forApiArray = []
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
@@ -276,7 +270,7 @@ const TopicEntityCreateSGD = () => {
 		setTagExistingMessage(tagExistingMessage);
 		setTimeout(() => {
 		    setTagExistingMessage('');
-		}, 10000);
+		}, 8000);
 	    }
 	} catch (error) {
 	    console.error("Error processing entry: ", error);
