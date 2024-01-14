@@ -259,24 +259,34 @@ const TopicEntityCreateSGD = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
+    let existingTags = [];
     for (const arrayData of forApiArray.values()) {
 	arrayData.unshift(accessToken);
 	try {
 	    const response = await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
-	    console.log("responsee:", response.data);
+	    //console.log("responsee:", response.data);
 	    if (response.status === 'exists') {
-		const tagExistingMessage = "The following tag already exists in the database:\n" +
-                                       JSON.stringify(response.data, null, 2);
-		setTagExistingMessage(tagExistingMessage);
-		setTimeout(() => {
-		    setTagExistingMessage('');
-		}, 8000);
+		existingTags.push(response.data)
 	    }
 	} catch (error) {
 	    console.error("Error processing entry: ", error);
 	}
     }  
-    
+
+    if (existingTags.length > 0) {
+	let tagExistingMessage = '';
+	if (existingTags.length > 1) {
+	    tagExistingMessage = "The following tags already exist in the database:";
+	} else {
+	    tagExistingMessage = "The following tag already exists in the database:"
+	}
+	tagExistingMessage += existingTags.map(tag => "\n" + JSON.stringify(tag, null, 2)).join("");
+        setTagExistingMessage(tagExistingMessage)
+        setTimeout(() => {
+          setTagExistingMessage('');
+        }, 8000);
+    }
+      
     dispatch(
       changeFieldEntityAddGeneralField({
         target: { id: "topicSelect", value: "" },
