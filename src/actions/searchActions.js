@@ -63,7 +63,7 @@ export const searchReferences = () => {
     dispatch(setSearchLoading());
 
     let params = {
-      query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+"),
+      query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
       size_result_count: state.search.searchSizeResultsCount,
       page: state.search.searchResultsPage,
       facets_values: state.search.searchFacetsValues,
@@ -112,7 +112,7 @@ export const filterFacets = (query, facetsValues, excludedFacetsValues, facetsLi
   return dispatch => {
     dispatch(setFacetsLoading());
     let params = {
-      query: query,
+      query: query.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
       size_result_count: sizeResultsCount,
       page: searchResultsPage,
       facets_values: facetsValues,
