@@ -316,13 +316,13 @@ const TopicEntityCreateSGD = () => {
         </Row>
       )}
       {tagExistingMessage && (
-        <Row className="form-group row">       
+        <Row className="form-group row">
           <Col sm="10">
 	    <div className="alert alert-warning" role="alert">
-		<pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap' }}>{tagExistingMessage}</pre>
-            </div>                                                                                                                                                                                                
-          </Col>                                                                                                                                                                                                  
-        </Row>
+		<div dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div>
+            </div>
+          </Col>
+       </Row>
       )}     
       <Row className="form-group row">
         <Col sm="3">

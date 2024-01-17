@@ -245,7 +245,7 @@ const TopicEntityCreate = () => {
       <Row className="form-group row">
         <Col sm="10">
           <div className="alert alert-warning" role="alert">
-            <pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap' }}>{tagExistingMessage}</pre>
+            <div dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div> 
           </div>
 	</Col>
       </Row>
