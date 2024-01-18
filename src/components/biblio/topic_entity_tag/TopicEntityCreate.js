@@ -12,6 +12,7 @@ import {
     setTypeaheadName2CurieMap,
     updateButtonBiblioEntityAdd
 } from "../../../actions/biblioActions";
+import { checkForExistingTags } from './TopicEntityUtils';
 import {
   getCurieToNameTaxon,
   getModToTaxon
@@ -65,7 +66,8 @@ const TopicEntityCreate = () => {
     
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
-
+  const [tagExistingMessage, setTagExistingMessage] = useState("");
+    
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
@@ -180,7 +182,7 @@ const TopicEntityCreate = () => {
     return updateJson;
   }
 
-  function createEntities(refCurie) {
+  async function createEntities(refCurie) {
     if (topicSelect === null) {
       return
     }
@@ -208,10 +210,15 @@ const TopicEntityCreate = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
-    for (const arrayData of forApiArray.values()) {
-      arrayData.unshift(accessToken);
-      dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel))
+    const message = await checkForExistingTags(forApiArray, accessToken, accessLevel,
+                         dispatch, updateButtonBiblioEntityAdd);
+    if (message) {
+      setTagExistingMessage(message);
+      setTimeout(() => {
+        setTagExistingMessage('');
+      }, 8000);
     }
+
     setTypeaheadOptions([]);
     dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: null }}));
     if (topicTypeaheadRef.current !== null) {
@@ -234,6 +241,15 @@ const TopicEntityCreate = () => {
     <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error"
                   genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
+    {tagExistingMessage && (
+      <Row className="form-group row">
+        <Col sm="10">
+          <div className="alert alert-warning" role="alert">
+            <div dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div> 
+          </div>
+	</Col>
+      </Row>
+    )}
     <Row className="form-group row" >
       <Col className="form-label col-form-label" sm="3"><h3>Entity and Topic Addition</h3></Col>
     </Row>

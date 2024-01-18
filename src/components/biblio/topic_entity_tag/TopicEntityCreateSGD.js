@@ -13,6 +13,7 @@ import {
   // setTypeaheadName2CurieMap,
   updateButtonBiblioEntityAdd
 } from "../../../actions/biblioActions";
+import { checkForExistingTags } from './TopicEntityUtils';
 import {
   checkTopicEntitySetDisplayTag,
   setDisplayTag,
@@ -55,6 +56,8 @@ const TopicEntityCreateSGD = () => {
   //  (state) => state.biblio.typeaheadName2CurieMap
   // );
   const [warningMessage, setWarningMessage] = useState("");
+  const [tagExistingMessage, setTagExistingMessage] = useState("");
+    
   const tetdisplayTagSelect = useSelector(
     (state) => state.biblio.entityAdd.tetdisplayTagSelect
   );
@@ -93,10 +96,6 @@ const TopicEntityCreateSGD = () => {
     };
     fetchData();
   }, [accessToken]);
-    
-  //const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
-  //                            'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
-  //                            'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
 
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push('');
@@ -199,12 +198,6 @@ const TopicEntityCreateSGD = () => {
     }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // const getMapKeyByValue = (mapObj, value) => {
-  //   const objEntries = Object.entries(mapObj);
-  //   const keyByValue = objEntries.filter((e) => e[1] === value);
-  //   return keyByValue.map((e) => e[0])[0];
-  // };
-
   function initializeUpdateJson(refCurie) {
     let updateJson = {};
     updateJson["reference_curie"] = refCurie;
@@ -229,7 +222,7 @@ const TopicEntityCreateSGD = () => {
     return setDisplayTag(topicSelect);
   }
 
-  function createEntities(refCurie) {
+  async function createEntities(refCurie) {
     if (topicSelect === null) {
       return;
     }
@@ -244,8 +237,6 @@ const TopicEntityCreateSGD = () => {
       return;
     }
     dispatch(changeFieldEntityAddDisplayTag(displayTag));
-    console.log("displayTag = " + displayTag);
-
     const forApiArray = []
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
@@ -269,11 +260,15 @@ const TopicEntityCreateSGD = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
-    for (const arrayData of forApiArray.values()) {
-      arrayData.unshift(accessToken);
-      dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
+    const message = await checkForExistingTags(forApiArray, accessToken, accessLevel,
+						 dispatch, updateButtonBiblioEntityAdd);
+    if (message) {
+        setTagExistingMessage(message);
+	setTimeout(() => {
+          setTagExistingMessage('');
+        }, 8000);
     }
-
+      
     dispatch(
       changeFieldEntityAddGeneralField({
         target: { id: "topicSelect", value: "" },
@@ -320,6 +315,15 @@ const TopicEntityCreateSGD = () => {
           </Col>
         </Row>
       )}
+      {tagExistingMessage && (
+        <Row className="form-group row">
+          <Col sm="10">
+	    <div className="alert alert-warning" role="alert">
+		<div dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div>
+            </div>
+          </Col>
+       </Row>
+      )}     
       <Row className="form-group row">
         <Col sm="3">
           <div>

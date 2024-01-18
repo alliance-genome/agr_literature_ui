@@ -322,45 +322,52 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
     }));
 } };
 
-export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => { return dispatch => {
-  // console.log('in updateButtonBiblioEntityAdd action');
-  // const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
-  const [accessToken, subPath, payload, method] = updateArrayData;
-  // console.log("payload " + payload);
-  // console.log("payload "); console.log(updateArrayData);
-  // let newId = null;
-  const url = restUrl + '/' + subPath;
-  let response_message = 'update success';
+export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
+  return dispatch => {
+    return new Promise((resolve, reject) => {
+      const [accessToken, subPath, payload, method] = updateArrayData;
+      const url = restUrl + '/' + subPath;
 
-  axios({
-      url: url,
-      method: method,
-      headers: {
-        'content-type': 'application/json',
-        'mode': 'cors',
-        'authorization': 'Bearer ' + accessToken
-      },
-      data: payload
-  })
-  .then(res => {
-    console.log(res);
-    if ( ((method === 'PATCH') && (res.status !== 202)) ||
-         ((method === 'DELETE') && (res.status !== 204)) ||
-         ((method === 'POST') && (res.status !== 201)) ) {
-           response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method; }
-    // if ((method === 'POST') && (res.status === 201)) {
-    //   newId = parseInt(res.data); }
-    dispatch({
-      type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-      payload: { responseMessage: response_message, accessLevel: accessLevel }
-    })
-  })
-  .catch(err =>
-    dispatch({
-      type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-      payload: { responseMessage: 'error: ' + subPath + ' ' + err, accessLevel: accessLevel }
-    }));
-} };
+      axios({
+        url: url,
+        method: method,
+        headers: {
+          'content-type': 'application/json',
+          'mode': 'cors',
+          'authorization': 'Bearer ' + accessToken
+        },
+        data: payload
+      })
+      .then(res => {
+        let response_message;
+        //console.log('API Response:', res);
+        if (((method === 'PATCH') && (res.status !== 202)) ||
+            ((method === 'DELETE') && (res.status !== 204)) ||
+            ((method === 'POST') && (res.status !== 201))) {
+          response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method;
+          reject(new Error(response_message));
+	} else {
+	    // response_message = `${JSON.stringify(res.data)}`;  
+          resolve(res.data);
+	  dispatch({
+              type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+              payload: { responseMessage: 'update success', accessLevel: accessLevel  }
+          });  
+        }
+      })
+      .catch(err => {
+        const errorMessage = 'error: ' + subPath + ' ' + err;
+        console.error(errorMessage);
+        dispatch({
+          type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+          payload: { responseMessage: errorMessage, accessLevel: accessLevel }
+        });
+        reject(new Error(errorMessage));
+      });
+    });
+  };
+};
+
 
 
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType) => {
