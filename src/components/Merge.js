@@ -319,6 +319,60 @@ function deriveReffilesMd5sum(refMetaReffiles1, refMetaReffiles2) {
   return [reffile1, reffile2, md5sums];
 } // function useDeriveReffilesMd5sum()
 
+function deriveRefeferenceRelationsAgrkbs(refMetaReferenceRelations1, refMetaReferenceRelations2) {
+  // this assumes that an agrkb cannot have two relationships to a unique other agrkb, so treating from and to the same.
+  // if later they can have multiple connections, the from/to should be accounted for so agrkbs1/2 don't overwrite values.
+  const agrkbs1 = {}; const agrkbs2 = {}; const sameAgrkbs = {}; const uniqAgrkbs1 = []; const uniqAgrkbs2 = [];
+  for (let i = 0; i < refMetaReferenceRelations1['to_references'].length; i++) {
+    const agrkb = refMetaReferenceRelations1['to_references'][i]['reference_curie_to'];
+    if (!(agrkb in agrkbs1)) { agrkbs1[agrkb] = {}; }
+    agrkbs1[agrkb]['index'] = i
+    agrkbs1[agrkb]['direction'] = 'to';
+    agrkbs1[agrkb]['toggle'] = refMetaReferenceRelations1['to_references'][i]['toggle'];
+    agrkbs1[agrkb]['id'] = refMetaReferenceRelations1['to_references'][i]['reference_relation_id'];
+    agrkbs1[agrkb]['type'] = refMetaReferenceRelations1['to_references'][i]['reference_relation_type'];
+    agrkbs1[agrkb]['subtype'] = 'to_references';
+  }
+  for (let i = 0; i < refMetaReferenceRelations1['from_references'].length; i++) {
+    const agrkb = refMetaReferenceRelations1['from_references'][i]['reference_curie_from'];
+    if (!(agrkb in agrkbs1)) { agrkbs1[agrkb] = {}; }
+    agrkbs1[agrkb]['index'] = i
+    agrkbs1[agrkb]['direction'] = 'from';
+    agrkbs1[agrkb]['toggle'] = refMetaReferenceRelations1['from_references'][i]['toggle'];
+    agrkbs1[agrkb]['id'] = refMetaReferenceRelations1['from_references'][i]['reference_relation_id'];
+    agrkbs1[agrkb]['type'] = refMetaReferenceRelations1['from_references'][i]['reference_relation_type'];
+    agrkbs1[agrkb]['subtype'] = 'from_references';
+  }
+  for (let i = 0; i < refMetaReferenceRelations2['to_references'].length; i++) {
+    const agrkb = refMetaReferenceRelations2['to_references'][i]['reference_curie_to'];
+    if (!(agrkb in agrkbs2)) { agrkbs2[agrkb] = {}; }
+    agrkbs2[agrkb]['index'] = i
+    agrkbs2[agrkb]['direction'] = 'to';
+    agrkbs2[agrkb]['toggle'] = refMetaReferenceRelations2['to_references'][i]['toggle'];
+    agrkbs2[agrkb]['id'] = refMetaReferenceRelations2['to_references'][i]['reference_relation_id'];
+    agrkbs2[agrkb]['type'] = refMetaReferenceRelations2['to_references'][i]['reference_relation_type'];
+    agrkbs2[agrkb]['subtype'] = 'to_references';
+  }
+  for (let i = 0; i < refMetaReferenceRelations2['from_references'].length; i++) {
+    const agrkb = refMetaReferenceRelations2['from_references'][i]['reference_curie_from'];
+    if (!(agrkb in agrkbs2)) { agrkbs2[agrkb] = {}; }
+    agrkbs2[agrkb]['index'] = i
+    agrkbs2[agrkb]['direction'] = 'from';
+    agrkbs2[agrkb]['toggle'] = refMetaReferenceRelations2['from_references'][i]['toggle'];
+    agrkbs2[agrkb]['id'] = refMetaReferenceRelations2['from_references'][i]['reference_relation_id'];
+    agrkbs2[agrkb]['type'] = refMetaReferenceRelations2['from_references'][i]['reference_relation_type'];
+    agrkbs2[agrkb]['subtype'] = 'from_references';
+  }
+
+  Object.keys(agrkbs1).forEach((agrkb) => {
+    if (agrkb in agrkbs2) { sameAgrkbs[agrkb] = 1; }
+      else { uniqAgrkbs1.push(agrkb); } } );
+  Object.keys(agrkbs2).forEach((agrkb) => {
+    if (!(agrkb in agrkbs1)) {
+      uniqAgrkbs2.push(agrkb); } } );
+  return [agrkbs1, agrkbs2, sameAgrkbs, uniqAgrkbs1, uniqAgrkbs2];
+} // function deriveRefeferenceRelationsAgrkbs(refMetaReferenceRelations1, refMetaReferenceRelations2)
+
 const MergeSubmitDataTransferUpdateButton = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -539,6 +593,7 @@ const MergeSubmitDataTransferUpdateButton = () => {
 
 
     // TODO  relations
+    const [agrkbs1, agrkbs2, sameAgrkbs, uniqAgrkbs1, uniqAgrkbs2] = deriveRefeferenceRelationsAgrkbs(referenceMeta1['referenceJson']['reference_relations'], referenceMeta2['referenceJson']['reference_relations']);
 // need to figure out how to know which direction .  editing reference_relations is also broken, but creating works.
 //     if ('reference_relations' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['reference_relations'] !== null) {
 //       for (const corrDict of referenceMeta2['referenceJson']['reference_relations'].values()) {
@@ -1123,57 +1178,7 @@ const RowDisplayPairReferenceRelations = ({fieldName, referenceMeta1, referenceM
        (referenceMeta2['referenceJson'][fieldName]['to_references'] === null ) &&
        (referenceMeta2['referenceJson'][fieldName]['from_references'] === null ) ) { return null; }
   const rowPairReferenceRelationsElements = []
-
-  // this assumes that an agrkb cannot have two relationships to a unique other agrkb, so treating from and to the same.
-  // if later they can have multiple connections, the from/to should be accounted for so agrkbs1/2 don't overwrite values.
-  const agrkbs1 = {}; const agrkbs2 = {}; const sameAgrkbs = {}; const uniqAgrkbs1 = []; const uniqAgrkbs2 = [];
-  for (let i = 0; i < referenceMeta1['referenceJson'][fieldName]['to_references'].length; i++) {
-    const agrkb = referenceMeta1['referenceJson'][fieldName]['to_references'][i]['reference_curie_to'];
-    if (!(agrkb in agrkbs1)) { agrkbs1[agrkb] = {}; }
-    agrkbs1[agrkb]['index'] = i
-    agrkbs1[agrkb]['direction'] = 'to';
-    agrkbs1[agrkb]['toggle'] = referenceMeta1['referenceJson'][fieldName]['to_references'][i]['toggle'];
-    agrkbs1[agrkb]['id'] = referenceMeta1['referenceJson'][fieldName]['to_references'][i]['reference_relation_id'];
-    agrkbs1[agrkb]['type'] = referenceMeta1['referenceJson'][fieldName]['to_references'][i]['reference_relation_type'];
-    agrkbs1[agrkb]['subtype'] = 'to_references';
-  }
-  for (let i = 0; i < referenceMeta1['referenceJson'][fieldName]['from_references'].length; i++) {
-    const agrkb = referenceMeta1['referenceJson'][fieldName]['from_references'][i]['reference_curie_from'];
-    if (!(agrkb in agrkbs1)) { agrkbs1[agrkb] = {}; }
-    agrkbs1[agrkb]['index'] = i
-    agrkbs1[agrkb]['direction'] = 'from';
-    agrkbs1[agrkb]['toggle'] = referenceMeta1['referenceJson'][fieldName]['from_references'][i]['toggle'];
-    agrkbs1[agrkb]['id'] = referenceMeta1['referenceJson'][fieldName]['from_references'][i]['reference_relation_id'];
-    agrkbs1[agrkb]['type'] = referenceMeta1['referenceJson'][fieldName]['from_references'][i]['reference_relation_type'];
-    agrkbs1[agrkb]['subtype'] = 'from_references';
-  }
-  for (let i = 0; i < referenceMeta2['referenceJson'][fieldName]['to_references'].length; i++) {
-    const agrkb = referenceMeta2['referenceJson'][fieldName]['to_references'][i]['reference_curie_to'];
-    if (!(agrkb in agrkbs2)) { agrkbs2[agrkb] = {}; }
-    agrkbs2[agrkb]['index'] = i
-    agrkbs2[agrkb]['direction'] = 'to';
-    agrkbs2[agrkb]['toggle'] = referenceMeta2['referenceJson'][fieldName]['to_references'][i]['toggle'];
-    agrkbs2[agrkb]['id'] = referenceMeta2['referenceJson'][fieldName]['to_references'][i]['reference_relation_id'];
-    agrkbs2[agrkb]['type'] = referenceMeta2['referenceJson'][fieldName]['to_references'][i]['reference_relation_type'];
-    agrkbs2[agrkb]['subtype'] = 'to_references';
-  }
-  for (let i = 0; i < referenceMeta2['referenceJson'][fieldName]['from_references'].length; i++) {
-    const agrkb = referenceMeta2['referenceJson'][fieldName]['from_references'][i]['reference_curie_from'];
-    if (!(agrkb in agrkbs2)) { agrkbs2[agrkb] = {}; }
-    agrkbs2[agrkb]['index'] = i
-    agrkbs2[agrkb]['direction'] = 'from';
-    agrkbs2[agrkb]['toggle'] = referenceMeta2['referenceJson'][fieldName]['from_references'][i]['toggle'];
-    agrkbs2[agrkb]['id'] = referenceMeta2['referenceJson'][fieldName]['from_references'][i]['reference_relation_id'];
-    agrkbs2[agrkb]['type'] = referenceMeta2['referenceJson'][fieldName]['from_references'][i]['reference_relation_type'];
-    agrkbs2[agrkb]['subtype'] = 'from_references';
-  }
-
-  Object.keys(agrkbs1).forEach((agrkb) => {
-    if (agrkb in agrkbs2) { sameAgrkbs[agrkb] = 1; }
-      else { uniqAgrkbs1.push(agrkb); } } );
-  Object.keys(agrkbs2).forEach((agrkb) => {
-    if (!(agrkb in agrkbs1)) {
-      uniqAgrkbs2.push(agrkb); } } );
+  const [agrkbs1, agrkbs2, sameAgrkbs, uniqAgrkbs1, uniqAgrkbs2] = deriveRefeferenceRelationsAgrkbs(referenceMeta1['referenceJson'][fieldName], referenceMeta2['referenceJson'][fieldName]);
 
   const element0 = GenerateFieldLabel('same ' + fieldName, 'unlock');
   Object.keys(sameAgrkbs).forEach((agrkb) => {
