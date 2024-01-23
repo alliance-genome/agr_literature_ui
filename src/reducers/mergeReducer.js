@@ -174,14 +174,24 @@ export default function(state = initialState, action) {
       let toggleIndependentJson1 = JSON.parse(JSON.stringify(state.referenceMeta1));
       let toggleIndependentJson2 = JSON.parse(JSON.stringify(state.referenceMeta2));
       
-      if (action.payload.oneOrTwo === 1) {
-        ('toggle' in toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]) ?
-          delete toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
-          toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
-      if (action.payload.oneOrTwo === 2) {
-        ('toggle' in toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]) ?
-          delete toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
-          toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
+      if (action.payload.subtype === null) {
+        if (action.payload.oneOrTwo === 1) {
+          ('toggle' in toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]) ?
+            delete toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
+            toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true }
+        if (action.payload.oneOrTwo === 2) {
+          ('toggle' in toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]) ?
+            delete toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] :
+            toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.index]['toggle'] = true } }
+      else {
+        if (action.payload.oneOrTwo === 1) {
+          ('toggle' in toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.subtype][action.payload.index]) ?
+            delete toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.subtype][action.payload.index]['toggle'] :
+            toggleIndependentJson1['referenceJson'][action.payload.fieldName][action.payload.subtype][action.payload.index]['toggle'] = true }
+        if (action.payload.oneOrTwo === 2) {
+          ('toggle' in toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.subtype][action.payload.index]) ?
+            delete toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.subtype][action.payload.index]['toggle'] :
+            toggleIndependentJson2['referenceJson'][action.payload.fieldName][action.payload.subtype][action.payload.index]['toggle'] = true } }
       return {
         ...state,
         referenceMeta1: toggleIndependentJson1,
