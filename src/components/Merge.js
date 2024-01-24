@@ -594,6 +594,23 @@ const MergeSubmitDataTransferUpdateButton = () => {
 
     // TODO  relations
     const [agrkbs1, agrkbs2, sameAgrkbs, uniqAgrkbs1, uniqAgrkbs2] = deriveRefeferenceRelationsAgrkbs(referenceMeta1['referenceJson']['reference_relations'], referenceMeta2['referenceJson']['reference_relations']);
+
+    for (let i = 0; i < uniqAgrkbs2.length; i++) {
+      const agrkb = uniqAgrkbs2[i];
+      const updateJsonRelation2 = { 'reference_relation_type': agrkbs2[agrkb]['type'] };
+      if (agrkbs2[agrkb]['direction'] === 'to') {
+          updateJsonRelation2['reference_curie_from'] = agrkb;
+          updateJsonRelation2['reference_curie_to'] = referenceMeta1['referenceJson']['curie']; }
+        else if (agrkbs2[agrkb]['direction'] === 'from') {
+          updateJsonRelation2['reference_curie_to'] = agrkb;
+          updateJsonRelation2['reference_curie_from'] = referenceMeta1['referenceJson']['curie']; }
+      let subPath = 'reference_relation/' + agrkbs2[agrkb]['id'];
+      let array = [ subPath, updateJsonRelation2, 'PATCH', 0, null, null]
+      console.log('array');
+      console.log(array);
+      forApiArray.push( array );
+    }
+
 // need to figure out how to know which direction .  editing reference_relations is also broken, but creating works.
 //     if ('reference_relations' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['reference_relations'] !== null) {
 //       for (const corrDict of referenceMeta2['referenceJson']['reference_relations'].values()) {
@@ -617,6 +634,7 @@ const MergeSubmitDataTransferUpdateButton = () => {
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift('mergeData');
       arrayData.unshift(accessToken)
+// PUT THIS BACK
       dispatch(mergeButtonApiDispatch(arrayData))
     }
 
