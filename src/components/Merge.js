@@ -572,8 +572,6 @@ const MergeSubmitDataTransferUpdateButton = () => {
           const updateJsonReffile2 = { 'reference_curie': referenceMeta1['referenceJson']['curie'] }
           let subPath = 'reference/referencefile/' + reffile2[reffileDict['md5sum']]['referencefile_id'];
           let array = [ subPath, updateJsonReffile2, 'PATCH', 0, null, null];
-          console.log('array');
-          console.log(array);
           forApiArray.push( array );
         }
         else if (reffileDict['md5sum'] in sameMd5) {
@@ -585,8 +583,6 @@ const MergeSubmitDataTransferUpdateButton = () => {
           console.log('transfer losing ' + losing_reffile_id + ' to winning ' + winning_reffile_id);
           let subPath = 'reference/referencefile/merge/' + referenceMeta1['referenceJson']['curie'] + '/' + losing_reffile_id + '/' + winning_reffile_id;
           let array = [ subPath, null, 'POST', 0, null, null]
-          console.log('array');
-          console.log(array);
           forApiArray.push( array );
         }
     } }
@@ -595,35 +591,41 @@ const MergeSubmitDataTransferUpdateButton = () => {
     // TODO  relations
     const [agrkbs1, agrkbs2, sameAgrkbs, uniqAgrkbs1, uniqAgrkbs2] = deriveRefeferenceRelationsAgrkbs(referenceMeta1['referenceJson']['reference_relations'], referenceMeta2['referenceJson']['reference_relations']);
 
+    // same reference_relations if toggled, winning reference relation is deleted, losing reference relation is transfered to winning reference
+    Object.keys(sameAgrkbs).forEach((agrkb) => {
+      if (agrkb in agrkbs1 && agrkbs1[agrkb]['toggle'] !== null && agrkbs1[agrkb]['toggle'] !== '') {
+        let subPath = 'reference_relation/' + agrkbs1[agrkb]['id'];
+        let array = [ subPath, null, 'DELETE', 0, null, null]
+        console.log('array');
+        console.log(array);
+        forApiArray.push( array ); }
+      if (agrkb in agrkbs2 && agrkbs2[agrkb]['toggle'] !== null && agrkbs2[agrkb]['toggle'] !== '') {
+        const updateJsonRelation2 = { 'reference_relation_type': agrkbs2[agrkb]['type'] };
+        if (agrkbs2[agrkb]['direction'] === 'from') {
+            updateJsonRelation2['reference_curie_from'] = agrkb;
+            updateJsonRelation2['reference_curie_to'] = referenceMeta1['referenceJson']['curie']; }
+          else if (agrkbs2[agrkb]['direction'] === 'to') {
+            updateJsonRelation2['reference_curie_to'] = agrkb;
+            updateJsonRelation2['reference_curie_from'] = referenceMeta1['referenceJson']['curie']; }
+        let subPath = 'reference_relation/' + agrkbs2[agrkb]['id'];
+        let array = [ subPath, updateJsonRelation2, 'PATCH', 0, null, null];
+        forApiArray.push( array ); }
+    });
+
+    // unique reference_relations from losing reference are transfered to winning reference, which is redundant since API would do that upon merge, but this lets curators transfer data before merging the references, so they could check what got transferred before obsoleting the losing reference
     for (let i = 0; i < uniqAgrkbs2.length; i++) {
       const agrkb = uniqAgrkbs2[i];
       const updateJsonRelation2 = { 'reference_relation_type': agrkbs2[agrkb]['type'] };
-      if (agrkbs2[agrkb]['direction'] === 'to') {
+      if (agrkbs2[agrkb]['direction'] === 'from') {
           updateJsonRelation2['reference_curie_from'] = agrkb;
           updateJsonRelation2['reference_curie_to'] = referenceMeta1['referenceJson']['curie']; }
-        else if (agrkbs2[agrkb]['direction'] === 'from') {
+        else if (agrkbs2[agrkb]['direction'] === 'to') {
           updateJsonRelation2['reference_curie_to'] = agrkb;
           updateJsonRelation2['reference_curie_from'] = referenceMeta1['referenceJson']['curie']; }
       let subPath = 'reference_relation/' + agrkbs2[agrkb]['id'];
       let array = [ subPath, updateJsonRelation2, 'PATCH', 0, null, null]
-      console.log('array');
-      console.log(array);
       forApiArray.push( array );
     }
-
-// need to figure out how to know which direction .  editing reference_relations is also broken, but creating works.
-//     if ('reference_relations' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['reference_relations'] !== null) {
-//       for (const corrDict of referenceMeta2['referenceJson']['reference_relations'].values()) {
-//         if (corrDict['toggle']) {
-//           const type = corrDict['type'];
-//           const corrCurie = corrDict['curie'];
-//           const referenceCurie1 = referenceMeta1.curie;
-//           const referenceCurie2 = referenceMeta2.curie;
-//           const updateJsonCorr2 = { 'reference_curie_from': referenceCurie, 'reference_curie_to': referenceCurie }	// figure this out
-//           let subPath = 'reference_relation/' + corrDict['reference_relation_id'];
-//           let array = [ subPath, updateJsonCorr2, 'PATCH', 0, null, null]
-//           forApiArray.push( array );
-//     } } }
 
     let dispatchCount = forApiArray.length;
 
@@ -634,7 +636,6 @@ const MergeSubmitDataTransferUpdateButton = () => {
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift('mergeData');
       arrayData.unshift(accessToken)
-// PUT THIS BACK
       dispatch(mergeButtonApiDispatch(arrayData))
     }
 
