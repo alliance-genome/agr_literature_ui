@@ -556,7 +556,6 @@ const MergeSubmitDataTransferUpdateButton = () => {
     } } }
 
     const [reffile1, reffile2, md5sums] = deriveReffilesMd5sum(referenceMeta1['referenceJson']['reference_files'], referenceMeta2['referenceJson']['reference_files'])
-
     const sameMd5 = {}; const uniqMd5 = {};
     const sortedKeys = Object.keys(md5sums).sort();
     for (let i = 0; i < sortedKeys.length; i++) {
@@ -587,10 +586,7 @@ const MergeSubmitDataTransferUpdateButton = () => {
         }
     } }
 
-
-    // TODO  relations
     const [agrkbs1, agrkbs2, sameAgrkbs, uniqAgrkbs1, uniqAgrkbs2] = deriveRefeferenceRelationsAgrkbs(referenceMeta1['referenceJson']['reference_relations'], referenceMeta2['referenceJson']['reference_relations']);
-
     // same reference_relations if toggled, winning reference relation is deleted, losing reference relation is transfered to winning reference
     Object.keys(sameAgrkbs).forEach((agrkb) => {
       if (agrkb in agrkbs1 && agrkbs1[agrkb]['toggle'] !== null && agrkbs1[agrkb]['toggle'] !== '') {
@@ -611,7 +607,6 @@ const MergeSubmitDataTransferUpdateButton = () => {
         let array = [ subPath, updateJsonRelation2, 'PATCH', 0, null, null];
         forApiArray.push( array ); }
     });
-
     // unique reference_relations from losing reference are transfered to winning reference, which is redundant since API would do that upon merge, but this lets curators transfer data before merging the references, so they could check what got transferred before obsoleting the losing reference
     for (let i = 0; i < uniqAgrkbs2.length; i++) {
       const agrkb = uniqAgrkbs2[i];
