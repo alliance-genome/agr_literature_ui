@@ -30,10 +30,10 @@ export const mergeSwapPairSimple = (fieldName) => {
   return { type: 'MERGE_SWAP_PAIR_SIMPLE',
            payload: { fieldName: fieldName } }; };
 
-export const mergeToggleIndependent = (fieldName, oneOrTwo, index) => {
-  console.log("action mergeToggleIndependent " + fieldName + ' ' + oneOrTwo + ' ' + index);
+export const mergeToggleIndependent = (fieldName, oneOrTwo, index, subtype) => {
+  console.log("action mergeToggleIndependent " + fieldName + ' ' + oneOrTwo + ' ' + index + ' ' + subtype);
   return { type: 'MERGE_TOGGLE_INDEPENDENT',
-           payload: { fieldName: fieldName, oneOrTwo: oneOrTwo, index: index } }; };
+           payload: { fieldName: fieldName, oneOrTwo: oneOrTwo, index: index, subtype: subtype } }; };
 
 // export const mergeSwapPairSimple = (fieldName) => dispatch => {
 //   console.log("action mergeSwapPairSimple " + fieldName);
