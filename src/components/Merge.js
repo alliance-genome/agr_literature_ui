@@ -18,6 +18,7 @@ import { setShowDataTransferModal } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
 
 import { splitCurie } from './biblio/BiblioEditor';
+import { comcorMapping } from './biblio/BiblioEditor';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -1194,7 +1195,9 @@ const RowDisplayPairReferenceRelations = ({fieldName, referenceMeta1, referenceM
   const rowPairReferenceRelationsElements = []
   const [agrkbs1, agrkbs2, sameAgrkbs, uniqAgrkbs1, uniqAgrkbs2] = deriveRefeferenceRelationsAgrkbs(referenceMeta1['referenceJson'][fieldName], referenceMeta2['referenceJson'][fieldName]);
 
-  const element0 = GenerateFieldLabel('same ' + fieldName, 'unlock');
+  const comcorReverse = Object.fromEntries(Object.entries(comcorMapping).map(a => a.reverse()))
+
+  const element0 = GenerateFieldLabel('relation to same ' + fieldName, 'unlock');
   Object.keys(sameAgrkbs).forEach((agrkb) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
@@ -1203,18 +1206,20 @@ const RowDisplayPairReferenceRelations = ({fieldName, referenceMeta1, referenceM
       if (agrkbs1[agrkb]['toggle'] !== null && agrkbs1[agrkb]['toggle'] !== '') { toggle1 = agrkbs1[agrkb]['toggle']; }
       if ( toggle1 ) { swapColor1 = !swapColor1; }
       keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
+      const relation1 = (agrkbs1[agrkb]['direction'] === 'from') ? comcorReverse[agrkbs1[agrkb]['type']] : agrkbs1[agrkb]['type'];
       element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => {
                     dispatch(mergeToggleIndependent(fieldName, 1, agrkbs1[agrkb]['index'], agrkbs1[agrkb]['subtype']));
                     if (agrkb in agrkbs2) { dispatch(mergeToggleIndependent(fieldName, 2, agrkbs2[agrkb]['index'], agrkbs2[agrkb]['subtype'])) } } }
-                  >{agrkb} &nbsp;&nbsp; {agrkbs1[agrkb]['direction']} &nbsp;&nbsp; {agrkbs1[agrkb]['type']} &nbsp;&nbsp; {agrkbs1[agrkb]['id']}</div>); }
+                  >{relation1} &nbsp;&nbsp; {agrkb}</div>); }
     if (agrkb in agrkbs2) {
       if (agrkbs2[agrkb]['toggle'] !== null && agrkbs2[agrkb]['toggle'] !== '') { toggle2 = agrkbs2[agrkb]['toggle']; }
       if ( toggle2 ) { swapColor2 = !swapColor2; }
       keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
+      const relation2 = (agrkbs2[agrkb]['direction'] === 'from') ? comcorReverse[agrkbs2[agrkb]['type']] : agrkbs2[agrkb]['type'];
       element2 = (<div className={`div-merge ${keepClass2}`}  onClick={() => {
                     if (agrkb in agrkbs1) { dispatch(mergeToggleIndependent(fieldName, 1, agrkbs1[agrkb]['index'], agrkbs1[agrkb]['subtype'])); }
                     dispatch(mergeToggleIndependent(fieldName, 2, agrkbs2[agrkb]['index'], agrkbs2[agrkb]['subtype'])) } }
-                  >{agrkb} &nbsp;&nbsp; {agrkbs2[agrkb]['direction']} &nbsp;&nbsp; {agrkbs2[agrkb]['type']} &nbsp;&nbsp; {agrkbs2[agrkb]['id']}</div>);
+                  >{relation2} &nbsp;&nbsp; {agrkb}</div>);
     }
     rowPairReferenceRelationsElements.push(
       <Row key={`toggle agrkb sameagrkb ${agrkb}`}>
@@ -1226,10 +1231,18 @@ const RowDisplayPairReferenceRelations = ({fieldName, referenceMeta1, referenceM
 
   const maxLengthUniq = ( uniqAgrkbs1.length > uniqAgrkbs2.length) ? uniqAgrkbs1.length : uniqAgrkbs2.length;
   rowPairReferenceRelationsElements.push(<RowDivider key="referencerelations_divider" />);
-  const element0Lock = GenerateFieldLabel('unique ' + fieldName, 'lock');
+  const element0Lock = GenerateFieldLabel('relation to unique ' + fieldName, 'lock');
   for (let i = 0; i < maxLengthUniq; i++) {
-    const element1 = (uniqAgrkbs1[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{uniqAgrkbs1[i]} &nbsp;&nbsp; {agrkbs1[uniqAgrkbs1[i]]['direction']} &nbsp;&nbsp; {agrkbs1[uniqAgrkbs1[i]]['type']} &nbsp;&nbsp; {agrkbs1[uniqAgrkbs1[i]]['id']}</div>) : '';
-    const element2 = (uniqAgrkbs2[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{uniqAgrkbs2[i]} &nbsp;&nbsp; {agrkbs2[uniqAgrkbs2[i]]['direction']} &nbsp;&nbsp; {agrkbs2[uniqAgrkbs2[i]]['type']} &nbsp;&nbsp; {agrkbs2[uniqAgrkbs2[i]]['id']}</div>) : '';
+    let relation1 = '';
+    if (uniqAgrkbs1[i] === undefined) { relation1 = ''; }
+      else if (agrkbs1[uniqAgrkbs1[i]] !== undefined) {
+        relation1 = (agrkbs1[uniqAgrkbs1[i]]['direction'] === 'from') ? comcorReverse[agrkbs1[uniqAgrkbs1[i]]['type']] : agrkbs1[uniqAgrkbs1[i]]['type']; }
+    let relation2 = '';
+    if (uniqAgrkbs2[i] === undefined) { relation2 = ''; }
+      else if (agrkbs2[uniqAgrkbs2[i]] !== undefined) {
+        relation2 = (agrkbs2[uniqAgrkbs2[i]]['direction'] === 'from') ? comcorReverse[agrkbs2[uniqAgrkbs2[i]]['type']] : agrkbs2[uniqAgrkbs2[i]]['type']; }
+    const element1 = (uniqAgrkbs1[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{relation1} &nbsp;&nbsp; {uniqAgrkbs1[i]}</div>) : '';
+    const element2 = (uniqAgrkbs2[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{relation2} &nbsp;&nbsp; {uniqAgrkbs2[i]}</div>) : '';
     rowPairReferenceRelationsElements.push(
       <Row key={`toggle reffile uniqmd5 ${i}`}>
         <Col sm="2" >{element0Lock}</Col>
