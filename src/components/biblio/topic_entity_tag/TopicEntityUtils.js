@@ -1,11 +1,11 @@
 export const checkForExistingTags = async (forApiArray, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) => {
-    let existingTags = [];
+    let existingTagResponses = [];
     for (const arrayData of forApiArray.values()) {
         arrayData.unshift(accessToken);
         try {
             const response = await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
-            if (response.status === 'exists') {
-                existingTags.push(response.data);
+            if (response.status.startsWith('exists')) {
+                existingTagResponses.push(response);
             }
         } catch (error) {
             console.error("Error processing entry: ", error);
@@ -23,8 +23,8 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
     */
 
     let tagExistingMessage = '';
-    if (existingTags.length > 0) {
-	tagExistingMessage = existingTags.length > 1
+    if (existingTagResponses.length > 0) {
+	tagExistingMessage = existingTagResponses.length > 1
             ? "The tags listed below were skipped as they already exist in the database:"
             : "The tag listed below was skipped as it already exists in the database:"; 
 	// filter out keys that end with '_name'
@@ -38,6 +38,8 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
 	}
 	headers.push('note')
 	headers.push('created_by')
+	headers.push('created_by(db)')
+	headers.push('tag_status')
 	
 	// create table headers
         let tableHTML = "<table class='table table-bordered'><tr>";
@@ -47,16 +49,31 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
         tableHTML += "</tr>";
 	
 	// create table rows
-        existingTags.forEach(tag => {
+        existingTagResponses.forEach(tagResponse => {
+	    const tag = tagResponse.data; 
             tableHTML += "<tr>";
+	    let	creator_in_db = '';
             headers.forEach(header => {
                 let value = tag[header];
                 // if there is a corresponding '_name' field, use its value instead
                 if (tag.hasOwnProperty(`${header}_name`) && tag[`${header}_name`] !== null) {
                     value = tag[`${header}_name`];
                 }
-                tableHTML += `<td>${value !== null ? value : ''}</td>`;
+		if (header === 'created_by') {
+		    creator_in_db = value;
+		}
+		if (header !== 'created_by(db)' && header !== 'tag_status'){
+                    tableHTML += `<td>${value !== null ? value : ''}</td>`;
+		}
             });
+	    if (tagResponse.status.startsWith("exists:")) {
+		let trimmedStr = tagResponse.status.substring(tagResponse.status.indexOf(':') + 1).trim();
+		let parts = trimmedStr.split(' | ');
+		creator_in_db = parts[0];
+		// updated_by_db = parts[1];
+	    }
+	    tableHTML += `<td>${creator_in_db}</td>`;
+	    tableHTML += `<td>${tagResponse.message}</td>`;
             tableHTML += "</tr>";
         });
         tableHTML += "</table>";
