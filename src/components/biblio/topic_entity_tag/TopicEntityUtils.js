@@ -64,7 +64,7 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
 	    const tag = tagResponse.data; 
             tableHTML += "<tr>";
 	    let	creator_in_db = '';
-	    let action_button = null;
+	    let action_button_html = '';
             headers.forEach(header => {
                 let value = tag[header];
                 // if there is a corresponding '_name' field, use its value instead
@@ -80,14 +80,12 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
 		let trimmedStr = tagResponse.status.substring(tagResponse.status.indexOf(':') + 1).trim();
 		let parts = trimmedStr.split(' | ');
 		creator_in_db = parts[0];
-		// updated_by_db = parts[1];
-		action_button = document.createElement("button");
-		action_button.innerHTML = "Force Insertion";
-		action_button.onclick = handleForceInsertionClick(tag);
+		// action_button_html = `<button style='background-color: white; color: blue; border: 2px blue; padding: 5px 10px; cursor: pointer;' onclick='handleForceInsertionClick(${JSON.stringify(tag)})'>Force Insertion</button>`;
+		action_button_html = `<button variant="outline-primary" size="sm" onclick='handleForceInsertionClick(${JSON.stringify(tag)})'>Force Insertion</button>`;
 	    }
 	    tableHTML += `<td>${creator_in_db}</td>`;
 	    tableHTML += `<td>${tagResponse.message}</td>`;
-	    tableHTML += `<td>${action_button}</td>`;
+	    tableHTML += `<td>${action_button_html}</td>`;
             tableHTML += "</tr>";
         });
         tableHTML += "</table>";
