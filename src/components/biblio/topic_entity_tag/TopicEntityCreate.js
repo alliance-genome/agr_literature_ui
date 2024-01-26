@@ -243,9 +243,9 @@ const TopicEntityCreate = () => {
     <RowDivider />
     {tagExistingMessage && (
       <Row className="form-group row">
-        <Col sm="10">
+        <Col sm="12">
           <div className="alert alert-warning" role="alert">
-            <div dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div> 
+            <div className="table-responsive" dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div> 
           </div>
 	</Col>
       </Row>
