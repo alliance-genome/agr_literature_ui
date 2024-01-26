@@ -1,7 +1,20 @@
-function handleForceInsertionClick(tag) {
+export function handleForceInsertionClick(tag) {
     // Logic for handling the click event
-    tag['force_inserstion'] = 1;
+    tag['force_insertion'] = 1;
     console.log("tag=", JSON.stringify(tag));
+}
+
+function setupEventListeners(existingTagResponses) {
+    existingTagResponses.forEach((tagResponse, index) => {
+	console.log("Tag data for button", index, ":", tagResponse.data); // Add this line for debugging 
+        const button = document.getElementById(`forceInsertionBtn-${index}`);
+        if (button) {
+            const tagData = tagResponse.data;
+            button.addEventListener('click', function() {
+                handleForceInsertionClick(tagData);
+            });
+        }
+    });
 }
 
 export const checkForExistingTags = async (forApiArray, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) => {
@@ -60,7 +73,7 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
 	const headerSubset = headers.slice(0, headers.length - 3);
 	
 	// create table rows
-        existingTagResponses.forEach(tagResponse => {
+        existingTagResponses.forEach((tagResponse, index) => {
 	    const tag = tagResponse.data; 
             tableHTML += "<tr>";
 	    let	creator_in_db = '';
@@ -81,7 +94,8 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
 		let parts = trimmedStr.split(' | ');
 		creator_in_db = parts[0];
 		// action_button_html = `<button style='background-color: white; color: blue; border: 2px blue; padding: 5px 10px; cursor: pointer;' onclick='handleForceInsertionClick(${JSON.stringify(tag)})'>Force Insertion</button>`;
-		action_button_html = `<button variant="outline-primary" size="sm" onclick='handleForceInsertionClick(${JSON.stringify(tag)})'>Force Insertion</button>`;
+		// action_button_html = `<button variant="outline-primary" size="sm" onclick='handleForceInsertionClick(${JSON.stringify(tag)})'>Force Insertion</button>`;
+		action_button_html = `<button id="forceInsertionBtn-${index}" class="force-insertion-btn" variant="outline-primary" size="sm">Force Insertion</button>`;
 	    }
 	    tableHTML += `<td>${creator_in_db}</td>`;
 	    tableHTML += `<td>${tagResponse.message}</td>`;
