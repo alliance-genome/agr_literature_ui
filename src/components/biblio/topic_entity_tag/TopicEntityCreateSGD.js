@@ -201,7 +201,8 @@ const TopicEntityCreateSGD = () => {
 
   useEffect(() => {
     if (tagExistingMessage) {
-      setupEventListeners(existingTagResponses);
+	setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
+			   updateButtonBiblioEntityAdd);
     }
   }, [tagExistingMessage, existingTagResponses]);
 

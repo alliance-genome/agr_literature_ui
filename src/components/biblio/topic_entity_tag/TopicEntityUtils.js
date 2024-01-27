@@ -1,25 +1,33 @@
+
 // function to handle the force insertion click event
-export function handleForceInsertionClick(tag) {
-    Object.keys(tag).forEach(key => {
+export function handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
+    Object.keys(tagData).forEach(key => {
 	if (key.endsWith('_name')) {
-            delete tag[key];
+            delete tagData[key];
 	}
     });
-    delete tag['created_by'];
-    delete tag['updated_by'];
-    tag['force_insertion'] = 1;
-    console.log("tag=", JSON.stringify(tag));
+    delete tagData['created_by'];
+    delete tagData['updated_by'];
+    tagData['force_insertion'] = 1;
+    console.log("tagData=", JSON.stringify(tagData));
+    const subPath = 'topic_entity_tag/';
+    const method = 'POST';
+    let data = [accessToken, subPath, tagData, method];
+    try {
+	dispatch(updateButtonBiblioEntityAdd(data, accessLevel));
+    } catch(error) {
+	console.error("Error processing entry: ", error);
+    }
 }
 
 // function to set up event listeners for the dynamically generated buttons
-export function setupEventListeners(existingTagResponses) {
+export function setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
     existingTagResponses.forEach((tagResponse, index) => {
-        console.log("Tag data for button", index, ":", tagResponse.data);
         const button = document.getElementById(`forceInsertionBtn-${index}`);
         if (button) {
             const tagData = tagResponse.data;
             button.addEventListener('click', function() {
-                handleForceInsertionClick(tagData);
+                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd);
             });
         }
     });
