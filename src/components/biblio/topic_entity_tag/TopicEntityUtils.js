@@ -6,9 +6,11 @@ export function handleForceInsertionClick(tagData, accessToken, accessLevel, dis
             delete tagData[key];
 	}
     });
+    tagData['force_insertion'] = 1;
+    tagData['reference_curie'] = tagData['reference_id'];
+    delete tagData['reference_id'];
     delete tagData['created_by'];
     delete tagData['updated_by'];
-    tagData['force_insertion'] = 1;
     console.log("tagData=", JSON.stringify(tagData));
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
