@@ -12,7 +12,7 @@ import {
     setTypeaheadName2CurieMap,
     updateButtonBiblioEntityAdd
 } from "../../../actions/biblioActions";
-import { checkForExistingTags } from './TopicEntityUtils';
+import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
 import {
   getCurieToNameTaxon,
   getModToTaxon
@@ -67,6 +67,7 @@ const TopicEntityCreate = () => {
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
   const [tagExistingMessage, setTagExistingMessage] = useState("");
+  const [existingTagResponses, setExistingTagResponses] = useState([]);
     
   useEffect(() => {
     const fetchData = async () => {
@@ -162,6 +163,13 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (tagExistingMessage) {
+      setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
+			  updateButtonBiblioEntityAdd);
+    }
+  }, [tagExistingMessage, existingTagResponses]);
+
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
     const keyByValue = objEntries.filter((e) => e[1] === value);
@@ -210,13 +218,14 @@ const TopicEntityCreate = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
-    const message = await checkForExistingTags(forApiArray, accessToken, accessLevel,
-                         dispatch, updateButtonBiblioEntityAdd);
-    if (message) {
-      setTagExistingMessage(message);
+    const result = await checkForExistingTags(forApiArray, accessToken, accessLevel,
+					      dispatch, updateButtonBiblioEntityAdd);
+    if (result) {
+      setTagExistingMessage(result.html);
       setTimeout(() => {
         setTagExistingMessage('');
       }, 8000);
+      setExistingTagResponses(result.existingTagResponses);
     }
 
     setTypeaheadOptions([]);
@@ -243,9 +252,9 @@ const TopicEntityCreate = () => {
     <RowDivider />
     {tagExistingMessage && (
       <Row className="form-group row">
-        <Col sm="10">
+        <Col sm="12">
           <div className="alert alert-warning" role="alert">
-            <div dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div> 
+            <div className="table-responsive" dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div> 
           </div>
 	</Col>
       </Row>
