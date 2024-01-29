@@ -14,6 +14,9 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from 'react-bootstrap/Modal';
 
+import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
+import "ag-grid-community/styles/ag-grid.css"; // Core CSS
+
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -262,219 +265,25 @@ const TopicEntityTable = () => {
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
   const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
+  const [colDefs, setColDefs] = useState([
+    { field: "make" },
+    { field: "model" },
+    { field: "price" },
+    { field: "electric" }
+  ]);
+  const [rowData, setRowData] = useState([
+    { make: "Tesla", model: "Model Y", price: 64950, electric: true },
+    { make: "Ford", model: "F-Series", price: 33850, electric: false },
+    { make: "Toyota", model: "Corolla", price: 29600, electric: false },
+  ]);
 
   return (
     <div>
-       <LoadingOverlay active={isLoadingData || isLoadingMappings} />
-       {/* container for total rows, popup, and page size selection */}
-       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-         
-          {/* total Rows */}
-          {typeof totalTagsCount !== 'undefined' && (
-            <h4 style={{ textAlign: 'left', paddingLeft: '15px' }}>
-              Total {totalTagsCount} rows
-            </h4>
-          )}
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px'}}>
+        <AgGridReact rowData={rowData} columnDefs={colDefs} rowHeight={200}/>
+      </div>
 
-          {/* Curie Popup */}
-          {selectedCurie && (
-            <GenericTetTableModal title="CURIE Information" body={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
-          )}
-
-          {/* Note Popup */}
-          {showNoteModal && (
-            <GenericTetTableModal title="Full Note" body={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
-          )}
-	  
-          {/* Page Size Selection */}
-          <Form.Group controlId="pageSizeSelect" style={{ marginRight: '15px' }}>
-            <Form.Label style={{ marginRight: '10px' }}>Rows per page:</Form.Label>
-            <Form.Control as="select" value={pageSize} onChange={handlePageSizeChange} style={{ display: 'inline-block', width: 'auto' }}>
-              {[10, 25, 50, 100, 500].map(size => (
-                <option key={size} value={size}>{size}</option>
-              ))}
-            </Form.Control>
-          </Form.Group>
-        </div>
-	  
-        <Table
-          bordered
-          size="sm"
-          responsive
-	>
-	  <thead>
-            <tr>
-	      <th>Actions</th>
-              {headers.map((header, index) => {
-                const thMinWidth = (header === 'note') ? '16em' : '';
-                return (
-                <th key={`tetTableHeader th ${index}`} style={{ whiteSpace: 'nowrap', minWidth: thMinWidth }}>
-                  {header === 'species' ? (
-                    <>
-                      <FontAwesomeIcon
-                        icon={faFilter}
-                        style={{ marginLeft: '5px', cursor: 'pointer', color: showSpeciesFilter ? '#0069d9' : 'black' }}
-                        onClick={handleSpeciesFilterClick}
-                      />
-                      <span style={{ marginLeft: '10px' }}>{header}</span>
-                      {headersWithSortability.has(header) ? (
-                        <FontAwesomeIcon
-                          icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
-                          style={{ marginLeft: '5px', color: sortBy === header ? '#0069d9' : 'black' }}
-                          onClick={() => {
-                            if (sortBy === header && descSort) {
-                              setSortBy(null);
-                              setDescSort(true);
-                            } else {
-                              setSortBy(header);
-                              setDescSort(!descSort);
-                            }
-                          }}
-                        />
-                      ) : null}
-		      <FilterPopup
-                        show={showSpeciesFilter}
-                        options={speciesInResultSet}
-                        selectedOptions={selectedSpecies}
-                        optionToName={curieToNameTaxon}
-                        onOptionChange={handleCheckboxChange}
-                        onClearClick={handleClearButtonClick}
-                        onHideFilter={handleMouseLeave}
-                        position={speciesFilterPosition}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      {(headerToLabelMap[header] !== undefined) ? (headerToLabelMap[header]) : (header) }
-                      {headersWithSortability.has(header) ? (
-                        <FontAwesomeIcon
-                          icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
-                          style={{ color: sortBy === header ? '#0069d9' : 'black' }}
-                          onClick={() => {
-                            if (sortBy === header && descSort) {
-                              setSortBy(null);
-                              setDescSort(true);
-                            } else {
-                              setSortBy(header);
-                              setDescSort(!descSort);
-                            }
-                          }}
-                        />
-                      ) : null}
-                    </>
-                  )}
-                </th>
-              )} )}
-              {source_headers.map((header, index) => (
-                <th key={`tetTableHeaderSource th ${index}`}>
-                  {header.startsWith('source_') ? header : 'source_' + header}
-                  {headersWithSortability.has(header) ? (
-                    <FontAwesomeIcon
-                      icon={sortBy !== header || !descSort ? faSortAlphaDown : faSortAlphaUp}
-                      style={{ color: sortBy === header ? '#0069d9' : 'black' }}
-                      onClick={() => {
-                        if (sortBy === header && descSort) {
-                          setSortBy(null);
-                          setDescSort(true);
-                        } else {
-                          setSortBy(header);
-                          setDescSort(!descSort);
-                        }
-                      }}
-                    />
-                  ) : null}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-          { topicEntityTags
-	    .filter((tetDict) => {
-              if (selectedSpecies.length > 0) {
-                return selectedSpecies.includes(tetDict.species);
-              }
-              return true;
-            })
-	    .map( (tetDict, index_1) => {
-              return (
-                <tr key={`tetTableRow ${index_1}`}>     
-		  <td>
-                    {tetDict.topic_entity_tag_source.mod === accessLevel ? (
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => handleDeleteClick(tetDict)}
-                      >
-                        Delete
-		      </Button>	    
-                    ) : null}
-		  </td>
-                  { headers.map( (header, index_2) => {
-                    let td_value = tetDict[header];
-                    if (td_value === true) { td_value = 'True'; }
-                    else if (td_value === false) { td_value = 'False'; }
-                    else if (td_value === null && header === "negated") {td_value = "N/A"}
-                    else if (dateColumnSet.has(header)) {
-                      td_value = new Date(td_value).toLocaleString(); }
-                    else if (["topic", "entity_type", "species", "entity"].includes(header)) {
-			let displayValue = '';
-			if (header === "species") {
-                            displayValue = tetDict.species in curieToNameTaxon ? curieToNameTaxon[tetDict.species] : tetDict.species;
-			} else if (header === 'entity') {
-			    displayValue = entityEntityMappings[tetDict[header]] || tetDict[header];
-                        } else {
-			    displayValue = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]] : tetDict[header]; 
-		        }
-                        const curieToShow = displayValue + ": " + tetDict[header]; 
-                        td_value = (
-                          <span onClick={() => handleCurieClick(curieToShow)} style={{ cursor: 'pointer' }}>
-                             {displayValue}
-                          </span>
-                        );
-                    }
-		    else if (headersToEntityMap.has(header)) {
-                        td_value = tetDict[header] in entityEntityMappings ? entityEntityMappings[tetDict[header]]
- : tetDict[header]; }
-		    else if (header === 'note') {
-                        let truncatedNote = tetDict[header] || '';
-                        let maxNoteCharLength = 100;
-                        if (truncatedNote.length >= maxNoteCharLength) {
-                          truncatedNote = truncatedNote.substr(0, truncatedNote.lastIndexOf(' ', maxNoteCharLength)) + ' ...';
-                          td_value = (<><span onClick={() => handleNoteClick(tetDict[header])} style={{ cursor: 'pointer' }}>{truncatedNote}</span></>); }
-                    }
-                    return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
-                  } ) }
-                  { source_headers.map( (header, index_2) => {
-                    let td_value = tetDict['topic_entity_tag_source'][header];
-		    if (header === 'evidence') {
-		      const ecoID = td_value;	  
-		      const displayValue = ecoToName[td_value] || td_value;
-		      td_value = (
-			<span onClick={() => handleCurieClick(displayValue + ': ' + ecoID)} style={{ cursor: 'pointer' }}>
-			  {displayValue}
-			</span>
-	              );
-		    } 
-                    else if (td_value === true) { td_value = 'True'; }
-                    else if (td_value === false) { td_value = 'False'; }
-                    if (dateColumnSet.has(header)) {
-                       td_value = new Date(td_value).toLocaleString();
-		    }   
-                    return (<td key={`tetTable ${index_1} td ${index_2}`} >{td_value}</td>)
-                  } ) }
-                </tr>);
-          } ) }
-          </tbody></Table>
-          {totalTagsCount > 0 ?
-            <Pagination style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '10vh'}}>
-              <Pagination.First  onClick={() => changePage('First')} />
-              <Pagination.Prev   onClick={() => changePage('Prev')} />
-              <Pagination.Item  disabled>{"Page " + page + " of " + Math.ceil(totalTagsCount/pageSize)}</Pagination.Item>
-              <Pagination.Next   onClick={() => changePage('Next')} />
-              <Pagination.Last   onClick={() => changePage('Last')} />
-            </Pagination>
-           : null}
-      </div>);
+    </div>);
 } // const EntityTable
 
 export default TopicEntityTable;
