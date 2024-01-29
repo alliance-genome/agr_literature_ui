@@ -1,12 +1,15 @@
 
 // function to handle the force insertion click event
-export function handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
+export function handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event) {
+    // change the background color when it the button is clicked
+    if (event && event.target) {
+        event.target.style.backgroundColor = 'lightblue';
+    }
     Object.keys(tagData).forEach(key => {
 	if (key.endsWith('_name')) {
             delete tagData[key];
 	}
     });
-    tagData['force_insertion'] = 1;
     tagData['reference_curie'] = tagData['reference_id'];
     delete tagData['reference_id'];
     delete tagData['created_by'];
@@ -20,6 +23,10 @@ export function handleForceInsertionClick(tagData, accessToken, accessLevel, dis
     } catch(error) {
 	console.error("Error processing entry: ", error);
     }
+    // remove the button after the data has been submitted
+    if (event && event.target) {
+	event.target.remove();
+    }
 }
 
 // function to set up event listeners for the dynamically generated buttons
@@ -28,8 +35,9 @@ export function setupEventListeners(existingTagResponses, accessToken, accessLev
         const button = document.getElementById(`forceInsertionBtn-${index}`);
         if (button) {
             const tagData = tagResponse.data;
-            button.addEventListener('click', function() {
-                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd);
+            button.addEventListener('click', function(event) {
+                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch,
+					  updateButtonBiblioEntityAdd, event);
             });
         }
     });
