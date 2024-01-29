@@ -98,6 +98,8 @@ const TopicEntityTable = () => {
       if (response.status === 204) {
         // remove the deleted item from the state so that the UI updates
         setTopicEntityTags(prevTags => prevTags.filter(tag => tag !== tetDictToDelete));
+	// fetch the updated total tag count
+        fetchTotalTagsCount();
       } else {
         console.error("Failed to delete the item:", response.data);
       }
