@@ -87,6 +87,7 @@ const TopicEntityCreateSGD = () => {
 
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
+  const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -230,6 +231,10 @@ const TopicEntityCreateSGD = () => {
     return setDisplayTag(topicSelect);
   }
 
+  const handleCloseTagExistingMessage = () => {
+    setIsTagExistingMessageVisible(false); // hide the message
+  };
+    
   async function createEntities(refCurie) {
     if (topicSelect === null) {
       return;
@@ -272,9 +277,12 @@ const TopicEntityCreateSGD = () => {
 					      dispatch, updateButtonBiblioEntityAdd); 
     if (result) {
         setTagExistingMessage(result.html);
+	/*
 	setTimeout(() => {
           setTagExistingMessage('');
         }, 8000);
+	*/
+	setIsTagExistingMessageVisible(true); // show the message
 	setExistingTagResponses(result.existingTagResponses);
     }
       
@@ -324,11 +332,14 @@ const TopicEntityCreateSGD = () => {
           </Col>
         </Row>
       )}
-      {tagExistingMessage && (
+      {isTagExistingMessageVisible && (
         <Row className="form-group row">
           <Col sm="12">
 	    <div className="alert alert-warning" role="alert">
 		<div className="table-responsive" dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div>
+		<Button variant="outline-secondary" size="sm" onClick={handleCloseTagExistingMessage}>
+                  Close
+                </Button>
             </div>
           </Col>
        </Row>
