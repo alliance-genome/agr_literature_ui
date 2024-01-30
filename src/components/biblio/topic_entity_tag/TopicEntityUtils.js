@@ -1,6 +1,5 @@
-
 // function to handle the force insertion click event
-export function handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event) {
+export function handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, updateType) {
     // change the background color when it the button is clicked
     if (event && event.target) {
         event.target.style.backgroundColor = 'lightblue';
@@ -10,18 +9,23 @@ export function handleForceInsertionClick(tagData, accessToken, accessLevel, dis
             delete tagData[key];
 	}
     });
-    tagData['reference_curie'] = tagData['reference_id'];
-    delete tagData['reference_id'];
-    delete tagData['created_by'];
-    delete tagData['updated_by'];
-    console.log("tagData=", JSON.stringify(tagData));
-    const subPath = 'topic_entity_tag/';
-    const method = 'POST';
-    let data = [accessToken, subPath, tagData, method];
-    try {
-	dispatch(updateButtonBiblioEntityAdd(data, accessLevel));
-    } catch(error) {
-	console.error("Error processing entry: ", error);
+    if (updateType === 'updateNote') {
+	console.log("Updating note!!")
+    }
+    else {
+	tagData['reference_curie'] = tagData['reference_id'];
+	delete tagData['reference_id'];
+	delete tagData['created_by'];
+	delete tagData['updated_by'];
+	console.log("tagData=", JSON.stringify(tagData));
+	const subPath = 'topic_entity_tag/';
+	const method = 'POST';
+	let data = [accessToken, subPath, tagData, method];
+	try {
+	    dispatch(updateButtonBiblioEntityAdd(data, accessLevel));
+	} catch(error) {
+	    console.error("Error processing entry: ", error);
+	}
     }
     // remove the button after the data has been submitted
     if (event && event.target) {
@@ -32,12 +36,15 @@ export function handleForceInsertionClick(tagData, accessToken, accessLevel, dis
 // function to set up event listeners for the dynamically generated buttons
 export function setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
     existingTagResponses.forEach((tagResponse, index) => {
-        const button = document.getElementById(`forceInsertionBtn-${index}`);
-        if (button) {
+	const insertionButton = document.getElementById(`forceInsertionBtn-${index}`);
+	const updateNoteButton = document.getElementById(`updateNoteBtn-${index}`);
+        if (insertionButton || updateNoteButton) {
+	    const button = insertionButton || updateNoteButton;
+	    const updateType = insertionButton ? "forceInsertion" : "updateNote";
             const tagData = tagResponse.data;
             button.addEventListener('click', function(event) {
                 handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch,
-					  updateButtonBiblioEntityAdd, event);
+					  updateButtonBiblioEntityAdd, event, updateType);
             });
         }
     });
@@ -106,7 +113,10 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
 		let trimmedStr = tagResponse.status.substring(tagResponse.status.indexOf(':') + 1).trim();
 		let parts = trimmedStr.split(' | ');
 		creator_in_db = parts[0];
-                action_button_html = `<button id="forceInsertionBtn-${index}" class="force-insertion-btn" variant="outline-primary" size="sm">Force Insertion</button>`;
+                action_button_html = `<button id="forceInsertionBtn-${index}" class="force-insertion-btn" style="margin-bottom: 5px;" variant="outline-primary" size="sm">Force Insertion</button>`;
+		if (tagResponse.message.startsWith("The tag with")) {
+		    action_button_html += `<button id="updateNoteBtn-${index}" class="update-note-btn" variant="outline-secondary" size="sm">Update Note</button>`; 
+		}
             }
 	    tableHTML += `<td>${creator_in_db}</td>`;
 	    tableHTML += `<td>${tagResponse.message}</td>`;
