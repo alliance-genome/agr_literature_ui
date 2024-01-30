@@ -332,7 +332,7 @@ const TopicEntityCreateSGD = () => {
           </Col>
         </Row>
       )}
-      {isTagExistingMessageVisible && (
+      {isTagExistingMessageVisible && tagExistingMessage && (
         <Row className="form-group row">
           <Col sm="12">
 	    <div className="alert alert-warning" role="alert">

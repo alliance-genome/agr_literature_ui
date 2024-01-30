@@ -258,7 +258,7 @@ const TopicEntityCreate = () => {
     <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error"
                   genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
-    {isTagExistingMessageVisible && (
+    {isTagExistingMessageVisible && tagExistingMessage && (
       <Row className="form-group row">
         <Col sm="12">
           <div className="alert alert-warning" role="alert">
