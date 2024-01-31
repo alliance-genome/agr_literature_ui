@@ -1,5 +1,7 @@
 // function to handle the force insertion click event
-export function handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, updateType) {
+export function handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, updateType) {
+    const tagData = tagResponse.data;
+    
     // change the background color when it the button is clicked
     if (event && event.target) {
         event.target.style.backgroundColor = 'lightblue';
@@ -9,14 +11,25 @@ export function handleForceInsertionClick(tagData, accessToken, accessLevel, dis
             delete tagData[key];
 	}
     });
+	
     if (updateType === 'updateNote') {
-	console.log("Updating note!!")
+	let note_in_db = "";
+	if (tagResponse.status.startsWith("exists:")) {
+            let trimmedStr = tagResponse.status.substring(tagResponse.status.indexOf(':') + 1).trim();
+            let parts = trimmedStr.split(' | ');
+            note_in_db = parts[1] === undefined ? '' : parts[1];
+	}
+	let data = { 'topic_entity_tag_id': tagData['topic_entity_tag_id'] };
+	data['note'] = note_in_db !== '' ? note_in_db + " | " + tagData['note'] : tagData['note'];    
+	console.log("Updating note!! topic_entity_tag_id = ", tagData['topic_entity_tag_id'])
+	console.log("Updating note!! new_note = ", data['note'])
     }
     else {
 	tagData['reference_curie'] = tagData['reference_id'];
 	delete tagData['reference_id'];
 	delete tagData['created_by'];
 	delete tagData['updated_by'];
+	delete tagData['topic_entity_tag_id']
 	console.log("tagData=", JSON.stringify(tagData));
 	const subPath = 'topic_entity_tag/';
 	const method = 'POST';
@@ -38,40 +51,22 @@ export function setupEventListeners(existingTagResponses, accessToken, accessLev
     existingTagResponses.forEach((tagResponse, index) => {
         const insertionButton = document.getElementById(`forceInsertionBtn-${index}`);
         const updateNoteButton = document.getElementById(`updateNoteBtn-${index}`);
-        const tagData = tagResponse.data;
 
         if (insertionButton) {
             insertionButton.addEventListener('click', function(event) {
-                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, "forceInsertion");
+                handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch,
+						updateButtonBiblioEntityAdd, event, "forceInsertion");
             });
         }
 
         if (updateNoteButton) {
             updateNoteButton.addEventListener('click', function(event) {
-                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, "updateNote");
+                handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel,
+						dispatch, updateButtonBiblioEntityAdd, event, "updateNote");
             });
         }
     });
 }
-
-// function to set up event listeners for the dynamically generated buttons
-/*
-export function setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
-    existingTagResponses.forEach((tagResponse, index) => {
-	const insertionButton = document.getElementById(`forceInsertionBtn-${index}`);
-	const updateNoteButton = document.getElementById(`updateNoteBtn-${index}`);
-        if (insertionButton || updateNoteButton) {
-	    const button = insertionButton || updateNoteButton;
-	    const updateType = insertionButton ? "forceInsertion" : "updateNote";
-            const tagData = tagResponse.data;
-            button.addEventListener('click', function(event) {
-                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch,
-					  updateButtonBiblioEntityAdd, event, updateType);
-            });
-        }
-    });
-}
-*/
 
 // function to check for existing tags and generate an HTML table
 export const checkForExistingTags = async (forApiArray, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) => {
