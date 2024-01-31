@@ -36,6 +36,28 @@ export function handleForceInsertionClick(tagData, accessToken, accessLevel, dis
 // function to set up event listeners for the dynamically generated buttons
 export function setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
     existingTagResponses.forEach((tagResponse, index) => {
+        const insertionButton = document.getElementById(`forceInsertionBtn-${index}`);
+        const updateNoteButton = document.getElementById(`updateNoteBtn-${index}`);
+        const tagData = tagResponse.data;
+
+        if (insertionButton) {
+            insertionButton.addEventListener('click', function(event) {
+                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, "forceInsertion");
+            });
+        }
+
+        if (updateNoteButton) {
+            updateNoteButton.addEventListener('click', function(event) {
+                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, "updateNote");
+            });
+        }
+    });
+}
+
+// function to set up event listeners for the dynamically generated buttons
+/*
+export function setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
+    existingTagResponses.forEach((tagResponse, index) => {
 	const insertionButton = document.getElementById(`forceInsertionBtn-${index}`);
 	const updateNoteButton = document.getElementById(`updateNoteBtn-${index}`);
         if (insertionButton || updateNoteButton) {
@@ -49,6 +71,7 @@ export function setupEventListeners(existingTagResponses, accessToken, accessLev
         }
     });
 }
+*/
 
 // function to check for existing tags and generate an HTML table
 export const checkForExistingTags = async (forApiArray, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) => {
@@ -97,7 +120,7 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
             tableHTML += "<tr>";
 	    let creator_in_db = '';
             headers.forEach(header => {
-                let value = tag[header];
+                let value = tag[header] === undefined ? '' : tag[header];
                 if (tag.hasOwnProperty(`${header}_name`) && tag[`${header}_name`] !== null) {
                     value = tag[`${header}_name`];
                 }
