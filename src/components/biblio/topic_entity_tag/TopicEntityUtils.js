@@ -22,7 +22,7 @@ export function handleForceInsertionUpdateClick(tagResponse, accessToken, access
             note_in_db = parts[1] === undefined ? '' : parts[1];
 	}
 	let tagDataWithUpdatedNote = {};
-	tagDataWithUpdatedNote['note'] = note_in_db !== '' ? note_in_db + " | " + tagData['note'] : tagData['note'];    
+	tagDataWithUpdatedNote['note'] = note_in_db !== '' ? note_in_db + " | " + tagData['note'] : tagData['note'];
 	console.log("topic_entity_tag_id = ", tagData['topic_entity_tag_id'])
 	console.log("new_note = ", tagDataWithUpdatedNote['note'])
 	const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + tagData['topic_entity_tag_id'];
@@ -33,7 +33,8 @@ export function handleForceInsertionUpdateClick(tagResponse, accessToken, access
 		    "Content-Type": "application/json"
 		}
 	    });
-	    // console.log("Update note success!");
+	    // dispatch a custom event after successful update
+	    window.dispatchEvent(new CustomEvent('noteUpdated', { detail: { updated: true } }));
 	} catch (error) {
 	    console.error("Error processing entry: ", error);
 	}

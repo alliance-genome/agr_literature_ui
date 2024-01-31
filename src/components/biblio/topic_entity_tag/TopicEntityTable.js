@@ -199,7 +199,20 @@ const TopicEntityTable = () => {
   useEffect(() => {
     fetchTableData();
   }, [topicEntityTags, sortBy, descSort, page, pageSize]);
-    
+
+  useEffect(() => {
+    // add event listener for noteUpdated event
+    const noteUpdatedHandler = () => {
+      // refresh the table data here
+      fetchTableData();
+    };
+
+    window.addEventListener("noteUpdated", noteUpdatedHandler);
+
+    // cleanup function to remove event listener
+    return () => window.removeEventListener("noteUpdated", noteUpdatedHandler);
+  }, [accessToken, referenceCurie, selectedSpecies, page, pageSize, sortBy, descSort]);
+
   const handlePageSizeChange = (event) => {
     const newSize = Number(event.target.value);
     dispatch(setPageSizeAction(newSize)); // update Redux store with new pageSize
