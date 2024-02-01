@@ -1,6 +1,9 @@
+import axios from 'axios';
 
 // function to handle the force insertion click event
-export function handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event) {
+export function handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, updateType) {
+    const tagData = tagResponse.data;
+    
     // change the background color when it the button is clicked
     if (event && event.target) {
         event.target.style.backgroundColor = 'lightblue';
@@ -10,34 +13,74 @@ export function handleForceInsertionClick(tagData, accessToken, accessLevel, dis
             delete tagData[key];
 	}
     });
-    tagData['reference_curie'] = tagData['reference_id'];
-    delete tagData['reference_id'];
-    delete tagData['created_by'];
-    delete tagData['updated_by'];
-    console.log("tagData=", JSON.stringify(tagData));
-    const subPath = 'topic_entity_tag/';
-    const method = 'POST';
-    let data = [accessToken, subPath, tagData, method];
-    try {
-	dispatch(updateButtonBiblioEntityAdd(data, accessLevel));
-    } catch(error) {
-	console.error("Error processing entry: ", error);
+	
+    if (updateType === 'updateNote') {
+	let note_in_db = "";
+	if (tagResponse.status.startsWith("exists:")) {
+            let trimmedStr = tagResponse.status.substring(tagResponse.status.indexOf(':') + 1).trim();
+            let parts = trimmedStr.split(' | ');
+            note_in_db = parts[1] === undefined ? '' : parts[1];
+	}
+	let tagDataWithUpdatedNote = {};
+	tagDataWithUpdatedNote['note'] = note_in_db !== '' ? note_in_db + " | " + tagData['note'] : tagData['note'];
+	console.log("topic_entity_tag_id = ", tagData['topic_entity_tag_id'])
+	console.log("new_note = ", tagDataWithUpdatedNote['note'])
+	const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + tagData['topic_entity_tag_id'];
+	try {
+	    axios.patch(url, tagDataWithUpdatedNote, {
+		headers: {
+		    "Authorization": "Bearer " + accessToken,
+		    "Content-Type": "application/json"
+		}
+	    });
+	    // dispatch a custom event after successful update
+	    window.dispatchEvent(new CustomEvent('noteUpdated', { detail: { updated: true } }));
+	} catch (error) {
+	    console.error("Error processing entry: ", error);
+	}
     }
-    // remove the button after the data has been submitted
-    if (event && event.target) {
-	event.target.remove();
+    else {
+	tagData['reference_curie'] = tagData['reference_id'];
+	delete tagData['reference_id'];
+	delete tagData['created_by'];
+	delete tagData['updated_by'];
+	delete tagData['topic_entity_tag_id']
+	console.log("tagData=", JSON.stringify(tagData));
+	const subPath = 'topic_entity_tag/';
+	const method = 'POST';
+	let data = [accessToken, subPath, tagData, method];
+	try {
+	    dispatch(updateButtonBiblioEntityAdd(data, accessLevel));
+	} catch(error) {
+	    console.error("Error processing entry: ", error);
+	}
     }
 }
 
 // function to set up event listeners for the dynamically generated buttons
 export function setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
     existingTagResponses.forEach((tagResponse, index) => {
-        const button = document.getElementById(`forceInsertionBtn-${index}`);
-        if (button) {
-            const tagData = tagResponse.data;
-            button.addEventListener('click', function(event) {
-                handleForceInsertionClick(tagData, accessToken, accessLevel, dispatch,
-					  updateButtonBiblioEntityAdd, event);
+        const insertionButton = document.getElementById(`forceInsertionBtn-${index}`);
+        const updateNoteButton = document.getElementById(`updateNoteBtn-${index}`);
+
+        const removeButtons = () => {
+            if (insertionButton) insertionButton.remove();
+            if (updateNoteButton) updateNoteButton.remove();
+        };
+
+        if (insertionButton) {
+            insertionButton.addEventListener('click', function(event) {
+                handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch,
+						updateButtonBiblioEntityAdd, event, "forceInsertion");
+                removeButtons();
+            });
+        }
+
+        if (updateNoteButton) {
+            updateNoteButton.addEventListener('click', function(event) {
+                handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch, 
+						updateButtonBiblioEntityAdd, event, "updateNote");
+                removeButtons();
             });
         }
     });
@@ -90,7 +133,7 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
             tableHTML += "<tr>";
 	    let creator_in_db = '';
             headers.forEach(header => {
-                let value = tag[header];
+                let value = tag[header] === undefined ? '' : tag[header];
                 if (tag.hasOwnProperty(`${header}_name`) && tag[`${header}_name`] !== null) {
                     value = tag[`${header}_name`];
                 }
@@ -106,7 +149,10 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
 		let trimmedStr = tagResponse.status.substring(tagResponse.status.indexOf(':') + 1).trim();
 		let parts = trimmedStr.split(' | ');
 		creator_in_db = parts[0];
-                action_button_html = `<button id="forceInsertionBtn-${index}" class="force-insertion-btn" variant="outline-primary" size="sm">Force Insertion</button>`;
+                action_button_html = `<button id="forceInsertionBtn-${index}" class="force-insertion-btn" style="margin-bottom: 5px;" variant="outline-primary" size="sm">Force Insertion</button>`;
+		if (tagResponse.message.startsWith("The tag with")) {
+		    action_button_html += `<button id="updateNoteBtn-${index}" class="update-note-btn" variant="outline-secondary" size="sm">Update Note</button>`; 
+		}
             }
 	    tableHTML += `<td>${creator_in_db}</td>`;
 	    tableHTML += `<td>${tagResponse.message}</td>`;
