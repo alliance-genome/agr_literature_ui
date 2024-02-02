@@ -1,5 +1,40 @@
 import axios from 'axios';
 
+export async function fetchNote(url, accessToken) {
+    let note = '';
+    try {
+        let response = await axios.get(url, {
+            headers: {
+                "Authorization": "Bearer " + accessToken,
+                "Content-Type": "application/json"
+            }
+        });
+        note = response.data.note;
+    } catch (error) {
+        console.error("Error processing entry: ", error);
+    }
+    return note;
+};
+
+// assuming fetchNote is an async function that returns a note from the database
+export async function fetchNoteAndAppend(url, accessToken, additionalNote) {
+    let noteFromDb = '';
+    try {
+        // await the asynchronous operation to complete and get the note
+        noteFromDb = await fetchNote(url, accessToken);
+    } catch (error) {
+        console.error("Error fetching note: ", error);
+    }
+    console.log("noteFromDb=", noteFromDb);
+    console.log("additionalNote=", additionalNote);
+    if (noteFromDb) {
+	return noteFromDb + " | " + additionalNote;
+    } else {
+	return additionalNote;
+    }
+}
+
+
 // function to handle the force insertion click event
 export function handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, updateType) {
     const tagData = tagResponse.data;
@@ -15,29 +50,35 @@ export function handleForceInsertionUpdateClick(tagResponse, accessToken, access
     });
 	
     if (updateType === 'updateNote') {
-	let note_in_db = "";
+	/*
 	if (tagResponse.status.startsWith("exists:")) {
             let trimmedStr = tagResponse.status.substring(tagResponse.status.indexOf(':') + 1).trim();
             let parts = trimmedStr.split(' | ');
             note_in_db = parts[1] === undefined ? '' : parts[1];
 	}
-	let tagDataWithUpdatedNote = {};
-	tagDataWithUpdatedNote['note'] = note_in_db !== '' ? note_in_db + " | " + tagData['note'] : tagData['note'];
-	console.log("topic_entity_tag_id = ", tagData['topic_entity_tag_id'])
-	console.log("new_note = ", tagDataWithUpdatedNote['note'])
+	*/
 	const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + tagData['topic_entity_tag_id'];
-	try {
-	    axios.patch(url, tagDataWithUpdatedNote, {
-		headers: {
-		    "Authorization": "Bearer " + accessToken,
-		    "Content-Type": "application/json"
-		}
-	    });
-	    // dispatch a custom event after successful update
-	    window.dispatchEvent(new CustomEvent('noteUpdated', { detail: { updated: true } }));
-	} catch (error) {
-	    console.error("Error processing entry: ", error);
-	}
+        (async () => {
+            try {
+                const updated_note = await fetchNoteAndAppend(url, accessToken, tagData['note']);
+                console.log("updated_note=", updated_note);
+
+                let tagDataWithUpdatedNote = { 'note': updated_note };
+                
+                // Ensure this axios call is awaited as well
+                await axios.patch(url, tagDataWithUpdatedNote, {
+                    headers: {
+                        "Authorization": "Bearer " + accessToken,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                // Dispatch a custom event after successful update
+                window.dispatchEvent(new CustomEvent('noteUpdated', { detail: { updated: true } }));
+            } catch (error) {
+                console.error("Error processing entry: ", error);
+            }
+        })();
     }
     else {
 	tagData['reference_curie'] = tagData['reference_id'];
