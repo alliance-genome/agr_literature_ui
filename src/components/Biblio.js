@@ -411,7 +411,8 @@ const BiblioIdQuery = () => {
   const history = useHistory();
   const [idQuery, setIdQuery] = useState('');
   const [error, setError] = useState(''); // state to store the error message
-  
+  const [showAlert, setShowAlert] = useState(false);
+    
   const loadReference = (refCurie) => {
     let biblioActionTogglerSelected = 'display';
     if (biblioAction === 'editor') {
@@ -443,28 +444,26 @@ const BiblioIdQuery = () => {
       .catch(error => {
         // check if the error has a response and data detail
         if (error.response && error.response.data && error.response.data.detail) {
-          setError(error.response.data.detail);
-	  setTimeout(() => {
-            setError('');
-          }, 6000);
-          return;
+            setError(error.response.data.detail);
+	    setShowAlert(true);
         } else {
-          setError("An unexpected error occurred.");
+            setError("An unexpected error occurred.");
+	    setShowAlert(true); 
         }
       });
   }
- 
+
+  const handleCloseAlert = () => {
+    setShowAlert(false);
+  }
+    
   return (
     <div>
       <div style={{width: "28em", margin: "auto"}}>
-	{error &&(
-          <Row className="form-group row">
-            <Col sm="12">
-              <div className="alert alert-warning" role="alert">
-                {error}
-              </div>
-            </Col>
-          </Row>
+	{showAlert && (
+          <Alert variant="danger" onClose={handleCloseAlert} dismissible>
+            {error}
+          </Alert>
         )}
         <InputGroup className="mb-2">
           <Form.Control 
