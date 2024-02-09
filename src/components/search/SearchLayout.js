@@ -34,16 +34,16 @@ const SearchLayout = () => {
                 <Row>
                     <Col>
                         <div style={{display: "flex"}}>
-                            <div style={{maxWidth: "32em", flex: "1"}}>
+                            <div style={{maxWidth: "32em", flex: "1", position: "sticky", top: "0px", alignSelf: "flex-start", zIndex: 1000}}>
                                 <Facets/>
                             </div>
-                            <div style={{flex: "1", }}>
+                            <div style={{flex: "3", marginLeft: "20px"}}>
                                 <SearchResults/>
                             </div>
                         </div>
                     </Col>
                 </Row>
-                <Row ><Col  sm={6}></Col><Col  sm={4}><SearchPagination/></Col></Row>
+                <Row><Col sm={6}></Col><Col sm={4}><SearchPagination/></Col></Row>
             </Container>
         </div>
     )
