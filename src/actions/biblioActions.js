@@ -612,7 +612,12 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
                   });
                 }
               } else {
-                entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
+                if (entityType.includes('construct')) {
+                  entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance match'});
+                }
+                else {
+                  entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
+                }
               }
             }
             dispatch(setEntityResultList(entityResultList));
