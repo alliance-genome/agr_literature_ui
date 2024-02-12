@@ -55,14 +55,6 @@ const SearchBar = () => {
                             }}>
                         {searchLoading ? <Spinner animation="border" size="sm"/> : <span>Search</span>  }
                     </Button>
-                    <InputGroup.Text className = "inputGroupRight">
-                      Include Partial Match &ensp;
-                      <Form.Check
-                        checked ={partialMatch}
-                        onChange={(evt) => {
-                            dispatch(setPartialMatch(evt.target.checked));
-                      }}/>
-                    </InputGroup.Text>
                 </InputGroup>
             </div>
         </>
