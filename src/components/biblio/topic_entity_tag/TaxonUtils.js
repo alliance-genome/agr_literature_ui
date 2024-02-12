@@ -1,5 +1,50 @@
 import axios from 'axios';
 
+export const getTaxonToMod = async () => {
+
+  const url = `${process.env.REACT_APP_RESTAPI}/mod/taxons/all`;
+
+  try {
+
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    const response = await axios.get(url, {headers});
+
+    if (!Array.isArray(response.data)) {
+      console.error('Unexpected response format:', response.data);
+      return {};
+    }
+
+    const data = response.data.reduce((acc, item) => {
+      if (item.mod_abbreviation && item.taxon_ids) {
+        for (const taxon of item.taxon_ids) {
+          acc[taxon] = item.mod_abbreviation;
+        }
+      }
+      return acc;
+    }, {});
+
+    return data;
+
+  } catch (error) {
+    console.error('Failed to fetch mod to tax data', error);
+    return {};
+  }
+  /* it will return something like following
+     return {
+          "NCBITaxon:559292": "SGD",
+          "NCBITaxon:6239": "WB",
+          "NCBITaxon:7227": "FB",
+          "NCBITaxon:7955": "ZFIN",
+          "NCBITaxon:10116": "RGD",
+          "NCBITaxon:10090": "MGI",
+          "NCBITaxon:8355": "XB",
+          "NCBITaxon:8364": "XB"
+   */
+};
+
 export const getModToTaxon = async () => {
 
   const url = `${process.env.REACT_APP_RESTAPI}/mod/taxons/all`;
