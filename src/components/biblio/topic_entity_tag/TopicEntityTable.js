@@ -119,9 +119,12 @@ const TopicEntityTable = () => {
     fetchDisplayTagData(accessToken);
   }, [accessToken]);
 
+  const [firtstMappingsFetch, setFirstMappingsFetch] = useState(true);
+
   useEffect(() => {
     const fetchMappings = async () => {
-      if (topicEntityTags.length > 0) {
+      if (topicEntityTags.length > 0 && firtstMappingsFetch) {
+        setFirstMappingsFetch(false);
         let config = {
           headers: {
             'content-type': 'application/json',
