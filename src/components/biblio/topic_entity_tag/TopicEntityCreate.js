@@ -12,7 +12,7 @@ import {
     setTypeaheadName2CurieMap,
     updateButtonBiblioEntityAdd
 } from "../../../actions/biblioActions";
-import { checkForExistingTags } from './TopicEntityUtils';
+import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
 import {
   getCurieToNameTaxon,
   getModToTaxon
@@ -68,10 +68,13 @@ const TopicEntityCreate = () => {
   const [modToTaxon, setModToTaxon] = useState({});
   // const [taxonToMod, setTaxonToMod] = useState({});
   const [tagExistingMessage, setTagExistingMessage] = useState("");
+  const [existingTagResponses, setExistingTagResponses] = useState([]);
+  const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
   const taxonToMod = {};
   for (const [mod, taxons] of Object.entries(modToTaxon)) {
      taxonToMod[taxons[0]] = mod;
   }
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -170,6 +173,13 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (tagExistingMessage) {
+      setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
+			  updateButtonBiblioEntityAdd);
+    }
+  }, [tagExistingMessage, existingTagResponses]);
+
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
     const keyByValue = objEntries.filter((e) => e[1] === value);
@@ -190,6 +200,10 @@ const TopicEntityCreate = () => {
     return updateJson;
   }
 
+  const handleCloseTagExistingMessage = () => {
+    setIsTagExistingMessageVisible(false); // hide the message
+  };
+    
   async function createEntities(refCurie) {
     if (topicSelect === null) {
       return
@@ -218,13 +232,17 @@ const TopicEntityCreate = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
-    const message = await checkForExistingTags(forApiArray, accessToken, accessLevel,
-                         dispatch, updateButtonBiblioEntityAdd);
-    if (message) {
-      setTagExistingMessage(message);
+    const result = await checkForExistingTags(forApiArray, accessToken, accessLevel,
+					      dispatch, updateButtonBiblioEntityAdd);
+    if (result) {
+      setTagExistingMessage(result.html);
+      /*
       setTimeout(() => {
         setTagExistingMessage('');
       }, 8000);
+      */
+      setIsTagExistingMessageVisible(true); // show the message
+      setExistingTagResponses(result.existingTagResponses);
     }
 
     setTypeaheadOptions([]);
@@ -249,11 +267,14 @@ const TopicEntityCreate = () => {
     <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error"
                   genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
-    {tagExistingMessage && (
+    {isTagExistingMessageVisible && tagExistingMessage && (
       <Row className="form-group row">
-        <Col sm="10">
+        <Col sm="12">
           <div className="alert alert-warning" role="alert">
-            <div dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div> 
+            <div className="table-responsive" dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div>
+	    <Button variant="outline-secondary" size="sm" onClick={handleCloseTagExistingMessage}>
+              Close
+            </Button>
           </div>
 	</Col>
       </Row>

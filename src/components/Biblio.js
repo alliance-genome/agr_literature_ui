@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {useHistory, useLocation} from 'react-router-dom';
+import Alert from 'react-bootstrap/Alert';
 
 import RowDivider from './biblio/RowDivider';
 
@@ -409,7 +410,9 @@ const BiblioIdQuery = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const history = useHistory();
   const [idQuery, setIdQuery] = useState('');
-
+  const [error, setError] = useState(''); // state to store the error message
+  const [showAlert, setShowAlert] = useState(false);
+    
   const loadReference = (refCurie) => {
     let biblioActionTogglerSelected = 'display';
     if (biblioAction === 'editor') {
@@ -428,34 +431,59 @@ const BiblioIdQuery = () => {
   }
 
   const queryIdAndLoadReference = (refId) => {
+    let url = '';	
     if (refId.startsWith('AGR:') || refId.startsWith('AGRKB:')) {
-      loadReference(refId);
+      url = restUrl + '/reference/' + refId;
     } else {
-      const url = restUrl + '/cross_reference/' + refId;
-      axios.get(url).then(res => {
-        loadReference(res.data.reference_curie)
-      });
+      url = restUrl + '/cross_reference/' + refId;
     }
+    axios.get(url)
+      .then(res => {
+        loadReference(res.data.reference_curie);
+      })
+      .catch(error => {
+        // check if the error has a response and data detail
+        if (error.response && error.response.data && error.response.data.detail) {
+            setError(error.response.data.detail);
+	    setShowAlert(true);
+        } else {
+            setError("An unexpected error occurred.");
+	    setShowAlert(true); 
+        }
+      });
   }
 
+  const handleCloseAlert = () => {
+    setShowAlert(false);
+  }
+    
   return (
-      <div>
-        <div style={{width: "28em", margin: "auto"}}>
-          <InputGroup className="mb-2">
-            <Form.Control placeholder="e.g., PMID:24895670 or AGRKB:101000000878586" type="text"
-                          id="xrefcurieField" name="xrefcurieField" value={idQuery}
-                          onChange={(e) => setIdQuery(e.target.value)}
-                          onKeyPress={(event) => {
-                            if (event.charCode === 13) {
-                              queryIdAndLoadReference(idQuery);
-                            }
-                          }}
-            />
-            <Button type="submit" size="sm" onClick={() => queryIdAndLoadReference(idQuery)}>Query exact ID</Button>
-          </InputGroup>
-        </div>
+    <div>
+      <div style={{width: "28em", margin: "auto"}}>
+	{showAlert && (
+          <Alert variant="danger" onClose={handleCloseAlert} dismissible>
+            {error}
+          </Alert>
+        )}
+        <InputGroup className="mb-2">
+          <Form.Control 
+            placeholder="e.g., PMID:24895670 or AGRKB:101000000878586" 
+            type="text"
+            id="xrefcurieField" 
+            name="xrefcurieField" 
+            value={idQuery}
+            onChange={(e) => setIdQuery(e.target.value)}
+            onKeyPress={(event) => {
+              if (event.charCode === 13) { // Enter key pressed
+                queryIdAndLoadReference(idQuery);
+              }
+            }}
+          />
+          <Button type="submit" size="sm" onClick={() => queryIdAndLoadReference(idQuery)}>Query exact ID</Button>
+        </InputGroup>
       </div>
-  )
+    </div>
+  ) 
 }
 
 const Biblio = () => {
