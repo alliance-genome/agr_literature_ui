@@ -15,8 +15,7 @@ import {
 import { checkForExistingTags } from './TopicEntityUtils';
 import {
   getCurieToNameTaxon,
-  getModToTaxon,
-  getTaxonToMod
+  getModToTaxon
 } from "./TaxonUtils";
 import {PulldownMenu} from "../PulldownMenu";
 import {FetchTypeaheadOptions} from "../FetchTypeahead";
@@ -67,16 +66,21 @@ const TopicEntityCreate = () => {
     
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
-  const [taxonToMod, setTaxonToMod] = useState({});
+  // const [taxonToMod, setTaxonToMod] = useState({});
   const [tagExistingMessage, setTagExistingMessage] = useState("");
+  const taxonToMod = {};
+  for (const [mod, taxons] of Object.entries(modToTaxon)) {
+     taxonToMod[taxons[0]] = mod;
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
       const modData = await getModToTaxon();
-      const altData = await getTaxonToMod()
+      // const altData = await getTaxonToMod()
       setCurieToNameTaxon(taxonData);
       setModToTaxon(modData);
-      setTaxonToMod(altData);
+      //setTaxonToMod(altData);
     };
     fetchData();
   }, [accessToken]);
