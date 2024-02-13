@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons';
 import {Dropdown, InputGroup, Spinner} from 'react-bootstrap';
 import {useDispatch, useSelector} from 'react-redux';
 import {
@@ -10,7 +12,6 @@ import {
     setAuthorFilter,
     setQueryFields
 } from '../../actions/searchActions';
-import question_mark_image from '../../images/question_mark.png';
 
 const SearchBar = () => {
     const searchLoading = useSelector(state => state.search.searchLoading);
@@ -73,7 +74,7 @@ const SearchBar = () => {
                         )}
                     </Button>
 		    <Button ref={helpBtnRef} variant="light" onClick={toggleHelpPopup} style={{ marginLeft: '5px', padding: '0', background: 'none', border: 'none' }}>
-                        <img src={question_mark_image} alt="Help" style={{ width: '20px', height: '20px' }}/>
+			<FontAwesomeIcon icon={faQuestionCircle} style={{ width: '20px', height: '20px' }} />
                     </Button>
 		    {showHelp && (
                         <div style={{
