@@ -160,7 +160,7 @@ const TopicEntityCreate = () => {
 
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
-      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
   }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect( () => {

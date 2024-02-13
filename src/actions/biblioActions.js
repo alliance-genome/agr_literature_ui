@@ -370,7 +370,7 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
 
 
 
-export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType) => {
+export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod) => {
   return dispatch => {
     // console.log('action change field entity list ' + entityText + ' entityType ' + entityType);
     let entityInputList = [];
@@ -386,15 +386,20 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
     if (entityType === 'species') {
       axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
           {
-             "searchFilters" : {
-                "nameFilter" : {
-                   "name" : {
-                      "queryString" : entityQueryString,
-                      "tokenOperator" : "OR" } } } },
-          { headers: {
-                  'content-type': 'application/json',
-                  'authorization': 'Bearer ' + accessToken
+            "searchFilters": {
+              "nameFilter": {
+                "name": {
+                  "queryString": entityQueryString,
+                  "tokenOperator": "OR"
+                }
               }
+            }
+          },
+          {
+            headers: {
+              'content-type': 'application/json',
+              'authorization': 'Bearer ' + accessToken
+            }
           })
           .then(res => {
             const searchMap = {};
