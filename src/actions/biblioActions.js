@@ -498,8 +498,12 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
     } else {
       // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
       // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
-      const ateamApiUrl = ateamApiBaseUrl + 'api/' + entityType + '/search?limit=100&page=0';
-      const entityTypeSymbolField = entityType + 'Symbol';
+      let searchType = entityType;
+      if (entityType.includes('construct')) {
+        searchType = 'construct';
+      }
+      const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType + '/search?limit=100&page=0';
+      const entityTypeSymbolField = searchType + 'Symbol';
 
       // console.log(ateamApiUrl);
       // console.log(accessToken);
@@ -509,15 +513,32 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
       //   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
 
       // search by taxon + exact symbol keyword or exact curie keyword
-      const searchEntityJson =
-        {"searchFilters": {
-          "nameFilters": {
-            [entityTypeSymbolField + ".displayText_keyword"]:{"queryString":entityQueryString,"tokenOperator":"OR"},
-            "curie_keyword":{"queryString":entityQueryString,"tokenOperator":"OR"}
-          },
-          "taxonFilters": { "taxon.curie_keyword":{"queryString":taxon,"tokenOperator":"AND"} }
-        }}
-
+      let searchEntityJson =
+          {
+            "searchFilters": {
+              "nameFilters": {
+                [entityTypeSymbolField + ".displayText_keyword"]: {
+                  "queryString": entityQueryString,
+                  "tokenOperator": "OR"
+                },
+                "curie_keyword": {"queryString": entityQueryString, "tokenOperator": "OR"}
+              },
+              "taxonFilters": {"taxon.curie_keyword": {"queryString": taxon, "tokenOperator": "AND"}}
+            }
+          }
+      if (entityType.includes('construct')) {
+          searchEntityJson =
+          {
+            "searchFilters": {
+                "symbolFilters": {
+                    "constructSymbol.displayText_keyword":{ "queryString": entityQueryString }
+                },
+                "dataProviderFilters": {
+                    // "dataProvider.sourceOrganization.uniqueId_keyword": {"queryString": taxon_to_mod[taxon], "tokenOperator": "AND"}}
+                    "dataProvider.sourceOrganization.uniqueId_keyword": {"queryString": taxonToMod[taxon], "tokenOperator": "AND"}}
+            }
+          }
+      }
       // MarkQT : although formatText may be more appropriate than displayText for your needs - I think the LinkML model explains the differences
       // if you wanted to add full names/systematic names/synonyms to your search then the appropriate fields would be geneFullName.displayText, geneSystematicName.displayText, and geneSynonyms.displayText
 
@@ -536,11 +557,16 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
           for (const entityResult of res.data.results) {
             if (entityResult.curie && entityResult[entityTypeSymbolField].displayText) {
               searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
-              searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.curie; }
+              searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.curie;
+            }
             // entityResultList.push(entityResult.symbol + " " + entityResult.curie);
             // console.log(entityResult.curie);
             // console.log(entityResult.symbol);
-        } }
+            if (entityResult.uniqueId && entityResult[entityTypeSymbolField].displayText) {
+              searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult[entityTypeSymbolField].displayText;
+            }
+          }
+        }
         let entityResultList = [];
         let uniqueEntityInput = new Set();
         for (const entityTypeSymbol of entityInputList) {

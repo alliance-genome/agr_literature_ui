@@ -69,7 +69,10 @@ const TopicEntityCreate = () => {
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
-
+  const taxonToMod = {};
+  for (const [mod, taxons] of Object.entries(modToTaxon)) {
+     taxonToMod[taxons[0]] = mod;
+  }
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
@@ -97,10 +100,11 @@ const TopicEntityCreate = () => {
       'ATP:0000014': 'AGMs',
       'ATP:0000027': 'strain',
       'ATP:0000025': 'genotype',
-      'ATP:0000026': 'fish'
+      'ATP:0000026': 'fish',
+      'ATP:0000013': 'transgenic construct'
   };
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123',
-			  'ATP:0000014', 'ATP:0000027', 'ATP:0000025', 'ATP:0000026'];
+			  'ATP:0000014', 'ATP:0000027', 'ATP:0000025', 'ATP:0000026', 'ATP:0000013'];
   const speciesATP = 'ATP:0000123';
   const renderView = () => {
     return topicSelect === speciesATP ? 'autocomplete' : 'list';
