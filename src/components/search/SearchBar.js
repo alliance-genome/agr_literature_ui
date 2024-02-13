@@ -89,7 +89,7 @@ const SearchBar = () => {
 		            textAlign: 'left', // left-aligns the text within the popup
                             zIndex: 1000,
                         }}>
-			    The search feature is enabled with wildcard functionality. For instance, querying 'act' would return documents containing any words starting with 'act' (e.g., actin, activities). Additionally, it supports boolean logic searches using the "AND" and "OR" operators. For example, a search for 'actin AND binding' will only retrieve documents that include both "actin" and "binding". Conversely, a search for 'actin OR binding' will return documents containing either "actin", "binding", or both.   
+			    <p>The search feature is enabled with wildcard functionality. For instance, querying 'act' would return documents containing any words starting with 'act' (e.g., actin, activities). To find exact matches use double quotes to find exact string matches; for example if you want returns for fish but not fishing use “fish” in your search.</p>Additionally, it supports boolean logic searches using the "AND" and "OR" operators. For example, a search for 'actin AND binding' will only retrieve documents that include both "actin" and "binding". Conversely, a search for 'actin OR binding' will return documents containing either "actin", "binding", or both.
                         </div>
                     )}
 		    
