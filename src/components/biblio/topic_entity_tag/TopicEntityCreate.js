@@ -15,7 +15,8 @@ import {
 import { checkForExistingTags } from './TopicEntityUtils';
 import {
   getCurieToNameTaxon,
-  getModToTaxon
+  getModToTaxon,
+  getTaxonToMod
 } from "./TaxonUtils";
 import {PulldownMenu} from "../PulldownMenu";
 import {FetchTypeaheadOptions} from "../FetchTypeahead";
@@ -66,14 +67,16 @@ const TopicEntityCreate = () => {
     
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
+  const [taxonToMod, setTaxonToMod] = useState({});
   const [tagExistingMessage, setTagExistingMessage] = useState("");
-    
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
       const modData = await getModToTaxon();
+      const altData = await getTaxonToMod()
       setCurieToNameTaxon(taxonData);
       setModToTaxon(modData);
+      setTaxonToMod(altData);
     };
     fetchData();
   }, [accessToken]);
@@ -155,7 +158,7 @@ const TopicEntityCreate = () => {
 
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
-      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
   }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect( () => {

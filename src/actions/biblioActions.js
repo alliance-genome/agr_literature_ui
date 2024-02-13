@@ -3,7 +3,8 @@
 // import notGithubVariables from './notGithubVariables';
 
 import axios from "axios";
-
+// import {useEffect} from "@types/react";
+// import {getCurieToNameTaxon, getTaxonToMod} from "../components/biblio/topic_entity_tag/TaxonUtils";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 // const restUrl = 'stage-literature-rest.alliancegenome.org';
@@ -12,16 +13,6 @@ const restUrl = process.env.REACT_APP_RESTAPI;
 
 //const ateamApiBaseUrl = 'https://beta-curation.alliancegenome.org/';
 const ateamApiBaseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
-
-const taxon_to_mod = {"NCBITaxon:559292": "SGD",
-                      "NCBITaxon:6239": "WB",
-                      "NCBITaxon:7227": "FB",
-                      "NCBITaxon:7955": "ZFIN",
-                      "NCBITaxon:10116": "RGD",
-                      "NCBITaxon:10090": "MGI",
-                      "NCBITaxon:8355": "XB",
-                      "NCBITaxon:8364": "XB",
-                      "NCBITaxon:9606": "Homo sapiens?"}
 
 export const changeFieldReferenceJson = (e) => {
   console.log('action change field reference json ' + e.target.id + ' to ' + e.target.value);
@@ -380,7 +371,7 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
 
 
 
-export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType) => {
+export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod) => {
   return dispatch => {
     // console.log('action change field entity list ' + entityText + ' entityType ' + entityType);
     let entityInputList = [];
@@ -566,7 +557,8 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
                     "constructSymbol.displayText_keyword":{ "queryString": entityQueryString }
                 },
                 "dataProviderFilters": {
-                    "dataProvider.sourceOrganization.uniqueId_keyword": {"queryString": taxon_to_mod[taxon], "tokenOperator": "AND"}}
+                    // "dataProvider.sourceOrganization.uniqueId_keyword": {"queryString": taxon_to_mod[taxon], "tokenOperator": "AND"}}
+                    "dataProvider.sourceOrganization.uniqueId_keyword": {"queryString": taxonToMod[taxon], "tokenOperator": "AND"}}
             }
           }
       }
