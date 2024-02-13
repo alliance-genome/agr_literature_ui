@@ -44,7 +44,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -55,6 +55,11 @@ const fieldsPubmedUnlocked = [ 'authors', 'category', 'resource_curie', 'date_pu
 const fieldsPubmedLocked = [ 'title', 'abstract', 'volume', 'issue_name', 'page_range', 'publisher', 'language' ];
 const fieldsPubmedOnly = [ 'correction', 'pubmed_types', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'keywords', 'reference_relations' ];
 // const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
+
+const atpFileUpload = {'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
+                       'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
+                       'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
+                       'ATP:0000141': {'priority': 2, 'name': 'file needed'} };
 
 const GenerateFieldLabel = (fieldName, isLocked) => {
   const renderTooltipLock = ( <Tooltip id="lock-tooltip" > Data in this field cannot be manually changed during a merge. </Tooltip> );
@@ -292,6 +297,35 @@ const AlertDismissibleMergeUpdate = () => {
 }
 
 function deriveReffilesMd5sum(refMetaReffiles1, refMetaReffiles2) {
+  const md5sums = {}; const reffile1 = {}; const reffile2 = {};
+  if (refMetaReffiles1 !== null ) {
+    for (const [index, val1] of refMetaReffiles1.entries()) {
+      if ('md5sum' in val1 && val1['md5sum'] !== null && val1['md5sum'] !== '') {
+        let reffile1md5sum = val1['md5sum'];
+        if (reffile1md5sum in md5sums) { md5sums[reffile1md5sum] += 1; }
+          else { md5sums[reffile1md5sum] = 1; }
+        reffile1[reffile1md5sum] = JSON.parse(JSON.stringify(val1));
+        reffile1[reffile1md5sum]['index'] = index;
+        const toggle1 = ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') ? val1['toggle'] : null;
+        reffile1[reffile1md5sum]['toggle'] = toggle1;
+  } } }
+  if (refMetaReffiles2 !== null ) {
+    for (const [index, val2] of refMetaReffiles2.entries()) {
+      if ('md5sum' in val2 && val2['md5sum'] !== null && val2['md5sum'] !== '') {
+        let reffile2md5sum = val2['md5sum'];
+        if (reffile2md5sum in md5sums) { md5sums[reffile2md5sum] += 1; }
+          else { md5sums[reffile2md5sum] = 1; }
+        reffile2[reffile2md5sum] = JSON.parse(JSON.stringify(val2));
+        reffile2[reffile2md5sum]['index'] = index;
+        const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
+        reffile2[reffile2md5sum]['toggle'] = toggle2;
+  } } }
+  // console.log('reffile1'); console.log('reffile2'); console.log('md5sums');
+  // console.log(reffile1); console.log(reffile2); console.log(md5sums);
+  return [reffile1, reffile2, md5sums];
+} // function useDeriveReffilesMd5sum()
+
+function deriveRefWorkflowTags(refMetaReffiles1, refMetaReffiles2) {
   const md5sums = {}; const reffile1 = {}; const reffile2 = {};
   if (refMetaReffiles1 !== null ) {
     for (const [index, val1] of refMetaReffiles1.entries()) {
@@ -698,6 +732,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, hasPm
     else if (fieldName === 'reference_files') {
       rowOrderedElements.push(
         <RowDisplayPairReferenceFiles key="RowDisplayPairReferenceFiles" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
+    else if (fieldName === 'workflow_tags') {
+      rowOrderedElements.push(
+        <RowDisplayPairWorkflowTags key="RowDisplayPairWorkflowTags" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
   }
   return (<Container fluid>{rowOrderedElements}</Container>);
 } // const MergePairsSection
@@ -876,6 +913,94 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   }
   return (<>{rowPairRefFilesElements}</>);
 } // const RowDisplayPairReferenceFiles
+
+const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
+  const dispatch = useDispatch();
+  if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
+       (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
+  const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
+  const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
+  if (referenceMeta1['referenceJson'][fieldName] !== null ) {
+    for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
+      const reference_workflow_tag_id = val1['reference_workflow_tag_id']
+      let mod = 'no_mod'; let atp = 'no_atp';
+      if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
+      if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
+      if (atp in atpFileUpload) {
+          fileuploadMods[mod] = true;
+          fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+        else {
+          // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+          otherworkflowMods[mod] = true;
+          otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+  if (referenceMeta2['referenceJson'][fieldName] !== null ) {
+    for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
+      const reference_workflow_tag_id = val2['reference_workflow_tag_id']
+      let mod = 'no_mod'; let atp = 'no_atp';
+      if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
+      if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
+      if (atp in atpFileUpload) {
+          fileuploadMods[mod] = true;
+          fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+        else {
+          // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+          otherworkflowMods[mod] = true;
+          otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+
+  const rowPairWorkflowTagElements = [];
+  const element0_fileupload = GenerateFieldLabel(fieldName + ': file upload', 'lock');
+  Object.keys(fileuploadMods).sort().forEach((mod) => {
+    let element1 = (<div></div>); let element2 = (<div></div>);
+    let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+    let priority1 = 0; let priority2 = 0;
+
+    if (mod in fileupload1) {
+      priority1 = atpFileUpload[fileupload1[mod]['atp']]['priority']; }
+    if (mod in fileupload2) {
+      priority2 = atpFileUpload[fileupload2[mod]['atp']]['priority']; }
+
+    if (priority2 > priority1) {
+      swapColor1 = !swapColor1;  swapColor2 = !swapColor2;
+      keepClass2 = 'div-merge-keep'; keepClass1 = 'div-merge-obsolete'; }
+
+    if (mod in fileupload1) {
+      const atp1 = fileupload1[mod]['atp'];
+      const name1 = atpFileUpload[atp1]['name'];
+      element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
+    if (mod in fileupload2) {
+      const atp2 = fileupload2[mod]['atp'];
+      const name2 = atpFileUpload[atp2]['name'];
+      element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
+    rowPairWorkflowTagElements.push(
+      <Row key={`toggle workflow_tag file_upload ${mod}`}>
+        <Col sm="2" >{element0_fileupload}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  });
+
+  const element0_unaccountedfor = GenerateFieldLabel(fieldName + ': unaccounted for', 'lock');
+  Object.keys(otherworkflowMods).sort().forEach((mod) => {
+    let element1 = (<div></div>); let element2 = (<div></div>);
+    let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+    if (mod in otherworkflow1) {
+      const atp1 = otherworkflow1[mod]['atp'];
+      element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1}</div>); }
+    if (mod in otherworkflow2) {
+      const atp2 = otherworkflow2[mod]['atp'];
+      element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2}</div>); }
+    rowPairWorkflowTagElements.push(
+      <Row key={`toggle workflow_tag unaccounted_for ${mod}`}>
+        <Col sm="2" >{element0_unaccountedfor}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  });
+
+  return (<>{rowPairWorkflowTagElements}</>);
+} // const RowDisplayPairWorkflowTags
 
 const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const dispatch = useDispatch();
