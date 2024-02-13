@@ -1197,7 +1197,7 @@ const RowDisplayPairReferenceRelations = ({fieldName, referenceMeta1, referenceM
 
   const comcorReverse = Object.fromEntries(Object.entries(comcorMapping).map(a => a.reverse()))
 
-  const element0 = GenerateFieldLabel('relation to same ' + fieldName, 'unlock');
+  const element0 = GenerateFieldLabel(fieldName + ': same reference', 'unlock');
   Object.keys(sameAgrkbs).forEach((agrkb) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
@@ -1231,7 +1231,7 @@ const RowDisplayPairReferenceRelations = ({fieldName, referenceMeta1, referenceM
 
   const maxLengthUniq = ( uniqAgrkbs1.length > uniqAgrkbs2.length) ? uniqAgrkbs1.length : uniqAgrkbs2.length;
   rowPairReferenceRelationsElements.push(<RowDivider key="referencerelations_divider" />);
-  const element0Lock = GenerateFieldLabel('relation to unique ' + fieldName, 'lock');
+  const element0Lock = GenerateFieldLabel(fieldName + ': unique reference', 'lock');
   for (let i = 0; i < maxLengthUniq; i++) {
     let relation1 = '';
     if (uniqAgrkbs1[i] === undefined) { relation1 = ''; }

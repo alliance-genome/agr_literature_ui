@@ -23,7 +23,7 @@ const TopicEntityTable = () => {
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
-  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
+  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);  
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const pageSize = useSelector(state => state.biblio.tetPageSize);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
@@ -98,6 +98,8 @@ const TopicEntityTable = () => {
       if (response.status === 204) {
         // remove the deleted item from the state so that the UI updates
         setTopicEntityTags(prevTags => prevTags.filter(tag => tag !== tetDictToDelete));
+	// fetch the updated total tag count
+        fetchTotalTagsCount();
       } else {
         console.error("Failed to delete the item:", response.data);
       }
@@ -149,47 +151,68 @@ const TopicEntityTable = () => {
     fetchAllSpecies().then();
   }, [referenceCurie, topicEntityTags, allSpecies])
 
-  useEffect(() => {
-    const fetchTotalTagsCount = async () => {
-      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?count_only=true";
-      if (selectedSpecies && selectedSpecies.length !== 0) {
-        url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
-      }
-      const resultTags = await axios.get(url);
-      setTotalTagsCount(resultTags.data);
+  // function to fetch total tag count
+  const fetchTotalTagsCount = async () => {
+    let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?count_only=true";
+    if (selectedSpecies && selectedSpecies.length !== 0) {
+      url += "&column_filter=species&column_values=" + selectedSpecies.join(',');
     }
-    fetchTotalTagsCount().then();
-  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie, selectedSpecies])
+    const resultTags = await axios.get(url);
+    setTotalTagsCount(resultTags.data);
+  };
+
+  // function to fetch table data
+  const fetchTableData = async () => {
+    let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize;
+    if (selectedSpecies && selectedSpecies.length !== 0) {
+      url += "&column_filter=species&column_values=" + selectedSpecies.join(',');
+    }
+    if (sortBy !== null && sortBy !== undefined) {
+      url += "&sort_by=" + sortBy;
+    }
+    if (descSort) {
+      url += "&desc_sort=true";
+    }
+    setIsLoadingData(true);
+    try {
+      const resultTags = await axios.get(url);
+      if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
+        setTopicEntityTags(resultTags.data);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  // useEffect for fetching total tag count and refreshing the table data
+  useEffect(() => {
+    const fetchDataAndCount = async () => {
+      await fetchTotalTagsCount();
+      await fetchTableData();
+    };
+    fetchDataAndCount();
+  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie, selectedSpecies]);
+
+  // useEffect for fetching table data without updating total tag count
+  useEffect(() => {
+    fetchTableData();
+  }, [topicEntityTags, sortBy, descSort, page, pageSize]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (biblioUpdatingEntityAdd === 0) {
-        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize
-	if (selectedSpecies && selectedSpecies.length !== 0) {
-	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
-	}
-        if (sortBy !== null && sortBy !== undefined) {
-          url += "&sort_by=" + sortBy
-        }
-        if (descSort) {
-          url += "&desc_sort=true"
-        }
-        setIsLoadingData(true);
-	try {  
-          const resultTags = await axios.get(url);
-          if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
-            setTopicEntityTags(resultTags.data);
-          }
-	} catch (error) {
-	  console.error("Error fetching data:" + error);
-        } finally { 
-          setIsLoadingData(false);
-	}
-      }
-    }
-    fetchData().then();
-  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags, selectedSpecies]);
-    
+    // add event listener for noteUpdated event
+    const noteUpdatedHandler = () => {
+      // refresh the table data here
+      fetchTableData();
+    };
+
+    window.addEventListener("noteUpdated", noteUpdatedHandler);
+
+    // cleanup function to remove event listener
+    return () => window.removeEventListener("noteUpdated", noteUpdatedHandler);
+  }, [accessToken, referenceCurie, selectedSpecies, page, pageSize, sortBy, descSort]);
+
   const handlePageSizeChange = (event) => {
     const newSize = Number(event.target.value);
     dispatch(setPageSizeAction(newSize)); // update Redux store with new pageSize
