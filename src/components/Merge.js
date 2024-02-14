@@ -325,35 +325,6 @@ function deriveReffilesMd5sum(refMetaReffiles1, refMetaReffiles2) {
   return [reffile1, reffile2, md5sums];
 } // function useDeriveReffilesMd5sum()
 
-function deriveRefWorkflowTags(refMetaReffiles1, refMetaReffiles2) {
-  const md5sums = {}; const reffile1 = {}; const reffile2 = {};
-  if (refMetaReffiles1 !== null ) {
-    for (const [index, val1] of refMetaReffiles1.entries()) {
-      if ('md5sum' in val1 && val1['md5sum'] !== null && val1['md5sum'] !== '') {
-        let reffile1md5sum = val1['md5sum'];
-        if (reffile1md5sum in md5sums) { md5sums[reffile1md5sum] += 1; }
-          else { md5sums[reffile1md5sum] = 1; }
-        reffile1[reffile1md5sum] = JSON.parse(JSON.stringify(val1));
-        reffile1[reffile1md5sum]['index'] = index;
-        const toggle1 = ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') ? val1['toggle'] : null;
-        reffile1[reffile1md5sum]['toggle'] = toggle1;
-  } } }
-  if (refMetaReffiles2 !== null ) {
-    for (const [index, val2] of refMetaReffiles2.entries()) {
-      if ('md5sum' in val2 && val2['md5sum'] !== null && val2['md5sum'] !== '') {
-        let reffile2md5sum = val2['md5sum'];
-        if (reffile2md5sum in md5sums) { md5sums[reffile2md5sum] += 1; }
-          else { md5sums[reffile2md5sum] = 1; }
-        reffile2[reffile2md5sum] = JSON.parse(JSON.stringify(val2));
-        reffile2[reffile2md5sum]['index'] = index;
-        const toggle2 = ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') ? val2['toggle'] : null;
-        reffile2[reffile2md5sum]['toggle'] = toggle2;
-  } } }
-  // console.log('reffile1'); console.log('reffile2'); console.log('md5sums');
-  // console.log(reffile1); console.log(reffile2); console.log(md5sums);
-  return [reffile1, reffile2, md5sums];
-} // function useDeriveReffilesMd5sum()
-
 function deriveRefeferenceRelationsAgrkbs(refMetaReferenceRelations1, refMetaReferenceRelations2) {
   // this assumes that an agrkb cannot have two relationships to a unique other agrkb, so treating from and to the same.
   // if later they can have multiple connections, the from/to should be accounted for so agrkbs1/2 don't overwrite values.
