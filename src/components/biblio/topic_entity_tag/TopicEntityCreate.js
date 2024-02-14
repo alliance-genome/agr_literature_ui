@@ -71,8 +71,10 @@ const TopicEntityCreate = () => {
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
   const taxonToMod = {};
   for (const [mod, taxons] of Object.entries(modToTaxon)) {
-     taxonToMod[taxons[0]] = mod;
-  }
+    taxons.forEach((taxon) => {
+    taxonToMod[taxon] = mod;
+    });
+  };
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);

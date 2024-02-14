@@ -370,7 +370,7 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
 
 
 
-export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod) => {
+export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod = undefined) => {
   return dispatch => {
     // console.log('action change field entity list ' + entityText + ' entityType ' + entityType);
     let entityInputList = [];
