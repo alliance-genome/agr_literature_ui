@@ -1,5 +1,7 @@
 // import { Link } from 'react-router-dom'
 // import { useHistory } from "react-router-dom";
+import axios from "axios";
+import { useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldInput } from '../actions/mergeActions';
@@ -55,11 +57,6 @@ const fieldsPubmedUnlocked = [ 'authors', 'category', 'resource_curie', 'date_pu
 const fieldsPubmedLocked = [ 'title', 'abstract', 'volume', 'issue_name', 'page_range', 'publisher', 'language' ];
 const fieldsPubmedOnly = [ 'correction', 'pubmed_types', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'keywords', 'reference_relations' ];
 // const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
-
-const atpFileUpload = {'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
-                       'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
-                       'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
-                       'ATP:0000141': {'priority': 2, 'name': 'file needed'} };
 
 const GenerateFieldLabel = (fieldName, isLocked) => {
   const renderTooltipLock = ( <Tooltip id="lock-tooltip" > Data in this field cannot be manually changed during a merge. </Tooltip> );
@@ -885,62 +882,108 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   return (<>{rowPairRefFilesElements}</>);
 } // const RowDisplayPairReferenceFiles
 
+const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool) => {
+  const atpID = 'ATP:0000140';
+  if (accessToken) {
+    const url = `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/${atpID}/children`;
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      response.data.entities.forEach( (entity) => {
+        if (!(entity.curie in atpFileUpload)) { 
+          atpFileUpload[entity.curie] = {};
+          atpFileUpload[entity.curie]['priority'] = 1; }
+        atpFileUpload[entity.curie]['name'] = entity.name;
+      });
+      const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
+      const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
+      if (referenceMeta1['referenceJson'][fieldName] !== null ) {
+        for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
+          const reference_workflow_tag_id = val1['reference_workflow_tag_id']
+          let mod = 'no_mod'; let atp = 'no_atp';
+          if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
+          if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
+          if (atp in atpFileUpload) {
+              fileuploadMods[mod] = true;
+              fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+            else {
+              // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+              otherworkflowMods[mod] = true;
+              otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+      if (referenceMeta2['referenceJson'][fieldName] !== null ) {
+        for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
+          const reference_workflow_tag_id = val2['reference_workflow_tag_id']
+          let mod = 'no_mod'; let atp = 'no_atp';
+          if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
+          if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
+          if (atp in atpFileUpload) {
+              fileuploadMods[mod] = true;
+              fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+            else {
+              // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+              otherworkflowMods[mod] = true;
+              otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+      setAtpFileUpload = atpFileUpload;
+      const newSortedWorkflow = {};
+      newSortedWorkflow['fileupload1'] = fileupload1;
+      newSortedWorkflow['fileupload2'] = fileupload2;
+      newSortedWorkflow['fileuploadMods'] = fileuploadMods;
+      newSortedWorkflow['otherworkflow1'] = otherworkflow1;
+      newSortedWorkflow['otherworkflow2'] = otherworkflow2;
+      newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
+      setSortedWorkflow(newSortedWorkflow);
+      setProcessingBool(false);
+    } catch (error) {
+      console.error('Error occurred:', error);
+      throw error;
+    }
+  }
+} // const getAteamWorkflowsDeriveData
+
 const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
+  const accessToken = useSelector(state => state.isLogged.accessToken);
   const dispatch = useDispatch();
+
+  const [processingBool, setProcessingBool] = useState(true);
+  const [atpFileUpload, setAtpFileUpload] = useState({'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
+                                                      'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
+                                                      'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
+                                                      'ATP:0000141': {'priority': 2, 'name': 'file needed'} });
+  const [sortedWorkflow, setSortedWorkflow] = useState({'fileuploadMods': {}, 'otherworkflowMods': {}});
+  getAteamWorkflowsDeriveData(accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool);
+
+  if (processingBool) { return (<Alert variant="danger" dismissible>Process Workflow, do not proceed</Alert>); }
+
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
-  const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
-  const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
-  if (referenceMeta1['referenceJson'][fieldName] !== null ) {
-    for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
-      const reference_workflow_tag_id = val1['reference_workflow_tag_id']
-      let mod = 'no_mod'; let atp = 'no_atp';
-      if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
-      if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
-      if (atp in atpFileUpload) {
-          fileuploadMods[mod] = true;
-          fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
-        else {
-          // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
-          otherworkflowMods[mod] = true;
-          otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
-  if (referenceMeta2['referenceJson'][fieldName] !== null ) {
-    for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
-      const reference_workflow_tag_id = val2['reference_workflow_tag_id']
-      let mod = 'no_mod'; let atp = 'no_atp';
-      if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
-      if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
-      if (atp in atpFileUpload) {
-          fileuploadMods[mod] = true;
-          fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
-        else {
-          // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
-          otherworkflowMods[mod] = true;
-          otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
 
   const rowPairWorkflowTagElements = [];
   const element0_fileupload = GenerateFieldLabel(fieldName + ': file upload', 'lock');
-  Object.keys(fileuploadMods).sort().forEach((mod) => {
+  Object.keys(sortedWorkflow['fileuploadMods']).sort().forEach((mod) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     let priority1 = 0; let priority2 = 0;
 
-    if (mod in fileupload1) {
-      priority1 = atpFileUpload[fileupload1[mod]['atp']]['priority']; }
-    if (mod in fileupload2) {
-      priority2 = atpFileUpload[fileupload2[mod]['atp']]['priority']; }
+    if (mod in sortedWorkflow['fileupload1']) {
+      priority1 = atpFileUpload[sortedWorkflow['fileupload1'][mod]['atp']]['priority']; }
+    if (mod in sortedWorkflow['fileupload2']) {
+      priority2 = atpFileUpload[sortedWorkflow['fileupload2'][mod]['atp']]['priority']; }
 
     if (priority2 > priority1) {
       swapColor1 = !swapColor1;  swapColor2 = !swapColor2;
       keepClass2 = 'div-merge-keep'; keepClass1 = 'div-merge-obsolete'; }
 
-    if (mod in fileupload1) {
-      const atp1 = fileupload1[mod]['atp'];
+    if (mod in sortedWorkflow['fileupload1']) {
+      const atp1 = sortedWorkflow['fileupload1'][mod]['atp'];
       const name1 = atpFileUpload[atp1]['name'];
       element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
-    if (mod in fileupload2) {
-      const atp2 = fileupload2[mod]['atp'];
+    if (mod in sortedWorkflow['fileupload2']) {
+      const atp2 = sortedWorkflow['fileupload2'][mod]['atp'];
       const name2 = atpFileUpload[atp2]['name'];
       element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
     rowPairWorkflowTagElements.push(
@@ -952,15 +995,15 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
   });
 
   const element0_unaccountedfor = GenerateFieldLabel(fieldName + ': unaccounted for', 'lock');
-  Object.keys(otherworkflowMods).sort().forEach((mod) => {
+  Object.keys(sortedWorkflow['otherworkflowMods']).sort().forEach((mod) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
-    if (mod in otherworkflow1) {
-      const atp1 = otherworkflow1[mod]['atp'];
+    if (mod in sortedWorkflow['otherworkflow1']) {
+      const atp1 = sortedWorkflow['otherworkflow1'][mod]['atp'];
       element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1}</div>); }
-    if (mod in otherworkflow2) {
-      const atp2 = otherworkflow2[mod]['atp'];
+    if (mod in sortedWorkflow['otherworkflow2']) {
+      const atp2 = sortedWorkflow['otherworkflow2'][mod]['atp'];
       element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2}</div>); }
     rowPairWorkflowTagElements.push(
       <Row key={`toggle workflow_tag unaccounted_for ${mod}`}>
