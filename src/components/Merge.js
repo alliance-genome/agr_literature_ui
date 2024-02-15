@@ -18,6 +18,7 @@ import { setDataTransferHappened } from '../actions/mergeActions';
 import { setShowDataTransferModal } from '../actions/mergeActions';
 // import { setCompletionMergeHappened } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
+import { mergeAteamQueryAtp } from '../actions/mergeActions';
 
 import { splitCurie } from './biblio/BiblioEditor';
 import { comcorMapping } from './biblio/BiblioEditor';
@@ -100,6 +101,10 @@ const MergeSelectionSection = () => {
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
   const mergeCompletingCount = useSelector(state => state.merge.mergeCompletingCount);
 
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const ateamResults = useSelector(state => state.merge.ateamResults);
+  const atpParents = useSelector(state => state.merge.atpParents);
+
   // swap icon fa-exchange
   // left arrow icon fa-arrow-left 
   // <FontAwesomeIcon size='lg' icon={faLongArrowAltLeft} />
@@ -120,6 +125,10 @@ const MergeSelectionSection = () => {
     else if (referenceMeta2.queryRefSuccess === false) { curie2Class = 'span-merge-message-failure'; }
   
   const dispatch = useDispatch();
+  if ( (ateamResults === 0) && (accessToken) ) {
+    dispatch(mergeAteamQueryAtp(accessToken, atpParents));
+  }
+
   return (
     <>
     <Container>
@@ -990,6 +999,8 @@ function deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSo
 
 const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
+// USE THIS LATER
+//   const atpFileUpload = useSelector(state => state.merge.atpFileUpload);
   const dispatch = useDispatch();
 
   const [processingBool, setProcessingBool] = useState(true);

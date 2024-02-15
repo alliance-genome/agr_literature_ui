@@ -13,7 +13,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'CGC:cgc3',
+    input: 'AGRKB:101000001829083',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -22,6 +22,7 @@ const initialState = {
     disableInput: '',
     blah: ''
   },
+//     input: 'CGC:cgc3',
 //     input: 'AGR:AGR-Reference-0000569189',
 //     input: 'AGR:AGR-Reference-0000852278',
 //     input: 'PMID:23524264',	-> reference 1
@@ -35,8 +36,9 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
+//     input: 'PMID:28049701',
   referenceMeta2: {
-    input: 'PMID:28049701',
+    input: 'AGRKB:101000001829084',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -48,6 +50,14 @@ const initialState = {
   referenceDb1: {},
   referenceDb2: {},
   referenceSwap: {},
+
+  ateamResults: 0,
+  atpParents: ['ATP:0000140'],
+  atpFileUpload: {'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
+                  'ATP:0000141': {'priority': 2, 'name': 'file needed'} },
+// PUT THIS BACK
+//                   'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
+//                   'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
 
   hasPmid: false,
   isLoadingReferences: false,
@@ -347,6 +357,23 @@ export default function(state = initialState, action) {
         ...state,
         updateAlert: 0
       }
+
+    case 'MERGE_ATEAM_ATP_RESULT':
+      console.log('MERGE_ATEAM_ATP_RESULT reducer');
+      const maar_atpFileUpload = JSON.parse(JSON.stringify(state.atpFileUpload))
+      action.payload.response.forEach( (entity) => {
+        if (!(entity.curie in maar_atpFileUpload)) {
+          maar_atpFileUpload[entity.curie] = {};
+          maar_atpFileUpload[entity.curie]['priority'] = 1; }
+        maar_atpFileUpload[entity.curie]['name'] = entity.name;
+      });
+      // console.log(maar_atpFileUpload);
+      return {
+        ...state,
+        ateamResults: state.ateamResults + 1,
+        atpFileUpload: maar_atpFileUpload
+      }
+
 
 //     case 'QUERY_CHANGE_QUERY_FIELD':
 //       // console.log(action.payload);
