@@ -46,7 +46,8 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags' ];
+// TODO put workflow_tags in the right place
+const fieldsOrdered = [ 'title', 'DIVIDER', 'workflow_tags', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -899,6 +900,54 @@ const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload
           atpFileUpload[entity.curie]['priority'] = 1; }
         atpFileUpload[entity.curie]['name'] = entity.name;
       });
+//       const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
+//       const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
+//       if (referenceMeta1['referenceJson'][fieldName] !== null ) {
+//         for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
+//           const reference_workflow_tag_id = val1['reference_workflow_tag_id']
+//           let mod = 'no_mod'; let atp = 'no_atp';
+//           if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
+//           if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
+//           if (atp in atpFileUpload) {
+//               fileuploadMods[mod] = true;
+//               fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+//             else {
+//               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+//               otherworkflowMods[mod] = true;
+//               otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+//       if (referenceMeta2['referenceJson'][fieldName] !== null ) {
+//         for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
+//           const reference_workflow_tag_id = val2['reference_workflow_tag_id']
+//           let mod = 'no_mod'; let atp = 'no_atp';
+//           if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
+//           if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
+//           if (atp in atpFileUpload) {
+//               fileuploadMods[mod] = true;
+//               fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+//             else {
+//               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+//               otherworkflowMods[mod] = true;
+//               otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+//       const newSortedWorkflow = {};
+//       newSortedWorkflow['fileupload1'] = fileupload1;
+//       newSortedWorkflow['fileupload2'] = fileupload2;
+//       newSortedWorkflow['fileuploadMods'] = fileuploadMods;
+//       newSortedWorkflow['otherworkflow1'] = otherworkflow1;
+//       newSortedWorkflow['otherworkflow2'] = otherworkflow2;
+//       newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
+//       setSortedWorkflow(newSortedWorkflow);
+      deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
+      setAtpFileUpload = atpFileUpload;
+      setProcessingBool(false);
+    } catch (error) {
+      console.error('Error occurred:', error);
+      throw error;
+    }
+  }
+} // const getAteamWorkflowsDeriveData
+
+function deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow) {
+      const fieldName = 'workflow_tags';
       const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
       const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
       if (referenceMeta1['referenceJson'][fieldName] !== null ) {
@@ -927,7 +976,6 @@ const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload
               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
               otherworkflowMods[mod] = true;
               otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
-      setAtpFileUpload = atpFileUpload;
       const newSortedWorkflow = {};
       newSortedWorkflow['fileupload1'] = fileupload1;
       newSortedWorkflow['fileupload2'] = fileupload2;
@@ -935,14 +983,10 @@ const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload
       newSortedWorkflow['otherworkflow1'] = otherworkflow1;
       newSortedWorkflow['otherworkflow2'] = otherworkflow2;
       newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
+// can return a value, but setting the sortedworkflow creates a render loop
+//       return newSortedWorkflow;
       setSortedWorkflow(newSortedWorkflow);
-      setProcessingBool(false);
-    } catch (error) {
-      console.error('Error occurred:', error);
-      throw error;
-    }
-  }
-} // const getAteamWorkflowsDeriveData
+} // function deriveWorkflowData(referenceMeta1, referenceMeta2)
 
 const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -954,6 +998,13 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
                                                       'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
                                                       'ATP:0000141': {'priority': 2, 'name': 'file needed'} });
   const [sortedWorkflow, setSortedWorkflow] = useState({'fileuploadMods': {}, 'otherworkflowMods': {}});
+
+// can call a team and set sorted workflow, but splitting up into calling the deriveWorkflowData + setSortedWorkflow as well as getting the ateam atp and doing both things creates a render loop
+//   const newSortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
+//   setSortedWorkflow(newSortedWorkflow);
+//   deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
+
+// can call a team and set sorted workflow, but splitting up into calling the deriveWorkflowData + setSortedWorkflow as well as getting the ateam atp and doing both things creates a render loop
   getAteamWorkflowsDeriveData(accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool);
 
   if (processingBool) { return (<Alert variant="danger" dismissible>Process Workflow, do not proceed</Alert>); }
