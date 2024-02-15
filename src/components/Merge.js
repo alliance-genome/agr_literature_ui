@@ -397,6 +397,8 @@ const MergeSubmitDataTransferUpdateButton = () => {
   const referenceSwap = useSelector(state => state.merge.referenceSwap);
 //   const queryDoubleSuccess = useSelector(state => state.merge.queryDoubleSuccess);
   const hasPmid = useSelector(state => state.merge.hasPmid);
+  const ateamResults = useSelector(state => state.merge.ateamResults);
+  const atpParents = useSelector(state => state.merge.atpParents);
 
   function mergeReferences() {
     const forApiArray = [];
@@ -649,10 +651,11 @@ const MergeSubmitDataTransferUpdateButton = () => {
 
   } // function mergeReferences()
 
+  const transferButtonDisabled = (atpParents.length > ateamResults) ? 'disabled' : '';
   if (dataTransferHappened) { return null; }
   else {
     return (<>
-             <Button variant='primary' onClick={() => mergeReferences()} >
+             <Button variant='primary' disabled={transferButtonDisabled} onClick={() => mergeReferences()} >
                {mergeTransferringCount > 0 ? <Spinner animation="border" size="sm"/> : "Transfer Data"}</Button>
              <RowDivider />
             </>
@@ -892,70 +895,72 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   return (<>{rowPairRefFilesElements}</>);
 } // const RowDisplayPairReferenceFiles
 
-const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool) => {
-  const atpID = 'ATP:0000140';
-  if (accessToken) {
-    const url = `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/${atpID}/children`;
-    try {
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      response.data.entities.forEach( (entity) => {
-        if (!(entity.curie in atpFileUpload)) { 
-          atpFileUpload[entity.curie] = {};
-          atpFileUpload[entity.curie]['priority'] = 1; }
-        atpFileUpload[entity.curie]['name'] = entity.name;
-      });
-//       const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
-//       const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
-//       if (referenceMeta1['referenceJson'][fieldName] !== null ) {
-//         for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
-//           const reference_workflow_tag_id = val1['reference_workflow_tag_id']
-//           let mod = 'no_mod'; let atp = 'no_atp';
-//           if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
-//           if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
-//           if (atp in atpFileUpload) {
-//               fileuploadMods[mod] = true;
-//               fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
-//             else {
-//               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
-//               otherworkflowMods[mod] = true;
-//               otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
-//       if (referenceMeta2['referenceJson'][fieldName] !== null ) {
-//         for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
-//           const reference_workflow_tag_id = val2['reference_workflow_tag_id']
-//           let mod = 'no_mod'; let atp = 'no_atp';
-//           if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
-//           if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
-//           if (atp in atpFileUpload) {
-//               fileuploadMods[mod] = true;
-//               fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
-//             else {
-//               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
-//               otherworkflowMods[mod] = true;
-//               otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
-//       const newSortedWorkflow = {};
-//       newSortedWorkflow['fileupload1'] = fileupload1;
-//       newSortedWorkflow['fileupload2'] = fileupload2;
-//       newSortedWorkflow['fileuploadMods'] = fileuploadMods;
-//       newSortedWorkflow['otherworkflow1'] = otherworkflow1;
-//       newSortedWorkflow['otherworkflow2'] = otherworkflow2;
-//       newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
-//       setSortedWorkflow(newSortedWorkflow);
-      deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
-      setAtpFileUpload = atpFileUpload;
-      setProcessingBool(false);
-    } catch (error) {
-      console.error('Error occurred:', error);
-      throw error;
-    }
-  }
-} // const getAteamWorkflowsDeriveData
+// const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool) => {
+// const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, sortedWorkflow, setSortedWorkflow, setProcessingBool) => {
+//   const atpID = 'ATP:0000140';
+//   if (accessToken) {
+//     const url = `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/${atpID}/children`;
+//     try {
+//       const response = await axios.get(url, {
+//         headers: {
+//           'Authorization': `Bearer ${accessToken}`,
+//           'Content-Type': 'application/json'
+//         }
+//       });
+//       response.data.entities.forEach( (entity) => {
+//         if (!(entity.curie in atpFileUpload)) { 
+//           atpFileUpload[entity.curie] = {};
+//           atpFileUpload[entity.curie]['priority'] = 1; }
+//         atpFileUpload[entity.curie]['name'] = entity.name;
+//       });
+// //       const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
+// //       const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
+// //       if (referenceMeta1['referenceJson'][fieldName] !== null ) {
+// //         for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
+// //           const reference_workflow_tag_id = val1['reference_workflow_tag_id']
+// //           let mod = 'no_mod'; let atp = 'no_atp';
+// //           if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
+// //           if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
+// //           if (atp in atpFileUpload) {
+// //               fileuploadMods[mod] = true;
+// //               fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+// //             else {
+// //               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+// //               otherworkflowMods[mod] = true;
+// //               otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+// //       if (referenceMeta2['referenceJson'][fieldName] !== null ) {
+// //         for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
+// //           const reference_workflow_tag_id = val2['reference_workflow_tag_id']
+// //           let mod = 'no_mod'; let atp = 'no_atp';
+// //           if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
+// //           if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
+// //           if (atp in atpFileUpload) {
+// //               fileuploadMods[mod] = true;
+// //               fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+// //             else {
+// //               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+// //               otherworkflowMods[mod] = true;
+// //               otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+// //       const newSortedWorkflow = {};
+// //       newSortedWorkflow['fileupload1'] = fileupload1;
+// //       newSortedWorkflow['fileupload2'] = fileupload2;
+// //       newSortedWorkflow['fileuploadMods'] = fileuploadMods;
+// //       newSortedWorkflow['otherworkflow1'] = otherworkflow1;
+// //       newSortedWorkflow['otherworkflow2'] = otherworkflow2;
+// //       newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
+// //       setSortedWorkflow(newSortedWorkflow);
+//       deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
+//       setAtpFileUpload = atpFileUpload;
+//       setProcessingBool(false);
+//     } catch (error) {
+//       console.error('Error occurred:', error);
+//       throw error;
+//     }
+//   }
+// } // const getAteamWorkflowsDeriveData
 
-function deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow) {
+// function deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow) {
+function deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload) {
       const fieldName = 'workflow_tags';
       const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
       const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
@@ -993,37 +998,47 @@ function deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSo
       newSortedWorkflow['otherworkflow2'] = otherworkflow2;
       newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
 // can return a value, but setting the sortedworkflow creates a render loop
-//       return newSortedWorkflow;
-      setSortedWorkflow(newSortedWorkflow);
+      return newSortedWorkflow;
+//       setSortedWorkflow(newSortedWorkflow);
 } // function deriveWorkflowData(referenceMeta1, referenceMeta2)
 
 const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
 // USE THIS LATER
-//   const atpFileUpload = useSelector(state => state.merge.atpFileUpload);
+  const atpFileUpload = useSelector(state => state.merge.atpFileUpload);
+  const ateamResults = useSelector(state => state.merge.ateamResults);
+  const atpParents = useSelector(state => state.merge.atpParents);
   const dispatch = useDispatch();
 
-  const [processingBool, setProcessingBool] = useState(true);
-  const [atpFileUpload, setAtpFileUpload] = useState({'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
-                                                      'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
-                                                      'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
-                                                      'ATP:0000141': {'priority': 2, 'name': 'file needed'} });
-  const [sortedWorkflow, setSortedWorkflow] = useState({'fileuploadMods': {}, 'otherworkflowMods': {}});
+//   const [processingBool, setProcessingBool] = useState(true);
+//   const [atpFileUpload, setAtpFileUpload] = useState({'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
+//                                                       'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
+//                                                       'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
+//                                                       'ATP:0000141': {'priority': 2, 'name': 'file needed'} });
+//   const [sortedWorkflow, setSortedWorkflow] = useState({'fileuploadMods': {}, 'otherworkflowMods': {}});
 
 // can call a team and set sorted workflow, but splitting up into calling the deriveWorkflowData + setSortedWorkflow as well as getting the ateam atp and doing both things creates a render loop
 //   const newSortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
+//   const newSortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload);
 //   setSortedWorkflow(newSortedWorkflow);
+
+  const sortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload);
+
 //   deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
 
 // can call a team and set sorted workflow, but splitting up into calling the deriveWorkflowData + setSortedWorkflow as well as getting the ateam atp and doing both things creates a render loop
-  getAteamWorkflowsDeriveData(accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool);
-
-  if (processingBool) { return (<Alert variant="danger" dismissible>Process Workflow, do not proceed</Alert>); }
+//   getAteamWorkflowsDeriveData(accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool);
+//   getAteamWorkflowsDeriveData(accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, sortedWorkflow, setSortedWorkflow, setProcessingBool);
 
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
 
   const rowPairWorkflowTagElements = [];
+
+  if (atpParents.length > ateamResults) {
+    rowPairWorkflowTagElements.push(
+      <Row key='querying alert'><Col sm="12"><Alert variant="danger" dismissible>Querying A-Team ATP values, do not proceed</Alert></Col></Row>); }
+
   const element0_fileupload = GenerateFieldLabel(fieldName + ': file upload', 'lock');
   Object.keys(sortedWorkflow['fileuploadMods']).sort().forEach((mod) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
