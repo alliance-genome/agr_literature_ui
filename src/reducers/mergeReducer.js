@@ -52,12 +52,15 @@ const initialState = {
   referenceSwap: {},
 
   ateamResults: 0,
-  atpParents: ['ATP:0000140'],
-  atpFileUpload: {'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
-                  'ATP:0000141': {'priority': 2, 'name': 'file needed'} },
+  atpParents: ['ATP:0000140', 'ATP:0000102'],
+  atpOntology: { 'ATP:0000140': {'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
 // PUT THIS BACK
-//                   'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
-//                   'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
+//                                  'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
+//                                  'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
+                                 'ATP:0000141': {'priority': 2, 'name': 'file needed'} },
+                 'ATP:0000102': {'ATP:0000103': {'priority': 1, 'name': 'experimental reference'},
+                                 'ATP:0000104': {'priority': 1, 'name': 'non-experimental reference'},
+                                 'ATP:0000105': {'priority': 1, 'name': 'unpublished reference'} } },
 
   hasPmid: false,
   isLoadingReferences: false,
@@ -360,18 +363,19 @@ export default function(state = initialState, action) {
 
     case 'MERGE_ATEAM_ATP_RESULT':
       console.log('MERGE_ATEAM_ATP_RESULT reducer');
-      const maar_atpFileUpload = JSON.parse(JSON.stringify(state.atpFileUpload))
+      const maar_atpOntology = JSON.parse(JSON.stringify(state.atpOntology))
+      if (!(action.payload.atp in maar_atpOntology)) {
+        maar_atpOntology[action.payload.atp] = {}; }
       action.payload.response.forEach( (entity) => {
-        if (!(entity.curie in maar_atpFileUpload)) {
-          maar_atpFileUpload[entity.curie] = {};
-          maar_atpFileUpload[entity.curie]['priority'] = 1; }
-        maar_atpFileUpload[entity.curie]['name'] = entity.name;
+        if (!(entity.curie in maar_atpOntology[action.payload.atp])) {
+          maar_atpOntology[action.payload.atp][entity.curie] = {};
+          maar_atpOntology[action.payload.atp][entity.curie]['priority'] = 1; }
+        maar_atpOntology[action.payload.atp][entity.curie]['name'] = entity.name;
       });
-      // console.log(maar_atpFileUpload);
       return {
         ...state,
         ateamResults: state.ateamResults + 1,
-        atpFileUpload: maar_atpFileUpload
+        atpOntology: maar_atpOntology
       }
 
 

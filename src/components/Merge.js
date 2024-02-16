@@ -895,140 +895,65 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   return (<>{rowPairRefFilesElements}</>);
 } // const RowDisplayPairReferenceFiles
 
-// const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool) => {
-// const getAteamWorkflowsDeriveData = async (accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, sortedWorkflow, setSortedWorkflow, setProcessingBool) => {
-//   const atpID = 'ATP:0000140';
-//   if (accessToken) {
-//     const url = `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/${atpID}/children`;
-//     try {
-//       const response = await axios.get(url, {
-//         headers: {
-//           'Authorization': `Bearer ${accessToken}`,
-//           'Content-Type': 'application/json'
-//         }
-//       });
-//       response.data.entities.forEach( (entity) => {
-//         if (!(entity.curie in atpFileUpload)) { 
-//           atpFileUpload[entity.curie] = {};
-//           atpFileUpload[entity.curie]['priority'] = 1; }
-//         atpFileUpload[entity.curie]['name'] = entity.name;
-//       });
-// //       const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
-// //       const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
-// //       if (referenceMeta1['referenceJson'][fieldName] !== null ) {
-// //         for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
-// //           const reference_workflow_tag_id = val1['reference_workflow_tag_id']
-// //           let mod = 'no_mod'; let atp = 'no_atp';
-// //           if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
-// //           if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
-// //           if (atp in atpFileUpload) {
-// //               fileuploadMods[mod] = true;
-// //               fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
-// //             else {
-// //               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
-// //               otherworkflowMods[mod] = true;
-// //               otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
-// //       if (referenceMeta2['referenceJson'][fieldName] !== null ) {
-// //         for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
-// //           const reference_workflow_tag_id = val2['reference_workflow_tag_id']
-// //           let mod = 'no_mod'; let atp = 'no_atp';
-// //           if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
-// //           if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
-// //           if (atp in atpFileUpload) {
-// //               fileuploadMods[mod] = true;
-// //               fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
-// //             else {
-// //               // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
-// //               otherworkflowMods[mod] = true;
-// //               otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
-// //       const newSortedWorkflow = {};
-// //       newSortedWorkflow['fileupload1'] = fileupload1;
-// //       newSortedWorkflow['fileupload2'] = fileupload2;
-// //       newSortedWorkflow['fileuploadMods'] = fileuploadMods;
-// //       newSortedWorkflow['otherworkflow1'] = otherworkflow1;
-// //       newSortedWorkflow['otherworkflow2'] = otherworkflow2;
-// //       newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
-// //       setSortedWorkflow(newSortedWorkflow);
-//       deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
-//       setAtpFileUpload = atpFileUpload;
-//       setProcessingBool(false);
-//     } catch (error) {
-//       console.error('Error occurred:', error);
-//       throw error;
-//     }
-//   }
-// } // const getAteamWorkflowsDeriveData
 
-// function deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow) {
-function deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload) {
-      const fieldName = 'workflow_tags';
-      const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
-      const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
-      if (referenceMeta1['referenceJson'][fieldName] !== null ) {
-        for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
-          const reference_workflow_tag_id = val1['reference_workflow_tag_id']
-          let mod = 'no_mod'; let atp = 'no_atp';
-          if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
-          if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
-          if (atp in atpFileUpload) {
-              fileuploadMods[mod] = true;
-              fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
-            else {
-              // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
-              otherworkflowMods[mod] = true;
-              otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
-      if (referenceMeta2['referenceJson'][fieldName] !== null ) {
-        for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
-          const reference_workflow_tag_id = val2['reference_workflow_tag_id']
-          let mod = 'no_mod'; let atp = 'no_atp';
-          if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
-          if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
-          if (atp in atpFileUpload) {
-              fileuploadMods[mod] = true;
-              fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
-            else {
-              // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
-              otherworkflowMods[mod] = true;
-              otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
-      const newSortedWorkflow = {};
-      newSortedWorkflow['fileupload1'] = fileupload1;
-      newSortedWorkflow['fileupload2'] = fileupload2;
-      newSortedWorkflow['fileuploadMods'] = fileuploadMods;
-      newSortedWorkflow['otherworkflow1'] = otherworkflow1;
-      newSortedWorkflow['otherworkflow2'] = otherworkflow2;
-      newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
-// can return a value, but setting the sortedworkflow creates a render loop
-      return newSortedWorkflow;
-//       setSortedWorkflow(newSortedWorkflow);
+function deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology) {
+  const fieldName = 'workflow_tags';
+  const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
+  const curatability1 = {}; const curatability2 = {}; const curatabilityMods = {};
+  const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
+  if (referenceMeta1['referenceJson'][fieldName] !== null ) {
+    for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
+      const reference_workflow_tag_id = val1['reference_workflow_tag_id']
+      let mod = 'no_mod'; let atp = 'no_atp';
+      if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
+      if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
+      if (atp in atpOntology['ATP:0000140']) {
+          fileuploadMods[mod] = true;
+          fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+        else if (atp in atpOntology['ATP:0000102']) {
+          curatabilityMods[mod] = true;
+          curatability1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+        else {
+          // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+          otherworkflowMods[mod] = true;
+          otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+  if (referenceMeta2['referenceJson'][fieldName] !== null ) {
+    for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
+      const reference_workflow_tag_id = val2['reference_workflow_tag_id']
+      let mod = 'no_mod'; let atp = 'no_atp';
+      if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
+      if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
+      if (atp in atpOntology['ATP:0000140']) {
+          fileuploadMods[mod] = true;
+          fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+        else if (atp in atpOntology['ATP:0000102']) {
+          curatabilityMods[mod] = true;
+          curatability2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+        else {
+          // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+          otherworkflowMods[mod] = true;
+          otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+  const newSortedWorkflow = {};
+  newSortedWorkflow['fileupload1'] = fileupload1;
+  newSortedWorkflow['fileupload2'] = fileupload2;
+  newSortedWorkflow['fileuploadMods'] = fileuploadMods;
+  newSortedWorkflow['curatability1'] = curatability1;
+  newSortedWorkflow['curatability2'] = curatability2;
+  newSortedWorkflow['curatabilityMods'] = curatabilityMods;
+  newSortedWorkflow['otherworkflow1'] = otherworkflow1;
+  newSortedWorkflow['otherworkflow2'] = otherworkflow2;
+  newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
+  return newSortedWorkflow;
 } // function deriveWorkflowData(referenceMeta1, referenceMeta2)
 
 const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
-// USE THIS LATER
-  const atpFileUpload = useSelector(state => state.merge.atpFileUpload);
+  const atpOntology = useSelector(state => state.merge.atpOntology);
   const ateamResults = useSelector(state => state.merge.ateamResults);
   const atpParents = useSelector(state => state.merge.atpParents);
   const dispatch = useDispatch();
 
-//   const [processingBool, setProcessingBool] = useState(true);
-//   const [atpFileUpload, setAtpFileUpload] = useState({'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
-//                                                       'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
-//                                                       'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
-//                                                       'ATP:0000141': {'priority': 2, 'name': 'file needed'} });
-//   const [sortedWorkflow, setSortedWorkflow] = useState({'fileuploadMods': {}, 'otherworkflowMods': {}});
-
-// can call a team and set sorted workflow, but splitting up into calling the deriveWorkflowData + setSortedWorkflow as well as getting the ateam atp and doing both things creates a render loop
-//   const newSortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
-//   const newSortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload);
-//   setSortedWorkflow(newSortedWorkflow);
-
-  const sortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload);
-
-//   deriveWorkflowData(referenceMeta1, referenceMeta2, atpFileUpload, setSortedWorkflow);
-
-// can call a team and set sorted workflow, but splitting up into calling the deriveWorkflowData + setSortedWorkflow as well as getting the ateam atp and doing both things creates a render loop
-//   getAteamWorkflowsDeriveData(accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, setAtpFileUpload, sortedWorkflow, setSortedWorkflow, setProcessingBool);
-//   getAteamWorkflowsDeriveData(accessToken, fieldName, atpFileUpload, referenceMeta1, referenceMeta2, sortedWorkflow, setSortedWorkflow, setProcessingBool);
+  const sortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology);
 
   if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
        (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
@@ -1047,9 +972,9 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
     let priority1 = 0; let priority2 = 0;
 
     if (mod in sortedWorkflow['fileupload1']) {
-      priority1 = atpFileUpload[sortedWorkflow['fileupload1'][mod]['atp']]['priority']; }
+      priority1 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload1'][mod]['atp']]['priority']; }
     if (mod in sortedWorkflow['fileupload2']) {
-      priority2 = atpFileUpload[sortedWorkflow['fileupload2'][mod]['atp']]['priority']; }
+      priority2 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload2'][mod]['atp']]['priority']; }
 
     if (priority2 > priority1) {
       swapColor1 = !swapColor1;  swapColor2 = !swapColor2;
@@ -1057,15 +982,37 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
 
     if (mod in sortedWorkflow['fileupload1']) {
       const atp1 = sortedWorkflow['fileupload1'][mod]['atp'];
-      const name1 = atpFileUpload[atp1]['name'];
+      const name1 = atpOntology['ATP:0000140'][atp1]['name'];
       element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
     if (mod in sortedWorkflow['fileupload2']) {
       const atp2 = sortedWorkflow['fileupload2'][mod]['atp'];
-      const name2 = atpFileUpload[atp2]['name'];
+      const name2 = atpOntology['ATP:0000140'][atp2]['name'];
       element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
     rowPairWorkflowTagElements.push(
       <Row key={`toggle workflow_tag file_upload ${mod}`}>
         <Col sm="2" >{element0_fileupload}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  });
+
+  // TODO  these need to toggle, ignore priority
+  const element0_curatability = GenerateFieldLabel(fieldName + ': curatability', 'unlock');
+  Object.keys(sortedWorkflow['curatabilityMods']).sort().forEach((mod) => {
+    let element1 = (<div></div>); let element2 = (<div></div>);
+    let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+    if (mod in sortedWorkflow['curatability1']) {
+      const atp1 = sortedWorkflow['curatability1'][mod]['atp'];
+      const name1 = atpOntology['ATP:0000102'][atp1]['name'];
+      element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
+    if (mod in sortedWorkflow['curatability2']) {
+      const atp2 = sortedWorkflow['curatability2'][mod]['atp'];
+      const name2 = atpOntology['ATP:0000102'][atp2]['name'];
+      element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
+    rowPairWorkflowTagElements.push(
+      <Row key={`toggle workflow_tag curatability ${mod}`}>
+        <Col sm="2" >{element0_curatability}</Col>
         <Col sm="5" >{element1}</Col>
         <Col sm="5" >{element2}</Col>
       </Row>);
