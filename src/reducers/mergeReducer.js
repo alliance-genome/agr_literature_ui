@@ -13,7 +13,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'AGRKB:101000001829083',
+    input: '',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -38,7 +38,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
 //     input: 'PMID:28049701',
   referenceMeta2: {
-    input: 'AGRKB:101000001829084',
+    input: '',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -54,9 +54,8 @@ const initialState = {
   ateamResults: 0,
   atpParents: ['ATP:0000140', 'ATP:0000102'],
   atpOntology: { 'ATP:0000140': {'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
-// PUT THIS BACK
-//                                  'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
-//                                  'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
+                                 'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
+                                 'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
                                  'ATP:0000141': {'priority': 2, 'name': 'file needed'} },
                  'ATP:0000102': {'ATP:0000103': {'priority': 1, 'name': 'experimental reference'},
                                  'ATP:0000104': {'priority': 1, 'name': 'non-experimental reference'},

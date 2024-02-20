@@ -399,6 +399,7 @@ const MergeSubmitDataTransferUpdateButton = () => {
   const hasPmid = useSelector(state => state.merge.hasPmid);
   const ateamResults = useSelector(state => state.merge.ateamResults);
   const atpParents = useSelector(state => state.merge.atpParents);
+  const atpOntology = useSelector(state => state.merge.atpOntology);
 
   function mergeReferences() {
     const forApiArray = [];
@@ -636,6 +637,45 @@ const MergeSubmitDataTransferUpdateButton = () => {
       let array = [ subPath, updateJsonRelation2, 'PATCH', 0, null, null]
       forApiArray.push( array );
     }
+
+    const sortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology);
+    // fileupload gets transferred based on priority
+    Object.keys(sortedWorkflow['fileuploadMods']).sort().forEach((mod) => {
+      let priority1 = 0; let priority2 = 0; let winner_id = null; let loser_id = null;
+      if (mod in sortedWorkflow['fileupload1']) {
+        winner_id = sortedWorkflow['fileupload1'][mod]['id'];
+        priority1 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload1'][mod]['atp']]['priority']; }
+      if (mod in sortedWorkflow['fileupload2']) {
+        loser_id = sortedWorkflow['fileupload2'][mod]['id'];
+        priority2 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload2'][mod]['atp']]['priority']; }
+      if (priority2 > priority1) { [winner_id, loser_id] = [loser_id, winner_id]; }
+      let subPath = 'workflow_tag/' + loser_id;
+      let array = [ subPath, null, 'DELETE', 0, null, null]
+      if (loser_id !== null) {
+        console.log('array'); console.log(array);
+        forApiArray.push( array ); }
+      if (priority2 > priority1) {
+        subPath = 'workflow_tag/' + winner_id;
+        array = [ subPath, { 'reference_curie': referenceMeta1['referenceJson']['curie'] }, 'PATCH', 0, null, null]
+        console.log('array'); console.log(array);
+        forApiArray.push( array ); }
+    });
+    // curatability gets transferred based on toggle
+    Object.keys(sortedWorkflow['curatabilityMods']).sort().forEach((mod) => {
+      if (mod in sortedWorkflow['curatability1']) {
+        if (sortedWorkflow['curatability1'][mod]['toggle'] !== false) {
+          let subPath = 'workflow_tag/' + sortedWorkflow['curatability1'][mod]['id'];
+          let array = [ subPath, null, 'DELETE', 0, null, null]
+          console.log('array'); console.log(array);
+          forApiArray.push( array ); } }
+      if (mod in sortedWorkflow['curatability2']) {
+        if (sortedWorkflow['curatability2'][mod]['toggle'] !== false) {
+          let subPath = 'workflow_tag/' + sortedWorkflow['curatability2'][mod]['id'];
+          let array = [ subPath, { 'reference_curie': referenceMeta1['referenceJson']['curie'] }, 'PATCH', 0, null, null]
+          console.log('array'); console.log(array);
+          forApiArray.push( array ); } }
+    });
+    // unaccounted for cannot get transferred
 
     let dispatchCount = forApiArray.length;
 
@@ -1005,7 +1045,7 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     if (mod in sortedWorkflow['curatability1']) {
       const wf1 = sortedWorkflow['curatability1'][mod];
-      if (wf1['toggle'] !== null && wf1['toggle'] !== '') { toggle1 = wf1['toggle']; }
+      if (wf1['toggle'] !== false) { toggle1 = wf1['toggle']; }
       if ( toggle1 ) { swapColor1 = !swapColor1; }
       keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
       const atp1 = wf1['atp'];
@@ -1016,7 +1056,7 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
                   >{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
     if (mod in sortedWorkflow['curatability2']) {
       const wf2 = sortedWorkflow['curatability2'][mod];
-      if (wf2['toggle'] !== null && wf2['toggle'] !== '') { toggle2 = wf2['toggle']; }
+      if (wf2['toggle'] !== false) { toggle2 = wf2['toggle']; }
       if ( toggle2 ) { swapColor2 = !swapColor2; }
       keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
       const atp2 = wf2['atp'];
