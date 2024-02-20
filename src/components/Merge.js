@@ -904,35 +904,37 @@ function deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology) {
   if (referenceMeta1['referenceJson'][fieldName] !== null ) {
     for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
       const reference_workflow_tag_id = val1['reference_workflow_tag_id']
-      let mod = 'no_mod'; let atp = 'no_atp';
+      let mod = 'no_mod'; let atp = 'no_atp'; let toggle = false;
       if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
       if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
+      if ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') { toggle = val1['toggle']; }
       if (atp in atpOntology['ATP:0000140']) {
           fileuploadMods[mod] = true;
-          fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+          fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } }
         else if (atp in atpOntology['ATP:0000102']) {
           curatabilityMods[mod] = true;
-          curatability1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+          curatability1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } }
         else {
           // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
           otherworkflowMods[mod] = true;
-          otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+          otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } } } }
   if (referenceMeta2['referenceJson'][fieldName] !== null ) {
     for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
       const reference_workflow_tag_id = val2['reference_workflow_tag_id']
-      let mod = 'no_mod'; let atp = 'no_atp';
+      let mod = 'no_mod'; let atp = 'no_atp'; let toggle = false;
       if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
       if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
+      if ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') { toggle = val2['toggle']; }
       if (atp in atpOntology['ATP:0000140']) {
           fileuploadMods[mod] = true;
-          fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+          fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } }
         else if (atp in atpOntology['ATP:0000102']) {
           curatabilityMods[mod] = true;
-          curatability2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } }
+          curatability2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } }
         else {
           // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
           otherworkflowMods[mod] = true;
-          otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id } } } }
+          otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } } } }
   const newSortedWorkflow = {};
   newSortedWorkflow['fileupload1'] = fileupload1;
   newSortedWorkflow['fileupload2'] = fileupload2;
@@ -967,7 +969,7 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
   const element0_fileupload = GenerateFieldLabel(fieldName + ': file upload', 'lock');
   Object.keys(sortedWorkflow['fileuploadMods']).sort().forEach((mod) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
-    let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
+    let swapColor1 = false; let swapColor2 = false;
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     let priority1 = 0; let priority2 = 0;
 
@@ -989,27 +991,40 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
       const name2 = atpOntology['ATP:0000140'][atp2]['name'];
       element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
     rowPairWorkflowTagElements.push(
-      <Row key={`toggle workflow_tag file_upload ${mod}`}>
+      <Row key={`workflow_tag file_upload ${mod}`}>
         <Col sm="2" >{element0_fileupload}</Col>
         <Col sm="5" >{element1}</Col>
         <Col sm="5" >{element2}</Col>
       </Row>);
   });
 
-  // TODO  these need to toggle, ignore priority
   const element0_curatability = GenerateFieldLabel(fieldName + ': curatability', 'unlock');
   Object.keys(sortedWorkflow['curatabilityMods']).sort().forEach((mod) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
     let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     if (mod in sortedWorkflow['curatability1']) {
-      const atp1 = sortedWorkflow['curatability1'][mod]['atp'];
+      const wf1 = sortedWorkflow['curatability1'][mod];
+      if (wf1['toggle'] !== null && wf1['toggle'] !== '') { toggle1 = wf1['toggle']; }
+      if ( toggle1 ) { swapColor1 = !swapColor1; }
+      keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
+      const atp1 = wf1['atp'];
       const name1 = atpOntology['ATP:0000102'][atp1]['name'];
-      element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
+      element1 = (<div className={`div-merge ${keepClass1}`}  onClick={() => {
+                    if (mod in sortedWorkflow['curatability2']) { dispatch(mergeToggleIndependent(fieldName, 2, sortedWorkflow['curatability2'][mod]['index'], null)); }
+                    dispatch(mergeToggleIndependent(fieldName, 1, wf1['index'], null)) } }
+                  >{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
     if (mod in sortedWorkflow['curatability2']) {
-      const atp2 = sortedWorkflow['curatability2'][mod]['atp'];
+      const wf2 = sortedWorkflow['curatability2'][mod];
+      if (wf2['toggle'] !== null && wf2['toggle'] !== '') { toggle2 = wf2['toggle']; }
+      if ( toggle2 ) { swapColor2 = !swapColor2; }
+      keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
+      const atp2 = wf2['atp'];
       const name2 = atpOntology['ATP:0000102'][atp2]['name'];
-      element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
+      element2 = (<div className={`div-merge ${keepClass2}`}  onClick={() => {
+                    if (mod in sortedWorkflow['curatability1']) { dispatch(mergeToggleIndependent(fieldName, 1, sortedWorkflow['curatability1'][mod]['index'], null)); }
+                    dispatch(mergeToggleIndependent(fieldName, 2, wf2['index'], null)) } }
+                  >{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
     rowPairWorkflowTagElements.push(
       <Row key={`toggle workflow_tag curatability ${mod}`}>
         <Col sm="2" >{element0_curatability}</Col>
@@ -1021,7 +1036,7 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
   const element0_unaccountedfor = GenerateFieldLabel(fieldName + ': unaccounted for', 'lock');
   Object.keys(sortedWorkflow['otherworkflowMods']).sort().forEach((mod) => {
     let element1 = (<div></div>); let element2 = (<div></div>);
-    let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
+    let swapColor1 = false; let swapColor2 = false;
     let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
     if (mod in sortedWorkflow['otherworkflow1']) {
       const atp1 = sortedWorkflow['otherworkflow1'][mod]['atp'];
@@ -1030,7 +1045,7 @@ const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, 
       const atp2 = sortedWorkflow['otherworkflow2'][mod]['atp'];
       element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2}</div>); }
     rowPairWorkflowTagElements.push(
-      <Row key={`toggle workflow_tag unaccounted_for ${mod}`}>
+      <Row key={`workflow_tag unaccounted_for ${mod}`}>
         <Col sm="2" >{element0_unaccountedfor}</Col>
         <Col sm="5" >{element1}</Col>
         <Col sm="5" >{element2}</Col>
