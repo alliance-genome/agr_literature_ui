@@ -13,7 +13,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'CGC:cgc3',
+    input: '',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -22,6 +22,7 @@ const initialState = {
     disableInput: '',
     blah: ''
   },
+//     input: 'CGC:cgc3',
 //     input: 'AGR:AGR-Reference-0000569189',
 //     input: 'AGR:AGR-Reference-0000852278',
 //     input: 'PMID:23524264',	-> reference 1
@@ -35,8 +36,9 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000790218',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
+//     input: 'PMID:28049701',
   referenceMeta2: {
-    input: 'PMID:28049701',
+    input: '',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -48,6 +50,16 @@ const initialState = {
   referenceDb1: {},
   referenceDb2: {},
   referenceSwap: {},
+
+  ateamResults: 0,
+  atpParents: ['ATP:0000140', 'ATP:0000102'],
+  atpOntology: { 'ATP:0000140': {'ATP:0000134': {'priority': 5, 'name': 'files uploaded'},
+                                 'ATP:0000135': {'priority': 4, 'name': 'file unavailable'},
+                                 'ATP:0000139': {'priority': 3, 'name': 'file upload in progress'},
+                                 'ATP:0000141': {'priority': 2, 'name': 'file needed'} },
+                 'ATP:0000102': {'ATP:0000103': {'priority': 1, 'name': 'experimental reference'},
+                                 'ATP:0000104': {'priority': 1, 'name': 'non-experimental reference'},
+                                 'ATP:0000105': {'priority': 1, 'name': 'unpublished reference'} } },
 
   hasPmid: false,
   isLoadingReferences: false,
@@ -347,6 +359,24 @@ export default function(state = initialState, action) {
         ...state,
         updateAlert: 0
       }
+
+    case 'MERGE_ATEAM_ATP_RESULT':
+      console.log('MERGE_ATEAM_ATP_RESULT reducer');
+      const maar_atpOntology = JSON.parse(JSON.stringify(state.atpOntology))
+      if (!(action.payload.atp in maar_atpOntology)) {
+        maar_atpOntology[action.payload.atp] = {}; }
+      action.payload.response.forEach( (entity) => {
+        if (!(entity.curie in maar_atpOntology[action.payload.atp])) {
+          maar_atpOntology[action.payload.atp][entity.curie] = {};
+          maar_atpOntology[action.payload.atp][entity.curie]['priority'] = 1; }
+        maar_atpOntology[action.payload.atp][entity.curie]['name'] = entity.name;
+      });
+      return {
+        ...state,
+        ateamResults: state.ateamResults + 1,
+        atpOntology: maar_atpOntology
+      }
+
 
 //     case 'QUERY_CHANGE_QUERY_FIELD':
 //       // console.log(action.payload);

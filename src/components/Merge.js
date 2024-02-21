@@ -1,5 +1,7 @@
 // import { Link } from 'react-router-dom'
 // import { useHistory } from "react-router-dom";
+import axios from "axios";
+import { useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldInput } from '../actions/mergeActions';
@@ -16,6 +18,7 @@ import { setDataTransferHappened } from '../actions/mergeActions';
 import { setShowDataTransferModal } from '../actions/mergeActions';
 // import { setCompletionMergeHappened } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
+import { mergeAteamQueryAtp } from '../actions/mergeActions';
 
 import { splitCurie } from './biblio/BiblioEditor';
 import { comcorMapping } from './biblio/BiblioEditor';
@@ -44,7 +47,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -97,6 +100,10 @@ const MergeSelectionSection = () => {
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
   const mergeCompletingCount = useSelector(state => state.merge.mergeCompletingCount);
 
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const ateamResults = useSelector(state => state.merge.ateamResults);
+  const atpParents = useSelector(state => state.merge.atpParents);
+
   // swap icon fa-exchange
   // left arrow icon fa-arrow-left 
   // <FontAwesomeIcon size='lg' icon={faLongArrowAltLeft} />
@@ -117,6 +124,10 @@ const MergeSelectionSection = () => {
     else if (referenceMeta2.queryRefSuccess === false) { curie2Class = 'span-merge-message-failure'; }
   
   const dispatch = useDispatch();
+  if ( (ateamResults === 0) && (accessToken) ) {
+    dispatch(mergeAteamQueryAtp(accessToken, atpParents));
+  }
+
   return (
     <>
     <Container>
@@ -385,6 +396,9 @@ const MergeSubmitDataTransferUpdateButton = () => {
   const referenceSwap = useSelector(state => state.merge.referenceSwap);
 //   const queryDoubleSuccess = useSelector(state => state.merge.queryDoubleSuccess);
   const hasPmid = useSelector(state => state.merge.hasPmid);
+  const ateamResults = useSelector(state => state.merge.ateamResults);
+  const atpParents = useSelector(state => state.merge.atpParents);
+  const atpOntology = useSelector(state => state.merge.atpOntology);
 
   function mergeReferences() {
     const forApiArray = [];
@@ -623,6 +637,45 @@ const MergeSubmitDataTransferUpdateButton = () => {
       forApiArray.push( array );
     }
 
+    const sortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology);
+    // fileupload gets transferred based on priority
+    Object.keys(sortedWorkflow['fileuploadMods']).sort().forEach((mod) => {
+      let priority1 = 0; let priority2 = 0; let winner_id = null; let loser_id = null;
+      if (mod in sortedWorkflow['fileupload1']) {
+        winner_id = sortedWorkflow['fileupload1'][mod]['id'];
+        priority1 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload1'][mod]['atp']]['priority']; }
+      if (mod in sortedWorkflow['fileupload2']) {
+        loser_id = sortedWorkflow['fileupload2'][mod]['id'];
+        priority2 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload2'][mod]['atp']]['priority']; }
+      if (priority2 > priority1) { [winner_id, loser_id] = [loser_id, winner_id]; }
+      let subPath = 'workflow_tag/' + loser_id;
+      let array = [ subPath, null, 'DELETE', 0, null, null]
+      if (loser_id !== null) {
+        console.log('array'); console.log(array);
+        forApiArray.push( array ); }
+      if (priority2 > priority1) {
+        subPath = 'workflow_tag/' + winner_id;
+        array = [ subPath, { 'reference_curie': referenceMeta1['referenceJson']['curie'] }, 'PATCH', 0, null, null]
+        console.log('array'); console.log(array);
+        forApiArray.push( array ); }
+    });
+    // curatability gets transferred based on toggle
+    Object.keys(sortedWorkflow['curatabilityMods']).sort().forEach((mod) => {
+      if (mod in sortedWorkflow['curatability1']) {
+        if (sortedWorkflow['curatability1'][mod]['toggle'] !== false) {
+          let subPath = 'workflow_tag/' + sortedWorkflow['curatability1'][mod]['id'];
+          let array = [ subPath, null, 'DELETE', 0, null, null]
+          console.log('array'); console.log(array);
+          forApiArray.push( array ); } }
+      if (mod in sortedWorkflow['curatability2']) {
+        if (sortedWorkflow['curatability2'][mod]['toggle'] !== false) {
+          let subPath = 'workflow_tag/' + sortedWorkflow['curatability2'][mod]['id'];
+          let array = [ subPath, { 'reference_curie': referenceMeta1['referenceJson']['curie'] }, 'PATCH', 0, null, null]
+          console.log('array'); console.log(array);
+          forApiArray.push( array ); } }
+    });
+    // unaccounted for cannot get transferred
+
     let dispatchCount = forApiArray.length;
 
     // console.log('dispatchCount ' + dispatchCount)
@@ -637,10 +690,11 @@ const MergeSubmitDataTransferUpdateButton = () => {
 
   } // function mergeReferences()
 
+  const transferButtonDisabled = (atpParents.length > ateamResults) ? 'disabled' : '';
   if (dataTransferHappened) { return null; }
   else {
     return (<>
-             <Button variant='primary' onClick={() => mergeReferences()} >
+             <Button variant='primary' disabled={transferButtonDisabled} onClick={() => mergeReferences()} >
                {mergeTransferringCount > 0 ? <Spinner animation="border" size="sm"/> : "Transfer Data"}</Button>
              <RowDivider />
             </>
@@ -698,6 +752,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, hasPm
     else if (fieldName === 'reference_files') {
       rowOrderedElements.push(
         <RowDisplayPairReferenceFiles key="RowDisplayPairReferenceFiles" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
+    else if (fieldName === 'workflow_tags') {
+      rowOrderedElements.push(
+        <RowDisplayPairWorkflowTags key="RowDisplayPairWorkflowTags" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
   }
   return (<Container fluid>{rowOrderedElements}</Container>);
 } // const MergePairsSection
@@ -876,6 +933,166 @@ const RowDisplayPairReferenceFiles = ({fieldName, referenceMeta1, referenceMeta2
   }
   return (<>{rowPairRefFilesElements}</>);
 } // const RowDisplayPairReferenceFiles
+
+
+function deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology) {
+  const fieldName = 'workflow_tags';
+  const fileupload1 = {}; const fileupload2 = {}; const fileuploadMods = {};
+  const curatability1 = {}; const curatability2 = {}; const curatabilityMods = {};
+  const otherworkflow1 = {}; const otherworkflow2 = {}; const otherworkflowMods = {};
+  if (referenceMeta1['referenceJson'][fieldName] !== null ) {
+    for (const [index, val1] of referenceMeta1['referenceJson'][fieldName].entries()) {
+      const reference_workflow_tag_id = val1['reference_workflow_tag_id']
+      let mod = 'no_mod'; let atp = 'no_atp'; let toggle = false;
+      if ('mod_abbreviation' in val1 && val1['mod_abbreviation'] !== null && val1['mod_abbreviation'] !== '') { mod = val1['mod_abbreviation']; }
+      if ('workflow_tag_id' in val1 && val1['workflow_tag_id'] !== null && val1['workflow_tag_id'] !== '') { atp = val1['workflow_tag_id']; }
+      if ('toggle' in val1 && val1['toggle'] !== null && val1['toggle'] !== '') { toggle = val1['toggle']; }
+      if (atp in atpOntology['ATP:0000140']) {
+          fileuploadMods[mod] = true;
+          fileupload1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } }
+        else if (atp in atpOntology['ATP:0000102']) {
+          curatabilityMods[mod] = true;
+          curatability1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } }
+        else {
+          // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+          otherworkflowMods[mod] = true;
+          otherworkflow1[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } } } }
+  if (referenceMeta2['referenceJson'][fieldName] !== null ) {
+    for (const [index, val2] of referenceMeta2['referenceJson'][fieldName].entries()) {
+      const reference_workflow_tag_id = val2['reference_workflow_tag_id']
+      let mod = 'no_mod'; let atp = 'no_atp'; let toggle = false;
+      if ('mod_abbreviation' in val2 && val2['mod_abbreviation'] !== null && val2['mod_abbreviation'] !== '') { mod = val2['mod_abbreviation']; }
+      if ('workflow_tag_id' in val2 && val2['workflow_tag_id'] !== null && val2['workflow_tag_id'] !== '') { atp = val2['workflow_tag_id']; }
+      if ('toggle' in val2 && val2['toggle'] !== null && val2['toggle'] !== '') { toggle = val2['toggle']; }
+      if (atp in atpOntology['ATP:0000140']) {
+          fileuploadMods[mod] = true;
+          fileupload2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } }
+        else if (atp in atpOntology['ATP:0000102']) {
+          curatabilityMods[mod] = true;
+          curatability2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } }
+        else {
+          // this is binning all other workflows into otherworkflow, only allowing one per mod.  This won't be right when other workflows exist.
+          otherworkflowMods[mod] = true;
+          otherworkflow2[mod] = { 'atp': atp, 'id': reference_workflow_tag_id, 'index': index, 'toggle': toggle } } } }
+  const newSortedWorkflow = {};
+  newSortedWorkflow['fileupload1'] = fileupload1;
+  newSortedWorkflow['fileupload2'] = fileupload2;
+  newSortedWorkflow['fileuploadMods'] = fileuploadMods;
+  newSortedWorkflow['curatability1'] = curatability1;
+  newSortedWorkflow['curatability2'] = curatability2;
+  newSortedWorkflow['curatabilityMods'] = curatabilityMods;
+  newSortedWorkflow['otherworkflow1'] = otherworkflow1;
+  newSortedWorkflow['otherworkflow2'] = otherworkflow2;
+  newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
+  return newSortedWorkflow;
+} // function deriveWorkflowData(referenceMeta1, referenceMeta2)
+
+const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const atpOntology = useSelector(state => state.merge.atpOntology);
+  const ateamResults = useSelector(state => state.merge.ateamResults);
+  const atpParents = useSelector(state => state.merge.atpParents);
+  const dispatch = useDispatch();
+
+  const sortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology);
+
+  if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
+       (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
+
+  const rowPairWorkflowTagElements = [];
+
+  if (atpParents.length > ateamResults) {
+    rowPairWorkflowTagElements.push(
+      <Row key='querying alert'><Col sm="12"><Alert variant="danger" dismissible>Querying A-Team ATP values, do not proceed</Alert></Col></Row>); }
+
+  const element0_fileupload = GenerateFieldLabel(fieldName + ': file upload', 'lock');
+  Object.keys(sortedWorkflow['fileuploadMods']).sort().forEach((mod) => {
+    let element1 = (<div></div>); let element2 = (<div></div>);
+    let swapColor1 = false; let swapColor2 = false;
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+    let priority1 = 0; let priority2 = 0;
+
+    if (mod in sortedWorkflow['fileupload1']) {
+      priority1 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload1'][mod]['atp']]['priority']; }
+    if (mod in sortedWorkflow['fileupload2']) {
+      priority2 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload2'][mod]['atp']]['priority']; }
+
+    if (priority2 > priority1) {
+      swapColor1 = !swapColor1;  swapColor2 = !swapColor2;
+      keepClass2 = 'div-merge-keep'; keepClass1 = 'div-merge-obsolete'; }
+
+    if (mod in sortedWorkflow['fileupload1']) {
+      const atp1 = sortedWorkflow['fileupload1'][mod]['atp'];
+      const name1 = atpOntology['ATP:0000140'][atp1]['name'];
+      element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
+    if (mod in sortedWorkflow['fileupload2']) {
+      const atp2 = sortedWorkflow['fileupload2'][mod]['atp'];
+      const name2 = atpOntology['ATP:0000140'][atp2]['name'];
+      element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
+    rowPairWorkflowTagElements.push(
+      <Row key={`workflow_tag file_upload ${mod}`}>
+        <Col sm="2" >{element0_fileupload}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  });
+
+  const element0_curatability = GenerateFieldLabel(fieldName + ': curatability', 'unlock');
+  Object.keys(sortedWorkflow['curatabilityMods']).sort().forEach((mod) => {
+    let element1 = (<div></div>); let element2 = (<div></div>);
+    let swapColor1 = false; let swapColor2 = false; let toggle1 = false; let toggle2 = false;
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+    if (mod in sortedWorkflow['curatability1']) {
+      const wf1 = sortedWorkflow['curatability1'][mod];
+      if (wf1['toggle'] !== false) { toggle1 = wf1['toggle']; }
+      if ( toggle1 ) { swapColor1 = !swapColor1; }
+      keepClass1 = (swapColor1) ? 'div-merge-obsolete' : 'div-merge-keep';
+      const atp1 = wf1['atp'];
+      const name1 = atpOntology['ATP:0000102'][atp1]['name'];
+      element1 = (<div className={`div-merge ${keepClass1}`}  onClick={() => {
+                    if (mod in sortedWorkflow['curatability2']) { dispatch(mergeToggleIndependent(fieldName, 2, sortedWorkflow['curatability2'][mod]['index'], null)); }
+                    dispatch(mergeToggleIndependent(fieldName, 1, wf1['index'], null)) } }
+                  >{mod} &nbsp;&nbsp; {atp1} &nbsp; {name1}</div>); }
+    if (mod in sortedWorkflow['curatability2']) {
+      const wf2 = sortedWorkflow['curatability2'][mod];
+      if (wf2['toggle'] !== false) { toggle2 = wf2['toggle']; }
+      if ( toggle2 ) { swapColor2 = !swapColor2; }
+      keepClass2 = (swapColor2) ? 'div-merge-keep' : 'div-merge-obsolete';
+      const atp2 = wf2['atp'];
+      const name2 = atpOntology['ATP:0000102'][atp2]['name'];
+      element2 = (<div className={`div-merge ${keepClass2}`}  onClick={() => {
+                    if (mod in sortedWorkflow['curatability1']) { dispatch(mergeToggleIndependent(fieldName, 1, sortedWorkflow['curatability1'][mod]['index'], null)); }
+                    dispatch(mergeToggleIndependent(fieldName, 2, wf2['index'], null)) } }
+                  >{mod} &nbsp;&nbsp; {atp2} &nbsp; {name2}</div>); }
+    rowPairWorkflowTagElements.push(
+      <Row key={`toggle workflow_tag curatability ${mod}`}>
+        <Col sm="2" >{element0_curatability}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  });
+
+  const element0_unaccountedfor = GenerateFieldLabel(fieldName + ': unaccounted for', 'lock');
+  Object.keys(sortedWorkflow['otherworkflowMods']).sort().forEach((mod) => {
+    let element1 = (<div></div>); let element2 = (<div></div>);
+    let swapColor1 = false; let swapColor2 = false;
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-obsolete';
+    if (mod in sortedWorkflow['otherworkflow1']) {
+      const atp1 = sortedWorkflow['otherworkflow1'][mod]['atp'];
+      element1 = (<div className={`div-merge ${keepClass1}`}>{mod} &nbsp;&nbsp; {atp1}</div>); }
+    if (mod in sortedWorkflow['otherworkflow2']) {
+      const atp2 = sortedWorkflow['otherworkflow2'][mod]['atp'];
+      element2 = (<div className={`div-merge ${keepClass2}`}>{mod} &nbsp;&nbsp; {atp2}</div>); }
+    rowPairWorkflowTagElements.push(
+      <Row key={`workflow_tag unaccounted_for ${mod}`}>
+        <Col sm="2" >{element0_unaccountedfor}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+  });
+
+  return (<>{rowPairWorkflowTagElements}</>);
+} // const RowDisplayPairWorkflowTags
 
 const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const dispatch = useDispatch();
