@@ -1,5 +1,5 @@
 import {useSelector, useDispatch} from "react-redux";
-import {useEffect, useState} from "react";
+import {useEffect, useState, useMemo, useCallback, useRef} from "react";
 import {fetchDisplayTagData} from "../../../actions/biblioActions";
 import { setTetPageSize as setPageSizeAction } from "../../../actions/biblioActions";
 import axios from "axios";
@@ -13,9 +13,11 @@ import {getCurieToNameTaxon} from "./TaxonUtils";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from 'react-bootstrap/Modal';
+import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
 
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
 import "ag-grid-community/styles/ag-grid.css"; // Core CSS
+import "ag-grid-community/styles/ag-theme-quartz.css"; // Theme
 
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
@@ -32,6 +34,7 @@ const TopicEntityTable = () => {
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
+  const [rowData, setRowData] = useState();
   const [descSort, setDescSort] = useState(true);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
@@ -49,6 +52,8 @@ const TopicEntityTable = () => {
   const [showNoteModal, setShowNoteModal] = useState(false);
 
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
+
+  const gridRef = useRef();
     
   useEffect(() => {
     const fetchData = async () => {
@@ -136,10 +141,14 @@ const TopicEntityTable = () => {
           setEntityEntityMappings(resultMappings.data);
         } finally {
           setIsLoadingMappings(false)
+          console.log(topicEntityTags);
         }
       }
     }
-    fetchMappings().then();
+    fetchMappings().then( () => {
+          //This isnt working!
+          gridRef.current.api.refreshCells();
+    });
   }, [referenceCurie, topicEntityTags]);
 
   useEffect(() => {
@@ -147,10 +156,32 @@ const TopicEntityTable = () => {
       const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?column_only=species");
       if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
         setAllSpecies(resultTags.data);
+        console.log(resultTags.data,"species");
       }
     }
     fetchAllSpecies().then();
   }, [referenceCurie, topicEntityTags, allSpecies])
+
+
+  useEffect(() => {
+    if((!isLoadingData) && (!isLoadingMappings)){
+      topicEntityTags.forEach((element) => {
+        //this probably needs some checking for empty sets
+        element.TopicName = entityEntityMappings[element.topic];
+        //gridRef.current.api.applyTransaction({ update: [ {id :gridRef.current.api.getRowNode(element.topic_entity_tag_id), TopicName : entityEntityMappings[element.topic] }] });
+        element.entityName=entityEntityMappings[element.entity];
+        element.speciesName=curieToNameTaxon[element.species];
+        element.entityTypeName=entityEntityMappings[element.entity_type];
+      });
+      if (gridRef.current.api){
+        //refreshes the cells... there is probably a better way to do this.
+        gridRef.current.api.refreshCells();
+      }
+
+
+
+    }
+  });
 
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
@@ -167,7 +198,7 @@ const TopicEntityTable = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
-        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + pageSize
+        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + 8000
 	if (selectedSpecies && selectedSpecies.length !== 0) {
 	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
 	}
@@ -220,27 +251,6 @@ const TopicEntityTable = () => {
       </Modal>
     );
   };
-    
-  const changePage = (action) => {
-    let maxPage = Math.max(0, Math.ceil(totalTagsCount/pageSize));
-    switch (action){
-      case 'Next':
-        setPage(Math.min(maxPage, page + 1));
-        break;
-      case 'Prev':
-        setPage(Math.max(1, page - 1));
-        break;
-      case 'First':
-        setPage(1);
-        break;
-      case 'Last':
-        setPage(maxPage);
-        break;
-      default:
-        setPage(1);
-        break;
-    }
-  }
 
   let headers = [
     'topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated',
@@ -266,23 +276,99 @@ const TopicEntityTable = () => {
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
   const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
   const [colDefs, setColDefs] = useState([
-    { field: "make" },
-    { field: "model" },
-    { field: "price" },
-    { field: "electric" }
+    { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
+    { headerName: "Topic", field: "TopicName", onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.topic)}},
+    { headerName: "Entity Type", field: "entityTypeName"},
+    { headerName: "Species", field: "speciesName" , filter: true, onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.species)}},
+    { headerName: "Entity", field: "entityName", onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.entity)}},
+    { field: "Entity Published As" },
+    { field: "No Data" },
+    { field: "Novel Data" },
+    { field: "Confidence Level" },
+    { field: "Created By" },
+    { field: "note", editable:true, onCellClicked: (params) => {console.log(params);handleNoteClick(params.value)}},
+    { field: "entity_source" },
+    { field: "date_created" },
+    { field: "updated_by" },
+    { field: "date_updated" },
+    { field: "validation_by_author" },
+    { field: "validation_by_curator" },
+    { field: "validation_by_data_curation" },
+    { field: "display_tag" },
+    { field: "topic_entity_tag_source.mod" },
+    { field: "topic_entity_tag_source.source_method" },
+    { field: "topic_entity_tag_source.evidence" },
+    { field: "topic_entity_tag_source.validation_type" },
+    { field: "topic_entity_tag_source.source_type" },
+    { field: "topic_entity_tag_source.description" },
+    { field: "topic_entity_tag_source.created_by" },
+    { field: "topic_entity_tag_source.date_updated" },
+    { field: "topic_entity_tag_source.date_created" }
   ]);
-  const [rowData, setRowData] = useState([
-    { make: "Tesla", model: "Model Y", price: 64950, electric: true },
-    { make: "Ford", model: "F-Series", price: 33850, electric: false },
-    { make: "Toyota", model: "Corolla", price: 29600, electric: false },
-  ]);
+
+
+  const paginationPageSizeSelector = useMemo(() => {
+    return [25, 500, 1000];
+  }, []);
+
+  const columnMoved = () => {
+    console.log("colum Moved");
+    let columnState=gridRef.current.api.getColumnState();
+    let columnOrder = [];
+    columnState.forEach((element) => {
+      columnOrder.push(element.colId);
+    });
+    console.log(columnOrder);
+    document.cookie=`columnOrder=${columnOrder}`;
+  }
+
+  const onGridReady = useCallback(() => {
+    let thaCookie = document.cookie.split("; ")
+        .find((row) => row.startsWith("columnOrder="))
+        ?.split("=")[1];
+    let columnOrder = thaCookie.split(',');
+    console.log(columnOrder);
+  },[]);
+
+  const getRowId = useMemo(() => {
+    return (params) => params.data.topic_entity_tag_id;
+  }, []);
+
+  const onRowDataUpdated = useCallback((event) => {
+    console.log(event);
+    event.api.refreshCells();
+  }, []);
+
+  const refreshCells = () => {
+    gridRef.current.api.refreshCells();
+  }
+
+
 
   return (
     <div>
-      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px'}}>
-        <AgGridReact rowData={rowData} columnDefs={colDefs} rowHeight={200}/>
+      <button onClick={refreshCells}> Klick Mich</button>
+      {/* Curie Popup */}
+      {selectedCurie && (
+          <GenericTetTableModal title="CURIE Information" body={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
+      )}
+      {/* Note Popup */}
+      {showNoteModal && (
+          <GenericTetTableModal title="Full Note" body={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
+      )}
+      <div className="ag-theme-quartz" style={{height: 500}}>
+        <AgGridReact
+            ref={gridRef}
+            rowData={topicEntityTags}
+            onGridReady={onGridReady}
+            getRowId={getRowId}
+            columnDefs={colDefs}
+            onColumnMoved={columnMoved}
+            onRowDataUpdated={onRowDataUpdated}
+            pagination={true}
+            paginationPageSize={25}
+            paginationPageSizeSelector={paginationPageSizeSelector}/>
       </div>
-
     </div>);
 } // const EntityTable
 
