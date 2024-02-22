@@ -270,8 +270,7 @@ const TopicEntityTable = () => {
     'novel_topic_data',
     'confidence_level', 'created_by', 'note', 'entity_source', 'date_created',
     'updated_by', 'date_updated', 'validation_by_author',
-    'validation_by_curator', 'validation_by_data_curation',
-    'display_tag'
+    'validation_by_professional_biocurator', 'display_tag'
   ];   
   let source_headers = [
     'mod', 'source_method', 'evidence', 'validation_type', 'source_type',
