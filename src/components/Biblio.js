@@ -439,7 +439,7 @@ const BiblioIdQuery = () => {
     }
     axios.get(url)
       .then(res => {
-        loadReference(res.data.reference_curie);
+        loadReference(res.data.reference_curie !== undefined ? res.data.reference_curie : res.data.curie);
       })
       .catch(error => {
         // check if the error has a response and data detail
