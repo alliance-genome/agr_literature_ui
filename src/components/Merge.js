@@ -340,7 +340,7 @@ function deriveRefeferenceRelationsAgrkbs(refMetaReferenceRelations1, refMetaRef
     if (!(agrkb in agrkbs1)) { agrkbs1[agrkb] = {}; }
     agrkbs1[agrkb]['index'] = i
     agrkbs1[agrkb]['direction'] = 'to';
-    agrkbs1[agrkb]['toggle'] = refMetaReferenceRelations1['to_references'][i]['toggle'];
+    agrkbs1[agrkb]['toggle'] = refMetaReferenceRelations1['to_references'][i]['toggle'] || false;
     agrkbs1[agrkb]['id'] = refMetaReferenceRelations1['to_references'][i]['reference_relation_id'];
     agrkbs1[agrkb]['type'] = refMetaReferenceRelations1['to_references'][i]['reference_relation_type'];
     agrkbs1[agrkb]['subtype'] = 'to_references';
@@ -350,7 +350,7 @@ function deriveRefeferenceRelationsAgrkbs(refMetaReferenceRelations1, refMetaRef
     if (!(agrkb in agrkbs1)) { agrkbs1[agrkb] = {}; }
     agrkbs1[agrkb]['index'] = i
     agrkbs1[agrkb]['direction'] = 'from';
-    agrkbs1[agrkb]['toggle'] = refMetaReferenceRelations1['from_references'][i]['toggle'];
+    agrkbs1[agrkb]['toggle'] = refMetaReferenceRelations1['from_references'][i]['toggle'] || false;
     agrkbs1[agrkb]['id'] = refMetaReferenceRelations1['from_references'][i]['reference_relation_id'];
     agrkbs1[agrkb]['type'] = refMetaReferenceRelations1['from_references'][i]['reference_relation_type'];
     agrkbs1[agrkb]['subtype'] = 'from_references';
@@ -360,7 +360,7 @@ function deriveRefeferenceRelationsAgrkbs(refMetaReferenceRelations1, refMetaRef
     if (!(agrkb in agrkbs2)) { agrkbs2[agrkb] = {}; }
     agrkbs2[agrkb]['index'] = i
     agrkbs2[agrkb]['direction'] = 'to';
-    agrkbs2[agrkb]['toggle'] = refMetaReferenceRelations2['to_references'][i]['toggle'];
+    agrkbs2[agrkb]['toggle'] = refMetaReferenceRelations2['to_references'][i]['toggle'] || false;
     agrkbs2[agrkb]['id'] = refMetaReferenceRelations2['to_references'][i]['reference_relation_id'];
     agrkbs2[agrkb]['type'] = refMetaReferenceRelations2['to_references'][i]['reference_relation_type'];
     agrkbs2[agrkb]['subtype'] = 'to_references';
@@ -370,7 +370,7 @@ function deriveRefeferenceRelationsAgrkbs(refMetaReferenceRelations1, refMetaRef
     if (!(agrkb in agrkbs2)) { agrkbs2[agrkb] = {}; }
     agrkbs2[agrkb]['index'] = i
     agrkbs2[agrkb]['direction'] = 'from';
-    agrkbs2[agrkb]['toggle'] = refMetaReferenceRelations2['from_references'][i]['toggle'];
+    agrkbs2[agrkb]['toggle'] = refMetaReferenceRelations2['from_references'][i]['toggle'] || false;
     agrkbs2[agrkb]['id'] = refMetaReferenceRelations2['from_references'][i]['reference_relation_id'];
     agrkbs2[agrkb]['type'] = refMetaReferenceRelations2['from_references'][i]['reference_relation_type'];
     agrkbs2[agrkb]['subtype'] = 'from_references';
@@ -604,13 +604,12 @@ const MergeSubmitDataTransferUpdateButton = () => {
     const [agrkbs1, agrkbs2, sameAgrkbs, uniqAgrkbs1, uniqAgrkbs2] = deriveRefeferenceRelationsAgrkbs(referenceMeta1['referenceJson']['reference_relations'], referenceMeta2['referenceJson']['reference_relations']);
     // same reference_relations if toggled, winning reference relation is deleted, losing reference relation is transfered to winning reference
     Object.keys(sameAgrkbs).forEach((agrkb) => {
-      if (agrkb in agrkbs1 && agrkbs1[agrkb]['toggle'] !== null && agrkbs1[agrkb]['toggle'] !== '') {
+      if (agrkb in agrkbs1 && agrkbs1[agrkb]['toggle'] !== false) {
         let subPath = 'reference_relation/' + agrkbs1[agrkb]['id'];
         let array = [ subPath, null, 'DELETE', 0, null, null]
-        console.log('array');
-        console.log(array);
+        console.log('delete sameAgrkbs array'); console.log(array);
         forApiArray.push( array ); }
-      if (agrkb in agrkbs2 && agrkbs2[agrkb]['toggle'] !== null && agrkbs2[agrkb]['toggle'] !== '') {
+      if (agrkb in agrkbs2 && agrkbs2[agrkb]['toggle'] !== false) {
         const updateJsonRelation2 = { 'reference_relation_type': agrkbs2[agrkb]['type'] };
         if (agrkbs2[agrkb]['direction'] === 'from') {
             updateJsonRelation2['reference_curie_from'] = agrkb;
@@ -620,22 +619,30 @@ const MergeSubmitDataTransferUpdateButton = () => {
             updateJsonRelation2['reference_curie_from'] = referenceMeta1['referenceJson']['curie']; }
         let subPath = 'reference_relation/' + agrkbs2[agrkb]['id'];
         let array = [ subPath, updateJsonRelation2, 'PATCH', 0, null, null];
+        console.log('patch sameAgrkbs array'); console.log(array);
         forApiArray.push( array ); }
     });
-    // unique reference_relations from losing reference are transfered to winning reference, which is redundant since API would do that upon merge, but this lets curators transfer data before merging the references, so they could check what got transferred before obsoleting the losing reference
     for (let i = 0; i < uniqAgrkbs2.length; i++) {
       const agrkb = uniqAgrkbs2[i];
-      const updateJsonRelation2 = { 'reference_relation_type': agrkbs2[agrkb]['type'] };
-      if (agrkbs2[agrkb]['direction'] === 'from') {
-          updateJsonRelation2['reference_curie_from'] = agrkb;
-          updateJsonRelation2['reference_curie_to'] = referenceMeta1['referenceJson']['curie']; }
-        else if (agrkbs2[agrkb]['direction'] === 'to') {
-          updateJsonRelation2['reference_curie_to'] = agrkb;
-          updateJsonRelation2['reference_curie_from'] = referenceMeta1['referenceJson']['curie']; }
-      let subPath = 'reference_relation/' + agrkbs2[agrkb]['id'];
-      let array = [ subPath, updateJsonRelation2, 'PATCH', 0, null, null]
-      forApiArray.push( array );
-    }
+      if (agrkb === referenceMeta1['referenceJson']['curie']) {
+      // if it's a relation to winning reference, delete it instead of transferring, or it will create a connection to itself, which is db constrained
+        let subPath = 'reference_relation/' + agrkbs2[agrkb]['id'];
+        let array = [ subPath, null, 'DELETE', 0, null, null]
+        console.log('delete uniqAgrkbs2 array'); console.log(array);
+        forApiArray.push( array ); }
+      else {
+      // unique reference_relations from losing reference are transfered to winning reference, which is redundant since API would do that upon merge, but this lets curators transfer data before merging the references, so they could check what got transferred before obsoleting the losing reference
+        const updateJsonRelation2 = { 'reference_relation_type': agrkbs2[agrkb]['type'] };
+        if (agrkbs2[agrkb]['direction'] === 'from') {
+            updateJsonRelation2['reference_curie_from'] = agrkb;
+            updateJsonRelation2['reference_curie_to'] = referenceMeta1['referenceJson']['curie']; }
+          else if (agrkbs2[agrkb]['direction'] === 'to') {
+            updateJsonRelation2['reference_curie_to'] = agrkb;
+            updateJsonRelation2['reference_curie_from'] = referenceMeta1['referenceJson']['curie']; }
+        let subPath = 'reference_relation/' + agrkbs2[agrkb]['id'];
+        let array = [ subPath, updateJsonRelation2, 'PATCH', 0, null, null]
+        console.log('patch uniqAgrkbs2array'); console.log(array);
+        forApiArray.push( array ); } }
 
     const sortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology);
     // fileupload gets transferred based on priority
@@ -1450,6 +1457,7 @@ const RowDisplayPairReferenceRelations = ({fieldName, referenceMeta1, referenceM
   rowPairReferenceRelationsElements.push(<RowDivider key="referencerelations_divider" />);
   const element0Lock = GenerateFieldLabel(fieldName + ': unique reference', 'lock');
   for (let i = 0; i < maxLengthUniq; i++) {
+    let keepClass1 = 'div-merge-keep'; let keepClass2 = 'div-merge-keep';
     let relation1 = '';
     if (uniqAgrkbs1[i] === undefined) { relation1 = ''; }
       else if (agrkbs1[uniqAgrkbs1[i]] !== undefined) {
@@ -1458,8 +1466,10 @@ const RowDisplayPairReferenceRelations = ({fieldName, referenceMeta1, referenceM
     if (uniqAgrkbs2[i] === undefined) { relation2 = ''; }
       else if (agrkbs2[uniqAgrkbs2[i]] !== undefined) {
         relation2 = (agrkbs2[uniqAgrkbs2[i]]['direction'] === 'from') ? comcorReverse[agrkbs2[uniqAgrkbs2[i]]['type']] : agrkbs2[uniqAgrkbs2[i]]['type']; }
-    const element1 = (uniqAgrkbs1[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{relation1} &nbsp;&nbsp; {uniqAgrkbs1[i]}</div>) : '';
-    const element2 = (uniqAgrkbs2[i] !== undefined) ? (<div className={`div-merge div-merge-keep`}>{relation2} &nbsp;&nbsp; {uniqAgrkbs2[i]}</div>) : '';
+    if (uniqAgrkbs1[i] === referenceMeta2['referenceJson']['curie']) { keepClass1 = 'div-merge-obsolete'; }
+    if (uniqAgrkbs2[i] === referenceMeta1['referenceJson']['curie']) { keepClass2 = 'div-merge-obsolete'; }
+    const element1 = (uniqAgrkbs1[i] !== undefined) ? (<div className={`div-merge ${keepClass1}`}>{relation1} &nbsp;&nbsp; {uniqAgrkbs1[i]}</div>) : '';
+    const element2 = (uniqAgrkbs2[i] !== undefined) ? (<div className={`div-merge ${keepClass2}`}>{relation2} &nbsp;&nbsp; {uniqAgrkbs2[i]}</div>) : '';
     rowPairReferenceRelationsElements.push(
       <Row key={`toggle reffile uniqmd5 ${i}`}>
         <Col sm="2" >{element0Lock}</Col>
