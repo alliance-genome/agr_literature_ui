@@ -979,7 +979,8 @@ export default function(state = initialState, action) {
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
         entityAdd: setRefCurieDefaultEntityAdd,
-	tetPageSize: defaultTetPageSize,
+	    tetPageSize: defaultTetPageSize,
+        curieToNameTaxon: [],
         getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
@@ -1104,6 +1105,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         tetPageSize: action.payload 
+      };
+
+    case 'SET_CURIE_TO_NAME_TAXON':
+      return {
+        ...state,
+        curieToNameTaxon: action.payload
       };
      
 //     case 'QUERY_BUTTON':

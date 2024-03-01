@@ -634,7 +634,6 @@ const setEntityResultList = (entityResultList) => ({
   payload: { entityResultList: entityResultList }
 });
 
-
 const getRevertButtonFromFontAwesomeElement = (activeElement) => {
   if (activeElement.nodeName === 'BUTTON') { return activeElement; }
   else if (activeElement.nodeName === 'svg') { return activeElement.parentNode; }
@@ -1138,4 +1137,9 @@ export const setTetPageNumber = (pageNumber) => ({
 export const setTetPageSize = (pageSize) => ({
   type: 'SET_TET_PAGE_SIZE',
   payload: pageSize
+});
+
+export const setCurieToNameTaxon = (taxonMappings) => ({
+  type: 'SET_CURIE_TO_NAME_TAXON',
+  payload: taxonMappings
 });

@@ -1,7 +1,7 @@
 import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState, useMemo, useCallback, useRef} from "react";
 import {fetchDisplayTagData} from "../../../actions/biblioActions";
-import { setTetPageSize as setPageSizeAction } from "../../../actions/biblioActions";
+import { setTetPageSize as setPageSizeAction,setCurieToNameTaxon } from "../../../actions/biblioActions";
 import axios from "axios";
 import LoadingOverlay from "../../LoadingOverlay";
 import Table from "react-bootstrap/Table";
@@ -14,6 +14,7 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from 'react-bootstrap/Modal';
 import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
+import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
 
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
 import "ag-grid-community/styles/ag-grid.css"; // Core CSS
@@ -31,6 +32,7 @@ const TopicEntityTable = () => {
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const pageSize = useSelector(state => state.biblio.tetPageSize);
+  const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(null);
@@ -51,7 +53,7 @@ const TopicEntityTable = () => {
   const [fullNote, setFullNote] = useState('');
   const [showNoteModal, setShowNoteModal] = useState(false);
 
-  const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
+  //const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
 
   const gridRef = useRef();
     
@@ -162,7 +164,7 @@ const TopicEntityTable = () => {
     fetchAllSpecies().then();
   }, [referenceCurie, topicEntityTags, allSpecies])
 
-
+  //This code can go away once we have this data returned from the API
   useEffect(() => {
     if((!isLoadingData) && (!isLoadingMappings)){
       topicEntityTags.forEach((element) => {
@@ -176,6 +178,7 @@ const TopicEntityTable = () => {
       if (gridRef.current.api){
         //refreshes the cells... there is probably a better way to do this.
         gridRef.current.api.refreshCells();
+        console.log(curieToNameTaxon,"taxon stuffs");
       }
 
 
@@ -279,7 +282,7 @@ const TopicEntityTable = () => {
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
     { headerName: "Topic", field: "TopicName", onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.topic)}},
     { headerName: "Entity Type", field: "entityTypeName"},
-    { headerName: "Species", field: "speciesName" , filter: true, onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.species)}},
+    { headerName: "Species", field: "speciesName" , filter: SpeciesFilter, onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.species)}},
     { headerName: "Entity", field: "entityName", onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.entity)}},
     { field: "Entity Published As" },
     { field: "No Data" },
@@ -312,22 +315,30 @@ const TopicEntityTable = () => {
   }, []);
 
   const columnMoved = () => {
-    console.log("colum Moved");
     let columnState=gridRef.current.api.getColumnState();
     let columnOrder = [];
     columnState.forEach((element) => {
       columnOrder.push(element.colId);
     });
-    console.log(columnOrder);
     document.cookie=`columnOrder=${columnOrder}`;
   }
 
   const onGridReady = useCallback(() => {
-    let thaCookie = document.cookie.split("; ")
-        .find((row) => row.startsWith("columnOrder="))
-        ?.split("=")[1];
-    let columnOrder = thaCookie.split(',');
-    console.log(columnOrder);
+    //We could use a package here... but its not much code to do this way.
+    //We also need to split twice to get the data, or we hit errors on empty sets.
+    let allCookies = document.cookie;
+    if(allCookies){
+      let thaCookie = document.cookie.split("; ")
+          .find((row) => row.startsWith("columnOrder="))
+          .split("=")[1];
+      let tableState = thaCookie.split(',').map((element) => {
+          return { "colId": element};
+      })
+      gridRef.current.api.applyColumnState({
+        state: tableState,
+        applyOrder: true
+      });
+    }
   },[]);
 
   const getRowId = useMemo(() => {
@@ -359,6 +370,7 @@ const TopicEntityTable = () => {
       <div className="ag-theme-quartz" style={{height: 500}}>
         <AgGridReact
             ref={gridRef}
+            reactiveCustomComponents
             rowData={topicEntityTags}
             onGridReady={onGridReady}
             getRowId={getRowId}
