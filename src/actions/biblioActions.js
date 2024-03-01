@@ -564,11 +564,9 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
               searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
               searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.curie;
             }
-            // entityResultList.push(entityResult.symbol + " " + entityResult.curie);
-            // console.log(entityResult.curie);
-            // console.log(entityResult.symbol);
-            if (entityResult.uniqueId && entityResult[entityTypeSymbolField].displayText) {
-              searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult[entityTypeSymbolField].displayText;
+            // constructs have no curie so use modEntityId.
+            if (entityResult.modEntityId && entityResult[entityTypeSymbolField].displayText) {
+              searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.modEntityId;
             }
           }
         }
