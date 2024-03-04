@@ -25,9 +25,9 @@ const TopicEntityTable = () => {
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
-  const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
+  //const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState([]);
-  const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
+  //const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
   const [allSpecies, setAllSpecies] = useState([]);
   const ecoToName = {
     'ECO:0000302': 'author statement used in manual assertion'
@@ -48,6 +48,7 @@ const TopicEntityTable = () => {
     fetchData();
   }, [accessToken]); 
     
+  /*
   const handleSpeciesFilterClick = (e) => {
     const headerCell = e.target.closest('th');
     if (headerCell) {
@@ -59,7 +60,6 @@ const TopicEntityTable = () => {
     }
     setShowSpeciesFilter(!showSpeciesFilter);
   };
-
   const handleCheckboxChange = (curie) => {
     setSelectedSpecies((prevSelected) =>
       prevSelected.includes(curie) ? prevSelected.filter((item) => item !== curie) : [...prevSelected, curie]
@@ -68,10 +68,12 @@ const TopicEntityTable = () => {
     setShowSpeciesFilter(true);
   };
 
+
   const handleClearButtonClick = () => {
     setSelectedSpecies([]);
     setShowSpeciesFilter(true);
   };
+   */
 
   const speciesInResultSet = new Set(allSpecies);
 	    
@@ -204,9 +206,9 @@ const TopicEntityTable = () => {
     );
   };
 
-  const dateColumnSet = new Set(['date_created', 'date_updated']);
-  const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
-  const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
+  //const dateColumnSet = new Set(['date_created', 'date_updated']);
+  //const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
+  //const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
     { headerName: "Topic", field: "TopicName", onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.topic)}},
@@ -275,15 +277,8 @@ const TopicEntityTable = () => {
   }, []);
 
   const onRowDataUpdated = useCallback((event) => {
-    console.log(event);
     event.api.refreshCells();
   }, []);
-
-  const refreshCells = () => {
-    gridRef.current.api.refreshCells();
-  }
-
-
 
   return (
     <div>

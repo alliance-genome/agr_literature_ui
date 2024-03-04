@@ -6,15 +6,7 @@ export default (props) => {
     const accessToken = useSelector(state => state.isLogged.accessToken);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
-    const [topicEntityTags, setTopicEntityTags] = useState([]);
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-    const buttonClicked = () => {
-        //alert(`You clicked the button!`);
-        console.log(accessLevel, "accessLevel");
-        console.log(props, "props");
-        props.api.applyTransaction({ remove: [ props.api.getRowNode(props.node.id).data ] });
-        //handleDeleteClick(props.data.topic_entity_tag_source.mod, props.data.topic_entity_tag_id);
-    };
 
     const handleDeleteClick = async () => {
         let mod = props.data.topic_entity_tag_source.mod;
