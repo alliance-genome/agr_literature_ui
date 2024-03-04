@@ -1,7 +1,7 @@
 import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState, useMemo, useCallback, useRef} from "react";
 import {fetchDisplayTagData} from "../../../actions/biblioActions";
-import { setTetPageSize as setPageSizeAction,setCurieToNameTaxon } from "../../../actions/biblioActions";
+import { setCurieToNameTaxon } from "../../../actions/biblioActions";
 import axios from "axios";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Modal from 'react-bootstrap/Modal';
@@ -15,21 +15,14 @@ import "ag-grid-community/styles/ag-theme-quartz.css"; // Theme
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  //const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  //const testerMod = useSelector(state => state.isLogged.testerMod);
-  //const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  const pageSize = useSelector(state => state.biblio.tetPageSize);
+  //const pageSize = useSelector(state => state.biblio.tetPageSize);
   const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
-  //const [page, setPage] = useState(1);
-  //const [sortBy, setSortBy] = useState(null);
-  //const [rowData, setRowData] = useState();
-  //const [descSort, setDescSort] = useState(true);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
@@ -45,14 +38,12 @@ const TopicEntityTable = () => {
   const [fullNote, setFullNote] = useState('');
   const [showNoteModal, setShowNoteModal] = useState(false);
 
-  //const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
-
   const gridRef = useRef();
     
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
-      setCurieToNameTaxon(taxonData);
+      dispatch(setCurieToNameTaxon(taxonData));
     };
     fetchData();
   }, [accessToken]); 
@@ -188,12 +179,7 @@ const TopicEntityTable = () => {
       }
     }
     fetchData().then();
-  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, pageSize, topicEntityTags, selectedSpecies]);
-    
-  const handlePageSizeChange = (event) => {
-    const newSize = Number(event.target.value);
-    dispatch(setPageSizeAction(newSize)); // update Redux store with new pageSize
-  };
+  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, topicEntityTags, selectedSpecies]);
 
   const handleNoteClick = (fullNote) => {
     // console.log("fullNote in 'handleNoteClick'=", fullNote);
