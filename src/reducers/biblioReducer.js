@@ -980,7 +980,7 @@ export default function(state = initialState, action) {
         referenceCurie: action.payload,
         entityAdd: setRefCurieDefaultEntityAdd,
 	    tetPageSize: defaultTetPageSize,
-        curieToNameTaxon: [],
+        curieToNameTaxon: {'NCBITaxon:7955': 'Danio rerio', 'NCBITaxon:8364': 'Xenopus tropicalis'},
         getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':

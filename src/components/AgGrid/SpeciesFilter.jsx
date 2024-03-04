@@ -7,13 +7,12 @@ export default ({ model, onModelChange }) => {
     const [closeFilter, setCloseFilter] = useState();
     const [unappliedModel, setUnappliedModel] = useState(model);
     const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
-    console.log(curieToNameTaxon);
 
     const doesFilterPass = useCallback((params) => {
-        // doesFilterPass only gets called if the filter is active,
-        // which is when the model is not null (e.g. >= 2010 in this case)
-        return params.data.year >= 2010;
-    }, []);
+        // doesFilterPass only gets called if the filter is active
+        console.log(params,model);
+        return model.includes(params.data.species);
+    }, [model]);
 
     const afterGuiAttached = useCallback(({ hidePopup }) => {
         setCloseFilter(() => hidePopup);
@@ -29,8 +28,15 @@ export default ({ model, onModelChange }) => {
         setUnappliedModel(model);
     }, [model]);
 
-    const onChange = ({ target: { value } }) => {
-        setUnappliedModel(value === 'All' ? null : value);
+    const onSpeciesChange = ({ target: { value,checked } } ) => {
+        let newModel = [];
+        if(checked){
+            newModel = unappliedModel ? unappliedModel.concat([value]) : [value];
+        }
+        else{
+            newModel = unappliedModel.filter(f => f !== value)
+        }
+        setUnappliedModel(newModel.length===0 ? null : newModel);
     };
 
     const onClick = () => {
@@ -40,31 +46,15 @@ export default ({ model, onModelChange }) => {
         }
     };
 
-    console.log(model, "das model");
-
     return (
         <div className="species-filter">
             <div>Select Species</div>
-            <label>
-                <input
-                    type="radio"
-                    name="year"
-                    value="All"
-                    checked={unappliedModel == null}
-                    onChange={onChange}
-                />{' '}
-                All
-            </label>
-            <label>
-                <input
-                    type="radio"
-                    name="year"
-                    value="2010"
-                    checked={unappliedModel != null}
-                    onChange={onChange}
-                />{' '}
-                Since 2010
-            </label>
+            {Object.entries(curieToNameTaxon).map( ([key,value]) => {
+                return  <div>
+                            <input type="checkbox" id={key} value ={key} onChange={onSpeciesChange}/>
+                            <label htmlFor={key}> {value}</label>
+                        </div>
+            })}
             <button onClick={onClick}>Apply</button>
         </div>
     );

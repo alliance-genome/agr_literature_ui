@@ -3,15 +3,7 @@ import {useEffect, useState, useMemo, useCallback, useRef} from "react";
 import {fetchDisplayTagData} from "../../../actions/biblioActions";
 import { setTetPageSize as setPageSizeAction,setCurieToNameTaxon } from "../../../actions/biblioActions";
 import axios from "axios";
-import LoadingOverlay from "../../LoadingOverlay";
-import Table from "react-bootstrap/Table";
-import {FilterPopup} from "../FilterPopup";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFilter, faSortAlphaDown, faSortAlphaUp} from "@fortawesome/free-solid-svg-icons";
-import Pagination from "react-bootstrap/Pagination";
 import {getCurieToNameTaxon} from "./TaxonUtils";
-import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
 import Modal from 'react-bootstrap/Modal';
 import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
 import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
@@ -23,9 +15,9 @@ import "ag-grid-community/styles/ag-theme-quartz.css"; // Theme
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;  
+  //const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  //const testerMod = useSelector(state => state.isLogged.testerMod);
+  //const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
@@ -34,10 +26,10 @@ const TopicEntityTable = () => {
   const pageSize = useSelector(state => state.biblio.tetPageSize);
   const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
   const [totalTagsCount, setTotalTagsCount] = useState(undefined);
-  const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState(null);
-  const [rowData, setRowData] = useState();
-  const [descSort, setDescSort] = useState(true);
+  //const [page, setPage] = useState(1);
+  //const [sortBy, setSortBy] = useState(null);
+  //const [rowData, setRowData] = useState();
+  //const [descSort, setDescSort] = useState(true);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
   const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
@@ -88,37 +80,6 @@ const TopicEntityTable = () => {
   const handleClearButtonClick = () => {
     setSelectedSpecies([]);
     setShowSpeciesFilter(true);
-  };
-
-  const handleDeleteClick = async (tetDictToDelete) => {
-    if (tetDictToDelete.topic_entity_tag_source.mod != accessLevel) {
-      console.error("Permission denied. Cannot delete this row.");
-      return;
-    }
-    try {
-      const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + tetDictToDelete.topic_entity_tag_id;	  
-      const response = await axios.delete(url, {
-        headers: {
-            "Authorization": "Bearer " + accessToken,
-	    "Content-Type": "application/json"
-        }
-      });
-
-      // status_code=status.HTTP_204_NO_CONTENT
-      if (response.status === 204) {
-        // remove the deleted item from the state so that the UI updates
-        setTopicEntityTags(prevTags => prevTags.filter(tag => tag !== tetDictToDelete));
-      } else {
-        console.error("Failed to delete the item:", response.data);
-      }
-    } catch (error) {
-      console.error("Error deleting item:", error);
-    }
-  };
-  
-  const handleMouseLeave = () => {
-    // Hide the species filter when the mouse leaves the filter area
-    setShowSpeciesFilter(false);
   };
 
   const speciesInResultSet = new Set(allSpecies);
@@ -178,7 +139,6 @@ const TopicEntityTable = () => {
       if (gridRef.current.api){
         //refreshes the cells... there is probably a better way to do this.
         gridRef.current.api.refreshCells();
-        console.log(curieToNameTaxon,"taxon stuffs");
       }
 
 
@@ -186,6 +146,7 @@ const TopicEntityTable = () => {
     }
   });
 
+  //This may no longer be necessary
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
       let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?count_only=true";
@@ -201,16 +162,18 @@ const TopicEntityTable = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
-        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + page + "&page_size=" + 8000
+        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000
 	if (selectedSpecies && selectedSpecies.length !== 0) {
 	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
 	}
+        /**
         if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
         }
         if (descSort) {
           url += "&desc_sort=true"
         }
+        **/
         setIsLoadingData(true);
 	try {  
           const resultTags = await axios.get(url);
@@ -225,7 +188,7 @@ const TopicEntityTable = () => {
       }
     }
     fetchData().then();
-  }, [sortBy, descSort, referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, page, pageSize, topicEntityTags, selectedSpecies]);
+  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, pageSize, topicEntityTags, selectedSpecies]);
     
   const handlePageSizeChange = (event) => {
     const newSize = Number(event.target.value);
@@ -255,26 +218,6 @@ const TopicEntityTable = () => {
     );
   };
 
-  let headers = [
-    'topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated',
-    'novel_topic_data',
-    'confidence_level', 'created_by', 'note', 'entity_source', 'date_created',
-    'updated_by', 'date_updated', 'validation_by_author',
-    'validation_by_curator', 'validation_by_data_curation',
-    'display_tag'
-  ];   
-  let source_headers = [
-    'mod', 'source_method', 'evidence', 'validation_type', 'source_type',
-    'description', 'created_by', 'date_updated', 'date_created'
-  ];
-  const headersWithSortability = new Set([
-    'topic', 'entity_type', 'species', 'entity', 
-    'entity_published_as', 'negated', 'novel_topic_data', 'confidence_level',
-    'created_by', 'note', 'entity_source', 'date_created', 
-    'updated_by', 'date_updated', 'display_tag', 
-    'mod', 'source_method', 'description', 'evidence',
-    'validation_type', 'source_type'
-  ]);
   const dateColumnSet = new Set(['date_created', 'date_updated']);
   const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
   const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
@@ -358,7 +301,6 @@ const TopicEntityTable = () => {
 
   return (
     <div>
-      <button onClick={refreshCells}> Klick Mich</button>
       {/* Curie Popup */}
       {selectedCurie && (
           <GenericTetTableModal title="CURIE Information" body={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
