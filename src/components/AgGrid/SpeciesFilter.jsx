@@ -7,10 +7,10 @@ export default ({ model, onModelChange }) => {
     const [closeFilter, setCloseFilter] = useState();
     const [unappliedModel, setUnappliedModel] = useState(model);
     const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
-
+    const allSpecies = useSelector(state => state.biblio.allSpecies);
+    console.log(Object.entries(curieToNameTaxon).filter(([key, value]) => allSpecies.includes(key)), "all them species");
     const doesFilterPass = useCallback((params) => {
         // doesFilterPass only gets called if the filter is active
-        console.log(params,model);
         return model.includes(params.data.species);
     }, [model]);
 
@@ -49,7 +49,7 @@ export default ({ model, onModelChange }) => {
     return (
         <div className="species-filter">
             <div>Select Species</div>
-            {Object.entries(curieToNameTaxon).map( ([key,value]) => {
+            {Object.entries(curieToNameTaxon).filter(([key, value]) => allSpecies.includes(key)).map( ([key,value]) => {
                 return  <div>
                             <input type="checkbox" id={key} value ={key} onChange={onSpeciesChange}/>
                             <label htmlFor={key}> {value}</label>

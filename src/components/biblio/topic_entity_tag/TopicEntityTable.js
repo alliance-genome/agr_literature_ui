@@ -1,7 +1,7 @@
 import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState, useMemo, useCallback, useRef} from "react";
 import {fetchDisplayTagData} from "../../../actions/biblioActions";
-import { setCurieToNameTaxon } from "../../../actions/biblioActions";
+import { setCurieToNameTaxon,setAllSpecies } from "../../../actions/biblioActions";
 import axios from "axios";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Modal from 'react-bootstrap/Modal';
@@ -22,13 +22,14 @@ const TopicEntityTable = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   //const pageSize = useSelector(state => state.biblio.tetPageSize);
   const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
-  const [totalTagsCount, setTotalTagsCount] = useState(undefined);
+  const allSpecies = useSelector(state => state.biblio.allSpecies);
+  //const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
   //const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
-  const [selectedSpecies, setSelectedSpecies] = useState([]);
+  //const [selectedSpecies, setSelectedSpecies] = useState([]);
   //const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
-  const [allSpecies, setAllSpecies] = useState([]);
+  //const [allSpecies, setAllSpecies] = useState([]);
   const ecoToName = {
     'ECO:0000302': 'author statement used in manual assertion'
   };
@@ -75,7 +76,7 @@ const TopicEntityTable = () => {
   };
    */
 
-  const speciesInResultSet = new Set(allSpecies);
+  //const speciesInResultSet = new Set(allSpecies);
 	    
   useEffect(() => {
     fetchDisplayTagData(accessToken);
@@ -111,7 +112,8 @@ const TopicEntityTable = () => {
     const fetchAllSpecies = async () => {
       const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?column_only=species");
       if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
-        setAllSpecies(resultTags.data);
+
+        dispatch(setAllSpecies(resultTags.data));
         console.log(resultTags.data,"species");
       }
     }
@@ -140,6 +142,7 @@ const TopicEntityTable = () => {
   });
 
   //This may no longer be necessary
+  /*
   useEffect(() => {
     const fetchTotalTagsCount = async () => {
       let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?count_only=true";
@@ -151,14 +154,16 @@ const TopicEntityTable = () => {
     }
     fetchTotalTagsCount().then();
   }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie, selectedSpecies])
-
+*/
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
         let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000
-	if (selectedSpecies && selectedSpecies.length !== 0) {
+	/*
+    if (selectedSpecies && selectedSpecies.length !== 0) {
 	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
 	}
+	*/
         /**
         if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
@@ -181,7 +186,7 @@ const TopicEntityTable = () => {
       }
     }
     fetchData().then();
-  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, topicEntityTags, selectedSpecies]);
+  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, topicEntityTags]);
 
   const handleNoteClick = (fullNote) => {
     // console.log("fullNote in 'handleNoteClick'=", fullNote);

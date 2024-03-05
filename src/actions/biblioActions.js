@@ -1128,7 +1128,7 @@ export const setFileUploadingModalText = (modalText) => ({
   type: 'SET_FILE_UPLOADING_MODAL_TEXT',
   payload: modalText
 })
-
+/*
 export const setTetPageNumber = (pageNumber) => ({
   type: 'SET_TET_PAGE_NUMBER',
   payload: pageNumber
@@ -1138,8 +1138,13 @@ export const setTetPageSize = (pageSize) => ({
   type: 'SET_TET_PAGE_SIZE',
   payload: pageSize
 });
-
+*/
 export const setCurieToNameTaxon = (taxonMappings) => ({
   type: 'SET_CURIE_TO_NAME_TAXON',
   payload: taxonMappings
+});
+
+export const setAllSpecies = (allSpecies) => ({
+  type: 'SET_ALL_SPECIES',
+  payload: allSpecies
 });
