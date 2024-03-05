@@ -1095,19 +1095,7 @@ export default function(state = initialState, action) {
         ...state,
         loadingFileNames: newLoadingFileNames2
       }
-    /*
-    case 'SET_TET_PAGE_NUMBER':
-      return {
-        ...state,
-        tetPageNumber: action.payload 
-      };
 
-    case 'SET_TET_PAGE_SIZE':
-      return {
-        ...state,
-        tetPageSize: action.payload 
-      };
-    */
     case 'SET_CURIE_TO_NAME_TAXON':
       return {
         ...state,

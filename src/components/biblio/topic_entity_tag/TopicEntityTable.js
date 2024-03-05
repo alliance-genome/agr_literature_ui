@@ -20,16 +20,10 @@ const TopicEntityTable = () => {
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  //const pageSize = useSelector(state => state.biblio.tetPageSize);
   const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
   const allSpecies = useSelector(state => state.biblio.allSpecies);
-  //const [totalTagsCount, setTotalTagsCount] = useState(undefined);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
-  //const [showSpeciesFilter, setShowSpeciesFilter] = useState(false);
-  //const [selectedSpecies, setSelectedSpecies] = useState([]);
-  //const [speciesFilterPosition, setSpeciesFilterPosition] = useState({ top: 0, left: 0 });
-  //const [allSpecies, setAllSpecies] = useState([]);
   const ecoToName = {
     'ECO:0000302': 'author statement used in manual assertion'
   };
@@ -47,36 +41,7 @@ const TopicEntityTable = () => {
       dispatch(setCurieToNameTaxon(taxonData));
     };
     fetchData();
-  }, [accessToken]); 
-    
-  /*
-  const handleSpeciesFilterClick = (e) => {
-    const headerCell = e.target.closest('th');
-    if (headerCell) {
-      const rect = headerCell.getBoundingClientRect();
-      setSpeciesFilterPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-      });
-    }
-    setShowSpeciesFilter(!showSpeciesFilter);
-  };
-  const handleCheckboxChange = (curie) => {
-    setSelectedSpecies((prevSelected) =>
-      prevSelected.includes(curie) ? prevSelected.filter((item) => item !== curie) : [...prevSelected, curie]
-    );
-    // keep the filter section open when checkboxes are checked
-    setShowSpeciesFilter(true);
-  };
-
-
-  const handleClearButtonClick = () => {
-    setSelectedSpecies([]);
-    setShowSpeciesFilter(true);
-  };
-   */
-
-  //const speciesInResultSet = new Set(allSpecies);
+  }, [accessToken]);
 	    
   useEffect(() => {
     fetchDisplayTagData(accessToken);
@@ -103,8 +68,6 @@ const TopicEntityTable = () => {
       }
     }
     fetchMappings().then( () => {
-          //This isnt working!
-          gridRef.current.api.refreshCells();
     });
   }, [referenceCurie, topicEntityTags]);
 
@@ -126,7 +89,6 @@ const TopicEntityTable = () => {
       topicEntityTags.forEach((element) => {
         //this probably needs some checking for empty sets
         element.TopicName = entityEntityMappings[element.topic];
-        //gridRef.current.api.applyTransaction({ update: [ {id :gridRef.current.api.getRowNode(element.topic_entity_tag_id), TopicName : entityEntityMappings[element.topic] }] });
         element.entityName=entityEntityMappings[element.entity];
         element.speciesName=curieToNameTaxon[element.species];
         element.entityTypeName=entityEntityMappings[element.entity_type];
@@ -135,35 +97,13 @@ const TopicEntityTable = () => {
         //refreshes the cells... there is probably a better way to do this.
         gridRef.current.api.refreshCells();
       }
-
-
-
     }
   });
 
-  //This may no longer be necessary
-  /*
-  useEffect(() => {
-    const fetchTotalTagsCount = async () => {
-      let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?count_only=true";
-      if (selectedSpecies && selectedSpecies.length !== 0) {
-        url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
-      }
-      const resultTags = await axios.get(url);
-      setTotalTagsCount(resultTags.data);
-    }
-    fetchTotalTagsCount().then();
-  }, [biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, referenceCurie, selectedSpecies])
-*/
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
         let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000
-	/*
-    if (selectedSpecies && selectedSpecies.length !== 0) {
-	  url = url + "&column_filter=species&column_values=" + selectedSpecies.join(',')
-	}
-	*/
         /**
         if (sortBy !== null && sortBy !== undefined) {
           url += "&sort_by=" + sortBy
@@ -211,9 +151,6 @@ const TopicEntityTable = () => {
     );
   };
 
-  //const dateColumnSet = new Set(['date_created', 'date_updated']);
-  //const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);
-  //const headerToLabelMap = { 'negated': 'no data', 'novel_topic_data': 'novel data' };
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
     { headerName: "Topic", field: "TopicName", onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.topic)}},
