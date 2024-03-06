@@ -102,24 +102,24 @@ const TopicEntityTable = () => {
     }
   });
 
+  const fetchTableData = async () => {
+    let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000;
+    setIsLoadingData(true);
+    try {
+        const resultTags = await axios.get(url);
+        if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
+          setTopicEntityTags(resultTags.data);
+        }
+    } catch (error) {
+    console.error("Error fetching data:" + error);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (biblioUpdatingEntityAdd === 0) {
-        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000
-        setIsLoadingData(true);
-	try {  
-          const resultTags = await axios.get(url);
-          if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
-            setTopicEntityTags(resultTags.data);
-          }
-	} catch (error) {
-	  console.error("Error fetching data:" + error);
-        } finally { 
-          setIsLoadingData(false);
-	}
-      }
-    fetchData().then();
-  }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, topicEntityTags]);
+    fetchTableData();
+  }, [topicEntityTags]);
 
 
   const handleNoteClick = (fullNote) => {
