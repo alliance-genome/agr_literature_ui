@@ -14,6 +14,7 @@ import BiblioRawTetData from './biblio/BiblioRawTetData';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString } from './biblio/BiblioDisplay';
+import { reffileCompareFn } from './biblio/BiblioFileManagement';
 
 import {
   downloadReferencefile,
@@ -294,6 +295,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
   const rowReferencefileSupplementElements = []
   let hasAccessToTarball = false;
+  referenceFiles.sort(reffileCompareFn);
   for (const[index, referencefileDict] of referenceFiles.entries()) {
     let is_ok = false;
     let allowed_mods = [];
@@ -372,7 +374,8 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
             </Row>
             :
             rowReferencefileElements}
-      </>); }
+      </>);
+}
 
 // curators no longer want this link
 // const RowDisplayPmcidCrossReference = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
