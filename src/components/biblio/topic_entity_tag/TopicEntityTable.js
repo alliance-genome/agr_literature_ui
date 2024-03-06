@@ -101,14 +101,6 @@ const TopicEntityTable = () => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
         let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000
-        /**
-        if (sortBy !== null && sortBy !== undefined) {
-          url += "&sort_by=" + sortBy
-        }
-        if (descSort) {
-          url += "&desc_sort=true"
-        }
-        **/
         setIsLoadingData(true);
 	try {  
           const resultTags = await axios.get(url);
@@ -141,6 +133,10 @@ const TopicEntityTable = () => {
     return new Date(params.value).toLocaleString();
   };
 
+  const nameFormatter = (params) => {
+    return ecoToName[params.value];
+  }
+
   const GenericTetTableModal = ({ title, body, show, onHide }) => {
     return (
       <Modal show={show} onHide={onHide} centered>
@@ -169,12 +165,11 @@ const TopicEntityTable = () => {
     { headerName: "Updated By", field: "updated_by" },
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
     { headerName: "Validation By Author", field: "validation_by_author" },
-    { headerName: "Validation By Curator", field: "validation_by_curator" },
-    { headerName: "Validation By Data Curation", field: "validation_by_data_curation" },
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator" },
     { headerName: "Display Tag", field: "display_tag" },
     { headerName: "Source Mod", field: "topic_entity_tag_source.mod" },
     { headerName: "Source Method", field: "topic_entity_tag_source.source_method" },
-    { headerName: "Source Evidence", field: "topic_entity_tag_source.evidence" },
+    { headerName: "Source Evidence", field: "topic_entity_tag_source.evidence" ,valueFormatter: nameFormatter },
     { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type" },
     { headerName: "Source Type", field: "topic_entity_tag_source.source_type" },
     { headerName: "Source Description", field: "topic_entity_tag_source.description" },
@@ -185,7 +180,7 @@ const TopicEntityTable = () => {
 
 
   const paginationPageSizeSelector = useMemo(() => {
-    return [25, 500, 1000];
+    return [10, 25, 50, 100, 500];
   }, []);
 
   const columnMoved = () => {
