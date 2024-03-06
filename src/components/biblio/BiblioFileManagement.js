@@ -246,6 +246,17 @@ export const BiblioCitationDisplay = () => {
   return (<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
 }
 
+export const reffileCompareFn = (a, b) => {
+  if (a.file_class + a.display_name + a.file_extension > b.file_class + b.display_name + b.file_extension) {
+    return 1;
+  }
+  if (a.file_class + a.display_name + a.file_extension < b.file_class + b.display_name + b.file_extension) {
+    return -1;
+  }
+  return 0;
+}
+
+
 const FileEditor = () => {
   const displayOrEditor = 'display';
   const fieldName = 'referencefiles';
@@ -277,16 +288,6 @@ const FileEditor = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileUploadingShowSuccess]);
-
-  const compareFn = (a, b) => {
-    if (a.file_class + a.display_name + a.file_extension > b.file_class + b.display_name + b.file_extension) {
-      return 1;
-    }
-    if (a.file_class + a.display_name + a.file_extension < b.file_class + b.display_name + b.file_extension) {
-      return -1;
-    }
-    return 0;
-  }
 
   const patchReferencefile = (referencefileId, data, accessToken) => {
     const url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/" + referencefileId;
@@ -383,8 +384,8 @@ const FileEditor = () => {
       .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] !== true && accessLevel !== 'developer' && referenceFile.referencefile_mods
           .every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null));
 
-  referenceFilesWithAccess.sort(compareFn);
-  referenceFilesNoAccess.sort(compareFn);
+  referenceFilesWithAccess.sort(reffileCompareFn);
+  referenceFilesNoAccess.sort(reffileCompareFn);
   rowReferencefileElements = [...getDisplayRowsFromReferenceFiles(referenceFilesWithAccess, true),
     ...getDisplayRowsFromReferenceFiles(referenceFilesNoAccess, false)];
   const referencefileHeaderRow = (

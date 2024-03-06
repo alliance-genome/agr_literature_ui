@@ -2,9 +2,13 @@
 
 // import notGithubVariables from './notGithubVariables';
 
+import axios from "axios";
+
 import { generateRelationsSimple } from './biblioActions';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
+
+const ateamApiBaseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
 
 export const changeFieldInput = (e, object, key1) => {
   // console.log('merge action change field array reference json ' + e.target.id + ' to ' + e.target.value);
@@ -30,14 +34,37 @@ export const mergeSwapPairSimple = (fieldName) => {
   return { type: 'MERGE_SWAP_PAIR_SIMPLE',
            payload: { fieldName: fieldName } }; };
 
-export const mergeToggleIndependent = (fieldName, oneOrTwo, index) => {
-  console.log("action mergeToggleIndependent " + fieldName + ' ' + oneOrTwo + ' ' + index);
+export const mergeToggleIndependent = (fieldName, oneOrTwo, index, subtype) => {
+  console.log("action mergeToggleIndependent " + fieldName + ' ' + oneOrTwo + ' ' + index + ' ' + subtype);
   return { type: 'MERGE_TOGGLE_INDEPENDENT',
-           payload: { fieldName: fieldName, oneOrTwo: oneOrTwo, index: index } }; };
+           payload: { fieldName: fieldName, oneOrTwo: oneOrTwo, index: index, subtype: subtype } }; };
 
 // export const mergeSwapPairSimple = (fieldName) => dispatch => {
 //   console.log("action mergeSwapPairSimple " + fieldName);
 // }
+
+export const mergeAteamQueryAtp = (accessToken, atpParents) => dispatch => {
+  console.log("action mergeAteamQueryAtp " + atpParents);
+
+  const queryAteamAtpChildren = async (atp) => {
+    const ateamApiUrl = ateamApiBaseUrl + 'api/atpterm/' + atp + '/children';
+    const response = await axios.get(ateamApiUrl, {
+      headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      }
+    });
+    dispatch({
+      type: 'MERGE_ATEAM_ATP_RESULT',
+      payload: { atp: atp, response: response.data.entities }
+    });
+  }
+
+  atpParents.forEach( (atp) => {
+    // console.log('foreach queryAteamAtpChildren ' + atp);
+    queryAteamAtpChildren(atp);
+  });
+}
 
 export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool) => dispatch => {
   // console.log("ref1 " + referenceInput1);

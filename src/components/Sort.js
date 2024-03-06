@@ -165,7 +165,7 @@ const Sort = () => {
         // console.log(reference['mod_corpus_association_id']);
         // console.log(reference['corpus']);
         // console.log(referencesToSortDb[index]['corpus']);
-        let updateJson = { 'corpus': reference['mod_corpus_association_corpus'] }
+        let updateJson = { 'corpus': reference['mod_corpus_association_corpus'], 'mod_corpus_sort_source': 'manual_creation' }
         let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
         const field = null;
         const subField = null;

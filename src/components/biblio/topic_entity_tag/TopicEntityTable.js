@@ -18,7 +18,7 @@ const TopicEntityTable = () => {
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const [entityEntityMappings, setEntityEntityMappings] = useState({});
   const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
-  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
+  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);  
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
   const allSpecies = useSelector(state => state.biblio.allSpecies);
@@ -42,14 +42,18 @@ const TopicEntityTable = () => {
     };
     fetchData();
   }, [accessToken]);
+
 	    
   useEffect(() => {
     fetchDisplayTagData(accessToken);
   }, [accessToken]);
 
+  const [firtstMappingsFetch, setFirstMappingsFetch] = useState(true);
+
   useEffect(() => {
     const fetchMappings = async () => {
-      if (topicEntityTags.length > 0) {
+      if (topicEntityTags.length > 0 && firtstMappingsFetch) {
+        setFirstMappingsFetch(false);
         let config = {
           headers: {
             'content-type': 'application/json',
@@ -79,6 +83,7 @@ const TopicEntityTable = () => {
     }
     fetchAllSpecies().then();
   }, [referenceCurie, topicEntityTags, allSpecies])
+
 
   //This code can go away once we have this data returned from the API
   useEffect(() => {
@@ -113,9 +118,9 @@ const TopicEntityTable = () => {
           setIsLoadingData(false);
 	}
       }
-    }
     fetchData().then();
   }, [referenceCurie, biblioUpdatingEntityAdd, biblioUpdatingEntityRemoveEntity, topicEntityTags]);
+
 
   const handleNoteClick = (fullNote) => {
     // console.log("fullNote in 'handleNoteClick'=", fullNote);
@@ -176,6 +181,7 @@ const TopicEntityTable = () => {
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter }
+
   ]);
 
 

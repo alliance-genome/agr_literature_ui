@@ -12,7 +12,7 @@ import {
     setTypeaheadName2CurieMap,
     updateButtonBiblioEntityAdd
 } from "../../../actions/biblioActions";
-import { checkForExistingTags } from './TopicEntityUtils';
+import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
 import {
   getCurieToNameTaxon,
   getModToTaxon
@@ -67,7 +67,14 @@ const TopicEntityCreate = () => {
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
   const [tagExistingMessage, setTagExistingMessage] = useState("");
-    
+  const [existingTagResponses, setExistingTagResponses] = useState([]);
+  const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
+  const taxonToMod = {};
+  for (const [mod, taxons] of Object.entries(modToTaxon)) {
+    taxons.forEach((taxon) => {
+    taxonToMod[taxon] = mod;
+    });
+  };
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
@@ -95,10 +102,11 @@ const TopicEntityCreate = () => {
       'ATP:0000014': 'AGMs',
       'ATP:0000027': 'strain',
       'ATP:0000025': 'genotype',
-      'ATP:0000026': 'fish'
+      'ATP:0000026': 'fish',
+      'ATP:0000013': 'transgenic construct'
   };
   const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006', 'ATP:0000123',
-			  'ATP:0000014', 'ATP:0000027', 'ATP:0000025', 'ATP:0000026'];
+			  'ATP:0000014', 'ATP:0000027', 'ATP:0000025', 'ATP:0000026', 'ATP:0000013'];
   const speciesATP = 'ATP:0000123';
   const renderView = () => {
     return topicSelect === speciesATP ? 'autocomplete' : 'list';
@@ -154,13 +162,20 @@ const TopicEntityCreate = () => {
 
   useEffect( () => {
     if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
-      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect])) }
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
   }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect( () => {
     if (accessLevel in modToTaxon) {
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (tagExistingMessage) {
+      setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
+			  updateButtonBiblioEntityAdd);
+    }
+  }, [tagExistingMessage, existingTagResponses]);
 
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
@@ -182,6 +197,10 @@ const TopicEntityCreate = () => {
     return updateJson;
   }
 
+  const handleCloseTagExistingMessage = () => {
+    setIsTagExistingMessageVisible(false); // hide the message
+  };
+    
   async function createEntities(refCurie) {
     if (topicSelect === null) {
       return
@@ -210,13 +229,17 @@ const TopicEntityCreate = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
-    const message = await checkForExistingTags(forApiArray, accessToken, accessLevel,
-                         dispatch, updateButtonBiblioEntityAdd);
-    if (message) {
-      setTagExistingMessage(message);
+    const result = await checkForExistingTags(forApiArray, accessToken, accessLevel,
+					      dispatch, updateButtonBiblioEntityAdd);
+    if (result) {
+      setTagExistingMessage(result.html);
+      /*
       setTimeout(() => {
         setTagExistingMessage('');
       }, 8000);
+      */
+      setIsTagExistingMessageVisible(true); // show the message
+      setExistingTagResponses(result.existingTagResponses);
     }
 
     setTypeaheadOptions([]);
@@ -241,11 +264,14 @@ const TopicEntityCreate = () => {
     <ModalGeneric showGenericModal={entityModalText !== '' ? true : false} genericModalHeader="Entity Error"
                   genericModalBody={entityModalText} onHideAction={setEntityModalText('')} />
     <RowDivider />
-    {tagExistingMessage && (
+    {isTagExistingMessageVisible && tagExistingMessage && (
       <Row className="form-group row">
-        <Col sm="10">
+        <Col sm="12">
           <div className="alert alert-warning" role="alert">
-            <div dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div> 
+            <div className="table-responsive" dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div>
+	    <Button variant="outline-secondary" size="sm" onClick={handleCloseTagExistingMessage}>
+              Close
+            </Button>
           </div>
 	</Col>
       </Row>

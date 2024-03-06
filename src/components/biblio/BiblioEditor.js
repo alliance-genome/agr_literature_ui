@@ -87,6 +87,16 @@ enumDict['referenceComcorType'] = ['', 'RetractionOf', 'HasRetraction', 'Erratum
 enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
 enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'automated_alliance', 'assigned_for_review']
 
+export const comcorMapping = {}
+comcorMapping['HasComment'] = 'CommentOn'
+comcorMapping['HasErratum'] = 'ErratumFor'
+comcorMapping['HasExpressionOfConcernFor'] = 'ExpressionOfConcernFor'
+comcorMapping['HasReprint'] = 'ReprintOf'
+comcorMapping['RepublishedIn'] = 'RepublishedFrom'
+comcorMapping['HasRetraction'] = 'RetractionOf'
+comcorMapping['HasUpdate'] = 'UpdateOf'
+comcorMapping['hasChapter'] = 'ChapterIn'
+
 // title
 // cross_references (doi, pmid, modID)
 // authors (collapsed [in a list, or only first author])
@@ -297,15 +307,6 @@ const BiblioSubmitUpdateButton = () => {
 
     if ('relations' in referenceJsonLive && referenceJsonLive['relations'] !== null) {
       let field = 'relations';
-      let comcorMapping = {}
-      comcorMapping['HasComment'] = 'CommentOn'
-      comcorMapping['HasErratum'] = 'ErratumFor'
-      comcorMapping['HasExpressionOfConcernFor'] = 'ExpressionOfConcernFor'
-      comcorMapping['HasReprint'] = 'ReprintOf'
-      comcorMapping['RepublishedIn'] = 'RepublishedFrom'
-      comcorMapping['HasRetraction'] = 'RetractionOf'
-      comcorMapping['HasUpdate'] = 'UpdateOf'
-      comcorMapping['hasChapter'] = 'ChapterIn'
       for (const[index, comcorDict] of referenceJsonLive['relations'].entries()) {
         if ('needsChange' in comcorDict) {
           let fromCurie = referenceCurie
