@@ -8,7 +8,6 @@ export default ({ model, onModelChange }) => {
     const [unappliedModel, setUnappliedModel] = useState(model);
     const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
     const allSpecies = useSelector(state => state.biblio.allSpecies);
-    console.log(Object.entries(curieToNameTaxon).filter(([key, value]) => allSpecies.includes(key)), "all them species");
     const doesFilterPass = useCallback((params) => {
         // doesFilterPass only gets called if the filter is active
         return model.includes(params.data.species);

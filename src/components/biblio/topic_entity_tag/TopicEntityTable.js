@@ -63,7 +63,6 @@ const TopicEntityTable = () => {
           setEntityEntityMappings(resultMappings.data);
         } finally {
           setIsLoadingMappings(false)
-          console.log(topicEntityTags);
         }
       }
     }
@@ -75,9 +74,7 @@ const TopicEntityTable = () => {
     const fetchAllSpecies = async () => {
       const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?column_only=species");
       if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
-
         dispatch(setAllSpecies(resultTags.data));
-        console.log(resultTags.data,"species");
       }
     }
     fetchAllSpecies().then();
@@ -140,6 +137,10 @@ const TopicEntityTable = () => {
     setShowModal(true);
   };
 
+  const dateFormatter = (params) => {
+    return new Date(params.value).toLocaleString();
+  };
+
   const GenericTetTableModal = ({ title, body, show, onHide }) => {
     return (
       <Modal show={show} onHide={onHide} centered>
@@ -153,33 +154,33 @@ const TopicEntityTable = () => {
 
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
-    { headerName: "Topic", field: "TopicName", onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.topic)}},
+    { headerName: "Topic", field: "TopicName", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
     { headerName: "Entity Type", field: "entityTypeName"},
-    { headerName: "Species", field: "speciesName" , filter: SpeciesFilter, onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.species)}},
-    { headerName: "Entity", field: "entityName", onCellClicked: (params) => {console.log(params);handleCurieClick(params.value+":"+params.data.entity)}},
-    { field: "Entity Published As" },
-    { field: "No Data" },
-    { field: "Novel Data" },
-    { field: "Confidence Level" },
-    { field: "Created By" },
-    { field: "note", editable:true, onCellClicked: (params) => {console.log(params);handleNoteClick(params.value)}},
-    { field: "entity_source" },
-    { field: "date_created" },
-    { field: "updated_by" },
-    { field: "date_updated" },
-    { field: "validation_by_author" },
-    { field: "validation_by_curator" },
-    { field: "validation_by_data_curation" },
-    { field: "display_tag" },
-    { field: "topic_entity_tag_source.mod" },
-    { field: "topic_entity_tag_source.source_method" },
-    { field: "topic_entity_tag_source.evidence" },
-    { field: "topic_entity_tag_source.validation_type" },
-    { field: "topic_entity_tag_source.source_type" },
-    { field: "topic_entity_tag_source.description" },
-    { field: "topic_entity_tag_source.created_by" },
-    { field: "topic_entity_tag_source.date_updated" },
-    { field: "topic_entity_tag_source.date_created" }
+    { headerName: "Species", field: "speciesName" , filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
+    { headerName: "Entity", field: "entityName", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
+    { headerName: "Entity Published As", field: "entity_published_as" },
+    { headerName: "No Data", field: "negated", cellDataType: "text" },
+    { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text"},
+    { headerName: "Confidence Level", field:"confidence_level" },
+    { headerName: "Created By", field: "created_by"},
+    { headerName: "Note", field: "note", onCellClicked: (params) => {handleNoteClick(params.value)}},
+    { headerName: "Entity Source", field: "entity_source" },
+    { headerName: "Date Created", field: "date_created", valueFormatter: dateFormatter },
+    { headerName: "Updated By", field: "updated_by" },
+    { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
+    { headerName: "Validation By Author", field: "validation_by_author" },
+    { headerName: "Validation By Curator", field: "validation_by_curator" },
+    { headerName: "Validation By Data Curation", field: "validation_by_data_curation" },
+    { headerName: "Display Tag", field: "display_tag" },
+    { headerName: "Source Mod", field: "topic_entity_tag_source.mod" },
+    { headerName: "Source Method", field: "topic_entity_tag_source.source_method" },
+    { headerName: "Source Evidence", field: "topic_entity_tag_source.evidence" },
+    { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type" },
+    { headerName: "Source Type", field: "topic_entity_tag_source.source_type" },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description" },
+    { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter }
   ]);
 
 
