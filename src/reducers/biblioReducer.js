@@ -979,7 +979,9 @@ export default function(state = initialState, action) {
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
         entityAdd: setRefCurieDefaultEntityAdd,
-	tetPageSize: defaultTetPageSize,
+	    tetPageSize: defaultTetPageSize,
+        curieToNameTaxon: {},
+        allSpecies: [],
         getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
@@ -1094,16 +1096,16 @@ export default function(state = initialState, action) {
         loadingFileNames: newLoadingFileNames2
       }
 
-    case 'SET_TET_PAGE_NUMBER':
+    case 'SET_CURIE_TO_NAME_TAXON':
       return {
         ...state,
-        tetPageNumber: action.payload 
+        curieToNameTaxon: action.payload
       };
 
-    case 'SET_TET_PAGE_SIZE':
+    case 'SET_ALL_SPECIES':
       return {
         ...state,
-        tetPageSize: action.payload 
+        allSpecies: action.payload
       };
      
 //     case 'QUERY_BUTTON':

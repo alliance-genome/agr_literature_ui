@@ -449,3 +449,20 @@ em {
   opacity: 1;
   visibility: visible;
 }
+
+.species-filter {
+  width: 200px;
+}
+
+.species-filter > * {
+  margin: 8px;
+}
+
+.species-filter > div:first-child {
+  font-weight: bold;
+  text-align: center;
+}
+
+.species-filter > div {
+  text-align: left;
+}
