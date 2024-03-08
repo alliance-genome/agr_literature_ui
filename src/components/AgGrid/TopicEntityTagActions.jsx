@@ -9,7 +9,7 @@ export default (props) => {
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
 
     const handleDeleteClick = async () => {
-        let mod = props.data.topic_entity_tag_source.data_provider;
+        let mod = props.data.topic_entity_tag_source.secondary_data_provider_abbreviation;
         let id = props.data.topic_entity_tag_id;
         if (mod !== accessLevel) {
             console.error("Permission denied. Cannot delete this row.");
@@ -39,7 +39,7 @@ export default (props) => {
 
     return (
     <span>
-        {props.data.topic_entity_tag_source.data_provider === accessLevel ? <button onClick={() => handleDeleteClick()}>Delete</button> : null}
+        {props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel ? <button onClick={() => handleDeleteClick()}>Delete</button> : null}
     </span>
     );
 };
