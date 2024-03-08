@@ -50,6 +50,7 @@ const TopicEntityTable = () => {
 
   const [firtstMappingsFetch, setFirstMappingsFetch] = useState(true);
 
+  /*
   useEffect(() => {
     const fetchMappings = async () => {
       if (topicEntityTags.length > 0 && firtstMappingsFetch) {
@@ -74,26 +75,30 @@ const TopicEntityTable = () => {
     });
   }, [referenceCurie, topicEntityTags]);
 
+
   useEffect(() => {
     const fetchAllSpecies = async () => {
       const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?column_only=species");
       if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
         dispatch(setAllSpecies(resultTags.data));
+        console.log(resultTags.data);
       }
     }
     fetchAllSpecies().then();
   }, [referenceCurie, topicEntityTags, allSpecies])
+  */
 
 
   //This code can go away once we have this data returned from the API
+  /*
   useEffect(() => {
     if((!isLoadingData) && (!isLoadingMappings)){
       topicEntityTags.forEach((element) => {
         //this probably needs some checking for empty sets
-        element.TopicName = entityEntityMappings[element.topic];
+        //element.TopicName = entityEntityMappings[element.topic];
         element.entityName=entityEntityMappings[element.entity];
-        element.speciesName=curieToNameTaxon[element.species];
-        element.entityTypeName=entityEntityMappings[element.entity_type];
+        //element.speciesName=curieToNameTaxon[element.species];
+        //element.entityTypeName=entityEntityMappings[element.entity_type];
       });
       if (gridRef.current.api){
         //refreshes the cells... there is probably a better way to do this.
@@ -101,6 +106,7 @@ const TopicEntityTable = () => {
       }
     }
   });
+   */
 
   const fetchTableData = async () => {
     let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000;
@@ -109,6 +115,8 @@ const TopicEntityTable = () => {
         const resultTags = await axios.get(url);
         if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
           setTopicEntityTags(resultTags.data);
+          const uniqueSpecies = [...new Set( resultTags.data.map(obj => obj.species)) ];
+          dispatch(setAllSpecies(uniqueSpecies));
         }
     } catch (error) {
     console.error("Error fetching data:" + error);
@@ -155,10 +163,10 @@ const TopicEntityTable = () => {
 
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
-    { headerName: "Topic", field: "TopicName", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
-    { headerName: "Entity Type", field: "entityTypeName"},
-    { headerName: "Species", field: "speciesName" , filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
-    { headerName: "Entity", field: "entityName", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
+    { headerName: "Topic", field: "topic_name", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
+    { headerName: "Entity Type", field: "entity_type_name"},
+    { headerName: "Species", field: "species_name" , filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
+    { headerName: "Entity", field: "entity_name", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
     { headerName: "Entity Published As", field: "entity_published_as" },
     { headerName: "No Data", field: "negated", cellDataType: "text" },
     { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text"},
