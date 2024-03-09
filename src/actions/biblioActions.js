@@ -536,7 +536,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
           {
             "searchFilters": {
                 "symbolFilters": {
-                    "constructSymbol.displayText_keyword":{ "queryString": entityQueryString }
+                    "constructSymbol.displayText_keyword":{ "queryString": entityQueryString, "tokenOperator": "OR" }
                 },
                 "dataProviderFilters": {
                     // "dataProvider.sourceOrganization.uniqueId_keyword": {"queryString": taxon_to_mod[taxon], "tokenOperator": "AND"}}
