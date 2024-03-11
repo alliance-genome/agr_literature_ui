@@ -1,6 +1,5 @@
 import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState, useMemo, useCallback, useRef} from "react";
-import {fetchDisplayTagData} from "../../../actions/biblioActions";
 import { setCurieToNameTaxon,setAllSpecies } from "../../../actions/biblioActions";
 import axios from "axios";
 import {getCurieToNameTaxon} from "./TaxonUtils";
@@ -16,20 +15,14 @@ const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
-  const [entityEntityMappings, setEntityEntityMappings] = useState({});
-  const biblioUpdatingEntityRemoveEntity = useSelector(state => state.biblio.biblioUpdatingEntityRemoveEntity);
-  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);  
+  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
-  const allSpecies = useSelector(state => state.biblio.allSpecies);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [isLoadingMappings, setIsLoadingMappings] = useState(false);
   const ecoToName = {
     'ECO:0000302': 'author statement used in manual assertion'
   };
   const [selectedCurie, setSelectedCurie] = useState(null);
   const [showModal, setShowModal] = useState(false);
-
   const [fullNote, setFullNote] = useState('');
   const [showNoteModal, setShowNoteModal] = useState(false);
 
@@ -43,65 +36,6 @@ const TopicEntityTable = () => {
     fetchData();
   }, [accessToken]);
 
-	    
-  useEffect(() => {
-    fetchDisplayTagData(accessToken);
-  }, [accessToken]);
-
-  const [firtstMappingsFetch, setFirstMappingsFetch] = useState(true);
-
-  useEffect(() => {
-    const fetchMappings = async () => {
-      if (topicEntityTags.length > 0 && firtstMappingsFetch) {
-        setFirstMappingsFetch(false);
-        let config = {
-          headers: {
-            'content-type': 'application/json',
-            // 'authorization': 'Bearer ' + accessToken
-          }
-        };
-        setIsLoadingMappings(true);
-        try {
-          const resultMappings = await axios.get(process.env.REACT_APP_RESTAPI + "/topic_entity_tag/map_entity_curie_to_name/?curie_or_reference_id=" + referenceCurie,
-              config);
-          setEntityEntityMappings(resultMappings.data);
-        } finally {
-          setIsLoadingMappings(false)
-        }
-      }
-    }
-    fetchMappings().then( () => {
-    });
-  }, [referenceCurie, topicEntityTags]);
-
-  useEffect(() => {
-    const fetchAllSpecies = async () => {
-      const resultTags = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?column_only=species");
-      if (JSON.stringify(resultTags.data) !== JSON.stringify(allSpecies)) {
-        dispatch(setAllSpecies(resultTags.data));
-      }
-    }
-    fetchAllSpecies().then();
-  }, [referenceCurie, topicEntityTags, allSpecies])
-
-
-  //This code can go away once we have this data returned from the API
-  useEffect(() => {
-    if((!isLoadingData) && (!isLoadingMappings)){
-      topicEntityTags.forEach((element) => {
-        //this probably needs some checking for empty sets
-        element.TopicName = entityEntityMappings[element.topic];
-        element.entityName=entityEntityMappings[element.entity];
-        element.speciesName=curieToNameTaxon[element.species];
-        element.entityTypeName=entityEntityMappings[element.entity_type];
-      });
-      if (gridRef.current.api){
-        //refreshes the cells... there is probably a better way to do this.
-        gridRef.current.api.refreshCells();
-      }
-    }
-  });
-
   const fetchTableData = async () => {
     let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000;
     setIsLoadingData(true);
@@ -109,6 +43,9 @@ const TopicEntityTable = () => {
         const resultTags = await axios.get(url);
         if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
           setTopicEntityTags(resultTags.data);
+          const uniqueSpecies = [...new Set( resultTags.data.map(obj => obj.species)) ];
+          dispatch(setAllSpecies(uniqueSpecies));
+          Object.entries(resultTags.data)
         }
     } catch (error) {
     console.error("Error fetching data:" + error);
@@ -119,7 +56,7 @@ const TopicEntityTable = () => {
 
   useEffect(() => {
     fetchTableData();
-  }, [topicEntityTags]);
+  }, [topicEntityTags,biblioUpdatingEntityAdd]);
 
 
   const handleNoteClick = (fullNote) => {
@@ -155,10 +92,10 @@ const TopicEntityTable = () => {
 
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
-    { headerName: "Topic", field: "TopicName", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
-    { headerName: "Entity Type", field: "entityTypeName"},
-    { headerName: "Species", field: "speciesName" , filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
-    { headerName: "Entity", field: "entityName", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
+    { headerName: "Topic", field: "topic_name", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
+    { headerName: "Entity Type", field: "entity_type_name"},
+    { headerName: "Species", field: "species_name" , filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
+    { headerName: "Entity", field: "entity_name", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
     { headerName: "Entity Published As", field: "entity_published_as" },
     { headerName: "No Data", field: "negated", cellDataType: "text" },
     { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text"},
@@ -181,9 +118,7 @@ const TopicEntityTable = () => {
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter }
-
   ]);
-
 
   const paginationPageSizeSelector = useMemo(() => {
     return [10, 25, 50, 100, 500];
@@ -220,10 +155,6 @@ const TopicEntityTable = () => {
     return (params) => params.data.topic_entity_tag_id;
   }, []);
 
-  const onRowDataUpdated = useCallback((event) => {
-    event.api.refreshCells();
-  }, []);
-
   return (
     <div>
       {/* Curie Popup */}
@@ -243,7 +174,6 @@ const TopicEntityTable = () => {
             getRowId={getRowId}
             columnDefs={colDefs}
             onColumnMoved={columnMoved}
-            onRowDataUpdated={onRowDataUpdated}
             pagination={true}
             paginationPageSize={25}
             paginationPageSizeSelector={paginationPageSizeSelector}/>
