@@ -108,7 +108,7 @@ const TopicEntityTable = () => {
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
     { headerName: "Validation By Author", field: "validation_by_author" },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator" },
-    { headerName: "Display Tag", field: "display_tag" },
+    { headerName: "Display Tag", field: "display_tag_name" },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
     { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion" ,valueFormatter: nameFormatter },
