@@ -197,7 +197,7 @@ const Sort = () => {
                               'entity': taxArray.pop(),     // taxid last element
                               'topic': "ATP:0000123",       // species
                               'entity_type': "ATP:0000123", // species
-                              'entity_source': "alliance",  // Kimberly said this instead of 'manual'
+                              'entity_id_validation': "alliance",  // Kimberly said this instead of 'manual'
                               'topic_entity_tag_source_id': topicEntitySourceId};    
                 subPath = 'topic_entity_tag/';
                 const field = null;
