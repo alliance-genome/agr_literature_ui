@@ -102,7 +102,7 @@ const TopicEntityTable = () => {
     { headerName: "Confidence Level", field:"confidence_level" },
     { headerName: "Created By", field: "created_by"},
     { headerName: "Note", field: "note", onCellClicked: (params) => {handleNoteClick(params.value)}},
-    { headerName: "Entity Source", field: "entity_source" },
+    { headerName: "Entity ID Validation", field: "entity_id_validation" },
     { headerName: "Date Created", field: "date_created", valueFormatter: dateFormatter },
     { headerName: "Updated By", field: "updated_by" },
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
