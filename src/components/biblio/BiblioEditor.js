@@ -779,29 +779,27 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
                   </Col>
 	        ) : (
 	          <Col sm="2">
-	    	<Form.Control
-	    	  as="input"
-	    	  id={`${fieldName} ${index} mod_abbreviation`}
-	    	  type={fieldName}
-	    	  value={valueLiveMod}
-	    	  className="form-control"
-	    	  disabled="disabled"
-	    	/>
+	            <Form.Control
+	              as="input"
+	              id={`${fieldName} ${index} mod_abbreviation`}
+	              type={fieldName}
+	              value={valueLiveMod}
+	              className="form-control"
+	              disabled="disabled"
+	            />
 	          </Col>
                 )}
-	        <ColEditorSelect
-	          key={`colElement ${fieldName} ${index} corpus`}
-	          fieldType="select"
-	          fieldName={fieldName}
-	          colSize={otherColSize}
-	          value={valueLiveCorpus}
-	          updatedFlag={updatedFlagCorpus}
-	          placeholder="corpus"
-	          disabled={(valueLiveMod !== accessLevel) ? 'disable' : ''}
-	          fieldKey={`${fieldName} ${index} corpus`}
-	          enumType="modAssociationCorpus"
-	          dispatchAction={changeFieldModAssociationReferenceJson}
-	        />
+                <Col sm={otherColSize}>
+                  <Form.Control as="select" id={`${fieldName} ${index} corpus`} type="{fieldName}" value={valueLiveCorpus} className={`form-control ${updatedFlagCorpus}`} disabled={(valueLiveMod !== accessLevel) ? 'disable' : ''} placeholder="corpus" onChange={ (e) => {
+                    dispatch(changeFieldModAssociationReferenceJson(e));
+                    if ( (e.target.value === 'inside_corpus') || (e.target.value === 'outside_corpus') ) {
+                      dispatch(changeFieldModAssociationReferenceJson({target: {id: 'mod_corpus_associations ' + index + ' mod_corpus_sort_source', value: 'manual_creation' }})); }
+                    } } >
+                    {"modAssociationCorpus" in enumDict && enumDict["modAssociationCorpus"].map((optionValue, index) => (
+                      <option key={`${fieldName} ${index} corpus ${optionValue}`}>{optionValue}</option>
+                    ))}
+                  </Form.Control>
+                </Col>
 	        <ColEditorSelect
 	          key={`colElement ${fieldName} ${index} mod_corpus_sort_source`}
 	          fieldType="select"
