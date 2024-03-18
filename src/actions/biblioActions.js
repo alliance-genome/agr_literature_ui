@@ -526,7 +526,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
                   "queryString": entityQueryString,
                   "tokenOperator": "OR"
                 },
-                "curie_keyword": {"queryString": entityQueryString, "tokenOperator": "OR"}
+                "modEntityId_keyword": {"queryString": entityQueryString, "tokenOperator": "OR"}
               },
               "taxonFilters": {"taxon.curie_keyword": {"queryString": taxon, "tokenOperator": "AND"}}
             }
@@ -560,13 +560,9 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
         const searchMap = {};
         if (res.data.results) {
           for (const entityResult of res.data.results) {
-            if (entityResult.curie && entityResult[entityTypeSymbolField].displayText) {
-              searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
-              searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.curie;
-            }
-            // constructs have no curie so use modEntityId.
-            if (entityResult.modEntityId && entityResult[entityTypeSymbolField].displayText) {
+            if (entityResult[entityTypeSymbolField].displayText) {
               searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.modEntityId;
+              searchMap[entityResult.modEntityId.toLowerCase()] = entityResult.modEntityId;
             }
           }
         }
