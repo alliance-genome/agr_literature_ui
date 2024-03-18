@@ -57,35 +57,40 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
+const getSearchParams = (state) => {
+  let params = {
+    query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
+    size_result_count: state.search.searchSizeResultsCount,
+    page: state.search.searchResultsPage,
+    facets_values: state.search.searchFacetsValues,
+    negated_facets_values: state.search.searchExcludedFacetsValues,
+    facets_limits: state.search.searchFacetsLimits,
+    author_filter: state.search.authorFilter,
+    query_fields: state.search.query_fields,
+    sort_by_published_date_order: state.search.sortByPublishedDate,
+    partial_match: state.search.partialMatch
+  }
+  if(state.search.datePubmedModified){
+    params.date_pubmed_modified = state.search.datePubmedModified;
+  }
+  if(state.search.datePubmedAdded){
+    params.date_pubmed_arrive = state.search.datePubmedAdded;
+  }
+  if(state.search.datePublished){
+    params.date_published = state.search.datePublished;
+  }
+  if(state.search.dateCreated){
+    params.date_created = state.search.dateCreated;
+  }
+
+  return params;
+}
+
 export const searchReferences = () => {
   return (dispatch,getState) => {
     const state = getState();
     dispatch(setSearchLoading());
-
-    let params = {
-      query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
-      size_result_count: state.search.searchSizeResultsCount,
-      page: state.search.searchResultsPage,
-      facets_values: state.search.searchFacetsValues,
-      negated_facets_values: state.search.searchExcludedFacetsValues,
-      facets_limits: state.search.searchFacetsLimits,
-      author_filter: state.search.authorFilter,
-      query_fields: state.search.query_fields,
-      sort_by_published_date_order: state.search.sortByPublishedDate,
-      partial_match: state.search.partialMatch
-    }
-    if(state.search.datePubmedModified){
-      params.date_pubmed_modified = state.search.datePubmedModified;
-    }
-    if(state.search.datePubmedAdded){
-      params.date_pubmed_arrive = state.search.datePubmedAdded;
-    }
-    if(state.search.datePublished){
-      params.date_published = state.search.datePublished;
-    }
-    if(state.search.dateCreated){
-      params.date_created = state.search.dateCreated;
-    }
+    let params = getSearchParams(state);
     axios.post(restUrl + '/search/references/', params )
 
         .then(res => {
@@ -108,28 +113,11 @@ export const searchReferences = () => {
   }
 }
 
-export const filterFacets = (query, facetsValues, excludedFacetsValues, facetsLimits, sizeResultsCount, searchResultsPage, authorFilter, datePubmedAdded, datePubmedModified, datePublished, sortByPublishedDate) => {
-  return dispatch => {
+export const filterFacets = () => {
+  return (dispatch,getState) => {
     dispatch(setFacetsLoading());
-    let params = {
-      query: query.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
-      size_result_count: sizeResultsCount,
-      page: searchResultsPage,
-      facets_values: facetsValues,
-      negated_facets_values: excludedFacetsValues,
-      facets_limits: facetsLimits,
-      author_filter: authorFilter,
-      sort_by_published_date_order: sortByPublishedDate
-    }
-    if(datePubmedModified){
-      params.date_pubmed_modified = datePubmedModified;
-    }
-    if(datePubmedAdded){
-      params.date_pubmed_arrive = datePubmedAdded;
-    }
-    if(datePublished){
-      params.date_published = datePublished;
-    }
+    let state= getState();
+    let params= getSearchParams(state);
 
     axios.post(restUrl + '/search/references/', params)
         .then(res => {
