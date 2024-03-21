@@ -430,17 +430,19 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
 	const ateamApiUrl = ateamApiBaseUrl + 'api/agm/search?limit=100&page=0';
 	
 	let searchEntityJson = {
-	    "searchFilters": {
-		"nameFilters": {
-		    "name": {
-			"queryString": entityQueryString,
-			"tokenOperator": "OR"
-		    },
-		    "curie": {
-			"queryString": entityQueryString,
-			"tokenOperator": "OR"
-		    }
-		},
+      "searchFilters": {
+        "nameFilters": {
+          "name": {
+            "queryString": entityQueryString,
+            "tokenOperator": "OR"
+          },
+          "modEntityId": {
+            "queryString": entityQueryString,
+            "tokenOperator": "OR",
+            "useKeywordFields": true,
+            "queryType": "matchQuery"
+          }
+        },
 		"taxonFilters": {
 		    "taxon.curie_keyword": {
 			"queryString": taxon,
@@ -479,9 +481,9 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
             const searchMap = {};
             if (res.data.results) {
 		for (const entityResult of res.data.results) {
-		    if (entityResult.curie && entityResult.name) {
-			searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
-			searchMap[entityResult.name.toLowerCase()] = entityResult.curie; }
+		    if (entityResult.modEntityId && entityResult.name) {
+			searchMap[entityResult.modEntityId.toLowerCase()] = entityResult.modEntityId;
+			searchMap[entityResult.name.toLowerCase()] = entityResult.modEntityId; }
 		} }
             let entityResultList = [];
             for (const entityTypeSymbol of entityInputList) {
