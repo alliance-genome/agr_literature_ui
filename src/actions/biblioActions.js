@@ -372,224 +372,106 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
 
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod = undefined) => {
   return dispatch => {
-    // console.log('action change field entity list ' + entityText + ' entityType ' + entityType);
     let entityInputList = [];
     if (entityText && entityText !== '') {
       entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item);
     }
+    if (entityType.includes('construct')) {
+      entityType = 'construct';
+    }
     const entityQueryString = entityInputList.map(element => { return element.replace(/(?=[() ])/g, '\\'); }).join(" ");
 
-    const validAGMTypes = ["AGMs", "strain", "genotype", "fish"];
-      
+    let searchType = {'AGMs': 'agm', 'strain': 'agm', 'genotype': 'agm', 'fish': 'agm', 'construct': 'construct', 'species': 'ncbitaxonterm', 'gene': 'gene', 'allele': 'allele'}
+    const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType[entityType] + '/search?limit=100&page=0';
     // a-team search fields are different for species vs gene or allele.
     // sort uses AND for species because only looking for one value, here using OR and filtering to allow multiple species
-    if (entityType === 'species') {
-      axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
-          {
-            "searchFilters": {
-              "nameFilter": {
-                "name": {
-                  "queryString": entityQueryString,
-                  "tokenOperator": "OR"
-                }
-              }
-            }
-          },
-          {
-            headers: {
-              'content-type': 'application/json',
-              'authorization': 'Bearer ' + accessToken
-            }
-          })
-          .then(res => {
-            const searchMap = {};
-            if (res.data.results) {
-              for (const entityResult of res.data.results) {
-                if (entityResult.curie && entityResult.name) {
-                  searchMap[entityResult.curie.toLowerCase()] = entityResult.curie;
-                  searchMap[entityResult.name.toLowerCase()] = entityResult.curie; } } }
-            let entityResultList = [];
-            for (const entityTypeSymbol of entityInputList) {
-              if (entityTypeSymbol.toLowerCase() in searchMap) {
-                entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); }
-              else {
-                entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' } ); } }
-            dispatch(setEntityResultList(entityResultList));
-          })
-          .catch(err =>
-            dispatch({
-              type: 'SET_ENTITY_MODAL_TEXT',
-              payload: 'Entity lookup API failure' + err
-            })
-          );
-    } else if (validAGMTypes.includes(entityType)) {
-	let subType = '';
-	if (entityType !== 'AGMs') {
-	    subType = entityType
-	}
-	const ateamApiUrl = ateamApiBaseUrl + 'api/agm/search?limit=100&page=0';
-	
-	let searchEntityJson = {
+    let postData = {
       "searchFilters": {
-        "nameFilters": {
-          "name": {
-            "queryString": entityQueryString,
-            "tokenOperator": "OR"
-          },
+        "nameFilter": {
           "modEntityId": {
             "queryString": entityQueryString,
             "tokenOperator": "OR",
             "useKeywordFields": true,
             "queryType": "matchQuery"
-          }
-        },
-		"taxonFilters": {
-		    "taxon.curie_keyword": {
-			"queryString": taxon,
-			"tokenOperator": "AND"
-		    }
-		}
-	    }
-	};
-	if (subType !== '') {
-	    searchEntityJson["searchFilters"]["subtypeFilters"] = {
-		"subtype.name": {
-		    "queryString": subType,
-		    "tokenOperator": "OR"
-		}
-	    };
-	}
-	/*
-	 1. between filters = AND
-	    between nameFilters and taxonFilters (also subtypeFilters) are AND 
-	 2. within same filters = OR
-	    between name and curie are OR (match 'name' OR match 'curie')
-	 3. each query can be OR or AND
-	    "tokenOperator": "OR" in "taxonFilters" means "taxon.curie_keyword" must match
-	    "NCBITaxon:123" OR match "NCBITaxon:124" if querystring
-	    taxon = "NCBITaxon:123 NCBITaxon:124"
-	 4. filter name can be anything. For example, we can change "subtypeFilters" 
-	    to "subtypeNameFilters"
-	*/
-	axios.post(ateamApiUrl, searchEntityJson, {
-            headers: {
-		'content-type': 'application/json',
-		'authorization': 'Bearer ' + accessToken
-            }
-	})
-	.then(res => {
-            const searchMap = {};
-            if (res.data.results) {
-		for (const entityResult of res.data.results) {
-		    if (entityResult.modEntityId && entityResult.name) {
-			searchMap[entityResult.modEntityId.toLowerCase()] = entityResult.modEntityId;
-			searchMap[entityResult.name.toLowerCase()] = entityResult.modEntityId; }
-		} }
-            let entityResultList = [];
-            for (const entityTypeSymbol of entityInputList) {
-		if (entityTypeSymbol.toLowerCase() in searchMap) {
-		    entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } );
-		} else {
-		    entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' } );
-		}
-	    }
-            dispatch(setEntityResultList(entityResultList));
-	})
-	.catch(err =>
-            dispatch({
-		type: 'SET_ENTITY_MODAL_TEXT',
-		payload: 'Entity lookup API failure' + err
-            })
-	);
-	 
-    } else {
-      // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/swagger-ui/#/Elastic%20Search%20Endpoints/post_api_gene_search';
-      // const aGeneApiUrl = 'https://beta-curation.alliancegenome.org/api/gene/search?limit=10&page=0';
-      let searchType = entityType;
-      if (entityType.includes('construct')) {
-        searchType = 'construct';
-      }
-      const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType + '/search?limit=100&page=0';
-      const entityTypeSymbolField = searchType + 'Symbol';
-
-      // console.log(ateamApiUrl);
-      // console.log(accessToken);
-      // const geneSymbol = e.target.value;
-
-      // simple search
-      //   const json = {"searchFilters":{"nameFilter":{"symbol_keyword":{"queryString":geneSymbol,"tokenOperator":"AND"}}}}
-
-      // search by taxon + exact symbol keyword or exact curie keyword
-      let searchEntityJson =
-          {
-            "searchFilters": {
-              "nameFilters": {
-                [entityTypeSymbolField + ".displayText_keyword"]: {
-                  "queryString": entityQueryString,
-                  "tokenOperator": "OR"
-                },
-                "modEntityId_keyword": {"queryString": entityQueryString, "tokenOperator": "OR"}
-              },
-              "taxonFilters": {"taxon.curie_keyword": {"queryString": taxon, "tokenOperator": "AND"}}
-            }
-          }
-      if (entityType.includes('construct')) {
-          searchEntityJson =
-          {
-            "searchFilters": {
-                "symbolFilters": {
-                    "constructSymbol.displayText_keyword":{ "queryString": entityQueryString, "tokenOperator": "OR" }
-                },
-                "dataProviderFilters": {
-                    // "dataProvider.sourceOrganization.uniqueId_keyword": {"queryString": taxon_to_mod[taxon], "tokenOperator": "AND"}}
-                    "dataProvider.sourceOrganization.uniqueId_keyword": {"queryString": taxonToMod[taxon], "tokenOperator": "AND"}}
-            }
-          }
-      }
-      // MarkQT : although formatText may be more appropriate than displayText for your needs - I think the LinkML model explains the differences
-      // if you wanted to add full names/systematic names/synonyms to your search then the appropriate fields would be geneFullName.displayText, geneSystematicName.displayText, and geneSynonyms.displayText
-
-      // try GET1, SGD:S000001766, MGM1
-      axios.post(ateamApiUrl, searchEntityJson, {
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer ' + accessToken
-        }
-      })
-      .then(res => {
-        // console.log('res.data.results');
-        // console.log(res.data.results);
-        const searchMap = {};
-        if (res.data.results) {
-          for (const entityResult of res.data.results) {
-            if (entityResult[entityTypeSymbolField].displayText) {
-              searchMap[entityResult[entityTypeSymbolField].displayText.toLowerCase()] = entityResult.modEntityId;
-              searchMap[entityResult.modEntityId.toLowerCase()] = entityResult.modEntityId;
-            }
+          },
+          "curie": {
+            "queryString": entityQueryString,
+            "tokenOperator": "OR",
+            "useKeywordFields": true,
+            "queryType": "matchQuery"
           }
         }
-        let entityResultList = [];
-        let uniqueEntityInput = new Set();
-        for (const entityTypeSymbol of entityInputList) {
-          if (entityTypeSymbol.toLowerCase() in searchMap) {
-            if (uniqueEntityInput.has(entityTypeSymbol.toLowerCase())) {
-              entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'duplicate' } ); }
-            else {
-              uniqueEntityInput.add(entityTypeSymbol.toLowerCase());
-              entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': searchMap[entityTypeSymbol.toLowerCase()] } ); } }
-          else {
-            entityResultList.push( { 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' } ); } }
-        dispatch(setEntityResultList(entityResultList));
-      })
-      .catch(err =>
-        dispatch({
-          type: 'SET_ENTITY_MODAL_TEXT',
-          payload: 'Entity lookup API failure' + err
-        })
-      );
+      }
     }
+    if (['species', 'strain', 'genotype', 'fish', 'AGMs'].includes(entityType)) {
+      postData["searchFilters"]["nameFilter"]["name"] = {
+        "queryString": entityQueryString,
+        "tokenOperator": "OR"
+      }
+    } else {
+      postData["searchFilters"]["nameFilter"][entityType + "Symbol.displayText"] = {
+        "queryString": entityQueryString,
+        "tokenOperator": "OR",
+        "useKeywordFields": true,
+        "queryType": "matchQuery"
+      }
+    }
+    if (['strain', 'genotype', 'fish'].includes(entityType)) {
+      postData["searchFilters"]["subtypeFilters"] = {
+        "subtype.name": {
+          "queryString": entityType,
+          "tokenOperator": "OR"
+        }
+      };
+    }
+    if (!['species', 'construct'].includes(entityType)) {
+      postData["searchFilters"]["taxonFilters"] = {
+        "taxon.curie_keyword": {
+          "queryString": taxon,
+          "tokenOperator": "AND"
+        }
+      }
+    }
+    axios.post(ateamApiUrl, postData,
+        {
+          headers: {
+            'content-type': 'application/json',
+            'authorization': 'Bearer ' + accessToken
+          }
+        })
+        .then(res => {
+          const searchMap = {};
+          if (res.data.results) {
+            for (const entityResult of res.data.results) {
+              let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
+              let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
+              if (primaryId && name) {
+                searchMap[primaryId.toLowerCase()] = primaryId;
+                searchMap[name] = primaryId;
+              }
+            }
+          }
+          let entityResultList = [];
+          for (const entityTypeSymbol of entityInputList) {
+            if (entityTypeSymbol.toLowerCase() in searchMap) {
+              entityResultList.push({
+                'entityTypeSymbol': entityTypeSymbol,
+                'curie': searchMap[entityTypeSymbol.toLowerCase()]
+              });
+            } else {
+              entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
+            }
+          }
+          dispatch(setEntityResultList(entityResultList));
+        })
+        .catch(err =>
+            dispatch({
+              type: 'SET_ENTITY_MODAL_TEXT',
+              payload: 'Entity lookup API failure' + err
+            })
+        );
   }
-};
+}
 
 export const ateamGetTopicDescendants = (accessToken) => {
   return dispatch => {
