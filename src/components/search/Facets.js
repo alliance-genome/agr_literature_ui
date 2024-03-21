@@ -39,13 +39,15 @@ export const RENAME_FACETS = {
     "mods_needs_review.keyword": "corpus - needs review",
     "mods_in_corpus_or_needs_review.keyword": "corpus - in corpus or needs review",
     "authors.name.keyword": "Authors",
-    "mod_reference_types.keyword": "MOD reference type"
+    "mod_reference_types.keyword": "MOD reference type",
+    "topic_entity_tags.topic.keyword": "Topics"
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
+    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"],
+    "Topics & Entities": ["topic entity tags.topic"]
 
 }
 
@@ -112,7 +114,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
+    const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types", "topic entity tags.topic"];
 
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
@@ -185,7 +187,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                     {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
                                                 </Col>
                                                 <Col sm={7}>
-                                                    <span dangerouslySetInnerHTML={{__html: bucket.key}} />
+                                                    <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
                                                 </Col>
                                                 <Col>
                                                     <Badge variant="secondary">{bucket.doc_count}</Badge>
