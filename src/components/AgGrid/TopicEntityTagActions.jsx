@@ -14,7 +14,6 @@ export default (props) => {
     const handleClose = () => { setShowModal(false);}
     const handleConfirm = () => {
         setConfirmDelete(true);
-        //setShowModal(false);
         handleDeleteConfirm();
     }
     const [title, setTitle] = useState("Please confirm delete here:");
@@ -39,7 +38,6 @@ export default (props) => {
 
     const handleDeleteConfirm = async () => {
      if (confirmDelete) {
-        console.log("start to delete");
         let id = props.data.topic_entity_tag_id;
         try {
             const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + id;
@@ -61,7 +59,6 @@ export default (props) => {
         } catch (error) {
             console.error("Error deleting item:", error);
         }
-        console.log("finish delete");
         setShowModal(false);
      }
     };
