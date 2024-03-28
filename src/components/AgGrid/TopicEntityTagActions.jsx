@@ -77,12 +77,12 @@ export default (props) => {
                   <Button variant="cancel" onClick={handleClose}>
                    Cancel
                   </Button>
-                  <Button variant="confirm" onClick={handleConfirm}>
+                  <Button variant="confirm" onClick={() => handleConfirm()} >
                    Confirm
                   </Button>
                  </Modal.Footer>
             </Modal>
-            <button onClick={handleDeleteClick}>Delete</button>
+            <button onClick={() => handleDeleteClick()}>Delete</button>
             </div> }
     </span>
     );
