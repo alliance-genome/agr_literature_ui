@@ -14,7 +14,7 @@ export default (props) => {
     const handleClose = () => { setShowModal(false);}
     const handleConfirm = () => {
         setConfirmDelete(true);
-        setShowModal(false);
+        //setShowModal(false);
         handleDeleteConfirm();
     }
     const [title, setTitle] = useState("Please confirm delete here:");
@@ -27,10 +27,13 @@ export default (props) => {
             console.error("Permission denied. Cannot delete this row.");
             return;
         }
-        let topic=props.data.topic;
-        let entity_type=props.data.entity_type;
-        let entity=props.data.entity;
-        setBody(topic+" "+entity_type + " "+ entity);
+        let topic=props.data.topic_name;
+        let entity_type=props.data.entity_type_name;
+        let entity=props.data.entity_name;
+
+        let noData=props.data.negated;
+        let novelData=props.data.novel_topic_data;
+        setBody("topic:" + topic+" entity type:"+entity_type + " entity:"+ entity + " no Data:"+noData+ " Novel Data:" + novelData);
         setShowModal(true);
     }
 
