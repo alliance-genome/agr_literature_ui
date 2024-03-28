@@ -5,6 +5,7 @@ import axios from "axios";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Modal from 'react-bootstrap/Modal';
 import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
+import ValidationByCurator from '../../AgGrid/ValidationByCurator.jsx';
 import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
 
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
@@ -107,7 +108,7 @@ const TopicEntityTable = () => {
     { headerName: "Updated By", field: "updated_by" },
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
     { headerName: "Validation By Author", field: "validation_by_author" },
-    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator" },
+    { headerName: "Validation By Professional Biocurator", cellRenderer: ValidationByCurator },
     { headerName: "Display Tag", field: "display_tag_name" },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
