@@ -389,7 +389,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
 
       // escape all characters that could cause issues in the API
       // adding backslashes before special characters
-      entity = entity.replace(/[\s\(\)\[\]\{\}\'\"\,\.\;\:\?\!\$\%\^\&\*\+\-\=\|\{\}\[\]`~\\\/]/g, '\\$&');
+      entity = entity.replace(/[\s\[\]\{\}\'\"\,\.\;\:\?\!\$\%\^\&\*\+\-\=\|\{\}\[\]`~\\\/]/g, '\\$&');
 
       return entity;
     }).join(' ');
