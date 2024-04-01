@@ -325,6 +325,7 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
 export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
   return dispatch => {
     return new Promise((resolve, reject) => {
+      console.log(updateArrayData);
       const [accessToken, subPath, payload, method] = updateArrayData;
       const url = restUrl + '/' + subPath;
 
