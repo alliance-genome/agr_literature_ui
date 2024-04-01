@@ -17,7 +17,11 @@ export default (props) => {
         handleDeleteConfirm();
     }
     const [title, setTitle] = useState("Please confirm delete here:");
-    const [body, setBody] = useState("body here1");
+    const [topicBody, setTopicBody] = useState("body here1");
+    const [entityTypeBody, setEntityTypeBody] = useState("body here1");
+    const [entityBody, setEntityBody] = useState("body here1");
+    const [noDataBody, setNoDataBody] = useState("body here1");
+    const [novelDataBody, setNovelDataBody] = useState("body here1");
 
     const handleDeleteClick = async () => {
         let mod = props.data.topic_entity_tag_source.secondary_data_provider_abbreviation;
@@ -27,12 +31,15 @@ export default (props) => {
             return;
         }
         let topic=props.data.topic_name;
-        let entity_type=props.data.entity_type_name;
+        let entityType=props.data.entity_type_name;
         let entity=props.data.entity_name;
-
         let noData=props.data.negated;
         let novelData=props.data.novel_topic_data;
-        setBody("topic:" + topic+" entity type:"+entity_type + " entity:"+ entity + " no Data:"+noData+ " Novel Data:" + novelData);
+        setTopicBody(topic);
+        setEntityTypeBody(entityType);
+        setEntityBody(entity);
+        setNoDataBody(noData);
+        setNovelDataBody(novelData);
         setShowModal(true);
     }
 
@@ -66,13 +73,13 @@ export default (props) => {
 
     return (
     <span>
-        {props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel &&
+        {props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel ?
             <div>
             <Modal  show={showModal} >
                 <Modal.Header closeButton>
                  <Modal.Title>{title}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>{body}</Modal.Body>
+                <Modal.Body>Topic:{topicBody}<br/>Entity Type:{entityTypeBody}<br/>Entity:{entityBody}<br/>No Data:{noDataBody}<br/>Novel Data:{novelDataBody}</Modal.Body>
                 <Modal.Footer>
                   <Button variant="cancel" onClick={handleClose}>
                    Cancel
@@ -83,7 +90,7 @@ export default (props) => {
                  </Modal.Footer>
             </Modal>
             <button onClick={() => handleDeleteClick()}>Delete</button>
-            </div> }
+            </div>  : null}
     </span>
     );
 };
