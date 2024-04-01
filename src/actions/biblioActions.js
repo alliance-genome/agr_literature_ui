@@ -387,9 +387,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
       // remove or replace non-printable control characters and extended ASCII
       entity = entity.replace(/[\x00-\x1F\x7F-\xFF]/g, '');
 
-      // escape all characters that could cause issues in the API
-      // adding backslashes before special characters
-      entity = entity.replace(/[\s\[\]\{\}\'\"\,\.\;\:\?\!\$\%\^\&\*\+\-\=\|\{\}\[\]`~\\\/]/g, '\\$&');
+      // entity = entity.replace(/[\s\(\)\[\]\{\}\'\"\,\.\;\:\?\!\$\%\^\&\*\+\-\=\|\{\}\[\]`~\\\/]/g, '\\$&');
 
       return entity;
     }).join(' ');
