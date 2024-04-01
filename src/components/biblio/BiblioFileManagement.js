@@ -39,9 +39,120 @@ const BiblioFileManagement = () => {
           <FileUpload main_or_supp="main" />
           <FileUpload main_or_supp="supplement" />
 	  <OpenAccess />
+	  <Workflow />
           <RowDivider />
           <FileEditor />
         </Container>
+      </>
+  );
+}
+
+const Workflow = () => {
+  const dispatch = useDispatch();
+  const [licenseData, setLicenseData] = useState([]);
+  const [fileStatus, setFileStatus] = useState('');
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceCurie = referenceJsonLive["curie"]
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const [alert, setAlert] = useState(false);
+  let [showAlert, setShowAlert] = useState(false);
+
+  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
+  const atpMappings = { '': 'Pick file status',
+                        'ATP:0000134': 'files uploaded',
+                        'ATP:0000135': 'file unavailable',
+                        'ATP:0000139': 'file upload in progress',
+                        'ATP:0000141': 'file needed',
+                      };
+
+  const fetchLicenseData = async () => {
+    try {
+      const result = await axios.get(process.env.REACT_APP_RESTAPI + "/copyright_license/all");
+      setLicenseData(result.data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    fetchLicenseData().finally();
+  }, []);
+
+  const licenseName = referenceJsonLive["copyright_license_name"];
+  const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
+
+  let lastUpdatedBy = ''
+  if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
+    lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"];
+  }
+
+//   let licenseNames = ['Pick file status', ...atpMappings.map(x => x.name)]
+//   if (licenseName !== '' && lastUpdatedBy !== '') {
+//     licenseNames.push('No license');
+//   }
+
+  const addLicense = (e) => {
+//     if (!fileStatus || fileStatus === 'Pick a license' || fileStatus === licenseName) return false;
+//     let license = fileStatus.replace(' ', '+')
+//     const url = process.env.REACT_APP_RESTAPI + "/reference/add_license/" + referenceCurie + "/" + license;
+//     axios.post(url, {}, {
+//       headers: {
+//         'Authorization': 'Bearer ' + accessToken,
+//         'mode': 'cors',
+//         'Content-Type': 'application/json',
+//       }
+//     }).then((res) => {
+//       setAlert("License Updated!");
+//       setShowAlert(true);
+//       setTimeout(() => {
+//         setShowAlert(false);
+//         dispatch(biblioQueryReferenceCurie(referenceCurie));
+//       }, 2000);
+//     }).catch((error) => {
+//       setAlert(error);
+//       setShowAlert(true);
+//     });
+  }
+
+const enumDict = {};
+enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
+
+// console.log(atpMappings);
+// console.log('before');
+//   Object.entries(atpMappings).forEach(([atp, name]) => {
+// console.log(atp);
+// console.log(name);
+//   })
+// console.log('after');
+
+//                         <option value={atp} defaultValue={licenseToShow !== '' ? licenseName : null} key={atp}>{name}</option>
+
+  return (
+      <>
+        <Row key='workflowFileStatus'>
+          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>workflow</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
+            <Container>
+              <Row key="fileStatusInput">
+                <Form.Control as='select' id='fileStatus' name='fileStatus' style={{width: "10em"}} value={fileStatus} onChange={(e) => setFileStatus(e.target.value)} >
+                  {Object.entries(atpMappings).map(([atp, name]) => 
+                      <option key={atp} value={atp}>{name}</option>
+)}
+                </Form.Control>
+                &nbsp;
+                <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '150px' }}>{licenseToShow !== '' ? "Update" : "Add"} File Status</div><br/><br/>
+              </Row>
+              <RowDivider />
+              <Row key="fileStatusDisplay">
+                {mods.map((mod, index) => (
+                  <Col className="Col-general Col-display" lg={{span: 4}} style={{ display: 'flex'}} key={`fileStatusDisplay ${mod}`}>{mod}</Col>)) }
+              </Row>
+            </Container>
+          </Col>
+        </Row>
+        <Row key='fileStatusDisplay'>
+        </Row>
+        {showAlert && alert && <Alert variant="success">{alert}</Alert>}
       </>
   );
 }
