@@ -144,7 +144,12 @@ const TopicEntityCreate = () => {
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
   }, [topicSelect, dispatch]);
-      
+
+  useEffect(() => {	
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+  }, [entityTypeSelect, dispatch]);
+    
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {

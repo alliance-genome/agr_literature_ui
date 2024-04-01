@@ -141,6 +141,11 @@ const TopicEntityCreateSGD = () => {
   }, [accessLevel, accessToken, dispatch]);
 
   useEffect(() => {
+    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
+    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+  }, [entityTypeSelect, dispatch]);
+    
+  useEffect(() => {
     if (
       taxonSelect !== "" &&
       taxonSelect !== undefined &&
