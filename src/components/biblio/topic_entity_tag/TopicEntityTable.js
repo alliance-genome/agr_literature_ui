@@ -1,3 +1,4 @@
+import { Spinner } from 'react-bootstrap';
 import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState, useMemo, useCallback, useRef} from "react";
 import { setCurieToNameTaxon,setAllSpecies } from "../../../actions/biblioActions";
@@ -165,6 +166,13 @@ const TopicEntityTable = () => {
       {showNoteModal && (
           <GenericTetTableModal title="Full Note" body={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
       )}
+      {isLoadingData && (
+        <div className="text-center">
+          <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </div>
+      )}	
       <div className="ag-theme-quartz" style={{height: 500}}>
         <AgGridReact
             ref={gridRef}
