@@ -373,14 +373,27 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod = undefined) => {
   return dispatch => {
     let entityInputList = [];
-    if (entityText && entityText !== '') {
-      entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item);
+      if (entityText && entityText.trim() !== '') {
+      entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item !== '');
     }
     if (entityType.includes('construct')) {
       entityType = 'construct';
     }
-    const entityQueryString = entityInputList.map(element => { return element.replace(/(?=[() ])/g, '\\'); }).join(" ");
+    // const entityQueryString = entityInputList.map(element => { return element.replace(/(?=[() ])/g, '\\'); }).join(" ");  
+    const entityQueryString = entityInputList.map(entity => {
+      // normalize Unicode characters to their canonical form
+      entity = entity.normalize("NFC");
 
+      // remove or replace non-printable control characters and extended ASCII
+      entity = entity.replace(/[\x00-\x1F\x7F-\xFF]/g, '');
+
+      // escape all characters that could cause issues in the API
+      // adding backslashes before special characters
+      entity = entity.replace(/[\s\(\)\[\]\{\}\'\"\,\.\;\:\?\!\$\%\^\&\*\+\-\=\|\{\}\[\]`~\\\/]/g, '\\$&');
+
+      return entity;
+    }).join(' ');
+  
     let searchType = {'AGMs': 'agm', 'strain': 'agm', 'genotype': 'agm', 'fish': 'agm', 'construct': 'construct', 'species': 'ncbitaxonterm', 'gene': 'gene', 'allele': 'allele'}
     const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType[entityType] + '/search?limit=100&page=0';
     // a-team search fields are different for species vs gene or allele.
