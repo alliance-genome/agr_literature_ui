@@ -58,6 +58,7 @@ const initialState = {
   referenceJsonLive: {},
   referenceJsonDb: {},
   referenceJsonHasChange: {},
+  referenceFiles: [],
   // loadingQuery: true,
   isLoading: true,
   queryFailure: false,
@@ -380,6 +381,13 @@ export default function(state = initialState, action) {
         entityAdd: entityAddUpdateButtonEntityAdd,
         getReferenceCurieFlag: getReferenceCurieFlagUpdateButtonEntityAdd,
         biblioUpdatingEntityAdd: state.biblioUpdatingEntityAdd - 1
+      }
+
+    case 'SET_REFERENCE_FILES':
+      console.log('SET_REFERENCE_FILES reducer ' + action.payload);
+      return {
+        ...state,
+        referenceFiles: action.payload
       }
 
     case 'SET_BIBLIO_EDITOR_MODAL_TEXT':

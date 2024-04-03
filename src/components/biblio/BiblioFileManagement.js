@@ -19,10 +19,12 @@ import ModalGeneric from './ModalGeneric';
 import {
   downloadReferencefile,
   fileUploadResult,
+  setReferenceFiles,
   setFileUploadingCount,
   setFileUploadingShowModal,
   setFileUploadingShowSuccess
 } from '../../actions/biblioActions';
+import { mergeAteamQueryAtp } from '../../actions/mergeActions';
 
 import {useDropzone} from 'react-dropzone';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
@@ -39,9 +41,131 @@ const BiblioFileManagement = () => {
           <FileUpload main_or_supp="main" />
           <FileUpload main_or_supp="supplement" />
 	  <OpenAccess />
+	  <Workflow />
           <RowDivider />
           <FileEditor />
         </Container>
+      </>
+  );
+}
+
+const Workflow = () => {
+  const dispatch = useDispatch();
+  const [fileStatus, setFileStatus] = useState('');
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const referenceCurie = referenceJsonLive["curie"]
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const [alert, setAlert] = useState(false);
+  let [showAlert, setShowAlert] = useState(false);
+  const ateamResults = useSelector(state => state.merge.ateamResults);
+  const atpParents = ['ATP:0000140'];
+  // const atpParents = useSelector(state => state.merge.atpParents);	// don't look up all parents, just 140
+  const atpOntology = useSelector(state => state.merge.atpOntology);
+
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  let accessLevel = oktaMod;
+  if (testerMod !== 'No') { accessLevel = testerMod; }
+  // Workflow accessLevel cannot be developer, is mod-specific
+
+  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
+  const atpMappings = { '': 'Pick file status',
+                        'ATP:0000134': 'files uploaded',
+                        'ATP:0000135': 'file unavailable',
+                        'ATP:0000139': 'file upload in progress',
+                        'ATP:0000141': 'file needed',
+                      };
+  Object.entries(atpOntology['ATP:0000140']).map(([atp, obj]) => atpMappings[atp] = obj['name']);
+
+  const referenceFiles = useSelector(state => state.biblio.referenceFiles);
+  let referenceFilesWithAccess = referenceFiles
+      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || referenceFile.referencefile_mods
+          .some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null));
+
+  useEffect(() => {
+    if (referenceFilesWithAccess.length > 0) { setFileStatus('ATP:0000134'); }
+      else { setFileStatus(''); }
+  }, [referenceFiles]);
+
+  if ( (ateamResults === 0) && (accessToken) ) {
+    dispatch(mergeAteamQueryAtp(accessToken, atpParents));
+  }
+
+  const deriveModFileStatus = (wfTags) => {
+    const modFileStatus =  {};
+    mods.map((mod, index) => ( modFileStatus[mod] = { 'workflow_tag_id': '', 'reference_workflow_tag_id': '', 'atpName': '' } ));
+    for (const [index, wfTag] of wfTags.entries()) {
+      const reference_workflow_tag_id = wfTag['reference_workflow_tag_id'];
+      let atp = ''; let atpName = '';
+      if ('workflow_tag_id' in wfTag && wfTag['workflow_tag_id'] !== null && wfTag['workflow_tag_id'] !== '') {
+        atp = wfTag['workflow_tag_id'];
+        if (atp in atpMappings) { atpName = atpMappings[atp]; }
+      }
+      if ('mod_abbreviation' in wfTag && wfTag['mod_abbreviation'] !== null && wfTag['mod_abbreviation'] !== '') {
+        const mod = wfTag['mod_abbreviation'];
+        modFileStatus[mod] = { 'workflow_tag_id': atp, 'reference_workflow_tag_id': reference_workflow_tag_id, 'atpName': atpName };
+      }
+    }
+    return modFileStatus;
+  }
+
+  const modFileStatus = deriveModFileStatus(referenceJsonLive["workflow_tags"]);
+  let dbAtp = modFileStatus[accessLevel]['workflow_tag_id'];
+  let dbWftId = modFileStatus[accessLevel]['reference_workflow_tag_id'];
+  const updated = ( (dbAtp !== fileStatus) && (fileStatus !== '') ) ? 'updated' : '';
+
+  const postApiFileStatus = (e) => {
+    let url = process.env.REACT_APP_RESTAPI + "/workflow_tag/";
+    if (fileStatus === '') { return; }		// cannot delete, no file status selected does nothing
+    let method = 'post';
+    let postData = { 'workflow_tag_id': fileStatus, 'reference_curie': referenceCurie , 'mod_abbreviation': accessLevel };
+    if (dbWftId !== '') {
+      postData = { 'workflow_tag_id': fileStatus };
+      method = 'patch';
+      url = url + dbWftId; }
+    axios({method: method, url: url, data: postData,
+      headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'mode': 'cors',
+        'Content-Type': 'application/json',
+      }
+    }).then((res) => {
+      setAlert("File Status Updated!");
+      setShowAlert(true);
+      setTimeout(() => {
+        setShowAlert(false);
+        dispatch(biblioQueryReferenceCurie(referenceCurie));
+      }, 2000);
+    }).catch((error) => {
+      setAlert(error.message);
+      setShowAlert(true);
+    });
+  }
+
+  return (
+      <>
+        <Row key='workflowFileStatus'>
+          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>workflow</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
+            <Container>
+              <Row key="fileStatusInput">
+                <Form.Control as='select' id='fileStatus' name='fileStatus' style={{width: "10em"}} className={`form-control ${updated}`} value={fileStatus} onChange={(e) => setFileStatus(e.target.value)} >
+                  {Object.entries(atpMappings).map(([atp, name]) => <option key={atp} value={atp}>{name}</option>)}
+                </Form.Control>
+                &nbsp;
+                <div className={`form-control biblio-button ${updated}`} type="submit" onClick={(e) => postApiFileStatus(e)} style={{ width: '160px' }}>{dbAtp !== '' ? "Update" : "Add"} File Status</div><br/><br/>
+              </Row>
+              <RowDivider />
+              <Row key="fileStatusDisplay">
+                {mods.map((mod, index) => (
+                  <Col className="Col-general Col-display" lg={{span: 4}} style={{ display: 'flex'}} key={`fileStatusDisplay ${mod}`}>{mod} {modFileStatus[mod]['atpName']}</Col>)) }
+              </Row>
+            </Container>
+          </Col>
+        </Row>
+        <Row key='fileStatusDisplay'>
+        </Row>
+        {showAlert && alert && <Alert variant="success">{alert}</Alert>}
       </>
   );
 }
@@ -129,7 +253,7 @@ const OpenAccess = () => {
                     ))}
                   </Form.Control>
                   &nbsp;
-                  <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '150px' }}>{licenseToShow !== '' ? "Update" : "Add"} License</div>
+                  <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '160px' }}>{licenseToShow !== '' ? "Update" : "Add"} License</div>
                 </>
             }
           </Col>
@@ -152,6 +276,7 @@ const FileUpload = ({main_or_supp}) => {
   let accessLevel = oktaMod;
   if (testerMod !== 'No') { accessLevel = testerMod; }
     else if (oktaDeveloper) { accessLevel = 'developer'; }
+  // FileUpload accessLevel can be developer to see all files and upload as PMC
   if (accessLevel === 'developer') {
     if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
       accessLevel = 'No';
@@ -267,13 +392,13 @@ const FileEditor = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const fileUploadingShowSuccess = useSelector(state => state.biblio.fileUploadingShowSuccess);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-  const [referencefiles, setReferencefiles] = useState([]);
+  const referenceFiles = useSelector(state => state.biblio.referenceFiles);
   const [referencefilesLoading, setReferencefilesLoading] = useState(false);
 
   const fetchReferencefiles = async () => {
     setReferencefilesLoading(true);
     const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
-    setReferencefiles(referencefiles.data);
+    dispatch(setReferenceFiles(referencefiles.data));
     setReferencefilesLoading(false);
   }
 
@@ -376,11 +501,12 @@ const FileEditor = () => {
   let accessLevel = oktaMod;
   if (testerMod !== 'No') { accessLevel = testerMod; }
     else if (oktaDeveloper) { accessLevel = 'developer'; }
-  let referenceFilesWithAccess = referencefiles
+  // FileEditor accessLevel can be developer to see all files and upload as PMC
+  let referenceFilesWithAccess = referenceFiles
       .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer' || referenceFile.referencefile_mods
           .some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null));
 
-  let referenceFilesNoAccess = referencefiles
+  let referenceFilesNoAccess = referenceFiles
       .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] !== true && accessLevel !== 'developer' && referenceFile.referencefile_mods
           .every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null));
 
