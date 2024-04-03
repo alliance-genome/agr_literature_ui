@@ -915,6 +915,13 @@ export const setEntityModalText = (payload) => {
   };
 };
 
+export const setReferenceFiles = (payload) => {
+  return {
+    type: 'SET_REFERENCE_FILES',
+    payload: payload
+  };
+};
+
 export const setBiblioEditorModalText = (payload) => {
   return {
     type: 'SET_BIBLIO_EDITOR_MODAL_TEXT',

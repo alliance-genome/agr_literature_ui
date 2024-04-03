@@ -19,6 +19,7 @@ import ModalGeneric from './ModalGeneric';
 import {
   downloadReferencefile,
   fileUploadResult,
+  setReferenceFiles,
   setFileUploadingCount,
   setFileUploadingShowModal,
   setFileUploadingShowSuccess
@@ -69,7 +70,15 @@ const Workflow = () => {
                         'ATP:0000141': 'file needed',
                       };
 
-// TODO check if any files exist, in which case set fileStatus to 'ATP:0000134': 'files uploaded'
+  const referenceFiles = useSelector(state => state.biblio.referenceFiles);
+  let referenceFilesWithAccess = referenceFiles
+      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer' || referenceFile.referencefile_mods
+          .some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null));
+
+  useEffect(() => {
+    if (referenceFilesWithAccess.length > 0) { setFileStatus('ATP:0000134'); }
+      else { setFileStatus(''); }
+  }, [referenceFiles]);
 
 // TODO get this from ateam for fileStatus children
 //   const fetchLicenseData = async () => {
@@ -401,13 +410,13 @@ const FileEditor = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const fileUploadingShowSuccess = useSelector(state => state.biblio.fileUploadingShowSuccess);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-  const [referencefiles, setReferencefiles] = useState([]);
+  const referenceFiles = useSelector(state => state.biblio.referenceFiles);
   const [referencefilesLoading, setReferencefilesLoading] = useState(false);
 
   const fetchReferencefiles = async () => {
     setReferencefilesLoading(true);
     const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
-    setReferencefiles(referencefiles.data);
+    dispatch(setReferenceFiles(referencefiles.data));
     setReferencefilesLoading(false);
   }
 
@@ -510,11 +519,11 @@ const FileEditor = () => {
   let accessLevel = oktaMod;
   if (testerMod !== 'No') { accessLevel = testerMod; }
     else if (oktaDeveloper) { accessLevel = 'developer'; }
-  let referenceFilesWithAccess = referencefiles
+  let referenceFilesWithAccess = referenceFiles
       .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer' || referenceFile.referencefile_mods
           .some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null));
 
-  let referenceFilesNoAccess = referencefiles
+  let referenceFilesNoAccess = referenceFiles
       .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] !== true && accessLevel !== 'developer' && referenceFile.referencefile_mods
           .every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null));
 
