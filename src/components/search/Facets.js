@@ -334,6 +334,7 @@ const Facets = () => {
             else{
                 dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
             }
+            dispatch(searchReferences());
 
         }
     }, [oktaMod]) // eslint-disable-line react-hooks/exhaustive-deps
