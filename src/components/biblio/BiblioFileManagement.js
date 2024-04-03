@@ -111,15 +111,19 @@ const Workflow = () => {
 
   const modFileStatus = deriveModFileStatus(referenceJsonLive["workflow_tags"]);
   let dbAtp = modFileStatus[accessLevel]['workflow_tag_id'];
+  let dbWftId = modFileStatus[accessLevel]['reference_workflow_tag_id'];
   const updated = ( (dbAtp !== fileStatus) && (fileStatus !== '') ) ? 'updated' : '';
 
   const postApiFileStatus = (e) => {
-//     if (!fileStatus || fileStatus === 'Pick a license' || fileStatus === licenseName) return false;
-//     let license = fileStatus.replace(' ', '+')
-// TODO, this only posts data, need to be able to update based on what the data is, but never delete
-    const url = process.env.REACT_APP_RESTAPI + "/workflow_tag/";
-    const postData = { 'workflow_tag_id': fileStatus, 'reference_curie': referenceCurie , 'mod_abbreviation': accessLevel };
-    axios.post(url, postData, {
+    let url = process.env.REACT_APP_RESTAPI + "/workflow_tag/";
+    if (fileStatus === '') { return; }		// cannot delete, no file status selected does nothing
+    let method = 'post';
+    let postData = { 'workflow_tag_id': fileStatus, 'reference_curie': referenceCurie , 'mod_abbreviation': accessLevel };
+    if (dbWftId !== '') {
+      postData = { 'workflow_tag_id': fileStatus };
+      method = 'patch';
+      url = url + dbWftId; }
+    axios({method: method, url: url, data: postData,
       headers: {
         'Authorization': 'Bearer ' + accessToken,
         'mode': 'cors',
