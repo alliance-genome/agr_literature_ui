@@ -70,7 +70,7 @@ const Workflow = () => {
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   const atpMappings = { '': 'Pick file status',
-                        'ATP:0000134': 'files banana',
+                        'ATP:0000134': 'files uploaded',
                         'ATP:0000135': 'file unavailable',
                         'ATP:0000139': 'file upload in progress',
                         'ATP:0000141': 'file needed',
