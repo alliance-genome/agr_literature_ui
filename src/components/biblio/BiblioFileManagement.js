@@ -66,6 +66,7 @@ const Workflow = () => {
   const testerMod = useSelector(state => state.isLogged.testerMod);
   let accessLevel = oktaMod;
   if (testerMod !== 'No') { accessLevel = testerMod; }
+  // Workflow accessLevel cannot be developer, is mod-specific
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   const atpMappings = { '': 'Pick file status',
@@ -78,7 +79,7 @@ const Workflow = () => {
 
   const referenceFiles = useSelector(state => state.biblio.referenceFiles);
   let referenceFilesWithAccess = referenceFiles
-      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer' || referenceFile.referencefile_mods
+      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || referenceFile.referencefile_mods
           .some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null));
 
   useEffect(() => {
@@ -271,6 +272,7 @@ const FileUpload = ({main_or_supp}) => {
   let accessLevel = oktaMod;
   if (testerMod !== 'No') { accessLevel = testerMod; }
     else if (oktaDeveloper) { accessLevel = 'developer'; }
+  // FileUpload accessLevel can be developer to see all files and upload as PMC
   if (accessLevel === 'developer') {
     if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
       accessLevel = 'No';
@@ -495,6 +497,7 @@ const FileEditor = () => {
   let accessLevel = oktaMod;
   if (testerMod !== 'No') { accessLevel = testerMod; }
     else if (oktaDeveloper) { accessLevel = 'developer'; }
+  // FileEditor accessLevel can be developer to see all files and upload as PMC
   let referenceFilesWithAccess = referenceFiles
       .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer' || referenceFile.referencefile_mods
           .some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null));
