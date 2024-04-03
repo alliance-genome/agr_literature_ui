@@ -33,8 +33,8 @@ export default (props) => {
         let topic=props.data.topic_name;
         let entityType=props.data.entity_type_name;
         let entity=props.data.entity_name;
-        let noData=props.data.negated.toString();
-        let novelData=props.data.novel_topic_data.toString();
+        let noData=null ? "" : props.data.negated.toString();
+        let novelData=null ? "" : props.data.novel_topic_data.toString();
         setTopicBody(topic);
         setEntityTypeBody(entityType);
         setEntityBody(entity);
