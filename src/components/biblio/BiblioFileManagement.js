@@ -70,7 +70,6 @@ const Workflow = () => {
                       };
 
 // TODO check if any files exist, in which case set fileStatus to 'ATP:0000134': 'files uploaded'
-// TODO if fileStatus != dbAtp set dropdown and button purple, but discuss with Ceri initial state ?
 
 // TODO get this from ateam for fileStatus children
 //   const fetchLicenseData = async () => {
@@ -121,12 +120,12 @@ const Workflow = () => {
   const modFileStatus = deriveModFileStatus(referenceJsonLive["workflow_tags"]);
   console.log(modFileStatus); 
   let dbAtp = modFileStatus[accessLevel]['workflow_tag_id'];
-  const updated = (dbAtp !== fileStatus) ? 'updated' : '';
+  const updated = ( (dbAtp !== fileStatus) && (fileStatus !== '') ) ? 'updated' : '';
 
   const postApiFileStatus = (e) => {
 //     if (!fileStatus || fileStatus === 'Pick a license' || fileStatus === licenseName) return false;
 //     let license = fileStatus.replace(' ', '+')
-// TODO, this only posts data, need to be able to delete or update based on what the data is
+// TODO, this only posts data, need to be able to update based on what the data is, but never delete
     const url = process.env.REACT_APP_RESTAPI + "/workflow_tag/";
     const postData = { 'workflow_tag_id': fileStatus, 'reference_curie': referenceCurie , 'mod_abbreviation': accessLevel };
     axios.post(url, postData, {
