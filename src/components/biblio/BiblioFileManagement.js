@@ -24,6 +24,7 @@ import {
   setFileUploadingShowModal,
   setFileUploadingShowSuccess
 } from '../../actions/biblioActions';
+import { mergeAteamQueryAtp } from '../../actions/mergeActions';
 
 import {useDropzone} from 'react-dropzone';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
@@ -56,6 +57,10 @@ const Workflow = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
   let [showAlert, setShowAlert] = useState(false);
+  const ateamResults = useSelector(state => state.merge.ateamResults);
+  const atpParents = ['ATP:0000140'];
+  // const atpParents = useSelector(state => state.merge.atpParents);	// don't look up all parents, just 140
+  const atpOntology = useSelector(state => state.merge.atpOntology);
 
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
@@ -64,11 +69,12 @@ const Workflow = () => {
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   const atpMappings = { '': 'Pick file status',
-                        'ATP:0000134': 'files uploaded',
+                        'ATP:0000134': 'files banana',
                         'ATP:0000135': 'file unavailable',
                         'ATP:0000139': 'file upload in progress',
                         'ATP:0000141': 'file needed',
                       };
+  Object.entries(atpOntology['ATP:0000140']).map(([atp, obj]) => atpMappings[atp] = obj['name']);
 
   const referenceFiles = useSelector(state => state.biblio.referenceFiles);
   let referenceFilesWithAccess = referenceFiles
@@ -80,33 +86,9 @@ const Workflow = () => {
       else { setFileStatus(''); }
   }, [referenceFiles]);
 
-// TODO get this from ateam for fileStatus children
-//   const fetchLicenseData = async () => {
-//     try {
-//       const result = await axios.get(process.env.REACT_APP_RESTAPI + "/copyright_license/all");
-//       setLicenseData(result.data);
-//     } catch (error) {
-//       console.log(error);
-//     }
-//   }
-// 
-//   useEffect(() => {
-//     fetchLicenseData().finally();
-//   }, []);
-
-
-//   const licenseName = referenceJsonLive["copyright_license_name"];
-//   const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
-// 
-//   let lastUpdatedBy = ''
-//   if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
-//     lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"];
-//   }
-// 
-//   let licenseNames = ['Pick file status', ...atpMappings.map(x => x.name)]
-//   if (licenseName !== '' && lastUpdatedBy !== '') {
-//     licenseNames.push('No license');
-//   }
+  if ( (ateamResults === 0) && (accessToken) ) {
+    dispatch(mergeAteamQueryAtp(accessToken, atpParents));
+  }
 
   const deriveModFileStatus = (wfTags) => {
     const modFileStatus =  {};
@@ -127,7 +109,6 @@ const Workflow = () => {
   }
 
   const modFileStatus = deriveModFileStatus(referenceJsonLive["workflow_tags"]);
-  console.log(modFileStatus); 
   let dbAtp = modFileStatus[accessLevel]['workflow_tag_id'];
   const updated = ( (dbAtp !== fileStatus) && (fileStatus !== '') ) ? 'updated' : '';
 
@@ -156,9 +137,6 @@ const Workflow = () => {
     });
   }
 
-
-//                         <option value={atp} defaultValue={licenseToShow !== '' ? licenseName : null} key={atp}>{name}</option>
-
   return (
       <>
         <Row key='workflowFileStatus'>
@@ -167,9 +145,7 @@ const Workflow = () => {
             <Container>
               <Row key="fileStatusInput">
                 <Form.Control as='select' id='fileStatus' name='fileStatus' style={{width: "10em"}} className={`form-control ${updated}`} value={fileStatus} onChange={(e) => setFileStatus(e.target.value)} >
-                  {Object.entries(atpMappings).map(([atp, name]) => 
-                      <option key={atp} value={atp}>{name}</option>
-)}
+                  {Object.entries(atpMappings).map(([atp, name]) => <option key={atp} value={atp}>{name}</option>)}
                 </Form.Control>
                 &nbsp;
                 <div className={`form-control biblio-button ${updated}`} type="submit" onClick={(e) => postApiFileStatus(e)} style={{ width: '160px' }}>{dbAtp !== '' ? "Update" : "Add"} File Status</div><br/><br/>
