@@ -8,7 +8,7 @@ import {updateButtonBiblioEntityAdd} from "../../actions/biblioActions";
 export default (props) => {
     const dispatch = useDispatch();
     const allOktaStuff = useSelector(state => state.isLogged);
-    const userID = useSelector(state => state.isLogged.userId);
+    const uid = useSelector(state => state.isLogged.uid);
     const accessToken = useSelector(state => state.isLogged.accessToken);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
@@ -23,7 +23,7 @@ export default (props) => {
                 confidence_level: props.data.confidence_level,
                 entity_type: props.data.entity_type,
                 entity: props.data.entity,
-                entity_id_validation: props.data.entity === null ? null : "alliance",
+                entity_id_validation: props.data.entity ? null : "alliance",
                 negated: validation === 'positive' ? props.data.negated : !props.data.negated,
                 note: null,
                 novel_topic_data: props.data.novel_topic_data,
@@ -46,6 +46,6 @@ export default (props) => {
 
 
     return (
-        <span>{(props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel) && (true) ? checkBoxElement() : null}{props.data.validation_by_professional_biocurator}</span>
+        <span>{(props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel) && (uid !== props.data.created_by) ? checkBoxElement() : null}{props.data.validation_by_professional_biocurator}</span>
     );
 };
