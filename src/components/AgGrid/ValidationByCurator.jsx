@@ -8,6 +8,7 @@ import {updateButtonBiblioEntityAdd} from "../../actions/biblioActions";
 export default (props) => {
     const dispatch = useDispatch();
     const allOktaStuff = useSelector(state => state.isLogged);
+    const userID = useSelector(state => state.isLogged.userId);
     const accessToken = useSelector(state => state.isLogged.accessToken);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
@@ -15,18 +16,21 @@ export default (props) => {
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
 
     const checkBoxElement = () => {
-        console.log(allOktaStuff);
+        //Should entity_id_validation always be alliance?
+        //Should source Id always be 290?
         const handleValidationClick = (validation) => {
             let payload = {
                 confidence_level: props.data.confidence_level,
                 entity_type: props.data.entity_type,
+                entity: props.data.entity,
+                entity_id_validation: props.data.entity === null ? null : "alliance",
                 negated: validation === 'positive' ? props.data.negated : !props.data.negated,
                 note: null,
                 novel_topic_data: props.data.novel_topic_data,
-                reference_curie: referenceCurie,
+                reference_curie: props.data.reference_id,
                 species: props.data.species,
                 topic: props.data.topic,
-                topic_entity_tag_source_id: props.data.topic_entity_tag_source_id
+                topic_entity_tag_source_id: 290
             }
             console.log(payload);
             dispatch(updateButtonBiblioEntityAdd([accessToken, 'topic_entity_tag/', payload, 'POST'],accessLevel));
