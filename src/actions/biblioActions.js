@@ -452,26 +452,34 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
         })
         .then(res => {
           const searchMap = {};
+	  const obsoleteMap = {};
           if (res.data.results) {
             for (const entityResult of res.data.results) {
               let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
               let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
-              if (primaryId && name) {
-                searchMap[primaryId.toLowerCase()] = primaryId;
-                searchMap[name] = primaryId;
+	      if (primaryId && name) {
+                if (entityResult.obsolete === true) {
+                  obsoleteMap[primaryId.toLowerCase()] = primaryId;
+                  obsoleteMap[name] = primaryId;
+                } else {
+                  searchMap[primaryId.toLowerCase()] = primaryId;
+                  searchMap[name] = primaryId;
+                }
               }
             }
           }
           let entityResultList = [];
-          for (const entityTypeSymbol of entityInputList) {
-            if (entityTypeSymbol.toLowerCase() in searchMap) {
-              entityResultList.push({
-                'entityTypeSymbol': entityTypeSymbol,
-                'curie': searchMap[entityTypeSymbol.toLowerCase()]
-              });
-            } else {
-              entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
-            }
+          for (const entityTypeSymbol of entityInputList) {	      
+	    if (entityTypeSymbol.toLowerCase() in searchMap) {
+		entityResultList.push({
+		  'entityTypeSymbol': entityTypeSymbol,
+		  'curie': searchMap[entityTypeSymbol.toLowerCase()]
+	      });
+	    } else if (entityTypeSymbol.toLowerCase() in obsoleteMap) {
+		entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'obsolete entity'});
+	    } else {
+		entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
+	    }
           }
           dispatch(setEntityResultList(entityResultList));
         })
