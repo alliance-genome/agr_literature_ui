@@ -433,6 +433,10 @@ const MergeSubmitDataTransferUpdateButton = () => {
         const fieldNameJson = ( fieldName in remapFieldNamesApi ) ? remapFieldNamesApi[fieldName] : fieldName;
         updateJsonReferenceMain[fieldNameJson] = referenceMeta2['referenceJson'][fieldName] } }
 
+    if ( ( referenceMeta1['referenceJson']['prepublication_pipeline'] !== referenceMeta2['referenceJson']['prepublication_pipeline'] ) &&
+         ( referenceMeta2['referenceJson']['prepublication_pipeline'] === true ) ) {
+        updateJsonReferenceMain['prepublication_pipeline'] = 'true'; }
+
     console.log(updateJsonReferenceMain);
     if (Object.keys(updateJsonReferenceMain).length !== 0) {
       const referenceCurie = referenceMeta1.curie;
