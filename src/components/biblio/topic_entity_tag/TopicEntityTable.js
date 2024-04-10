@@ -11,6 +11,7 @@ import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
 import "ag-grid-community/styles/ag-grid.css"; // Core CSS
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Theme
+import Multiselect from 'multiselect-react-dropdown';//show/hide dropdown menu
 
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
@@ -71,6 +72,52 @@ const TopicEntityTable = () => {
     setSelectedCurie(curie);
     setShowModal(true);
   };
+
+  const options = [{ headerName: "Topic", field: "topic_name", id: 1},
+    { headerName: "Entity Type", field: "entity_type_name", id: 2},
+    { headerName: "Species", field: "species_name", id: 3},
+    { headerName: "Entity", field: "entity_name", id: 4},
+    { headerName: "Entity Published As", field: "entity_published_as", id: 5 },
+    { headerName: "No Data", field: "negated", id: 6 },
+    { headerName: "Novel Data", field: "novel_topic_data", id: 7},
+    { headerName: "Confidence Level", field:"confidence_level", id: 8 },
+    { headerName: "Created By", field: "created_by", id: 9},
+    { headerName: "Note", field: "note", id: 10},
+    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 11 },
+    { headerName: "Date Created", field: "date_created", id: 12},
+    { headerName: "Updated By", field: "updated_by", id: 13 },
+    { headerName: "Date Updated", field: "date_updated", id: 14},
+    { headerName: "Validation By Author", field: "validation_by_author", id: 15 },
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 16 },
+    { headerName: "Display Tag", field: "display_tag_name", id: 17},
+    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18 },
+    { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", id: 19 },
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion" , id: 20},
+    { headerName: "Source Method", field: "topic_entity_tag_source.source_method", id: 21 },
+    { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type", id: 22 },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 23},
+    { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24 },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25 },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26 }
+    ] ;
+
+
+   //const [selectedOption, setSelectedOption] = useState(options);
+
+   const handleTypeRemove = (selectedList, selectedItem) => {
+        console.log('selected Item:' + selectedItem.field);
+        gridRef.current.api.applyColumnState({
+                 state: [{ colId: selectedItem.field, hide: true },],
+                });
+    }
+
+
+    const handleTypeSelect = (selectedList, selectedItem) => {
+        console.log('selected Item:' + selectedItem.field);
+        gridRef.current.api.applyColumnState({
+                 state: [{ colId: selectedItem.field, hide: false },],
+                });
+    }
 
   const dateFormatter = (params) => {
     return new Date(params.value).toLocaleString();
@@ -195,7 +242,36 @@ const TopicEntityTable = () => {
               <span className="visually-hidden">Loading...</span>
           </Spinner>
         </div>
-      )}	
+      )}
+      <div style={{width: '20%', float: 'left'}}>Hide/Show Columns</div>
+      <div className="columnSelectBox">
+        <div id="dialog2" className="triangle_down1"/>
+                <div className="arrowdown">
+                    <Multiselect
+                        onSelect={handleTypeSelect}
+                        onRemove={handleTypeRemove}
+                        options={options} // Options to display in the dropdown
+                        //selectedItems={optionsPreSelected}
+                        selectedValues={options}//
+                        //onChange={handleOptionChange} // Handle option changes
+                        displayValue="headerName" //which data to display
+                        hideSelectedList
+                        showCheckbox={true}
+                        emptyRecordMsg={"Maximum columns selected !"}
+                        placeholder="click to select"
+                        style={{
+                            arrowdown: {
+                               background: 'red',
+                               width: '20%',
+                            },
+                            multiselectContainer: {
+                                color: 'red',
+                                width: '20%'
+                            }
+                        }}
+                    />
+        </div>
+      </div>
       <div className="ag-theme-quartz" style={{height: 500}}>
         <AgGridReact
             ref={gridRef}

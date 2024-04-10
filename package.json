@@ -36,10 +36,11 @@
     "redux-thunk": "^2.3.0",
     "web-vitals": "^1.1.2",
     "ag-grid-community": "~31.0.2",
-    "ag-grid-react": "~31.0.2"
+    "ag-grid-react": "~31.0.2",
+    "multiselect-react-dropdown": "2.0.25"
   },
   "scripts": {
-    "start": "PORT=3001 BROWSER=none react-app-rewired start",
+    "start": "PORT=3005 BROWSER=none react-app-rewired start",
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
