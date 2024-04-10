@@ -437,9 +437,11 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
     }
     if (!['species', 'construct'].includes(entityType)) {
       postData["searchFilters"]["taxonFilters"] = {
-        "taxon.curie_keyword": {
+        "taxon.curie": {
           "queryString": taxon,
-          "tokenOperator": "AND"
+          "tokenOperator": "AND",
+          "useKeywordFields": true,
+          "queryType": "matchQuery"
         }
       }
     }

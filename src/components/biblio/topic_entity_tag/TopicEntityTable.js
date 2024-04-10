@@ -243,7 +243,7 @@ const TopicEntityTable = () => {
           </Spinner>
         </div>
       )}
-      <div style={{width: '20%', float: 'left'}}>Hide/Show Columns</div>
+
       <div className="columnSelectBox">
         <div id="dialog2" className="triangle_down1"/>
                 <div className="arrowdown">
@@ -258,15 +258,15 @@ const TopicEntityTable = () => {
                         hideSelectedList
                         showCheckbox={true}
                         emptyRecordMsg={"Maximum columns selected !"}
-                        placeholder="click to select"
+                        placeholder="type to filter"
+                        showArrow={true}
                         style={{
                             arrowdown: {
                                background: 'red',
                                width: '20%',
                             },
                             multiselectContainer: {
-                                color: 'red',
-                                width: '20%'
+                                width: '15%'
                             }
                         }}
                     />
