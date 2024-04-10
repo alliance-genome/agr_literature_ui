@@ -13,24 +13,31 @@ export default (props) => {
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+    const topicEntitySourceId = useSelector(state => state.biblio.topicEntitySourceId);
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+    const state = useSelector(state => state.biblio);
 
     const checkBoxElement = () => {
+        console.log(topicEntitySourceId);
+        console.log(state);
         //Should entity_id_validation always be alliance?
-        //Should source Id always be 290?
+        //Should source Id always be 290? NO
+        //source method abc_literature_system
+        //source assertion ATP:0000036
+        //Need to generate id.
         const handleValidationClick = (validation) => {
             let payload = {
                 confidence_level: props.data.confidence_level,
                 entity_type: props.data.entity_type,
                 entity: props.data.entity,
-                entity_id_validation: props.data.entity ? null : "alliance",
+                entity_id_validation: props.data.entity ? "alliance" : null,
                 negated: validation === 'positive' ? props.data.negated : !props.data.negated,
                 note: null,
                 novel_topic_data: props.data.novel_topic_data,
                 reference_curie: props.data.reference_id,
                 species: props.data.species,
                 topic: props.data.topic,
-                topic_entity_tag_source_id: 290
+                topic_entity_tag_source_id: topicEntitySourceId
             }
             console.log(payload);
             dispatch(updateButtonBiblioEntityAdd([accessToken, 'topic_entity_tag/', payload, 'POST'],accessLevel));

@@ -1047,3 +1047,8 @@ export const setAllSpecies = (allSpecies) => ({
   type: 'SET_ALL_SPECIES',
   payload: allSpecies
 });
+
+export const setTopicEntitySourceId = (topicEntitySourceId) => ({
+  type: 'SET_TOPIC_ENTITY_SOURCE_ID',
+  payload: topicEntitySourceId
+});
