@@ -459,11 +459,6 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
 	  const obsoleteMap = {};
           if (res.data.results) {
             for (const entityResult of res.data.results) {
-	      // console.log("entityResult =" + JSON.stringify(entityResult, null, 2));
-	      // console.log("entityResult.taxon.curie = " + entityResult.taxon.curie);
-	      if (['gene', 'allele'].includes(entityType) && entityResult.taxon.curie !== taxon) {
-	          continue
-	      }
               let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
 	      let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
 	      let otherName = entityType === "construct" ? entityResult['constructFullName']?.displayText?.toLowerCase() ?? "" : "";
