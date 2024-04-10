@@ -162,16 +162,20 @@ const TopicEntityTable = () => {
     //We also need to split twice to get the data, or we hit errors on empty sets.
     let allCookies = document.cookie;
     if(allCookies){
-      let thaCookie = document.cookie.split("; ")
-          .find((row) => row.startsWith("columnOrder="))
-          .split("=")[1];
-      let tableState = thaCookie.split(',').map((element) => {
-          return { "colId": element};
-      })
-      gridRef.current.api.applyColumnState({
-        state: tableState,
-        applyOrder: true
-      });
+      let thaCookie = document.cookie.split("; ");
+      if (thaCookie) {
+        let columnOrderCookie = thaCookie.find((row) => row.startsWith("columnOrder="));
+        if (columnOrderCookie) {
+          let splitCookie = columnOrderCookie.split("=")[1];
+          let tableState = splitCookie.split(',').map((element) => {
+            return {"colId": element};
+          });
+          gridRef.current.api.applyColumnState({
+            state: tableState,
+            applyOrder: true
+          });
+        }
+      }
     }
   },[]);
 
