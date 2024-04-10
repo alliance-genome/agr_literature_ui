@@ -190,15 +190,18 @@ const MergeCompletedMergeModal = () => {
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
   const updateFailure = useSelector(state => state.merge.updateFailure);
   const updateMessages = useSelector(state => state.merge.updateMessages);
+  const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
+  const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
 
   const modalBody = updateFailure ? 
-                    <Modal.Body>{referenceMeta2.curie} has failed to merge into {referenceMeta1.curie}.<br/>
+                    <Modal.Body><a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into
+<a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>
                       Contact a developer with the error message:<br/><br/>
                       Merge Completion Failure<br/>
                       {updateMessages.map((message, index) => (
                         <div key={`${message} ${index}`}>{message}</div>
                       ))}</Modal.Body> :
-                    <Modal.Body>{referenceMeta2.curie} has been merged into {referenceMeta1.curie}.<br/>Information associated with {referenceMeta2.curie} has been removed.</Modal.Body>
+                    <Modal.Body>{referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>Information associated with {referenceMeta2.curie} has been removed.</Modal.Body>
   const modalHeader = updateFailure ? 
                       <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
                       <Modal.Header closeButton><Modal.Title>Merge Complete</Modal.Title></Modal.Header>
