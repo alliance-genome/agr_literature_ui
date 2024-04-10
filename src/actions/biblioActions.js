@@ -158,7 +158,7 @@ export const getCuratorSourceId = async (mod, accessToken) => {
         const newSourceId = await axios.post(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source', {
           "source_evidence_assertion": "ATP:0000036",
           "source_method": "abc_literature_system",
-          "validation_type": "curator",
+          "validation_type": "professional_curator",
           "description": "Trained professional biocurator specializing in curation of model organism data using the ABC data entry form.",
           "secondary_data_provider_abbreviation": mod,
           "data_provider": mod,
