@@ -1,3 +1,4 @@
+import { Spinner } from 'react-bootstrap';
 import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState, useMemo, useCallback, useRef} from "react";
 import { setCurieToNameTaxon,setAllSpecies } from "../../../actions/biblioActions";
@@ -91,25 +92,48 @@ const TopicEntityTable = () => {
     );
   };
 
+  // const gridOptions = {
+  //  sortingCaseInsensitive: true
+  // }
+  // { headerName: "Entity Type",
+  //   field: "entity_type_name",
+  //   sortingOrder: ['asc', 'desc', 'null'],
+  //   sortingCaseInsensitive: true
+  // }
+  // these do not work
+  // so use our own caseInsensitiveComparator
+  const caseInsensitiveComparator = (valueA, valueB) => {
+    if (valueA == null && valueB == null) {
+      return 0;
+    }
+    if (valueA == null) {
+      return -1;
+    }
+    if (valueB == null) {
+      return 1;
+    }
+    return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
+  };
+
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
-    { headerName: "Topic", field: "topic_name", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
-    { headerName: "Entity Type", field: "entity_type_name"},
-    { headerName: "Species", field: "species_name" , filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
-    { headerName: "Entity", field: "entity_name", onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
-    { headerName: "Entity Published As", field: "entity_published_as" },
+    { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
+    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator },
+    { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
+    { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
+    { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
     { headerName: "No Data", field: "negated", cellDataType: "text" },
     { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text"},
     { headerName: "Confidence Level", field:"confidence_level" },
     { headerName: "Created By", field: "created_by"},
-    { headerName: "Note", field: "note", onCellClicked: (params) => {handleNoteClick(params.value)}},
+    { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleNoteClick(params.value)}},
     { headerName: "Entity ID Validation", field: "entity_id_validation" },
     { headerName: "Date Created", field: "date_created", valueFormatter: dateFormatter },
     { headerName: "Updated By", field: "updated_by" },
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
     { headerName: "Validation By Author", field: "validation_by_author" },
     { headerName: "Validation By Professional Biocurator", cellRenderer: ValidationByCurator },
-    { headerName: "Display Tag", field: "display_tag_name" },
+    { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
     { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion" ,valueFormatter: nameFormatter },
@@ -139,16 +163,20 @@ const TopicEntityTable = () => {
     //We also need to split twice to get the data, or we hit errors on empty sets.
     let allCookies = document.cookie;
     if(allCookies){
-      let thaCookie = document.cookie.split("; ")
-          .find((row) => row.startsWith("columnOrder="))
-          .split("=")[1];
-      let tableState = thaCookie.split(',').map((element) => {
-          return { "colId": element};
-      })
-      gridRef.current.api.applyColumnState({
-        state: tableState,
-        applyOrder: true
-      });
+      let thaCookie = document.cookie.split("; ");
+      if (thaCookie) {
+        let columnOrderCookie = thaCookie.find((row) => row.startsWith("columnOrder="));
+        if (columnOrderCookie) {
+          let splitCookie = columnOrderCookie.split("=")[1];
+          let tableState = splitCookie.split(',').map((element) => {
+            return {"colId": element};
+          });
+          gridRef.current.api.applyColumnState({
+            state: tableState,
+            applyOrder: true
+          });
+        }
+      }
     }
   },[]);
 
@@ -165,6 +193,13 @@ const TopicEntityTable = () => {
       {/* Note Popup */}
       {showNoteModal && (
           <GenericTetTableModal title="Full Note" body={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
+      )}
+      {isLoadingData && (
+        <div className="text-center">
+          <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </div>
       )}
       <div className="ag-theme-quartz" style={{height: 500}}>
         <AgGridReact

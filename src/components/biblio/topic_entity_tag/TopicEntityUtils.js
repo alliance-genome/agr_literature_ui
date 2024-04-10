@@ -81,7 +81,8 @@ export function handleForceInsertionUpdateClick(tagResponse, accessToken, access
         })();
     }
     else {
-	tagData['reference_curie'] = tagData['reference_id'];
+	// tagData['reference_curie'] = tagData['reference_id'];
+	tagData['force_insertion'] = 1;
 	delete tagData['reference_id'];
 	delete tagData['created_by'];
 	delete tagData['updated_by'];

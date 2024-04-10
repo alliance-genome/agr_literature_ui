@@ -374,14 +374,18 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod = undefined) => {
   return dispatch => {
     let entityInputList = [];
-    if (entityText && entityText !== '') {
-      entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item);
+      if (entityText && entityText.trim() !== '') {
+      entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item !== '');
     }
     if (entityType.includes('construct')) {
       entityType = 'construct';
     }
-    const entityQueryString = entityInputList.map(element => { return element.replace(/(?=[() ])/g, '\\'); }).join(" ");
-
+    let entityList = entityInputList.map(entity =>
+	entity.normalize("NFC")
+	    .replace(/[\x00-\x1F\x7F-\xFF]/g, '')
+	    .trim()
+    );
+    const entityQueryString = entityList.join(' ');
     let searchType = {'AGMs': 'agm', 'strain': 'agm', 'genotype': 'agm', 'fish': 'agm', 'construct': 'construct', 'species': 'ncbitaxonterm', 'gene': 'gene', 'allele': 'allele'}
     const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType[entityType] + '/search?limit=100&page=0';
     // a-team search fields are different for species vs gene or allele.
@@ -415,7 +419,15 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
         "tokenOperator": "OR",
         "useKeywordFields": true,
         "queryType": "matchQuery"
-      }
+      };
+      if (entityType === "construct") {
+	postData["searchFilters"]["nameFilter"][entityType + "FullName.displayText"] = {
+          "queryString": entityQueryString,
+          "tokenOperator": "OR",
+          "useKeywordFields": true,
+          "queryType": "matchQuery"
+        };
+      } 
     }
     if (['strain', 'genotype', 'fish'].includes(entityType)) {
       postData["searchFilters"]["subtypeFilters"] = {
@@ -433,6 +445,9 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
         }
       }
     }
+  
+    // console.log("postData =" + JSON.stringify(postData, null, 2));
+      
     axios.post(ateamApiUrl, postData,
         {
           headers: {
@@ -442,25 +457,40 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
         })
         .then(res => {
           const searchMap = {};
+	  const obsoleteMap = {};
           if (res.data.results) {
             for (const entityResult of res.data.results) {
               let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
-              let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
+	      let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
+	      let otherName = entityType === "construct" ? entityResult['constructFullName']?.displayText?.toLowerCase() ?? "" : "";
               if (primaryId && name) {
-                searchMap[primaryId.toLowerCase()] = primaryId;
-                searchMap[name] = primaryId;
+                if (entityResult.obsolete === true) {
+                  obsoleteMap[primaryId.toLowerCase()] = primaryId;
+                  obsoleteMap[name] = primaryId;
+		  if (otherName) {
+		    obsoleteMap[otherName] = primaryId;
+		  }
+                } else {
+                  searchMap[primaryId.toLowerCase()] = primaryId;
+                  searchMap[name] = primaryId;
+		  if (otherName) {
+		    searchMap[otherName] = primaryId;
+		  }
+                }
               }
             }
           }
           let entityResultList = [];
           for (const entityTypeSymbol of entityInputList) {
             if (entityTypeSymbol.toLowerCase() in searchMap) {
-              entityResultList.push({
-                'entityTypeSymbol': entityTypeSymbol,
-                'curie': searchMap[entityTypeSymbol.toLowerCase()]
+                entityResultList.push({
+                  'entityTypeSymbol': entityTypeSymbol,
+                  'curie': searchMap[entityTypeSymbol.toLowerCase()]
               });
+            } else if (entityTypeSymbol.toLowerCase() in obsoleteMap) {
+                entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'obsolete entity'});
             } else {
-              entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
+                entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
             }
           }
           dispatch(setEntityResultList(entityResultList));
@@ -899,6 +929,13 @@ export const setWorkflowModalText = (payload) => {
 export const setEntityModalText = (payload) => {
   return {
     type: 'SET_ENTITY_MODAL_TEXT',
+    payload: payload
+  };
+};
+
+export const setReferenceFiles = (payload) => {
+  return {
+    type: 'SET_REFERENCE_FILES',
     payload: payload
   };
 };

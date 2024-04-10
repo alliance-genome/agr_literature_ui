@@ -145,7 +145,12 @@ const TopicEntityCreate = () => {
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
     dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
   }, [topicSelect, dispatch]);
-      
+
+  useEffect(() => {	
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+  }, [entityTypeSelect, dispatch]);
+    
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
@@ -304,10 +309,10 @@ const TopicEntityCreate = () => {
                               accessToken
                           );
                           setTopicSelectLoading(false);
-			  // ensure results is an array
-                          // results = Array.isArray(results) ? results : []; 
-                          dispatch(setTypeaheadName2CurieMap(Object.fromEntries(results.map(item => [item.name, item.curie]))));
-                          setTypeaheadOptions(results.filter(item => { return topicDescendants.has(item.curie) }).map(item => item.name));
+			  dispatch(setTypeaheadName2CurieMap(Object.fromEntries(
+			      results.filter(item => !item.obsolete).map(item => [item.name, item.curie])
+			  )));
+			  setTypeaheadOptions(results.filter(item => !item.obsolete && topicDescendants.has(item.curie)).map(item => item.name));
                         }}
                         onChange={(selected) => {
                           dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
@@ -392,7 +397,7 @@ const TopicEntityCreate = () => {
         <Container>
           { renderView() === 'list' && entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
             let colDisplayClass = 'Col-display';
-            if (entityResult.curie === 'no Alliance curie') { colDisplayClass = 'Col-display-warn'; }
+            if (['no Alliance curie', 'obsolete entity'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
               else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
             return (
               <Row key={`entityEntityContainerrows ${index}`}>
