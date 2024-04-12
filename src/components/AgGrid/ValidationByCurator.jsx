@@ -20,7 +20,7 @@ export default (props) => {
     const checkBoxElement = () => {
         const handleValidationClick = (validation) => {
             let payload = {
-                confidence_level: props.data.confidence_level,
+                confidence_level: null,
                 entity_type: props.data.entity_type,
                 entity: props.data.entity,
                 entity_id_validation: props.data.entity ? "alliance" : null,
