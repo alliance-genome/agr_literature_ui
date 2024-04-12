@@ -10,7 +10,8 @@ import {
     setBiblioUpdatingEntityAdd,
     setEntityModalText,
     setTypeaheadName2CurieMap,
-    updateButtonBiblioEntityAdd
+    updateButtonBiblioEntityAdd,
+    setTopicEntitySourceId
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
 import {
@@ -53,7 +54,7 @@ const TopicEntityCreate = () => {
   const novelCheckbox = useSelector(state => state.biblio.entityAdd.novelCheckbox);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
-  const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
+  const topicEntitySourceId = useSelector(state => state.biblio.entityAdd.topicEntitySourceId);
 
   // state to track the current view: 'list' or 'autocomplete'
   //const [currentView, setCurrentView] = useState('list');
@@ -153,7 +154,7 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
-        setTopicEntitySourceId(await getCuratorSourceId(accessLevel, accessToken));
+        dispatch(setTopicEntitySourceId(await getCuratorSourceId(accessLevel, accessToken)));
       }
     }
     fetchSourceId().catch(console.error);

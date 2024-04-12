@@ -70,7 +70,8 @@ const initialState = {
   updateAlert: 0,
   updateFailure: 0,
   updateMessages: [],
-  loadingFileNames: new Set()
+  loadingFileNames: new Set(),
+  topicEntitySourceId: null
 };
 
 const deriveCuratability = (referenceJson) => {
@@ -1114,6 +1115,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         allSpecies: action.payload
+      };
+
+    case 'SET_TOPIC_ENTITY_SOURCE_ID':
+      return {
+        ...state,
+        topicEntitySourceId: action.payload
       };
      
 //     case 'QUERY_BUTTON':
