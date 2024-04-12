@@ -161,6 +161,10 @@ const TopicEntityTable = () => {
     return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
   };
 
+  const [isOpen, setIsOpen] = useState(false);
+  function toggle() {
+    setIsOpen((isOpen) => !isOpen);
+  }
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
     { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
@@ -243,8 +247,9 @@ const TopicEntityTable = () => {
           </Spinner>
         </div>
       )}
+      <div style={{width: '20%'}}>  <button onClick={toggle}>Select to hide/show Columns</button></div>
 
-      <div className="columnSelectBox">
+      {isOpen &&  <div className="columnSelectBox" >
         <div id="dialog2" className="triangle_down1"/>
                 <div className="arrowdown">
                     <Multiselect
@@ -258,8 +263,9 @@ const TopicEntityTable = () => {
                         hideSelectedList
                         showCheckbox={true}
                         emptyRecordMsg={"Maximum columns selected !"}
-                        placeholder="type to filter"
+                        placeholder="type to filter column"
                         showArrow={true}
+
                         style={{
                             arrowdown: {
                                background: 'red',
@@ -271,7 +277,7 @@ const TopicEntityTable = () => {
                         }}
                     />
         </div>
-      </div>
+      </div>}
       <div className="ag-theme-quartz" style={{height: 500}}>
         <AgGridReact
             ref={gridRef}
