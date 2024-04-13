@@ -70,6 +70,7 @@ const initialState = {
   updateAlert: 0,
   updateFailure: 0,
   updateMessages: [],
+  xrefPatterns: {},
   loadingFileNames: new Set()
 };
 
@@ -1116,6 +1117,15 @@ export default function(state = initialState, action) {
         allSpecies: action.payload
       };
      
+    case 'UPDATE_XREF_PATTERNS':
+      // console.log('UPDATE_XREF_PATTERNS');
+      const cloneXrefPatterns = _.cloneDeep(state.xrefPatterns);
+      cloneXrefPatterns[action.payload.datatype] = action.payload.data;
+      return {
+        ...state,
+        xrefPatterns: cloneXrefPatterns
+      };
+
 //     case 'QUERY_BUTTON':
 //       console.log("query button reducer set " + action.payload);
 //       let responseField = action.payload;

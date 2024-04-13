@@ -178,6 +178,20 @@ export const getCuratorSourceId = async (mod, accessToken) => {
   }
 }
 
+export const getXrefPatterns = (datatype) => { return dispatch => {
+  const url = process.env.REACT_APP_RESTAPI + '/cross_reference/check/patterns/' + datatype;
+  axios({ url: url })
+  .then(res => {
+    console.log(res);
+    dispatch({
+      type: 'UPDATE_XREF_PATTERNS',
+      payload: { datatype: datatype, data: res.data }
+    })
+  })
+  .catch(err =>
+    console.log(err)
+  );
+} }
 
 export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIBLIO_UPDATING_ENTITY_ADD', payload: payload }; };
 
