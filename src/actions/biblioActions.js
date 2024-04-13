@@ -158,7 +158,7 @@ export const getCuratorSourceId = async (mod, accessToken) => {
         const newSourceId = await axios.post(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source', {
           "source_evidence_assertion": "ATP:0000036",
           "source_method": "abc_literature_system",
-          "validation_type": "curator",
+          "validation_type": "professional_curator",
           "description": "Trained professional biocurator specializing in curation of model organism data using the ABC data entry form.",
           "secondary_data_provider_abbreviation": mod,
           "data_provider": mod,
@@ -393,19 +393,12 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
     if (entityType.includes('construct')) {
       entityType = 'construct';
     }
-    // const entityQueryString = entityInputList.map(element => { return element.replace(/(?=[() ])/g, '\\'); }).join(" ");  
-    const entityQueryString = entityInputList.map(entity => {
-      // normalize Unicode characters to their canonical form
-      entity = entity.normalize("NFC");
-
-      // remove or replace non-printable control characters and extended ASCII
-      entity = entity.replace(/[\x00-\x1F\x7F-\xFF]/g, '');
-
-      // entity = entity.replace(/[\s\(\)\[\]\{\}\'\"\,\.\;\:\?\!\$\%\^\&\*\+\-\=\|\{\}\[\]`~\\\/]/g, '\\$&');
-
-      return entity;
-    }).join(' ');
-  
+    let entityList = entityInputList.map(entity =>
+	entity.normalize("NFC")
+	    .replace(/[\x00-\x1F\x7F-\xFF]/g, '')
+	    .trim()
+    );
+    const entityQueryString = entityList.join(' ');
     let searchType = {'AGMs': 'agm', 'strain': 'agm', 'genotype': 'agm', 'fish': 'agm', 'construct': 'construct', 'species': 'ncbitaxonterm', 'gene': 'gene', 'allele': 'allele'}
     const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType[entityType] + '/search?limit=100&page=0';
     // a-team search fields are different for species vs gene or allele.
@@ -439,7 +432,15 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
         "tokenOperator": "OR",
         "useKeywordFields": true,
         "queryType": "matchQuery"
-      }
+      };
+      if (entityType === "construct") {
+	postData["searchFilters"]["nameFilter"][entityType + "FullName.displayText"] = {
+          "queryString": entityQueryString,
+          "tokenOperator": "OR",
+          "useKeywordFields": true,
+          "queryType": "matchQuery"
+        };
+      } 
     }
     if (['strain', 'genotype', 'fish'].includes(entityType)) {
       postData["searchFilters"]["subtypeFilters"] = {
@@ -457,6 +458,9 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
         }
       }
     }
+  
+    // console.log("postData =" + JSON.stringify(postData, null, 2));
+      
     axios.post(ateamApiUrl, postData,
         {
           headers: {
@@ -470,30 +474,37 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
           if (res.data.results) {
             for (const entityResult of res.data.results) {
               let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
-              let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
-	      if (primaryId && name) {
+	      let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
+	      let otherName = entityType === "construct" ? entityResult['constructFullName']?.displayText?.toLowerCase() ?? "" : "";
+              if (primaryId && name) {
                 if (entityResult.obsolete === true) {
                   obsoleteMap[primaryId.toLowerCase()] = primaryId;
                   obsoleteMap[name] = primaryId;
+		  if (otherName) {
+		    obsoleteMap[otherName] = primaryId;
+		  }
                 } else {
                   searchMap[primaryId.toLowerCase()] = primaryId;
                   searchMap[name] = primaryId;
+		  if (otherName) {
+		    searchMap[otherName] = primaryId;
+		  }
                 }
               }
             }
           }
           let entityResultList = [];
-          for (const entityTypeSymbol of entityInputList) {	      
-	    if (entityTypeSymbol.toLowerCase() in searchMap) {
-		entityResultList.push({
-		  'entityTypeSymbol': entityTypeSymbol,
-		  'curie': searchMap[entityTypeSymbol.toLowerCase()]
-	      });
-	    } else if (entityTypeSymbol.toLowerCase() in obsoleteMap) {
-		entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'obsolete entity'});
-	    } else {
-		entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
-	    }
+          for (const entityTypeSymbol of entityInputList) {
+            if (entityTypeSymbol.toLowerCase() in searchMap) {
+                entityResultList.push({
+                  'entityTypeSymbol': entityTypeSymbol,
+                  'curie': searchMap[entityTypeSymbol.toLowerCase()]
+              });
+            } else if (entityTypeSymbol.toLowerCase() in obsoleteMap) {
+                entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'obsolete entity'});
+            } else {
+                entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
+            }
           }
           dispatch(setEntityResultList(entityResultList));
         })
@@ -1085,4 +1096,9 @@ export const setCurieToNameTaxon = (taxonMappings) => ({
 export const setAllSpecies = (allSpecies) => ({
   type: 'SET_ALL_SPECIES',
   payload: allSpecies
+});
+
+export const setTopicEntitySourceId = (topicEntitySourceId) => ({
+  type: 'SET_TOPIC_ENTITY_SOURCE_ID',
+  payload: topicEntitySourceId
 });

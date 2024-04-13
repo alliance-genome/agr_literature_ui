@@ -6,6 +6,7 @@ import axios from "axios";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Modal from 'react-bootstrap/Modal';
 import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
+import ValidationByCurator from '../../AgGrid/ValidationByCurator.jsx';
 import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
 
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
@@ -61,16 +62,16 @@ const TopicEntityTable = () => {
 
 
   const handleNoteClick = (fullNote) => {
-    // console.log("fullNote in 'handleNoteClick'=", fullNote);
     setFullNote(fullNote);
     setShowNoteModal(true);
   };
 
   const handleCurieClick = (curie) => {
-    // console.log("curie in 'handleCurieClick'=", curie);
-    setSelectedCurie(curie);
-    setShowModal(true);
-  };
+    if(curie !== "null:null"){
+      setSelectedCurie(curie);
+      setShowModal(true);
+    }
+  }
 
   const dateFormatter = (params) => {
     return new Date(params.value).toLocaleString();
@@ -91,16 +92,6 @@ const TopicEntityTable = () => {
     );
   };
 
-  // const gridOptions = {
-  //  sortingCaseInsensitive: true
-  // }  
-  // { headerName: "Entity Type",
-  //   field: "entity_type_name",
-  //   sortingOrder: ['asc', 'desc', 'null'],
-  //   sortingCaseInsensitive: true
-  // }  
-  // these do not work
-  // so use our own caseInsensitiveComparator  
   const caseInsensitiveComparator = (valueA, valueB) => {
     if (valueA == null && valueB == null) {
       return 0;
@@ -117,7 +108,7 @@ const TopicEntityTable = () => {
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
     { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
-    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator },
+    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity_type)} },
     { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
     { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
     { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
@@ -131,7 +122,7 @@ const TopicEntityTable = () => {
     { headerName: "Updated By", field: "updated_by" },
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
     { headerName: "Validation By Author", field: "validation_by_author" },
-    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator" },
+    { headerName: "Validation By Professional Biocurator", cellRenderer: ValidationByCurator},
     { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
@@ -199,7 +190,7 @@ const TopicEntityTable = () => {
               <span className="visually-hidden">Loading...</span>
           </Spinner>
         </div>
-      )}	
+      )}
       <div className="ag-theme-quartz" style={{height: 500}}>
         <AgGridReact
             ref={gridRef}

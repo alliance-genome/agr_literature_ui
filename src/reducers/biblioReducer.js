@@ -71,7 +71,8 @@ const initialState = {
   updateFailure: 0,
   updateMessages: [],
   xrefPatterns: {},
-  loadingFileNames: new Set()
+  loadingFileNames: new Set(),
+  topicEntitySourceId: null
 };
 
 const deriveCuratability = (referenceJson) => {
@@ -1115,6 +1116,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         allSpecies: action.payload
+      };
+
+    case 'SET_TOPIC_ENTITY_SOURCE_ID':
+      return {
+        ...state,
+        topicEntitySourceId: action.payload
       };
      
     case 'UPDATE_XREF_PATTERNS':
