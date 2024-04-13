@@ -38,6 +38,7 @@ import { biblioRevertAuthorArray } from '../../actions/biblioActions';
 import { biblioRevertDatePublished } from '../../actions/biblioActions';
 import { setBiblioEditorModalText } from '../../actions/biblioActions';
 import { changeFieldDatePublishedRange } from '../../actions/biblioActions';
+import { getXrefPatterns } from '../../actions/biblioActions';
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -840,7 +841,6 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
   }
     
   return (<>{rowModAssociationElements}</>);
-
 }
 
 
@@ -853,6 +853,21 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
   const rowCrossReferencesElements = []
+
+  const xrefPatterns = useSelector(state => state.biblio.xrefPatterns);
+  function validateXref(datatype, xrefPatterns, prefix, value) {
+    if ( (prefix === '') || (value === '') ) { return; }
+    if (prefix in xrefPatterns[datatype]) {
+      const pattern = xrefPatterns[datatype][prefix];
+      const curie = prefix + ':' + value;
+      var re = new RegExp(pattern);
+      if (re.test(curie) === false) {
+        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' check your entry and try again.'));
+      }
+    } else {
+      console.log('xref prefix ' + prefix + ' not allowed');
+    }
+  }
 
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
@@ -898,8 +913,16 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
         rowCrossReferencesElements.push(
           <Form.Group as={Row} key={`${fieldName} ${index}`}>
             <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-            <ColEditorSelect key={`colElement ${fieldName} ${index} curiePrefix`} fieldType="select" fieldName={fieldName} colSize="2" value={valueLiveCuriePrefix} updatedFlag={updatedFlagCuriePrefix} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie prefix`} enumType="referenceXrefPrefix" dispatchAction={changeFieldCrossReferencesReferenceJson} />
-            <ColEditorSimple key={`colElement ${fieldName} ${index} curieId`} fieldType="input" fieldName={fieldName} colSize={otherColSize} value={valueLiveCurieId} updatedFlag={updatedFlagCurieId} placeholder="curie" disabled={disabled} fieldKey={`${fieldName} ${index} curie id`} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            <Col sm="2">
+              <Form.Control as="select" key={`colElement ${fieldName} ${index} curiePrefix`} id={`${fieldName} ${index} curie prefix`} type="{fieldName}" value={valueLiveCuriePrefix} className={`form-control ${updatedFlagCuriePrefix}`} disabled={disabled} placeholder="curie" onChange={(e) => { dispatch(changeFieldCrossReferencesReferenceJson(e)); validateXref('reference', xrefPatterns, e.target.value, valueLiveCurieId) } } >
+                {'referenceXrefPrefix' in enumDict && enumDict['referenceXrefPrefix'].map((optionValue, index) => (
+                  <option key={`${fieldName} ${index} curie prefix ${optionValue}`}>{optionValue}</option>
+                ))}
+              </Form.Control>
+            </Col>
+            <Col sm={otherColSize}>
+              <Form.Control as="input" key={`colElement ${fieldName} ${index} curieId`} id={`${fieldName} ${index} curie id`}  type="{fieldName}" value={valueLiveCurieId} className={`form-control ${updatedFlagCurieId}`} disabled={disabled} placeholder="curie" onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))} onBlur={ (e) => validateXref('reference', xrefPatterns, valueLiveCuriePrefix, valueLiveCurieId) } />
+            </Col>
             <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
             {buttonsElement}
           </Form.Group>); } } }
@@ -911,6 +934,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
       </Row>);
   }
   return (<>{rowCrossReferencesElements}</>); }
+
 
 const RowEditorReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
@@ -1151,9 +1175,17 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 } // const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb})
 
 const BiblioEditor = () => {
+  const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const biblioEditorModalText = useSelector(state => state.biblio.biblioEditorModalText);
+  const xrefPatterns = useSelector(state => state.biblio.xrefPatterns);
+  useEffect(() => {
+    if (Object.keys(xrefPatterns).length === 0) {
+      const fetchXrefPattern = async () => { dispatch(getXrefPatterns('reference')); }
+      fetchXrefPattern().catch(console.error);
+    }
+  }, [xrefPatterns]);
   if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
