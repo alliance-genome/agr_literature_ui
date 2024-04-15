@@ -40,13 +40,14 @@ export const RENAME_FACETS = {
     "mods_in_corpus_or_needs_review.keyword": "corpus - in corpus or needs review",
     "authors.name.keyword": "Authors",
     "mod_reference_types.keyword": "MOD reference type",
-    "topic_entity_tags.topic.keyword": "Topic"
+    "topic_entity_tags.topic.keyword": "Topic",
+    "topic_entity_tags.confidence_level.keyword": "Confidence level",
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Topics and Entities": ["topic entity tags.topic"],
+    "Topics and Entities": ["topic entity tags.topic", "topic entity tags.confidence_level"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
 
 }

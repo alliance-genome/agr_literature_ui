@@ -416,9 +416,9 @@ const TopicEntityCreateSGD = () => {
           <div><label>Entity Validation:</label></div>
           <Container>
            { entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
-             let colDisplayClass = 'Col-display';
-             if (entityResult.curie === 'no Alliance curie') { colDisplayClass = 'Col-display-warn'; }
-               else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
+              let colDisplayClass = 'Col-display';
+	      if (['no Alliance curie', 'obsolete entity'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
+              else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
               return (
                 <Row key={`entityEntityContainerrows ${index}`}>
                   <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{entityResult.entityTypeSymbol}</Col>

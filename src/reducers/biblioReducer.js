@@ -70,7 +70,9 @@ const initialState = {
   updateAlert: 0,
   updateFailure: 0,
   updateMessages: [],
-  loadingFileNames: new Set()
+  xrefPatterns: {},
+  loadingFileNames: new Set(),
+  topicEntitySourceId: null
 };
 
 const deriveCuratability = (referenceJson) => {
@@ -1115,7 +1117,22 @@ export default function(state = initialState, action) {
         ...state,
         allSpecies: action.payload
       };
+
+    case 'SET_TOPIC_ENTITY_SOURCE_ID':
+      return {
+        ...state,
+        topicEntitySourceId: action.payload
+      };
      
+    case 'UPDATE_XREF_PATTERNS':
+      // console.log('UPDATE_XREF_PATTERNS');
+      const cloneXrefPatterns = _.cloneDeep(state.xrefPatterns);
+      cloneXrefPatterns[action.payload.datatype] = action.payload.data;
+      return {
+        ...state,
+        xrefPatterns: cloneXrefPatterns
+      };
+
 //     case 'QUERY_BUTTON':
 //       console.log("query button reducer set " + action.payload);
 //       let responseField = action.payload;
