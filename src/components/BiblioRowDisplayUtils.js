@@ -13,7 +13,7 @@ export const RowDisplayResourcesForCuration = ({referenceJsonLive}) => {
         });
         return (
             <Row key='resources_for_curation' className="Row-general" xs={2} md={4} lg={6}>
-                <Col className='Col-general Col-display Col-display-left'>Resources for Curation</Col>
+                <Col className='Col-general Col-display Col-display-left'>resources_for_curation</Col>
                 <Col className='Col-general Col-display Col-display-right' lg={{ span: 10 }}>
                     <div dangerouslySetInnerHTML={{ __html: resource_list }}></div>
                 </Col>
