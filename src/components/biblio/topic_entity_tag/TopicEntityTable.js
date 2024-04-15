@@ -11,7 +11,6 @@ import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
 import "ag-grid-community/styles/ag-grid.css"; // Core CSS
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Theme
-import Multiselect from 'multiselect-react-dropdown';//show/hide dropdown menu
 import { observer } from "mobx-react-lite";
 import { Button, ButtonGroup, Dropdown, Form } from "react-bootstrap";
 import React from "react";
@@ -78,7 +77,7 @@ const TopicEntityTable = () => {
   };
 
 
-
+    //code for the dropdown menu to handle hide/show topic entity tag columns
     const state = useLocalStore(() => ({
     items: [{ headerName: "Topic", field: "topic_name", id: 1, checked: true},
     { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true},
@@ -109,7 +108,7 @@ const TopicEntityTable = () => {
     ]
   }));
 
-const CheckboxMenu = React.forwardRef(
+  const CheckboxMenu = React.forwardRef(
   (
     {
       children,
@@ -132,22 +131,23 @@ const CheckboxMenu = React.forwardRef(
           className="d-flex flex-column"
           style={{ maxHeight: "calc(100vh)", overflow: "none" }}
         >
+          <div className="dropdown-item border-top pt-2 pb-0">
+            <ButtonGroup size="sm">
+              <Button variant="link" onClick={onSelectAll}>
+                Show All
+              </Button>
+              <Button variant="link" onClick={onSelectNone}>
+                Hide All
+              </Button>
+            </ButtonGroup>
+          </div>
           <ul
             className="list-unstyled flex-shrink mb-0"
             style={{ overflow: "auto" }}
           >
             {children}
           </ul>
-          <div className="dropdown-item border-top pt-2 pb-0">
-            <ButtonGroup size="sm">
-              <Button variant="link" onClick={onSelectAll}>
-                Select All
-              </Button>
-              <Button variant="link" onClick={onSelectNone}>
-                Select None
-              </Button>
-            </ButtonGroup>
-          </div>
+
         </div>
       </div>
     );
@@ -171,7 +171,7 @@ const CheckDropdownItem = React.forwardRef(
 
 const CheckboxDropdown = observer(({ items }) => {
   const handleChecked = (key, event) => {
-    console.log('touch item here:' + key + " status: " + event.target.checked);
+    //console.log('touch item here:' + key + " status: " + event.target.checked);
     let item=items.find(i => i.id === key);
     item.checked = event.target.checked;
     if (item && item.checked == true){
@@ -185,7 +185,6 @@ const CheckboxDropdown = observer(({ items }) => {
                  });
     }
     //items.find(i => i.id === key).checked = event.target.checked;
-    console.log('find item:' + key);
   };
 
   const handleSelectAll = () => {
