@@ -149,6 +149,29 @@ const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, re
     return (<>{rowCrossReferenceElements}</>); }
   else { return null; } }
 
+const RowDisplayResourcesForCuration = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  if ('resources_for_curation' in referenceJsonLive && referenceJsonLive['resources_for_curation'] !== null) {
+      let resource_list = "";
+      referenceJsonLive['resources_for_curation'].forEach(resource => {
+	  if (resource_list !== '') {
+	      resource_list += " | ";
+	  }
+	  resource_list += `<a href="${resource.link_url}" target="_blank">${resource.display_name}</a>`;
+      });
+      return (
+	  <Row key={fieldIndex} className="Row-general" xs={2} md={4} lg={6}>
+              <Col className='Col-general Col-display Col-display-left'>Resources for Curation</Col>
+              <Col className='Col-general Col-display Col-display-right' lg={{ span: 10 }}>
+                 <div dangerouslySetInnerHTML={{ __html: resource_list }}></div>
+              </Col>
+	  </Row>
+     );
+
+  } else {
+      return null;
+  }
+}
+
 const RowDisplayReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
     const rowReferenceRelationsElements = []
@@ -427,7 +450,9 @@ const BiblioDisplay = () => {
     else if (fieldName === 'mod_corpus_associations') {
       rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
-      rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+	rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'resources_for_curation') {
+        rowOrderedElements.push(<RowDisplayResourcesForCuration key="RowDisplayResourcesForCuration" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }  
     else if (fieldName === 'relations') {
       rowOrderedElements.push(<RowDisplayReferenceRelations key="RowDisplayReferenceRelations" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
