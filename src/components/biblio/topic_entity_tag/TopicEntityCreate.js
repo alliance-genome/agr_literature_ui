@@ -54,7 +54,7 @@ const TopicEntityCreate = () => {
   const novelCheckbox = useSelector(state => state.biblio.entityAdd.novelCheckbox);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector(state => state.biblio.entityAdd.entityResultList);
-  const topicEntitySourceId = useSelector(state => state.biblio.entityAdd.topicEntitySourceId);
+  const topicEntitySourceId = useSelector(state => state.biblio.topicEntitySourceId);
 
   // state to track the current view: 'list' or 'autocomplete'
   //const [currentView, setCurrentView] = useState('list');
