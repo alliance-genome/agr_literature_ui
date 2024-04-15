@@ -78,7 +78,7 @@ const TopicEntityTable = () => {
 
 
     //code for the dropdown menu to handle hide/show topic entity tag columns
-    const state = useLocalStore(() => ({
+  const state = useLocalStore(() => ({
     items: [{ headerName: "Topic", field: "topic_name", id: 1, checked: true},
     { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true},
     { headerName: "Species", field: "species_name", id: 3, checked: true},
