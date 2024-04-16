@@ -8,6 +8,7 @@ import { AuthorExpandToggler } from './BiblioEditor';
 import { splitCurie } from './BiblioEditor';
 // import { aggregateCitation } from './BiblioEditor';
 import { RowDisplayReferencefiles } from '../Biblio';
+import { RowDisplayResourcesForCuration } from '../BiblioRowDisplayUtils';
 
 import { changeBiblioMeshExpandToggler } from '../../actions/biblioActions';
 
@@ -148,6 +149,7 @@ const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, re
       rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
     return (<>{rowCrossReferenceElements}</>); }
   else { return null; } }
+
 
 const RowDisplayReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
@@ -427,7 +429,9 @@ const BiblioDisplay = () => {
     else if (fieldName === 'mod_corpus_associations') {
       rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
-      rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+	rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'resources_for_curation') {
+        rowOrderedElements.push(<RowDisplayResourcesForCuration referenceJsonLive={referenceJsonLive} />); }  
     else if (fieldName === 'relations') {
       rowOrderedElements.push(<RowDisplayReferenceRelations key="RowDisplayReferenceRelations" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
