@@ -56,7 +56,9 @@ export const getCurieToNameTaxon = async (accessToken) => {
           "nameFilter": {
             "curie": {
               "queryString": taxon_ids,
-              "tokenOperator": "OR"
+              "tokenOperator": "OR",
+              "useKeywordFields": true,
+              "queryType": "matchQuery"
             }
           }
         }
