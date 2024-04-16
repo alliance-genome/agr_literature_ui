@@ -47,7 +47,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -190,15 +190,18 @@ const MergeCompletedMergeModal = () => {
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
   const updateFailure = useSelector(state => state.merge.updateFailure);
   const updateMessages = useSelector(state => state.merge.updateMessages);
+  const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
+  const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
 
   const modalBody = updateFailure ? 
-                    <Modal.Body>{referenceMeta2.curie} has failed to merge into {referenceMeta1.curie}.<br/>
+                    <Modal.Body><a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into
+<a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>
                       Contact a developer with the error message:<br/><br/>
                       Merge Completion Failure<br/>
                       {updateMessages.map((message, index) => (
                         <div key={`${message} ${index}`}>{message}</div>
                       ))}</Modal.Body> :
-                    <Modal.Body>{referenceMeta2.curie} has been merged into {referenceMeta1.curie}.<br/>Information associated with {referenceMeta2.curie} has been removed.</Modal.Body>
+                    <Modal.Body>{referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>Information associated with {referenceMeta2.curie} has been removed.</Modal.Body>
   const modalHeader = updateFailure ? 
                       <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
                       <Modal.Header closeButton><Modal.Title>Merge Complete</Modal.Title></Modal.Header>
@@ -432,6 +435,10 @@ const MergeSubmitDataTransferUpdateButton = () => {
       if (!keep1) {
         const fieldNameJson = ( fieldName in remapFieldNamesApi ) ? remapFieldNamesApi[fieldName] : fieldName;
         updateJsonReferenceMain[fieldNameJson] = referenceMeta2['referenceJson'][fieldName] } }
+
+    if ( ( referenceMeta1['referenceJson']['prepublication_pipeline'] !== referenceMeta2['referenceJson']['prepublication_pipeline'] ) &&
+         ( referenceMeta2['referenceJson']['prepublication_pipeline'] === true ) ) {
+        updateJsonReferenceMain['prepublication_pipeline'] = 'true'; }
 
     console.log(updateJsonReferenceMain);
     if (Object.keys(updateJsonReferenceMain).length !== 0) {
@@ -741,6 +748,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, hasPm
     else if (fieldName === 'mod_reference_types') {
       rowOrderedElements.push(
         <RowDisplayPairModReferenceTypes key="RowDisplayPairModReferenceTypes" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} /> ); }
+    else if (fieldName === 'prepublication_pipeline') {
+      rowOrderedElements.push(
+        <RowDisplayPairPrepublicationPipeline key="RowDisplayPairPrepublicationPipeline" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} /> ); }
     else if (fieldName === 'mod_corpus_associations') {
       rowOrderedElements.push(
         <RowDisplayPairModCorpusAssociations key="RowDisplayPairModCorpusAssociations" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} /> ); }
@@ -1233,6 +1243,25 @@ const RowDisplayPairModReferenceTypes = ({fieldName, referenceMeta1, referenceMe
   }
   return (<>{rowPairModReferenceTypesElements}</>);
 } // const RowDisplayPairModReferenceTypes
+
+
+const RowDisplayPairPrepublicationPipeline = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid}) => {
+  if ( (referenceMeta1['referenceJson'][fieldName] === null ) &&
+       (referenceMeta2['referenceJson'][fieldName] === null ) ) { return null; }
+  let keepClass1 = (referenceMeta1['referenceJson'][fieldName] === true ) ? 'div-merge-keep' : 'div-merge-obsolete';
+  let keepClass2 = (referenceMeta2['referenceJson'][fieldName] === true ) ? 'div-merge-keep' : 'div-merge-obsolete';
+  if ( referenceMeta1['referenceJson'][fieldName] === referenceMeta2['referenceJson'][fieldName] ) {
+    keepClass1 = 'div-merge-keep'; keepClass2 = 'div-merge-keep'; }
+  const element0 = GenerateFieldLabel(fieldName, 'lock');
+  let element1 = (<div className={`div-merge ${keepClass1}`} >{referenceMeta1['referenceJson'][fieldName].toString()}</div>);
+  let element2 = (<div className={`div-merge ${keepClass2}`} >{referenceMeta2['referenceJson'][fieldName].toString()}</div>);
+  return ( <Row key={'toggle prepublication_pipeline'}>
+             <Col sm="2" >{element0}</Col>
+             <Col sm="5" >{element1}</Col>
+             <Col sm="5" >{element2}</Col>
+           </Row>);
+} // const RowDisplayPairPrepublicationPipeline
+
 
 const RowDisplayPairModCorpusAssociations = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid}) => {
   const dispatch = useDispatch();

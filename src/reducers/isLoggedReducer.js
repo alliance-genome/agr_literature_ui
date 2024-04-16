@@ -9,7 +9,8 @@ const INTIAL_STATE = {
   oktaDeveloper: false,
   oktaTester: false,
   testerMod: 'No',
-  accessToken: null
+  accessToken: null,
+  uid: null
 };
 
 const loggedReducer = (state = INTIAL_STATE, action) => {
@@ -45,9 +46,10 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         oktaMod: oktaMod,
         oktaDeveloper: oktaDeveloper,
         oktaTester: oktaTester,
-        oktaGroups: jsonToken.Groups }
+        oktaGroups: jsonToken.Groups,
+        uid: jsonToken.uid}
     case 'SIGN_OUT':
-      return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, testerMod: 'No'}
+      return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, testerMod: 'No', uid: null}
     default:
       return state;
   }
