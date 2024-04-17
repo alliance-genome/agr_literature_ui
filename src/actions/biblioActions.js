@@ -427,20 +427,36 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
         "tokenOperator": "OR"
       }
     } else {
-      postData["searchFilters"]["nameFilter"][entityType + "Symbol.displayText"] = {
-        "queryString": entityQueryString,
-        "tokenOperator": "OR",
-        "useKeywordFields": true,
-        "queryType": "matchQuery"
-      };
-      if (entityType === "construct") {
-	postData["searchFilters"]["nameFilter"][entityType + "FullName.displayText"] = {
-          "queryString": entityQueryString,
-          "tokenOperator": "OR",
-          "useKeywordFields": true,
-          "queryType": "matchQuery"
+      let searchFilters = {};
+      let filterKey = "curie";
+      if (entityType === "construct"){
+        filterKey = entityType + "FullName.displayText";
+      }
+      entityList.forEach((entity, index) => {
+        let filterKey2 = entityType + "Symbol.displayText";
+        searchFilters[`nameFilter${index + 1}`] = {
+          "modEntityId": {
+              "queryString": entity,
+              "tokenOperator": "OR",
+              "useKeywordFields": true,
+              "queryType": "matchQuery"
+          },
+          [filterKey]: {
+              "queryString": entity,
+              "tokenOperator": "OR",
+              "useKeywordFields": true,
+              "queryType": "matchQuery"
+          },
+          [filterKey2]: {
+              "queryString": entity,
+              "tokenOperator": "OR",
+              "useKeywordFields": true,
+              "queryType": "matchQuery"
+          }
         };
-      } 
+      });
+      postData["searchFilters"] = searchFilters;
+      postData["searchFilterOperator"] = "OR";
     }
     if (['strain', 'genotype', 'fish'].includes(entityType)) {
       postData["searchFilters"]["subtypeFilters"] = {
@@ -452,9 +468,11 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
     }
     if (!['species', 'construct'].includes(entityType)) {
       postData["searchFilters"]["taxonFilters"] = {
-        "taxon.curie_keyword": {
+        "taxon.curie": {
           "queryString": taxon,
-          "tokenOperator": "AND"
+          "tokenOperator": "AND",
+          "useKeywordFields": true,
+          "queryType": "matchQuery"
         }
       }
     }
@@ -473,6 +491,9 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
 	  const obsoleteMap = {};
           if (res.data.results) {
             for (const entityResult of res.data.results) {
+	      if (['gene', 'allele'].includes(entityType) && entityResult.taxon.curie !== taxon) {
+                  continue
+              }
               let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
 	      let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
 	      let otherName = entityType === "construct" ? entityResult['constructFullName']?.displayText?.toLowerCase() ?? "" : "";
