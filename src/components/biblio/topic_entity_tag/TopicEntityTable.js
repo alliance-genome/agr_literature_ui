@@ -12,10 +12,8 @@ import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
 import "ag-grid-community/styles/ag-grid.css"; // Core CSS
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Theme
-import { observer } from "mobx-react-lite";
 import { Button, ButtonGroup, Dropdown, Form } from "react-bootstrap";
 import React from "react";
-import { useLocalStore } from "mobx-react-lite";
 
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
@@ -31,6 +29,7 @@ const TopicEntityTable = () => {
   const [showModal, setShowModal] = useState(false);
   const [fullNote, setFullNote] = useState('');
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const gridRef = useRef();
     
@@ -79,8 +78,13 @@ const TopicEntityTable = () => {
 
 
     //code for the dropdown menu to handle hide/show topic entity tag columns
-  const state = useLocalStore(() => ({
-    items: [{ headerName: "Topic", field: "topic_name", id: 1, checked: true},
+  //const state = useLocalStore(() => ({
+  //  items: [{ headerName: "Topic", field: "topic_name", id: 1, checked: true},
+  //  { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true}
+  //  ]
+  // }));
+  const [items, setItems] = useState([
+    { headerName: "Topic", field: "topic_name", id: 1, checked: true},
     { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true},
     { headerName: "Species", field: "species_name", id: 3, checked: true},
     { headerName: "Entity", field: "entity_name", id: 4, checked: true},
@@ -106,8 +110,7 @@ const TopicEntityTable = () => {
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24, checked: true },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25, checked: true },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: true }
-    ]
-  }));
+    ]);
 
   const CheckboxMenu = React.forwardRef(
   (
@@ -170,43 +173,51 @@ const CheckDropdownItem = React.forwardRef(
   }
 );
 
-const CheckboxDropdown = observer(({ items }) => {
-  const handleChecked = (key, event) => {
+  const CheckboxDropdown =  ({ items }) => {
+   const handleChecked = (key, event) => {
     //console.log('touch item here:' + key + " status: " + event.target.checked);
-    let item=items.find(i => i.id === key);
-    item.checked = event.target.checked;
-    if (item && item.checked == true){
+     const newItems = [...items];
+     let item=newItems.find(i => i.id === key);
+     item.checked = event.target.checked;
+     if (item && item.checked == true){
         gridRef.current.api.applyColumnState({
                  state: [{ colId: item.field, hide: false },],
                 });
-    }
-    else if (item && item.checked == false) {
+     }
+     else if (item && item.checked == false) {
          gridRef.current.api.applyColumnState({
                   state: [{ colId: item.field, hide: true },],
                  });
-    }
-    //items.find(i => i.id === key).checked = event.target.checked;
-  };
+     }
+     //items.find(i => i.id === key).checked = event.target.checked;
+     setItems(newItems);
+     setShowDropdown(true);
+   };
 
-  const handleSelectAll = () => {
-     items.forEach(i => {i.checked = true;
+   const handleSelectAll = () => {
+     const newItems = [...items];
+     newItems.forEach(i => {i.checked = true;
+
          gridRef.current.api.applyColumnState({
                   state: [{ colId: i.field, hide: false },],
                  });
      });
-  };
+     setItems(newItems);
+   };
 
-  const handleSelectNone = () => {
+   const handleSelectNone = () => {
    // items.forEach(i => (i.checked = false));
-      items.forEach(i => {i.checked = false;
+      const newItems = [...items];
+      newItems.forEach(i => {i.checked = false;
          gridRef.current.api.applyColumnState({
                   state: [{ colId: i.field, hide: true },],
                  });
      });
-  };
+      setItems(newItems);
+   };
 
-  return (
-    <Dropdown>
+   return (
+    <Dropdown autoClose={false} >
       <Dropdown.Toggle variant="primary" id="dropdown-basic">
         Hide/Show Columns
       </Dropdown.Toggle>
@@ -214,6 +225,8 @@ const CheckboxDropdown = observer(({ items }) => {
         as={CheckboxMenu}
         onSelectAll={handleSelectAll}
         onSelectNone={handleSelectNone}
+        show={showDropdown}
+        renderOnMount={false}
       >
         {items.map(i => (
           <Dropdown.Item
@@ -229,7 +242,7 @@ const CheckboxDropdown = observer(({ items }) => {
       </Dropdown.Menu>
     </Dropdown>
   );
-});
+};
 
   const dateFormatter = (params) => {
     return new Date(params.value).toLocaleString();
@@ -282,7 +295,7 @@ const CheckboxDropdown = observer(({ items }) => {
     { headerName: "Updated By", field: "updated_by" },
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
     { headerName: "Validation By Author", field: "validation_by_author" },
-    { headerName: "Validation By Professional Biocurator", cellRenderer: ValidationByCurator},
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", cellRenderer: ValidationByCurator},
     { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
@@ -354,7 +367,7 @@ const CheckboxDropdown = observer(({ items }) => {
       )}
 
       <div>
-        <CheckboxDropdown items={state.items} />
+        <CheckboxDropdown items={items} />
       </div>
 
 
