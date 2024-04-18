@@ -198,7 +198,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div>
 	    {showWarning && (
                 <div className="alert alert-warning" role="alert">
-                    You can only pick one topic and one confidence_level since you checked the "apply selections to one tag" checkbox.
+                    You can only pick one topic and one confidence_level since you checked the "apply selections to one tag" checkbox. Please remove the extra one from the selected list.
                 </div>
             )}
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
