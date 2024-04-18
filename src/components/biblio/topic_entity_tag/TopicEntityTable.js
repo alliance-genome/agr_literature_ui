@@ -14,7 +14,9 @@ import "ag-grid-community/styles/ag-grid.css"; // Core CSS
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Theme
 import { Button, ButtonGroup, Dropdown, Form } from "react-bootstrap";
 import React from "react";
-
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -365,13 +367,17 @@ const CheckDropdownItem = React.forwardRef(
           </Spinner>
         </div>
       )}
-
-      <div>
-        <CheckboxDropdown items={items} />
-      </div>
-
-
-      <div className="ag-theme-quartz" style={{height: 500}}>
+      <Container fluid>
+          <Row>
+            <Col>
+             <div style={{float: "left"}}>
+                 <CheckboxDropdown items={items} />
+             </div>
+            </Col>
+         </Row>
+         <Row>
+            <Col>
+              <div className="ag-theme-quartz" style={{height: 500}}>
         <AgGridReact
             ref={gridRef}
             reactiveCustomComponents
@@ -383,7 +389,10 @@ const CheckDropdownItem = React.forwardRef(
             pagination={true}
             paginationPageSize={25}
             paginationPageSizeSelector={paginationPageSizeSelector}/>
-      </div>
+               </div>
+            </Col>
+        </Row>
+      </Container>
     </div>);
 } // const EntityTable
 
