@@ -12,7 +12,11 @@ import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
 import "ag-grid-community/styles/ag-grid.css"; // Core CSS
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Theme
-
+import { Button, ButtonGroup, Dropdown, Form } from "react-bootstrap";
+import React from "react";
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -27,6 +31,7 @@ const TopicEntityTable = () => {
   const [showModal, setShowModal] = useState(false);
   const [fullNote, setFullNote] = useState('');
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const gridRef = useRef();
     
@@ -73,6 +78,174 @@ const TopicEntityTable = () => {
     }
   }
 
+
+    //code for the dropdown menu to handle hide/show topic entity tag columns
+  //const state = useLocalStore(() => ({
+  //  items: [{ headerName: "Topic", field: "topic_name", id: 1, checked: true},
+  //  { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true}
+  //  ]
+  // }));
+  const [items, setItems] = useState([
+    { headerName: "Topic", field: "topic_name", id: 1, checked: true},
+    { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true},
+    { headerName: "Species", field: "species_name", id: 3, checked: true},
+    { headerName: "Entity", field: "entity_name", id: 4, checked: true},
+    { headerName: "Entity Published As", field: "entity_published_as", id: 5, checked: true },
+    { headerName: "No Data", field: "negated", id: 6, checked: true },
+    { headerName: "Novel Data", field: "novel_topic_data", id: 7, checked: true},
+    { headerName: "Confidence Level", field:"confidence_level", id: 8, checked: true },
+    { headerName: "Created By", field: "created_by", id: 9, checked: true},
+    { headerName: "Note", field: "note", id: 10, checked: true},
+    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 11 , checked: true},
+    { headerName: "Date Created", field: "date_created", id: 12, checked: true},
+    { headerName: "Updated By", field: "updated_by", id: 13, checked: true },
+    { headerName: "Date Updated", field: "date_updated", id: 14, checked: true},
+    { headerName: "Validation By Author", field: "validation_by_author", id: 15, checked: true },
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 16, checked: true },
+    { headerName: "Display Tag", field: "display_tag_name", id: 17, checked: true},
+    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18, checked: true },
+    { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", id: 19, checked: true },
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion" , id: 20, checked: true},
+    { headerName: "Source Method", field: "topic_entity_tag_source.source_method", id: 21, checked: true },
+    { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type", id: 22, checked: true },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 23, checked: true},
+    { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24, checked: true },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25, checked: true },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: true }
+    ]);
+
+  const CheckboxMenu = React.forwardRef(
+  (
+    {
+      children,
+      style,
+      className,
+      "aria-labelledby": labeledBy,
+      onSelectAll,
+      onSelectNone
+    },
+    ref
+  ) => {
+    return (
+      <div
+        ref={ref}
+        style={style}
+        className={`${className} CheckboxMenu`}
+        aria-labelledby={labeledBy}
+      >
+        <div
+          className="d-flex flex-column"
+          style={{ maxHeight: "calc(100vh)", overflow: "none" }}
+        >
+          <div className="dropdown-item border-top pt-2 pb-0">
+            <ButtonGroup size="sm">
+              <Button variant="link" onClick={onSelectAll}>
+                Show All
+              </Button>
+              <Button variant="link" onClick={onSelectNone}>
+                Hide All
+              </Button>
+            </ButtonGroup>
+          </div>
+          <ul
+            className="list-unstyled flex-shrink mb-0"
+            style={{ overflow: "auto" }}
+          >
+            {children}
+          </ul>
+
+        </div>
+      </div>
+    );
+  }
+);
+
+const CheckDropdownItem = React.forwardRef(
+  ({ children, id, checked, onChange }, ref) => {
+    return (
+      <Form.Group ref={ref} className="dropdown-item mb-0" controlId={id}>
+        <Form.Check
+          type="checkbox"
+          label={children}
+          checked={checked}
+          onChange={onChange && onChange.bind(onChange, id)}
+        />
+      </Form.Group>
+    );
+  }
+);
+
+  const CheckboxDropdown =  ({ items }) => {
+   const handleChecked = (key, event) => {
+    //console.log('touch item here:' + key + " status: " + event.target.checked);
+     const newItems = [...items];
+     let item=newItems.find(i => i.id === key);
+     item.checked = event.target.checked;
+     if (item && item.checked == true){
+        gridRef.current.api.applyColumnState({
+                 state: [{ colId: item.field, hide: false },],
+                });
+     }
+     else if (item && item.checked == false) {
+         gridRef.current.api.applyColumnState({
+                  state: [{ colId: item.field, hide: true },],
+                 });
+     }
+     //items.find(i => i.id === key).checked = event.target.checked;
+     setItems(newItems);
+     setShowDropdown(true);
+   };
+
+   const handleSelectAll = () => {
+     const newItems = [...items];
+     newItems.forEach(i => {i.checked = true;
+
+         gridRef.current.api.applyColumnState({
+                  state: [{ colId: i.field, hide: false },],
+                 });
+     });
+     setItems(newItems);
+   };
+
+   const handleSelectNone = () => {
+   // items.forEach(i => (i.checked = false));
+      const newItems = [...items];
+      newItems.forEach(i => {i.checked = false;
+         gridRef.current.api.applyColumnState({
+                  state: [{ colId: i.field, hide: true },],
+                 });
+     });
+      setItems(newItems);
+   };
+
+   return (
+    <Dropdown autoClose={false} >
+      <Dropdown.Toggle variant="primary" id="dropdown-basic">
+        Hide/Show Columns
+      </Dropdown.Toggle>
+      <Dropdown.Menu
+        as={CheckboxMenu}
+        onSelectAll={handleSelectAll}
+        onSelectNone={handleSelectNone}
+        show={showDropdown}
+        renderOnMount={false}
+      >
+        {items.map(i => (
+          <Dropdown.Item
+            key={i.field}
+            as={CheckDropdownItem}
+            id={i.id}
+            checked={i.checked}
+            onChange={handleChecked}
+          >
+            {i.headerName}
+          </Dropdown.Item>
+        ))}
+      </Dropdown.Menu>
+    </Dropdown>
+  );
+};
+
   const dateFormatter = (params) => {
     return new Date(params.value).toLocaleString();
   };
@@ -105,6 +278,8 @@ const TopicEntityTable = () => {
     return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
   };
 
+
+
   const [colDefs, setColDefs] = useState([
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
     { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
@@ -122,7 +297,7 @@ const TopicEntityTable = () => {
     { headerName: "Updated By", field: "updated_by" },
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
     { headerName: "Validation By Author", field: "validation_by_author" },
-    { headerName: "Validation By Professional Biocurator", cellRenderer: ValidationByCurator},
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", cellRenderer: ValidationByCurator},
     { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
@@ -175,6 +350,7 @@ const TopicEntityTable = () => {
   }, []);
 
   return (
+
     <div>
       {/* Curie Popup */}
       {selectedCurie && (
@@ -191,7 +367,17 @@ const TopicEntityTable = () => {
           </Spinner>
         </div>
       )}
-      <div className="ag-theme-quartz" style={{height: 500}}>
+      <Container fluid>
+          <Row>
+            <Col>
+             <div style={{float: "left"}}>
+                 <CheckboxDropdown items={items} />
+             </div>
+            </Col>
+         </Row>
+         <Row>
+            <Col>
+              <div className="ag-theme-quartz" style={{height: 500}}>
         <AgGridReact
             ref={gridRef}
             reactiveCustomComponents
@@ -203,7 +389,10 @@ const TopicEntityTable = () => {
             pagination={true}
             paginationPageSize={25}
             paginationPageSizeSelector={paginationPageSizeSelector}/>
-      </div>
+               </div>
+            </Col>
+        </Row>
+      </Container>
     </div>);
 } // const EntityTable
 
