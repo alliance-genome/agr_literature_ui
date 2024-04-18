@@ -116,14 +116,31 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
     const [applyToSingleTag, setApplyToSingleTag] = useState(true);
-
+    const [showWarning, setShowWarning] = useState(false);
+ 
     const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
 
     const handleCheckboxChange = (evt) => {
         setApplyToSingleTag(evt.target.checked);
-        // Optionally dispatch an action or filter facets based on this new state
-        dispatch(filterFacets()); // Example: Refilter facets based on new checkbox state
+        dispatch(filterFacets());
     };
+
+    useEffect(() => {
+        if (applyToSingleTag) {
+            const topics = searchFacetsValues['topic_entity_tags.topic.keyword'] || [];
+            const confidenceLevels = searchFacetsValues['topic_entity_tags.confidence_level.keyword'] || [];
+            if (topics.length > 1 || confidenceLevels.length > 1) {
+                setShowWarning(true);
+		setTimeout(() => {
+                    setShowWarning(false);
+                }, 6000);
+            } else {
+                setShowWarning(false);
+            }
+        } else {
+            setShowWarning(false);
+        }
+    }, [applyToSingleTag, searchFacetsValues]);
     
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
@@ -179,6 +196,11 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     return (
         <div>
+	    {showWarning && (
+                <div className="alert alert-warning" role="alert">
+                    You can only pick one topic and one confidence_level since you checked the "apply selections to one tag" checkbox.
+                </div>
+            )}
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
                     let key = facetToInclude + '.keyword';
                     key = key.replaceAll(' ', '_');
