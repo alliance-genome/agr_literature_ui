@@ -49,7 +49,8 @@ const initialState = {
   query_fields:"All",
   sort_by_published_date_order:"relevance",
   partialMatch:"true",
-  modPreferencesLoaded:"false"
+  modPreferencesLoaded:"false",
+  applyToSingleTag: "false"
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -247,11 +248,12 @@ export default function(state = initialState, action) {
         modPreferencesLoaded: action.payload.modPreferencesLoaded
       }
 
-   case SEARCH_SET_APPLY_TO_SINGLE_TAG:
-    return {
+    case SEARCH_SET_APPLY_TO_SINGLE_TAG:
+      console.log('Updating applyToSingleTag to:', action.payload);
+      return {
         ...state,
-        applyToSingleTag: action.payload.applyToSingleTag
-    }
+        applyToSingleTag: action.payload
+      }
 
 //     case 'FETCH_POSTS':
 //       console.log('in postReducer case FETCH_POSTS');

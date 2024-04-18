@@ -215,7 +215,9 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                             type="checkbox"
                                             label="apply selections to single tag"
                                             checked={applyToSingleTag}
-                                            onChange={(event) => dispatch(setApplyToSingleTag(event.target.checked))}
+                                            onChange={(event) => {
+						dispatch(setApplyToSingleTag(event.target.checked));
+					    }}
                                             style={{ display: 'inline-block', marginLeft: '10px', fontSize: '0.8rem' }}
                                         />
                                       )}

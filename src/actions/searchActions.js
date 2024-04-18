@@ -83,10 +83,13 @@ const getSearchParams = (state) => {
   if(state.search.dateCreated){
     params.date_created = state.search.dateCreated;
   }
-  if (state.search.applyToSingleTag) {
-    params.apply_selections_to_single_tag = state.search.applyToSingleTag;
-  }
+  
+  // if (state.search.applyToSingleTag) {
+  //  params.apply_selections_to_single_tag = state.search.applyToSingleTag;
+  // }
 
+  params.apply_selections_to_single_tag = state.search.applyToSingleTag;
+    
   console.log("searchParams =" + JSON.stringify(params, null, 2));  
     
   return params;
@@ -316,9 +319,8 @@ export const setModPreferencesLoaded = (modPreferencesLoaded) => ({
   }
 });
 
-export const setApplyToSingleTag = (applyToSingleTag) => ({
-    type: SEARCH_SET_APPLY_TO_SINGLE_TAG,
-    payload: {
-        applyToSingleTag
-    }
+export const setApplyToSingleTag = (value) => ({
+    type: 'SEARCH_SET_APPLY_TO_SINGLE_TAG',
+    payload: value
 });
+
