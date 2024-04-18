@@ -11,7 +11,7 @@ import {
   SEARCH_SET_DATE_PUBLISHED, SEARCH_SET_SEARCH_QUERY_FIELDS,
   SEARCH_SET_SORT_BY_PUBLISHED_DATE, SEARCH_SET_PARTIAL_MATCH,
   SEARCH_SET_DATE_CREATED, SEARCH_SET_CROSS_REFERENCE_RESULTS,
-  SEARCH_SET_MOD_PREFERENCES_LOADED
+  SEARCH_SET_MOD_PREFERENCES_LOADED, SEARCH_SET_APPLY_TO_SINGLE_TAG 
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -246,6 +246,12 @@ export default function(state = initialState, action) {
         ...state,
         modPreferencesLoaded: action.payload.modPreferencesLoaded
       }
+
+   case SEARCH_SET_APPLY_TO_SINGLE_TAG:
+    return {
+        ...state,
+        applyToSingleTag: action.payload.applyToSingleTag
+    }
 
 //     case 'FETCH_POSTS':
 //       console.log('in postReducer case FETCH_POSTS');

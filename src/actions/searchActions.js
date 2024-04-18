@@ -27,6 +27,7 @@ export const SEARCH_SET_SEARCH_QUERY_FIELDS = 'SEARCH_SET_SEARCH_QUERY_FIELDS';
 export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_DATE';
 export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
 export const SEARCH_SET_MOD_PREFERENCES_LOADED = 'SEARCH_SET_MOD_PREFERENCES_LOADED';
+export const SEARCH_SET_APPLY_TO_SINGLE_TAG = 'SEARCH_SET_APPLY_TO_SINGLE_TAG';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -82,7 +83,12 @@ const getSearchParams = (state) => {
   if(state.search.dateCreated){
     params.date_created = state.search.dateCreated;
   }
+  if (state.search.applyToSingleTag) {
+    params.apply_selections_to_single_tag = state.search.applyToSingleTag;
+  }
 
+  console.log("searchParams =" + JSON.stringify(params, null, 2));  
+    
   return params;
 }
 
@@ -308,4 +314,11 @@ export const setModPreferencesLoaded = (modPreferencesLoaded) => ({
   payload: {
     modPreferencesLoaded : modPreferencesLoaded
   }
+});
+
+export const setApplyToSingleTag = (applyToSingleTag) => ({
+    type: SEARCH_SET_APPLY_TO_SINGLE_TAG,
+    payload: {
+        applyToSingleTag
+    }
 });

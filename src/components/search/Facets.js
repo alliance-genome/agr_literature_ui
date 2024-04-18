@@ -115,8 +115,16 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
+    const [applyToSingleTag, setApplyToSingleTag] = useState(true);
+
     const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
 
+    const handleCheckboxChange = (evt) => {
+        setApplyToSingleTag(evt.target.checked);
+        // Optionally dispatch an action or filter facets based on this new state
+        dispatch(filterFacets()); // Example: Refilter facets based on new checkbox state
+    };
+    
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
 
@@ -179,7 +187,17 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                         return (
                             <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
                                 <div>
-                                    <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
+                                    <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}
+                                      {facetToInclude === "topic entity tags.topic" && (
+                                        <Form.Check
+                                            type="checkbox"
+                                            label="apply selections to single tag"
+                                            checked={applyToSingleTag}
+                                            onChange={(event) => dispatch(setApplyToSingleTag(event.target.checked))}
+                                            style={{ display: 'inline-block', marginLeft: '10px', fontSize: '0.8rem' }}
+                                        />
+                                      )}
+				    </h5>
                                     {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
                                     {value.buckets.map(bucket =>
                                         <Container key={bucket.key}>
