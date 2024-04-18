@@ -15,7 +15,8 @@ import {
     setDatePubmedModified,
     setDatePublished,
     setDateCreated,
-    setModPreferencesLoaded
+    setModPreferencesLoaded,
+    setApplyToSingleTag
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse} from 'react-bootstrap';
@@ -115,14 +116,13 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const [applyToSingleTag, setApplyToSingleTag] = useState(true);
+    const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     const [showWarning, setShowWarning] = useState(false);
  
     const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
 
-    const handleCheckboxChange = (evt) => {
-        setApplyToSingleTag(evt.target.checked);
-        dispatch(filterFacets());
+    const handleCheckboxChange = (event) => {
+        dispatch(setApplyToSingleTag(event.target.checked));
     };
 
     useEffect(() => {
