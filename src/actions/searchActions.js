@@ -63,13 +63,29 @@ const getSearchParams = (state) => {
     query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
     size_result_count: state.search.searchSizeResultsCount,
     page: state.search.searchResultsPage,
-    facets_values: state.search.searchFacetsValues,
     negated_facets_values: state.search.searchExcludedFacetsValues,
     facets_limits: state.search.searchFacetsLimits,
     author_filter: state.search.authorFilter,
     query_fields: state.search.query_fields,
     sort_by_published_date_order: state.search.sortByPublishedDate,
     partial_match: state.search.partialMatch
+  }
+  if (state.search.applyToSingleTag) {
+    const tet_nested_facets_values = {};
+    const facets_values = {};
+    const facetsValues = state.search.searchFacetsValues;  
+    for (const key in facetsValues) {
+      if (key.startsWith("topic_entity_tags")) {
+        tet_nested_facets_values[key] = facetsValues[key];
+      } else {
+        facets_values[key] = facetsValues[key];
+      }
+    }
+    params.facets_values = facets_values;
+    params.tet_nested_facets_values = tet_nested_facets_values;
+  } else {
+    params.facets_values = state.search.searchFacetsValues;
+    params.tet_nested_facets_values = {};
   }
   if(state.search.datePubmedModified){
     params.date_pubmed_modified = state.search.datePubmedModified;
@@ -83,12 +99,6 @@ const getSearchParams = (state) => {
   if(state.search.dateCreated){
     params.date_created = state.search.dateCreated;
   }
-  
-  // if (state.search.applyToSingleTag) {
-  //  params.apply_selections_to_single_tag = state.search.applyToSingleTag;
-  // }
-
-  params.apply_selections_to_single_tag = state.search.applyToSingleTag;
     
   console.log("searchParams =" + JSON.stringify(params, null, 2));  
     
