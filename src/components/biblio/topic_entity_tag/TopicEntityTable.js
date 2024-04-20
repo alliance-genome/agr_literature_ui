@@ -17,6 +17,8 @@ import React from "react";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import { CookiesProvider, useCookies } from 'react-cookie'
+
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -85,9 +87,10 @@ const TopicEntityTable = () => {
   //  { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true}
   //  ]
   // }));
-  const [items, setItems] = useState([
-    { headerName: "Topic", field: "topic_name", id: 1, checked: true},
-    { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true},
+    //initial items if no cookies found for items
+    let itemsInit=[
+    { headerName: "Topic", field: "topic_name", id: 1, checked: true },
+    { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true },
     { headerName: "Species", field: "species_name", id: 3, checked: true},
     { headerName: "Entity", field: "entity_name", id: 4, checked: true},
     { headerName: "Entity Published As", field: "entity_published_as", id: 5, checked: true },
@@ -112,7 +115,17 @@ const TopicEntityTable = () => {
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24, checked: true },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25, checked: true },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: true }
-    ]);
+    ];
+  const [cookies, setCookie] = useCookies(['items']);
+  //use itemsInit if no cookie for 'items' found
+  if (!cookies.items){
+     const items = [...itemsInit];
+     setCookie("items", items);
+   }
+
+
+
+
 
   const CheckboxMenu = React.forwardRef(
   (
@@ -178,7 +191,7 @@ const CheckDropdownItem = React.forwardRef(
   const CheckboxDropdown =  ({ items }) => {
    const handleChecked = (key, event) => {
     //console.log('touch item here:' + key + " status: " + event.target.checked);
-     const newItems = [...items];
+     const newItems = [...cookies.items];
      let item=newItems.find(i => i.id === key);
      item.checked = event.target.checked;
      if (item && item.checked == true){
@@ -192,30 +205,30 @@ const CheckDropdownItem = React.forwardRef(
                  });
      }
      //items.find(i => i.id === key).checked = event.target.checked;
-     setItems(newItems);
+     setCookie('items', newItems);
      setShowDropdown(true);
    };
 
    const handleSelectAll = () => {
-     const newItems = [...items];
+     const newItems = [...cookies.items];
      newItems.forEach(i => {i.checked = true;
 
          gridRef.current.api.applyColumnState({
                   state: [{ colId: i.field, hide: false },],
                  });
      });
-     setItems(newItems);
+     setCookie('items', newItems);
    };
 
    const handleSelectNone = () => {
    // items.forEach(i => (i.checked = false));
-      const newItems = [...items];
+      const newItems = [...cookies.items];
       newItems.forEach(i => {i.checked = false;
          gridRef.current.api.applyColumnState({
                   state: [{ colId: i.field, hide: true },],
                  });
      });
-      setItems(newItems);
+      setCookie('items', newItems);
    };
 
    return (
@@ -230,7 +243,7 @@ const CheckDropdownItem = React.forwardRef(
         show={showDropdown}
         renderOnMount={false}
       >
-        {items.map(i => (
+        {cookies.items.map(i => (
           <Dropdown.Item
             key={i.field}
             as={CheckDropdownItem}
@@ -278,9 +291,7 @@ const CheckDropdownItem = React.forwardRef(
     return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
   };
 
-
-
-  const [colDefs, setColDefs] = useState([
+  let cols=[
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
     { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
     { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity_type)} },
@@ -308,7 +319,13 @@ const CheckDropdownItem = React.forwardRef(
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter }
-  ]);
+  ];
+
+  cookies.items.forEach(i => {
+     let col=cols.find(j => j.field === i.field);
+     col.hide=!i.checked;
+  });
+  const [colDefs, setColDefs] = useState(cols);
 
   const paginationPageSizeSelector = useMemo(() => {
     return [10, 25, 50, 100, 500];
@@ -344,7 +361,6 @@ const CheckDropdownItem = React.forwardRef(
       }
     }
   },[]);
-
   const getRowId = useMemo(() => {
     return (params) => params.data.topic_entity_tag_id;
   }, []);
@@ -371,7 +387,9 @@ const CheckDropdownItem = React.forwardRef(
           <Row>
             <Col>
              <div style={{float: "left"}}>
-                 <CheckboxDropdown items={items} />
+                 <CookiesProvider>
+                 <CheckboxDropdown items={cookies.items} />
+                 </CookiesProvider>
              </div>
             </Col>
          </Row>
