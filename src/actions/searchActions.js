@@ -70,23 +70,48 @@ const getSearchParams = (state) => {
     sort_by_published_date_order: state.search.sortByPublishedDate,
     partial_match: state.search.partialMatch
   }
+
   if (state.search.applyToSingleTag) {
-    const tet_nested_facets_values = {};
-    const facets_values = {};
-    const facetsValues = state.search.searchFacetsValues;  
-    for (const key in facetsValues) {
-      if (key.startsWith("topic_entity_tags")) {
-        tet_nested_facets_values[key] = facetsValues[key];
-      } else {
-        facets_values[key] = facetsValues[key];
-      }
+    const data = state.search.searchFacetsValues;
+    if (data["topic_entity_tags.topic.keyword"] &&
+       data["topic_entity_tags.topic.keyword"].length > 0 &&
+       data["topic_entity_tags.confidence_level.keyword"] &&
+       data["topic_entity_tags.confidence_level.keyword"].length > 0) {  
+       const tetNestedFacetsValues = [];
+       const facetsValues = {};
+       const seenEntries = new Set();
+       for (const key in data) {
+         if (key.startsWith("topic_entity_tags.")) {
+	   const topics = data["topic_entity_tags.topic.keyword"];
+	   const confidences = data["topic_entity_tags.confidence_level.keyword"];
+	   topics.forEach(topic => {
+             confidences.forEach(confidence => {
+	       const entry = {
+                 "topic_entity_tags.topic.keyword": topic,
+                 "topic_entity_tags.confidence_level.keyword": confidence
+               };
+               const entryString = JSON.stringify(entry);
+               if (!seenEntries.has(entryString)) {
+                 tetNestedFacetsValues.push(entry);
+                 seenEntries.add(entryString);
+               }
+             });
+           });
+	 } else {
+           facetsValues[key] = data[key];
+         }
+       }
+       params.facets_values = facetsValues;
+       params.tet_nested_facets_values = tetNestedFacetsValues;
+    } else {
+       params.facets_values = state.search.searchFacetsValues;
+       params.tet_nested_facets_values = {};
     }
-    params.facets_values = facets_values;
-    params.tet_nested_facets_values = tet_nested_facets_values;
   } else {
     params.facets_values = state.search.searchFacetsValues;
     params.tet_nested_facets_values = {};
   }
+
   if(state.search.datePubmedModified){
     params.date_pubmed_modified = state.search.datePubmedModified;
   }
