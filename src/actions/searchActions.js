@@ -105,11 +105,11 @@ const getSearchParams = (state) => {
        params.tet_nested_facets_values = tetNestedFacetsValues;
     } else {
        params.facets_values = state.search.searchFacetsValues;
-       params.tet_nested_facets_values = {};
+       params.tet_nested_facets_values = [];
     }
   } else {
     params.facets_values = state.search.searchFacetsValues;
-    params.tet_nested_facets_values = {};
+    params.tet_nested_facets_values = [];
   }
 
   if(state.search.datePubmedModified){
