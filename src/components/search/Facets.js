@@ -116,44 +116,8 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
-    // const [showWarning, setShowWarning] = useState(false);
- 
-    const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
-
-    const handleCheckboxChange = (event) => {
-        dispatch(setApplyToSingleTag(event.target.checked));
-	refreshData();
-    };
-
-    const refreshData = () => {
-        dispatch(searchReferences());
-    };
-
-    // useEffect hook to trigger refresh when applyToSingleTag changes
-    useEffect(() => {
-        refreshData();
-    }, [applyToSingleTag, dispatch]);
-
-    /*
-    useEffect(() => {
-        if (applyToSingleTag) {
-            const topics = searchFacetsValues['topic_entity_tags.topic.keyword'] || [];
-            const confidenceLevels = searchFacetsValues['topic_entity_tags.confidence_level.keyword'] || [];
-            if (topics.length > 1 || confidenceLevels.length > 1) {
-                setShowWarning(true);
-		setTimeout(() => {
-                    setShowWarning(false);
-                }, 6000);
-            } else {
-                setShowWarning(false);
-            }
-        } else {
-            setShowWarning(false);
-        }
-    }, [applyToSingleTag, searchFacetsValues]);
     
-    */
+    const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
     
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
@@ -217,15 +181,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 	    return facetData.buckets || [];
 	}
     };
-
-    /*
-     {showWarning && (
-                <div className="alert alert-warning" role="alert">                                                                               
-                    You can only pick one topic and one confidence_level since you checked the "apply selections to one tag" checkbox.           
-                </div>
-            )} 
-      
-    */
     
     return (
         <div> 
@@ -243,15 +198,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                             <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
                                 <div>
                                     <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}
-                                      {facetToInclude === "nested_topics" && (
-                                        <Form.Check
-                                            type="checkbox"
-                                            label="apply selections to single tag"
-                                            checked={applyToSingleTag}
-                                            onChange={handleCheckboxChange}
-                                            style={{ display: 'inline-block', marginLeft: '10px', fontSize: '0.8rem' }}
-                                        />
-                                      )}
 				    </h5>
                                     {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
                                     {buckets.map(bucket =>
@@ -358,8 +304,23 @@ const Facets = () => {
     const datePublished= useSelector(state => state.search.datePublished);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
+    const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     const dispatch = useDispatch();
 
+    const handleCheckboxChange = (event) => {
+	dispatch(setApplyToSingleTag(event.target.checked));
+	refreshData();
+    };
+
+    const refreshData = () => {
+	dispatch(searchReferences());
+    };
+
+    // to trigger refresh when applyToSingleTag changes
+    useEffect(() => {
+	refreshData();
+    }, [applyToSingleTag, dispatch]);
+    
     const toggleFacetGroup = (facetGroupLabel) => {
         let newOpenFacets = new Set([...openFacets]);
         if (newOpenFacets.has(facetGroupLabel)) {
@@ -424,6 +385,15 @@ const Facets = () => {
                         </Button>
                         <Collapse in={openFacets.has(facetCategory)}>
                             <div>
+				{facetCategory === 'Topics and Entities' && (
+				   <Form.Check
+                                     type="checkbox"
+                                     label="apply selections to single tag"
+                                     checked={applyToSingleTag}
+                                     onChange={handleCheckboxChange}
+                                     style={{ display: 'inline-block', marginLeft: '30px', fontSize: '0.8rem' }}
+                                  />
+				)}
                                 {facetCategory === 'Date Range' ? <DateFacet facetsToInclude={facetsInCategory}/> : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
                             </div>
                         </Collapse>
