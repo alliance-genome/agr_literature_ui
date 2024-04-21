@@ -117,13 +117,23 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
-    const [showWarning, setShowWarning] = useState(false);
+    // const [showWarning, setShowWarning] = useState(false);
  
     const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
 
     const handleCheckboxChange = (event) => {
         dispatch(setApplyToSingleTag(event.target.checked));
+	refreshData();
     };
+
+    const refreshData = () => {
+        dispatch(searchReferences());
+    };
+
+    // useEffect hook to trigger refresh when applyToSingleTag changes
+    useEffect(() => {
+        refreshData();
+    }, [applyToSingleTag, dispatch]);
 
     /*
     useEffect(() => {
@@ -238,9 +248,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                             type="checkbox"
                                             label="apply selections to single tag"
                                             checked={applyToSingleTag}
-                                            onChange={(event) => {
-						dispatch(setApplyToSingleTag(event.target.checked));
-					    }}
+                                            onChange={handleCheckboxChange}
                                             style={{ display: 'inline-block', marginLeft: '10px', fontSize: '0.8rem' }}
                                         />
                                       )}
