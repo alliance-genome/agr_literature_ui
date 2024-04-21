@@ -41,14 +41,14 @@ export const RENAME_FACETS = {
     "mods_in_corpus_or_needs_review.keyword": "corpus - in corpus or needs review",
     "authors.name.keyword": "Authors",
     "mod_reference_types.keyword": "MOD reference type",
-    "topic_entity_tags.topic.keyword": "Topic",
-    "topic_entity_tags.confidence_level.keyword": "Confidence level",
+    "nested_topics": "Topic",
+    "nested_confidence_level": "Confidence Level",
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Topics and Entities": ["topic entity tags.topic", "topic entity tags.confidence_level"],
+    "Topics and Entities": ["nested_topics", "nested_confidence_level"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
 
 }
@@ -125,6 +125,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         dispatch(setApplyToSingleTag(event.target.checked));
     };
 
+    /*
     useEffect(() => {
         if (applyToSingleTag) {
             const topics = searchFacetsValues['topic_entity_tags.topic.keyword'] || [];
@@ -141,6 +142,8 @@ const Facet = ({facetsToInclude, renameFacets}) => {
             setShowWarning(false);
         }
     }, [applyToSingleTag, searchFacetsValues]);
+    
+    */
     
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
@@ -194,23 +197,43 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         )
     }
 
-    return (
-        <div>
-	    {showWarning && (
-                <div className="alert alert-warning" role="alert">
-                    You can only pick one topic and one confidence_level since you checked the "apply selections to one tag" checkbox. Please remove the extra one from the selected list.
+    const getBuckets = (facetData) => {
+	// check if the facet data is nested
+	if (facetData.topics) {
+	    return facetData.topics.buckets;
+	} else if (facetData.confidence_levels) {
+	    return facetData.confidence_levels.buckets;
+	} else {
+	    return facetData.buckets || [];
+	}
+    };
+
+    /*
+     {showWarning && (
+                <div className="alert alert-warning" role="alert">                                                                               
+                    You can only pick one topic and one confidence_level since you checked the "apply selections to one tag" checkbox.           
                 </div>
-            )}
+            )} 
+      
+    */
+    
+    return (
+        <div> 
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
-                    let key = facetToInclude + '.keyword';
-                    key = key.replaceAll(' ', '_');
+                    //let key = facetToInclude + '.keyword';
+                    // key = key.replaceAll(' ', '_');
+		    let key = facetToInclude.replaceAll(' ', '_');
+		    if (!key.includes("nested")){
+			key = key + '.keyword';
+	            }
                     if (key in searchFacets) {
-                        let value = searchFacets[key];
+                        const facetData = searchFacets[key];
+			const buckets = getBuckets(facetData);
                         return (
                             <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
                                 <div>
                                     <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}
-                                      {facetToInclude === "topic entity tags.topic" && (
+                                      {facetToInclude === "nested_topics" && (
                                         <Form.Check
                                             type="checkbox"
                                             label="apply selections to single tag"
@@ -223,7 +246,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                       )}
 				    </h5>
                                     {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
-                                    {value.buckets.map(bucket =>
+                                    {buckets.map(bucket =>
                                         <Container key={bucket.key}>
                                             <Row>
                                                 <Col sm={2}>
@@ -237,7 +260,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                 </Col>
                                             </Row>
                                         </Container>)}
-                                    <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
+                                    <ShowMoreLessAllButtons facetLabel={key} facetValue={buckets} />
                                     <br/>
                                 </div>
                             </div>
@@ -284,7 +307,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 
     return (
         <div style={{paddingLeft: "1em"}}>
-            {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ?
+            {facetValue.length >= searchFacetsLimits[facetLabel] ?
                 <button className="button-to-link" onClick={()=> {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] * 2;
@@ -300,7 +323,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     dispatch(filterFacets());
                 }}>-Show Less</button></span> : null
             }
-            {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
+            {facetValue.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
                 <button className="button-to-link" onClick={() =>{
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
