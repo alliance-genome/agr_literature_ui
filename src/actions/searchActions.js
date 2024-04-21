@@ -71,19 +71,18 @@ const getSearchParams = (state) => {
     partial_match: state.search.partialMatch
   }
 
-  if (state.search.applyToSingleTag) {
-    const data = state.search.searchFacetsValues;
-    if (data["topic_entity_tags.topic.keyword"] &&
-       data["topic_entity_tags.topic.keyword"].length > 0 &&
-       data["topic_entity_tags.confidence_level.keyword"] &&
-       data["topic_entity_tags.confidence_level.keyword"].length > 0) {  
-       const tetNestedFacetsValues = [];
-       const facetsValues = {};
-       const seenEntries = new Set();
-       for (const key in data) {
-         if (key.startsWith("topic_entity_tags.")) {
-	   const topics = data["topic_entity_tags.topic.keyword"];
-	   const confidences = data["topic_entity_tags.confidence_level.keyword"];
+  // console.log("searchFacetsValues =" + JSON.stringify(state.search.searchFacetsValues, null, 2));
+
+  const data = state.search.searchFacetsValues;
+  const tetNestedFacetsValues = [];
+  const facetsValues = {};
+  if (state.search.applyToSingleTag && data["nested_topics"] && data["nested_topics"].length > 0 &&
+      data["nested_confidence_level"] && data["nested_confidence_level"].length > 0) {
+      const seenEntries = new Set();
+      for (const key in data) {
+         if (key.startsWith("nested")) {
+	   const topics = data["nested_topics"];
+	   const confidences = data["nested_confidence_level"];
 	   topics.forEach(topic => {
              confidences.forEach(confidence => {
 	       const entry = {
@@ -100,18 +99,36 @@ const getSearchParams = (state) => {
 	 } else {
            facetsValues[key] = data[key];
          }
-       }
-       params.facets_values = facetsValues;
-       params.tet_nested_facets_values = tetNestedFacetsValues;
-    } else {
-       params.facets_values = state.search.searchFacetsValues;
-       params.tet_nested_facets_values = [];
-    }
+      }
   } else {
-    params.facets_values = state.search.searchFacetsValues;
-    params.tet_nested_facets_values = [];
+      for (const key in data) {
+	 if (key.startsWith("nested")) {
+	    const topics = data["nested_topics"];
+	    const confidences = data["nested_confidence_level"];
+	    if (topics && topics.length > 0) {
+	        topics.forEach(topic => {
+		    const newEntry = { "topic_entity_tags.topic.keyword": topic };
+		    if (!tetNestedFacetsValues.some(entry => entry["topic_entity_tags.topic.keyword"] === topic)) {  
+			tetNestedFacetsValues.push(newEntry);
+		    }
+	        });
+            }
+	    if (confidences && confidences.length > 0) {
+	        confidences.forEach(confidence => {
+		    const newEntry = { "topic_entity_tags.confidence_level.keyword": confidence };
+		    if (!tetNestedFacetsValues.some(entry => entry["topic_entity_tags.confidence_level.keyword"] === confidence)) {
+			tetNestedFacetsValues.push(newEntry);
+		    }
+                });
+	    }
+	 } else {
+	    facetsValues[key] = data[key];
+	 }
+      } 
   }
-
+  params.facets_values = facetsValues;
+  params.tet_nested_facets_values = tetNestedFacetsValues;
+    
   if(state.search.datePubmedModified){
     params.date_pubmed_modified = state.search.datePubmedModified;
   }
