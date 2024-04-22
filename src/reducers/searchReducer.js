@@ -50,7 +50,7 @@ const initialState = {
   sort_by_published_date_order:"relevance",
   partialMatch:"true",
   modPreferencesLoaded:"false",
-  applyToSingleTag: false
+  applyToSingleTag: true
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
