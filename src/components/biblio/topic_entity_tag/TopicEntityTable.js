@@ -17,11 +17,11 @@ import React from "react";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { CookiesProvider, useCookies } from 'react-cookie'
 
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
@@ -93,39 +93,81 @@ const TopicEntityTable = () => {
     { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true },
     { headerName: "Species", field: "species_name", id: 3, checked: true},
     { headerName: "Entity", field: "entity_name", id: 4, checked: true},
-    { headerName: "Entity Published As", field: "entity_published_as", id: 5, checked: true },
+    { headerName: "Entity Published As", field: "entity_published_as", id: 5, checked: false },
     { headerName: "No Data", field: "negated", id: 6, checked: true },
     { headerName: "Novel Data", field: "novel_topic_data", id: 7, checked: true},
-    { headerName: "Confidence Level", field:"confidence_level", id: 8, checked: true },
+    { headerName: "Confidence Level", field:"confidence_level", id: 8, checked: false },
     { headerName: "Created By", field: "created_by", id: 9, checked: true},
     { headerName: "Note", field: "note", id: 10, checked: true},
-    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 11 , checked: true},
+    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 11 , checked: false},
     { headerName: "Date Created", field: "date_created", id: 12, checked: true},
-    { headerName: "Updated By", field: "updated_by", id: 13, checked: true },
+    { headerName: "Updated By", field: "updated_by", id: 13, checked: false },
     { headerName: "Date Updated", field: "date_updated", id: 14, checked: true},
-    { headerName: "Validation By Author", field: "validation_by_author", id: 15, checked: true },
-    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 16, checked: true },
-    { headerName: "Display Tag", field: "display_tag_name", id: 17, checked: true},
-    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18, checked: true },
-    { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", id: 19, checked: true },
-    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion" , id: 20, checked: true},
-    { headerName: "Source Method", field: "topic_entity_tag_source.source_method", id: 21, checked: true },
-    { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type", id: 22, checked: true },
-    { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 23, checked: true},
-    { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24, checked: true },
-    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25, checked: true },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: true }
+    { headerName: "Validation By Author", field: "validation_by_author", id: 15, checked: false },
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 16, checked: false },
+    { headerName: "Display Tag", field: "display_tag_name", id: 17, checked: false},
+    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18, checked: false },
+    { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", id: 19, checked: false },
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion" , id: 20, checked: false},
+    { headerName: "Source Method", field: "topic_entity_tag_source.source_method", id: 21, checked: false },
+    { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type", id: 22, checked: false },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 23, checked: false},
+    { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24, checked: false },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25, checked: false },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: false }
     ];
-  const [cookies, setCookie] = useCookies(['items']);
+
+  let itemsInitSGD=[
+    { headerName: "Topic", field: "topic_name", id: 1, checked: true },
+    { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true },
+    { headerName: "Species", field: "species_name", id: 3, checked: true},
+    { headerName: "Entity", field: "entity_name", id: 4, checked: true},
+    { headerName: "Entity Published As", field: "entity_published_as", id: 5, checked: false },
+    { headerName: "No Data", field: "negated", id: 6, checked: false },
+    { headerName: "Novel Data", field: "novel_topic_data", id: 7, checked: false},
+    { headerName: "Confidence Level", field:"confidence_level", id: 8, checked: false },
+    { headerName: "Created By", field: "created_by", id: 9, checked: true},
+    { headerName: "Note", field: "note", id: 10, checked: true},
+    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 11 , checked: false},
+    { headerName: "Date Created", field: "date_created", id: 12, checked: true},
+    { headerName: "Updated By", field: "updated_by", id: 13, checked: false },
+    { headerName: "Date Updated", field: "date_updated", id: 14, checked: true},
+    { headerName: "Validation By Author", field: "validation_by_author", id: 15, checked: false },
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 16, checked: false },
+    { headerName: "Display Tag", field: "display_tag_name", id: 17, checked: true},
+    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18, checked: false },
+    { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", id: 19, checked: false },
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion" , id: 20, checked: false},
+    { headerName: "Source Method", field: "topic_entity_tag_source.source_method", id: 21, checked: false },
+    { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type", id: 22, checked: false },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 23, checked: false},
+    { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24, checked: false },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25, checked: false },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: false }
+    ];
+
+    // Function to get a cookie value by name
+  const getCookie = (name) => {
+   const cookies = document.cookie
+   .split("; ")
+   .find((row) => row.startsWith(`${name}=`));
+   return cookies ? cookies.split("=")[1] : null;
+  };
+
+  if ( oktaMod.startsWith("SGD")){
+     itemsInit = [...itemsInitSGD];
+  }
+  let itemsCookieStr = getCookie("items");
   //use itemsInit if no cookie for 'items' found
-  if (!cookies.items){
-     const items = [...itemsInit];
-     setCookie("items", items);
+  if (!itemsCookieStr ){
+      let itemsStr= JSON.stringify(itemsInit);
+     document.cookie = `items=${itemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure; Secure`;
    }
-
-
-
-
+  else {
+      let itemsCookie= JSON.parse(itemsCookieStr);
+      itemsInit = [...itemsCookie];
+  }
+  const [items, setItems] = useState (itemsInit);
 
   const CheckboxMenu = React.forwardRef(
   (
@@ -191,7 +233,7 @@ const CheckDropdownItem = React.forwardRef(
   const CheckboxDropdown =  ({ items }) => {
    const handleChecked = (key, event) => {
     //console.log('touch item here:' + key + " status: " + event.target.checked);
-     const newItems = [...cookies.items];
+     const newItems = [...items];
      let item=newItems.find(i => i.id === key);
      item.checked = event.target.checked;
      if (item && item.checked == true){
@@ -205,30 +247,37 @@ const CheckDropdownItem = React.forwardRef(
                  });
      }
      //items.find(i => i.id === key).checked = event.target.checked;
-     setCookie('items', newItems);
+     let newItemsStr=JSON.stringify(newItems);
+     document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+     setItems(newItems);
      setShowDropdown(true);
    };
 
    const handleSelectAll = () => {
-     const newItems = [...cookies.items];
-     newItems.forEach(i => {i.checked = true;
-
-         gridRef.current.api.applyColumnState({
-                  state: [{ colId: i.field, hide: false },],
-                 });
-     });
-     setCookie('items', newItems);
+       const newItems = [...items];
+           newItems.forEach(i => {
+               i.checked = true;
+               gridRef.current.api.applyColumnState({
+                   state: [{colId: i.field, hide: false},],
+               });
+           });
+           let newItemsStr=JSON.stringify(newItems);
+           document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+           setItems(newItems);
    };
 
    const handleSelectNone = () => {
    // items.forEach(i => (i.checked = false));
-      const newItems = [...cookies.items];
-      newItems.forEach(i => {i.checked = false;
-         gridRef.current.api.applyColumnState({
-                  state: [{ colId: i.field, hide: true },],
-                 });
-     });
-      setCookie('items', newItems);
+      const newItems = [...items];
+          newItems.forEach(i => {
+              i.checked = false;
+              gridRef.current.api.applyColumnState({
+                  state: [{colId: i.field, hide: true},],
+              });
+          });
+          let newItemsStr=JSON.stringify(newItems);
+          document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+          setItems(newItems);
    };
 
    return (
@@ -243,7 +292,7 @@ const CheckDropdownItem = React.forwardRef(
         show={showDropdown}
         renderOnMount={false}
       >
-        {cookies.items.map(i => (
+        {items.map(i => (
           <Dropdown.Item
             key={i.field}
             as={CheckDropdownItem}
@@ -320,11 +369,13 @@ const CheckDropdownItem = React.forwardRef(
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter }
   ];
-
-  cookies.items.forEach(i => {
-     let col=cols.find(j => j.field === i.field);
-     col.hide=!i.checked;
-  });
+  //here to set the table column display/hide values
+  if (items && Array.isArray(items)) {
+      items.forEach(i => {
+          let col = cols.find(j => j.field === i.field);
+          col.hide = !i.checked;
+      });
+  }
   const [colDefs, setColDefs] = useState(cols);
 
   const paginationPageSizeSelector = useMemo(() => {
@@ -387,9 +438,7 @@ const CheckDropdownItem = React.forwardRef(
           <Row>
             <Col>
              <div style={{float: "left"}}>
-                 <CookiesProvider>
-                 <CheckboxDropdown items={cookies.items} />
-                 </CookiesProvider>
+                 <CheckboxDropdown items={items} />
              </div>
             </Col>
          </Row>
