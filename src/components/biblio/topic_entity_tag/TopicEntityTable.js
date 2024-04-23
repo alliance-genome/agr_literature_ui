@@ -22,6 +22,8 @@ const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector((state) => state.isLogged.testerMod);
+  const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
@@ -154,7 +156,7 @@ const TopicEntityTable = () => {
    return cookies ? cookies.split("=")[1] : null;
   };
 
-  if ( oktaMod.startsWith("SGD")){
+  if ( accessLevel ==="SGD"){
      itemsInit = [...itemsInitSGD];
   }
   let itemsCookieStr = getCookie("items");
