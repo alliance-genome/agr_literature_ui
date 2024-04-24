@@ -163,14 +163,13 @@ const TopicEntityTable = () => {
   //use itemsInit if no cookie for 'items' found
   if (!itemsCookieStr ){
       let itemsStr= JSON.stringify(itemsInit);
-     document.cookie = `items=${itemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure; Secure`;
+     document.cookie = `items=${itemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure;`;
    }
   else {
       let itemsCookie= JSON.parse(itemsCookieStr);
       itemsInit = [...itemsCookie];
   }
   const [items, setItems] = useState (itemsInit);
-
   const CheckboxMenu = React.forwardRef(
   (
     {
@@ -439,7 +438,7 @@ const CheckDropdownItem = React.forwardRef(
       <Container fluid>
           <Row>
             <Col>
-             <div style={{float: "left"}}>
+             <div style={{float: "left", padding: "0  0  10px  0"}}>
                  <CheckboxDropdown items={items} />
              </div>
             </Col>
