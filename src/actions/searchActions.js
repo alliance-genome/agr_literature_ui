@@ -76,13 +76,13 @@ const getSearchParams = (state) => {
   const data = state.search.searchFacetsValues;
   const tetNestedFacetsValues = [];
   const facetsValues = {};
-  if (state.search.applyToSingleTag && data["nested_topics"] && data["nested_topics"].length > 0 &&
-      data["nested_confidence_level"] && data["nested_confidence_level"].length > 0) {
+  if (state.search.applyToSingleTag && data["topics"] && data["topics"].length > 0 &&
+      data["confidence_levels"] && data["confidence_levels"].length > 0) {
       const seenEntries = new Set();
       for (const key in data) {
-         if (key.startsWith("nested")) {
-	   const topics = data["nested_topics"];
-	   const confidences = data["nested_confidence_level"];
+         if (key === 'topics' || key === 'confidence_levels') {
+	   const topics = data["topics"];
+	   const confidences = data["confidence_levels"];
 	   topics.forEach(topic => {
              confidences.forEach(confidence => {
 	       const entry = {
@@ -102,9 +102,9 @@ const getSearchParams = (state) => {
       }
   } else {
       for (const key in data) {
-	 if (key.startsWith("nested")) {
-	    const topics = data["nested_topics"];
-	    const confidences = data["nested_confidence_level"];
+	 if (key === 'topics' || key === 'confidence_levels') {
+	    const topics = data["topics"];
+	    const confidences = data["confidence_levels"];
 	    if (topics && topics.length > 0) {
 	        topics.forEach(topic => {
 		    const newEntry = { "topic_entity_tags.topic.keyword": topic };

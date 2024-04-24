@@ -41,14 +41,14 @@ export const RENAME_FACETS = {
     "mods_in_corpus_or_needs_review.keyword": "corpus - in corpus or needs review",
     "authors.name.keyword": "Authors",
     "mod_reference_types.keyword": "MOD reference type",
-    "nested_topics": "Topic",
-    "nested_confidence_level": "Confidence Level",
+    "topics": "Topic",
+    "confidence_levels": "Confidence level",
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Topics and Entities": ["nested_topics", "nested_confidence_level"],
+    "Topics and Entities": ["topics", "confidence_levels"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
 
 }
@@ -116,9 +116,8 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    
     const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
-    
+
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
 
@@ -171,36 +170,23 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         )
     }
 
-    const getBuckets = (facetData) => {
-	// check if the facet data is nested
-	if (facetData.topics) {
-	    return facetData.topics.buckets;
-	} else if (facetData.confidence_levels) {
-	    return facetData.confidence_levels.buckets;
-	} else {
-	    return facetData.buckets || [];
-	}
-    };
-    
     return (
-        <div> 
+        <div>
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
-                    //let key = facetToInclude + '.keyword';
+                    // let key = facetToInclude + '.keyword';
                     // key = key.replaceAll(' ', '_');
 		    let key = facetToInclude.replaceAll(' ', '_');
-		    if (!key.includes("nested")){
-			key = key + '.keyword';
-	            }
+                    if (key !== 'topics' && key !== 'confidence_levels'){
+                        key = key + '.keyword';
+                    }
                     if (key in searchFacets) {
-                        const facetData = searchFacets[key];
-			const buckets = getBuckets(facetData);
+                        let value = searchFacets[key];
                         return (
                             <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
                                 <div>
-                                    <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}
-				    </h5>
+                                    <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
                                     {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
-                                    {buckets.map(bucket =>
+                                    {value.buckets.map(bucket =>
                                         <Container key={bucket.key}>
                                             <Row>
                                                 <Col sm={2}>
@@ -214,7 +200,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                 </Col>
                                             </Row>
                                         </Container>)}
-                                    <ShowMoreLessAllButtons facetLabel={key} facetValue={buckets} />
+                                    <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
                                     <br/>
                                 </div>
                             </div>
@@ -261,7 +247,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 
     return (
         <div style={{paddingLeft: "1em"}}>
-            {facetValue.length >= searchFacetsLimits[facetLabel] ?
+            {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ?
                 <button className="button-to-link" onClick={()=> {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] * 2;
@@ -277,7 +263,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     dispatch(filterFacets());
                 }}>-Show Less</button></span> : null
             }
-            {facetValue.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
+            {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
                 <button className="button-to-link" onClick={() =>{
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
@@ -305,21 +291,22 @@ const Facets = () => {
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
+    const [showWarning, setShowWarning] = useState(false);
     const dispatch = useDispatch();
 
     const handleCheckboxChange = (event) => {
-	dispatch(setApplyToSingleTag(event.target.checked));
-	refreshData();
+        dispatch(setApplyToSingleTag(event.target.checked));
+        refreshData();
     };
 
     const refreshData = () => {
-	dispatch(searchReferences());
+        dispatch(searchReferences());
     };
 
     // to trigger refresh when applyToSingleTag changes
     useEffect(() => {
-	refreshData();
-    }, [applyToSingleTag, dispatch]);
+        refreshData();
+    }, [applyToSingleTag, dispatch])
     
     const toggleFacetGroup = (facetGroupLabel) => {
         let newOpenFacets = new Set([...openFacets]);
@@ -374,6 +361,24 @@ const Facets = () => {
         }
     }, [oktaMod]) // eslint-disable-line react-hooks/exhaustive-deps
 
+
+    useEffect(() => {                                                    
+	if (applyToSingleTag) {
+	    const topics = searchFacetsValues['topics'] || [];
+	    const confidenceLevels = searchFacetsValues['confidence_levels'] || [];
+	    if (topics.length > 1 || confidenceLevels.length > 1) {
+		setShowWarning(true);
+		setTimeout(() => {
+		    setShowWarning(false);
+		}, 6000);
+	    } else {
+		setShowWarning(false);
+	    }
+	} else {
+	    setShowWarning(false);
+	}
+    }, [applyToSingleTag, searchFacetsValues]);
+
     return (
         <>
             <LoadingOverlay active={facetsLoading} />
@@ -383,17 +388,24 @@ const Facets = () => {
                         <Button variant="light" size="lg" eventkey="0" onClick={() => toggleFacetGroup(facetCategory)}>
                             {openFacets.has(facetCategory) ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} {facetCategory}
                         </Button>
-                        <Collapse in={openFacets.has(facetCategory)}>
+			<Collapse in={openFacets.has(facetCategory)}>
                             <div>
 				{facetCategory === 'Topics and Entities' && (
-				   <Form.Check
-                                     type="checkbox"
-                                     label="apply selections to single tag"
-                                     checked={applyToSingleTag}
-                                     onChange={handleCheckboxChange}
-                                     style={{ display: 'inline-block', marginLeft: '30px', fontSize: '0.8rem' }}
-                                  />
-				)}
+				   <>
+				       {showWarning && (
+					   <div className="alert alert-warning" role="alert">
+					       You can only pick one topic and one confidence level since you checked the "apply selections to one tag" checkbox.
+					   </div>
+				       )}
+                                       <Form.Check
+					   type="checkbox"
+					   label="apply selections to single tag"
+					   checked={applyToSingleTag}
+					   onChange={handleCheckboxChange}
+					   style={{ display: 'inline-block', marginLeft: '30px', fontSize: '0.8rem' }}
+                                       />
+				   </>
+                                )}
                                 {facetCategory === 'Date Range' ? <DateFacet facetsToInclude={facetsInCategory}/> : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
                             </div>
                         </Collapse>
