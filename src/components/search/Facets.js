@@ -186,7 +186,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                 <div>
                                     <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
                                     {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
-                                    {value.buckets.map(bucket =>
+                                    {value.buckets && value.buckets.map(bucket =>
                                         <Container key={bucket.key}>
                                             <Row>
                                                 <Col sm={2}>
@@ -247,7 +247,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 
     return (
         <div style={{paddingLeft: "1em"}}>
-            {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ?
+            {facetValue.buckets && facetValue.buckets.length >= searchFacetsLimits[facetLabel] ?
                 <button className="button-to-link" onClick={()=> {
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] * 2;
@@ -263,7 +263,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     dispatch(filterFacets());
                 }}>-Show Less</button></span> : null
             }
-            {facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
+            {facetValue.buckets && facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
                 <button className="button-to-link" onClick={() =>{
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
