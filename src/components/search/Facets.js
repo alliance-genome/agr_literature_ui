@@ -15,7 +15,8 @@ import {
     setDatePubmedModified,
     setDatePublished,
     setDateCreated,
-    setModPreferencesLoaded
+    setModPreferencesLoaded,
+    setApplyToSingleTag
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse} from 'react-bootstrap';
@@ -40,14 +41,14 @@ export const RENAME_FACETS = {
     "mods_in_corpus_or_needs_review.keyword": "corpus - in corpus or needs review",
     "authors.name.keyword": "Authors",
     "mod_reference_types.keyword": "MOD reference type",
-    "topic_entity_tags.topic.keyword": "Topic",
-    "topic_entity_tags.confidence_level.keyword": "Confidence level",
+    "topics": "Topic",
+    "confidence_levels": "Confidence level",
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Topics and Entities": ["topic entity tags.topic", "topic entity tags.confidence_level"],
+    "Topics and Entities": ["topics", "confidence_levels"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
 
 }
@@ -172,8 +173,12 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     return (
         <div>
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
-                    let key = facetToInclude + '.keyword';
-                    key = key.replaceAll(' ', '_');
+                    // let key = facetToInclude + '.keyword';
+                    // key = key.replaceAll(' ', '_');
+		    let key = facetToInclude.replaceAll(' ', '_');
+                    if (key !== 'topics' && key !== 'confidence_levels'){
+                        key = key + '.keyword';
+                    }
                     if (key in searchFacets) {
                         let value = searchFacets[key];
                         return (
@@ -285,8 +290,24 @@ const Facets = () => {
     const datePublished= useSelector(state => state.search.datePublished);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
+    const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
+    // const [showWarning, setShowWarning] = useState(false);
     const dispatch = useDispatch();
 
+    const handleCheckboxChange = (event) => {
+        dispatch(setApplyToSingleTag(event.target.checked));
+        refreshData();
+    };
+
+    const refreshData = () => {
+        dispatch(searchReferences());
+    };
+
+    // to trigger refresh when applyToSingleTag changes
+    useEffect(() => {
+        refreshData();
+    }, [applyToSingleTag, dispatch])
+    
     const toggleFacetGroup = (facetGroupLabel) => {
         let newOpenFacets = new Set([...openFacets]);
         if (newOpenFacets.has(facetGroupLabel)) {
@@ -340,6 +361,26 @@ const Facets = () => {
         }
     }, [oktaMod]) // eslint-disable-line react-hooks/exhaustive-deps
 
+
+    /*
+    useEffect(() => {                                                    
+	if (applyToSingleTag) {
+	    const topics = searchFacetsValues['topics'] || [];
+	    const confidenceLevels = searchFacetsValues['confidence_levels'] || [];
+	    if (topics.length > 1 || confidenceLevels.length > 1) {
+		setShowWarning(true);
+		setTimeout(() => {
+		    setShowWarning(false);
+		}, 6000);
+	    } else {
+		setShowWarning(false);
+	    }
+	} else {
+	    setShowWarning(false);
+	}
+    }, [applyToSingleTag, searchFacetsValues]);
+    */
+    
     return (
         <>
             <LoadingOverlay active={facetsLoading} />
@@ -349,8 +390,24 @@ const Facets = () => {
                         <Button variant="light" size="lg" eventkey="0" onClick={() => toggleFacetGroup(facetCategory)}>
                             {openFacets.has(facetCategory) ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} {facetCategory}
                         </Button>
-                        <Collapse in={openFacets.has(facetCategory)}>
+			<Collapse in={openFacets.has(facetCategory)}>
                             <div>
+				{facetCategory === 'Topics and Entities' && (
+				   <>
+				     {/*  {showWarning && (
+					   <div className="alert alert-warning" role="alert">
+					       You can only pick one topic and one confidence level since you checked the "apply selections to one tag" checkbox.
+					   </div>
+				       )} */}
+                                       <Form.Check
+					   type="checkbox"
+					   label="apply selections to single tag"
+					   checked={applyToSingleTag}
+					   onChange={handleCheckboxChange}
+					   style={{ display: 'inline-block', marginLeft: '30px', fontSize: '0.8rem' }}
+                                       />
+				   </>
+                                )}
                                 {facetCategory === 'Date Range' ? <DateFacet facetsToInclude={facetsInCategory}/> : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
                             </div>
                         </Collapse>
