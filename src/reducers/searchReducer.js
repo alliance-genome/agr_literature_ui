@@ -11,7 +11,7 @@ import {
   SEARCH_SET_DATE_PUBLISHED, SEARCH_SET_SEARCH_QUERY_FIELDS,
   SEARCH_SET_SORT_BY_PUBLISHED_DATE, SEARCH_SET_PARTIAL_MATCH,
   SEARCH_SET_DATE_CREATED, SEARCH_SET_CROSS_REFERENCE_RESULTS,
-  SEARCH_SET_MOD_PREFERENCES_LOADED
+  SEARCH_SET_MOD_PREFERENCES_LOADED, SEARCH_SET_APPLY_TO_SINGLE_TAG 
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -49,7 +49,8 @@ const initialState = {
   query_fields:"All",
   sort_by_published_date_order:"relevance",
   partialMatch:"true",
-  modPreferencesLoaded:"false"
+  modPreferencesLoaded:"false",
+  applyToSingleTag: true
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -245,6 +246,13 @@ export default function(state = initialState, action) {
       return {
         ...state,
         modPreferencesLoaded: action.payload.modPreferencesLoaded
+      }
+
+    case SEARCH_SET_APPLY_TO_SINGLE_TAG:
+      console.log('Updating applyToSingleTag to:', action.payload);
+      return {
+        ...state,
+        applyToSingleTag: action.payload
       }
 
 //     case 'FETCH_POSTS':
