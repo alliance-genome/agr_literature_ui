@@ -27,6 +27,7 @@ export const SEARCH_SET_SEARCH_QUERY_FIELDS = 'SEARCH_SET_SEARCH_QUERY_FIELDS';
 export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_DATE';
 export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
 export const SEARCH_SET_MOD_PREFERENCES_LOADED = 'SEARCH_SET_MOD_PREFERENCES_LOADED';
+export const SEARCH_SET_APPLY_TO_SINGLE_TAG = 'SEARCH_SET_APPLY_TO_SINGLE_TAG';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -62,7 +63,6 @@ const getSearchParams = (state) => {
     query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
     size_result_count: state.search.searchSizeResultsCount,
     page: state.search.searchResultsPage,
-    facets_values: state.search.searchFacetsValues,
     negated_facets_values: state.search.searchExcludedFacetsValues,
     facets_limits: state.search.searchFacetsLimits,
     author_filter: state.search.authorFilter,
@@ -70,6 +70,68 @@ const getSearchParams = (state) => {
     sort_by_published_date_order: state.search.sortByPublishedDate,
     partial_match: state.search.partialMatch
   }
+
+  // console.log("searchFacetsValues =" + JSON.stringify(state.search.searchFacetsValues, null, 2));
+
+  const data = state.search.searchFacetsValues;
+  const tetNestedFacetsValues = [];
+  const facetsValues = {};
+  if (state.search.applyToSingleTag && data["topics"] && data["topics"].length > 0 &&
+      data["confidence_levels"] && data["confidence_levels"].length > 0) {
+      const seenEntries = new Set();
+      for (const key in data) {
+         if (key === 'topics' || key === 'confidence_levels') {
+	   const topics = data["topics"];
+	   const confidences = data["confidence_levels"];
+	   topics.forEach(topic => {
+             confidences.forEach(confidence => {
+	       const entry = {
+                 "topic_entity_tags.topic.keyword": topic,
+                 "topic_entity_tags.confidence_level.keyword": confidence
+               };
+               const entryString = JSON.stringify(entry);
+               if (!seenEntries.has(entryString)) {
+                 tetNestedFacetsValues.push(entry);
+                 seenEntries.add(entryString);
+               }
+             });
+           });
+	 } else {
+           facetsValues[key] = data[key];
+         }
+      }
+  } else {
+      for (const key in data) {
+	 if (key === 'topics' || key === 'confidence_levels') {
+	    const topics = data["topics"];
+	    const confidences = data["confidence_levels"];
+	    if (topics && topics.length > 0) {
+	        topics.forEach(topic => {
+		    const newEntry = { "topic_entity_tags.topic.keyword": topic };
+		    if (!tetNestedFacetsValues.some(entry => entry["topic_entity_tags.topic.keyword"] === topic)) {  
+			tetNestedFacetsValues.push(newEntry);
+		    }
+	        });
+            }
+	    if (confidences && confidences.length > 0) {
+	        confidences.forEach(confidence => {
+		    const newEntry = { "topic_entity_tags.confidence_level.keyword": confidence };
+		    if (!tetNestedFacetsValues.some(entry => entry["topic_entity_tags.confidence_level.keyword"] === confidence)) {
+			tetNestedFacetsValues.push(newEntry);
+		    }
+                });
+	    }
+	 } else {
+	    facetsValues[key] = data[key];
+	 }
+      } 
+  }
+  params.facets_values = facetsValues;
+  params.tet_nested_facets_values = {
+      "apply_to_single_tag": state.search.applyToSingleTag,
+      "tet_facets_values": tetNestedFacetsValues
+  };
+    
   if(state.search.datePubmedModified){
     params.date_pubmed_modified = state.search.datePubmedModified;
   }
@@ -82,7 +144,9 @@ const getSearchParams = (state) => {
   if(state.search.dateCreated){
     params.date_created = state.search.dateCreated;
   }
-
+    
+  console.log("searchParams =" + JSON.stringify(params, null, 2));  
+    
   return params;
 }
 
@@ -309,3 +373,9 @@ export const setModPreferencesLoaded = (modPreferencesLoaded) => ({
     modPreferencesLoaded : modPreferencesLoaded
   }
 });
+
+export const setApplyToSingleTag = (value) => ({
+    type: 'SEARCH_SET_APPLY_TO_SINGLE_TAG',
+    payload: value
+});
+
