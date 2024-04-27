@@ -338,11 +338,16 @@ const FileUpload = ({main_or_supp}) => {
                       onHideAction={setFileUploadingShowModal(false)} />
         <Row key={main_or_supp} >
           <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>{main_or_supp} file</Col>
-          <Col lg={{ span: 10 }}>
-            <div className="dropzone" {...getRootProps()} >
-              <input {...getInputProps()} />
-              <p>Drag and drop {main_or_supp} file here, or click to select files</p>
-            </div>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center'}}>
+            { (() => {
+              if (accessLevel !== 'No') {
+                return (
+                  <div className="dropzone" {...getRootProps()} >
+                    <input {...getInputProps()} />
+                    <p>Drag and drop {main_or_supp} file here, or click to select files</p>
+                  </div>
+                ) }
+              else { return ( <div>You must be in an Okta curator group to upload files in production</div>) } } )() }
           </Col>
         </Row>
       </>
