@@ -173,8 +173,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     return (
         <div>
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
-                    // let key = facetToInclude + '.keyword';
-                    // key = key.replaceAll(' ', '_');
 		    let key = facetToInclude.replaceAll(' ', '_');
                     if (key !== 'topics' && key !== 'confidence_levels'){
                         key = key + '.keyword';
@@ -196,10 +194,14 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                     <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
                                                 </Col>
                                                 <Col>
-                                                    <Badge variant="secondary">{bucket.doc_count}</Badge>
+                                                <Badge variant="secondary">
+                                                    {['topics', 'confidence_levels'].includes(key) ? bucket.docs_count.doc_count : bucket.doc_count}
+                                                </Badge>
                                                 </Col>
                                             </Row>
                                         </Container>)}
+
+				    
                                     <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
                                     <br/>
                                 </div>
