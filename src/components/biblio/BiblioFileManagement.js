@@ -110,6 +110,17 @@ const Workflow = () => {
   }
 
   const modFileStatus = deriveModFileStatus(referenceJsonLive["workflow_tags"]);
+  if (!(accessLevel in modFileStatus)) {
+    return (
+      <>
+        <Row key='workflowFileStatus'>
+          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>workflow</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>Your okta credenditals must belong to a mod</Col>
+        </Row>
+      </>
+    );
+  }
+
   let dbAtp = modFileStatus[accessLevel]['workflow_tag_id'];
   let dbWftId = modFileStatus[accessLevel]['reference_workflow_tag_id'];
   const updated = ( (dbAtp !== fileStatus) && (fileStatus !== '') ) ? 'updated' : '';
