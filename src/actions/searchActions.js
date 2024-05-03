@@ -58,6 +58,35 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
+function processTopicsAndConfidences(data, tetNestedFacetsValues) {
+  const topics = data["topics"];
+  const confidences = data["confidence_levels"];
+  const seenEntries = new Set();
+
+  topics.forEach(topic => {
+    confidences.forEach(confidence => {
+      const entry = {
+        "topic_entity_tags.topic.keyword": topic,
+        "topic_entity_tags.confidence_level.keyword": confidence
+      };
+      const entryString = JSON.stringify(entry);
+      if (!seenEntries.has(entryString)) {
+        tetNestedFacetsValues.push(entry);
+        seenEntries.add(entryString);
+      }
+    });
+  });
+}
+
+function processSingleFacet(facetArray, facetKey, tetNestedFacetsValues) {
+  facetArray.forEach(item => {
+    const newEntry = { [facetKey]: item };
+    if (!tetNestedFacetsValues.some(entry => JSON.stringify(entry) === JSON.stringify(newEntry))) {
+      tetNestedFacetsValues.push(newEntry);
+    }
+  });
+}
+
 const getSearchParams = (state) => {
   let params = {
     query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
@@ -71,61 +100,27 @@ const getSearchParams = (state) => {
     partial_match: state.search.partialMatch
   }
 
-  // console.log("searchFacetsValues =" + JSON.stringify(state.search.searchFacetsValues, null, 2));
-
   const data = state.search.searchFacetsValues;
   const tetNestedFacetsValues = [];
   const facetsValues = {};
   if (state.search.applyToSingleTag && data["topics"] && data["topics"].length > 0 &&
       data["confidence_levels"] && data["confidence_levels"].length > 0) {
-      const seenEntries = new Set();
-      for (const key in data) {
-         if (key === 'topics' || key === 'confidence_levels') {
-	   const topics = data["topics"];
-	   const confidences = data["confidence_levels"];
-	   topics.forEach(topic => {
-             confidences.forEach(confidence => {
-	       const entry = {
-                 "topic_entity_tags.topic.keyword": topic,
-                 "topic_entity_tags.confidence_level.keyword": confidence
-               };
-               const entryString = JSON.stringify(entry);
-               if (!seenEntries.has(entryString)) {
-                 tetNestedFacetsValues.push(entry);
-                 seenEntries.add(entryString);
-               }
-             });
-           });
-	 } else {
-           facetsValues[key] = data[key];
-         }
-      }
+      processTopicsAndConfidences(data, tetNestedFacetsValues);
   } else {
-      for (const key in data) {
-	 if (key === 'topics' || key === 'confidence_levels') {
-	    const topics = data["topics"];
-	    const confidences = data["confidence_levels"];
-	    if (topics && topics.length > 0) {
-	        topics.forEach(topic => {
-		    const newEntry = { "topic_entity_tags.topic.keyword": topic };
-		    if (!tetNestedFacetsValues.some(entry => entry["topic_entity_tags.topic.keyword"] === topic)) {  
-			tetNestedFacetsValues.push(newEntry);
-		    }
-	        });
-            }
-	    if (confidences && confidences.length > 0) {
-	        confidences.forEach(confidence => {
-		    const newEntry = { "topic_entity_tags.confidence_level.keyword": confidence };
-		    if (!tetNestedFacetsValues.some(entry => entry["topic_entity_tags.confidence_level.keyword"] === confidence)) {
-			tetNestedFacetsValues.push(newEntry);
-		    }
-                });
-	    }
-	 } else {
-	    facetsValues[key] = data[key];
-	 }
-      } 
+      ["topics", "confidence_levels"].forEach(key => {
+	  if (data[key]) {
+	      const facetType = key.slice(0, -1); // topics => topic
+	      const keyword = `topic_entity_tags.${facetType}.keyword`;
+	      processSingleFacet(data[key], keyword, tetNestedFacetsValues);
+	  }
+      });
   }
+  Object.keys(data).forEach(key => {
+      if (key !== 'topics' && key !== 'confidence_levels') {
+	  facetsValues[key] = data[key];
+      }
+  });
+    
   params.facets_values = facetsValues;
   params.tet_nested_facets_values = {
       "apply_to_single_tag": state.search.applyToSingleTag,
