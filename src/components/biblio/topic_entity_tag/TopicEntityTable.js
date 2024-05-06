@@ -156,8 +156,11 @@ const TopicEntityTable = () => {
    return cookies ? cookies.split("=")[1] : null;
   };
 
+  //keep this untouched for default
+  let itemsInitOrg = [...itemsInit];
   if ( accessLevel ==="SGD"){
      itemsInit = [...itemsInitSGD];
+     itemsInitOrg = [...itemsInitSGD];
   }
   let itemsCookieStr = getCookie("items");
   //use itemsInit if no cookie for 'items' found
@@ -178,7 +181,8 @@ const TopicEntityTable = () => {
       className,
       "aria-labelledby": labeledBy,
       onSelectAll,
-      onSelectNone
+      onSelectNone,
+      onDefault
     },
     ref
   ) => {
@@ -200,6 +204,9 @@ const TopicEntityTable = () => {
               </Button>
               <Button variant="link" onClick={onSelectNone}>
                 Hide All
+              </Button>
+              <Button variant="link" onClick={onDefault}>
+                Restore Default
               </Button>
             </ButtonGroup>
           </div>
@@ -281,6 +288,26 @@ const CheckDropdownItem = React.forwardRef(
           setItems(newItems);
    };
 
+   const handleSelectDefault = () => {
+       setItems(itemsInitOrg);
+       const newItems = [...itemsInitOrg];
+           newItems.forEach(i => {
+               let columChecked = !i.checked;
+               if (i  && i.checked == true) {
+                   gridRef.current.api.applyColumnState({
+                       state: [{colId: i.field, hide: false},],
+                   });
+               }
+               else if (i  && i.checked == false){
+                   gridRef.current.api.applyColumnState({
+                       state: [{colId: i.field, hide: true},],
+                   });
+               }
+           });
+           let newItemsStr=JSON.stringify(newItems);
+           document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+   };
+
    return (
     <Dropdown autoClose={false} >
       <Dropdown.Toggle variant="primary" id="dropdown-basic">
@@ -290,6 +317,7 @@ const CheckDropdownItem = React.forwardRef(
         as={CheckboxMenu}
         onSelectAll={handleSelectAll}
         onSelectNone={handleSelectNone}
+        onDefault={handleSelectDefault}
         show={showDropdown}
         renderOnMount={false}
       >
