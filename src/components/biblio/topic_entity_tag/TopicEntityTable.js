@@ -291,7 +291,7 @@ const CheckDropdownItem = React.forwardRef(
    const handleSelectDefault = () => {
        setItems(itemsInitOrg);
        itemsInitOrg.forEach(i => {
-       gridRef.current.api.applyColumnState({
+        gridRef.current.api.applyColumnState({
            state: [{colId: i.field, hide: !i.checked},],
         });
        });
@@ -393,11 +393,12 @@ const CheckDropdownItem = React.forwardRef(
   const gridOptions = {
     autoSizeStrategy: {
         type: 'fitCellContents',
-        skipHeader: false
+        skipHeader: false,
+        defaultMaxWidth: 300
     },
     // other grid options ...
   }
-  
+
   //here to set the table column display/hide values
   if (items && Array.isArray(items)) {
       items.forEach(i => {
