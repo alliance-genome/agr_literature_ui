@@ -371,7 +371,7 @@ const CheckDropdownItem = React.forwardRef(
     { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text", valueGetter: (params) =>   params.data.novel_topic_data === true ? 'new data': ''},
     { headerName: "Confidence Level", field:"confidence_level" },
     { headerName: "Created By", field: "created_by"},
-    { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleNoteClick(params.value)}},
+    { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleNoteClick(params.value)}, id: 10},
     { headerName: "Entity ID Validation", field: "entity_id_validation" },
     { headerName: "Date Created", field: "date_created", valueFormatter: dateFormatter },
     { headerName: "Updated By", field: "updated_by" },
@@ -393,10 +393,11 @@ const CheckDropdownItem = React.forwardRef(
   const gridOptions = {
     autoSizeStrategy: {
         type: 'fitCellContents',
-        skipHeader: false,
-        defaultMaxWidth: 300
-    },
+        skipHeader: false
+    }
     // other grid options ...
+
+
   }
 
   //here to set the table column display/hide values
