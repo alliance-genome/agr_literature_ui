@@ -50,7 +50,7 @@ export default (props) => {
     return (
         <Container style={{ padding: '0px'}}><Row>
             <Col xs={3}>
-                {(props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel) && (uid !== props.data.created_by) && (!props.data.validating_users.includes(uid)) ? checkBoxElement() : null}
+                {(props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel) && (uid !== props.data.created_by) && (!props.data.validating_users || !props.data.validating_users.includes(uid)) ? checkBoxElement() : null}
             </Col>
             <Col style={{textOverflow: 'ellipsis', overflow: 'hidden'}}>
                 {props.data.validation_by_professional_biocurator}

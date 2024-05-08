@@ -290,22 +290,13 @@ const CheckDropdownItem = React.forwardRef(
 
    const handleSelectDefault = () => {
        setItems(itemsInitOrg);
-       const newItems = [...itemsInitOrg];
-           newItems.forEach(i => {
-               let columChecked = !i.checked;
-               if (i  && i.checked == true) {
-                   gridRef.current.api.applyColumnState({
-                       state: [{colId: i.field, hide: false},],
-                   });
-               }
-               else if (i  && i.checked == false){
-                   gridRef.current.api.applyColumnState({
-                       state: [{colId: i.field, hide: true},],
-                   });
-               }
-           });
-           let newItemsStr=JSON.stringify(newItems);
-           document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+       itemsInitOrg.forEach(i => {
+        gridRef.current.api.applyColumnState({
+           state: [{colId: i.field, hide: !i.checked},],
+        });
+       });
+       let newItemsStr=JSON.stringify(itemsInitOrg);
+       document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
    };
 
    return (
@@ -370,14 +361,14 @@ const CheckDropdownItem = React.forwardRef(
   };
 
   let cols=[
-    { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions },
+    { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions},
     { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
     { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity_type)} },
     { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
     { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
     { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
-    { headerName: "No Data", field: "negated", cellDataType: "text" },
-    { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text"},
+    { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (params) =>   params.data.negated === true ? 'no data': '' },
+    { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text", valueGetter: (params) =>   params.data.novel_topic_data === true ? 'new data': ''},
     { headerName: "Confidence Level", field:"confidence_level" },
     { headerName: "Created By", field: "created_by"},
     { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleNoteClick(params.value)}},
@@ -398,6 +389,17 @@ const CheckDropdownItem = React.forwardRef(
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter }
   ];
+
+  const gridOptions = {
+    autoSizeStrategy: {
+        type: 'fitCellContents',
+        skipHeader: false
+    }
+    // other grid options ...
+
+
+  }
+
   //here to set the table column display/hide values
   if (items && Array.isArray(items)) {
       items.forEach(i => {
@@ -484,6 +486,7 @@ const CheckDropdownItem = React.forwardRef(
             onColumnMoved={columnMoved}
             pagination={true}
             paginationPageSize={25}
+            gridOptions={gridOptions}
             paginationPageSizeSelector={paginationPageSizeSelector}/>
                </div>
             </Col>
