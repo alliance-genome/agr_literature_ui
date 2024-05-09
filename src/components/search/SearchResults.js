@@ -81,16 +81,23 @@ const SearchResultItem = ({ reference }) => {
               </Link>
             </li>
             {reference.cross_references ? (
-              reference.cross_references.map((xref, i) => (
-                <li key={i}>
-                  <span className="obsolete">
-                    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
-                  </span>
-                  <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
-                    {xref.curie}
-                  </a>
-                </li>
-              ))
+		reference.cross_references.map((xref, i) => (
+		    <li key={i}>
+			<span className="obsolete">
+			    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
+			</span>
+			<a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
+			    {xref.curie}
+			</a>
+			{xref.curie.startsWith('PMID:') && (
+			    <div>
+				<a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`} rel="noreferrer noopener" target="_blank">
+				    EuropePMC
+				</a>
+			    </div>
+			)}
+		    </li>
+		))
             ) : null}
           </ul>
         </div>
