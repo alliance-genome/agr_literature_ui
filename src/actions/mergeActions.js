@@ -93,6 +93,24 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
     return [response_curie, response_success]
   }
 
+  const queryRefTet = async (referenceCurie) => {
+    const url = restUrl + '/topic_entity_tag/by_reference/' + referenceCurie
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
+    const response = await res.json();
+    let response_payload = referenceCurie + ' not found';
+    let response_success = false;
+    if (Array.isArray(response)) {
+      response_success = true;
+      response_payload = response; }
+    return [response_payload, response_success]
+  }
+
   const queryRefFiles = async (referenceCurie) => {
     const url = restUrl + '/reference/referencefile/show_all/' + referenceCurie;
     console.log(url);
@@ -201,6 +219,12 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
       let valuesRefFiles = await Promise.allSettled([promiseRefFile1, promiseRefFile2]);
       referenceJson1['reference_files'] = valuesRefFiles[0]['value'][0];
       referenceJson2['reference_files'] = valuesRefFiles[1]['value'][0];
+
+      const promiseRefTet1 = queryRefTet(curieValue1);
+      const promiseRefTet2 = queryRefTet(curieValue2);
+      let valuesRefTets = await Promise.allSettled([promiseRefTet1, promiseRefTet2]);
+      referenceJson1['topic_entity_tags'] = valuesRefTets[0]['value'][0];
+      referenceJson2['topic_entity_tags'] = valuesRefTets[1]['value'][0];
 
       if (curieValue1 === curieValue2) {
         curieValue2 = curieValue2 + ' is the same as the reference curie to keep';
