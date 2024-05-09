@@ -47,7 +47,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags', 'DIVIDER', 'topic_entity_tags' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -772,6 +772,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, hasPm
     else if (fieldName === 'workflow_tags') {
       rowOrderedElements.push(
         <RowDisplayPairWorkflowTags key="RowDisplayPairWorkflowTags" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
+    else if (fieldName === 'topic_entity_tags') {
+      rowOrderedElements.push(
+        <RowDisplayPairTopicEntityTags key="RowDisplayPairTopicEntityTags" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
   }
   return (<Container fluid>{rowOrderedElements}</Container>);
 } // const MergePairsSection
@@ -1003,6 +1006,26 @@ function deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology) {
   newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
   return newSortedWorkflow;
 } // function deriveWorkflowData(referenceMeta1, referenceMeta2)
+
+const RowDisplayPairTopicEntityTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
+  const element0 = GenerateFieldLabel(fieldName, 'lock');
+  let element1 = (<div>Loading</div>); let element2 = (<div>Loading</div>);
+  if (referenceMeta1['referenceJson'][fieldName].length === 0) { element1 = (<div>No Data</div>); }
+    else {
+      const url1 = '/Biblio/?action=entity&referenceCurie=' + referenceMeta1.curie;
+      element1 = (<div>Confirm data at <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> then click this checkbox <Form.Check inline type="checkbox" id="confirmTet1" /></div>); }
+  if (referenceMeta2['referenceJson'][fieldName].length === 0) { element2 = (<div>No Data</div>); }
+    else {
+      const url2 = '/Biblio/?action=entity&referenceCurie=' + referenceMeta2.curie;
+      element2 = (<div>Confirm data at <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> then click this checkbox <Form.Check inline type="checkbox" id="confirmTet2" /></div>); }
+  return (
+      <Row key={`topic_entity_tags `}>
+        <Col sm="2" >{element0}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+} // const RowDisplayPairTopicEntityTags
+
 
 const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
