@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldInput } from '../actions/mergeActions';
+import { changeFieldTetCheckbox } from '../actions/mergeActions';
 import { mergeQueryReferences } from '../actions/mergeActions';
 import { mergeResetReferences } from '../actions/mergeActions';
 import { mergeSwapKeep } from '../actions/mergeActions';
@@ -47,7 +48,7 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'resource_curie', 'resource_title' ];
 const fieldsPubmedArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types' ];
 
-const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags' ];
+const fieldsOrdered = [ 'title', 'DIVIDER', 'mod_corpus_associations', 'DIVIDER', 'cross_references', 'DIVIDER', 'reference_relations', 'DIVIDER', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'keywords', 'mesh_terms', 'DIVIDER', 'reference_files', 'DIVIDER', 'workflow_tags', 'DIVIDER', 'topic_entity_tags' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 // const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'reference_relations', 'authors', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'DIVIDER', 'tags', 'DIVIDER', 'keywords', 'mesh_terms' ];
 
@@ -192,6 +193,7 @@ const MergeCompletedMergeModal = () => {
   const updateMessages = useSelector(state => state.merge.updateMessages);
   const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
   const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
+  const url1e = '/Biblio/?entity=display&referenceCurie=' + referenceMeta1.curie;
 
   const modalBody = updateFailure ? 
                     <Modal.Body><a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into
@@ -201,7 +203,9 @@ const MergeCompletedMergeModal = () => {
                       {updateMessages.map((message, index) => (
                         <div key={`${message} ${index}`}>{message}</div>
                       ))}</Modal.Body> :
-                    <Modal.Body>{referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>Information associated with {referenceMeta2.curie} has been removed.</Modal.Body>
+                    <Modal.Body>{referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>Information associated with {referenceMeta2.curie} has been removed.
+                      { ( (referenceMeta1['referenceJson']['topic_entity_tags'].length > 0) || (referenceMeta2['referenceJson']['topic_entity_tags'].length > 0) ) && (<div><br />See <a href={url1e} target="_blank" rel="noreferrer noopener">topic entity tag</a> data.<br/></div>) }
+                      </Modal.Body>
   const modalHeader = updateFailure ? 
                       <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
                       <Modal.Header closeButton><Modal.Title>Merge Complete</Modal.Title></Modal.Header>
@@ -704,7 +708,10 @@ const MergeSubmitDataTransferUpdateButton = () => {
 
   } // function mergeReferences()
 
-  const transferButtonDisabled = (atpParents.length > ateamResults) ? 'disabled' : '';
+  let transferButtonDisabled = '';
+  if (atpParents.length > ateamResults) { transferButtonDisabled = 'disabled'; }
+  if ( (referenceMeta1['referenceJson']['topic_entity_tags'].length > 0) && (referenceMeta1['tetCheckbox'] === false) ) { transferButtonDisabled = 'disabled'; }
+  if ( (referenceMeta2['referenceJson']['topic_entity_tags'].length > 0) && (referenceMeta2['tetCheckbox'] === false) ) { transferButtonDisabled = 'disabled'; }
   if (dataTransferHappened) { return null; }
   else {
     return (<>
@@ -772,6 +779,9 @@ const MergePairsSection = ({referenceMeta1, referenceMeta2, referenceSwap, hasPm
     else if (fieldName === 'workflow_tags') {
       rowOrderedElements.push(
         <RowDisplayPairWorkflowTags key="RowDisplayPairWorkflowTags" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
+    else if (fieldName === 'topic_entity_tags') {
+      rowOrderedElements.push(
+        <RowDisplayPairTopicEntityTags key="RowDisplayPairTopicEntityTags" fieldName={fieldName} referenceMeta1={referenceMeta1} referenceMeta2={referenceMeta2} referenceSwap={referenceSwap} hasPmid={hasPmid} pmidKeepReference={pmidKeepReference} /> ); }
   }
   return (<Container fluid>{rowOrderedElements}</Container>);
 } // const MergePairsSection
@@ -1003,6 +1013,27 @@ function deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology) {
   newSortedWorkflow['otherworkflowMods'] = otherworkflowMods;
   return newSortedWorkflow;
 } // function deriveWorkflowData(referenceMeta1, referenceMeta2)
+
+const RowDisplayPairTopicEntityTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
+  const dispatch = useDispatch();
+  const element0 = GenerateFieldLabel(fieldName, 'lock');
+  let element1 = (<div>Loading</div>); let element2 = (<div>Loading</div>);
+  if (referenceMeta1['referenceJson'][fieldName].length === 0) { element1 = (<div>No Data</div>); }
+    else {
+      const url1 = '/Biblio/?action=entity&referenceCurie=' + referenceMeta1.curie;
+      element1 = (<div>Confirm data at <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> then click this checkbox <Form.Check inline type="checkbox" id="confirmTet1" onChange={(evt) => dispatch(changeFieldTetCheckbox(evt, 'referenceMeta1', true)) } /></div>); }
+  if (referenceMeta2['referenceJson'][fieldName].length === 0) { element2 = (<div>No Data</div>); }
+    else {
+      const url2 = '/Biblio/?action=entity&referenceCurie=' + referenceMeta2.curie;
+      element2 = (<div>Confirm data at <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> then click this checkbox <Form.Check inline type="checkbox" id="confirmTet2" onChange={(evt) => dispatch(changeFieldTetCheckbox(evt, 'referenceMeta2', true)) } /></div>); }
+  return (
+      <Row key={`topic_entity_tags `}>
+        <Col sm="2" >{element0}</Col>
+        <Col sm="5" >{element1}</Col>
+        <Col sm="5" >{element2}</Col>
+      </Row>);
+} // const RowDisplayPairTopicEntityTags
+
 
 const RowDisplayPairWorkflowTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
   const accessToken = useSelector(state => state.isLogged.accessToken);

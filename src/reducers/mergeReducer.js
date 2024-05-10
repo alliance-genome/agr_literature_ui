@@ -10,6 +10,7 @@ const initialState = {
     queryRefSuccess: null,
     message: 'Enter an AGR reference or cross reference curie',
     disableInput: '',
+    tetCheckbox: false,
     blah: ''
   },
   referenceMeta1: {
@@ -20,6 +21,7 @@ const initialState = {
     queryRefSuccess: null,
     message: 'Enter an AGR reference or cross reference curie',
     disableInput: '',
+    tetCheckbox: false,
     blah: ''
   },
 //     input: 'CGC:cgc3',
@@ -37,6 +39,7 @@ const initialState = {
 //     input: 'AGR:AGR-Reference-0000744531',	-> reorder authors
 //     input: 'AGR:AGR-Reference-0000869178',	-> test pmid 5432
 //     input: 'PMID:28049701',
+//     input: '',
   referenceMeta2: {
     input: '',
     curie: '',
@@ -45,6 +48,7 @@ const initialState = {
     queryRefSuccess: null,
     message: 'Enter an AGR reference or cross reference curie',
     disableInput: '',
+    tetCheckbox: false,
     blah: ''
   },
   referenceDb1: {},
@@ -138,6 +142,14 @@ export default function(state = initialState, action) {
       return {
         ...state,
         [action.payload.object]: changeObjectCopy
+      }
+    case 'MERGE_CHANGE_FIELD_TET_CHECKBOX':
+      // console.log(action.payload);
+      const changeObjectTetCheckboxCopy = JSON.parse(JSON.stringify(state[action.payload.object]));
+      changeObjectTetCheckboxCopy['tetCheckbox'] = action.payload.value;
+      return {
+        ...state,
+        [action.payload.object]: changeObjectTetCheckboxCopy
       }
     case 'MERGE_SWAP_KEEP':
       console.log(action.type);

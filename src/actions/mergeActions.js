@@ -23,6 +23,19 @@ export const changeFieldInput = (e, object, key1) => {
   };
 };
 
+export const changeFieldTetCheckbox = (e, object) => {
+  // console.log('merge action change field array reference json ' + e.target.id + ' to ' + e.target.value);
+  const value = (e.target.checked) ? true : false;
+  return {
+    type: 'MERGE_CHANGE_FIELD_TET_CHECKBOX',
+    payload: {
+      field: e.target.id,
+      object: object,
+      value: value
+    }
+  };
+};
+
 export const mergeResetReferences = () => { return { type: 'MERGE_RESET_REFERENCES' }; };
 
 export const mergeSwapKeep = () => { return { type: 'MERGE_SWAP_KEEP' }; };
@@ -91,6 +104,24 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
       response_curie = response.reference_curie;
       response_success = true; }
     return [response_curie, response_success]
+  }
+
+  const queryRefTet = async (referenceCurie) => {
+    const url = restUrl + '/topic_entity_tag/by_reference/' + referenceCurie
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
+    const response = await res.json();
+    let response_payload = referenceCurie + ' not found';
+    let response_success = false;
+    if (Array.isArray(response)) {
+      response_success = true;
+      response_payload = response; }
+    return [response_payload, response_success]
   }
 
   const queryRefFiles = async (referenceCurie) => {
@@ -201,6 +232,12 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
       let valuesRefFiles = await Promise.allSettled([promiseRefFile1, promiseRefFile2]);
       referenceJson1['reference_files'] = valuesRefFiles[0]['value'][0];
       referenceJson2['reference_files'] = valuesRefFiles[1]['value'][0];
+
+      const promiseRefTet1 = queryRefTet(curieValue1);
+      const promiseRefTet2 = queryRefTet(curieValue2);
+      let valuesRefTets = await Promise.allSettled([promiseRefTet1, promiseRefTet2]);
+      referenceJson1['topic_entity_tags'] = valuesRefTets[0]['value'][0];
+      referenceJson2['topic_entity_tags'] = valuesRefTets[1]['value'][0];
 
       if (curieValue1 === curieValue2) {
         curieValue2 = curieValue2 + ' is the same as the reference curie to keep';
