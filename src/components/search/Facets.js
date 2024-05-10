@@ -112,18 +112,13 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     return(
         <div key={facetName} style={{textAlign: "left", paddingLeft: "2em"}}>
             <h5>{facetName}</h5>
-            <Container fluid>
-                <Row><Col sm={8}>
-                <ButtonGroup aria-label="DateSetter" size ="sm">
-                    <Button variant="secondary" style={{'border-bottom-left-radius' : 0}} onClick={() => {handleFixedTimeClick('Day')}}>Day</Button>
-                    <Button variant="secondary" onClick={() => {handleFixedTimeClick('Week')}}>Week</Button>
-                    <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
-                    <Button variant="secondary" style={{'border-bottom-right-radius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
-                </ButtonGroup>
-                </Col></Row>
-                <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
-            </Container>
-
+            <ButtonGroup aria-label="DateSetter" size ="sm">
+                <Button variant="secondary" style={{'border-bottom-left-radius' : 0}} onClick={() => {handleFixedTimeClick('Day')}}>Day</Button>
+                <Button variant="secondary" onClick={() => {handleFixedTimeClick('Week')}}>Week</Button>
+                <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
+                <Button variant="secondary" style={{'border-bottom-right-radius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
+            </ButtonGroup>
+            <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
         </div>
     )
 }
