@@ -705,7 +705,10 @@ const MergeSubmitDataTransferUpdateButton = () => {
 
   } // function mergeReferences()
 
-  const transferButtonDisabled = (atpParents.length > ateamResults) ? 'disabled' : '';
+  let transferButtonDisabled = '';
+  if (atpParents.length > ateamResults) { transferButtonDisabled = 'disabled'; }
+  if ( (referenceMeta1['referenceJson']['topic_entity_tags'].length > 0) && (referenceMeta1['tetCheckbox'] === false) ) { transferButtonDisabled = 'disabled'; }
+  if ( (referenceMeta2['referenceJson']['topic_entity_tags'].length > 0) && (referenceMeta2['tetCheckbox'] === false) ) { transferButtonDisabled = 'disabled'; }
   if (dataTransferHappened) { return null; }
   else {
     return (<>
