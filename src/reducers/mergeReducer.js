@@ -14,7 +14,7 @@ const initialState = {
     blah: ''
   },
   referenceMeta1: {
-    input: 'PMID:1',
+    input: '',
     curie: '',
     referenceJson: '',
     referenceKeep: {},
@@ -41,7 +41,7 @@ const initialState = {
 //     input: 'PMID:28049701',
 //     input: '',
   referenceMeta2: {
-    input: 'AGRKB:101000001829105',
+    input: '',
     curie: '',
     referenceJson: '',
     referenceKeep: {},

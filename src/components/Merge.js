@@ -193,6 +193,7 @@ const MergeCompletedMergeModal = () => {
   const updateMessages = useSelector(state => state.merge.updateMessages);
   const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
   const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
+  const url1e = '/Biblio/?entity=display&referenceCurie=' + referenceMeta1.curie;
 
   const modalBody = updateFailure ? 
                     <Modal.Body><a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into
@@ -202,7 +203,9 @@ const MergeCompletedMergeModal = () => {
                       {updateMessages.map((message, index) => (
                         <div key={`${message} ${index}`}>{message}</div>
                       ))}</Modal.Body> :
-                    <Modal.Body>{referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>Information associated with {referenceMeta2.curie} has been removed.</Modal.Body>
+                    <Modal.Body>{referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>Information associated with {referenceMeta2.curie} has been removed.
+                      { ( (referenceMeta1['referenceJson']['topic_entity_tags'].length > 0) || (referenceMeta2['referenceJson']['topic_entity_tags'].length > 0) ) && (<div><br />See <a href={url1e} target="_blank" rel="noreferrer noopener">topic entity tag</a> data.<br/></div>) }
+                      </Modal.Body>
   const modalHeader = updateFailure ? 
                       <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
                       <Modal.Header closeButton><Modal.Title>Merge Complete</Modal.Title></Modal.Header>
