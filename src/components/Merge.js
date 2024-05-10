@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldInput } from '../actions/mergeActions';
+import { changeFieldTetCheckbox } from '../actions/mergeActions';
 import { mergeQueryReferences } from '../actions/mergeActions';
 import { mergeResetReferences } from '../actions/mergeActions';
 import { mergeSwapKeep } from '../actions/mergeActions';
@@ -1008,16 +1009,17 @@ function deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology) {
 } // function deriveWorkflowData(referenceMeta1, referenceMeta2)
 
 const RowDisplayPairTopicEntityTags = ({fieldName, referenceMeta1, referenceMeta2, referenceSwap, hasPmid, pmidKeepReference}) => {
+  const dispatch = useDispatch();
   const element0 = GenerateFieldLabel(fieldName, 'lock');
   let element1 = (<div>Loading</div>); let element2 = (<div>Loading</div>);
   if (referenceMeta1['referenceJson'][fieldName].length === 0) { element1 = (<div>No Data</div>); }
     else {
       const url1 = '/Biblio/?action=entity&referenceCurie=' + referenceMeta1.curie;
-      element1 = (<div>Confirm data at <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> then click this checkbox <Form.Check inline type="checkbox" id="confirmTet1" /></div>); }
+      element1 = (<div>Confirm data at <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a> then click this checkbox <Form.Check inline type="checkbox" id="confirmTet1" onChange={(evt) => dispatch(changeFieldTetCheckbox(evt, 'referenceMeta1', true)) } /></div>); }
   if (referenceMeta2['referenceJson'][fieldName].length === 0) { element2 = (<div>No Data</div>); }
     else {
       const url2 = '/Biblio/?action=entity&referenceCurie=' + referenceMeta2.curie;
-      element2 = (<div>Confirm data at <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> then click this checkbox <Form.Check inline type="checkbox" id="confirmTet2" /></div>); }
+      element2 = (<div>Confirm data at <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> then click this checkbox <Form.Check inline type="checkbox" id="confirmTet2" onChange={(evt) => dispatch(changeFieldTetCheckbox(evt, 'referenceMeta2', true)) } /></div>); }
   return (
       <Row key={`topic_entity_tags `}>
         <Col sm="2" >{element0}</Col>

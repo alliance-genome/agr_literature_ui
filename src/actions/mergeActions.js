@@ -23,6 +23,19 @@ export const changeFieldInput = (e, object, key1) => {
   };
 };
 
+export const changeFieldTetCheckbox = (e, object) => {
+  // console.log('merge action change field array reference json ' + e.target.id + ' to ' + e.target.value);
+  const value = (e.target.checked) ? true : false;
+  return {
+    type: 'MERGE_CHANGE_FIELD_TET_CHECKBOX',
+    payload: {
+      field: e.target.id,
+      object: object,
+      value: value
+    }
+  };
+};
+
 export const mergeResetReferences = () => { return { type: 'MERGE_RESET_REFERENCES' }; };
 
 export const mergeSwapKeep = () => { return { type: 'MERGE_SWAP_KEEP' }; };
