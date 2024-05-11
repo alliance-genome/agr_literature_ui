@@ -108,7 +108,7 @@ const TopicEntityTable = () => {
     { headerName: "Validation By Author", field: "validation_by_author", id: 15, checked: false },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 16, checked: false },
     { headerName: "Display Tag", field: "display_tag_name", id: 17, checked: false},
-    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18, checked: false },
+    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18, checked: true },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", id: 19, checked: false },
     { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion" , id: 20, checked: false},
     { headerName: "Source Method", field: "topic_entity_tag_source.source_method", id: 21, checked: false },
