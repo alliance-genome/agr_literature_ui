@@ -362,6 +362,7 @@ export default function(state = initialState, action) {
         updateMessages: newArrayUpdateMessages,
         // getReferenceCurieFlag: getReferenceCurieFlagUpdateButton,
         // referenceJsonHasChange: hasChangeUpdateButton,
+        showDataTransferModal: false,
         mergeCompletingCount: mergeCompletingCountApiDispatch,
         mergeTransferringCount: mergeTransferringCountApiDispatch
       }
