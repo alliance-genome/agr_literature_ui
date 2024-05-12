@@ -172,7 +172,7 @@ const MergeSelectionSection = () => {
       ) }
     })()}
 
-    { dataTransferHappened && mergeTransferringCount === 0 ?
+    { ( ( dataTransferHappened && mergeTransferringCount === 0 ) || ( mergeCompletingCount > 0 ) ) ?
       <MergeDataTransferredModal /> : null
     }
 
@@ -265,7 +265,6 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
     console.log('completing merge');
     console.log(array);
     dispatch(setDataTransferHappened(false));
-    dispatch(setShowDataTransferModal(false));
     dispatch(setMergeCompleting(1));
     dispatch(mergeButtonApiDispatch(array));
   }
