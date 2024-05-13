@@ -32,7 +32,7 @@ export const SEARCH_SET_APPLY_TO_SINGLE_TAG = 'SEARCH_SET_APPLY_TO_SINGLE_TAG';
 const restUrl = process.env.REACT_APP_RESTAPI;
 
 export const changeQueryField = (e) => {
-  console.log('action change field ' + e.target.id + ' to ' + e.target.value);
+  //console.log('action change field ' + e.target.id + ' to ' + e.target.value);
   return {
     type: 'SEARCH_CHANGE_QUERY_FIELD',
     payload: {
@@ -140,7 +140,7 @@ const getSearchParams = (state) => {
     params.date_created = state.search.dateCreated;
   }
     
-  console.log("searchParams =" + JSON.stringify(params, null, 2));  
+  //console.log("searchParams =" + JSON.stringify(params, null, 2));
     
   return params;
 }

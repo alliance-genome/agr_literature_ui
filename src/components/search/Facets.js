@@ -19,7 +19,7 @@ import {
     setApplyToSingleTag
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
-import {Badge, Button, Collapse} from 'react-bootstrap';
+import {Badge, Button, Collapse, ButtonGroup} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
 import {INITIAL_FACETS_LIMIT} from '../../reducers/searchReducer';
 import Container from "react-bootstrap/Container";
@@ -74,22 +74,51 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         }
     }
 
+    function handleFixedTimeClick(timeframe){
+        var today = new Date();
+        let newDate = ['',''];
+        if(timeframe === 'Day'){
+            newDate = formatDateRange([today,today]);
+        }
+        else if(timeframe === 'Week'){
+            let lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            newDate = formatDateRange([lastWeek,today]);
+        }
+        else if (timeframe === 'Month'){
+            let lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+            newDate = formatDateRange([lastMonth,today]);
+        }
+        else if(timeframe === 'Year'){
+            let lastYear = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
+            newDate = formatDateRange([lastYear,today]);
+        }
+        dispatch(setValueFunction(newDate));
+        dispatch(searchReferences());
+    }
+
+    function handleDateChange(newDateRangeArr){
+        if (newDateRangeArr === null) {
+            dispatch(setValueFunction(''));
+            dispatch(setSearchResultsPage(1));
+            dispatch(searchReferences());
+        }
+        else if(!isNaN(Date.parse(newDateRangeArr[0])) && !isNaN(Date.parse(newDateRangeArr[1]))){
+            dispatch(setValueFunction(formatDateRange(newDateRangeArr)));
+            dispatch(setSearchResultsPage(1));
+            dispatch(searchReferences());
+        }
+    }
+
     return(
         <div key={facetName} style={{textAlign: "left", paddingLeft: "2em"}}>
             <h5>{facetName}</h5>
-            <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {
-                if (newDateRangeArr === null) {
-                    dispatch(setValueFunction(''));
-                    dispatch(setSearchResultsPage(1));
-                    dispatch(searchReferences());
-                }
-                else if(!isNaN(Date.parse(newDateRangeArr[0])) && !isNaN(Date.parse(newDateRangeArr[1]))){
-                    dispatch(setValueFunction(formatDateRange(newDateRangeArr)));
-                    dispatch(setSearchResultsPage(1));
-                    dispatch(searchReferences());
-                }
-
-            }}/>
+            <ButtonGroup aria-label="DateSetter" size ="sm">
+                <Button variant="secondary" style={{'border-bottom-left-radius' : 0}} onClick={() => {handleFixedTimeClick('Day')}}>Day</Button>
+                <Button variant="secondary" onClick={() => {handleFixedTimeClick('Week')}}>Week</Button>
+                <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
+                <Button variant="secondary" style={{'border-bottom-right-radius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
+            </ButtonGroup>
+            <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
         </div>
     )
 }
