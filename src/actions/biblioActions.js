@@ -12,6 +12,7 @@ const restUrl = process.env.REACT_APP_RESTAPI;
 
 //const ateamApiBaseUrl = 'https://beta-curation.alliancegenome.org/';
 const ateamApiBaseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
+const sgdApiBaseUrl = process.env.REACT_APP_SGD_API_BASE_URL;
 
 export const changeFieldReferenceJson = (e) => {
   console.log('action change field reference json ' + e.target.id + ' to ' + e.target.value);
@@ -383,13 +384,60 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
 };
 
 
+async function fetchJsonData(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch data:', error);
+	return null;
+    }
+};
+
+export const sgd_entity_validation = (dispatch, entityType, entityInputList) => {
+
+    const url = sgdApiBaseUrl + "entity/" + entityType + '/' + entityInputList.join('|').replace(/ /g, '+');
+    fetchJsonData(url).then(data => {
+	const searchMap = {};
+	// console.log("data =" + JSON.stringify(data, null, 2));  
+        for (const entityResult of data) {
+	    // console.log("entityResult = " + JSON.stringify(entityResult, null, 2));
+	    searchMap[entityResult['query'].toLowerCase()] = entityResult['modEntityId'];
+	}
+	let entityResultList = [];
+        for (const entity  of entityInputList) {
+	    const lowerEntity = entity.toLowerCase();
+            if (lowerEntity in searchMap) {
+                entityResultList.push({
+                  'entityTypeSymbol': entity,
+                  'curie': searchMap[lowerEntity]
+              });
+            } else {
+                entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no Alliance curie'});
+            }
+        }
+        dispatch(setEntityResultList(entityResultList));
+    }).catch(error => {
+	console.error('Error fetching data:', error);
+    });
+
+};
+
 
 export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod = undefined) => {
   return dispatch => {
     let entityInputList = [];
-      if (entityText && entityText.trim() !== '') {
+    if (entityText && entityText.trim() !== '') {
       entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item !== '');
     }
+
+    if (entityType == 'complex' || entityType == 'pathway') {
+	return sgd_entity_validation(dispatch, entityType, entityInputList)
+    }
+     
     if (entityType.includes('construct')) {
       entityType = 'construct';
     }
@@ -400,7 +448,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
     );
     const entityQueryString = entityList.join(' ');
     let searchType = {'AGMs': 'agm', 'strain': 'agm', 'genotype': 'agm', 'fish': 'agm', 'construct': 'construct', 'species': 'ncbitaxonterm', 'gene': 'gene', 'allele': 'allele'}
-    const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType[entityType] + '/search?limit=100&page=0';
+    const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType[entityType] + '/search?limit=100&page=0';  
     // a-team search fields are different for species vs gene or allele.
     // sort uses AND for species because only looking for one value, here using OR and filtering to allow multiple species
     let postData = {
