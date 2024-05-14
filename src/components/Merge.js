@@ -193,7 +193,7 @@ const MergeCompletedMergeModal = () => {
   const updateMessages = useSelector(state => state.merge.updateMessages);
   const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
   const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
-  const url1e = '/Biblio/?entity=display&referenceCurie=' + referenceMeta1.curie;
+  const url1e = '/Biblio/?action=entity&referenceCurie=' + referenceMeta1.curie;
 
   const modalBody = updateFailure ? 
                     <Modal.Body><a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into
