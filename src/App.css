@@ -450,19 +450,24 @@ em {
   visibility: visible;
 }
 
-.species-filter {
-  width: 200px;
+.custom-filter > * {
+  margin: 5px;
 }
 
-.species-filter > * {
-  margin: 8px;
-}
-
-.species-filter > div:first-child {
+.custom-filter > div:first-child {
   font-weight: bold;
   text-align: center;
 }
 
-.species-filter > div {
+.custom-filter > div {
   text-align: left;
 }
+
+.custom-filter input {
+  margin-right: 10px;
+}
+
+.custom-filter label {
+  margin-bottom: 0px;
+}
+
