@@ -47,7 +47,7 @@ export default ({ model, onModelChange }) => {
 
     return (
         <div className="custom-filter">
-            <div>Select Entity</div><hr/>
+            <div>Select Entity Type</div><hr/>
             {allEntities.map((entity) => {
                 let DisplayEntity = entity ? entity : 'None';
                 return  <div>
