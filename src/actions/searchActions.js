@@ -28,6 +28,7 @@ export const SEARCH_SET_SORT_BY_PUBLISHED_DATE = 'SEARCH_SET_SORT_BY_PUBLISHED_D
 export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
 export const SEARCH_SET_MOD_PREFERENCES_LOADED = 'SEARCH_SET_MOD_PREFERENCES_LOADED';
 export const SEARCH_SET_APPLY_TO_SINGLE_TAG = 'SEARCH_SET_APPLY_TO_SINGLE_TAG';
+export const SEARCH_SET_READY_TO_FACET_SEARCH = "SEARCH_SET_READY_TO_FACET_SEARCH";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -165,6 +166,7 @@ export const searchReferences = () => {
                 dispatch(setCrossReferenceResults(curieToCrossRefMap));
                 dispatch(setSearchResults(res.data.hits, res.data.return_count));
                 dispatch(setSearchFacets(res.data.aggregations));
+                dispatch(setReadyToFacetSearch(true));
               })
               .catch(err => dispatch(setSearchError(true)));
         })
@@ -276,6 +278,13 @@ export const setSearchFacets = (facets) => ({
     facets: facets
   }
 });
+
+export const setReadyToFacetSearch = (value) => ({
+  type: SEARCH_SET_READY_TO_FACET_SEARCH,
+  payload: {
+    value: value
+  }
+})
 
 export const addFacetValue = (facet, value) => ({
   type: SEARCH_ADD_FACET_VALUE,

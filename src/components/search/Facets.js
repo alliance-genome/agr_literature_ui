@@ -315,6 +315,7 @@ const Facets = () => {
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchQuery = useSelector(state => state.search.searchQuery);
+    const readyToFacetSearch = useSelector(state => state.search.readyToFacetSearch);
     const facetsLoading = useSelector(state => state.search.facetsLoading);
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
@@ -327,17 +328,7 @@ const Facets = () => {
 
     const handleCheckboxChange = (event) => {
         dispatch(setApplyToSingleTag(event.target.checked));
-        refreshData();
     };
-
-    const refreshData = () => {
-        dispatch(searchReferences());
-    };
-
-    // to trigger refresh when applyToSingleTag changes
-    useEffect(() => {
-        refreshData();
-    }, [applyToSingleTag, dispatch])
     
     const toggleFacetGroup = (facetGroupLabel) => {
         let newOpenFacets = new Set([...openFacets]);
@@ -353,13 +344,13 @@ const Facets = () => {
         if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
-            if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0) {
+            if (readyToFacetSearch === true && (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0)) {
                 dispatch(setSearchResultsPage(1));
                 dispatch(setAuthorFilter(""));
                 dispatch(searchReferences());
             }
         }
-    }, [searchFacetsValues,searchExcludedFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchFacetsValues,searchExcludedFacetsValues, applyToSingleTag]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         let newOpenFacets = new Set([...openFacets]);
@@ -384,7 +375,7 @@ const Facets = () => {
                     dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
                 }
             }
-            else{
+            else {
                 dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
             }
             dispatch(searchReferences());
