@@ -39,7 +39,8 @@ const initialState = {
     'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT,
     'authors.name.keyword': INITIAL_FACETS_LIMIT,
     'topics': INITIAL_FACETS_LIMIT,
-    'confidence_levels': INITIAL_FACETS_LIMIT
+    'confidence_levels': INITIAL_FACETS_LIMIT,
+    'source_methods': INITIAL_FACETS_LIMIT
   },
   searchFacetsShowMore: {},
   searchQuery: "",

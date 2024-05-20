@@ -43,12 +43,13 @@ export const RENAME_FACETS = {
     "mod_reference_types.keyword": "MOD reference type",
     "topics": "Topic",
     "confidence_levels": "Confidence level",
+    "source_methods": "Source method"
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Topics and Entities": ["topics", "confidence_levels"],
+    "Topics and Entities": ["topics", "confidence_levels", "source_methods"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
 
 }
@@ -203,7 +204,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div>
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
 		    let key = facetToInclude.replaceAll(' ', '_');
-                    if (key !== 'topics' && key !== 'confidence_levels'){
+                    if (!['topics', 'confidence_levels', 'source_methods'].includes(key)){
                         key = key + '.keyword';
                     }
                     if (key in searchFacets) {
@@ -224,7 +225,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                 </Col>
                                                 <Col>
                                                 <Badge variant="secondary">
-                                                    {['topics', 'confidence_levels'].includes(key) ? bucket.docs_count.doc_count : bucket.doc_count}
+                                                    {['topics', 'confidence_levels', 'source_methods'].includes(key) ? bucket.docs_count.doc_count : bucket.doc_count}
                                                 </Badge>
                                                 </Col>
                                             </Row>
