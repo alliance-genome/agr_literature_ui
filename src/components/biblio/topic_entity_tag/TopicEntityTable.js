@@ -1,13 +1,15 @@
 import { Spinner } from 'react-bootstrap';
 import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState, useMemo, useCallback, useRef} from "react";
-import { setCurieToNameTaxon,setAllSpecies, setAllEntities} from "../../../actions/biblioActions";
+import { setCurieToNameTaxon,setAllSpecies, setAllEntities, setAllTopics, setAllEntityTypes} from "../../../actions/biblioActions";
 import axios from "axios";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Modal from 'react-bootstrap/Modal';
 import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
 import ValidationByCurator from '../../AgGrid/ValidationByCurator.jsx';
 import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
+import EntityTypeFilter from '../../AgGrid/EntityTypeFilter.jsx';
+import TopicFilter from '../../AgGrid/TopicFilter.jsx';
 import EntityFilter from '../../AgGrid/EntityFilter.jsx';
 
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
@@ -56,9 +58,13 @@ const TopicEntityTable = () => {
         if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
           setTopicEntityTags(resultTags.data);
           const uniqueSpecies = [...new Set( resultTags.data.map(obj => obj.species)) ];
-          const uniqueEntities = [...new Set( resultTags.data.map(obj => obj.entity_type_name))];
+          const uniqueEntityTypes = [...new Set( resultTags.data.map(obj => obj.entity_type_name))];
+	  const uniqueTopics = [...new Set( resultTags.data.map(obj => obj.topic_name))];
+	  const uniqueEntities = [...new Set( resultTags.data.map(obj => obj.entity_name))];  
           dispatch(setAllSpecies(uniqueSpecies));
-          dispatch(setAllEntities(uniqueEntities));
+          dispatch(setAllEntityTypes(uniqueEntityTypes));
+	  dispatch(setAllTopics(uniqueTopics));
+	  dispatch(setAllEntities(uniqueEntities));  
           Object.entries(resultTags.data)
         }
     } catch (error) {
@@ -365,10 +371,10 @@ const CheckDropdownItem = React.forwardRef(
 
   let cols=[
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions},
-    { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
-    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity_type)} },
+      { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
+    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, filter: EntityTypeFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity_type)} },
     { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
-    { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
+      { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
     { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
     { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (params) =>   params.data.negated === true ? 'no data': '' },
     { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text", valueGetter: (params) =>   params.data.novel_topic_data === true ? 'new data': ''},
