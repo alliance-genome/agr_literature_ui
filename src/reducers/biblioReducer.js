@@ -1125,6 +1125,18 @@ export default function(state = initialState, action) {
         allEntities: action.payload
       };
 
+    case 'SET_ALL_TOPICS':
+      return {
+        ...state,
+        allTopics: action.payload
+      };
+
+    case 'SET_ALL_ENTITY_TYPES':
+      return {
+        ...state,
+        allEntityTypes: action.payload
+      };
+      
     case 'SET_TOPIC_ENTITY_SOURCE_ID':
       return {
         ...state,
