@@ -1172,6 +1172,16 @@ export const setAllEntities = (allEntities) => ({
   payload: allEntities
 });
 
+export const setAllTopics = (allTopics) => ({
+  type: 'SET_ALL_TOPICS',
+  payload: allTopics
+});
+
+export const setAllEntityTypes = (allEntityTypes) => ({
+  type: 'SET_ALL_ENTITY_TYPES',
+  payload: allEntityTypes
+});
+
 export const setTopicEntitySourceId = (topicEntitySourceId) => ({
   type: 'SET_TOPIC_ENTITY_SOURCE_ID',
   payload: topicEntitySourceId
