@@ -43,12 +43,14 @@ export const RENAME_FACETS = {
     "mod_reference_types.keyword": "MOD reference type",
     "topics": "Topic",
     "confidence_levels": "Confidence level",
+    "source_methods": "Source method",
+    "source_evidence_assertions": "Source evidence assertion"
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Topics and Entities": ["topics", "confidence_levels"],
+    "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
 
 }
@@ -203,7 +205,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div>
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
 		    let key = facetToInclude.replaceAll(' ', '_');
-                    if (key !== 'topics' && key !== 'confidence_levels'){
+                    if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key)){
                         key = key + '.keyword';
                     }
                     if (key in searchFacets) {
@@ -224,7 +226,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                 </Col>
                                                 <Col>
                                                 <Badge variant="secondary">
-                                                    {['topics', 'confidence_levels'].includes(key) ? bucket.docs_count.doc_count : bucket.doc_count}
+                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) ? bucket.docs_count.doc_count : bucket.doc_count}
                                                 </Badge>
                                                 </Col>
                                             </Row>
@@ -315,6 +317,7 @@ const Facets = () => {
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchQuery = useSelector(state => state.search.searchQuery);
+    const readyToFacetSearch = useSelector(state => state.search.readyToFacetSearch);
     const facetsLoading = useSelector(state => state.search.facetsLoading);
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
@@ -327,17 +330,7 @@ const Facets = () => {
 
     const handleCheckboxChange = (event) => {
         dispatch(setApplyToSingleTag(event.target.checked));
-        refreshData();
     };
-
-    const refreshData = () => {
-        dispatch(searchReferences());
-    };
-
-    // to trigger refresh when applyToSingleTag changes
-    useEffect(() => {
-        refreshData();
-    }, [applyToSingleTag, dispatch])
     
     const toggleFacetGroup = (facetGroupLabel) => {
         let newOpenFacets = new Set([...openFacets]);
@@ -353,13 +346,13 @@ const Facets = () => {
         if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
-            if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0) {
+            if (readyToFacetSearch === true && (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0)) {
                 dispatch(setSearchResultsPage(1));
                 dispatch(setAuthorFilter(""));
                 dispatch(searchReferences());
             }
         }
-    }, [searchFacetsValues,searchExcludedFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchFacetsValues,searchExcludedFacetsValues, applyToSingleTag]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         let newOpenFacets = new Set([...openFacets]);
@@ -384,7 +377,7 @@ const Facets = () => {
                     dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
                 }
             }
-            else{
+            else {
                 dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
             }
             dispatch(searchReferences());
