@@ -29,6 +29,8 @@ export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
 export const SEARCH_SET_MOD_PREFERENCES_LOADED = 'SEARCH_SET_MOD_PREFERENCES_LOADED';
 export const SEARCH_SET_APPLY_TO_SINGLE_TAG = 'SEARCH_SET_APPLY_TO_SINGLE_TAG';
 export const SEARCH_SET_READY_TO_FACET_SEARCH = "SEARCH_SET_READY_TO_FACET_SEARCH";
+const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"]
+
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
@@ -59,24 +61,17 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-function processTopicsAndConfidences(data, tetNestedFacetsValues) {
-  const topics = data["topics"];
-  const confidences = data["confidence_levels"];
-  const seenEntries = new Set();
-
-  topics.forEach(topic => {
-    confidences.forEach(confidence => {
-      const entry = {
-        "topic_entity_tags.topic.keyword": topic,
-        "topic_entity_tags.confidence_level.keyword": confidence
-      };
-      const entryString = JSON.stringify(entry);
-      if (!seenEntries.has(entryString)) {
-        tetNestedFacetsValues.push(entry);
-        seenEntries.add(entryString);
-      }
-    });
-  });
+function processCombinedTETFacets(data, tetNestedFacetsValues) {
+  const non_empty_facets = TET_FACETS_LIST.filter(tet_facet_label => data[tet_facet_label] &&
+      data[tet_facet_label].length > 0)
+  if (non_empty_facets.length > 0) {
+    tetNestedFacetsValues.push(
+        Object.fromEntries(
+            non_empty_facets.map(tet_facet_label => [`topic_entity_tags.${tet_facet_label.slice(0, -1)}.keyword`,
+              data[tet_facet_label][0]])
+        )
+    );
+  }
 }
 
 function processSingleFacet(facetArray, facetKey, tetNestedFacetsValues) {
@@ -104,11 +99,10 @@ const getSearchParams = (state) => {
   const data = state.search.searchFacetsValues;
   const tetNestedFacetsValues = [];
   const facetsValues = {};
-  if (state.search.applyToSingleTag && data["topics"] && data["topics"].length > 0 &&
-      data["confidence_levels"] && data["confidence_levels"].length > 0) {
-      processTopicsAndConfidences(data, tetNestedFacetsValues);
+  if (state.search.applyToSingleTag) {
+      processCombinedTETFacets(data, tetNestedFacetsValues);
   } else {
-      ["topics", "confidence_levels"].forEach(key => {
+      TET_FACETS_LIST.forEach(key => {
 	  if (data[key]) {
 	      const facetType = key.slice(0, -1); // topics => topic
 	      const keyword = `topic_entity_tags.${facetType}.keyword`;
@@ -117,8 +111,8 @@ const getSearchParams = (state) => {
       });
   }
   Object.keys(data).forEach(key => {
-      if (key !== 'topics' && key !== 'confidence_levels') {
-	  facetsValues[key] = data[key];
+      if (!TET_FACETS_LIST.includes(key)) {
+        facetsValues[key] = data[key];
       }
   });
     
