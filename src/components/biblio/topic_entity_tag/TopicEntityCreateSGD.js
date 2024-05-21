@@ -82,7 +82,9 @@ const TopicEntityCreateSGD = () => {
   const curieToNameEntityType = {
     '': 'no value',
     'ATP:0000005': 'gene',
-    'ATP:0000006': 'allele'
+    'ATP:0000006': 'allele',
+    'ATP:0000128': 'complex',
+    'ATP:0000022': 'pathway'
   };
 
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
@@ -103,8 +105,9 @@ const TopicEntityCreateSGD = () => {
   unsortedTaxonList.push('');
   unsortedTaxonList.push('NCBITaxon:9606');  
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
-  const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
-
+  // const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
+  const entityTypeList = Object.keys(curieToNameEntityType);
+    
   useEffect(() => {
     // ... (fetchSourceId useEffect)
     const fetchSourceId = async () => {
