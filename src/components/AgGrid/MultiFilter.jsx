@@ -50,7 +50,7 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
 
     return (
         <div className="custom-filter">
-            <div>Select {label}</div><hr/>
+            <div>Select {label.replace("_name", "")}</div><hr/>
             {items.length <= 10 ? (
                 items.map((item) => {
                     let DisplayItem = item ? item : 'None';
@@ -68,12 +68,14 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
                     );
                 })
             ) : (
+	      <div style={{ height: '200px' }}> 
                 <Select
                     isMulti
                     options={items.map(item => ({ value: item, label: item }))}
                     onChange={onItemsChangeTypeAhead}
                     value={unappliedModel ? unappliedModel.map(item => ({ value: item, label: item })) : []}
                 />
+	      </div>
             )}
             <hr/><button onClick={onClick}>Apply</button>
         </div>
