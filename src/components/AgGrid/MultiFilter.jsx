@@ -48,6 +48,17 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
         }
     };
 
+    const customStyles = {
+        menu: (provided) => ({
+            ...provided,
+            zIndex: 9999,
+        }),
+        menuList: (provided) => ({
+            ...provided,
+            maxHeight: 300, 
+        }),
+    };
+
     return (
         <div className="custom-filter">
             <div>Select {label.replace("_name", "")}</div><hr/>
@@ -68,9 +79,10 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
                     );
                 })
             ) : (
-	      <div style={{ height: '200px' }}> 
+	      <div style={{ height: '300px' }}> 
                 <Select
                     isMulti
+                    styles={customStyles}
                     options={items.map(item => ({ value: item, label: item }))}
                     onChange={onItemsChangeTypeAhead}
                     value={unappliedModel ? unappliedModel.map(item => ({ value: item, label: item })) : []}
