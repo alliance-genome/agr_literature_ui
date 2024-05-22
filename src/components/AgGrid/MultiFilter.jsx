@@ -55,15 +55,17 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
         }),
         menuList: (provided) => ({
             ...provided,
-            maxHeight: 300, 
+            maxHeight: 200, 
         }),
     };
 
+    const sortedItems = items.slice().sort((a, b) => a.localeCompare(b));
+ 
     return (
         <div className="custom-filter">
             <div>Select {label.replace("_name", "")}</div><hr/>
             {items.length <= 10 ? (
-                items.map((item) => {
+                sortedItems.map((item) => {
                     let DisplayItem = item ? item : 'None';
                     return (
                         <div key={item}>
@@ -79,11 +81,11 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
                     );
                 })
             ) : (
-	      <div style={{ height: '300px' }}> 
+	      <div style={{ height: '200px' }}> 
                 <Select
                     isMulti
                     styles={customStyles}
-                    options={items.map(item => ({ value: item, label: item }))}
+                    options={sortedItems.map(item => ({ value: item, label: item }))}
                     onChange={onItemsChangeTypeAhead}
                     value={unappliedModel ? unappliedModel.map(item => ({ value: item, label: item })) : []}
                 />
