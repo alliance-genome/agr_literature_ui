@@ -13,7 +13,7 @@ const NotLoggedInBar = () => {
   const loggedClass = (everSignedIn) ? 'NotLoggedInAlert-everLogged' : '';
   return (
     (!isSignedIn) && 
-    <Alert className={`fade alert alert-danger show ${loggedClass}`} variant='danger'><FontAwesomeIcon icon={faExclamationTriangle} /> You are not signed in. Please sign in if you want to make changes. <FontAwesomeIcon icon={faExclamationTriangle} /></Alert>
+    <Alert className={`fade alert alert-danger show ${loggedClass}`} variant='danger'><FontAwesomeIcon icon={faExclamationTriangle} /> You are not signed in. Please sign in to edit, tag, or download PDFs. <FontAwesomeIcon icon={faExclamationTriangle} /></Alert>
   )
 }
 
