@@ -309,7 +309,14 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
       if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) { is_ok = true; }
     }
     let filename = referencefileDict['display_name'] + '.' + referencefileDict['file_extension'];
-    let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
+    let referencefileValue = (
+      <OverlayTrigger
+        placement="right"
+        delay={{ show: 250, hide: 400 }}
+        overlay={<Tooltip id="button-tooltip-2">You don't have permissions to access this PDF</Tooltip>}
+      >
+        <div>{filename} &nbsp;({allowed_mods.join(", ")})</div>
+      </OverlayTrigger>);
     if (accessLevel === 'No') {
       is_ok = false;
       let hover_message = 'You must be logged in and have permissions to access this PDF.';
