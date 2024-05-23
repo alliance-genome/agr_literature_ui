@@ -81,15 +81,16 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
                     );
                 })
             ) : (
-	      <div style={{ height: '200px' }}> 
-                <Select
-                    isMulti
-                    styles={customStyles}
-                    options={sortedItems.map(item => ({ value: item, label: item }))}
-                    onChange={onItemsChangeTypeAhead}
-                    value={unappliedModel ? unappliedModel.map(item => ({ value: item, label: item })) : []}
-                />
-	      </div>
+                <div style={{ height: '250px' }}>
+                    <Select
+                        isMulti
+                        defaultMenuIsOpen={true}
+                        styles={customStyles}
+                        options={sortedItems.map(item => ({ value: item, label: item }))}
+                        onChange={onItemsChangeTypeAhead}
+                        value={unappliedModel ? unappliedModel.map(item => ({ value: item, label: item })) : []}
+                    />
+                </div>
             )}
             <hr/><button onClick={onClick}>Apply</button>
         </div>
