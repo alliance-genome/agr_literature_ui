@@ -1,7 +1,6 @@
 import {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {useHistory, useLocation} from 'react-router-dom';
-import Alert from 'react-bootstrap/Alert';
 
 import RowDivider from './biblio/RowDivider';
 
@@ -28,12 +27,15 @@ import { changeBiblioSupplementExpandToggler } from '../actions/biblioActions';
 
 import { changeBiblioActionToggler } from '../actions/biblioActions';
 
+import Alert from 'react-bootstrap/Alert';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import InputGroup from 'react-bootstrap/InputGroup';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import loading_gif from '../images/loading_cat.gif';
 import Spinner from "react-bootstrap/Spinner";
@@ -248,7 +250,7 @@ const BiblioTagging = () => {
   rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   // rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);	// curators no longer want this link
   rowOrderedElements.push(<RowDisplayReferencefiles key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />);
-  rowOrderedElements.push(<RowDisplayResourcesForCuration referenceJsonLive={referenceJsonLive} />);
+  rowOrderedElements.push(<RowDisplayResourcesForCuration key="RowDisplayResourcesForCuration" referenceJsonLive={referenceJsonLive} />);
   rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
   // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
   return (<><Container>{rowOrderedElements}</Container>
@@ -265,6 +267,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const [referenceFiles, setReferenceFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
 
   useEffect(() => {
     const fetchReferencefiles = async () => {
@@ -309,15 +312,33 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
     let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
     if (accessLevel === 'No') {
       is_ok = false;
-      referencefileValue = (<div>{filename}</div>);
+      let hover_message = 'You must be logged in and have permissions to access this PDF.';
+      if ( (accessLevel !== null) && (devOrStageOrProd === 'prod') ) { hover_message = "You don't have permissions to access this PDF"; }
+      referencefileValue = (
+      <OverlayTrigger
+        placement="right"
+        delay={{ show: 250, hide: 400 }}
+        overlay={<Tooltip id="button-tooltip-2">{hover_message}</Tooltip>}
+      >
+        <div>{filename}</div>
+      </OverlayTrigger>);
     } else if (referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer') {
       is_ok = true;
     }
     if (is_ok) {
       hasAccessToTarball = true;
-      referencefileValue = (<div><button className='button-to-link' onClick={ () =>
-          dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken))
-      } >{filename}</button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}</div>); }
+      referencefileValue = (
+        <div>
+          <button className='button-to-link' onClick={ () => dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken)) } >
+            { (devOrStageOrProd === 'stage') ?
+              <OverlayTrigger
+                placement="right"
+                delay={{ show: 250, hide: 400 }}
+                overlay={<Tooltip id="button-tooltip-2">Go to Production; PDFs are deleted after one week on stage and may not be available.</Tooltip>} >
+                <div>{filename}</div>
+              </OverlayTrigger> : <div>{filename}</div> }
+          </button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}
+        </div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
     const referencefileRow = (
         <Row key={`referencefiles ${index}`} className="Row-general" xs={2} md={4} lg={6}>
