@@ -101,6 +101,12 @@ const TopicEntityCreateSGD = () => {
     fetchData();
   }, [accessToken]);
 
+  useEffect(() => {
+    if (entityTypeList.includes(topicSelect)) {
+	dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));
+    }
+  }, [topicSelect, dispatch]);
+ 
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push('');
   unsortedTaxonList.push('NCBITaxon:9606');  

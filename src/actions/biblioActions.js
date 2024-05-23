@@ -480,6 +480,9 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
       if (entityType === "construct"){
         filterKey = entityType + "FullName.displayText";
       }
+      else if (entityType === "gene"){
+	filterKey = entityType + "SystematicName.displayText";
+      }
       entityList.forEach((entity, index) => {
         let filterKey2 = entityType + "Symbol.displayText";
         searchFilters[`nameFilter${index + 1}`] = {
@@ -542,19 +545,26 @@ export const changeFieldEntityEntityList = (entityText, accessToken, taxon, enti
 	      if (['gene', 'allele'].includes(entityType) && entityResult.taxon.curie !== taxon) {
                   continue
               }
-              let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
+	      let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
 	      let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
+	      let systematicName = entityType === "gene" ? entityResult['geneSystematicName']?.displayText?.toLowerCase() ?? "" : "";
 	      let otherName = entityType === "construct" ? entityResult['constructFullName']?.displayText?.toLowerCase() ?? "" : "";
               if (primaryId && name) {
                 if (entityResult.obsolete === true) {
                   obsoleteMap[primaryId.toLowerCase()] = primaryId;
                   obsoleteMap[name] = primaryId;
+		  if (systematicName) {
+	            obsoleteMap[systematicName] = primaryId;
+		  }
 		  if (otherName) {
 		    obsoleteMap[otherName] = primaryId;
 		  }
                 } else {
                   searchMap[primaryId.toLowerCase()] = primaryId;
                   searchMap[name] = primaryId;
+		  if (systematicName) {
+                    searchMap[systematicName] = primaryId;
+                  }  
 		  if (otherName) {
 		    searchMap[otherName] = primaryId;
 		  }
