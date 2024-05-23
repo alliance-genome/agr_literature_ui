@@ -57,6 +57,9 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
             ...provided,
             maxHeight: 200, 
         }),
+        dropdownIndicator: () => ({
+            display: 'none'
+        }),
     };
 
     const sortedItems = items.slice().sort((a, b) => a.localeCompare(b));
@@ -85,6 +88,7 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
                     <Select
                         isMulti
                         defaultMenuIsOpen={true}
+                        menuIsOpen={true}
                         styles={customStyles}
                         options={sortedItems.map(item => ({ value: item, label: item }))}
                         onChange={onItemsChangeTypeAhead}
