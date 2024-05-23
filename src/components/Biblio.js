@@ -312,12 +312,13 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
     let referencefileValue = (<div>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
     if (accessLevel === 'No') {
       is_ok = false;
-//       referencefileValue = (<div>{filename}</div>);
+      let hover_message = 'You must be logged in and have permissions to access this PDF.';
+      if ( (accessLevel !== null) && (devOrStageOrProd === 'prod') ) { hover_message = "You don't have permissions to access this PDF"; }
       referencefileValue = (
       <OverlayTrigger
         placement="right"
         delay={{ show: 250, hide: 400 }}
-        overlay={<Tooltip id="button-tooltip-2">You must be logged in and have permissions to access this PDF</Tooltip>}
+        overlay={<Tooltip id="button-tooltip-2">{hover_message}</Tooltip>}
       >
         <div>{filename}</div>
       </OverlayTrigger>);
