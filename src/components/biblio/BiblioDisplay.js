@@ -431,7 +431,7 @@ const BiblioDisplay = () => {
     else if (fieldName === 'cross_references') {
 	rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'resources_for_curation') {
-        rowOrderedElements.push(<RowDisplayResourcesForCuration referenceJsonLive={referenceJsonLive} />); }  
+        rowOrderedElements.push(<RowDisplayResourcesForCuration key="RowDisplayResourcesForCuration" referenceJsonLive={referenceJsonLive} />); }
     else if (fieldName === 'relations') {
       rowOrderedElements.push(<RowDisplayReferenceRelations key="RowDisplayReferenceRelations" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
