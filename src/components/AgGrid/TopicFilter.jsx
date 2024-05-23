@@ -2,16 +2,16 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import MultiFilter from './MultiFilter';
 
-const EntityFilter = ({ model, onModelChange }) => {
-    const allEntities = useSelector(state => state.biblio.allEntities);
+const TopicFilter = ({ model, onModelChange }) => {
+    const allTopics = useSelector(state => state.biblio.allTopics);
     return (
         <MultiFilter
             model={model}
             onModelChange={onModelChange}
-            items={allEntities}
-            label="entity_name"
+            items={allTopics}
+            label="topic_name"
         />
     );
 };
 
-export default EntityFilter;
+export default TopicFilter;

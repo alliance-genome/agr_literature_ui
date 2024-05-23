@@ -267,7 +267,11 @@ const TopicEntityCreateSGD = () => {
         console.log(entityResult.curie);
         if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'duplicate') ) {
           let updateJson = initializeUpdateJson(refCurie);
-          updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
+	  if (entityTypeSelect === 'ATP:0000128' || entityTypeSelect === 'ATP:0000022') {
+	    updateJson['entity_id_validation'] = 'SGD';
+	  } else {
+	    updateJson['entity_id_validation'] = 'alliance';
+          }
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]
