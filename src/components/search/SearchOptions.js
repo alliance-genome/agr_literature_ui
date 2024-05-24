@@ -26,7 +26,7 @@ const SearchOptions = () => {
                     </div>
                 </Col>
                 <Col sm={2}>
-                    <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount"
+                    <Form.Control as="select" id="selectSizeResultsCount" name="selectSizeResultsCount" defaultValue="50"
                                   onChange={(e) => {
                                       dispatch(setSearchSizeResultsCount(e.target.value));
                                       dispatch(setSearchResultsPage(1));
@@ -34,17 +34,17 @@ const SearchOptions = () => {
                                   } }>
                         <option value="10" >Results per page 10</option>
                         <option value="25" >Results per page 25</option>
-                        <option value="50" selected>Results per page 50</option>
+                        <option value="50" >Results per page 50</option>
                         <option value="100" >Results per page 100</option>
                     </Form.Control>
                 </Col>
                 <Col sm={2}>
-                    <Form.Control as="select" id="sortByPublishedDate" name="sortByPublishedDate"
+                    <Form.Control as="select" id="sortByPublishedDate" name="sortByPublishedDate" defaultValue="relevance"
                                   onChange={(e) => {
                                       dispatch(setSortByPublishedDate(e.target.value))
                                       dispatch(searchReferences());
                                   } }>
-                        <option value="relevance" selected>Sort by relevance</option>
+                        <option value="relevance">Sort by relevance</option>
                         <option value="desc">Newest first</option>
                         <option value="asc">Oldest first</option>
                     </Form.Control>
