@@ -115,10 +115,10 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         <div key={facetName} style={{textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em"}}>
             <h5>{facetName}</h5>
             <ButtonGroup aria-label="DateSetter" size ="sm" style={{display: "block"}}>
-                <Button variant="secondary" style={{'border-bottom-left-radius' : 0}} onClick={() => {handleFixedTimeClick('Day')}}>Day</Button>
+                <Button variant="secondary" style={{'borderBottomLeftRadius' : 0}} onClick={() => {handleFixedTimeClick('Day')}}>Day</Button>
                 <Button variant="secondary" onClick={() => {handleFixedTimeClick('Week')}}>Week</Button>
                 <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
-                <Button variant="secondary" style={{'border-bottom-right-radius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
+                <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
             </ButtonGroup>
             <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
         </div>
