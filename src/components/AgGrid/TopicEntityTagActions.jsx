@@ -69,7 +69,7 @@ export default (props) => {
      }
     };
 
-    let show_del = props.data.validation_by_professional_biocurator !== 'not_validated' &&
+    let show_del = props.data.validation_by_professional_biocurator === 'professional_biocurator' &&
         props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel;
     return (
     <span>
