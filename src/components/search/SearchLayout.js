@@ -36,6 +36,7 @@ const SearchLayout = () => {
                         <div style={{display: "flex"}}>
                             <div style={{
                                 maxWidth: "32em",
+				minWidth: "325px", // set minimum width for the facets section
                                 flex: "1",
                                 position: "sticky", // to make the facets section always visible
                                 top: "0px",
