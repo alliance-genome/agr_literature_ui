@@ -132,12 +132,30 @@ const DateFacet = ({facetsToInclude}) => {
   const dateCreated = useSelector(state => state.search.dateCreated);
 
   return (
-    <div>
-        <DatePicker facetName={facetsToInclude[2]} currentValue={datePublished} setValueFunction={setDatePublished}/>
-        <DatePicker facetName={facetsToInclude[0]} currentValue={datePubmedModified} setValueFunction={setDatePubmedModified}/>
-        <DatePicker facetName={facetsToInclude[1]} currentValue={datePubmedAdded} setValueFunction={setDatePubmedAdded}/>
-        <DatePicker facetName={facetsToInclude[3]} currentValue={dateCreated} setValueFunction={setDateCreated}/>
-    </div>
+        <div>
+            <Container>
+                <Row>
+                    <Col>
+                        <DatePicker facetName={facetsToInclude[2]} currentValue={datePublished} setValueFunction={setDatePublished}/>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <DatePicker facetName={facetsToInclude[0]} currentValue={datePubmedModified} setValueFunction={setDatePubmedModified}/>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <DatePicker facetName={facetsToInclude[1]} currentValue={datePubmedAdded} setValueFunction={setDatePubmedAdded}/>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <DatePicker facetName={facetsToInclude[3]} currentValue={dateCreated} setValueFunction={setDateCreated}/>
+                    </Col>
+                </Row>
+            </Container>
+        </div>
   )
 }
 
@@ -194,7 +212,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
             <span>
                 <FontAwesomeIcon icon={faCheckSquare} style= {includedChecked ? {color: "#28a745"} : {color: "#808080"}}
                     onClick={handleClickInclude}/>
-                &ensp;
+                &nbsp;
                 <FontAwesomeIcon icon={faMinusSquare} style= {excludedChecked ? {color: "#dc3545"} : {color: "#808080"}}
                      onClick={handleClickExclude}/>
             </span>
@@ -202,7 +220,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     }
 
     return (
-        <div>
+        <div className="facet-container">
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
 		    let key = facetToInclude.replaceAll(' ', '_');
                     if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key)){
@@ -211,31 +229,29 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                     if (key in searchFacets) {
                         let value = searchFacets[key];
                         return (
-                            <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
-                                <div>
-                                    <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
-                                    {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
-                                    {value.buckets && value.buckets.map(bucket =>
-                                        <Container key={bucket.key}>
-                                            <Row>
-                                                <Col sm={2}>
-                                                    {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
-                                                </Col>
-                                                <Col sm={7}>
-                                                    <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
-                                                </Col>
-                                                <Col>
-                                                <Badge variant="secondary">
-                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && bucket.docs_count !== undefined ? bucket.docs_count.doc_count : bucket.doc_count}
-                                                </Badge>
-                                                </Col>
-                                            </Row>
-                                        </Container>)}
+                            <div key={facetToInclude} className="facet-container">
+                               <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
+                               {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
+			       {value.buckets && value.buckets.map(bucket => (
+                                  <Container key={bucket.key}>
+                                     <Row className="align-items-center facet-item">
+                                        <Col xs={3} sm={2}>
+                                          {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
+                                        </Col>
+                                        <Col xs={6} sm={7}>
+                                          <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
+                                        </Col>
+                                        <Col xs={3} sm={3}>
+                                          <Badge variant="secondary">
+                                            {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && bucket.docs_count !== undefined ? bucket.docs_count.doc_count : bucket.doc_count}
+                                          </Badge>
+                                       </Col>
+                                    </Row>
+                                 </Container>
 
-				    
-                                    <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
-                                    <br/>
-                                </div>
+			       ))}
+                               <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
+                               <br/>
                             </div>
                         )
                     } else {
