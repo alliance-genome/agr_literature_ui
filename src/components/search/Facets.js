@@ -212,7 +212,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
             <span>
                 <FontAwesomeIcon icon={faCheckSquare} style= {includedChecked ? {color: "#28a745"} : {color: "#808080"}}
                     onClick={handleClickInclude}/>
-                &ensp;
+                &nbsp;
                 <FontAwesomeIcon icon={faMinusSquare} style= {excludedChecked ? {color: "#dc3545"} : {color: "#808080"}}
                      onClick={handleClickExclude}/>
             </span>
@@ -235,13 +235,13 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 			       {value.buckets && value.buckets.map(bucket => (
                                   <Container key={bucket.key}>
                                      <Row className="align-items-center facet-item">
-                                        <Col xs={2} sm={1}>
+                                        <Col xs={3} sm={2}>
                                           {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
                                         </Col>
-                                        <Col xs={8} sm={7}>
+                                        <Col xs={6} sm={7}>
                                           <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
                                         </Col>
-                                        <Col>
+                                        <Col xs={3} sm={3}>
                                           <Badge variant="secondary">
                                             {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && bucket.docs_count !== undefined ? bucket.docs_count.doc_count : bucket.doc_count}
                                           </Badge>

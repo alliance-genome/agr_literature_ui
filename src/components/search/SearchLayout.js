@@ -36,14 +36,15 @@ const SearchLayout = () => {
                         <div style={{display: "flex"}}>
                             <div style={{
                                 maxWidth: "32em",
-				minWidth: "325px", // set minimum width for the facets section
+                                minWidth: "21em", // set minimum width for the facets section
                                 flex: "1",
                                 position: "sticky", // to make the facets section always visible
                                 top: "0px",
                                 alignSelf: "flex-start",
                                 zIndex: 1000,
                                 maxHeight: "100vh", // set maximum height to 100% of the viewport height
-                                overflowY: "auto" // enable vertical scrolling within the facets container
+                                overflowY: "auto", // enable vertical scrolling within the facets container
+                                overflowX: "hidden"
                             }}>
                                 <Facets/>
                             </div>
