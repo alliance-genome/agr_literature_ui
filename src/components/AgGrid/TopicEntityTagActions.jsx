@@ -68,8 +68,7 @@ export default (props) => {
         setShowModal(false);
      }
     };
-
-    let show_del = props.data.source_validation_type === 'professional_biocurator' &&
+    let show_del = props.data.topic_entity_tag_source.validation_type === 'professional_biocurator' &&
         props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel;
     return (
     <span>
