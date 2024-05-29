@@ -68,12 +68,13 @@ export default (props) => {
         setShowModal(false);
      }
     };
-
-    let show_del = props.data.validation_by_professional_biocurator !== 'professional_biocurator' &&
-        props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel;
+    // console.log("BOB:", props.data.source_validation_type);
+    // console.log(props.data);
+    // let show_del = props.data.source_validation_type !== 'professional_biocurator' &&
+        // props.data.topic_entity_tag_source.secondary_data_provider_abbreviation !== accessLevel;
     return (
     <span>
-        { show_del   ?
+        { props.data.topic_entity_tag_source.secondary_data_provider_abbreviation !== accessLevel   ?
             <div>
             <Modal  show={showModal} >
                 <Modal.Header closeButton>
