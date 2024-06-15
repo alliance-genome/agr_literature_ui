@@ -51,8 +51,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
     "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
-    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
-
+    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
 const DatePicker = ({facetName,currentValue,setValueFunction}) => {
@@ -70,7 +69,7 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
             let offset = dateStart.getTimezoneOffset();
             let parsedDateStart = Date.parse(dateRange[0])  + (offset * 60000);
             let parsedDateEnd = Date.parse(dateRange[1]) + (offset * 60000);
-            return [parsedDateStart,parsedDateEnd];
+            return [parsedDateStart, parsedDateEnd];
         }else{
             return '';
         }
@@ -338,6 +337,7 @@ const Facets = () => {
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const datePublished= useSelector(state => state.search.datePublished);
+    const dateCreated = useSelector(state => state.search.dateCreated);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
