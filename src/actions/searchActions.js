@@ -29,6 +29,11 @@ export const SEARCH_SET_PARTIAL_MATCH = 'SEARCH_SET_PARTIAL_MATCH';
 export const SEARCH_SET_MOD_PREFERENCES_LOADED = 'SEARCH_SET_MOD_PREFERENCES_LOADED';
 export const SEARCH_SET_APPLY_TO_SINGLE_TAG = 'SEARCH_SET_APPLY_TO_SINGLE_TAG';
 export const SEARCH_SET_READY_TO_FACET_SEARCH = "SEARCH_SET_READY_TO_FACET_SEARCH";
+export const SEARCH_REMOVE_DATE_PUBMED_ADDED = "SEARCH_REMOVE_DATE_PUBMED_ADDED"
+export const SEARCH_REMOVE_DATE_PUBMED_MODIFIED = "SEARCH_REMOVE_DATE_PUBMED_MODIFIED"
+export const SEARCH_REMOVE_DATE_PUBLISHED = "SEARCH_REMOVE_DATE_PUBLISHED"
+export const SEARCH_REMOVE_DATE_CREATED = "SEARCH_REMOVE_DATE_CREATED"
+
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"]
 
 
@@ -377,3 +382,18 @@ export const setApplyToSingleTag = (value) => ({
     payload: value
 });
 
+export const removeDatePubmedAdded = () => ({
+    type: 'SEARCH_REMOVE_DATE_PUBMED_ADDED'
+});
+
+export const removeDatePubmedModified = () => ({
+    type: 'SEARCH_REMOVE_DATE_PUBMED_MODIFIED'
+});
+
+export const removeDatePublished = () => ({
+    type: 'SEARCH_REMOVE_DATE_PUBLISHED'
+});
+
+export const removeDateCreated = () => ({
+    type: 'SEARCH_REMOVE_DATE_CREATED'
+});
