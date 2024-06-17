@@ -309,7 +309,7 @@ const CheckDropdownItem = React.forwardRef(
    };
 
    return (
-    <Dropdown autoClose={false} >
+    <Dropdown>
       <Dropdown.Toggle variant="primary" id="dropdown-basic">
         Hide/Show Columns
       </Dropdown.Toggle>
