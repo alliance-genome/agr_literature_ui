@@ -798,7 +798,9 @@ export const getDescendantATPIds = async (accessToken, atpID) => {
         'Content-Type': 'application/json'
       }
     });
-    return response.data.entities.map(x => x.curie);
+    if ('entities' in response.data) {
+      return response.data.entities.map(x => x.curie); }
+    return null;
   } catch (error) {
     console.error('Error occurred:', error);
     throw error;
