@@ -4,7 +4,6 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { useDispatch, useSelector } from "react-redux";
 import Button from "react-bootstrap/Button";
-import { RiCloseFill } from "react-icons/ri";
 import {
     removeFacetValue,
     resetFacetValues,
@@ -16,6 +15,7 @@ import {
     searchReferences
 } from "../../actions/searchActions";
 import { RENAME_FACETS } from "./Facets";
+import BreadcrumbItem from "./BreadCrumbItem";
 
 const BreadCrumbs = () => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
@@ -26,23 +26,15 @@ const BreadCrumbs = () => {
     const dateCreated = useSelector(state => state.search.dateCreated);
     const dispatch = useDispatch();
 
-    const handleRemoveDate = (dateType) => {
-        switch (dateType) {
-            case 'datePubmedAdded':
-                dispatch(removeDatePubmedAdded());
-                break;
-            case 'datePubmedModified':
-                dispatch(removeDatePubmedModified());
-                break;
-            case 'datePublished':
-                dispatch(removeDatePublished());
-                break;
-            case 'dateCreated':
-                dispatch(removeDateCreated());
-                break;
-            default:
-                break;
-        }
+    const dateTypes = [
+        { key: 'datePubmedAdded', label: 'Date Range: Added to PubMed', value: datePubmedAdded, action: removeDatePubmedAdded },
+        { key: 'datePubmedModified', label: 'Date Range: Modified in PubMed', value: datePubmedModified, action: removeDatePubmedModified },
+        { key: 'datePublished', label: 'Date Range: Published', value: datePublished, action: removeDatePublished },
+        { key: 'dateCreated', label: 'Date Range: Added to ABC', value: dateCreated, action: removeDateCreated },
+    ];
+
+    const handleRemoveDate = (action) => {
+        dispatch(action());
         dispatch(searchReferences());
     };
 
@@ -57,66 +49,41 @@ const BreadCrumbs = () => {
                 <Col style={{ textAlign: "left" }}>
                     {Object.entries(searchFacetsValues).map(([facet, values]) => (
                         Array.isArray(values) ? values.map(value => (
-                            <span key={facet + value + "_breadcrumb"}>
-                                <Button variant="outline-secondary">
-                                    {(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value} &nbsp;
-                                    <RiCloseFill onClick={() => handleRemoveFacet(facet, value)} />
-                                </Button>&nbsp;&nbsp;
-                            </span>
+                            <BreadcrumbItem
+                                key={facet + value + "_breadcrumb"}
+                                label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value}
+                                onRemove={() => handleRemoveFacet(facet, value)}
+                            />
                         )) : (
-                            <span key={facet + "_breadcrumb"}>
-                                <Button variant="outline-secondary">
-                                    {`${facet.replace('datePubmedAdded', 'Date Added to PubMed')
-                                        .replace('datePubmedModified', 'Date Modified in PubMed')
-                                        .replace('datePublished', 'Date Published')
-                                        .replace('dateCreated', 'Date Created')}`} &nbsp;
-                                    <RiCloseFill onClick={() => handleRemoveDate(facet)} />
-                                </Button>&nbsp;&nbsp;
-                            </span>
+                            <BreadcrumbItem
+                                key={facet + "_breadcrumb"}
+                                label={`${facet.replace('datePubmedAdded', 'Date Added to PubMed')
+                                    .replace('datePubmedModified', 'Date Modified in PubMed')
+                                    .replace('datePublished', 'Date Published')
+                                    .replace('dateCreated', 'Date Created')}`}
+                                onRemove={() => handleRemoveDate(facet)}
+                            />
                         )
                     ))}
                     {Object.entries(searchExcludedFacetsValues).map(([facet, values]) =>
                         values.map(value =>
-                            <span key={facet + value + "_breadcrumb"}>
-                                <Button variant="outline-danger">Exclude&nbsp;{(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value} &nbsp;
-                                    <RiCloseFill onClick={() => dispatch(removeExcludedFacetValue(facet, value))} />
-                                </Button>&nbsp;&nbsp;
-                            </span>
+                            <BreadcrumbItem
+                                key={facet + value + "_breadcrumb"}
+                                label={`Exclude ${(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value}`}
+                                onRemove={() => dispatch(removeExcludedFacetValue(facet, value))}
+                            />
                         )
                     )}
-                    {datePubmedAdded && (
-                        <span key="datePubmedAdded_breadcrumb">
-                            <Button variant="outline-secondary">
-                                Date Added to PubMed &nbsp;
-                                <RiCloseFill onClick={() => handleRemoveDate('datePubmedAdded')} />
-                            </Button>&nbsp;&nbsp;
-                        </span>
-                    )}
-                    {datePubmedModified && (
-                        <span key="datePubmedModified_breadcrumb">
-                            <Button variant="outline-secondary">
-                                Date Modified in PubMed &nbsp;
-                                <RiCloseFill onClick={() => handleRemoveDate('datePubmedModified')} />
-                            </Button>&nbsp;&nbsp;
-                        </span>
-                    )}
-                    {datePublished && (
-                        <span key="datePublished_breadcrumb">
-                            <Button variant="outline-secondary">
-                                Date Published &nbsp;
-                                <RiCloseFill onClick={() => handleRemoveDate('datePublished')} />
-                            </Button>&nbsp;&nbsp;
-                        </span>
-                    )}
-                    {dateCreated && (
-                        <span key="dateCreated_breadcrumb">
-                            <Button variant="outline-secondary">
-                                Date Created &nbsp;
-                                <RiCloseFill onClick={() => handleRemoveDate('dateCreated')} />
-                            </Button>&nbsp;&nbsp;
-                        </span>
-                    )}
-                    {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || datePubmedAdded || datePubmedModified || datePublished || dateCreated) &&
+                    {dateTypes.map(({ key, label, value, action }) => (
+                        value && (
+                            <BreadcrumbItem
+                                key={`${key}_breadcrumb`}
+                                label={label}
+                                onRemove={() => handleRemoveDate(action)}
+                            />
+                        )
+                    ))}
+                    {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || dateTypes.some(({ value }) => value)) &&
                         <Button onClick={() => { dispatch(resetFacetValues()); dispatch(searchReferences()); }}>Clear All</Button>}
                 </Col>
             </Row>
