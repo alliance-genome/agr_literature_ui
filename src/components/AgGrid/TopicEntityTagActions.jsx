@@ -1,10 +1,12 @@
 import React, {useState} from 'react';
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import axios from "axios";
 import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
+import {changeFieldEntityAddGeneralField,setEditMode} from "../../actions/biblioActions";
 
 export default (props) => {
+    const dispatch = useDispatch();
     const accessToken = useSelector(state => state.isLogged.accessToken);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
@@ -70,27 +72,41 @@ export default (props) => {
      }
     };
 
+    const handleEditClick = () => {
+        console.log(props.data);
+        dispatch(setEditMode(true));
+
+        //All entries with typeahead break
+
+        //dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: 'props.data.topic' } }));
+        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: props.data.entity_type } }));
+        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
+        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: props.data.species } }));
+    }
+
 
     return (
     <span>
-        {props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel ?
-            <div>
-            <Modal  show={showModal} >
+    {props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel ?
+        <div>
+            <Modal show={showModal}>
                 <Modal.Header closeButton>
-                 <Modal.Title>{title}</Modal.Title>
+                    <Modal.Title>{title}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>Topic:{topicBody}<br/>Entity Type:{entityTypeBody}<br/>Entity:{entityBody}<br/>No Data:{noDataBody}<br/>Novel Data:{novelDataBody}</Modal.Body>
+                <Modal.Body>Topic:{topicBody}<br/>Entity Type:{entityTypeBody}<br/>Entity:{entityBody}<br/>No
+                    Data:{noDataBody}<br/>Novel Data:{novelDataBody}</Modal.Body>
                 <Modal.Footer>
-                  <Button variant="cancel" onClick={handleClose}>
-                   Cancel
-                  </Button>
-                  <Button variant="confirm" onClick={() => handleConfirm()} >
-                   Confirm
-                  </Button>
-                 </Modal.Footer>
+                    <Button variant="cancel" onClick={handleClose}>
+                        Cancel
+                    </Button>
+                    <Button variant="confirm" onClick={() => handleConfirm()}>
+                        Confirm
+                    </Button>
+                </Modal.Footer>
             </Modal>
             <button onClick={() => handleDeleteClick()}>Delete</button>
-            </div>  : null}
+            <button onClick={() => handleEditClick()}>Edit</button>
+        </div> : null}
     </span>
     );
 };

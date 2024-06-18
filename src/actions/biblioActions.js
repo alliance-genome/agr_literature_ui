@@ -608,6 +608,11 @@ const setEntityResultList = (entityResultList) => ({
   payload: { entityResultList: entityResultList }
 });
 
+export const setEditMode = (editMode) => ({
+  type: 'SET_EDIT_MODE',
+  payload: { editMode: editMode }
+});
+
 const getRevertButtonFromFontAwesomeElement = (activeElement) => {
   if (activeElement.nodeName === 'BUTTON') { return activeElement; }
   else if (activeElement.nodeName === 'svg') { return activeElement.parentNode; }

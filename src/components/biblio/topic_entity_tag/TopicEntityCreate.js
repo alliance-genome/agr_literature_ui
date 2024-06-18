@@ -33,6 +33,7 @@ import Spinner from "react-bootstrap/Spinner";
 
 const TopicEntityCreate = () => {
   const dispatch = useDispatch();
+  const editMode = useSelector(state => state.biblio.editMode);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
@@ -137,6 +138,7 @@ const TopicEntityCreate = () => {
     }
     if (topicSelect !== speciesATP) {
       if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
+          console.log(modToTaxon[accessLevel][0]);
           dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
       }
     }
@@ -315,6 +317,7 @@ const TopicEntityCreate = () => {
 			  setTypeaheadOptions(results.filter(item => !item.obsolete && topicDescendants.has(item.curie)).map(item => item.name));
                         }}
                         onChange={(selected) => {
+                          console.log(typeaheadName2CurieMap[selected[0]]);
                           dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
                         }}
                         options={typeaheadOptions}
@@ -410,7 +413,11 @@ const TopicEntityCreate = () => {
       <Col className="form-label col-form-label" sm="2">
         <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
       </Col>
-      <Col className="form-label col-form-label" sm="1"><Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button></Col>
+      <Col className="form-label col-form-label" sm="1">
+        {editMode ? <Button>Edit </Button> :
+        <Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button>
+        }
+      </Col>
     </Row></Container>);
 } 
 
