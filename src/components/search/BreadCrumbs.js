@@ -8,11 +8,11 @@ import {
     removeFacetValue,
     resetFacetValues,
     removeExcludedFacetValue,
+    searchReferences,
     removeDatePubmedAdded,
     removeDatePubmedModified,
     removeDatePublished,
-    removeDateCreated,
-    searchReferences
+    removeDateCreated
 } from "../../actions/searchActions";
 import { RENAME_FACETS } from "./Facets";
 import BreadcrumbItem from "./BreadCrumbItem";
@@ -26,13 +26,6 @@ const BreadCrumbs = () => {
     const dateCreated = useSelector(state => state.search.dateCreated);
     const dispatch = useDispatch();
 
-    const dateTypes = [
-        { key: 'datePubmedAdded', label: 'Date Range: Added to PubMed', value: datePubmedAdded, action: removeDatePubmedAdded },
-        { key: 'datePubmedModified', label: 'Date Range: Modified in PubMed', value: datePubmedModified, action: removeDatePubmedModified },
-        { key: 'datePublished', label: 'Date Range: Published', value: datePublished, action: removeDatePublished },
-        { key: 'dateCreated', label: 'Date Range: Added to ABC', value: dateCreated, action: removeDateCreated },
-    ];
-
     const handleRemoveDate = (action) => {
         dispatch(action());
         dispatch(searchReferences());
@@ -43,6 +36,19 @@ const BreadCrumbs = () => {
         dispatch(searchReferences());
     };
 
+    const handleClearAll = () => {
+        dispatch(resetFacetValues());
+        Object.keys(RENAME_FACETS).forEach(key => {
+            if (RENAME_FACETS[key].action) {
+                dispatch(RENAME_FACETS[key].action());
+            }
+        });
+        dispatch(searchReferences());
+    };
+
+    const dateKeys = ["datePubmedAdded", "datePubmedModified", "datePublished", "dateCreated"];
+    const dateValues = { datePubmedAdded, datePubmedModified, datePublished, dateCreated };
+
     return (
         <Container fluid>
             <Row>
@@ -51,17 +57,14 @@ const BreadCrumbs = () => {
                         Array.isArray(values) ? values.map(value => (
                             <BreadcrumbItem
                                 key={facet + value + "_breadcrumb"}
-                                label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value}
+                                label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value}
                                 onRemove={() => handleRemoveFacet(facet, value)}
                             />
                         )) : (
                             <BreadcrumbItem
                                 key={facet + "_breadcrumb"}
-                                label={`${facet.replace('datePubmedAdded', 'Date Added to PubMed')
-                                    .replace('datePubmedModified', 'Date Modified in PubMed')
-                                    .replace('datePublished', 'Date Published')
-                                    .replace('dateCreated', 'Date Created')}`}
-                                onRemove={() => handleRemoveDate(facet)}
+                                label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' '))}
+                                onRemove={() => handleRemoveDate(RENAME_FACETS[facet].action)}
                             />
                         )
                     ))}
@@ -69,22 +72,24 @@ const BreadCrumbs = () => {
                         values.map(value =>
                             <BreadcrumbItem
                                 key={facet + value + "_breadcrumb"}
-                                label={`Exclude ${(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value}`}
+                                label={`Exclude ${(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value}`}
                                 onRemove={() => dispatch(removeExcludedFacetValue(facet, value))}
                             />
                         )
                     )}
-                    {dateTypes.map(({ key, label, value, action }) => (
-                        value && (
+                    {dateKeys.map(key => {
+                        const dateFacet = RENAME_FACETS[key];
+                        const dateValue = dateValues[key];
+                        return dateValue && (
                             <BreadcrumbItem
                                 key={`${key}_breadcrumb`}
-                                label={label}
-                                onRemove={() => handleRemoveDate(action)}
+                                label={dateFacet.label}
+                                onRemove={() => handleRemoveDate(dateFacet.action)}
                             />
-                        )
-                    ))}
-                    {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || dateTypes.some(({ value }) => value)) &&
-                        <Button onClick={() => { dispatch(resetFacetValues()); dispatch(searchReferences()); }}>Clear All</Button>}
+                        );
+                    })}
+                    {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || dateKeys.some(key => dateValues[key])) &&
+                        <Button onClick={handleClearAll}>Clear All</Button>}
                 </Col>
             </Row>
         </Container>

@@ -16,7 +16,11 @@ import {
     setDatePublished,
     setDateCreated,
     setModPreferencesLoaded,
-    setApplyToSingleTag
+    setApplyToSingleTag,
+    removeDatePubmedAdded,
+    removeDatePubmedModified,
+    removeDatePublished,
+    removeDateCreated
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse, ButtonGroup} from 'react-bootstrap';
@@ -44,7 +48,27 @@ export const RENAME_FACETS = {
     "topics": "Topic",
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
-    "source_evidence_assertions": "Source evidence assertion"
+    "source_evidence_assertions": "Source evidence assertion",
+    "datePubmedAdded": {
+        label: "Date Range: Added to PubMed",
+        value: (state) => state.search.datePubmedAdded,
+        action: removeDatePubmedAdded
+    },
+    "datePubmedModified": {
+        label: "Date Range: Modified in PubMed",
+        value: (state) => state.search.datePubmedModified,
+        action: removeDatePubmedModified
+    },
+    "datePublished": {
+        label: "Date Range: Published",
+        value: (state) => state.search.datePublished,
+        action: removeDatePublished
+    },
+    "dateCreated": {
+        label: "Date Range: Added to ABC",
+        value: (state) => state.search.dateCreated,
+        action: removeDateCreated
+    }
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
