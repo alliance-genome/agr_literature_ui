@@ -99,14 +99,13 @@ const TopicEntityCreate = () => {
     
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));    
 
-  const unsortedTaxonListWB = [ '', 'NCBITaxon:135651', 'NCBITaxon:6238', 'NCBITaxon:6279', 'NCBITaxon:6239',
+  const unsortedTaxonListWB = [ '', 'NCBITaxon:135651', 'NCBITaxon:6238', 'NCBITaxon:6279',
                                     'NCBITaxon:281687', 'NCBITaxon:6282', 'NCBITaxon:54126', 'NCBITaxon:31234',
                                     'NCBITaxon:34506', 'NCBITaxon:70415' ];
   const curieToNameTaxonWB = {
       'NCBITaxon:135651': 'Caenorhabditis brenneri',
       'NCBITaxon:6238': 'Caenorhabditis briggsae',
       'NCBITaxon:6279': 'Brugia malayi',
-      'NCBITaxon:6239': 'Caenorhabditis elegans',
       'NCBITaxon:281687': 'Caenorhabditis japonica',
       'NCBITaxon:6282': 'Onchocerca volvulus',
       'NCBITaxon:54126': 'Pristionchus pacificus',
