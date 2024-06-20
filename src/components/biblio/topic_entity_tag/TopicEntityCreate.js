@@ -188,8 +188,10 @@ const TopicEntityCreate = () => {
   }, [topicDescendants, accessToken, dispatch])
 
   useEffect( () => {
-    if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
-      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
+    if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, 'wb', taxonSelectWB, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
+    else if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, 'alliance', taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
   }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect( () => {

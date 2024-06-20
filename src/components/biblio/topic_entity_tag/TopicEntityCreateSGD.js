@@ -160,10 +160,12 @@ const TopicEntityCreateSGD = () => {
       taxonSelect !== undefined &&
       entityTypeSelect !== ""
     ) {
+      const entityIdValidation = ( curieToNameEntityType[entityTypeSelect] === 'complex' || curieToNameEntityType[entityTypeSelect] === 'pathway' ) ? 'sgd' : 'alliance';
       dispatch(
         changeFieldEntityEntityList(
           entityText,
           accessToken,
+          entityIdValidation,
           taxonSelect,
           curieToNameEntityType[entityTypeSelect]
         )
@@ -195,10 +197,12 @@ const TopicEntityCreateSGD = () => {
       taxonSelect !== undefined &&
       entityTypeSelect !== ""
     ) {
+      const entityIdValidation = ( curieToNameEntityType[entityTypeSelect] === 'complex' || curieToNameEntityType[entityTypeSelect] === 'pathway' ) ? 'sgd' : 'alliance';
       dispatch(
         changeFieldEntityEntityList(
           entityText,
           accessToken,
+          entityIdValidation,
           taxonSelect,
           curieToNameEntityType[entityTypeSelect]
         )
