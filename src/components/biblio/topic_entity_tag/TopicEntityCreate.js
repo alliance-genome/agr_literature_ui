@@ -245,8 +245,7 @@ const TopicEntityCreate = () => {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
         console.log(entityResult.curie);
-        // Shuai, should this not if statement include 'obsolete entity' ?  Before it didn't, but maybe it should ?  But maybe it doesn't need to because 'obsolete entity' can only come from the SGD api, and would never happen in this non-SGD code ?
-        if (!(['no Alliance curie', 'duplicate', 'obsolete entity', 'not found at WB', 'no wb curie'].includes(entityResult.curie))) {
+        if (!(['no Alliance curie', 'duplicate', 'obsolete entity', 'not found at WB', 'no WB curie', 'no SGD curie'].includes(entityResult.curie))) {
           let updateJson = initializeUpdateJson(refCurie);
           updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
@@ -430,7 +429,7 @@ const TopicEntityCreate = () => {
         <Container>
           { renderView() === 'list' && entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
             let colDisplayClass = 'Col-display';
-            if (['no Alliance curie', 'obsolete entity', 'not found at WB', 'no wb curie'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
+            if (['no Alliance curie', 'obsolete entity', 'not found at WB', 'no WB curie', 'no SGD curie'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
               else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
             return (
               <Row key={`entityEntityContainerrows ${index}`}>
