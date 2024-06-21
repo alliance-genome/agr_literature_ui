@@ -147,9 +147,9 @@ const TopicEntityCreate = () => {
 	  dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: '' } }));
           setIsSpeciesSelected(true); // reset when topic changes
       }
-    } else if (geneDescendants.includes(topicSelect)) {
+    } else if (geneDescendants !== null && geneDescendants.includes(topicSelect)) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000005' } }));
-    } else if (alleleDescendants.includes(topicSelect)) {
+    } else if (alleleDescendants !== null && alleleDescendants.includes(topicSelect)) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000006' } }));
     } else {
       setSelectedSpecies([]); // Clear selected species
@@ -237,16 +237,24 @@ const TopicEntityCreate = () => {
     const forApiArray = []
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
+
+    if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, 'wb', taxonSelectWB, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
+
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
         console.log(entityResult.curie);
-        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'duplicate') ) {
+        // Shuai, should this not if statement include 'obsolete entity' ?  Before it didn't, but maybe it should ?
+        if (!(['no Alliance curie', 'duplicate', 'obsolete entity', 'not found at WB', 'no wb curie'].includes(entityResult.curie))) {
           let updateJson = initializeUpdateJson(refCurie);
           updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
 	  updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
           updateJson['entity'] = entityResult.curie;
+          if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+            updateJson['entity_id_validation'] = 'wb';
+	    updateJson['species'] = taxonSelectWB; }
           let array = [subPath, updateJson, method]
           forApiArray.push(array); } } }
     else if (taxonSelect !== '' && taxonSelect !== undefined) {
