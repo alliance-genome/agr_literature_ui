@@ -81,7 +81,7 @@ const TopicEntityCreate = () => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
       const modData = await getModToTaxon();
-      taxonData['use_wb'] = 'other nematode';
+      taxonData['use_wb'] = 'other nematode';	// not a taxon, but simplest way to add it to the dropdown.
       setCurieToNameTaxon(taxonData);
       setModToTaxon(modData);
     };
@@ -94,7 +94,7 @@ const TopicEntityCreate = () => {
 
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push('');
-  unsortedTaxonList.push('use_wb');
+  unsortedTaxonList.push('use_wb');	// not a taxon, but simplest way to add it to the dropdown.
   unsortedTaxonList.push('NCBITaxon:9606');
     
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));    

@@ -441,8 +441,6 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList) => {
           }
         })
         .then(res => {
-          console.log('res');
-          console.log(res.data);
           if (res.data) {
 	    const searchMap = {};
             for (const [curie, name] of Object.entries(res.data)) {
@@ -471,7 +469,6 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList) => {
 };
 
 export const changeFieldEntityEntityList = (entityText, accessToken, entityIdValidation, taxon, entityType, taxonToMod = undefined) => {
-console.log(entityText, accessToken, entityIdValidation, taxon, entityType, taxonToMod = undefined);
   return dispatch => {
     let entityInputList = [];
     if (entityText && entityText.trim() !== '') {
