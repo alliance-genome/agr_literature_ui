@@ -447,7 +447,10 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList) => {
 	    const searchMap = {};
             for (const [curie, name] of Object.entries(res.data)) {
 	        searchMap[name.toLowerCase()] = curie;
-	        searchMap[curie.toLowerCase()] = curie;
+                if (name.toLowerCase() === 'not found at wb') {
+	            searchMap[curie.toLowerCase()] = name; }
+                else {
+	            searchMap[curie.toLowerCase()] = curie; }
 	    }
             let entityResultList = [];
             for (const entityTypeSymbol of entityInputList) {
