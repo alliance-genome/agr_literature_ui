@@ -422,7 +422,7 @@ const TopicEntityCreate = () => {
         <Container>
           { renderView() === 'list' && entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
             let colDisplayClass = 'Col-display';
-            if (['no Alliance curie', 'obsolete entity'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
+            if (['no Alliance curie', 'obsolete entity', 'not found at WB', 'no wb curie'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
               else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
             return (
               <Row key={`entityEntityContainerrows ${index}`}>
