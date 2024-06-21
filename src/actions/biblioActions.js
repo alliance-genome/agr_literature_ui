@@ -460,7 +460,7 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList) => {
                     'curie': searchMap[entityTypeSymbol.toLowerCase()]
                 });
               } else {
-                  entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no wb curie'});
+                  entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no WB curie'});
               }
             }
             dispatch(setEntityResultList(entityResultList));
