@@ -275,7 +275,7 @@ const TopicEntityCreateSGD = () => {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
         console.log(entityResult.curie);
-        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'duplicate') ) {
+        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'no SGD curie') && (entityResult.curie !== 'duplicate') ) {
           let updateJson = initializeUpdateJson(refCurie);
 	  if (entityTypeSelect === 'ATP:0000128' || entityTypeSelect === 'ATP:0000022') {
 	    updateJson['entity_id_validation'] = 'SGD';
