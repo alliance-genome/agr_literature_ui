@@ -417,7 +417,7 @@ export const sgd_entity_validation = (dispatch, entityType, entityInputList) => 
                   'curie': searchMap[lowerEntity]
               });
             } else {
-                entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no Alliance curie'});	// Shuai, should this say no SGD curie ?
+                entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no SGD curie'});
             }
         }
         dispatch(setEntityResultList(entityResultList));
@@ -478,7 +478,7 @@ console.log(entityText, accessToken, entityIdValidation, taxon, entityType, taxo
       entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item !== '');
     }
 
-    if ( (entityIdValidation === 'sgd') && (entityType == 'complex' || entityType == 'pathway') ) {	// Shuai, should this only be based on entityIdValidation ?
+    if ( (entityIdValidation === 'sgd') && (entityType == 'complex' || entityType == 'pathway') ) {	// this could be based solely on entityIdValidation, but keeping the explicit entityType to make it clearer.
 	return sgd_entity_validation(dispatch, entityType, entityInputList)
     }
 
