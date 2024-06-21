@@ -160,10 +160,12 @@ const TopicEntityCreateSGD = () => {
       taxonSelect !== undefined &&
       entityTypeSelect !== ""
     ) {
+      const entityIdValidation = ( curieToNameEntityType[entityTypeSelect] === 'complex' || curieToNameEntityType[entityTypeSelect] === 'pathway' ) ? 'sgd' : 'alliance';
       dispatch(
         changeFieldEntityEntityList(
           entityText,
           accessToken,
+          entityIdValidation,
           taxonSelect,
           curieToNameEntityType[entityTypeSelect]
         )
@@ -195,10 +197,12 @@ const TopicEntityCreateSGD = () => {
       taxonSelect !== undefined &&
       entityTypeSelect !== ""
     ) {
+      const entityIdValidation = ( curieToNameEntityType[entityTypeSelect] === 'complex' || curieToNameEntityType[entityTypeSelect] === 'pathway' ) ? 'sgd' : 'alliance';
       dispatch(
         changeFieldEntityEntityList(
           entityText,
           accessToken,
+          entityIdValidation,
           taxonSelect,
           curieToNameEntityType[entityTypeSelect]
         )
@@ -271,7 +275,7 @@ const TopicEntityCreateSGD = () => {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
         console.log(entityResult.curie);
-        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'duplicate') ) {
+        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'no SGD curie') && (entityResult.curie !== 'duplicate') ) {
           let updateJson = initializeUpdateJson(refCurie);
 	  if (entityTypeSelect === 'ATP:0000128' || entityTypeSelect === 'ATP:0000022') {
 	    updateJson['entity_id_validation'] = 'SGD';

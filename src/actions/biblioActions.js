@@ -13,6 +13,7 @@ const restUrl = process.env.REACT_APP_RESTAPI;
 //const ateamApiBaseUrl = 'https://beta-curation.alliancegenome.org/';
 const ateamApiBaseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
 const sgdApiBaseUrl = process.env.REACT_APP_SGD_API_BASE_URL;
+const wbApiBaseUrl = process.env.REACT_APP_WB_API_BASE_URL;
 
 export const changeFieldReferenceJson = (e) => {
   console.log('action change field reference json ' + e.target.id + ' to ' + e.target.value);
@@ -416,7 +417,7 @@ export const sgd_entity_validation = (dispatch, entityType, entityInputList) => 
                   'curie': searchMap[lowerEntity]
               });
             } else {
-                entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no Alliance curie'});
+                entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no SGD curie'});
             }
         }
         dispatch(setEntityResultList(entityResultList));
@@ -427,15 +428,59 @@ export const sgd_entity_validation = (dispatch, entityType, entityInputList) => 
 };
 
 
-export const changeFieldEntityEntityList = (entityText, accessToken, taxon, entityType, taxonToMod = undefined) => {
+export const wb_entity_validation = (dispatch, entityType, entityInputList) => {
+    let postData = {
+      "datatype": entityType,
+      "entities": entityInputList.join('|').replace(/ /g, '+')
+    };
+    // let postData = {"datatype":"gene","entities":"let-60|abc-1|WB:WBGeneQUACK|WB:WBGene99901234|WB:WBGene00001234|quack"};
+    axios.post(wbApiBaseUrl, postData,
+        {
+          headers: {
+            'content-type': 'application/json'
+          }
+        })
+        .then(res => {
+          if (res.data) {
+	    const searchMap = {};
+            for (const [curie, name] of Object.entries(res.data)) {
+	        searchMap[name.toLowerCase()] = curie;
+                if (name.toLowerCase() === 'not found at wb') {
+	            searchMap[curie.toLowerCase()] = name; }
+                else {
+	            searchMap[curie.toLowerCase()] = curie; }
+	    }
+            let entityResultList = [];
+            for (const entityTypeSymbol of entityInputList) {
+              if (entityTypeSymbol.toLowerCase() in searchMap) {
+                  entityResultList.push({
+                    'entityTypeSymbol': entityTypeSymbol,
+                    'curie': searchMap[entityTypeSymbol.toLowerCase()]
+                });
+              } else {
+                  entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no WB curie'});
+              }
+            }
+            dispatch(setEntityResultList(entityResultList));
+          }
+    }).catch(error => {
+	console.error('Error fetching data:', error);
+    });
+};
+
+export const changeFieldEntityEntityList = (entityText, accessToken, entityIdValidation, taxon, entityType, taxonToMod = undefined) => {
   return dispatch => {
     let entityInputList = [];
     if (entityText && entityText.trim() !== '') {
       entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item !== '');
     }
 
-    if (entityType == 'complex' || entityType == 'pathway') {
+    if ( (entityIdValidation === 'sgd') && (entityType == 'complex' || entityType == 'pathway') ) {	// this could be based solely on entityIdValidation, but keeping the explicit entityType to make it clearer.
 	return sgd_entity_validation(dispatch, entityType, entityInputList)
+    }
+
+    if (entityIdValidation === 'wb') {
+	return wb_entity_validation(dispatch, entityType, entityInputList)
     }
      
     if (entityType.includes('construct')) {
@@ -798,7 +843,9 @@ export const getDescendantATPIds = async (accessToken, atpID) => {
         'Content-Type': 'application/json'
       }
     });
-    return response.data.entities.map(x => x.curie);
+    if (('data' in response) && ('entities' in response.data)) {
+      return response.data.entities.map(x => x.curie); }
+    return null;
   } catch (error) {
     console.error('Error occurred:', error);
     throw error;

@@ -50,6 +50,7 @@ const TopicEntityCreate = () => {
   const typeaheadName2CurieMap = useSelector(state => state.biblio.typeaheadName2CurieMap);
 
   const taxonSelect = useSelector(state => state.biblio.entityAdd.taxonSelect);
+  const taxonSelectWB = useSelector(state => state.biblio.entityAdd.taxonSelectWB);
   const noDataCheckbox = useSelector(state => state.biblio.entityAdd.noDataCheckbox);
   const novelCheckbox = useSelector(state => state.biblio.entityAdd.novelCheckbox);
   const entityTypeSelect = useSelector(state => state.biblio.entityAdd.entityTypeSelect);
@@ -80,6 +81,7 @@ const TopicEntityCreate = () => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
       const modData = await getModToTaxon();
+      taxonData['use_wb'] = 'other nematode';	// not a taxon, but simplest way to add it to the dropdown.
       setCurieToNameTaxon(taxonData);
       setModToTaxon(modData);
     };
@@ -87,14 +89,33 @@ const TopicEntityCreate = () => {
   }, [accessToken]);
 
   // const unsortedTaxonList = [ '', 'NCBITaxon:559292', 'NCBITaxon:6239', 'NCBITaxon:7227',
-  //                            'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',                                                                                  //                            'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
+  //                            'NCBITaxon:7955', 'NCBITaxon:10116', 'NCBITaxon:10090',
+  //                            'NCBITaxon:8355', 'NCBITaxon:8364', 'NCBITaxon:9606' ];
 
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push('');
+  unsortedTaxonList.push('use_wb');	// not a taxon, but simplest way to add it to the dropdown.
   unsortedTaxonList.push('NCBITaxon:9606');
     
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));    
-    
+
+  const unsortedTaxonListWB = [ '', 'NCBITaxon:135651', 'NCBITaxon:6238', 'NCBITaxon:6279',
+                                    'NCBITaxon:281687', 'NCBITaxon:6282', 'NCBITaxon:54126', 'NCBITaxon:31234',
+                                    'NCBITaxon:34506', 'NCBITaxon:70415' ];
+  const curieToNameTaxonWB = {
+      'NCBITaxon:135651': 'Caenorhabditis brenneri',
+      'NCBITaxon:6238': 'Caenorhabditis briggsae',
+      'NCBITaxon:6279': 'Brugia malayi',
+      'NCBITaxon:281687': 'Caenorhabditis japonica',
+      'NCBITaxon:6282': 'Onchocerca volvulus',
+      'NCBITaxon:54126': 'Pristionchus pacificus',
+      'NCBITaxon:31234': 'Caenorhabditis remanei',
+      'NCBITaxon:34506': 'Strongyloides ratti',
+      'NCBITaxon:70415': 'Trichuris muris',
+      '': ''
+  };
+  const taxonListWB = unsortedTaxonListWB.sort((a, b) => (curieToNameTaxonWB[a] > curieToNameTaxonWB[b] ? 1 : -1));    
+
   const curieToNameEntityType = {
       '': 'no value',
       'ATP:0000005': 'gene',
@@ -126,9 +147,9 @@ const TopicEntityCreate = () => {
 	  dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: '' } }));
           setIsSpeciesSelected(true); // reset when topic changes
       }
-    } else if (geneDescendants.includes(topicSelect)) {
+    } else if (geneDescendants !== null && geneDescendants.includes(topicSelect)) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000005' } }));
-    } else if (alleleDescendants.includes(topicSelect)) {
+    } else if (alleleDescendants !== null && alleleDescendants.includes(topicSelect)) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000006' } }));
     } else {
       setSelectedSpecies([]); // Clear selected species
@@ -167,8 +188,10 @@ const TopicEntityCreate = () => {
   }, [topicDescendants, accessToken, dispatch])
 
   useEffect( () => {
-    if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
-      dispatch(changeFieldEntityEntityList(entityText, accessToken, taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
+    if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, 'wb', taxonSelectWB, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
+    else if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, 'alliance', taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
   }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect( () => {
@@ -214,16 +237,23 @@ const TopicEntityCreate = () => {
     const forApiArray = []
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
+
+    if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+      dispatch(changeFieldEntityEntityList(entityText, accessToken, 'wb', taxonSelectWB, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
+
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
         console.log(entityResult.curie);
-        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'duplicate') ) {
+        if (!(['no Alliance curie', 'duplicate', 'obsolete entity', 'not found at WB', 'no WB curie', 'no SGD curie'].includes(entityResult.curie))) {
           let updateJson = initializeUpdateJson(refCurie);
           updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
 	  updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
           updateJson['entity'] = entityResult.curie;
+          if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+            updateJson['entity_id_validation'] = 'wb';
+	    updateJson['species'] = taxonSelectWB; }
           let array = [subPath, updateJson, method]
           forApiArray.push(array); } } }
     else if (taxonSelect !== '' && taxonSelect !== undefined) {
@@ -341,6 +371,8 @@ const TopicEntityCreate = () => {
       </Col>
       <Col sm="1">
          <PulldownMenu id='taxonSelect' value={taxonSelect} pdList={taxonList} optionToName={curieToNameTaxon} />
+         { taxonSelect === 'use_wb' &&
+           <PulldownMenu id='taxonSelectWB' value={taxonSelectWB} pdList={taxonListWB} optionToName={curieToNameTaxonWB} /> }
       </Col>
       <Col className="form-label col-form-label" sm="2" >
         {renderView() === 'list' ? (
@@ -397,7 +429,7 @@ const TopicEntityCreate = () => {
         <Container>
           { renderView() === 'list' && entityResultList && entityResultList.length > 0 && entityResultList.map( (entityResult, index) => {
             let colDisplayClass = 'Col-display';
-            if (['no Alliance curie', 'obsolete entity'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
+            if (['no Alliance curie', 'obsolete entity', 'not found at WB', 'no WB curie', 'no SGD curie'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
               else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
             return (
               <Row key={`entityEntityContainerrows ${index}`}>

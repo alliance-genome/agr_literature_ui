@@ -13,6 +13,7 @@ const defaultTetPageSize = 25;
 const defaultEntityAdd = {
   'topicSelect': '',
   'taxonSelect': '',
+  'taxonSelectWB': '',
   'noDataCheckbox': false,
   'novelCheckbox': false,
   'entityTypeSelect': '',
