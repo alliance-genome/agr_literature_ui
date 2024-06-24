@@ -82,7 +82,9 @@ const TopicEntityCreateSGD = () => {
   const curieToNameEntityType = {
     '': 'no value',
     'ATP:0000005': 'gene',
-    'ATP:0000006': 'allele'
+    'ATP:0000006': 'allele',
+    'ATP:0000128': 'complex',
+    'ATP:0000022': 'pathway'
   };
 
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
@@ -99,12 +101,19 @@ const TopicEntityCreateSGD = () => {
     fetchData();
   }, [accessToken]);
 
+  useEffect(() => {
+    if (entityTypeList.includes(topicSelect)) {
+	dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));
+    }
+  }, [topicSelect, dispatch]);
+ 
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push('');
   unsortedTaxonList.push('NCBITaxon:9606');  
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
-  const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
-
+  // const entityTypeList = ['', 'ATP:0000005', 'ATP:0000006'];
+  const entityTypeList = Object.keys(curieToNameEntityType);
+    
   useEffect(() => {
     // ... (fetchSourceId useEffect)
     const fetchSourceId = async () => {
@@ -151,10 +160,12 @@ const TopicEntityCreateSGD = () => {
       taxonSelect !== undefined &&
       entityTypeSelect !== ""
     ) {
+      const entityIdValidation = ( curieToNameEntityType[entityTypeSelect] === 'complex' || curieToNameEntityType[entityTypeSelect] === 'pathway' ) ? 'sgd' : 'alliance';
       dispatch(
         changeFieldEntityEntityList(
           entityText,
           accessToken,
+          entityIdValidation,
           taxonSelect,
           curieToNameEntityType[entityTypeSelect]
         )
@@ -186,10 +197,12 @@ const TopicEntityCreateSGD = () => {
       taxonSelect !== undefined &&
       entityTypeSelect !== ""
     ) {
+      const entityIdValidation = ( curieToNameEntityType[entityTypeSelect] === 'complex' || curieToNameEntityType[entityTypeSelect] === 'pathway' ) ? 'sgd' : 'alliance';
       dispatch(
         changeFieldEntityEntityList(
           entityText,
           accessToken,
+          entityIdValidation,
           taxonSelect,
           curieToNameEntityType[entityTypeSelect]
         )
@@ -262,9 +275,13 @@ const TopicEntityCreateSGD = () => {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
         console.log(entityResult.curie);
-        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'duplicate') ) {
+        if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'no SGD curie') && (entityResult.curie !== 'duplicate') ) {
           let updateJson = initializeUpdateJson(refCurie);
-          updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
+	  if (entityTypeSelect === 'ATP:0000128' || entityTypeSelect === 'ATP:0000022') {
+	    updateJson['entity_id_validation'] = 'SGD';
+	  } else {
+	    updateJson['entity_id_validation'] = 'alliance';
+          }
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]

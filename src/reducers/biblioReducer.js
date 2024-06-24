@@ -13,6 +13,7 @@ const defaultTetPageSize = 25;
 const defaultEntityAdd = {
   'topicSelect': '',
   'taxonSelect': '',
+  'taxonSelectWB': '',
   'noDataCheckbox': false,
   'novelCheckbox': false,
   'entityTypeSelect': '',
@@ -993,6 +994,7 @@ export default function(state = initialState, action) {
 	    tetPageSize: defaultTetPageSize,
         curieToNameTaxon: {},
         allSpecies: [],
+        allEntities: [],
         getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
@@ -1119,6 +1121,24 @@ export default function(state = initialState, action) {
         allSpecies: action.payload
       };
 
+    case 'SET_ALL_ENTITIES':
+      return {
+        ...state,
+        allEntities: action.payload
+      };
+
+    case 'SET_ALL_TOPICS':
+      return {
+        ...state,
+        allTopics: action.payload
+      };
+
+    case 'SET_ALL_ENTITY_TYPES':
+      return {
+        ...state,
+        allEntityTypes: action.payload
+      };
+      
     case 'SET_TOPIC_ENTITY_SOURCE_ID':
       return {
         ...state,

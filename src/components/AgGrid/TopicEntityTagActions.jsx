@@ -39,7 +39,6 @@ export default (props) => {
 
     const handleDeleteClick = async () => {
         let mod = props.data.topic_entity_tag_source.secondary_data_provider_abbreviation;
-
         if (mod !== accessLevel) {
             console.error("Permission denied. Cannot delete this row.");
             return;
@@ -108,9 +107,11 @@ export default (props) => {
     }
 
 
+    let show_del = props.data.topic_entity_tag_source.validation_type === 'professional_biocurator' &&
+        props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel;
     return (
     <span>
-    {props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel ?
+    { show_del   ?
         <div>
             <Modal show={showModal}>
                 <Modal.Header closeButton>

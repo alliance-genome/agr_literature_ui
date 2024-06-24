@@ -6,11 +6,10 @@ import {useSelector} from "react-redux";
 export default ({ model, onModelChange }) => {
     const [closeFilter, setCloseFilter] = useState();
     const [unappliedModel, setUnappliedModel] = useState(model);
-    const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
-    const allSpecies = useSelector(state => state.biblio.allSpecies);
+    const allEntityTypes = useSelector(state => state.biblio.allEntityTypes);
     const doesFilterPass = useCallback((params) => {
         // doesFilterPass only gets called if the filter is active
-        return model.includes(params.data.species);
+        return model.includes(params.data.entity_type_name);
     }, [model]);
 
     const afterGuiAttached = useCallback(({ hidePopup }) => {
@@ -27,8 +26,9 @@ export default ({ model, onModelChange }) => {
         setUnappliedModel(model);
     }, [model]);
 
-    const onSpeciesChange = ({ target: { value,checked } } ) => {
+    const onEntityTypesChange = ({ target: { value,checked } } ) => {
         let newModel = [];
+        value = value === 'None' ? null : value;
         if(checked){
             newModel = unappliedModel ? unappliedModel.concat([value]) : [value];
         }
@@ -47,12 +47,13 @@ export default ({ model, onModelChange }) => {
 
     return (
         <div className="custom-filter">
-            <div>Select Species</div><hr/>
-            {Object.entries(curieToNameTaxon).filter(([key, value]) => allSpecies.includes(key)).map( ([key,value]) => {
+            <div>Select Entity Type</div><hr/>
+            {allEntityTypes.map((entityType) => {
+                let DisplayEntityType = entityType ? entityType : 'None';
                 return  <div>
-                            <input type="checkbox" id={key} value ={key} onChange={onSpeciesChange}/>
-                            <label htmlFor={key}> {value}</label>
-                        </div>
+                    <input type="checkbox" id={entityType} value ={DisplayEntityType} onChange={onEntityTypesChange}/>
+                    <label htmlFor={entityType}> {DisplayEntityType}</label>
+                </div>
             })}
             <hr/><button onClick={onClick}>Apply</button>
         </div>

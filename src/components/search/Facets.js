@@ -16,7 +16,11 @@ import {
     setDatePublished,
     setDateCreated,
     setModPreferencesLoaded,
-    setApplyToSingleTag
+    setApplyToSingleTag,
+    removeDatePubmedAdded,
+    removeDatePubmedModified,
+    removeDatePublished,
+    removeDateCreated
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse, ButtonGroup} from 'react-bootstrap';
@@ -43,14 +47,35 @@ export const RENAME_FACETS = {
     "mod_reference_types.keyword": "MOD reference type",
     "topics": "Topic",
     "confidence_levels": "Confidence level",
+    "source_methods": "Source method",
+    "source_evidence_assertions": "Source evidence assertion",
+    "datePubmedAdded": {
+        label: "Date Range: Added to PubMed",
+        value: (state) => state.search.datePubmedAdded,
+        action: removeDatePubmedAdded
+    },
+    "datePubmedModified": {
+        label: "Date Range: Modified in PubMed",
+        value: (state) => state.search.datePubmedModified,
+        action: removeDatePubmedModified
+    },
+    "datePublished": {
+        label: "Date Range: Published",
+        value: (state) => state.search.datePublished,
+        action: removeDatePublished
+    },
+    "dateCreated": {
+        label: "Date Range: Added to ABC",
+        value: (state) => state.search.dateCreated,
+        action: removeDateCreated
+    }
 }
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
-    "Topics and Entities": ["topics", "confidence_levels"],
-    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published","Date Added to ABC"]
-
+    "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
+    "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
 const DatePicker = ({facetName,currentValue,setValueFunction}) => {
@@ -68,7 +93,7 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
             let offset = dateStart.getTimezoneOffset();
             let parsedDateStart = Date.parse(dateRange[0])  + (offset * 60000);
             let parsedDateEnd = Date.parse(dateRange[1]) + (offset * 60000);
-            return [parsedDateStart,parsedDateEnd];
+            return [parsedDateStart, parsedDateEnd];
         }else{
             return '';
         }
@@ -113,10 +138,10 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         <div key={facetName} style={{textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em"}}>
             <h5>{facetName}</h5>
             <ButtonGroup aria-label="DateSetter" size ="sm" style={{display: "block"}}>
-                <Button variant="secondary" style={{'border-bottom-left-radius' : 0}} onClick={() => {handleFixedTimeClick('Day')}}>Day</Button>
+                <Button variant="secondary" style={{'borderBottomLeftRadius' : 0}} onClick={() => {handleFixedTimeClick('Day')}}>Day</Button>
                 <Button variant="secondary" onClick={() => {handleFixedTimeClick('Week')}}>Week</Button>
                 <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
-                <Button variant="secondary" style={{'border-bottom-right-radius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
+                <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
             </ButtonGroup>
             <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
         </div>
@@ -130,12 +155,30 @@ const DateFacet = ({facetsToInclude}) => {
   const dateCreated = useSelector(state => state.search.dateCreated);
 
   return (
-    <div>
-        <DatePicker facetName={facetsToInclude[2]} currentValue={datePublished} setValueFunction={setDatePublished}/>
-        <DatePicker facetName={facetsToInclude[0]} currentValue={datePubmedModified} setValueFunction={setDatePubmedModified}/>
-        <DatePicker facetName={facetsToInclude[1]} currentValue={datePubmedAdded} setValueFunction={setDatePubmedAdded}/>
-        <DatePicker facetName={facetsToInclude[3]} currentValue={dateCreated} setValueFunction={setDateCreated}/>
-    </div>
+        <div>
+            <Container>
+                <Row>
+                    <Col>
+                        <DatePicker facetName={facetsToInclude[2]} currentValue={datePublished} setValueFunction={setDatePublished}/>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <DatePicker facetName={facetsToInclude[0]} currentValue={datePubmedModified} setValueFunction={setDatePubmedModified}/>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <DatePicker facetName={facetsToInclude[1]} currentValue={datePubmedAdded} setValueFunction={setDatePubmedAdded}/>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <DatePicker facetName={facetsToInclude[3]} currentValue={dateCreated} setValueFunction={setDateCreated}/>
+                    </Col>
+                </Row>
+            </Container>
+        </div>
   )
 }
 
@@ -192,7 +235,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
             <span>
                 <FontAwesomeIcon icon={faCheckSquare} style= {includedChecked ? {color: "#28a745"} : {color: "#808080"}}
                     onClick={handleClickInclude}/>
-                &ensp;
+                &nbsp;
                 <FontAwesomeIcon icon={faMinusSquare} style= {excludedChecked ? {color: "#dc3545"} : {color: "#808080"}}
                      onClick={handleClickExclude}/>
             </span>
@@ -200,40 +243,38 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     }
 
     return (
-        <div>
+        <div className="facet-container">
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
 		    let key = facetToInclude.replaceAll(' ', '_');
-                    if (key !== 'topics' && key !== 'confidence_levels'){
+                    if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key)){
                         key = key + '.keyword';
                     }
                     if (key in searchFacets) {
                         let value = searchFacets[key];
                         return (
-                            <div key={facetToInclude} style={{textAlign: "left", paddingLeft: "2em"}}>
-                                <div>
-                                    <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
-                                    {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
-                                    {value.buckets && value.buckets.map(bucket =>
-                                        <Container key={bucket.key}>
-                                            <Row>
-                                                <Col sm={2}>
-                                                    {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
-                                                </Col>
-                                                <Col sm={7}>
-                                                    <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
-                                                </Col>
-                                                <Col>
-                                                <Badge variant="secondary">
-                                                    {['topics', 'confidence_levels'].includes(key) ? bucket.docs_count.doc_count : bucket.doc_count}
-                                                </Badge>
-                                                </Col>
-                                            </Row>
-                                        </Container>)}
+                            <div key={facetToInclude} className="facet-container">
+                               <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
+                               {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
+			       {value.buckets && value.buckets.map(bucket => (
+                                  <Container key={bucket.key}>
+                                     <Row className="align-items-center facet-item">
+                                        <Col xs={3} sm={2}>
+                                          {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
+                                        </Col>
+                                        <Col xs={6} sm={7}>
+                                          <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
+                                        </Col>
+                                        <Col xs={3} sm={3}>
+                                          <Badge variant="secondary">
+                                            {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && bucket.docs_count !== undefined ? bucket.docs_count.doc_count : bucket.doc_count}
+                                          </Badge>
+                                       </Col>
+                                    </Row>
+                                 </Container>
 
-				    
-                                    <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
-                                    <br/>
-                                </div>
+			       ))}
+                               <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
+                               <br/>
                             </div>
                         )
                     } else {
@@ -315,10 +356,12 @@ const Facets = () => {
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     const searchQuery = useSelector(state => state.search.searchQuery);
+    const readyToFacetSearch = useSelector(state => state.search.readyToFacetSearch);
     const facetsLoading = useSelector(state => state.search.facetsLoading);
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const datePublished= useSelector(state => state.search.datePublished);
+    const dateCreated = useSelector(state => state.search.dateCreated);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
@@ -327,17 +370,7 @@ const Facets = () => {
 
     const handleCheckboxChange = (event) => {
         dispatch(setApplyToSingleTag(event.target.checked));
-        refreshData();
     };
-
-    const refreshData = () => {
-        dispatch(searchReferences());
-    };
-
-    // to trigger refresh when applyToSingleTag changes
-    useEffect(() => {
-        refreshData();
-    }, [applyToSingleTag, dispatch])
     
     const toggleFacetGroup = (facetGroupLabel) => {
         let newOpenFacets = new Set([...openFacets]);
@@ -353,13 +386,13 @@ const Facets = () => {
         if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
             dispatch(fetchInitialFacets(searchFacetsLimits));
         } else {
-            if (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0) {
+            if (readyToFacetSearch === true && (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0)) {
                 dispatch(setSearchResultsPage(1));
                 dispatch(setAuthorFilter(""));
                 dispatch(searchReferences());
             }
         }
-    }, [searchFacetsValues,searchExcludedFacetsValues]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchFacetsValues,searchExcludedFacetsValues, applyToSingleTag]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         let newOpenFacets = new Set([...openFacets]);
@@ -384,7 +417,7 @@ const Facets = () => {
                     dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
                 }
             }
-            else{
+            else {
                 dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
             }
             dispatch(searchReferences());
