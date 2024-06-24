@@ -238,9 +238,6 @@ const TopicEntityCreate = () => {
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
 
-    if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
-      dispatch(changeFieldEntityEntityList(entityText, accessToken, 'wb', taxonSelectWB, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
-
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
