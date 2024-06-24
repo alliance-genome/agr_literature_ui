@@ -188,7 +188,7 @@ const TopicEntityCreate = () => {
   }, [topicDescendants, accessToken, dispatch])
 
   useEffect( () => {
-    if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+    if (taxonSelect === 'use_wb' && taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
       dispatch(changeFieldEntityEntityList(entityText, accessToken, 'wb', taxonSelectWB, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
     else if (taxonSelect !== '' && taxonSelect !== undefined && entityTypeSelect !== '') {
       dispatch(changeFieldEntityEntityList(entityText, accessToken, 'alliance', taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
@@ -238,9 +238,6 @@ const TopicEntityCreate = () => {
     const subPath = 'topic_entity_tag/';
     const method = 'POST';
 
-    if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
-      dispatch(changeFieldEntityEntityList(entityText, accessToken, 'wb', taxonSelectWB, curieToNameEntityType[entityTypeSelect], taxonToMod)) }
-
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
         console.log(entityResult);
@@ -251,7 +248,7 @@ const TopicEntityCreate = () => {
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
 	  updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
           updateJson['entity'] = entityResult.curie;
-          if (taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+          if (taxonSelect === 'use_wb' && taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
             updateJson['entity_id_validation'] = 'wb';
 	    updateJson['species'] = taxonSelectWB; }
           let array = [subPath, updateJson, method]
