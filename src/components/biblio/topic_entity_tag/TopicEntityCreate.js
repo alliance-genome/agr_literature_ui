@@ -320,6 +320,10 @@ const TopicEntityCreate = () => {
     }
     else if ( entityResultList && entityResultList.length > 1){
       console.error("Error processing entry: too many entities");
+      dispatch({
+        type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+        payload: { responseMessage: 'Only one entity allowed on edit.  Please create additonal tags with the add function.', accessLevel: accessLevel  }
+      });
     }
   }
 
