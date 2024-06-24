@@ -3,7 +3,12 @@ import {useDispatch, useSelector} from "react-redux";
 import axios from "axios";
 import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
-import {changeFieldEntityAddGeneralField, setEditTag, setTypeaheadName2CurieMap} from "../../actions/biblioActions";
+import {
+    changeFieldEntityAddGeneralField,
+    changeFieldEntityAddTaxonSelect,
+    setEditTag,
+    setTypeaheadName2CurieMap
+} from "../../actions/biblioActions";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faEdit, faTrashAlt} from "@fortawesome/free-solid-svg-icons";
 import Container from "react-bootstrap/Container";
@@ -83,13 +88,15 @@ export default (props) => {
         console.log(props.data,editTag);
         if(editTag === props.data.topic_entity_tag_id){
             dispatch(setEditTag(null));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: ''} }));
         }
         else{
             dispatch(setEditTag(props.data.topic_entity_tag_id));
             dispatch(setTypeaheadName2CurieMap({[props.data.topic_name]: props.data.topic}));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: props.data.topic} }));
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: props.data.species } }));
+            dispatch(changeFieldEntityAddTaxonSelect(props.data.species));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: props.data.note ? props.data.note : '' } }));
             if (props.data.entity_type){
                 console.log('doing this stuff', props.data.entity_type)
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: props.data.entity_name } }));

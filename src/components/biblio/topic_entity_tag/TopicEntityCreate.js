@@ -138,19 +138,26 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
     }
     if (topicSelect !== speciesATP) {
-      if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
+      if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0 && editTag === null) {
           dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
       }
     }
-    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
-    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
-    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
-    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
+    if(editTag === null){
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: '' } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
+    }
+
+
+
   }, [topicSelect, dispatch]);
 
-  useEffect(() => {	
+  useEffect(() => {
+    if(editTag === null){
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+    }
   }, [entityTypeSelect, dispatch]);
     
   useEffect(() => {
@@ -175,6 +182,7 @@ const TopicEntityCreate = () => {
 
   useEffect( () => {
     if (accessLevel in modToTaxon) {
+      console.log("When is this happening?");
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -262,19 +270,18 @@ const TopicEntityCreate = () => {
       return
     }
     const forApiArray = []
-    const subPath = 'topic_entity_tag/'+editTag.editTag;
+    const subPath = 'topic_entity_tag/'+editTag;
     const method = 'PATCH';
     if ( entityResultList && entityResultList.length === 1 ) {
-      console.log('good!');
       let entityResult = entityResultList[0];
       let updateJson = initializeUpdateJson(refCurie);
       updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
       updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
       updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
       updateJson['entity'] = entityResult.curie;
-      //add note! #TODO
       let array = [accessToken, subPath, updateJson, method];
       const response = await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
+      console.log(updateJson);
 
       setTypeaheadOptions([]);
       dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: null }}));
