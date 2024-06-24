@@ -40,6 +40,7 @@ const TopicEntityCreate = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  const uid = useSelector(state => state.isLogged.uid);
     
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector(state => state.biblio.entityModalText);
@@ -305,6 +306,7 @@ const TopicEntityCreate = () => {
       updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
       updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
       updateJson['entity'] = entityResult.curie;
+      updateJson['updated_by'] = uid;
       let array = [accessToken, subPath, updateJson, method];
       const response = await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
       console.log(updateJson);
