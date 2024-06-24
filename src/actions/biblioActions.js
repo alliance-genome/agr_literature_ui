@@ -608,9 +608,9 @@ const setEntityResultList = (entityResultList) => ({
   payload: { entityResultList: entityResultList }
 });
 
-export const setEditMode = (editMode) => ({
-  type: 'SET_EDIT_MODE',
-  payload: { editMode: editMode }
+export const setEditTag = (editTag) => ({
+  type: 'SET_EDIT_TAG',
+  payload: editTag
 });
 
 const getRevertButtonFromFontAwesomeElement = (activeElement) => {

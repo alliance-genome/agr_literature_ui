@@ -3,13 +3,20 @@ import {useDispatch, useSelector} from "react-redux";
 import axios from "axios";
 import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
-import {changeFieldEntityAddGeneralField,setEditMode} from "../../actions/biblioActions";
+import {changeFieldEntityAddGeneralField, setEditTag, setTypeaheadName2CurieMap} from "../../actions/biblioActions";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faEdit, faTrashAlt} from "@fortawesome/free-solid-svg-icons";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 export default (props) => {
     const dispatch = useDispatch();
     const accessToken = useSelector(state => state.isLogged.accessToken);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
+    const editTag = useSelector(state => state.biblio.editTag);
+    const allState = useSelector(state => state.biblio);
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
     const [showModal, setShowModal] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -73,15 +80,34 @@ export default (props) => {
     };
 
     const handleEditClick = () => {
-        console.log(props.data);
-        dispatch(setEditMode(true));
+        console.log(props.data,editTag);
+        if(editTag === props.data.topic_entity_tag_id){
+            dispatch(setEditTag(null));
+        }
+        else{
+            dispatch(setEditTag(props.data.topic_entity_tag_id));
+            dispatch(setTypeaheadName2CurieMap({[props.data.topic_name]: props.data.topic}));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: props.data.topic} }));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: props.data.species } }));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
+            if (props.data.entity_type){
+                console.log('doing this stuff', props.data.entity_type)
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: props.data.entity_name } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: props.data.entity_type } }));
+            }
+            else{
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
+            }
+            console.log(allState);
+        }
+
+
 
         //All entries with typeahead break
 
-        //dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: 'props.data.topic' } }));
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: props.data.entity_type } }));
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: props.data.species } }));
+
+
     }
 
 
@@ -104,8 +130,11 @@ export default (props) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <button onClick={() => handleDeleteClick()}>Delete</button>
-            <button onClick={() => handleEditClick()}>Edit</button>
+            <Button onClick={() => handleDeleteClick()} size='sm'><FontAwesomeIcon icon={faTrashAlt}/></Button>
+            &nbsp;
+            <Button onClick={() => handleEditClick()} size='sm' variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button>
+
+
         </div> : null}
     </span>
     );

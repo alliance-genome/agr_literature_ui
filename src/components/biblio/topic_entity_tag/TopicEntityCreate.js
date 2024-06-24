@@ -11,7 +11,8 @@ import {
     setEntityModalText,
     setTypeaheadName2CurieMap,
     updateButtonBiblioEntityAdd,
-    setTopicEntitySourceId
+    setTopicEntitySourceId,
+    setEditTag
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
 import {
@@ -33,7 +34,7 @@ import Spinner from "react-bootstrap/Spinner";
 
 const TopicEntityCreate = () => {
   const dispatch = useDispatch();
-  const editMode = useSelector(state => state.biblio.editMode);
+  const editTag = useSelector(state => state.biblio.editTag);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
@@ -138,7 +139,6 @@ const TopicEntityCreate = () => {
     }
     if (topicSelect !== speciesATP) {
       if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
-          console.log(modToTaxon[accessLevel][0]);
           dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
       }
     }
@@ -224,7 +224,7 @@ const TopicEntityCreate = () => {
           let updateJson = initializeUpdateJson(refCurie);
           updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
           updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
-	  updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
+	      updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
           updateJson['entity'] = entityResult.curie;
           let array = [subPath, updateJson, method]
           forApiArray.push(array); } } }
@@ -255,6 +255,38 @@ const TopicEntityCreate = () => {
     if (topicTypeaheadRef.current !== null) {
       topicTypeaheadRef.current.clear();
     }
+  }
+
+  async function patchEntities(refCurie) {
+    if (topicSelect === null) {
+      return
+    }
+    const forApiArray = []
+    const subPath = 'topic_entity_tag/'+editTag.editTag;
+    const method = 'PATCH';
+    if ( entityResultList && entityResultList.length === 1 ) {
+      console.log('good!');
+      let entityResult = entityResultList[0];
+      let updateJson = initializeUpdateJson(refCurie);
+      updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
+      updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
+      updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
+      updateJson['entity'] = entityResult.curie;
+      //add note! #TODO
+      let array = [accessToken, subPath, updateJson, method];
+      const response = await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
+
+      setTypeaheadOptions([]);
+      dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: null }}));
+      if (topicTypeaheadRef.current !== null) {
+        topicTypeaheadRef.current.clear();
+      }
+      dispatch(setEditTag(null));
+    }
+    else if ( entityResultList && entityResultList.length > 1){
+      console.log('too many entities');
+    }
+    console.log ('patch', refCurie);
   }
 
   if (accessLevel in modToTaxon) {
@@ -317,10 +349,11 @@ const TopicEntityCreate = () => {
 			  setTypeaheadOptions(results.filter(item => !item.obsolete && topicDescendants.has(item.curie)).map(item => item.name));
                         }}
                         onChange={(selected) => {
-                          console.log(typeaheadName2CurieMap[selected[0]]);
                           dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
+                          console.log(typeaheadName2CurieMap);
                         }}
                         options={typeaheadOptions}
+                        //selected={['gene']}
                         selected={topicSelect !== undefined && topicSelect !== null && topicSelect !== '' ? [getMapKeyByValue(typeaheadName2CurieMap, topicSelect)] : []}
         />
       </Col>
@@ -414,7 +447,7 @@ const TopicEntityCreate = () => {
         <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
       </Col>
       <Col className="form-label col-form-label" sm="1">
-        {editMode ? <Button>Edit </Button> :
+        {editTag ? <Button variant="outline-danger" onClick={() => patchEntities(referenceJsonLive.curie)}>Edit </Button> :
         <Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button>
         }
       </Col>

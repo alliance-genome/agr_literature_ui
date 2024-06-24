@@ -56,7 +56,7 @@ const initialState = {
 //   updateCitationFlag: false,	// citation now updates from database triggers
   referenceCurie: '',
   referenceJsonLive: {},
-  editMode: false,
+  editTag: false,
   referenceJsonDb: {},
   referenceJsonHasChange: {},
   referenceFiles: [],
@@ -1125,10 +1125,10 @@ export default function(state = initialState, action) {
         topicEntitySourceId: action.payload
       };
 
-    case 'SET_EDIT_MODE':
+    case 'SET_EDIT_TAG':
       return {
         ...state,
-        editMode: action.payload
+        editTag: action.payload
       };
      
     case 'UPDATE_XREF_PATTERNS':
