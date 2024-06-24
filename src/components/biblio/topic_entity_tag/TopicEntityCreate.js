@@ -182,7 +182,6 @@ const TopicEntityCreate = () => {
 
   useEffect( () => {
     if (accessLevel in modToTaxon) {
-      console.log("When is this happening?");
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])) }
   }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -226,8 +225,6 @@ const TopicEntityCreate = () => {
     const method = 'POST';
     if ( entityResultList && entityResultList.length > 0 ) {
       for (const entityResult of entityResultList.values()) {
-        console.log(entityResult);
-        console.log(entityResult.curie);
         if ( (entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'duplicate') ) {
           let updateJson = initializeUpdateJson(refCurie);
           updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
@@ -291,9 +288,8 @@ const TopicEntityCreate = () => {
       dispatch(setEditTag(null));
     }
     else if ( entityResultList && entityResultList.length > 1){
-      console.log('too many entities');
+      console.error("Error processing entry: too many entities");
     }
-    console.log ('patch', refCurie);
   }
 
   if (accessLevel in modToTaxon) {
@@ -357,7 +353,6 @@ const TopicEntityCreate = () => {
                         }}
                         onChange={(selected) => {
                           dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
-                          console.log(typeaheadName2CurieMap);
                         }}
                         options={typeaheadOptions}
                         //selected={['gene']}

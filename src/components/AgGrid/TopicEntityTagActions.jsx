@@ -85,7 +85,6 @@ export default (props) => {
     };
 
     const handleEditClick = () => {
-        console.log(props.data,editTag);
         if(editTag === props.data.topic_entity_tag_id){
             dispatch(setEditTag(null));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: ''} }));
@@ -98,7 +97,6 @@ export default (props) => {
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: props.data.note ? props.data.note : '' } }));
             if (props.data.entity_type){
-                console.log('doing this stuff', props.data.entity_type)
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: props.data.entity_name } }));
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: props.data.entity_type } }));
             }
@@ -106,15 +104,7 @@ export default (props) => {
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
             }
-            console.log(allState);
         }
-
-
-
-        //All entries with typeahead break
-
-
-
     }
 
 
