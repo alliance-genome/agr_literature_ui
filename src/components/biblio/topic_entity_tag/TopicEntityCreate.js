@@ -144,24 +144,26 @@ const TopicEntityCreate = () => {
 
   // effect to reset view and other fields when topic changes
   useEffect(() => {
-    if (entityTypeList.includes(topicSelect)) {
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));
-      if (topicSelect === speciesATP) {
-	  dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: '' } }));
+    if (editTag === null) {
+      if (entityTypeList.includes(topicSelect)) {
+        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: topicSelect}}));
+        if (topicSelect === speciesATP) {
+          dispatch(changeFieldEntityAddGeneralField({target: {id: 'taxonSelect', value: ''}}));
           setIsSpeciesSelected(true); // reset when topic changes
+        }
+      } else if (geneDescendants !== null && geneDescendants.includes(topicSelect)) {
+        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000005'}}));
+      } else if (alleleDescendants !== null && alleleDescendants.includes(topicSelect)) {
+        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: 'ATP:0000006'}}));
+      } else {
+        setSelectedSpecies([]); // Clear selected species
+        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityTypeSelect', value: ''}}));
+        dispatch(changeFieldEntityAddGeneralField({target: {id: 'entityResultList', value: []}}));
       }
-    } else if (geneDescendants !== null && geneDescendants.includes(topicSelect)) {
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000005' } }));
-    } else if (alleleDescendants !== null && alleleDescendants.includes(topicSelect)) {
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: 'ATP:0000006' } }));
-    } else {
-      setSelectedSpecies([]); // Clear selected species
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
     }
     if (topicSelect !== speciesATP) {
       if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0 && editTag === null) {
-          dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
+        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
       }
     }
     if(editTag === null){
