@@ -299,17 +299,25 @@ const TopicEntityCreate = () => {
     const forApiArray = []
     const subPath = 'topic_entity_tag/'+editTag;
     const method = 'PATCH';
-    if ( entityResultList && entityResultList.length === 1 ) {
+    if ( entityResultList && entityResultList.length > 1){
+      console.error("Error processing entry: too many entities");
+      dispatch({
+        type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+        payload: { responseMessage: 'Only one entity allowed on edit.  Please create additonal tags with the add function.', accessLevel: accessLevel  }
+      });
+    }
+    else {
       let entityResult = entityResultList[0];
       let updateJson = initializeUpdateJson(refCurie);
-      updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
+      updateJson['entity_id_validation'] = (entityTypeSelect === '') ? null : 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
       updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
       updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
-      updateJson['entity'] = entityResult.curie;
+      if(entityResult){
+        updateJson['entity'] = entityResult.curie;
+      }
       updateJson['updated_by'] = uid;
       let array = [accessToken, subPath, updateJson, method];
       const response = await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
-      console.log(updateJson);
 
       setTypeaheadOptions([]);
       dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: null }}));
@@ -318,13 +326,7 @@ const TopicEntityCreate = () => {
       }
       dispatch(setEditTag(null));
     }
-    else if ( entityResultList && entityResultList.length > 1){
-      console.error("Error processing entry: too many entities");
-      dispatch({
-        type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-        payload: { responseMessage: 'Only one entity allowed on edit.  Please create additonal tags with the add function.', accessLevel: accessLevel  }
-      });
-    }
+
   }
 
   if (accessLevel in modToTaxon) {
