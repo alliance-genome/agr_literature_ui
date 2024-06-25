@@ -309,7 +309,7 @@ const TopicEntityCreate = () => {
     else {
       let entityResult = entityResultList[0];
       let updateJson = initializeUpdateJson(refCurie);
-      updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
+      updateJson['entity_id_validation'] = (entityTypeSelect === '') ? null : 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
       updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
       updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
       if(entityResult){
@@ -318,7 +318,6 @@ const TopicEntityCreate = () => {
       updateJson['updated_by'] = uid;
       let array = [accessToken, subPath, updateJson, method];
       const response = await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
-      console.log(updateJson);
 
       setTypeaheadOptions([]);
       dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: null }}));
