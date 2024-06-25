@@ -249,7 +249,7 @@ const TopicEntityCreate = () => {
 	  updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
           updateJson['entity'] = entityResult.curie;
           if (taxonSelect === 'use_wb' && taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
-            updateJson['entity_id_validation'] = 'wb';
+            updateJson['entity_id_validation'] = 'WB';
 	    updateJson['species'] = taxonSelectWB; }
           let array = [subPath, updateJson, method]
           forApiArray.push(array); } } }
