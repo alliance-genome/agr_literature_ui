@@ -711,6 +711,11 @@ const setEntityResultList = (entityResultList) => ({
   payload: { entityResultList: entityResultList }
 });
 
+export const setEditTag = (editTag) => ({
+  type: 'SET_EDIT_TAG',
+  payload: editTag
+});
+
 const getRevertButtonFromFontAwesomeElement = (activeElement) => {
   if (activeElement.nodeName === 'BUTTON') { return activeElement; }
   else if (activeElement.nodeName === 'svg') { return activeElement.parentNode; }

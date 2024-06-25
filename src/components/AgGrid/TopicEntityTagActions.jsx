@@ -1,13 +1,27 @@
 import React, {useState} from 'react';
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import axios from "axios";
 import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
+import {
+    changeFieldEntityAddGeneralField,
+    changeFieldEntityAddTaxonSelect,
+    setEditTag,
+    setTypeaheadName2CurieMap
+} from "../../actions/biblioActions";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faEdit, faTrashAlt} from "@fortawesome/free-solid-svg-icons";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 export default (props) => {
+    const dispatch = useDispatch();
     const accessToken = useSelector(state => state.isLogged.accessToken);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
+    const editTag = useSelector(state => state.biblio.editTag);
+    const allState = useSelector(state => state.biblio);
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
     const [showModal, setShowModal] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -68,28 +82,58 @@ export default (props) => {
         setShowModal(false);
      }
     };
+
+    const handleEditClick = () => {
+        if(editTag === props.data.topic_entity_tag_id){
+            dispatch(setEditTag(null));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: ''} }));
+        }
+        else{
+            dispatch(setEditTag(props.data.topic_entity_tag_id));
+            dispatch(setTypeaheadName2CurieMap({[props.data.topic_name]: props.data.topic}));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: props.data.topic} }));
+            dispatch(changeFieldEntityAddTaxonSelect(props.data.species));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: props.data.note ? props.data.note : '' } }));
+            if (props.data.entity_type){
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: props.data.entity_name } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: props.data.entity_type } }));
+            }
+            else{
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
+            }
+        }
+    }
+
+
     let show_del = props.data.topic_entity_tag_source.validation_type === 'professional_biocurator' &&
         props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel;
     return (
     <span>
-        { show_del   ?
-            <div>
-            <Modal  show={showModal} >
+    { show_del   ?
+        <div>
+            <Modal show={showModal}>
                 <Modal.Header closeButton>
-                 <Modal.Title>{title}</Modal.Title>
+                    <Modal.Title>{title}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>Topic:{topicBody}<br/>Entity Type:{entityTypeBody}<br/>Entity:{entityBody}<br/>No Data:{noDataBody}<br/>Novel Data:{novelDataBody}</Modal.Body>
+                <Modal.Body>Topic:{topicBody}<br/>Entity Type:{entityTypeBody}<br/>Entity:{entityBody}<br/>No
+                    Data:{noDataBody}<br/>Novel Data:{novelDataBody}</Modal.Body>
                 <Modal.Footer>
-                  <Button variant="cancel" onClick={handleClose}>
-                   Cancel
-                  </Button>
-                  <Button variant="confirm" onClick={() => handleConfirm()} >
-                   Confirm
-                  </Button>
-                 </Modal.Footer>
+                    <Button variant="cancel" onClick={handleClose}>
+                        Cancel
+                    </Button>
+                    <Button variant="confirm" onClick={() => handleConfirm()}>
+                        Confirm
+                    </Button>
+                </Modal.Footer>
             </Modal>
-            <button onClick={() => handleDeleteClick()}>Delete</button>
-            </div>  : null}
+            <Button onClick={() => handleDeleteClick()} size='sm'><FontAwesomeIcon icon={faTrashAlt}/></Button>
+            &nbsp;
+            <Button onClick={() => handleEditClick()} size='sm' variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button>
+
+
+        </div> : null}
     </span>
     );
 };
