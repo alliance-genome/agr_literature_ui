@@ -390,7 +390,6 @@ const TopicEntityCreate = () => {
                           dispatch(changeFieldEntityAddGeneralField({target: {id: 'topicSelect', value: typeaheadName2CurieMap[selected[0]] }}));
                         }}
                         options={typeaheadOptions}
-                        //selected={['gene']}
                         selected={topicSelect !== undefined && topicSelect !== null && topicSelect !== '' ? [getMapKeyByValue(typeaheadName2CurieMap, topicSelect)] : []}
         />
       </Col>

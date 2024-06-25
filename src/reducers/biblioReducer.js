@@ -57,7 +57,7 @@ const initialState = {
 //   updateCitationFlag: false,	// citation now updates from database triggers
   referenceCurie: '',
   referenceJsonLive: {},
-  editTag: false,
+  editTag: null,
   referenceJsonDb: {},
   referenceJsonHasChange: {},
   referenceFiles: [],
