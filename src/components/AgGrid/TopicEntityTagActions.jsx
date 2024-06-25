@@ -94,6 +94,7 @@ export default (props) => {
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: props.data.topic} }));
             dispatch(changeFieldEntityAddTaxonSelect(props.data.species));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: props.data.negated } }));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: props.data.note ? props.data.note : '' } }));
             if (props.data.entity_type){
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: props.data.entity_name } }));
