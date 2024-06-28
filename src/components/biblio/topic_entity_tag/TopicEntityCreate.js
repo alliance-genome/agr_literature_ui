@@ -224,7 +224,7 @@ const TopicEntityCreate = () => {
     return keyByValue.map(e => e[0])[0];
   }
 
-  function initializeUpdateJson(refCurie) {
+  function initializeUpdateJson(refCurie, entityType = undefined, entity = undefined, taxonID, entityIdValidation = 'alliance') {
     let updateJson = {};
     updateJson['reference_curie'] = refCurie;
     updateJson['topic'] = topicSelect;
@@ -235,6 +235,12 @@ const TopicEntityCreate = () => {
     updateJson['novel_topic_data'] = novelCheckbox;
     updateJson['confidence_level'] = null;
     updateJson['topic_entity_tag_source_id'] = topicEntitySourceId;
+    if (entityType !== undefined && entity !== undefined) {
+      updateJson['entity_id_validation'] = entityIdValidation
+      updateJson['entity_type'] = (entityType === '') ? null : entityType;
+      updateJson['species'] = (taxonID === '') ? null : taxonID;
+      updateJson['entity'] = entity;
+    }
     return updateJson;
   }
 
@@ -255,11 +261,13 @@ const TopicEntityCreate = () => {
         console.log(entityResult);
         console.log(entityResult.curie);
         if (!(['no Alliance curie', 'duplicate', 'obsolete entity', 'not found at WB', 'no WB curie', 'no SGD curie'].includes(entityResult.curie))) {
-          let updateJson = initializeUpdateJson(refCurie);
-          updateJson['entity_id_validation'] = 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
-          updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
-          updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
-          updateJson['entity'] = entityResult.curie;
+          let taxonId = taxonSelect;
+          let entityIdValidation = 'alliance';
+          if (taxonSelect === 'use_wb' && taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+            entityIdValidation = 'WB';
+            taxonId = taxonSelectWB;
+          }
+          let updateJson = initializeUpdateJson(refCurie, entityTypeSelect, entityResult.curie, taxonId, entityIdValidation);
           if (taxonSelect === 'use_wb' && taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
             updateJson['entity_id_validation'] = 'WB';
             updateJson['species'] = taxonSelectWB; }
@@ -267,8 +275,6 @@ const TopicEntityCreate = () => {
           forApiArray.push(array); } } }
     else if (taxonSelect !== '' && taxonSelect !== undefined) {
       let updateJson = initializeUpdateJson(refCurie);
-      // curators can pick an entity_type without adding an entity list, so send that to API so they can get an error message
-      updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
       let array = [subPath, updateJson, method]
       forApiArray.push(array); }
 
@@ -298,7 +304,6 @@ const TopicEntityCreate = () => {
     if (topicSelect === null) {
       return
     }
-    const forApiArray = []
     const subPath = 'topic_entity_tag/'+editTag;
     const method = 'PATCH';
     if ( entityResultList && entityResultList.length > 1){
