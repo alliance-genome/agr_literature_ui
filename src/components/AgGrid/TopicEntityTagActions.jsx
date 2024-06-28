@@ -92,7 +92,13 @@ export default (props) => {
             dispatch(setEditTag(props.data.topic_entity_tag_id));
             dispatch(setTypeaheadName2CurieMap({[props.data.topic_name]: props.data.topic}));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: props.data.topic} }));
-            dispatch(changeFieldEntityAddTaxonSelect(props.data.species));
+            if (props.data.entity_id_validation === 'WB') {
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: 'use_wb' } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelectWB', value: props.data.species } }));
+            }
+            else{
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: props.data.species } }));
+            }
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: props.data.negated } }));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: props.data.note ? props.data.note : '' } }));
