@@ -268,6 +268,9 @@ const TopicEntityCreate = () => {
             taxonId = taxonSelectWB;
           }
           let updateJson = initializeUpdateJson(refCurie, entityTypeSelect, entityResult.curie, taxonId, entityIdValidation);
+          if (taxonSelect === 'use_wb' && taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+            updateJson['entity_id_validation'] = 'WB';
+            updateJson['species'] = taxonSelectWB; }
           let array = [subPath, updateJson, method]
           forApiArray.push(array); } } }
     else if (taxonSelect !== '' && taxonSelect !== undefined) {
@@ -316,6 +319,9 @@ const TopicEntityCreate = () => {
       updateJson['entity_id_validation'] = (entityTypeSelect === '') ? null : 'alliance'; // TODO: make this a select with 'alliance', 'mod', 'new'
       updateJson['entity_type'] = (entityTypeSelect === '') ? null : entityTypeSelect;
       updateJson['species'] = (taxonSelect === '') ? null : taxonSelect;
+      if (taxonSelect === 'use_wb' && taxonSelectWB !== '' && taxonSelectWB !== undefined && entityTypeSelect !== '') {
+        updateJson['entity_id_validation'] = 'WB';
+        updateJson['species'] = taxonSelectWB; }
       if(entityResult){
         updateJson['entity'] = entityResult.curie;
       }
