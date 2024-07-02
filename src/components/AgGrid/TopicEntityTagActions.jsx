@@ -5,7 +5,6 @@ import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
 import {
     changeFieldEntityAddGeneralField,
-    changeFieldEntityAddTaxonSelect,
     setEditTag,
     setTypeaheadName2CurieMap
 } from "../../actions/biblioActions";
@@ -21,21 +20,15 @@ export default (props) => {
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const editTag = useSelector(state => state.biblio.editTag);
-    const allState = useSelector(state => state.biblio);
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
     const [showModal, setShowModal] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
     const handleClose = () => { setShowModal(false);}
-    const handleConfirm = () => {
-        setConfirmDelete(true);
-        handleDeleteConfirm();
-    }
-    const [title, setTitle] = useState("Please confirm delete here:");
-    const [topicBody, setTopicBody] = useState("body here1");
-    const [entityTypeBody, setEntityTypeBody] = useState("body here1");
-    const [entityBody, setEntityBody] = useState("body here1");
-    const [noDataBody, setNoDataBody] = useState("body here1");
-    const [novelDataBody, setNovelDataBody] = useState("body here1");
+    const title = "Please confirm delete here:";
+    const [topicBody, setTopicBody] = useState("");
+    const [entityTypeBody, setEntityTypeBody] = useState("");
+    const [entityBody, setEntityBody] = useState("");
+    const [noDataBody, setNoDataBody] = useState("");
+    const [novelDataBody, setNovelDataBody] = useState("");
 
     const handleDeleteClick = async () => {
         let mod = props.data.topic_entity_tag_source.secondary_data_provider_abbreviation;
@@ -57,7 +50,6 @@ export default (props) => {
     }
 
     const handleDeleteConfirm = async () => {
-     if (confirmDelete) {
         let id = props.data.topic_entity_tag_id;
         try {
             const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + id;
@@ -80,7 +72,6 @@ export default (props) => {
             console.error("Error deleting item:", error);
         }
         setShowModal(false);
-     }
     };
 
     const handleEditClick = () => {
@@ -120,17 +111,24 @@ export default (props) => {
     <span>
     { show_del   ?
         <div>
-            <Modal show={showModal}>
+            <Modal show={showModal} onHide={handleClose}>
                 <Modal.Header closeButton>
                     <Modal.Title>{title}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>Topic:{topicBody}<br/>Entity Type:{entityTypeBody}<br/>Entity:{entityBody}<br/>No
-                    Data:{noDataBody}<br/>Novel Data:{novelDataBody}</Modal.Body>
+                <Modal.Body>
+                    <Container>
+                        <Row><Col md="4">Topic:</Col><Col>{topicBody}</Col></Row>
+                        <Row><Col md="4">Entity Type:</Col><Col>{entityTypeBody}</Col></Row>
+                        <Row><Col md="4">Entity:</Col><Col>{entityBody}</Col></Row>
+                        <Row><Col md="4">No Data:</Col><Col>{noDataBody}</Col></Row>
+                        <Row><Col md="4">Novel Data:</Col><Col>{novelDataBody}</Col></Row>
+                    </Container>
+                </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="cancel" onClick={handleClose}>
+                    <Button onClick={handleClose}>
                         Cancel
                     </Button>
-                    <Button variant="confirm" onClick={() => handleConfirm()}>
+                    <Button variant="danger" onClick={handleDeleteConfirm}>
                         Confirm
                     </Button>
                 </Modal.Footer>
