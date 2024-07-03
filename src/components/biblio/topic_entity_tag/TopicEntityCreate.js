@@ -172,9 +172,6 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: false } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: false } }));
     }
-
-
-
   }, [topicSelect, dispatch]);
 
   useEffect(() => {
@@ -327,6 +324,7 @@ const TopicEntityCreate = () => {
       }
       updateJson['updated_by'] = uid;
       let array = [accessToken, subPath, updateJson, method];
+      dispatch(setBiblioUpdatingEntityAdd(1));
       const response = await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
 
       setTypeaheadOptions([]);
@@ -497,7 +495,7 @@ const TopicEntityCreate = () => {
         <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
       </Col>
       <Col className="form-label col-form-label" sm="1">
-        {editTag ? <Button variant="outline-danger" onClick={() => patchEntities(referenceJsonLive.curie)}>Edit </Button> :
+        {editTag ? <Button variant="outline-danger" onClick={() => patchEntities(referenceJsonLive.curie)}>{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Edit"}</Button> :
         <Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)} >{biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm"/> : "Add"}</Button>
         }
       </Col>
