@@ -9,6 +9,7 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Form from 'react-bootstrap/Form';
 import axios from "axios";
+import Modal from 'react-bootstrap/Modal';
 
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 
@@ -285,9 +286,11 @@ const FileUpload = ({main_or_supp}) => {
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
   let accessLevel = oktaMod;
+
   if (testerMod !== 'No') { accessLevel = testerMod; }
     else if (oktaDeveloper) { accessLevel = 'developer'; }
   // FileUpload accessLevel can be developer to see all files and upload as PMC
+    
   if (accessLevel === 'developer') {
     if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
       accessLevel = 'No';
@@ -296,46 +299,84 @@ const FileUpload = ({main_or_supp}) => {
       accessLevel = null;
     }
   }
+  
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [fileToReUpload, setFileToReUpload] = useState(null);
 
+  const handleConfirmUpload = () => {
+    console.log('Hello Confirm upload');	
+    setShowConfirmModal(false);
+    if (fileToReUpload) {
+	uploadFile(fileToReUpload, true);
+	setFileToReUpload(null); // reset fileToReUpload
+    }
+  };
+
+  const handleCancelUpload = () => {
+    console.log('Hello Cancel upload');
+    setShowConfirmModal(false);
+    setFileToReUpload(null);
+    dispatch(setFileUploadingCount(0)); // reset file uploading count
+  };
+    
+  const uploadFile = (file, uploadIfAlreadyConverted = false) => {
+    //  const reader = new FileReader()
+    //  reader.onabort = () => console.log('file reading was aborted')
+    //  reader.onerror = () => console.log('file reading has failed')
+    //  reader.onload = () => {}
+    //  reader.readAsBinaryString(file);
+    const formData = new FormData();
+    formData.append("file", file);
+    let fileName = "";
+    let fileExtension = "";
+    if (file.name.toLowerCase().endsWith(".tar.gz")) {
+      fileName = file.name.split(".").slice(0, -2).join(".");
+      fileExtension = file.name.split(".").slice(-2).join(".");
+    } else {
+      fileName = file.name.split(".").slice(0, -1).join(".");
+      fileExtension = file.name.split(".").pop();
+    }
+
+    let url = `${process.env.REACT_APP_RESTAPI}/reference/referencefile/file_upload/?reference_curie=${referenceCurie}&display_name=${fileName}&file_class=${main_or_supp}&file_publication_status=final&file_extension=${fileExtension}&is_annotation=false`;
+    if (accessLevel !== null) {
+      url += `&mod_abbreviation=${accessLevel}`;
+    }
+    if (uploadIfAlreadyConverted) {
+      url += "&upload_if_already_converted=True";
+    }
+
+    if (accessLevel !== 'No') {
+      axios.post(url, formData, {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "multipart/form-data",
+        }
+      }).then((res) => {
+        dispatch(fileUploadResult(`<strong>${file.name}</strong>`, 'success<br/>'));
+        dispatch(setFileUploadingCount(0)); // Reset file uploading count on success
+      }).catch((error) => {
+        console.error('Upload Error:', error);
+        const errorMessage = error.response && error.response.data && error.response.data.detail
+          ? error.response.data.detail
+          : 'An error occurred during the file upload';
+        if (error.response && error.response.status === 422 && errorMessage.includes("File already converted to text")) {
+          setFileToReUpload(file);
+          setShowConfirmModal(true);
+        } else {
+          dispatch(fileUploadResult(`<strong>${file.name}</strong><br/>`, `${errorMessage}<br/>`));
+          dispatch(setFileUploadingCount(0)); // Reset file uploading count on error
+        }
+      });
+    }
+  };
+
+    
   // https://react-dropzone.js.org/
   const onDrop = useCallback((acceptedFiles) => {
     dispatch(setFileUploadingCount(acceptedFiles.length));
 
     acceptedFiles.forEach((file) => {
-      const reader = new FileReader()
-      reader.onabort = () => console.log('file reading was aborted')
-      reader.onerror = () => console.log('file reading has failed')
-      reader.onload = () => {}
-      reader.readAsBinaryString(file);
-      const formData = new FormData();
-      formData.append("file", file);
-      let fileName = "";
-      let fileExtension = "";
-      if (file.name.toLowerCase().endsWith(".tar.gz")) {
-        fileName = file.name.split(".").slice(0, -2).join(".");
-        fileExtension = file.name.split(".").slice(-2).join(".");
-      } else {
-        fileName = file.name.split(".").slice(0, -1).join(".");
-        fileExtension = file.name.split(".").pop();
-      }
-      let url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/file_upload/?reference_curie=" + referenceCurie + "&display_name=" + fileName + "&file_class=" + main_or_supp + "&file_publication_status=final&file_extension=" + fileExtension + "&is_annotation=false";
-      if (accessLevel !== null) {
-        url += "&mod_abbreviation=" + accessLevel
-      }
-      if (accessLevel !== 'No') {
-        axios.post(url, formData, {
-          headers: {
-            "Authorization": "Bearer " + accessToken,
-            "Content-Type": "multipart/form-data",
-          }
-        }).then((res) => {
-          dispatch(fileUploadResult('<strong>' + file.name + '</strong>', 'success<br/>'))
-        }).catch((error) => {
-          dispatch(fileUploadResult('<strong>' + file.name + '</strong><br/>', error.response.data.detail + '<br/>'))
-          console.log(error)
-        });
-      }
-      //reader.readAsBinaryString();
+      uploadFile(file);
     });
   }, [accessLevel, dispatch, accessToken, main_or_supp, referenceCurie]);
 
@@ -361,6 +402,18 @@ const FileUpload = ({main_or_supp}) => {
               else { return ( <div>You must be in an Okta curator group to upload files in production</div>) } } )() }
           </Col>
         </Row>
+
+        <Modal show={showConfirmModal} onHide={handleCancelUpload}>
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm Re-upload</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>Do you really want to re-upload the file and re-run entity extraction pipelines?</Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCancelUpload}>Cancel</Button>
+            <Button variant="primary" onClick={handleConfirmUpload}>Confirm</Button>
+          </Modal.Footer>
+        </Modal>
+      
       </>
   );
 }
