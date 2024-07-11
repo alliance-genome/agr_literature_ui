@@ -173,7 +173,7 @@ const TopicEntityTable = () => {
   }
   let itemsCookieStr = getCookie("items");
   //use itemsInit if no cookie for 'items' found
-  if (!itemsCookieStr ){
+  if (!itemsCookieStr || !itemsInit.every(itemInit => JSON.parse(itemsCookieStr).some(itemCookie => itemInit.headerName === itemCookie.headerName && itemInit.field === itemCookie.field && itemInit.id === itemCookie.id))){
       let itemsStr= JSON.stringify(itemsInit);
      document.cookie = `items=${itemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure;`;
    }
