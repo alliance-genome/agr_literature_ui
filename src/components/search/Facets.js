@@ -73,7 +73,7 @@ export const RENAME_FACETS = {
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
-    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name"],
+    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name","language"],
     "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
@@ -420,6 +420,14 @@ const Facets = () => {
             else {
                 dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
             }
+            if(searchFacetsValues["language.keyword"]){
+                if(!searchFacetsValues["language.keyword"].includes('English')) {
+                    dispatch(addFacetValue("language.keyword", 'English'));
+                }
+            }
+            else {
+                dispatch(addFacetValue("language.keyword", 'English'));
+            }
             dispatch(searchReferences());
 
         }
@@ -444,7 +452,7 @@ const Facets = () => {
 	}
     }, [applyToSingleTag, searchFacetsValues]);
     */
-    
+
     return (
         <>
             <LoadingOverlay active={facetsLoading} />
