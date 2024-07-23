@@ -431,6 +431,11 @@ const CheckDropdownItem = React.forwardRef(
     document.cookie=`columnOrder=${columnOrder}`;
   }
 
+  const rowUpdateEvent = () => {
+      //If this is causing slowdowns we can likely target specific cells.
+      gridRef.current.api.refreshCells({force : true});
+  }
+
   const onGridReady = useCallback(() => {
     //We could use a package here... but its not much code to do this way.
     //We also need to split twice to get the data, or we hit errors on empty sets.
@@ -493,6 +498,7 @@ const CheckDropdownItem = React.forwardRef(
             getRowId={getRowId}
             columnDefs={colDefs}
             onColumnMoved={columnMoved}
+            onRowDataUpdated={rowUpdateEvent}
             pagination={true}
             paginationPageSize={25}
             gridOptions={gridOptions}
