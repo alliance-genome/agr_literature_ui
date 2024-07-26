@@ -173,23 +173,16 @@ const Sort = () => {
         let array = [ subPath, updateJson, method, index, field, subField ]
         forApiArray.push( array );
         if (reference['mod_corpus_association_corpus'] === true) {
-          let workflowTagId = null;
-          if      (reference['workflow'] === 'experimental')     { workflowTagId = 'ATP:0000103'; }
-          else if (reference['workflow'] === 'not_experimental') { workflowTagId = 'ATP:0000104'; }
-          else if (reference['workflow'] === 'meeting')          { workflowTagId = 'ATP:0000106'; }
-          if (workflowTagId !== null) {
-            if (reference['existing_reference_workflow_tag_id_expt_meeting']) {
-              updateJson = { 'workflow_tag_id': workflowTagId }
-              subPath = 'workflow_tag/' + reference['existing_reference_workflow_tag_id_expt_meeting'];
-              method = 'PATCH';
-              let array = [ subPath, updateJson, method, index, field, subField]
-              forApiArray.push( array ); }
-            else {
-              updateJson = { 'workflow_tag_id': workflowTagId, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] }
-              subPath = 'workflow_tag/'
+          let reference_type = null;
+          if      (reference['workflow'] === 'experimental')     { reference_type = 'Experimental'; }
+          else if (reference['workflow'] === 'not_experimental') { reference_type = 'Not_experimental'; }
+          else if (reference['workflow'] === 'meeting')          { reference_type = 'Meeting_abstract'; }
+          if (reference_type !== null) {
+              updateJson = { 'reference_type': reference_type, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] }
+              subPath = 'reference/mod_reference_type/';
               method = 'POST';
               let array = [ subPath, updateJson, method, index, field, subField]
-              forApiArray.push( array ); }
+              forApiArray.push( array ); 
           if (speciesSelect && speciesSelect[index]) {
             for ( const item of speciesSelect[index].values() ){
                 const taxArray = item.split(" ");
