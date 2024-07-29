@@ -67,32 +67,38 @@ const WorkflowStatTable = () => {
   };
 
   const formatTagName = (tagName) => {
-    return tagName.replace(/^files?\s/, '');
+      return tagName.replace(/^files?\s/, '').replace(/^upload /, "");
   };
 
-  const BoldRenderer = (props) => {
-    return <strong>{props.value}</strong>;
+  const boldCellStyle = (params) => {
+    if (params.colDef.field === 'tag_name') {
+      return { fontWeight: 'bold' };
+    }
+    return null;
   };
 
   const columns = [
     { 
       headerName: '', 
       field: 'tag_name', 
-      flex: 1, // Use flex for dynamic width
-      cellStyle: { textAlign: 'left', whiteSpace: 'normal' }, 
-      cellRendererFramework: BoldRenderer 
+      flex: 1, 
+      cellStyle: boldCellStyle,
+      cellRendererFramework: (params) => <strong>{params.value}</strong>,
+      headerClass: 'wft-bold-header' // Apply CSS class to header
     },
     { 
       headerName: 'Total', 
       field: 'total', 
-      flex: 1, // Use flex for dynamic width
-      cellStyle: { textAlign: 'left' } 
+      flex: 1, 
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header' // Apply CSS class to header
     },
     ...mods.map(mod => ({
       headerName: mod, 
       field: mod, 
-      flex: 1, // Use flex for dynamic width
-      cellStyle: { textAlign: 'left' }
+      flex: 1, 
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header' // Apply CSS class to header
     })),
   ];
 
