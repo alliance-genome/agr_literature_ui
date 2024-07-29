@@ -30,10 +30,10 @@ const WorkflowStatTable = () => {
 
         const totalsObj = {};
         result.data.forEach(item => {
-          if (!totalsObj[item.wornflow_tag_name]) {
-            totalsObj[item.wornflow_tag_name] = 0;
+          if (!totalsObj[item.workflow_tag_name]) {
+            totalsObj[item.workflow_tag_name] = 0;
           }
-          totalsObj[item.wornflow_tag_name] += item.tag_count;
+          totalsObj[item.workflow_tag_name] += item.tag_count;
         });
         setTotals(totalsObj);
 
@@ -49,7 +49,7 @@ const WorkflowStatTable = () => {
   }, []);
 
   const getTagCount = (tagName, mod) => {
-    const item = data.find(d => d.wornflow_tag_name === tagName && d.mod_abbreviation === mod);
+    const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === mod);
     return item ? item.tag_count : 0;
   };
 
@@ -84,21 +84,21 @@ const WorkflowStatTable = () => {
       flex: 1, 
       cellStyle: boldCellStyle,
       cellRendererFramework: (params) => <strong>{params.value}</strong>,
-      headerClass: 'wft-bold-header' // Apply CSS class to header
+      headerClass: 'wft-bold-header'
     },
     { 
       headerName: 'Total', 
       field: 'total', 
       flex: 1, 
       cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header' // Apply CSS class to header
+      headerClass: 'wft-bold-header'
     },
     ...mods.map(mod => ({
       headerName: mod, 
       field: mod, 
       flex: 1, 
       cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header' // Apply CSS class to header
+      headerClass: 'wft-bold-header'
     })),
   ];
 
