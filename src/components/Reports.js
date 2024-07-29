@@ -6,14 +6,13 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner } from 'react-bootstrap';
 
 const file_upload_process_atp_id = "ATP:0000140";
-const col_width = '70px';
 
 const WorkflowStatTable = () => {
   const [data, setData] = useState([]);
   const [mods, setMods] = useState([]);
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [key, setKey] = useState(0); // Add a key state to force re-rendering
+  const [key, setKey] = useState(0);
 
   const gridRef = useRef();
 
@@ -38,9 +37,7 @@ const WorkflowStatTable = () => {
         });
         setTotals(totalsObj);
 
-        // Update key to force re-render
         setKey(prevKey => prevKey + 1);
-
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -66,23 +63,11 @@ const WorkflowStatTable = () => {
 
   const tableStyle = {
     borderCollapse: 'collapse',
-    width: '95%',
-  };
-
-  const thTdStyle = {
-    border: '1px solid #ddd',
-    padding: '8px',
-    width: col_width,
-    textAlign: 'left',
-  };
-
-  const thStyle = {
-    ...thTdStyle,
-    backgroundColor: '#f2f2f2',
+    width: '100%',
   };
 
   const formatTagName = (tagName) => {
-    return tagName.replace(/^files?\s/, '').replace('upload in progress', 'in progress');
+    return tagName.replace(/^files?\s/, '');
   };
 
   const BoldRenderer = (props) => {
@@ -93,12 +78,22 @@ const WorkflowStatTable = () => {
     { 
       headerName: '', 
       field: 'tag_name', 
-      width: 300,  // Increased width for the first column
+      flex: 1, // Use flex for dynamic width
       cellStyle: { textAlign: 'left', whiteSpace: 'normal' }, 
       cellRendererFramework: BoldRenderer 
     },
-    { headerName: 'Total', field: 'total', width: 150, cellStyle: { textAlign: 'left' } },
-    ...mods.map(mod => ({ headerName: mod, field: mod, width: 150, cellStyle: { textAlign: 'left' } })),
+    { 
+      headerName: 'Total', 
+      field: 'total', 
+      flex: 1, // Use flex for dynamic width
+      cellStyle: { textAlign: 'left' } 
+    },
+    ...mods.map(mod => ({
+      headerName: mod, 
+      field: mod, 
+      flex: 1, // Use flex for dynamic width
+      cellStyle: { textAlign: 'left' }
+    })),
   ];
 
   const rowData = tagNames.map(tagName => {
@@ -126,7 +121,7 @@ const WorkflowStatTable = () => {
         <div style={containerStyle}>
           <div className="ag-theme-quartz" style={{ height: 500, width: '90%' }}>
             <AgGridReact
-              key={key} // Add key prop to force re-render
+              key={key}
               ref={gridRef}
               rowData={rowData}
               columnDefs={columns}
