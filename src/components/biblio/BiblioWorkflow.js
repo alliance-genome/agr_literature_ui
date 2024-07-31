@@ -103,6 +103,10 @@ const BiblioWorkflow = () => {
     </Container> );
   */
 
+  /*
+    When the commented code above is removed, the associated actions and reducer code should also be removed.
+  */
+    
   return (
     <div className="section-content">
 	   <p>This section is currently unavailable. Please check back later.</p>
