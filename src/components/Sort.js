@@ -172,7 +172,7 @@ const Sort = () => {
         let method = 'PATCH';
         let array = [ subPath, updateJson, method, index, field, subField ]
         forApiArray.push( array );
-        if (reference['mod_corpus_association_corpus'] === true) {
+        if (reference['mod_corpus_association_corpus'] === true && activeMod === "WB") {
           let reference_type = null;
           if      (reference['workflow'] === 'experimental')     { reference_type = 'Experimental'; }
           else if (reference['workflow'] === 'not_experimental') { reference_type = 'Not_experimental'; }
