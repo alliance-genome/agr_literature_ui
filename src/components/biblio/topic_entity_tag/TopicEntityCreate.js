@@ -19,7 +19,7 @@ import {
   getCurieToNameTaxon,
   getModToTaxon
 } from "./TaxonUtils";
-import {PulldownMenu} from "../PulldownMenu";
+import {PulldownMenu} from "../PulldownMenuOld";
 import {FetchTypeaheadOptions} from "../FetchTypeahead";
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
