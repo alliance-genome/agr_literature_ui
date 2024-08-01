@@ -208,6 +208,11 @@ const TopicEntityCreateSGD = () => {
         newRows[index].entityTypeSelect = defaultEntityTypeGene;
       }
       newRows[index].taxonSelect = defaultSpecies;
+
+      // Set default display tag
+      const displayTag = setDisplayTag(value);
+      newRows[index].tetdisplayTagSelect = displayTag;
+      dispatch(changeFieldEntityAddDisplayTag(displayTag));
     }
 
     setRows(newRows);
