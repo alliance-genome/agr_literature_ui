@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   ateamGetTopicDescendants,
@@ -63,13 +63,13 @@ const TopicEntityCreateSGD = () => {
 
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
-  const curieToNameEntityType = {
+  const curieToNameEntityType = useMemo(() => ({
     '': 'no value',
     'ATP:0000005': 'gene',
     'ATP:0000006': 'allele',
     'ATP:0000128': 'complex',
     'ATP:0000022': 'pathway'
-  };
+  }), []);
 
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
@@ -136,7 +136,8 @@ const TopicEntityCreateSGD = () => {
       if (
         row.taxonSelect !== "" &&
         row.taxonSelect !== undefined &&
-        row.entityTypeSelect !== ""
+        row.entityTypeSelect !== "" &&
+        row.entityText !== "" // Only validate if entityText is not empty
       ) {
         const entityIdValidation = (curieToNameEntityType[row.entityTypeSelect] === 'complex' || curieToNameEntityType[row.entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
         dispatch(
@@ -147,10 +148,11 @@ const TopicEntityCreateSGD = () => {
             row.taxonSelect,
             curieToNameEntityType[row.entityTypeSelect],
             (result) => {
-              const newRows = [...rows];
-              newRows[index].entityResultList = result;
-              setRows(newRows);
-              console.log("Validated entities for row", index, result);
+              setRows((prevRows) => {
+                const newRows = [...prevRows];
+                newRows[index] = { ...newRows[index], entityResultList: result };
+                return newRows;
+              });
             }
           )
         );
@@ -187,16 +189,18 @@ const TopicEntityCreateSGD = () => {
       noteText: "",
       entityResultList: []
     };
+    // dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }))
   }
 
   const addRow = () => {
-    setRows([...rows, createNewRow()]);
+      console.log("Adding a new row...")
+    setRows((prevRows) => [...prevRows, createNewRow()]);
   };
 
   const handleRowChange = (index, field, value) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
-      newRows[index][field] = value;
+      newRows[index] = { ...newRows[index], [field]: value };
 
       if (field === "topicSelect") {
         const entityTypeSelect = ["ATP:0000128", "ATP:0000022"].includes(value) ? value : "ATP:0000005";
@@ -205,7 +209,7 @@ const TopicEntityCreateSGD = () => {
         newRows[index].tetdisplayTagSelect = tetdisplayTagSelect;
       }
 
-      if (field === "entityText") {
+      if (field === "entityText" && value !== "") {
         const entityIdValidation = (curieToNameEntityType[newRows[index].entityTypeSelect] === 'complex' || curieToNameEntityType[newRows[index].entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
         dispatch(
           changeFieldEntityEntityList(
@@ -215,9 +219,11 @@ const TopicEntityCreateSGD = () => {
             newRows[index].taxonSelect,
             curieToNameEntityType[newRows[index].entityTypeSelect],
             (result) => {
-              newRows[index].entityResultList = result;
-              setRows(newRows);
-              console.log("Validated entities for row", index, result);
+              setRows((prevRows) => {
+                const updatedRows = [...prevRows];
+                updatedRows[index] = { ...updatedRows[index], entityResultList: result };
+                return updatedRows;
+              });
             }
           )
         );
@@ -225,6 +231,10 @@ const TopicEntityCreateSGD = () => {
 
       return newRows;
     });
+  };
+
+  const removeAllRows = () => {
+    setRows([createNewRow()]);
   };
 
   const patchEntities = async (refCurie, index) => {
@@ -258,7 +268,6 @@ const TopicEntityCreateSGD = () => {
       dispatch(setEditTag(null));
     }
     removeRow(index);
-    ensureAtLeastOneRow();
   };
 
   const createEntities = async (refCurie, index) => {
@@ -317,26 +326,25 @@ const TopicEntityCreateSGD = () => {
       })
     );
     removeRow(index);
-    ensureAtLeastOneRow();
   };
 
   const handleAddAll = async () => {
     for (let index = 0; index < rows.length; index++) {
       await createEntities(referenceJsonLive.curie, index);
     }
-    ensureAtLeastOneRow();
+    removeAllRows();
   };
 
   const removeRow = (index) => {
-    const newRows = [...rows];
-    newRows.splice(index, 1);
-    setRows(newRows);
-  };
-
-  const ensureAtLeastOneRow = () => {
-    if (rows.length === 0) {
-      addRow();
-    }
+      console.log("Removing row: ", index)
+    setRows((prevRows) => {
+      const newRows = [...prevRows];
+      newRows.splice(index, 1);
+      if (newRows.length === 0) {
+        newRows.push(createNewRow());
+      }
+      return newRows;
+    });
   };
 
   function initializeUpdateJson(refCurie, row) {
@@ -354,15 +362,6 @@ const TopicEntityCreateSGD = () => {
     return updateJson;
   }
 
-  function getDisplayTagForTopic(topicSelect) {
-    dispatch(
-      changeFieldEntityAddGeneralField({
-        target: { id: "topicSelect", value: topicSelect },
-      })
-    );
-    return setDisplayTag(topicSelect);
-  }
-
   const handleCloseTagExistingMessage = () => {
     setIsTagExistingMessageVisible(false); // hide the message
   };
@@ -374,8 +373,7 @@ const TopicEntityCreateSGD = () => {
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList);
   }
 
-  const disabledEntityList = rows.some(row => row.taxonSelect === "" || row.taxonSelect === undefined) ? "disabled" : "";
-  const disabledAddButton = rows.some(row => row.taxonSelect === "" || row.taxonSelect === undefined || topicEntitySourceId === undefined) ? "disabled" : "";
+  const disabledAddButton = rows.some(row => row.taxonSelect === "" || row.taxonSelect === undefined || topicEntitySourceId === undefined);
 
   return (
     <Container fluid>
@@ -520,6 +518,7 @@ const TopicEntityCreateSGD = () => {
                 :
                   <Button
                     variant="outline-primary"
+                    disabled={disabledAddButton}
                     onClick={() => createEntities(referenceJsonLive.curie, index)}
                   >
                     {biblioUpdatingEntityAdd > 0 ? (
