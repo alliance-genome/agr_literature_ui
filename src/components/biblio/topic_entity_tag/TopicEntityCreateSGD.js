@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   ateamGetTopicDescendants,
@@ -11,7 +11,7 @@ import {
   setBiblioUpdatingEntityAdd,
   setEntityModalText,
   setEditTag,
-  updateButtonBiblioEntityAdd
+  updateButtonBiblioEntityAdd,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
 import {
@@ -22,7 +22,7 @@ import {
 import { PulldownMenu } from "../PulldownMenu";
 import {
   getCurieToNameTaxon,
-  getModToTaxon  
+  getModToTaxon,
 } from "./TaxonUtils";
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
@@ -32,9 +32,6 @@ import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
-
-const defaultEntityTypeGene = "ATP:0000005";
-const defaultSpecies = "NCBITaxon:559292"; // saccharomyces cerevisiae S288C
 
 const TopicEntityCreateSGD = () => {
   const dispatch = useDispatch();
@@ -77,7 +74,6 @@ const TopicEntityCreateSGD = () => {
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
 
-  // Fetch taxon and mod data
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon(accessToken);
@@ -94,7 +90,6 @@ const TopicEntityCreateSGD = () => {
   let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
   const entityTypeList = Object.keys(curieToNameEntityType);
 
-  // Fetch curator source ID
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
@@ -108,21 +103,18 @@ const TopicEntityCreateSGD = () => {
     (state) => state.biblio.topicDescendants
   );
 
-  // Update taxon select based on access level
   useEffect(() => {
     if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: modToTaxon[accessLevel][0] } }));
     }
   }, [modToTaxon, accessLevel, dispatch]);
 
-  // Fetch topic descendants
   useEffect(() => {
     if (topicDescendants.size === 0 && accessToken !== null) {
       dispatch(ateamGetTopicDescendants(accessToken));
     }
   }, [topicDescendants, accessToken, dispatch]);
 
-  // Fetch display tag data and set default entity type
   useEffect(() => {
     fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
     dispatch(
@@ -132,7 +124,6 @@ const TopicEntityCreateSGD = () => {
     );
   }, [accessLevel, accessToken, dispatch]);
 
-  // Clear fields when editTag is null
   useEffect(() => {
     if (editTag === null) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
@@ -140,8 +131,7 @@ const TopicEntityCreateSGD = () => {
     }
   }, [dispatch, editTag]);
 
-  // Update entity list based on row data
-  useEffect(() => {
+  const handleEntityValidation = useCallback(() => {
     rows.forEach((row, index) => {
       if (
         row.taxonSelect !== "" &&
@@ -155,14 +145,23 @@ const TopicEntityCreateSGD = () => {
             accessToken,
             entityIdValidation,
             row.taxonSelect,
-            curieToNameEntityType[row.entityTypeSelect]
+            curieToNameEntityType[row.entityTypeSelect],
+            (result) => {
+              const newRows = [...rows];
+              newRows[index].entityResultList = result;
+              setRows(newRows);
+              console.log("Validated entities for row", index, result);
+            }
           )
         );
       }
     });
   }, [rows, accessToken, dispatch, curieToNameEntityType]);
 
-  // Update taxon select based on access level
+  useEffect(() => {
+    handleEntityValidation();
+  }, [rows, handleEntityValidation]);
+
   useEffect(() => {
     if (accessLevel in modToTaxon) {
       dispatch(
@@ -171,7 +170,6 @@ const TopicEntityCreateSGD = () => {
     }
   }, [accessLevel, modToTaxon, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Setup event listeners for existing tags
   useEffect(() => {
     if (tagExistingMessage) {
       setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
@@ -182,8 +180,8 @@ const TopicEntityCreateSGD = () => {
   function createNewRow() {
     return {
       topicSelect: "",
-      entityTypeSelect: defaultEntityTypeGene,
-      taxonSelect: defaultSpecies,
+      entityTypeSelect: "ATP:0000005",
+      taxonSelect: "NCBITaxon:559292",
       tetdisplayTagSelect: "",
       entityText: "",
       noteText: "",
@@ -196,27 +194,37 @@ const TopicEntityCreateSGD = () => {
   };
 
   const handleRowChange = (index, field, value) => {
-    console.log(`Updating row ${index}, field ${field}, value ${value}`);
-    const newRows = [...rows];
-    newRows[index][field] = value;
+    setRows((prevRows) => {
+      const newRows = [...prevRows];
+      newRows[index][field] = value;
 
-    // Set default values based on topic selection
-    if (field === 'topicSelect') {
-      if (value === 'ATP:0000022' || value === 'ATP:0000128') {
-        newRows[index].entityTypeSelect = value;
-      } else {
-        newRows[index].entityTypeSelect = defaultEntityTypeGene;
+      if (field === "topicSelect") {
+        const entityTypeSelect = ["ATP:0000128", "ATP:0000022"].includes(value) ? value : "ATP:0000005";
+        const tetdisplayTagSelect = setDisplayTag(value);
+        newRows[index].entityTypeSelect = entityTypeSelect;
+        newRows[index].tetdisplayTagSelect = tetdisplayTagSelect;
       }
-      newRows[index].taxonSelect = defaultSpecies;
 
-      // Set default display tag
-      const displayTag = setDisplayTag(value);
-      newRows[index].tetdisplayTagSelect = displayTag;
-      dispatch(changeFieldEntityAddDisplayTag(displayTag));
-    }
+      if (field === "entityText") {
+        const entityIdValidation = (curieToNameEntityType[newRows[index].entityTypeSelect] === 'complex' || curieToNameEntityType[newRows[index].entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
+        dispatch(
+          changeFieldEntityEntityList(
+            value,
+            accessToken,
+            entityIdValidation,
+            newRows[index].taxonSelect,
+            curieToNameEntityType[newRows[index].entityTypeSelect],
+            (result) => {
+              newRows[index].entityResultList = result;
+              setRows(newRows);
+              console.log("Validated entities for row", index, result);
+            }
+          )
+        );
+      }
 
-    setRows(newRows);
-    console.log("Updated rows:", newRows);
+      return newRows;
+    });
   };
 
   const patchEntities = async (refCurie, index) => {
@@ -346,6 +354,15 @@ const TopicEntityCreateSGD = () => {
     return updateJson;
   }
 
+  function getDisplayTagForTopic(topicSelect) {
+    dispatch(
+      changeFieldEntityAddGeneralField({
+        target: { id: "topicSelect", value: topicSelect },
+      })
+    );
+    return setDisplayTag(topicSelect);
+  }
+
   const handleCloseTagExistingMessage = () => {
     setIsTagExistingMessageVisible(false); // hide the message
   };
@@ -426,7 +443,7 @@ const TopicEntityCreateSGD = () => {
                 value={row.entityTypeSelect}
                 pdList={entityTypeList}
                 optionToName={curieToNameEntityType}
-                onChange={(value) => handleRowChange(index, 'entityTypeSelect', value)}
+                onChange={(e) => handleRowChange(index, 'entityTypeSelect', e.target.value)}
               />
             </Col>
             <Col sm="3">
@@ -438,7 +455,7 @@ const TopicEntityCreateSGD = () => {
                 value={row.taxonSelect}
                 pdList={taxonList}
                 optionToName={curieToNameTaxon}
-                onChange={(value) => handleRowChange(index, 'taxonSelect', value)}
+                onChange={(e) => handleRowChange(index, 'taxonSelect', e.target.value)}
               />
             </Col>
             <Col sm="3">
@@ -450,7 +467,7 @@ const TopicEntityCreateSGD = () => {
                 value={row.tetdisplayTagSelect}
                 pdList={displayTagList}
                 optionToName={curieToNameDisplayTag}
-                onChange={(value) => handleRowChange(index, 'tetdisplayTagSelect', value)}
+                onChange={(e) => handleRowChange(index, 'tetdisplayTagSelect', e.target.value)}
               />
             </Col>
           </Row>
