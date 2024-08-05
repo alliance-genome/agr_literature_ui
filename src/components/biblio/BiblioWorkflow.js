@@ -40,6 +40,7 @@ const BiblioWorkflow = () => {
     return (newDate.toLocaleDateString("fr-CA") + ' ' + newDate.toLocaleTimeString());
   }
 
+  /*
   return (
     <Container fluid>
     <ModalGeneric showGenericModal={workflowModalText !== '' ? true : false} genericModalHeader="Workflow Error" 
@@ -100,6 +101,18 @@ const BiblioWorkflow = () => {
       <Col sm="1"></Col>
     </Row>
     </Container> );
+  */
+
+  /*
+    When the commented code above is removed, the associated actions and reducer code should also be removed.
+  */
+    
+  return (
+    <div className="section-content">
+	   <p>This section is currently unavailable. Please check back later.</p>
+    </div>
+ );
+    
 } // const BiblioWorkflow
 
 export default BiblioWorkflow;

@@ -34,6 +34,7 @@ const NavigationBar = () => {
       <Nav.Link as={Link} to="/tracker">Tracker</Nav.Link>
       <Nav.Link as={Link} to="/create">Create</Nav.Link>
       <Nav.Link as={Link} to="/merge">Merge</Nav.Link>
+      <Nav.Link as={Link} to="/reports">Reports</Nav.Link>
       <Nav.Link as={Link} to="/download">Download</Nav.Link>
       <Nav.Link as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
     </Nav>
