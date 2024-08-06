@@ -4,10 +4,16 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import {Link} from 'react-router-dom';
-import {setGetReferenceCurieFlag, setReferenceCurie} from '../../actions/biblioActions';
+import {
+    setGetReferenceCurieFlag,
+    setReferenceCurie
+} from '../../actions/biblioActions';
 import {Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faFilePdf} from "@fortawesome/free-solid-svg-icons";
+import axios from "axios";
 
 
 const MatchingTextBox = (highlight) => {
@@ -26,6 +32,50 @@ const SearchResultItem = ({ reference }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const crossReferenceResults = useSelector(state => state.search.crossReferenceResults);
   const dispatch = useDispatch();
+
+  const FileDownloadIcon = ({curie}) => {
+      const [mainPDF, setMainPDF] = useState(false);
+      const accessToken = useSelector(state => state.isLogged.accessToken);
+      const oktaMod = useSelector(state => state.isLogged.oktaMod);
+      const fetchReferenceFileList = async () => {
+          const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + curie);
+          referencefiles.data.forEach((reference) => {
+              if (reference.file_class === 'main'){
+                  reference.referencefile_mods.forEach((mod) => {
+                      if(mod.mod_abbreviation === oktaMod){
+                          setMainPDF(reference.referencefile_id);
+                      }
+                      else if(mod.created_by ==='load_pmc_metadata' && !mainPDF){
+                          setMainPDF(reference.referencefile_id);
+                      }
+                  })
+              }
+          });
+      }
+      const downloadPDFfile = (referencefileId, accessToken) => {
+          let url = process.env.REACT_APP_RESTAPI + '/reference/referencefile/download_file/' + referencefileId
+          axios({
+              url: url,
+              method: "GET",
+              headers: {
+                  'Authorization': 'Bearer ' + accessToken,
+                  'Content-Type': 'application/pdf'
+              },
+              responseType: 'blob'
+          }).then(response => {
+              const blob = new Blob([response.data], { type: 'application/pdf' });
+              const pdfUrl = window.URL.createObjectURL(blob);
+              window.open(pdfUrl, '_blank');
+          })
+      }
+      if(accessToken && !mainPDF){
+          fetchReferenceFileList();
+      }
+
+      return(
+          mainPDF ? <Button className = "file-download-button" onClick={() => downloadPDFfile(mainPDF,accessToken)}><FontAwesomeIcon icon={faFilePdf} size= '3x'/></Button> : null
+      )
+  }
     
   function toggleAbstract() {
     setIsExpanded(!isExpanded);
@@ -73,42 +123,44 @@ const SearchResultItem = ({ reference }) => {
     <Row>
       <Col className="Col-general Col-display Col-search" > 
         <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
-        <div className="searchRow-xref">
-          <ul>
-            <li>
-              <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
-                onClick={() => {
-                  dispatch(setReferenceCurie(reference.curie));
-                  dispatch(setGetReferenceCurieFlag(true));
-                }}>
-                {reference.curie}
-              </Link>
-            </li>
-            {reference.cross_references ? (
-		reference.cross_references.map((xref, i) => (
-		    <li key={i}>
+          <Row><Col><div className="searchRow-xref">
+              <ul>
+                  <li>
+                      <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
+                            onClick={() => {
+                                dispatch(setReferenceCurie(reference.curie));
+                                dispatch(setGetReferenceCurieFlag(true));
+                            }}>
+                          {reference.curie}
+                      </Link>
+                  </li>
+                  {reference.cross_references ? (
+                      reference.cross_references.map((xref, i) => (
+                          <li key={i}>
 			<span className="obsolete">
 			    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
 			</span>
-			<a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
-			    {xref.curie}
-			</a>
-			{xref.curie.startsWith('PMID:') && (
-			    <div>
-				<a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`} rel="noreferrer noopener" target="_blank">
-				    EuropePMC
-				</a>
-			    </div>
-			)}
-		    </li>
-		))
-            ) : null}
-          </ul>
-        </div>
-        <div className="searchRow-other">Authors : <span dangerouslySetInnerHTML={{__html: reference.authors ? reference.authors.map((author, i) => ((i ? ' ' : '') + author.name)) : ''}} /></div>
-        <div className="searchRow-other">Publication Date: {reference.date_published}</div>	
+                              <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
+                                  {xref.curie}
+                              </a>
+                              {xref.curie.startsWith('PMID:') && (
+                                  <div>
+                                      <a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`}
+                                         rel="noreferrer noopener" target="_blank">
+                                          EuropePMC
+                                      </a>
+                                  </div>
+                              )}
+                          </li>
+                      ))
+                  ) : null}
+              </ul>
+            <FileDownloadIcon curie = {reference.curie}/>
+          </div></Col></Row>
+          <div className="searchRow-other">Authors : <span dangerouslySetInnerHTML={{__html: reference.authors ? reference.authors.map((author, i) => ((i ? ' ' : '') + author.name)) : ''}} /></div>
+        <div className="searchRow-other">Publication Date: {reference.date_published}</div>
         <div className="searchRow-other">
-          Abstract: 
+          Abstract:
           <div style={{ cursor: 'pointer' }} onClick={toggleAbstract}>
             <span dangerouslySetInnerHTML={{ __html: isExpanded ? formatAbstract(reference.abstract) : truncateAbstract(reference.abstract, 500) }} />
             <span style={{ color: 'blue', textDecoration: 'underline', marginLeft: '10px' }}>
@@ -116,8 +168,8 @@ const SearchResultItem = ({ reference }) => {
             </span>
           </div>
         </div>
-        {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}                                       
-      </Col>                                                                                                                  
+        {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}
+      </Col>
     </Row>
   );
 };
@@ -129,7 +181,7 @@ const SearchResults = () => {
     const searchSuccess = useSelector(state => state.search.searchSuccess);
     const searchError = useSelector(state => state.search.searchError);
     const dispatch = useDispatch();
-  
+
     return (
         <div>
             {

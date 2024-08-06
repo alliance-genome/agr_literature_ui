@@ -509,6 +509,12 @@ em {
   margin-bottom: 0px;
 }
 
+.file-download-button{
+  position : absolute;
+  top : 10px;
+  right: 20px;
+}
+
 .wft-bold-header {
   font-weight: bold;
 }
