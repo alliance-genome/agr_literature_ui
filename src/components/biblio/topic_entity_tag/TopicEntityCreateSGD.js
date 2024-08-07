@@ -51,7 +51,7 @@ const TopicEntityCreateSGD = () => {
   const [warningMessage, setWarningMessage] = useState("");
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
-  const [rows, setRows] = useState([createNewRow()]); // Initialize with one row
+  const [rows, setRows] = useState([createNewRow()]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
 
   const curieToNameDisplayTag = displayTagData.reduce((acc, option) => {
@@ -84,6 +84,12 @@ const TopicEntityCreateSGD = () => {
     fetchData();
   }, [accessToken]);
 
+  // useEffect(() => {
+  //  if (entityTypeList.includes(topicSelect)) {
+  //	dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));
+  //  }
+  // }, [topicSelect, dispatch]);
+   
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push('');
   unsortedTaxonList.push('NCBITaxon:9606');
@@ -124,6 +130,13 @@ const TopicEntityCreateSGD = () => {
     );
   }, [accessLevel, accessToken, dispatch]);
 
+  //useEffect(() => {
+  //  if (editTag === null) {
+  //    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
+  //    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+  //  }
+  //}, [entityTypeSelect, dispatch]);
+   
   useEffect(() => {
     if (editTag === null) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
@@ -131,6 +144,10 @@ const TopicEntityCreateSGD = () => {
     }
   }, [dispatch, editTag]);
 
+
+
+
+    
   const handleEntityValidation = useCallback(() => {
     rows.forEach((row, index) => {
       if (
@@ -153,6 +170,7 @@ const TopicEntityCreateSGD = () => {
                 newRows[index] = { ...newRows[index], entityResultList: result };
                 return newRows;
               });
+              console.log("Validated entities for row", index, result);
             }
           )
         );
@@ -164,6 +182,73 @@ const TopicEntityCreateSGD = () => {
     handleEntityValidation();
   }, [rows, handleEntityValidation]);
 
+  /*
+  useEffect(() => {
+    if (
+      taxonSelect !== "" &&
+      taxonSelect !== undefined &&
+      entityTypeSelect !== ""
+    ) {
+      const entityIdValidation = ( curieToNameEntityType[entityTypeSelect] === 'complex' || curieToNameEntityType[entityTypeSelect] === 'pathway' ) ? 'sgd' : 'alliance';
+      dispatch(
+        changeFieldEntityEntityList(
+          entityText,
+          accessToken,
+          entityIdValidation,
+          taxonSelect,
+          curieToNameEntityType[entityTypeSelect]
+        )
+      );
+    }
+  }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
+  */
+
+
+    
+  useEffect(() => {
+    rows.forEach((row, index) => {
+      if (row.entityText === "") {
+        setRows((prevRows) => {
+          const newRows = [...prevRows];
+          newRows[index] = { ...newRows[index], entityResultList: [] };
+          return newRows;
+        });
+      } else if (
+        row.taxonSelect !== "" &&
+        row.taxonSelect !== undefined &&
+        row.entityTypeSelect !== ""
+      ) {
+        const entityIdValidation = (curieToNameEntityType[row.entityTypeSelect] === 'complex' || curieToNameEntityType[row.entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
+        dispatch(
+          changeFieldEntityEntityList(
+            row.entityText,
+            accessToken,
+            entityIdValidation,
+            row.taxonSelect,
+            curieToNameEntityType[row.entityTypeSelect],
+            (result) => {
+              setRows((prevRows) => {
+                const updatedRows = [...prevRows];
+                updatedRows[index] = { ...updatedRows[index], entityResultList: result };
+                return updatedRows;
+              });
+            }
+          )
+        );
+      }
+    });
+  }, [rows, curieToNameEntityType, accessToken, dispatch]);
+
+    
+    
+  //useEffect(() => {
+  //  if (accessLevel in modToTaxon) {
+  //    dispatch(
+  //      changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])
+  //    );
+  //  }
+  // }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (accessLevel in modToTaxon) {
       dispatch(
@@ -172,6 +257,13 @@ const TopicEntityCreateSGD = () => {
     }
   }, [accessLevel, modToTaxon, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  //useEffect(() => {
+  //  if (tagExistingMessage) {
+  //	setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
+  //			    updateButtonBiblioEntityAdd);
+  //  }
+  //}, [tagExistingMessage, existingTagResponses]);
+    
   useEffect(() => {
     if (tagExistingMessage) {
       setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
@@ -189,12 +281,15 @@ const TopicEntityCreateSGD = () => {
       noteText: "",
       entityResultList: []
     };
-    // dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }))
   }
 
   const addRow = () => {
-      console.log("Adding a new row...")
-    setRows((prevRows) => [...prevRows, createNewRow()]);
+    setRows((prevRows) => {
+      if (prevRows.length === 0) {
+        return [createNewRow()];
+      }
+      return [...prevRows, createNewRow()];
+    });
   };
 
   const handleRowChange = (index, field, value) => {
@@ -209,26 +304,29 @@ const TopicEntityCreateSGD = () => {
         newRows[index].tetdisplayTagSelect = tetdisplayTagSelect;
       }
 
-      if (field === "entityText" && value !== "") {
-        const entityIdValidation = (curieToNameEntityType[newRows[index].entityTypeSelect] === 'complex' || curieToNameEntityType[newRows[index].entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
-        dispatch(
-          changeFieldEntityEntityList(
-            value,
-            accessToken,
-            entityIdValidation,
-            newRows[index].taxonSelect,
-            curieToNameEntityType[newRows[index].entityTypeSelect],
-            (result) => {
-              setRows((prevRows) => {
-                const updatedRows = [...prevRows];
-                updatedRows[index] = { ...updatedRows[index], entityResultList: result };
-                return updatedRows;
-              });
-            }
-          )
-        );
+      if (field === "entityText") {
+        if (value === "") {
+          newRows[index].entityResultList = []; // Reset entityResultList if entityText is empty
+        } else {	    
+          const entityIdValidation = (curieToNameEntityType[newRows[index].entityTypeSelect] === 'complex' || curieToNameEntityType[newRows[index].entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
+          dispatch(
+            changeFieldEntityEntityList(
+              value,
+              accessToken,
+              entityIdValidation,
+              newRows[index].taxonSelect,
+              curieToNameEntityType[newRows[index].entityTypeSelect],
+              (result) => {
+                setRows((prevRows) => {
+                  const updatedRows = [...prevRows];
+                  updatedRows[index] = { ...updatedRows[index], entityResultList: result };
+                  return updatedRows;
+                });
+             }
+           )
+         );
+	}
       }
-
       return newRows;
     });
   };
@@ -329,19 +427,22 @@ const TopicEntityCreateSGD = () => {
   };
 
   const handleAddAll = async () => {
-    for (let index = 0; index < rows.length; index++) {
+    
+    for (let index = rows.length - 1; index >= 0; index--) {
       await createEntities(referenceJsonLive.curie, index);
     }
-    removeAllRows();
+ 
+    // Reset the state with a new row and clear all fields including "Entity Validation"
+    setRows([{ ...createNewRow(), entityResultList: [] }]);
+    
   };
 
   const removeRow = (index) => {
-      console.log("Removing row: ", index)
     setRows((prevRows) => {
       const newRows = [...prevRows];
       newRows.splice(index, 1);
       if (newRows.length === 0) {
-        newRows.push(createNewRow());
+	  newRows.push(createNewRow());
       }
       return newRows;
     });
@@ -373,6 +474,8 @@ const TopicEntityCreateSGD = () => {
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList);
   }
 
+  // If any of these conditions are true for at least one element in the rows array,
+  // the some method returns true, which makes disabledAddButton true.
   const disabledAddButton = rows.some(row => row.taxonSelect === "" || row.taxonSelect === undefined || topicEntitySourceId === undefined);
 
   return (
@@ -524,7 +627,7 @@ const TopicEntityCreateSGD = () => {
                     {biblioUpdatingEntityAdd > 0 ? (
                       <Spinner animation="border" size="sm" />
                     ) : (
-                      "Add"
+                      "Submit"
                     )}
                   </Button>
                 }
@@ -534,7 +637,7 @@ const TopicEntityCreateSGD = () => {
                     onClick={handleAddAll}
                     className="ml-2"
                   >
-                    Add All
+                    Submit All
                   </Button>
                 )}
               </div>
@@ -545,7 +648,7 @@ const TopicEntityCreateSGD = () => {
       <Row>
         <Col sm="2">
           <Button variant="outline-secondary" onClick={addRow}>
-            Add Additional Row
+            New row
           </Button>
         </Col>
         <Col sm="8"></Col>
