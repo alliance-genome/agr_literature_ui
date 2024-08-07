@@ -468,14 +468,14 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList) => {
     });
 };
 
-export const changeFieldEntityEntityList = (entityText, accessToken, entityIdValidation, taxon, entityType, taxonToMod = undefined) => {
+export const changeFieldEntityEntityListOld = (entityText, accessToken, entityIdValidation, taxon, entityType, taxonToMod = undefined) => {
   return dispatch => {
     let entityInputList = [];
     if (entityText && entityText.trim() !== '') {
       entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item !== '');
     }
 
-    if ( (entityIdValidation === 'sgd') && (entityType == 'complex' || entityType == 'pathway') ) {	// this could be based solely on entityIdValidation, but keeping the explicit entityType to make it clearer.
+    if ( (entityIdValidation === 'sgd') && (entityType == 'complex' || entityType == 'pathway') ) {	// thchangeFieldEntityEntityListis could be based solely on entityIdValidation, but keeping the explicit entityType to make it clearer.
 	return sgd_entity_validation(dispatch, entityType, entityInputList)
     }
 
@@ -640,6 +640,190 @@ export const changeFieldEntityEntityList = (entityText, accessToken, entityIdVal
         );
   }
 }
+
+
+export const changeFieldEntityEntityList = (entityText, accessToken, entityIdValidation, taxon, entityType, callback) => {
+  return async (dispatch) => {
+    let entityInputList = [];
+    if (entityText && entityText.trim() !== '') {
+      entityInputList = entityText.split('\n').map(element => element.trim()).filter(item => item !== '');
+    }
+
+    if (entityIdValidation === 'sgd' && (entityType === 'complex' || entityType === 'pathway')) {
+      return sgd_entity_validation(dispatch, entityType, entityInputList, callback);
+    }
+
+    if (entityIdValidation === 'wb') {
+      return wb_entity_validation(dispatch, entityType, entityInputList, callback);
+    }
+
+    // Default case
+    if (entityType.includes('construct')) {
+      entityType = 'construct';
+    }
+    let entityList = entityInputList.map(entity =>
+      entity.normalize("NFC")
+        .replace(/[\x00-\x1F\x7F-\xFF]/g, '')
+        .trim()
+    );
+    const entityQueryString = entityList.join(' ');
+    let searchType = {
+      'AGMs': 'agm', 'strain': 'agm', 'genotype': 'agm', 'fish': 'agm', 'construct': 'construct', 'species': 'ncbitaxonterm',
+      'gene': 'gene', 'allele': 'allele'
+    };
+    const ateamApiUrl = `${ateamApiBaseUrl}api/${searchType[entityType]}/search?limit=100&page=0`;
+    let postData = {
+      "searchFilters": {
+        "nameFilter": {
+          "modEntityId": {
+            "queryString": entityQueryString,
+            "tokenOperator": "OR",
+            "useKeywordFields": true,
+            "queryType": "matchQuery"
+          },
+          "curie": {
+            "queryString": entityQueryString,
+            "tokenOperator": "OR",
+            "useKeywordFields": true,
+            "queryType": "matchQuery"
+          }
+        }
+      }
+    };
+    if (['species', 'strain', 'genotype', 'fish', 'AGMs'].includes(entityType)) {
+      postData["searchFilters"]["nameFilter"]["name"] = {
+        "queryString": entityQueryString,
+        "tokenOperator": "OR"
+      };
+    } else {
+      let searchFilters = {};
+      let filterKey = "curie";
+      if (entityType === "construct") {
+        filterKey = entityType + "FullName.displayText";
+      } else if (entityType === "gene") {
+        filterKey = entityType + "SystematicName.displayText";
+      }
+      entityList.forEach((entity, index) => {
+        let filterKey2 = entityType + "Symbol.displayText";
+        searchFilters[`nameFilter${index + 1}`] = {
+          "modEntityId": {
+            "queryString": entity,
+            "tokenOperator": "OR",
+            "useKeywordFields": true,
+            "queryType": "matchQuery"
+          },
+          [filterKey]: {
+            "queryString": entity,
+            "tokenOperator": "OR",
+            "useKeywordFields": true,
+            "queryType": "matchQuery"
+          },
+          [filterKey2]: {
+            "queryString": entity,
+            "tokenOperator": "OR",
+            "useKeywordFields": true,
+            "queryType": "matchQuery"
+          }
+        };
+      });
+      postData["searchFilters"] = searchFilters;
+      postData["searchFilterOperator"] = "OR";
+    }
+    if (['strain', 'genotype', 'fish'].includes(entityType)) {
+      postData["searchFilters"]["subtypeFilters"] = {
+        "subtype.name": {
+          "queryString": entityType,
+          "tokenOperator": "OR"
+        }
+      };
+    }
+    if (!['species', 'construct'].includes(entityType)) {
+      postData["searchFilters"]["taxonFilters"] = {
+        "taxon.curie": {
+          "queryString": taxon,
+          "tokenOperator": "AND",
+          "useKeywordFields": true,
+          "queryType": "matchQuery"
+        }
+      };
+    }
+
+    try {
+      const res = await axios.post(ateamApiUrl, postData, {
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer ' + accessToken
+        }
+      });
+      const searchMap = {};
+      const obsoleteMap = {};
+      if (res.data.results) {
+        for (const entityResult of res.data.results) {
+          if (['gene', 'allele'].includes(entityType) && entityResult.taxon.curie !== taxon) {
+            continue;
+          }
+          let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
+          let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
+          let systematicName = entityType === "gene" ? entityResult['geneSystematicName']?.displayText?.toLowerCase() ?? "" : "";
+          let otherName = entityType === "construct" ? entityResult['constructFullName']?.displayText?.toLowerCase() ?? "" : "";
+          if (primaryId && name) {
+            if (entityResult.obsolete === true) {
+              obsoleteMap[primaryId.toLowerCase()] = primaryId;
+              obsoleteMap[name] = primaryId;
+              if (systematicName) {
+                obsoleteMap[systematicName] = primaryId;
+              }
+              if (otherName) {
+                obsoleteMap[otherName] = primaryId;
+              }
+            } else {
+              searchMap[primaryId.toLowerCase()] = primaryId;
+              searchMap[name] = primaryId;
+              if (systematicName) {
+                searchMap[systematicName] = primaryId;
+              }
+              if (otherName) {
+                searchMap[otherName] = primaryId;
+              }
+            }
+          }
+        }
+      }
+      let entityResultList = [];
+      for (const entityTypeSymbol of entityInputList) {
+        if (entityTypeSymbol.toLowerCase() in searchMap) {
+          entityResultList.push({
+            'entityTypeSymbol': entityTypeSymbol,
+            'curie': searchMap[entityTypeSymbol.toLowerCase()]
+          });
+        } else if (entityTypeSymbol.toLowerCase() in obsoleteMap) {
+          entityResultList.push({ 'entityTypeSymbol': entityTypeSymbol, 'curie': 'obsolete entity' });
+        } else {
+          entityResultList.push({ 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' });
+        }
+      }
+      dispatch(setEntityResultList(entityResultList));
+      if (callback) {
+        callback(entityResultList);
+      }
+    } catch (err) {
+      dispatch({
+        type: 'SET_ENTITY_MODAL_TEXT',
+        payload: 'Entity lookup API failure' + err
+      });
+      if (callback) {
+        callback([]);
+      }
+    }
+  };
+}
+
+/*
+const setEntityResultList = (entityResultList) => ({
+  type: 'SET_ENTITY_RESULT_LIST',
+  payload: { entityResultList: entityResultList }
+});
+*/
 
 export const ateamGetTopicDescendants = (accessToken) => {
   return dispatch => {
