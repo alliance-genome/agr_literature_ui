@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   ateamGetTopicDescendants,
@@ -32,6 +32,7 @@ import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
+import { debounce } from 'lodash';
 
 const TopicEntityCreateSGD = () => {
   const dispatch = useDispatch();
@@ -53,6 +54,7 @@ const TopicEntityCreateSGD = () => {
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [rows, setRows] = useState([createNewRow()]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
+  const inputRefs = useRef([]);
 
   const curieToNameDisplayTag = displayTagData.reduce((acc, option) => {
     acc[option.curie] = option.name;
@@ -84,12 +86,6 @@ const TopicEntityCreateSGD = () => {
     fetchData();
   }, [accessToken]);
 
-  // useEffect(() => {
-  //  if (entityTypeList.includes(topicSelect)) {
-  //	dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: topicSelect } }));
-  //  }
-  // }, [topicSelect, dispatch]);
-   
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push('');
   unsortedTaxonList.push('NCBITaxon:9606');
@@ -130,13 +126,6 @@ const TopicEntityCreateSGD = () => {
     );
   }, [accessLevel, accessToken, dispatch]);
 
-  //useEffect(() => {
-  //  if (editTag === null) {
-  //    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
-  //    dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
-  //  }
-  //}, [entityTypeSelect, dispatch]);
-   
   useEffect(() => {
     if (editTag === null) {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
@@ -144,191 +133,71 @@ const TopicEntityCreateSGD = () => {
     }
   }, [dispatch, editTag]);
 
-
-
-
-    
-  const handleEntityValidation = useCallback(() => {
-    rows.forEach((row, index) => {
-      if (
-        row.taxonSelect !== "" &&
-        row.taxonSelect !== undefined &&
-        row.entityTypeSelect !== "" &&
-        row.entityText !== "" // Only validate if entityText is not empty
-      ) {
-        const entityIdValidation = (curieToNameEntityType[row.entityTypeSelect] === 'complex' || curieToNameEntityType[row.entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
-        dispatch(
-          changeFieldEntityEntityList(
-            row.entityText,
-            accessToken,
-            entityIdValidation,
-            row.taxonSelect,
-            curieToNameEntityType[row.entityTypeSelect],
-            (result) => {
-              setRows((prevRows) => {
-                const newRows = [...prevRows];
-                newRows[index] = { ...newRows[index], entityResultList: result };
-                return newRows;
-              });
-              console.log("Validated entities for row", index, result);
-            }
-          )
-        );
-      }
-    });
-  }, [rows, accessToken, dispatch, curieToNameEntityType]);
-
-  useEffect(() => {
-    handleEntityValidation();
-  }, [rows, handleEntityValidation]);
-
-  /*
-  useEffect(() => {
-    if (
-      taxonSelect !== "" &&
-      taxonSelect !== undefined &&
-      entityTypeSelect !== ""
-    ) {
-      const entityIdValidation = ( curieToNameEntityType[entityTypeSelect] === 'complex' || curieToNameEntityType[entityTypeSelect] === 'pathway' ) ? 'sgd' : 'alliance';
-      dispatch(
-        changeFieldEntityEntityList(
-          entityText,
-          accessToken,
-          entityIdValidation,
-          taxonSelect,
-          curieToNameEntityType[entityTypeSelect]
-        )
-      );
-    }
-  }, [entityText, taxonSelect]); // eslint-disable-line react-hooks/exhaustive-deps
-  */
-
-
-    
-  useEffect(() => {
-    rows.forEach((row, index) => {
-      if (row.entityText === "") {
-        setRows((prevRows) => {
-          const newRows = [...prevRows];
-          newRows[index] = { ...newRows[index], entityResultList: [] };
-          return newRows;
-        });
-      } else if (
-        row.taxonSelect !== "" &&
-        row.taxonSelect !== undefined &&
-        row.entityTypeSelect !== ""
-      ) {
-        const entityIdValidation = (curieToNameEntityType[row.entityTypeSelect] === 'complex' || curieToNameEntityType[row.entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
-        dispatch(
-          changeFieldEntityEntityList(
-            row.entityText,
-            accessToken,
-            entityIdValidation,
-            row.taxonSelect,
-            curieToNameEntityType[row.entityTypeSelect],
-            (result) => {
-              setRows((prevRows) => {
-                const updatedRows = [...prevRows];
-                updatedRows[index] = { ...updatedRows[index], entityResultList: result };
-                return updatedRows;
-              });
-            }
-          )
-        );
-      }
-    });
-  }, [rows, curieToNameEntityType, accessToken, dispatch]);
-
-    
-    
-  //useEffect(() => {
-  //  if (accessLevel in modToTaxon) {
-  //    dispatch(
-  //      changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])
-  //    );
-  //  }
-  // }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (accessLevel in modToTaxon) {
-      dispatch(
-        changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0])
-      );
-    }
-  }, [accessLevel, modToTaxon, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  //useEffect(() => {
-  //  if (tagExistingMessage) {
-  //	setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
-  //			    updateButtonBiblioEntityAdd);
-  //  }
-  //}, [tagExistingMessage, existingTagResponses]);
-    
-  useEffect(() => {
-    if (tagExistingMessage) {
-      setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch,
-        updateButtonBiblioEntityAdd);
-    }
-  }, [tagExistingMessage, existingTagResponses, accessToken, accessLevel, dispatch]);
-
-  function createNewRow() {
-    return {
-      topicSelect: "",
-      entityTypeSelect: "ATP:0000005",
-      taxonSelect: "NCBITaxon:559292",
-      tetdisplayTagSelect: "",
-      entityText: "",
-      noteText: "",
-      entityResultList: []
-    };
-  }
-
-  const addRow = () => {
-    setRows((prevRows) => {
-      if (prevRows.length === 0) {
-        return [createNewRow()];
-      }
-      return [...prevRows, createNewRow()];
-    });
-  };
+  const handleEntityValidation = useCallback(
+    debounce((index, value) => {
+      setRows((prevRows) => {
+        const newRows = [...prevRows];
+        const row = newRows[index];
+        if (row.entityText === "") {
+          row.entityResultList = []; // Reset entityResultList if entityText is empty
+        } else if (
+          row.taxonSelect !== "" &&
+          row.taxonSelect !== undefined &&
+          row.entityTypeSelect !== ""
+        ) {
+          const entityIdValidation = (curieToNameEntityType[row.entityTypeSelect] === 'complex' || curieToNameEntityType[row.entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
+          dispatch(
+            changeFieldEntityEntityList(
+              row.entityText,
+              accessToken,
+              entityIdValidation,
+              row.taxonSelect,
+              curieToNameEntityType[row.entityTypeSelect],
+              (result) => {
+                setRows((updatedRows) => {
+                  const finalRows = [...updatedRows];
+                  if (inputRefs.current[index] === value) {
+                    finalRows[index].entityResultList = result;
+                  }
+                  return finalRows;
+                });
+              }
+            )
+          );
+        }
+        return newRows;
+      });
+    }, 300), // Adjust the debounce delay as needed
+    [rows, accessToken, dispatch, curieToNameEntityType]
+  );
 
   const handleRowChange = (index, field, value) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
       newRows[index] = { ...newRows[index], [field]: value };
 
-      if (field === "topicSelect") {
-        const entityTypeSelect = ["ATP:0000128", "ATP:0000022"].includes(value) ? value : "ATP:0000005";
-        const tetdisplayTagSelect = setDisplayTag(value);
-        newRows[index].entityTypeSelect = entityTypeSelect;
-        newRows[index].tetdisplayTagSelect = tetdisplayTagSelect;
+      if (field === 'entityText') {
+        inputRefs.current[index] = value; // Store the current input value
       }
 
-      if (field === "entityText") {
-        if (value === "") {
-          newRows[index].entityResultList = []; // Reset entityResultList if entityText is empty
-        } else {	    
-          const entityIdValidation = (curieToNameEntityType[newRows[index].entityTypeSelect] === 'complex' || curieToNameEntityType[newRows[index].entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
-          dispatch(
-            changeFieldEntityEntityList(
-              value,
-              accessToken,
-              entityIdValidation,
-              newRows[index].taxonSelect,
-              curieToNameEntityType[newRows[index].entityTypeSelect],
-              (result) => {
-                setRows((prevRows) => {
-                  const updatedRows = [...prevRows];
-                  updatedRows[index] = { ...updatedRows[index], entityResultList: result };
-                  return updatedRows;
-                });
-             }
-           )
-         );
-	}
+      // Validate the row when relevant fields change
+      if (field === 'entityText' || field === 'taxonSelect' || field === 'entityTypeSelect') {
+        handleEntityValidation(index, value);
       }
+
       return newRows;
     });
+  };
+
+  const handleAddAll = async () => {
+    for (let index = rows.length - 1; index >= 0; index--) {
+      await createEntities(referenceJsonLive.curie, index);
+    }
+    setRows([createNewRow()]);
+  };
+
+  const addRow = () => {
+    setRows((prevRows) => [...prevRows, createNewRow()]);
   };
 
   const removeAllRows = () => {
@@ -426,27 +295,28 @@ const TopicEntityCreateSGD = () => {
     removeRow(index);
   };
 
-  const handleAddAll = async () => {
-    
-    for (let index = rows.length - 1; index >= 0; index--) {
-      await createEntities(referenceJsonLive.curie, index);
-    }
- 
-    // Reset the state with a new row and clear all fields including "Entity Validation"
-    setRows([{ ...createNewRow(), entityResultList: [] }]);
-    
-  };
-
   const removeRow = (index) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
       newRows.splice(index, 1);
       if (newRows.length === 0) {
-	  newRows.push(createNewRow());
+        newRows.push(createNewRow());
       }
       return newRows;
     });
   };
+
+  function createNewRow() {
+    return {
+      topicSelect: "",
+      entityTypeSelect: "ATP:0000005",
+      taxonSelect: "NCBITaxon:559292",
+      tetdisplayTagSelect: "",
+      entityText: "",
+      noteText: "",
+      entityResultList: []
+    };
+  }
 
   function initializeUpdateJson(refCurie, row) {
     let updateJson = {};
@@ -474,8 +344,6 @@ const TopicEntityCreateSGD = () => {
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList);
   }
 
-  // If any of these conditions are true for at least one element in the rows array,
-  // the some method returns true, which makes disabledAddButton true.
   const disabledAddButton = rows.some(row => row.taxonSelect === "" || row.taxonSelect === undefined || topicEntitySourceId === undefined);
 
   return (
