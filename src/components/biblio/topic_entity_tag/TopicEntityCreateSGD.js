@@ -176,6 +176,19 @@ const TopicEntityCreateSGD = () => {
       const newRows = [...prevRows];
       newRows[index] = { ...newRows[index], [field]: value };
 
+      if (field === 'topicSelect') {
+        if (value === 'ATP:0000022') {
+          newRows[index].entityTypeSelect = 'ATP:0000022';
+          newRows[index].tetdisplayTagSelect = 'ATP:0000022';
+        } else if (value === 'ATP:0000128') {
+          newRows[index].entityTypeSelect = 'ATP:0000128';
+          newRows[index].tetdisplayTagSelect = 'ATP:0000128';
+        } else {
+          newRows[index].entityTypeSelect = 'ATP:0000005'; // Reset to gene if topic is not complex or pathway
+          newRows[index].tetdisplayTagSelect = '';
+        }
+      }
+
       if (field === 'entityText') {
         inputRefs.current[index] = value; // Store the current input value
       }
@@ -407,37 +420,55 @@ const TopicEntityCreateSGD = () => {
               <div>
                 <label>Entity Type:</label>
               </div>
-              <PulldownMenu
+              <Form.Control
+                as="select"
                 id={`entityTypeSelect-${index}`}
+                type="entityTypeSelect"
                 value={row.entityTypeSelect}
-                pdList={entityTypeList}
-                optionToName={curieToNameEntityType}
                 onChange={(e) => handleRowChange(index, 'entityTypeSelect', e.target.value)}
-              />
+              >
+                {entityTypeList.map((option, idx) => (
+                  <option key={idx} value={option}>
+                    {curieToNameEntityType[option]}
+                  </option>
+                ))}
+              </Form.Control>
             </Col>
             <Col sm="3">
               <div>
                 <label>Species:</label>
               </div>
-              <PulldownMenu
+              <Form.Control
+                as="select"
                 id={`taxonSelect-${index}`}
+                type="taxonSelect"
                 value={row.taxonSelect}
-                pdList={taxonList}
-                optionToName={curieToNameTaxon}
                 onChange={(e) => handleRowChange(index, 'taxonSelect', e.target.value)}
-              />
+              >
+                {taxonList.map((option, idx) => (
+                  <option key={idx} value={option}>
+                    {curieToNameTaxon[option]}
+                  </option>
+                ))}
+              </Form.Control>
             </Col>
             <Col sm="3">
               <div>
                 <label>Display Tag:</label>
               </div>
-              <PulldownMenu
+              <Form.Control
+                as="select"
                 id={`tetdisplayTagSelect-${index}`}
+                type="tetdisplayTagSelect"
                 value={row.tetdisplayTagSelect}
-                pdList={displayTagList}
-                optionToName={curieToNameDisplayTag}
                 onChange={(e) => handleRowChange(index, 'tetdisplayTagSelect', e.target.value)}
-              />
+              >
+                {displayTagList.map((option, idx) => (
+                  <option key={idx} value={option}>
+                    {curieToNameDisplayTag[option]}
+                  </option>
+                ))}
+              </Form.Control>
             </Col>
           </Row>
           <Row className="form-group row">
