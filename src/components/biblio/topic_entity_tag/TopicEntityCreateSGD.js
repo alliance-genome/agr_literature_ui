@@ -185,7 +185,7 @@ const TopicEntityCreateSGD = () => {
           newRows[index].tetdisplayTagSelect = 'ATP:0000128';
         } else {
           newRows[index].entityTypeSelect = 'ATP:0000005'; // Reset to gene if topic is not complex or pathway
-          newRows[index].tetdisplayTagSelect = '';
+          newRows[index].tetdisplayTagSelect = setDisplayTag(value);
         }
       }
 
