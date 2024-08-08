@@ -1,8 +1,20 @@
 import React from "react";
 import PropTypes from 'prop-types';
 import Form from "react-bootstrap/Form";
+import { useDispatch } from "react-redux";
+import { changeFieldEntityAddGeneralField } from "../../actions/biblioActions";
 
 export const PulldownMenu = ({ id, value, pdList, optionToName, onChange }) => {
+  const dispatch = useDispatch();
+
+  const handleChange = (e) => {
+    if (onChange) {
+      onChange(e.target.value);
+    } else {
+      dispatch(changeFieldEntityAddGeneralField(e));
+    }
+  };
+
   return (
     <div>
       <Form.Control
@@ -10,10 +22,10 @@ export const PulldownMenu = ({ id, value, pdList, optionToName, onChange }) => {
         id={id}
         type={id}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={handleChange}
       >
-        {pdList.map((optionValue, index) => (
-          <option key={`{id} ${optionValue}`} value={optionValue}>
+        {pdList.map((optionValue) => (
+          <option key={`${id} ${optionValue}`} value={optionValue}>
             {optionToName[optionValue]}
           </option>
         ))}
@@ -27,5 +39,5 @@ PulldownMenu.propTypes = {
   value: PropTypes.string.isRequired,
   pdList: PropTypes.arrayOf(PropTypes.string).isRequired,
   optionToName: PropTypes.object.isRequired,
-  onChange: PropTypes.func.isRequired,
+  onChange: PropTypes.func
 };

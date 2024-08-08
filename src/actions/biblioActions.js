@@ -641,7 +641,6 @@ export const changeFieldEntityEntityListOld = (entityText, accessToken, entityId
   }
 }
 
-
 export const changeFieldEntityEntityList = (entityText, accessToken, entityIdValidation, taxon, entityType, callback) => {
   return async (dispatch) => {
     let entityInputList = [];
@@ -803,7 +802,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, entityIdVal
         }
       }
       dispatch(setEntityResultList(entityResultList));
-      if (callback) {
+      if (typeof callback === 'function') {
         callback(entityResultList);
       }
     } catch (err) {
@@ -811,12 +810,12 @@ export const changeFieldEntityEntityList = (entityText, accessToken, entityIdVal
         type: 'SET_ENTITY_MODAL_TEXT',
         payload: 'Entity lookup API failure' + err
       });
-      if (callback) {
+      if (typeof callback === 'function') {
         callback([]);
       }
     }
   };
-}
+};
 
 /*
 const setEntityResultList = (entityResultList) => ({
