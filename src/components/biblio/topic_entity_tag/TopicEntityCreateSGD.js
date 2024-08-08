@@ -17,7 +17,11 @@ import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
 import {
   checkTopicEntitySetDisplayTag,
   setDisplayTag,
-  sgdTopicList
+  sgdTopicList,
+  geneATP,
+  alleleATP,
+  complexATP,
+  pathwayATP
 } from "./BiblioEntityUtilsSGD";
 import { PulldownMenu } from "../PulldownMenu";
 import {
@@ -67,12 +71,13 @@ const TopicEntityCreateSGD = () => {
 
   const curieToNameEntityType = useMemo(() => ({
     '': 'no value',
-    'ATP:0000005': 'gene',
-    'ATP:0000006': 'allele',
-    'ATP:0000128': 'complex',
-    'ATP:0000022': 'pathway'
+    [geneATP]: 'gene',
+    [alleleATP]: 'allele',
+    [complexATP]: 'complex',
+    [pathwayATP]: 'pathway'
   }), []);
 
+    
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
 
@@ -121,7 +126,7 @@ const TopicEntityCreateSGD = () => {
     fetchDisplayTagData(accessToken).then((data) => setDisplayTagData(data));
     dispatch(
       changeFieldEntityAddGeneralField({
-        target: { id: "entityTypeSelect", value: "ATP:0000005" },
+        target: { id: "entityTypeSelect", value: geneATP },
       })
     );
   }, [accessLevel, accessToken, dispatch]);
@@ -133,19 +138,30 @@ const TopicEntityCreateSGD = () => {
     }
   }, [dispatch, editTag]);
 
+  /*
+  use 'useCallback' and 'debounce' to limit the calls to A-team API
+  The "useCallback" hook ensures that the handleEntityValidation function is only re-created
+  if any of the dependencies (rows, accessToken, dispatch, curieToNameEntityType) change.
+  The "debounce" limits the rate at which a function can fire. It makes sure the function is only 
+  called after a specified delay has passed since the last time the debounced function was invoked. 
+  We don't want to call A-team API every time a keystroke occurs, but rather wait for the curators
+  to stop typing.
+  */
+
   const handleEntityValidation = useCallback(
     debounce((index, value) => {
+      // creates a new copy of the rows state and modifies the row at the given index
       setRows((prevRows) => {
         const newRows = [...prevRows];
         const row = newRows[index];
         if (row.entityText === "") {
-          row.entityResultList = []; // Reset entityResultList if entityText is empty
+          row.entityResultList = []; // reset entityResultList if entityText is empty
         } else if (
           row.taxonSelect !== "" &&
           row.taxonSelect !== undefined &&
           row.entityTypeSelect !== ""
         ) {
-          const entityIdValidation = (curieToNameEntityType[row.entityTypeSelect] === 'complex' || curieToNameEntityType[row.entityTypeSelect] === 'pathway') ? 'sgd' : 'alliance';
+	  const entityIdValidation = (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) ? 'sgd' : 'alliance';
           dispatch(
             changeFieldEntityEntityList(
               row.entityText,
@@ -165,9 +181,10 @@ const TopicEntityCreateSGD = () => {
             )
           );
         }
+        // returns the updated rows
         return newRows;
       });
-    }, 300), // Adjust the debounce delay as needed
+    }, 300), // 300 milliseconds, we can adjust the debounce delay as needed
     [rows, accessToken, dispatch, curieToNameEntityType]
   );
 
@@ -176,6 +193,7 @@ const TopicEntityCreateSGD = () => {
       const newRows = [...prevRows];
       newRows[index] = { ...newRows[index], [field]: value };
 
+      /*
       if (field === 'topicSelect') {
         if (value === 'ATP:0000022') {
           newRows[index].entityTypeSelect = 'ATP:0000022';
@@ -184,20 +202,29 @@ const TopicEntityCreateSGD = () => {
           newRows[index].entityTypeSelect = 'ATP:0000128';
           newRows[index].tetdisplayTagSelect = 'ATP:0000128';
         } else {
-          newRows[index].entityTypeSelect = 'ATP:0000005'; // Reset to gene if topic is not complex or pathway
           newRows[index].tetdisplayTagSelect = setDisplayTag(value);
         }
+      }
+      */
+
+      if (field === 'topicSelect') {
+        if (value !== alleleATP && entityTypeList.includes(value)) {	    
+	    newRows[index].entityTypeSelect = value;
+	    newRows[index].tetdisplayTagSelect = value;
+	} else {
+	    newRows[index].entityTypeSelect = geneATP; // reset to gene if topic is not complex or pathway
+	    newRows[index].tetdisplayTagSelect = setDisplayTag(value);
+	}
       }
 
       if (field === 'entityText') {
         inputRefs.current[index] = value; // Store the current input value
       }
 
-      // Validate the row when relevant fields change
+      // validate the row when relevant fields change
       if (field === 'entityText' || field === 'taxonSelect' || field === 'entityTypeSelect') {
         handleEntityValidation(index, value);
       }
-
       return newRows;
     });
   };
@@ -274,7 +301,7 @@ const TopicEntityCreateSGD = () => {
       for (const entityResult of entityResultList.values()) {
         if ((entityResult.curie !== 'no Alliance curie') && (entityResult.curie !== 'no SGD curie') && (entityResult.curie !== 'duplicate')) {
           let updateJson = initializeUpdateJson(refCurie, row);
-          if (row.entityTypeSelect === 'ATP:0000128' || row.entityTypeSelect === 'ATP:0000022') {
+          if (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) {
             updateJson['entity_id_validation'] = 'SGD';
           } else {
             updateJson['entity_id_validation'] = 'alliance';
@@ -322,7 +349,7 @@ const TopicEntityCreateSGD = () => {
   function createNewRow() {
     return {
       topicSelect: "",
-      entityTypeSelect: "ATP:0000005",
+      entityTypeSelect: geneATP,
       taxonSelect: "NCBITaxon:559292",
       tetdisplayTagSelect: "",
       entityText: "",
