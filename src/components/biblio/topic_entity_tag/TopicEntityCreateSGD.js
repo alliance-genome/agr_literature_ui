@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import axios from "axios";
 import {
   ateamGetTopicDescendants,
   changeFieldEntityAddDisplayTag,
@@ -58,6 +59,7 @@ const TopicEntityCreateSGD = () => {
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [rows, setRows] = useState([createNewRow()]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
+  const [topicEntityTags, setTopicEntityTags] = useState([]);
   const inputRefs = useRef([]);
 
   const curieToNameDisplayTag = displayTagData.reduce((acc, option) => {
@@ -132,12 +134,51 @@ const TopicEntityCreateSGD = () => {
   }, [accessLevel, accessToken, dispatch]);
 
   useEffect(() => {
-    if (editTag === null) {
+    const fetchTopicEntityTags = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/${editTag}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+	console.log("TET response.data=", response.data)  
+        setTopicEntityTags(response.data);
+      } catch (error) {
+        console.error("Error fetching topic entity tags:", error);
+      }
+    };
+
+    if (editTag !== null) {
+      fetchTopicEntityTags();
+    }
+  }, [editTag, accessToken]);
+
+  useEffect(() => {
+    console.log("useEffect triggered: editTag =", editTag);
+    if (editTag !== null && topicEntityTags) {
+      const editRow = topicEntityTags;
+      console.log("Found editRow:", editRow);
+      if (editRow) {
+        setRows([{
+          topicSelect: editRow.topic || "",
+          entityTypeSelect: editRow.entity_type || geneATP,
+          taxonSelect: editRow.species || "NCBITaxon:559292",
+          tetdisplayTagSelect: editRow.display_tag || "",
+          entityText: editRow.entity_name || editRow.entity || "",
+          noteText: editRow.note || "",
+          entityResultList: editRow.entityResultList || []
+        }]);
+        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: editRow.entityResultList || [] } }));
+        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: editRow.entity || '' } }));
+      }
+    } else {
+      setRows([createNewRow()]);
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
     }
-  }, [dispatch, editTag]);
+  }, [editTag, topicEntityTags, dispatch]);
 
+    
   /*
   use 'useCallback' and 'debounce' to limit the calls to A-team API
   The "useCallback" hook ensures that the handleEntityValidation function is only re-created
@@ -193,20 +234,6 @@ const TopicEntityCreateSGD = () => {
       const newRows = [...prevRows];
       newRows[index] = { ...newRows[index], [field]: value };
 
-      /*
-      if (field === 'topicSelect') {
-        if (value === 'ATP:0000022') {
-          newRows[index].entityTypeSelect = 'ATP:0000022';
-          newRows[index].tetdisplayTagSelect = 'ATP:0000022';
-        } else if (value === 'ATP:0000128') {
-          newRows[index].entityTypeSelect = 'ATP:0000128';
-          newRows[index].tetdisplayTagSelect = 'ATP:0000128';
-        } else {
-          newRows[index].tetdisplayTagSelect = setDisplayTag(value);
-        }
-      }
-      */
-
       if (field === 'topicSelect') {
         if (value !== alleleATP && entityTypeList.includes(value)) {	    
 	    newRows[index].entityTypeSelect = value;
@@ -243,7 +270,7 @@ const TopicEntityCreateSGD = () => {
   const removeAllRows = () => {
     setRows([createNewRow()]);
   };
-
+  
   const patchEntities = async (refCurie, index) => {
     const row = rows[index];
     if (row.topicSelect === null) {

@@ -74,28 +74,29 @@ export default (props) => {
         setShowModal(false);
     };
 
-    const handleEditClick = () => {
-        if(editTag === props.data.topic_entity_tag_id){
+    const handleEditClick = (row) => {
+	console.log("Editing row:", row);
+        if(editTag === row.topic_entity_tag_id){
             dispatch(setEditTag(null));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: ''} }));
         }
         else{
-            dispatch(setEditTag(props.data.topic_entity_tag_id));
-            dispatch(setTypeaheadName2CurieMap({[props.data.topic_name]: props.data.topic}));
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: props.data.topic} }));
-            if (props.data.entity_id_validation === 'WB') {
+            dispatch(setEditTag(row.topic_entity_tag_id));
+            dispatch(setTypeaheadName2CurieMap({[row.topic_name]: row.topic}));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: row.topic} }));
+            if (row.entity_id_validation === 'WB') {
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: 'use_wb' } }));
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelectWB', value: props.data.species } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelectWB', value: row.species } }));
             }
             else{
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: props.data.species } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: row.species } }));
             }
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: props.data.novel_topic_data } }));
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: props.data.negated } }));
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: props.data.note ? props.data.note : '' } }));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: row.novel_topic_data } }));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: row.negated } }));
+            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: row.note ? row.note : '' } }));
             if (props.data.entity_type){
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: props.data.entity_name } }));
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: props.data.entity_type } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: row.entity_name } }));
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: row.entity_type } }));
             }
             else{
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
@@ -135,7 +136,7 @@ export default (props) => {
             </Modal>
             <Button onClick={() => handleDeleteClick()} size='sm'><FontAwesomeIcon icon={faTrashAlt}/></Button>
             &nbsp;
-            <Button onClick={() => handleEditClick()} size='sm' variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button>
+            <Button onClick={() => handleEditClick(props.data)} size='sm' variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button>
 
 
         </div> : null}
