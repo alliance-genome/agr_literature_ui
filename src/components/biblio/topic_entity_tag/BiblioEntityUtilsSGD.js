@@ -15,6 +15,12 @@ export const sgdTopicList = [{'curie': 'ATP:0000012', 'name': 'gene ontology'},
 			     {'curie': 'ATP:0000006', 'name': 'allele'},
 			     {'curie': 'other additional literature', 'name': 'other additional literature'}];
 			  
+
+export const geneATP = 'ATP:0000005';
+export const alleleATP = 'ATP:0000006';
+export const complexATP = 'ATP:0000128';
+export const pathwayATP = 'ATP:0000022';
+
 /*
    ATP:0000128: protein containing complex
    ATP:0000012: gene ontology
