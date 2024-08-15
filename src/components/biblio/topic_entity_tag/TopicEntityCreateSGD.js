@@ -541,7 +541,7 @@ const TopicEntityCreateSGD = () => {
               <Container>
                 {row.entityResultList && row.entityResultList.length > 0 && row.entityResultList.map((entityResult, idx) => {
                   let colDisplayClass = 'Col-display';
-                  if (['no Alliance curie', 'obsolete entity'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
+                  if (['no Alliance curie', 'no SGD curie', 'obsolete entity'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
                   else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
                   return (
                     <Row key={`entityEntityContainerrows ${idx}`}>

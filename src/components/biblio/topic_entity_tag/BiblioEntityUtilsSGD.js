@@ -86,7 +86,8 @@ export function checkTopicEntitySetDisplayTag(entityText, entityResultList, topi
   let isEntityInvalid = false;
   if ( entityResultList && entityResultList.length > 0 ) {
     for (let entityResult of entityResultList.values()) {
-      if (entityResult.curie === 'no Alliance curie') {
+      //if (entityResult.curie === 'no Alliance curie') {
+      if (["no Alliance curie", "obsolete entity", "no SGD curie"].includes(entityResult.curie)) {
         isEntityInvalid = true;
 	break;
       }
