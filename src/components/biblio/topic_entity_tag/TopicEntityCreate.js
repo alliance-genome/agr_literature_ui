@@ -293,11 +293,11 @@ const TopicEntityCreate = () => {
     setIsTagExistingMessageVisible(false);
   };
 
-  function createNewRow() {
+  function createNewRow() {	
     return {
       topicSelect: "",
       entityTypeSelect: "",
-      taxonSelect: "",
+      taxonSelect: modToTaxon[accessLevel] && modToTaxon[accessLevel][0] ? modToTaxon[accessLevel][0] : "",
       entityText: "",
       noteText: "",
       entityResultList: [],
@@ -357,14 +357,23 @@ const TopicEntityCreate = () => {
       newRows[index] = { ...newRows[index], [field]: value };
 
       if (field === 'topicSelect') {
-	//console.log("Topic selected:", value, 'Entity type list:', entityTypeList);
+
         if (entityTypeList.includes(value)) {
-          //console.log("Setting entityTypeSelect to:", value);
           newRows[index].entityTypeSelect = value;
         } else {
-	  //console.log("Resetting entityTypeSelect");
           newRows[index].entityTypeSelect = "";
         }
+	if (value === speciesATP) {
+          newRows[index].taxonSelect = ""; // clear the species column
+          newRows[index].selectedSpecies = []; // optionally clear any selected species in the typeahead
+        }
+
+	if (value === "" || value === null) {
+          newRows[index].entityText = ""; // Clear the entity text
+          newRows[index].entityResultList = []; // Clear the entity list
+          newRows[index].selectedSpecies = []; // Clear any selected species in the typeahead
+	}
+	  
       }
 
       if (field === 'entityText') {
@@ -372,7 +381,7 @@ const TopicEntityCreate = () => {
       }
 
       if (field === 'selectedSpecies') {
-        newRows[index].selectedSpecies = value; // Store selected species
+        newRows[index].selectedSpecies = value; // store selected species
       }
 	
       // Validate the row when relevant fields change
