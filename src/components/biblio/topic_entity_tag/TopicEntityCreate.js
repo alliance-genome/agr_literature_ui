@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   ateamGetTopicDescendants,
@@ -27,6 +27,7 @@ import Form from "react-bootstrap/Form";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
+import { debounce } from 'lodash';
 
 const TopicEntityCreate = () => {
   const dispatch = useDispatch();
@@ -68,7 +69,9 @@ const TopicEntityCreate = () => {
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
-
+  const [rows, setRows] = useState([createNewRow()]);
+  const inputRefs = useRef([]);
+    
   const taxonToMod = {};
   for (const [mod, taxons] of Object.entries(modToTaxon)) {
     taxons.forEach((taxon) => {
@@ -218,12 +221,39 @@ const TopicEntityCreate = () => {
     }
   }, [entityText, taxonSelect]);
 
+  /*
   useEffect(() => {
     if (accessLevel in modToTaxon) {
       dispatch(changeFieldEntityAddTaxonSelect(modToTaxon[accessLevel][0]));
     }
   }, [accessLevel]);
+  */
 
+  useEffect(() => {
+    if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
+      // update each row's taxonSelect field with the default species based on accessLevel
+      setRows((prevRows) => prevRows.map((row, index) => ({
+        ...row,
+        taxonSelect: modToTaxon[accessLevel][0]
+      })));
+    }
+  }, [modToTaxon, accessLevel]);
+
+ 
+  useEffect(() => {
+     // ensure that species can be adjusted manually and prevent errors
+    setRows((prevRows) =>
+      prevRows.map((row) => {
+        const defaultTaxon = modToTaxon && modToTaxon[accessLevel] && modToTaxon[accessLevel][0] ? modToTaxon[accessLevel][0] : "";
+        return {
+          ...row,
+          taxonSelect: row.taxonSelect !== "" && row.taxonSelect !== undefined ? row.taxonSelect : defaultTaxon,
+        };
+      })
+    );
+  }, [modToTaxon, accessLevel]);
+  
+    
   useEffect(() => {
     if (tagExistingMessage) {
       setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd);
@@ -259,6 +289,93 @@ const TopicEntityCreate = () => {
     setIsTagExistingMessageVisible(false);
   };
 
+  function createNewRow() {
+    return {
+      topicSelect: "",
+      entityTypeSelect: "",
+      taxonSelect: "",
+      entityText: "",
+      noteText: "",
+      entityResultList: [],
+      noDataCheckbox: false,
+      novelCheckbox: false
+    };
+  }
+
+  const handleEntityValidation = useCallback(
+     debounce((index, value) => {
+	console.log("Validating entity for row index:", index)
+        setRows((prevRows) => {
+            const newRows = [...prevRows]; // copy data
+            const row = newRows[index];
+            if (row.entityText === "") {
+		console.log("Entity text is empty, resetting entityResultList");
+                row.entityResultList = []; // reset entityResultList if entityText is empty
+            } else if (
+                row.taxonSelect !== "" &&
+                row.taxonSelect !== undefined &&
+                row.entityTypeSelect !== ""
+            ) {
+		console.log("Validating entity:", row.entityText);
+                let entityIdValidation = row.taxonSelect === "use_wb" ? "wb" : "alliance";
+                // if (row.taxonSelect === "use_wb" && row.taxonSelectWB !== "" && row.taxonSelectWB !== undefined && row.entityTypeSelect !== "") {
+                //    entityIdValidation = 'wb';
+		//}
+                dispatch(
+                    changeFieldEntityEntityList(
+                        row.entityText,
+                        accessToken,
+                        entityIdValidation,
+                        row.taxonSelect,
+                        curieToNameEntityType[row.entityTypeSelect],
+                        (result) => {
+                            setRows((updatedRows) => {
+                                const finalRows = [...updatedRows];
+                                if (inputRefs.current[index] === value) {
+                                    finalRows[index].entityResultList = result;
+                                }
+                                return finalRows;
+                            });
+                        }
+                    )
+                );
+            }
+            return newRows;
+        });
+    }, 300),
+    [rows, accessToken, dispatch, curieToNameEntityType]
+  );
+
+  const handleRowChange = (index, field, value) => {
+    //console.log("handleRowChange triggered:", { index, field, value });
+    setRows((prevRows) => {
+      const newRows = [...prevRows];
+      newRows[index] = { ...newRows[index], [field]: value };
+
+      if (field === 'topicSelect') {
+	//console.log("Topic selected:", value, 'Entity type list:', entityTypeList);
+        if (entityTypeList.includes(value)) {
+          //console.log("Setting entityTypeSelect to:", value);
+          newRows[index].entityTypeSelect = value;
+        } else {
+	  //console.log("Resetting entityTypeSelect");
+          newRows[index].entityTypeSelect = "";
+        }
+      }
+
+      if (field === 'entityText') {
+        inputRefs.current[index] = value; // store the current input value
+      }
+
+      // Validate the row when relevant fields change
+      if (['entityText', 'taxonSelect', 'entityTypeSelect'].includes(field)) {
+        handleEntityValidation(index, value);
+      }
+      return newRows;
+    });
+  };
+
+    
   async function createEntities(refCurie) {
     if (topicSelect === null) {
       return;
@@ -413,168 +530,240 @@ const TopicEntityCreate = () => {
           button
         </Col>
       </Row>
-      <Row className="form-group row">
-        <Col sm="2">
-          <AsyncTypeahead
-            isLoading={topicSelectLoading}
-            useCache={false}
-            placeholder="Start typing to search topics"
-            ref={topicTypeaheadRef}
-            id="topicTypeahead"
-            onSearch={async (query) => {
-              setTopicSelectLoading(true);
-              const results = await FetchTypeaheadOptions(
-                `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/search?limit=10&page=0`,
-                query,
-                accessToken
-              );
-              setTopicSelectLoading(false);
-              dispatch(
-                setTypeaheadName2CurieMap(
-                  Object.fromEntries(
-                    results.filter((item) => !item.obsolete).map((item) => [item.name, item.curie])
-                  )
-                )
-              );
-              setTypeaheadOptions(results.filter((item) => !item.obsolete && topicDescendants.has(item.curie)).map((item) => item.name));
-            }}
-            onChange={(selected) => {
-              dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: typeaheadName2CurieMap[selected[0]] } }));
-            }}
-            options={typeaheadOptions}
-            selected={topicSelect !== undefined && topicSelect !== null && topicSelect !== "" ? [getMapKeyByValue(typeaheadName2CurieMap, topicSelect)] : []}
-          />
-        </Col>
-        <Col sm="1">
-          <div style={{ textAlign: "left" }}>
-            <Form.Check
-              inline
-              type="checkbox"
-              id="noDataCheckbox"
-              checked={noDataCheckbox}
-              onChange={(evt) => {
-                if (evt.target.checked) {
-                  dispatch(changeFieldEntityAddGeneralField({ target: { id: "noDataCheckbox", value: true } }));
-                } else {
-                  dispatch(changeFieldEntityAddGeneralField({ target: { id: "noDataCheckbox", value: false } }));
-                }
-              }}
-            />
-            No Data
-            <br></br>
-            <Form.Check
-              inline
-              type="checkbox"
-              id="novelCheckbox"
-              checked={novelCheckbox}
-              onChange={(evt) => {
-                if (evt.target.checked) {
-                  dispatch(changeFieldEntityAddGeneralField({ target: { id: "novelCheckbox", value: true } }));
-                } else {
-                  dispatch(changeFieldEntityAddGeneralField({ target: { id: "novelCheckbox", value: false } }));
-                }
-              }}
-            />
-            Novel Data
-          </div>
-        </Col>
-        <Col sm="1">
-          <PulldownMenu id="entityTypeSelect" value={entityTypeSelect} pdList={entityTypeList} optionToName={curieToNameEntityType} />
-        </Col>
-        <Col sm="1">
-          <PulldownMenu id="taxonSelect" value={taxonSelect} pdList={taxonList} optionToName={curieToNameTaxon} />
-          {taxonSelect === "use_wb" && <PulldownMenu id="taxonSelectWB" value={taxonSelectWB} pdList={taxonListWB} optionToName={curieToNameTaxonWB} />}
-        </Col>
-        <Col className="form-label col-form-label" sm="2">
-          {renderView() === "list" ? (
-            <Form.Control as="textarea" id="entitytextarea" value={entityText} disabled={disabledEntityList} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
-          ) : (
-            topicSelect === speciesATP && (
-              <AsyncTypeahead
-                multiple
-                isLoading={speciesSelectLoading}
-                placeholder="enter species name"
-                ref={speciesTypeaheadRef}
-                onSearch={async (query) => {
-                  setSpeciesSelectLoading(true);
+      {rows.map((row, index) => (
+        <Row className="form-group row" key={index}>
+	  <Col sm="2">
+            <AsyncTypeahead
+              isLoading={topicSelectLoading}
+              useCache={false}
+              placeholder="Start typing to search topics"
+              ref={topicTypeaheadRef}
+              id={`topicTypeahead-${index}`}
+              onSearch={async (query) => {
+	        setTopicSelectLoading(true);	    
+                try {
                   const results = await FetchTypeaheadOptions(
-                    `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
+                    `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/search?limit=10&page=0`,
                     query,
                     accessToken
+		  );
+
+		  //console.log("API Results:", results);
+		    
+                  // make sure results is an array before processing
+                  const filteredResults = (results || [])
+                    .filter((item) => !item.obsolete)
+                    .map((item) => [item.name, item.curie]);
+
+                  dispatch(setTypeaheadName2CurieMap(Object.fromEntries(filteredResults)));
+
+		  // setTopicSelectLoading(false);
+		    
+                  setTypeaheadOptions(
+                    filteredResults
+		      .filter((item) => topicDescendants.has(item[1])) // check against topicDescendants by curie
+			  .map((item) => item[0]) // extract the name for display
                   );
-                  setSpeciesSelectLoading(false);
-                  if (results) {
-                    setTypeaheadOptions(results.map((item) => item.name + " " + item.curie));
-                  }
+                } catch (error) {
+                  console.error("Error during topic search:", error);
+                  // setTopicSelectLoading(false);
+                  setTypeaheadOptions([]); // clear options on error
+                } finally {
+		  setTopicSelectLoading(false);
+		}  
+              }}
+              onChange={(selected) => {
+                if (selected.length > 0) {
+                  const selectedCurie = typeaheadName2CurieMap[selected[0]];
+                  handleRowChange(index, 'topicSelect', selectedCurie);
+                } else {
+		  handleRowChange(index, 'topicSelect', "");
+		}
+              }}
+              options={typeaheadOptions}
+              selected={row.topicSelect ? [getMapKeyByValue(typeaheadName2CurieMap, row.topicSelect)] : []}
+            />		
+          </Col>
+	  <Col sm="1">
+            <div style={{ textAlign: "left" }}>
+              <Form.Check
+                inline
+                type="checkbox"
+                id={`noDataCheckbox-${index}`}
+                checked={row.noDataCheckbox}
+                onChange={(evt) => {
+                  const updatedRows = [...rows];
+                  updatedRows[index] = { ...updatedRows[index], noDataCheckbox: evt.target.checked };
+                  setRows(updatedRows);
                 }}
-                onChange={(selected) => {
-                  const extractedStrings = selected
-                    .map((specie) => {
-                      const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-                      return match ? `${match[1]} ${match[2]}` : null;
-                    })
-                    .filter((item) => item);
-
-                  setSelectedSpecies(extractedStrings);
-                  setIsSpeciesSelected(selected.length > 0);
-
-                  const entityResults = extractedStrings.map((specie) => {
-                    const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-                    if (match) {
-                      return {
-                        entityTypeSymbol: match[1],
-                        curie: match[2],
-                      };
-                    }
-                    return null;
-                  }).filter((item) => item);
-                  dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityResultList", value: entityResults } }));
-                }}
-                options={typeaheadOptions}
-                selected={selectedSpecies}
               />
-            )
-          )}
+              No Data
+              <br />
+              <Form.Check
+                inline
+                type="checkbox"
+                id={`novelCheckbox-${index}`}
+                checked={row.novelCheckbox}
+                onChange={(evt) => {
+                  const updatedRows = [...rows];
+                  updatedRows[index] = { ...updatedRows[index], novelCheckbox: evt.target.checked };
+                  setRows(updatedRows);
+                }}
+              />
+              Novel Data
+            </div>
+          </Col>
+          <Col sm="1">
+            <Form.Control
+              as="select"
+              id={`entityTypeSelect-${index}`}
+              type="entityTypeSelect"
+              value={row.entityTypeSelect}
+              onChange={(e) => handleRowChange(index, 'entityTypeSelect', e.target.value)}
+            >
+              {entityTypeList.map((option, idx) => (
+                <option key={idx} value={option}>
+                  {curieToNameEntityType[option]}
+                </option>
+              ))}
+            </Form.Control>
+          </Col>
+          <Col sm="1">
+            <Form.Control
+              as="select"
+              id={`taxonSelect-${index}`}
+              type="taxonSelect"
+              value={row.taxonSelect}
+              onChange={(e) => handleRowChange(index, 'taxonSelect', e.target.value)}
+            >
+              {taxonList.map((option, idx) => (
+                <option key={idx} value={option}>
+                  {curieToNameTaxon[option]}
+                </option>
+              ))}
+            </Form.Control>
+	      	      
+            {row.taxonSelect === "use_wb" && (
+	      <Form.Control
+                as="select"
+                id={`taxonSelectWB-${index}`}
+                type="taxonSelectWB"
+                value={row.taxonSelectWB}
+                onChange={(e) => handleRowChange(index, 'taxonSelectWB', e.target.value)}
+              >
+	        {taxonListWB.map((option, idx) => (
+                  <option key={idx} value={option}>
+                     {curieToNameTaxonWB[option]}   
+                  </option>
+		))}
+              </Form.Control>	
+            )}
+          </Col>
+          <Col className="form-label col-form-label" sm="2">
+            {renderView() === "list" ? (
+              <Form.Control
+                as="textarea"
+                id={`entitytextarea-${index}`}
+                value={row.entityText}
+                disabled={disabledEntityList}
+                onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}
+              />
+            ) : (
+              row.topicSelect === speciesATP && (
+                <AsyncTypeahead
+                  multiple
+                  isLoading={speciesSelectLoading}
+                  placeholder="enter species name"
+                  ref={speciesTypeaheadRef}
+                  onSearch={async (query) => {
+                    setSpeciesSelectLoading(true);
+                    const results = await FetchTypeaheadOptions(
+                      `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
+                      query,
+                      accessToken
+                    );
+                    setSpeciesSelectLoading(false);
+                    if (results) {
+                      setTypeaheadOptions(results.map((item) => item.name + " " + item.curie));
+                    }
+                  }}
+                  onChange={(selected) => {
+                    const extractedStrings = selected
+                      .map((specie) => {
+                        const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                        return match ? `${match[1]} ${match[2]}` : null;
+                      })
+                      .filter((item) => item);
+
+                    handleRowChange(index, 'entityResultList', extractedStrings.map(specie => {
+                      const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                      if (match) {
+                        return {
+                          entityTypeSymbol: match[1],
+                          curie: match[2],
+                        };
+                      }
+                      return null;
+                    }).filter(item => item));
+                  }}
+                  options={typeaheadOptions}
+                  selected={row.entityResultList.map(entity => `${entity.entityTypeSymbol} ${entity.curie}`)}
+                />
+               )
+             )}
+          </Col>
+          <Col className="form-label col-form-label" sm="2">
+            <Container>
+              {renderView() === "list" &&
+                row.entityResultList &&
+                row.entityResultList.length > 0 &&
+                row.entityResultList.map((entityResult, idx) => {
+                  let colDisplayClass = "Col-display";
+                  if (["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie"].includes(entityResult.curie)) {
+                    colDisplayClass = "Col-display-warn";
+                  } else if (entityResult.curie === "duplicate") {
+                    colDisplayClass = "Col-display-grey";
+                  }
+                  return (
+                    <Row key={`entityEntityContainerrows-${idx}`}>
+                      <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">
+                        {entityResult.entityTypeSymbol}
+                      </Col>
+                      <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">
+                        {entityResult.curie}
+                      </Col>
+                    </Row>
+                  );
+                })}
+            </Container>
+          </Col>
+          <Col className="form-label col-form-label" sm="2">
+            <Form.Control as="textarea" id={`notetextarea-${index}`} type="notetextarea" value={row.noteText} onChange={(e) => {
+              const updatedRows = [...rows];
+              updatedRows[index] = { ...updatedRows[index], noteText: e.target.value };
+              setRows(updatedRows);
+            }} />
+          </Col>
+          <Col className="form-label col-form-label" sm="1">
+            {editTag ? (
+              <Button variant="outline-danger" onClick={() => patchEntities(referenceJsonLive.curie, index)}>
+                {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Edit"}
+              </Button>
+            ) : (
+              <Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
+                {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
+              </Button>
+            )}
+          </Col>
+        </Row>
+      ))}
+      <Row>
+        <Col sm="2">
+          <Button variant="outline-secondary" onClick={() => setRows([...rows, createNewRow()])}>
+            New row
+          </Button>
         </Col>
-        <Col className="form-label col-form-label" sm="2">
-          <Container>
-            {renderView() === "list" &&
-              entityResultList &&
-              entityResultList.length > 0 &&
-              entityResultList.map((entityResult, index) => {
-                let colDisplayClass = "Col-display";
-                if (["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie"].includes(entityResult.curie)) {
-                  colDisplayClass = "Col-display-warn";
-                } else if (entityResult.curie === "duplicate") {
-                  colDisplayClass = "Col-display-grey";
-                }
-                return (
-                  <Row key={`entityEntityContainerrows ${index}`}>
-                    <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">
-                      {entityResult.entityTypeSymbol}
-                    </Col>
-                    <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">
-                      {entityResult.curie}
-                    </Col>
-                  </Row>
-                );
-              })}
-          </Container>
-        </Col>
-        <Col className="form-label col-form-label" sm="2">
-          <Form.Control as="textarea" id="notetextarea" type="notetextarea" value={noteText} onChange={(e) => dispatch(changeFieldEntityAddGeneralField(e))} />
-        </Col>
-        <Col className="form-label col-form-label" sm="1">
-          {editTag ? (
-            <Button variant="outline-danger" onClick={() => patchEntities(referenceJsonLive.curie)}>
-              {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Edit"}
-            </Button>
-          ) : (
-            <Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie)}>
-              {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Add"}
-            </Button>
-          )}
-        </Col>
+        <Col sm="8"></Col>
       </Row>
     </Container>
   );
