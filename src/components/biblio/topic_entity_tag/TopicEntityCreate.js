@@ -69,7 +69,10 @@ const TopicEntityCreate = () => {
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
-  const [rows, setRows] = useState([createNewRow()]);
+  // const [rows, setRows] = useState([createNewRow()]);
+  const [rows, setRows] = useState([
+    { topicSelect: "", entityTypeSelect: "", taxonSelect: "", entityText: "", entityResultList: [] }
+  ]);
   const inputRefs = useRef([]);
     
   const taxonToMod = {};
@@ -146,8 +149,9 @@ const TopicEntityCreate = () => {
     "ATP:0000013",
   ];
   const speciesATP = "ATP:0000123";
-  const renderView = () => {
-    return topicSelect === speciesATP ? "autocomplete" : "list";
+  const renderView = (row) => {
+    if (!row) return "list"; // return default view if row is undefined
+    return row.topicSelect === speciesATP ? "autocomplete" : "list";
   };
 
   useEffect(() => {
@@ -304,7 +308,7 @@ const TopicEntityCreate = () => {
 
   const handleEntityValidation = useCallback(
      debounce((index, value) => {
-	console.log("Validating entity for row index:", index)
+	// console.log("Validating entity for row index:", index)
         setRows((prevRows) => {
             const newRows = [...prevRows]; // copy data
             const row = newRows[index];
@@ -316,7 +320,7 @@ const TopicEntityCreate = () => {
                 row.taxonSelect !== undefined &&
                 row.entityTypeSelect !== ""
             ) {
-		console.log("Validating entity:", row.entityText);
+		// console.log("Validating entity:", row.entityText);
                 let entityIdValidation = row.taxonSelect === "use_wb" ? "wb" : "alliance";
                 // if (row.taxonSelect === "use_wb" && row.taxonSelectWB !== "" && row.taxonSelectWB !== undefined && row.entityTypeSelect !== "") {
                 //    entityIdValidation = 'wb';
@@ -367,6 +371,10 @@ const TopicEntityCreate = () => {
         inputRefs.current[index] = value; // store the current input value
       }
 
+      if (field === 'selectedSpecies') {
+        newRows[index].selectedSpecies = value; // Store selected species
+      }
+	
       // Validate the row when relevant fields change
       if (['entityText', 'taxonSelect', 'entityTypeSelect'].includes(field)) {
         handleEntityValidation(index, value);
@@ -660,7 +668,46 @@ const TopicEntityCreate = () => {
             )}
           </Col>
           <Col className="form-label col-form-label" sm="2">
-            {renderView() === "list" ? (
+            {renderView(row) === "autocomplete" ? (
+              <AsyncTypeahead
+                  multiple
+                  isLoading={speciesSelectLoading}
+                  placeholder="enter species name"
+                  ref={speciesTypeaheadRef}
+                  onSearch={async (query) => {
+	            setSpeciesSelectLoading(true);
+		    try {
+		      const results = await FetchTypeaheadOptions(
+                        `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
+                        query,
+                        accessToken
+                      );
+                      setSpeciesSelectLoading(false);
+                      if (results) {
+                        setTypeaheadOptions(results.map((item) => item.name + " " + item.curie));
+                      }
+                    } catch (error) {
+		       console.error("Error fetching typeahead options:", error);
+                        setSpeciesSelectLoading(false);
+                    }
+		  }}
+                  onChange={(selected) => {
+                    const extractedStrings = selected
+                      .map((specie) => {
+                        const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+                        return match ? `${match[1]} ${match[2]}` : null;
+                      })
+		      .filter((item) => item);
+
+	              handleRowChange(index, 'entityResultList', entityResultList);
+		      // set the selected species in the input box
+                      handleRowChange(index, 'selectedSpecies', selected.map(s => s));
+                  }}
+                  options={typeaheadOptions}
+                  // selected={row.entityResultList.map(entity => `${entity.entityTypeSymbol} ${entity.curie}`)}
+		  selected={row.selectedSpecies || row.entityResultList.map(entity => `${entity.entityTypeSymbol} ${entity.curie}`)}
+	      />
+	    ) : ( 	
               <Form.Control
                 as="textarea"
                 id={`entitytextarea-${index}`}
@@ -668,53 +715,11 @@ const TopicEntityCreate = () => {
                 disabled={disabledEntityList}
                 onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}
               />
-            ) : (
-              row.topicSelect === speciesATP && (
-                <AsyncTypeahead
-                  multiple
-                  isLoading={speciesSelectLoading}
-                  placeholder="enter species name"
-                  ref={speciesTypeaheadRef}
-                  onSearch={async (query) => {
-                    setSpeciesSelectLoading(true);
-                    const results = await FetchTypeaheadOptions(
-                      `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
-                      query,
-                      accessToken
-                    );
-                    setSpeciesSelectLoading(false);
-                    if (results) {
-                      setTypeaheadOptions(results.map((item) => item.name + " " + item.curie));
-                    }
-                  }}
-                  onChange={(selected) => {
-                    const extractedStrings = selected
-                      .map((specie) => {
-                        const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-                        return match ? `${match[1]} ${match[2]}` : null;
-                      })
-                      .filter((item) => item);
-
-                    handleRowChange(index, 'entityResultList', extractedStrings.map(specie => {
-                      const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-                      if (match) {
-                        return {
-                          entityTypeSymbol: match[1],
-                          curie: match[2],
-                        };
-                      }
-                      return null;
-                    }).filter(item => item));
-                  }}
-                  options={typeaheadOptions}
-                  selected={row.entityResultList.map(entity => `${entity.entityTypeSymbol} ${entity.curie}`)}
-                />
-               )
-             )}
+            )}
           </Col>
           <Col className="form-label col-form-label" sm="2">
             <Container>
-              {renderView() === "list" &&
+              {renderView(row) === "list" &&
                 row.entityResultList &&
                 row.entityResultList.length > 0 &&
                 row.entityResultList.map((entityResult, idx) => {
