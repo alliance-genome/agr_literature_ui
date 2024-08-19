@@ -274,14 +274,14 @@ const TopicEntityCreate = () => {
 
     return {
       reference_curie: refCurie,
-      topic: row.topicSelect,
-      species: row.taxonSelect,
+      topic: row.topicSelect || null,
+      species: row.taxonSelect || null,
       note: row.noteText !== "" ? row.noteText : null,
-      negated: row.noDataCheckbox,
-      novel_topic_data: row.novelCheckbox,
-      confidence_level: null,
-      topic_entity_tag_source_id: row.topicEntitySourceId,
-      entity_id_validation: entityIdValidation,
+      negated: row.noDataCheckbox || null,
+      novel_topic_data: row.novelCheckbox || false,
+      confidence_level: null || false,
+      topic_entity_tag_source_id: topicEntitySourceId || null,
+      entity_id_validation: entityIdValidation || null,
       entity_type: row.entityTypeSelect !== "" ? row.entityTypeSelect : null,
       entity: row.entityText !== "" ? row.entityText : null	
     };
