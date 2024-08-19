@@ -270,24 +270,23 @@ const TopicEntityCreate = () => {
     return keyByValue.map((e) => e[0])[0];
   };
 
-  function initializeUpdateJson(refCurie, entityType = undefined, entity = undefined, taxonID, entityIdValidation = "alliance") {
-    let updateJson = {};
-    updateJson["reference_curie"] = refCurie;
-    updateJson["topic"] = topicSelect;
-    updateJson["species"] = taxonSelect;
-    updateJson["note"] = noteText !== "" ? noteText : null;
-    updateJson["negated"] = noDataCheckbox;
-    updateJson["novel_topic_data"] = novelCheckbox;
-    updateJson["confidence_level"] = null;
-    updateJson["topic_entity_tag_source_id"] = topicEntitySourceId;
-    if (entityType !== undefined && entity !== undefined) {
-      updateJson["entity_id_validation"] = entityIdValidation;
-      updateJson["entity_type"] = entityType === "" ? null : entityType;
-      updateJson["species"] = taxonID === "" ? null : taxonID;
-      updateJson["entity"] = entity;
-    }
-    return updateJson;
+  function initializeUpdateJson(refCurie, row, entityIdValidation) {
+
+    return {
+      reference_curie: refCurie,
+      topic: row.topicSelect,
+      species: row.taxonSelect,
+      note: row.noteText !== "" ? row.noteText : null,
+      negated: row.noDataCheckbox,
+      novel_topic_data: row.novelCheckbox,
+      confidence_level: null,
+      topic_entity_tag_source_id: row.topicEntitySourceId,
+      entity_id_validation: entityIdValidation,
+      entity_type: row.entityTypeSelect !== "" ? row.entityTypeSelect : null,
+      entity: row.entityText !== "" ? row.entityText : null	
+    };
   }
+
 
   const handleCloseTagExistingMessage = () => {
     setIsTagExistingMessageVisible(false);
@@ -392,38 +391,44 @@ const TopicEntityCreate = () => {
     });
   };
 
-    
-  async function createEntities(refCurie) {
-    if (topicSelect === null) {
+  async function createEntities(refCurie, index) {
+    const row = rows[index]
+    if (!row.topicSelect) {
       return;
     }
     const forApiArray = [];
     const subPath = "topic_entity_tag/";
     const method = "POST";
-
-    if (entityResultList && entityResultList.length > 0) {
-      for (const entityResult of entityResultList.values()) {
+    
+    if (row.entityResultList && row.entityResultList.length > 0) {
+      for (const entityResult of row.entityResultList.values()) {
         if (!["no Alliance curie", "duplicate", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie"].includes(entityResult.curie)) {
-          let taxonId = taxonSelect;
           let entityIdValidation = "alliance";
-          if (taxonSelect === "use_wb" && taxonSelectWB !== "" && taxonSelectWB !== undefined && entityTypeSelect !== "") {
+          if (row.taxonSelect === "use_wb" && row.taxonSelectWB && row.entityTypeSelect) {
             entityIdValidation = "WB";
-            taxonId = taxonSelectWB;
           }
-          let updateJson = initializeUpdateJson(refCurie, entityTypeSelect, entityResult.curie, taxonId, entityIdValidation);
-          if (taxonSelect === "use_wb" && taxonSelectWB !== "" && taxonSelectWB !== undefined && entityTypeSelect !== "") {
+	  const updateJson = initializeUpdateJson(refCurie, row, entityIdValidation)
+
+	  if (entityIdValidation === "WB") {
             updateJson["entity_id_validation"] = "WB";
-            updateJson["species"] = taxonSelectWB;
+	    updateJson["species"] = row.taxonSelectWB;
           }
-          let array = [subPath, updateJson, method];
-          forApiArray.push(array);
-        }
+
+	  console.log("HELLO updateJson = " + JSON.stringify(updateJson, null, 2));
+	    
+          forApiArray.push([subPath, updateJson, method]);
+
+	}
       }
-    } else if (taxonSelect !== "" && taxonSelect !== undefined) {
-      let updateJson = initializeUpdateJson(refCurie);
-      let array = [subPath, updateJson, method];
-      forApiArray.push(array);
+    } else if (row.taxonSelect !== "" && row.taxonSelect !== undefined) {
+      const updateJson = initializeUpdateJson(refCurie, row, "alliance");
+      forApiArray.push([subPath, updateJson, method]);
     }
+
+    if (forApiArray.length === 0) {
+      console.error("No valid data to submit.");
+      return;
+    }  
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
@@ -436,9 +441,11 @@ const TopicEntityCreate = () => {
 
     setTypeaheadOptions([]);
     dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: null } }));
+
     if (topicTypeaheadRef.current !== null) {
       topicTypeaheadRef.current.clear();
     }
+    
   }
 
   async function patchEntities(refCurie) {
