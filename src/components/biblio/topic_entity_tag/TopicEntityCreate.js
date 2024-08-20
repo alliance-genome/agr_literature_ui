@@ -270,7 +270,7 @@ const TopicEntityCreate = () => {
     return keyByValue.map((e) => e[0])[0];
   };
 
-  function initializeUpdateJson(refCurie, row, entityIdValidation) {
+    function initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation) {
 
     return {
       reference_curie: refCurie,
@@ -283,7 +283,7 @@ const TopicEntityCreate = () => {
       topic_entity_tag_source_id: topicEntitySourceId || null,
       entity_id_validation: entityIdValidation || null,
       entity_type: row.entityTypeSelect !== "" ? row.entityTypeSelect : null,
-      entity: row.entityText !== "" ? row.entityText : null	
+      entity: entityCurie || null
     };
   }
 
@@ -350,27 +350,34 @@ const TopicEntityCreate = () => {
   );
 
   const handleRowChange = (index, field, value) => {
-    //console.log("handleRowChange triggered:", { index, field, value });
     setRows((prevRows) => {
       const newRows = [...prevRows];
       newRows[index] = { ...newRows[index], [field]: value };
-
+      const currentRow = newRows[index];
+	
+      if (field === 'entityResultList') {
+        // make sure entityResultList is always treated as an array
+        currentRow.entityResultList = Array.isArray(value) ? value : [];
+      } else {
+        currentRow[field] = value;
+      }
+	
       if (field === 'topicSelect') {
 
         if (entityTypeList.includes(value)) {
-          newRows[index].entityTypeSelect = value;
+          currentRow.entityTypeSelect = value;
         } else {
-          newRows[index].entityTypeSelect = "";
+          currentRow.entityTypeSelect = "";
         }
 	if (value === speciesATP) {
-          newRows[index].taxonSelect = ""; // clear the species column
-          newRows[index].selectedSpecies = []; // optionally clear any selected species in the typeahead
+          currentRow.taxonSelect = ""; // clear the species column
+          currentRow.selectedSpecies = []; // optionally clear any selected species in the typeahead
         }
 
 	if (value === "" || value === null) {
-          newRows[index].entityText = ""; // Clear the entity text
-          newRows[index].entityResultList = []; // Clear the entity list
-          newRows[index].selectedSpecies = []; // Clear any selected species in the typeahead
+          currentRow.entityText = ""; // clear the entity text
+          currentRow.entityResultList = []; // clear the entity list
+          currentRow.selectedSpecies = []; // clear any selected species in the typeahead
 	}
 	  
       }
@@ -387,6 +394,7 @@ const TopicEntityCreate = () => {
       if (['entityText', 'taxonSelect', 'entityTypeSelect'].includes(field)) {
         handleEntityValidation(index, value);
       }
+      newRows[index] = currentRow;
       return newRows;
     });
   };
@@ -407,7 +415,8 @@ const TopicEntityCreate = () => {
     const forApiArray = [];
     const subPath = "topic_entity_tag/";
     const method = "POST";
-    
+
+      
     if (row.entityResultList && row.entityResultList.length > 0) {
       for (const entityResult of row.entityResultList.values()) {
         if (!["no Alliance curie", "duplicate", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie"].includes(entityResult.curie)) {
@@ -415,7 +424,11 @@ const TopicEntityCreate = () => {
           if (row.taxonSelect === "use_wb" && row.taxonSelectWB && row.entityTypeSelect) {
             entityIdValidation = "WB";
           }
-	  const updateJson = initializeUpdateJson(refCurie, row, entityIdValidation)
+	  let entityCurie = entityResult.curie;
+	  if (entityCurie === null && entityResult.includes("NCBITaxon:")) {
+	      entityCurie = entityResult.match(/NCBITaxon:\d+/)[0];
+	  }
+	  const updateJson = initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation)
 
 	  if (entityIdValidation === "WB") {
             updateJson["entity_id_validation"] = "WB";
@@ -429,7 +442,7 @@ const TopicEntityCreate = () => {
 	}
       }
     } else if (row.taxonSelect !== "" && row.taxonSelect !== undefined) {
-      const updateJson = initializeUpdateJson(refCurie, row, "alliance");
+      const updateJson = initializeUpdateJson(refCurie, row, null, "alliance");
       forApiArray.push([subPath, updateJson, method]);
     }
 
@@ -725,9 +738,10 @@ const TopicEntityCreate = () => {
                         const match = specie.match(/(.+) (NCBITaxon:\d+)/);
                         return match ? `${match[1]} ${match[2]}` : null;
                       })
-		      .filter((item) => item);
-
-	              handleRowChange(index, 'entityResultList', entityResultList);
+	              .filter((item) => item);
+		      
+		      // update entityResultList as an array of selected species
+	              handleRowChange(index, 'entityResultList', extractedStrings);
 		      // set the selected species in the input box
                       handleRowChange(index, 'selectedSpecies', selected.map(s => s));
                   }}
