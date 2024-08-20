@@ -422,7 +422,7 @@ const TopicEntityCreate = () => {
 	    updateJson["species"] = row.taxonSelectWB;
           }
 
-	  // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
+	  console.log("HELLO updateJson = " + JSON.stringify(updateJson, null, 2));
 	    
           forApiArray.push([subPath, updateJson, method]);
 
@@ -696,7 +696,8 @@ const TopicEntityCreate = () => {
           </Col>
           <Col className="form-label col-form-label" sm="2">
             {renderView(row) === "autocomplete" ? (
-              <AsyncTypeahead
+	      <AsyncTypeahead
+		  id={`species-typeahead-${index}`}  
                   multiple
                   isLoading={speciesSelectLoading}
                   placeholder="enter species name"
