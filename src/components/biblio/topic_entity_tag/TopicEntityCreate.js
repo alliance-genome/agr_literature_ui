@@ -391,6 +391,14 @@ const TopicEntityCreate = () => {
     });
   };
 
+
+  const handleSubmitAll = async () => {
+    for (let index = 0; index < rows.length; index++) {
+      await createEntities(referenceJsonLive.curie, index);
+    }
+    setRows([createNewRow()]);
+  };
+  
   async function createEntities(refCurie, index) {
     const row = rows[index]
     if (!row.topicSelect) {
@@ -414,7 +422,7 @@ const TopicEntityCreate = () => {
 	    updateJson["species"] = row.taxonSelectWB;
           }
 
-	  console.log("HELLO updateJson = " + JSON.stringify(updateJson, null, 2));
+	  // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
 	    
           forApiArray.push([subPath, updateJson, method]);
 
@@ -432,7 +440,9 @@ const TopicEntityCreate = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
-    const result = await checkForExistingTags(forApiArray, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd);
+    const result = await checkForExistingTags(forApiArray, accessToken,
+					      accessLevel, dispatch,
+					      updateButtonBiblioEntityAdd);
     if (result) {
       setTagExistingMessage(result.html);
       setIsTagExistingMessageVisible(true);
@@ -440,12 +450,13 @@ const TopicEntityCreate = () => {
     }
 
     setTypeaheadOptions([]);
-    dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: null } }));
 
-    if (topicTypeaheadRef.current !== null) {
-      topicTypeaheadRef.current.clear();
-    }
-    
+    // remove the row after submission
+    setRows((prevRows) => {
+      const newRows = prevRows.filter((_, i) => i !== index);
+      // if no rows are left, add an empty row
+      return newRows.length === 0 ? [createNewRow()] : newRows;
+    });
   }
 
   async function patchEntities(refCurie) {
@@ -785,6 +796,13 @@ const TopicEntityCreate = () => {
           </Button>
         </Col>
         <Col sm="8"></Col>
+	{rows.length > 1 && (
+          <Col sm="2" className="text-right">
+            <Button variant="outline-primary" onClick={handleSubmitAll}>
+              Submit All
+            </Button>
+          </Col>
+        )}
       </Row>
     </Container>
   );
