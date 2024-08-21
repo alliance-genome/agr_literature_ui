@@ -16,7 +16,6 @@ import {
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
 import { getCurieToNameTaxon, getModToTaxon } from "./TaxonUtils";
-import { PulldownMenu } from "../PulldownMenu";
 import { FetchTypeaheadOptions } from "../FetchTypeahead";
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
@@ -71,7 +70,7 @@ const TopicEntityCreate = () => {
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
   // const [rows, setRows] = useState([createNewRow()]);
   const [rows, setRows] = useState([
-    { topicSelect: "", entityTypeSelect: "", taxonSelect: "", entityText: "", entityResultList: [] }
+    { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", entityResultList: [] }
   ]);
   const inputRefs = useRef([]);
     
@@ -150,7 +149,7 @@ const TopicEntityCreate = () => {
   ];
   const speciesATP = "ATP:0000123";
   const renderView = (row) => {
-    if (!row) return "list"; // return default view if row is undefined
+    if (!row || !row.topicSelect) return "list";
     return row.topicSelect === speciesATP ? "autocomplete" : "list";
   };
 
@@ -270,7 +269,7 @@ const TopicEntityCreate = () => {
     return keyByValue.map((e) => e[0])[0];
   };
 
-    function initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation) {
+  function initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation) {
 
     return {
       reference_curie: refCurie,
@@ -295,6 +294,7 @@ const TopicEntityCreate = () => {
   function createNewRow() {	
     return {
       topicSelect: "",
+      topicSelectValue: "",
       entityTypeSelect: "",
       taxonSelect: modToTaxon[accessLevel] && modToTaxon[accessLevel][0] ? modToTaxon[accessLevel][0] : "",
       entityText: "",
@@ -307,7 +307,6 @@ const TopicEntityCreate = () => {
 
   const handleEntityValidation = useCallback(
      debounce((index, value) => {
-	// console.log("Validating entity for row index:", index)
         setRows((prevRows) => {
             const newRows = [...prevRows]; // copy data
             const row = newRows[index];
@@ -434,7 +433,7 @@ const TopicEntityCreate = () => {
 	    updateJson["species"] = row.taxonSelectWB;
           }
 
-	  console.log("HELLO updateJson = " + JSON.stringify(updateJson, null, 2));
+	  // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
 	    
           forApiArray.push([subPath, updateJson, method]);
 
@@ -502,7 +501,7 @@ const TopicEntityCreate = () => {
       updateJson["updated_by"] = uid;
       let array = [accessToken, subPath, updateJson, method];
       dispatch(setBiblioUpdatingEntityAdd(1));
-      const response = await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
+      await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
 
       setTypeaheadOptions([]);
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: null } }));
@@ -518,7 +517,7 @@ const TopicEntityCreate = () => {
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList);
   }
 
-  const disabledEntityList = taxonSelect === "" || taxonSelect === undefined;
+  // const disabledEntityList = taxonSelect === "" || taxonSelect === undefined;
   const disabledAddButton =
     (topicSelect === speciesATP && !isSpeciesSelected) ||
     (topicSelect !== speciesATP && (taxonSelect === "" || taxonSelect === undefined)) ||
@@ -758,8 +757,7 @@ const TopicEntityCreate = () => {
                 as="textarea"
                 id={`entitytextarea-${index}`}
                 value={row.entityText}
-                disabled={disabledEntityList}
-                onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}
+                onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}	    
               />
             )}
           </Col>
