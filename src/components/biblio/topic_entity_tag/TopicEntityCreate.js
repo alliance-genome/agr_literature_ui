@@ -415,7 +415,6 @@ const TopicEntityCreate = () => {
     const forApiArray = [];
     const subPath = "topic_entity_tag/";
     const method = "POST";
-
       
     if (row.entityResultList && row.entityResultList.length > 0) {
       for (const entityResult of row.entityResultList.values()) {
@@ -425,9 +424,9 @@ const TopicEntityCreate = () => {
             entityIdValidation = "WB";
           }
 	  let entityCurie = entityResult.curie;
-	  if (entityCurie === null && entityResult.includes("NCBITaxon:")) {
-	      entityCurie = entityResult.match(/NCBITaxon:\d+/)[0];
-	  }
+	  if (row.topicSelect === speciesATP) {
+	      entityCurie = entityResult;
+	  } 
 	  const updateJson = initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation)
 
 	  if (entityIdValidation === "WB") {
@@ -736,7 +735,8 @@ const TopicEntityCreate = () => {
                     const extractedStrings = selected
                       .map((specie) => {
                         const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-                        return match ? `${match[1]} ${match[2]}` : null;
+                        //return match ? `${match[1]} ${match[2]}` : null;
+			return match ? `${match[2]}` : null;   
                       })
 	              .filter((item) => item);
 		      
