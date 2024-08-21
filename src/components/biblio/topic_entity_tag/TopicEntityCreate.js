@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import axios from "axios";
 import {
   ateamGetTopicDescendants,
   getDescendantATPIds,
@@ -67,12 +68,16 @@ const TopicEntityCreate = () => {
   const [modToTaxon, setModToTaxon] = useState({});
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
-  const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
-  // const [rows, setRows] = useState([createNewRow()]);
+  const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);  
   const [rows, setRows] = useState([
     { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", entityResultList: [] }
   ]);
+  const [topicEntityTags, setTopicEntityTags] = useState([]);
   const inputRefs = useRef([]);
+
+  const curieToNameMap = Object.fromEntries(
+    Object.entries(typeaheadName2CurieMap).map(([name, curie]) => [curie, name])
+  );
     
   const taxonToMod = {};
   for (const [mod, taxons] of Object.entries(modToTaxon)) {
@@ -158,6 +163,55 @@ const TopicEntityCreate = () => {
     getDescendantATPIds(accessToken, "ATP:0000006").then((data) => setAlleleDescendants(data));
   }, [accessLevel, accessToken, dispatch]);
 
+  useEffect(() => {
+    const fetchTopicEntityTags = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/${editTag}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+	console.log("TET response.data=", response.data)  
+        setTopicEntityTags(response.data);
+      } catch (error) {
+        console.error("Error fetching topic entity tags:", error);
+      }
+    };
+
+    if (editTag !== null) {
+      fetchTopicEntityTags();
+    }
+  }, [editTag, accessToken]);
+
+  useEffect(() => {
+    console.log("useEffect triggered: editTag =", editTag);
+    console.log("topicEntityTags =", topicEntityTags);
+    if (editTag !== null && topicEntityTags) {
+      const editRow = topicEntityTags;
+      console.log("Found editRow:", editRow);
+      if (editRow) {
+        setRows([{
+          topicSelect: editRow.topic || "",
+	  topicSelectValue: curieToNameMap[editRow.topic] || "",
+          entityTypeSelect: editRow.entity_type || "",
+          taxonSelect: editRow.species || "",
+          negated: editRow.noDataCheckbox || null,
+          novel_topic_data: editRow.novelCheckbox || false,
+          confidence_level: editRow.confidence_level || false,
+          entityText: editRow.entity_name || editRow.entity || "",
+          noteText: editRow.note || "",
+          entityResultList: editRow.entityResultList || []
+        }]);
+        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: editRow.entityResultList || [] } }));
+        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: editRow.entity || '' } }));
+      }
+    } else {
+      setRows([createNewRow()]);
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
+    }
+  }, [editTag, topicEntityTags, dispatch]);
+    
   useEffect(() => {
     if (editTag === null) {
       if (entityTypeList.includes(topicSelect)) {
@@ -470,13 +524,15 @@ const TopicEntityCreate = () => {
     });
   }
 
-  async function patchEntities(refCurie) {
-    if (topicSelect === null) {
+  async function patchEntities(refCurie, index) {
+    const row = rows[index];
+    if (row.topicSelect === null) {
       return;
     }
     const subPath = "topic_entity_tag/" + editTag;
     const method = "PATCH";
-    if (entityResultList && entityResultList.length > 1) {
+    const entityResultList = row.entityResultList || [];  
+    if (entityResultList.length > 1) {
       console.error("Error processing entry: too many entities");
       dispatch({
         type: "UPDATE_BUTTON_BIBLIO_ENTITY_ADD",
@@ -487,13 +543,13 @@ const TopicEntityCreate = () => {
       });
     } else {
       let entityResult = entityResultList[0];
-      let updateJson = initializeUpdateJson(refCurie);
-      updateJson["entity_id_validation"] = entityTypeSelect === "" ? null : "alliance";
-      updateJson["entity_type"] = entityTypeSelect === "" ? null : entityTypeSelect;
-      updateJson["species"] = taxonSelect === "" ? null : taxonSelect;
-      if (taxonSelect === "use_wb" && taxonSelectWB !== "" && taxonSelectWB !== undefined && entityTypeSelect !== "") {
+      let updateJson = initializeUpdateJson(refCurie, row);
+      updateJson["entity_id_validation"] = (row.entityTypeSelect) === "" ? null : "alliance";
+      updateJson["entity_type"] = (row.entityTypeSelect) === "" ? null : row.entityTypeSelect;
+      updateJson["species"] = (row.taxonSelect) === "" ? null : row.taxonSelect;
+      if (row.taxonSelect === "use_wb" && row.taxonSelectWB !== "" && row.taxonSelectWB !== undefined && row.entityTypeSelect !== "") {
         updateJson["entity_id_validation"] = "WB";
-        updateJson["species"] = taxonSelectWB;
+        updateJson["species"] = row.taxonSelectWB;
       }
       if (entityResult) {
         updateJson["entity"] = entityResult.curie;
