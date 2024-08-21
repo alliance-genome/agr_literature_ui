@@ -491,7 +491,7 @@ const TopicEntityCreate = () => {
     } else if (row.taxonSelect !== "" && row.taxonSelect !== undefined) {
       //const updateJson = initializeUpdateJson(refCurie, row, null, "alliance");
       const updateJson = initializeUpdateJson(refCurie, row);
-      console.log("updateJson = " + JSON.stringify(updateJson, null, 2));     
+      // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));     
       forApiArray.push([subPath, updateJson, method]);
     }
     
