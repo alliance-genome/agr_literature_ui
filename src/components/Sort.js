@@ -455,7 +455,7 @@ const NewTaxonModal = () => {
   const [ateamSuccess, setAteamSuccess] = useState(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
-  const defaultBodyText = "Import NCBI Taxon into A-team system for autocomplete here.\n\n";
+  const defaultBodyText = "Import NCBI Taxon into A-team system for autocomplete here.\nOnly put in the digits part of the NCBI Taxon ID.\n\n";
 
   function importTaxon(taxonId) {
     axios.get(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/NCBITaxon:' + taxonId,
