@@ -363,7 +363,7 @@ const TopicEntityCreate = () => {
       }
 	
       if (field === 'topicSelect') {
-
+	currentRow.topicSelect = value || "";
         if (entityTypeList.includes(value)) {
           currentRow.entityTypeSelect = value;
         } else {
@@ -622,13 +622,17 @@ const TopicEntityCreate = () => {
               onChange={(selected) => {
                 if (selected.length > 0) {
                   const selectedCurie = typeaheadName2CurieMap[selected[0]];
+		  const selectedValue = selected[0];
                   handleRowChange(index, 'topicSelect', selectedCurie);
+		  handleRowChange(index, "topicSelectValue", selectedValue);  
                 } else {
 		  handleRowChange(index, 'topicSelect', "");
+		  handleRowChange(index, "topicSelectValue", "");  
 		}
               }}
               options={typeaheadOptions}
-              selected={row.topicSelect ? [getMapKeyByValue(typeaheadName2CurieMap, row.topicSelect)] : []}
+              // selected={row.topicSelect ? [getMapKeyByValue(typeaheadName2CurieMap, row.topicSelect)] : []}
+	      selected={row.topicSelectValue ? [row.topicSelectValue] : []}	
             />		
           </Col>
 	  <Col sm="1">
