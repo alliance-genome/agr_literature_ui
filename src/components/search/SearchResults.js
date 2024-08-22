@@ -107,12 +107,12 @@ const SearchResultItem = ({ reference }) => {
       // always use the URL privided by mod - through DQM submission
       // that is stored in cross_reference.pages
       // check if 'pages' is an array and not empty
-      if (crossReferenceResults[xref.curie] !== undefined && Array.isArray(crossReferenceResults[xref.curie].pages) && crossReferenceResults[xref.curie].pages.length > 0) {
+      if (xref.curie in crossReferenceResults && crossReferenceResults[xref.curie] !== undefined && Array.isArray(crossReferenceResults[xref.curie].pages) && crossReferenceResults[xref.curie].pages.length > 0) {
 	  // use the URL from the first item in the 'pages' array
 	  return crossReferenceResults[xref.curie].pages[0].url;
       }
       // if 'pages' is not an array or is empty, fall back to the main URL
-      if (crossReferenceResults[xref.curie] !== undefined) {
+      if (xref.curie in crossReferenceResults && crossReferenceResults[xref.curie] !== undefined) {
           return crossReferenceResults[xref.curie].url;
       }
       // if search is out of sync with database, return empty string to prevent UI crashing, but this should not happen on prod or stage
