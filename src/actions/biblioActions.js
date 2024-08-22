@@ -483,6 +483,9 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList, call
 
 export const changeFieldEntityEntityList = (entityText, accessToken, entityIdValidation, taxon, entityType, callback) => {
   return async (dispatch) => {
+    if (entityType.includes('allele')) {
+      entityType = 'allele';
+    }
     let entityInputList = [];
     if (entityText && entityText.trim() !== '') {
       entityInputList = entityText.split('\n').map(element => element.trim()).filter(item => item !== '');
