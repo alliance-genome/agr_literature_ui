@@ -399,6 +399,15 @@ const TopicEntityCreate = () => {
     [rows, accessToken, dispatch, curieToNameEntityType]
   );
 
+  const handleSpeciesSelection = (index, selectedSpecies) => {
+    setRows((prevRows) => {
+      const newRows = [...prevRows];
+      newRows[index].selectedSpecies = selectedSpecies;
+      newRows[index].isSpeciesSelected = selectedSpecies.length > 0;  // Ensure this is updated correctly
+      return newRows;
+    });
+  };  
+    
   const handleRowChange = (index, field, value) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
@@ -432,6 +441,15 @@ const TopicEntityCreate = () => {
 	  
       }
 
+      // Calculate disabledAddButton for the current row
+      const disabledAddButton =
+        (currentRow.topicSelect === speciesATP && !currentRow.isSpeciesSelected) ||
+        (currentRow.topicSelect !== speciesATP && (!currentRow.taxonSelect || currentRow.taxonSelect === "")) ||
+        !topicEntitySourceId ||
+        !currentRow.topicSelect;
+
+      currentRow.disabledAddButton = disabledAddButton;
+	
       if (field === 'entityText') {
         inputRefs.current[index] = value; // store the current input value
       }
@@ -573,11 +591,6 @@ const TopicEntityCreate = () => {
   }
 
   // const disabledEntityList = taxonSelect === "" || taxonSelect === undefined;
-  const disabledAddButton =
-    (topicSelect === speciesATP && !isSpeciesSelected) ||
-    (topicSelect !== speciesATP && (taxonSelect === "" || taxonSelect === undefined)) ||
-    topicEntitySourceId === undefined ||
-    topicSelect === undefined;
 
   return (
     <Container fluid>
@@ -797,6 +810,9 @@ const TopicEntityCreate = () => {
 			return match ? `${match[2]}` : null;   
                       })
 	              .filter((item) => item);
+
+		      // call handleSpeciesSelection to update the state
+		      handleSpeciesSelection(index, extractedStrings);
 		      
 		      // update entityResultList as an array of selected species
 	              handleRowChange(index, 'entityResultList', extractedStrings);
@@ -854,7 +870,7 @@ const TopicEntityCreate = () => {
                 {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Edit"}
               </Button>
             ) : (
-              <Button variant="outline-primary" disabled={disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
+              <Button variant="outline-primary" disabled={row.disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
                 {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
               </Button>
             )}
