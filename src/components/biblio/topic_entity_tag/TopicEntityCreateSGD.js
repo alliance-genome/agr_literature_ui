@@ -5,7 +5,6 @@ import {
   ateamGetTopicDescendants,
   changeFieldEntityAddDisplayTag,
   changeFieldEntityAddGeneralField,
-  changeFieldEntityAddTaxonSelect,
   changeFieldEntityEntityList,
   fetchDisplayTagData,
   getCuratorSourceId,
@@ -14,7 +13,7 @@ import {
   setEditTag,
   updateButtonBiblioEntityAdd,
 } from "../../../actions/biblioActions";
-import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
+import { checkForExistingTags } from './TopicEntityUtils';
 import {
   checkTopicEntitySetDisplayTag,
   setDisplayTag,
@@ -24,7 +23,6 @@ import {
   complexATP,
   pathwayATP
 } from "./BiblioEntityUtilsSGD";
-import { PulldownMenu } from "../PulldownMenu";
 import {
   getCurieToNameTaxon,
   getModToTaxon,
@@ -79,7 +77,6 @@ const TopicEntityCreateSGD = () => {
     [pathwayATP]: 'pathway'
   }), []);
 
-    
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
 
@@ -141,7 +138,7 @@ const TopicEntityCreateSGD = () => {
             Authorization: `Bearer ${accessToken}`
           }
         });
-	console.log("TET response.data=", response.data)  
+        console.log("TET response.data=", response.data)
         setTopicEntityTags(response.data);
       } catch (error) {
         console.error("Error fetching topic entity tags:", error);
@@ -178,13 +175,12 @@ const TopicEntityCreateSGD = () => {
     }
   }, [editTag, topicEntityTags, dispatch]);
 
-    
   /*
   use 'useCallback' and 'debounce' to limit the calls to A-team API
   The "useCallback" hook ensures that the handleEntityValidation function is only re-created
   if any of the dependencies (rows, accessToken, dispatch, curieToNameEntityType) change.
-  The "debounce" limits the rate at which a function can fire. It makes sure the function is only 
-  called after a specified delay has passed since the last time the debounced function was invoked. 
+  The "debounce" limits the rate at which a function can fire. It makes sure the function is only
+  called after a specified delay has passed since the last time the debounced function was invoked.
   We don't want to call A-team API every time a keystroke occurs, but rather wait for the curators
   to stop typing.
   */
@@ -202,7 +198,7 @@ const TopicEntityCreateSGD = () => {
           row.taxonSelect !== undefined &&
           row.entityTypeSelect !== ""
         ) {
-	  const entityIdValidation = (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) ? 'sgd' : 'alliance';
+          const entityIdValidation = (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) ? 'sgd' : 'alliance';
           dispatch(
             changeFieldEntityEntityList(
               row.entityText,
@@ -235,13 +231,13 @@ const TopicEntityCreateSGD = () => {
       newRows[index] = { ...newRows[index], [field]: value };
 
       if (field === 'topicSelect') {
-        if (value !== alleleATP && entityTypeList.includes(value)) {	    
-	    newRows[index].entityTypeSelect = value;
-	    newRows[index].tetdisplayTagSelect = value;
-	} else {
-	    newRows[index].entityTypeSelect = geneATP; // reset to gene if topic is not complex or pathway
-	    newRows[index].tetdisplayTagSelect = setDisplayTag(value);
-	}
+        if (value !== alleleATP && entityTypeList.includes(value)) {
+          newRows[index].entityTypeSelect = value;
+          newRows[index].tetdisplayTagSelect = value;
+        } else {
+          newRows[index].entityTypeSelect = geneATP; // reset to gene if topic is not complex or pathway
+          newRows[index].tetdisplayTagSelect = setDisplayTag(value);
+        }
       }
 
       if (field === 'entityText') {
@@ -267,10 +263,14 @@ const TopicEntityCreateSGD = () => {
     setRows((prevRows) => [...prevRows, createNewRow()]);
   };
 
-  const removeAllRows = () => {
-    setRows([createNewRow()]);
+  const cloneRow = (index) => {
+    setRows((prevRows) => {
+      const newRows = [...prevRows];
+      newRows.splice(index + 1, 0, { ...newRows[index] });
+      return newRows;
+    });
   };
-  
+
   const patchEntities = async (refCurie, index) => {
     const row = rows[index];
     if (row.topicSelect === null) {
@@ -571,7 +571,7 @@ const TopicEntityCreateSGD = () => {
                       "Edit"
                     )}
                   </Button>
-                :
+                  :
                   <Button
                     variant="outline-primary"
                     disabled={disabledAddButton}
@@ -596,16 +596,22 @@ const TopicEntityCreateSGD = () => {
               </div>
             </Col>
           </Row>
+          <Row>
+            <Col sm="3" style={{ marginLeft: '-100px' }}>
+              <Button variant="outline-secondary" onClick={() => cloneRow(index)}>
+                Clone row
+              </Button>
+            </Col>
+	    {index === rows.length - 1 && (
+                <Col sm="3" style={{ marginLeft: '-270px' }}>
+                    <Button variant="outline-secondary" onClick={addRow}>
+                        New row
+                    </Button>
+                </Col>
+            )}  
+          </Row>
         </React.Fragment>
-      ))}
-      <Row>
-        <Col sm="2">
-          <Button variant="outline-secondary" onClick={addRow}>
-            New row
-          </Button>
-        </Col>
-        <Col sm="8"></Col>
-      </Row>
+      ))}	
     </Container>
   );
 };
