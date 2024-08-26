@@ -5,7 +5,6 @@ import {
   ateamGetTopicDescendants,
   changeFieldEntityAddDisplayTag,
   changeFieldEntityAddGeneralField,
-  changeFieldEntityAddTaxonSelect,
   changeFieldEntityEntityList,
   fetchDisplayTagData,
   getCuratorSourceId,
@@ -14,7 +13,7 @@ import {
   setEditTag,
   updateButtonBiblioEntityAdd,
 } from "../../../actions/biblioActions";
-import { checkForExistingTags, setupEventListeners } from './TopicEntityUtils';
+import { checkForExistingTags } from './TopicEntityUtils';
 import {
   checkTopicEntitySetDisplayTag,
   setDisplayTag,
@@ -24,7 +23,6 @@ import {
   complexATP,
   pathwayATP
 } from "./BiblioEntityUtilsSGD";
-import { PulldownMenu } from "../PulldownMenu";
 import {
   getCurieToNameTaxon,
   getModToTaxon,
@@ -79,7 +77,6 @@ const TopicEntityCreateSGD = () => {
     [pathwayATP]: 'pathway'
   }), []);
 
-    
   const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
   const [modToTaxon, setModToTaxon] = useState({});
 
@@ -141,7 +138,6 @@ const TopicEntityCreateSGD = () => {
             Authorization: `Bearer ${accessToken}`
           }
         });
-	console.log("TET response.data=", response.data)  
         setTopicEntityTags(response.data);
       } catch (error) {
         console.error("Error fetching topic entity tags:", error);
@@ -154,10 +150,8 @@ const TopicEntityCreateSGD = () => {
   }, [editTag, accessToken]);
 
   useEffect(() => {
-    console.log("useEffect triggered: editTag =", editTag);
     if (editTag !== null && topicEntityTags) {
       const editRow = topicEntityTags;
-      console.log("Found editRow:", editRow);
       if (editRow) {
         setRows([{
           topicSelect: editRow.topic || "",
@@ -178,31 +172,19 @@ const TopicEntityCreateSGD = () => {
     }
   }, [editTag, topicEntityTags, dispatch]);
 
-    
-  /*
-  use 'useCallback' and 'debounce' to limit the calls to A-team API
-  The "useCallback" hook ensures that the handleEntityValidation function is only re-created
-  if any of the dependencies (rows, accessToken, dispatch, curieToNameEntityType) change.
-  The "debounce" limits the rate at which a function can fire. It makes sure the function is only 
-  called after a specified delay has passed since the last time the debounced function was invoked. 
-  We don't want to call A-team API every time a keystroke occurs, but rather wait for the curators
-  to stop typing.
-  */
-
   const handleEntityValidation = useCallback(
     debounce((index, value) => {
-      // creates a new copy of the rows state and modifies the row at the given index
       setRows((prevRows) => {
         const newRows = [...prevRows];
         const row = newRows[index];
         if (row.entityText === "") {
-          row.entityResultList = []; // reset entityResultList if entityText is empty
+          row.entityResultList = [];
         } else if (
           row.taxonSelect !== "" &&
           row.taxonSelect !== undefined &&
           row.entityTypeSelect !== ""
         ) {
-	  const entityIdValidation = (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) ? 'sgd' : 'alliance';
+          const entityIdValidation = (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) ? 'sgd' : 'alliance';
           dispatch(
             changeFieldEntityEntityList(
               row.entityText,
@@ -222,10 +204,9 @@ const TopicEntityCreateSGD = () => {
             )
           );
         }
-        // returns the updated rows
         return newRows;
       });
-    }, 300), // 300 milliseconds, we can adjust the debounce delay as needed
+    }, 300),
     [rows, accessToken, dispatch, curieToNameEntityType]
   );
 
@@ -235,20 +216,19 @@ const TopicEntityCreateSGD = () => {
       newRows[index] = { ...newRows[index], [field]: value };
 
       if (field === 'topicSelect') {
-        if (value !== alleleATP && entityTypeList.includes(value)) {	    
-	    newRows[index].entityTypeSelect = value;
-	    newRows[index].tetdisplayTagSelect = value;
-	} else {
-	    newRows[index].entityTypeSelect = geneATP; // reset to gene if topic is not complex or pathway
-	    newRows[index].tetdisplayTagSelect = setDisplayTag(value);
-	}
+        if (value !== alleleATP && entityTypeList.includes(value)) {
+          newRows[index].entityTypeSelect = value;
+          newRows[index].tetdisplayTagSelect = value;
+        } else {
+          newRows[index].entityTypeSelect = geneATP;
+          newRows[index].tetdisplayTagSelect = setDisplayTag(value);
+        }
       }
 
       if (field === 'entityText') {
-        inputRefs.current[index] = value; // Store the current input value
+        inputRefs.current[index] = value;
       }
 
-      // validate the row when relevant fields change
       if (field === 'entityText' || field === 'taxonSelect' || field === 'entityTypeSelect') {
         handleEntityValidation(index, value);
       }
@@ -267,10 +247,14 @@ const TopicEntityCreateSGD = () => {
     setRows((prevRows) => [...prevRows, createNewRow()]);
   };
 
-  const removeAllRows = () => {
-    setRows([createNewRow()]);
+  const cloneRow = (index) => {
+    setRows((prevRows) => {
+      const newRows = [...prevRows];
+      newRows.splice(index + 1, 0, { ...newRows[index] });
+      return newRows;
+    });
   };
-  
+
   const patchEntities = async (refCurie, index) => {
     const row = rows[index];
     if (row.topicSelect === null) {
@@ -401,7 +385,7 @@ const TopicEntityCreateSGD = () => {
   }
 
   const handleCloseTagExistingMessage = () => {
-    setIsTagExistingMessageVisible(false); // hide the message
+    setIsTagExistingMessageVisible(false);
   };
 
   if (accessLevel in modToTaxon) {
@@ -450,7 +434,7 @@ const TopicEntityCreateSGD = () => {
       )}
       {rows.map((row, index) => (
         <React.Fragment key={index}>
-          <Row className="form-group row">
+          <Row className="form-group row mb-3">
             <Col sm="3">
               <div>
                 <label>Topic:</label>
@@ -525,7 +509,7 @@ const TopicEntityCreateSGD = () => {
               </Form.Control>
             </Col>
           </Row>
-          <Row className="form-group row">
+          <Row className="form-group row mb-3">
             <Col sm="3">
               <div><label>Entity List (one per line, case insensitive)</label></div>
               <Form.Control
@@ -571,7 +555,7 @@ const TopicEntityCreateSGD = () => {
                       "Edit"
                     )}
                   </Button>
-                :
+                  :
                   <Button
                     variant="outline-primary"
                     disabled={disabledAddButton}
@@ -596,16 +580,20 @@ const TopicEntityCreateSGD = () => {
               </div>
             </Col>
           </Row>
+          <Row className="mb-3">
+            <Col sm="3">
+              <Button variant="outline-secondary" onClick={() => cloneRow(index)}>
+                Clone row
+              </Button>
+              {index === rows.length - 1 && (
+                <Button variant="outline-secondary" onClick={addRow} className="ml-2">
+                  New row
+                </Button>
+              )}
+            </Col>
+          </Row>
         </React.Fragment>
       ))}
-      <Row>
-        <Col sm="2">
-          <Button variant="outline-secondary" onClick={addRow}>
-            New row
-          </Button>
-        </Col>
-        <Col sm="8"></Col>
-      </Row>
     </Container>
   );
 };
