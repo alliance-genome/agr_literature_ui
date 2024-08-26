@@ -423,22 +423,26 @@ const TopicEntityCreate = () => {
 	
       if (field === 'topicSelect') {
 	currentRow.topicSelect = value || "";
-        if (entityTypeList.includes(value)) {
-          currentRow.entityTypeSelect = value;
-        } else {
-          currentRow.entityTypeSelect = "";
-        }
-	if (value === speciesATP) {
-          currentRow.taxonSelect = ""; // clear the species column
-          currentRow.selectedSpecies = []; // optionally clear any selected species in the typeahead
-        }
 
-	if (value === "" || value === null) {
-          currentRow.entityText = ""; // clear the entity text
-          currentRow.entityResultList = []; // clear the entity list
-          currentRow.selectedSpecies = []; // clear any selected species in the typeahead
+	if (!currentRow.isCloned) {
+	      
+          if (entityTypeList.includes(value)) {
+            currentRow.entityTypeSelect = value;
+          } else {
+            currentRow.entityTypeSelect = "";
+          }
+	  if (value === speciesATP) {
+            currentRow.taxonSelect = ""; // clear the species column
+            currentRow.selectedSpecies = []; // optionally clear any selected species in the typeahead
+          }
+
+	  if (value === "" || value === null) {
+            currentRow.entityText = ""; // clear the entity text
+            currentRow.entityResultList = []; // clear the entity list
+            currentRow.selectedSpecies = []; // clear any selected species in the typeahead
+	  }
+
 	}
-	  
       }
 
       // Calculate disabledAddButton for the current row
@@ -478,7 +482,8 @@ const TopicEntityCreate = () => {
   const cloneRow = (index) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
-      newRows.splice(index + 1, 0, { ...newRows[index] });
+      const clonedRow = { ...newRows[index], isCloned: true };
+      newRows.splice(index + 1, 0, clonedRow);
       return newRows;
     });
   };
