@@ -48,7 +48,7 @@ const TopicEntityTable = () => {
       dispatch(setCurieToNameTaxon(taxonData));
     };
     fetchData();
-  }, [accessToken]);
+  }, [accessToken, dispatch]);
 
   const fetchTableData = async () => {
     let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000;
@@ -76,7 +76,7 @@ const TopicEntityTable = () => {
 
   useEffect(() => {
     fetchTableData();
-  }, [topicEntityTags,biblioUpdatingEntityAdd]);
+  }, [topicEntityTags, biblioUpdatingEntityAdd, fetchTableData]);
 
 
   const handleNoteClick = (fullNote) => {
