@@ -31,9 +31,6 @@ const TopicEntityTable = () => {
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const ecoToName = {
-    'ECO:0000302': 'author statement used in manual assertion'
-  };
   const [selectedCurie, setSelectedCurie] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [fullNote, setFullNote] = useState('');
@@ -48,7 +45,7 @@ const TopicEntityTable = () => {
       dispatch(setCurieToNameTaxon(taxonData));
     };
     fetchData();
-  }, [accessToken]);
+  }, [accessToken, dispatch]);
 
   const fetchTableData = async () => {
     let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000;
@@ -76,7 +73,7 @@ const TopicEntityTable = () => {
 
   useEffect(() => {
     fetchTableData();
-  }, [topicEntityTags,biblioUpdatingEntityAdd]);
+  }, [topicEntityTags, biblioUpdatingEntityAdd, fetchTableData]);
 
 
   const handleNoteClick = (fullNote) => {
@@ -125,7 +122,9 @@ const TopicEntityTable = () => {
     { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 23, checked: false},
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24, checked: false },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25, checked: false },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: false }
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: false },
+    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 27, checked: false },
+    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 28, checked: false }
     ];
 
   let itemsInitSGD=[
@@ -154,7 +153,9 @@ const TopicEntityTable = () => {
     { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 23, checked: false},
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 24, checked: false },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 25, checked: false },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: false }
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 26, checked: false },
+    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 27, checked: false },
+    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 28, checked: false }
     ];
 
     // Function to get a cookie value by name
@@ -253,12 +254,12 @@ const CheckDropdownItem = React.forwardRef(
      const newItems = [...items];
      let item=newItems.find(i => i.id === key);
      item.checked = event.target.checked;
-     if (item && item.checked == true){
+     if (item && item.checked === true){
         gridRef.current.api.applyColumnState({
                  state: [{ colId: item.field, hide: false },],
                 });
      }
-     else if (item && item.checked == false) {
+     else if (item && item.checked === false) {
          gridRef.current.api.applyColumnState({
                   state: [{ colId: item.field, hide: true },],
                  });
@@ -341,10 +342,6 @@ const CheckDropdownItem = React.forwardRef(
     return new Date(params.value).toLocaleString();
   };
 
-  const nameFormatter = (params) => {
-    return ecoToName[params.value];
-  }
-
   const GenericTetTableModal = ({ title, body, show, onHide }) => {
     return (
       <Modal show={show} onHide={onHide} centered>
@@ -357,13 +354,13 @@ const CheckDropdownItem = React.forwardRef(
   };
 
   const caseInsensitiveComparator = (valueA, valueB) => {
-    if (valueA == null && valueB == null) {
+    if (valueA === null && valueB === null) {
       return 0;
     }
-    if (valueA == null) {
+    if (valueA === null) {
       return -1;
     }
-    if (valueB == null) {
+    if (valueB === null) {
       return 1;
     }
     return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
@@ -396,7 +393,9 @@ const CheckDropdownItem = React.forwardRef(
     { headerName: "Source Description", field: "topic_entity_tag_source.description" },
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter }
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter },
+    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" },
+    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" }
   ];
 
   const gridOptions = {
