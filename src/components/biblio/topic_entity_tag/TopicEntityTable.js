@@ -31,9 +31,6 @@ const TopicEntityTable = () => {
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const ecoToName = {
-    'ECO:0000302': 'author statement used in manual assertion'
-  };
   const [selectedCurie, setSelectedCurie] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [fullNote, setFullNote] = useState('');
@@ -344,10 +341,6 @@ const CheckDropdownItem = React.forwardRef(
   const dateFormatter = (params) => {
     return new Date(params.value).toLocaleString();
   };
-
-  const nameFormatter = (params) => {
-    return ecoToName[params.value];
-  }
 
   const GenericTetTableModal = ({ title, body, show, onHide }) => {
     return (
