@@ -121,13 +121,13 @@ const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, ref
     return (<>{rowModAssociationElements}</>); }
   else { return null; } }
 
-const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+
+export const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
-    const rowCrossReferenceElements = []
+    let anyUpdatedFlag = ''; let xref_list = '';
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
       let url = crossRefDict['url'];
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
-
       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
       if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
            (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
@@ -143,11 +143,19 @@ const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, re
              if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
              else { isObsolete = ''; } }
       let updatedFlag = '';
-      if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated' }
+      if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated'; anyUpdatedFlag = 'updated'; }
       if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
-      const xrefValue = (<div><span style={{color: 'red'}}>{isObsolete}</span> <a href={url}  rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a></div>);
-      rowCrossReferenceElements.push(<RowDisplaySimple key={`${fieldIndex} ${index}`} fieldName={fieldName} value={xrefValue} updatedFlag={updatedFlag} />); }
-    return (<>{rowCrossReferenceElements}</>); }
+      if (xref_list !== '') { xref_list += " | "; }
+      xref_list += `<span style="color: red">${isObsolete}</span> <a href=${url}  rel="noreferrer noopener" target="_blank">${valueLiveCurie}</a>`;
+    }
+    return (
+        <Row key='resources_for_curation' className="Row-general" xs={2} md={4} lg={6}>
+            <Col className='Col-general Col-display Col-display-left'>cross_references</Col>
+            <Col className={`Col-general Col-display Col-display-right ${anyUpdatedFlag}`} lg={{ span: 10 }}>
+                <div dangerouslySetInnerHTML={{ __html: xref_list }}></div>
+            </Col>
+        </Row>
+    ); }
   else { return null; } }
 
 
