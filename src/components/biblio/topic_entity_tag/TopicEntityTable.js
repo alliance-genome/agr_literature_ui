@@ -36,6 +36,7 @@ const TopicEntityTable = () => {
   const [fullNote, setFullNote] = useState('');
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [firstFetch, setFirstFetch] = useState(true);
 
   const gridRef = useRef();
     
@@ -72,8 +73,12 @@ const TopicEntityTable = () => {
   }
 
   useEffect(() => {
-    fetchTableData();
-  }, [biblioUpdatingEntityAdd]);
+      if (firstFetch && topicEntityTags.length > 0) {
+          setFirstFetch(false);
+      } else {
+          fetchTableData();
+      }
+  }, [topicEntityTags, biblioUpdatingEntityAdd]);
 
 
   const handleNoteClick = (fullNote) => {
