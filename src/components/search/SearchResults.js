@@ -106,7 +106,7 @@ const SearchResultItem = ({ reference }) => {
   const determineUrl = (xref) => {
       // always use the URL privided by mod - through DQM submission
       // that is stored in cross_reference.pages
-      // check if 'pages' is an array and not empty
+      // check if 'pages' is an array and not empty, occasionally debezium records may out of sync with elasticsearch and some crossreference may in elasticsearch but not in debezium, so check first
       if (xref.curie in crossReferenceResults && crossReferenceResults[xref.curie] !== undefined && Array.isArray(crossReferenceResults[xref.curie].pages) && crossReferenceResults[xref.curie].pages.length > 0) {
 	  // use the URL from the first item in the 'pages' array
 	  return crossReferenceResults[xref.curie].pages[0].url;
