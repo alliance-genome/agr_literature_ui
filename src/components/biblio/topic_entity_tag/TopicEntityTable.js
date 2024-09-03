@@ -73,7 +73,7 @@ const TopicEntityTable = () => {
 
   useEffect(() => {
     fetchTableData();
-  }, [topicEntityTags, biblioUpdatingEntityAdd, fetchTableData]);
+  }, [biblioUpdatingEntityAdd]);
 
 
   const handleNoteClick = (fullNote) => {
