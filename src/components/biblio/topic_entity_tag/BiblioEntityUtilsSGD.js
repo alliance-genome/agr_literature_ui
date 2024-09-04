@@ -1,11 +1,10 @@
 export const sgdTopicList = [{'curie': 'ATP:0000012', 'name': 'gene ontology'},
 			     {'curie': 'ATP:0000079', 'name': 'classical phenotype information'},
 			     {'curie': 'ATP:0000129', 'name': 'headline information'},
-			     {'curie': 'ATP:0000128', 'name': 'protein containing complex'},
-			     {'curie': 'other primary information', 'name': 'other primary information'},
+			     {'curie': 'ATP:0000147', 'name': 'other primary information'},
 			     {'curie': 'ATP:0000085', 'name': 'high throughput phenotype assay'},
 			     {'curie': 'ATP:0000150', 'name': 'other HTP data (OMICs)'},
-			     {'curie': 'review',      'name': 'review'},
+			     {'curie': 'ATP:0000130', 'name': 'review'},
 			     {'curie': 'ATP:0000011', 'name': 'homology/disease'},
 			     {'curie': 'ATP:0000088', 'name': 'post translational modification'},
 			     {'curie': 'ATP:0000070', 'name': 'regulation information'},
@@ -13,7 +12,7 @@ export const sgdTopicList = [{'curie': 'ATP:0000012', 'name': 'gene ontology'},
 			     {'curie': 'ATP:0000149', 'name': 'metabolic engineering'},
 			     {'curie': 'ATP:0000054', 'name': 'gene model'},
 			     {'curie': 'ATP:0000006', 'name': 'allele'},
-			     {'curie': 'other additional literature', 'name': 'other additional literature'}];
+			     {'curie': 'ATP:0000132', 'name': 'other additional literature'}];
 			  
 
 export const geneATP = 'ATP:0000005';
@@ -22,14 +21,13 @@ export const complexATP = 'ATP:0000128';
 export const pathwayATP = 'ATP:0000022';
 
 /*
-   ATP:0000128: protein containing complex
    ATP:0000012: gene ontology
    ATP:0000079: Classical phenotype information
    ATP:0000129: Headline information
    'other primary literature': place holder for other primary literature
 */
-const sgdPrimaryTopics = ['ATP:0000128', 'ATP:0000012', 'ATP:0000079', 'ATP:0000129',
-			  'other primary information'];
+const sgdPrimaryTopics = ['ATP:0000012', 'ATP:0000079', 'ATP:0000129',
+			  'ATP:0000147'];
 const primaryDisplay = 'ATP:0000147';
     
 /*
@@ -51,11 +49,11 @@ const omicsDisplay = 'ATP:0000148';
 */  
 const sgdAdditionalTopics = ['ATP:0000142', 'ATP:0000011', 'ATP:0000088', 'ATP:0000070',
 			     'ATP:0000022', 'ATP:0000149', 'ATP:0000054', 'ATP:0000006',
-			     'other additional literature'];
+			     'ATP:0000132'];
 const additionalDisplay = 'ATP:0000132';
 
 /* place holder for review topic */
-const sgdReviewTopic = 'review';  
+const sgdReviewTopic = 'ATP:0000130';  
 const reviewDisplay = 'ATP:0000130';
   
 export function setDisplayTag(topicSelect) {
