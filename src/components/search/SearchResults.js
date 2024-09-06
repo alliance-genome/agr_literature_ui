@@ -34,24 +34,9 @@ const SearchResultItem = ({ reference }) => {
   const dispatch = useDispatch();
 
   const FileDownloadIcon = ({curie}) => {
-      const [mainPDF, setMainPDF] = useState(false);
       const accessToken = useSelector(state => state.isLogged.accessToken);
-      const oktaMod = useSelector(state => state.isLogged.oktaMod);
-      const fetchReferenceFileList = async () => {
-          const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + curie);
-          referencefiles.data.forEach((reference) => {
-              if (reference.file_class === 'main'){
-                  reference.referencefile_mods.forEach((mod) => {
-                      if(mod.mod_abbreviation === oktaMod){
-                          setMainPDF(reference.referencefile_id);
-                      }
-                      else if(mod.created_by ==='load_pmc_metadata' && !mainPDF){
-                          setMainPDF(reference.referencefile_id);
-                      }
-                  })
-              }
-          });
-      }
+      const curiePDFIDsMap = useSelector(state => state.search.curiePDFIDsMap);
+
       const downloadPDFfile = (referencefileId, accessToken) => {
           let url = process.env.REACT_APP_RESTAPI + '/reference/referencefile/download_file/' + referencefileId
           axios({
@@ -68,12 +53,9 @@ const SearchResultItem = ({ reference }) => {
               window.open(pdfUrl, '_blank');
           })
       }
-      if(accessToken && !mainPDF){
-          fetchReferenceFileList();
-      }
 
       return(
-          mainPDF ? <Button className = "file-download-button" onClick={() => downloadPDFfile(mainPDF,accessToken)}><FontAwesomeIcon icon={faFilePdf} size= '3x'/></Button> : null
+          curiePDFIDsMap[curie] ? <Button className = "file-download-button" onClick={() => downloadPDFfile(curiePDFIDsMap[curie], accessToken)}><FontAwesomeIcon icon={faFilePdf} size= '3x'/></Button> : null
       )
   }
     
