@@ -14,7 +14,7 @@ import {
   SEARCH_SET_MOD_PREFERENCES_LOADED, SEARCH_SET_APPLY_TO_SINGLE_TAG,
   SEARCH_SET_READY_TO_FACET_SEARCH, SEARCH_REMOVE_DATE_PUBMED_ADDED,
   SEARCH_REMOVE_DATE_PUBMED_MODIFIED, SEARCH_REMOVE_DATE_PUBLISHED,
-  SEARCH_REMOVE_DATE_CREATED
+  SEARCH_REMOVE_DATE_CREATED, SERACH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -58,7 +58,8 @@ const initialState = {
   sort_by_published_date_order:"relevance",
   partialMatch:"true",
   modPreferencesLoaded:"false",
-  applyToSingleTag: true
+  applyToSingleTag: true,
+  curiePDFIDsMap: {}
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -92,6 +93,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         crossReferenceResults: action.payload.crossReferenceResults
+      }
+
+    case SERACH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS:
+      return {
+        ...state,
+        curiePDFIDsMap: action.payload.curiePDFIDsMap
       }
 
     case SEARCH_SET_SEARCH_LOADING:
