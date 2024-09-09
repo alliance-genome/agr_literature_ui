@@ -112,19 +112,16 @@ export function checkTopicEntitySetDisplayTag(entityText, entityResultList, topi
 
   /*
      -----------------------------------------------------------------
-     displayTag = 'additional display', ATP:0000132 if there is entity
+     displayTag = 'additional display'
      -----------------------------------------------------------------
   */
   if (sgdAdditionalTopics.includes(topicSelect)) {
-    if (isEntityEmpty) { // no gene/entity => no displayTag
-      return [false, ''];
-    }
-    else if (isEntityInvalid) {
-      return ["The addition of entities are not required for this topic, but if associated they must be valid genes or entities", false];
+    if (isEntityEmpty || isEntityInvalid) {
+      return ["This topic requires the inclusion of a valid gene or entity.", false];
     }
     return [false, additionalDisplay];
   }
-
+    
   /*
      -------------------------------------------------------------------
      displayTag = 'review display', ATP:0000130
