@@ -184,7 +184,8 @@ const TopicEntityCreateSGD = () => {
           row.taxonSelect !== undefined &&
           row.entityTypeSelect !== ""
         ) {
-          const entityIdValidation = (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) ? 'sgd' : 'alliance';
+          // const entityIdValidation = (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) ? 'sgd' : 'alliance';
+	  const entityIdValidation = 'sgd';  
           dispatch(
             changeFieldEntityEntityList(
               row.entityText,
