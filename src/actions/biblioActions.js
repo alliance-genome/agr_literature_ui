@@ -644,17 +644,30 @@ export const changeFieldEntityEntityList = (entityText, accessToken, entityIdVal
           entityResultList.push({ 'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie' });
         }
       }
+
+      // if no mapping or empty result, check entityIdValidation for 'sgd'
+      if (entityResultList.length === 0 && entityIdValidation === 'sgd') {
+        return sgd_entity_validation(dispatch, entityType, entityInputList, callback);
+      }	
+	
       dispatch(setEntityResultList(entityResultList));
       if (typeof callback === 'function') {
         callback(entityResultList);
       }
     } catch (err) {
+      console.error("Error in entity lookup API:", err);
+
+      // handle error and fallback to sgd_entity_validation if entityIdValidation is 'sgd'
+      if (entityIdValidation === 'sgd') {
+        return sgd_entity_validation(dispatch, entityType, entityInputList, callback);
+      }
+	
       dispatch({
         type: 'SET_ENTITY_MODAL_TEXT',
         payload: 'Entity lookup API failure' + err
       });
       if (typeof callback === 'function') {
-        callback([]);
+         callback([]);
       }
     }
   };
@@ -884,6 +897,13 @@ export const getDescendantATPIds = async (accessToken, atpID) => {
 }
 
 export const fetchDisplayTagData = async (accessToken) => {
+  const fallbackDisplayTagData = [
+    { curie: "ATP:0000147", name: "primary display" },
+    { curie: "ATP:0000148", name: "OMICs display" },
+    { curie: "ATP:0000132", name: "additional display" },
+    { curie: "ATP:0000130", name: "review display" }
+  ];
+
   try {
     const response = await axios.get(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/ATP:0000136/descendants`, {
       headers: {
@@ -892,16 +912,14 @@ export const fetchDisplayTagData = async (accessToken) => {
       },
       mode: 'cors'
     });
-    // return response.data.entities;
-    // const displayTagData = response.data.entities.map(x => ({ curie: x.curie, name: x.name }));
-    // return displayTagData;
+
     const displayTagData = response.data.entities
       .filter(x => x.name !== 'other primary display')
       .map(x => ({ curie: x.curie, name: x.name }));
     return displayTagData;
   } catch (error) {
     console.error('Error occurred:', error);
-    throw error;
+    return fallbackDisplayTagData;  // return fallback data if an error occurs
   }
 }
 
