@@ -82,25 +82,30 @@ export const getCurieToNameTaxon = async (accessToken) => {
       }
     }
 
-    //console.log("taxonToNameMapping=", JSON.stringify(taxonToNameMapping));
+    if (Object.keys(taxonToNameMapping).filter(key => key !== '').length < 8) {
+      return fallbackTaxonCurieToNameMapping();
+    }
     return taxonToNameMapping;
 
   } catch (error) {
     console.error('Failed to fetch Curie to Name Taxon data', error);
-    return {};
+    //return {};
+    return fallbackTaxonCurieToNameMapping();
   }
 
-  /* it will return something like the following 
-   return {
-    'NCBITaxon:559292': 'Saccharomyces cerevisiae',
-    'NCBITaxon:6239': 'Caenorhabditis elegans',
-    'NCBITaxon:7227': 'Drosophila melanogaster',
-    'NCBITaxon:7955': 'Danio rerio',
-    'NCBITaxon:10116': 'Rattus norvegicus',
-    'NCBITaxon:10090': 'Mus musculus',
-    'NCBITaxon:8355': 'Xenopus laevis',
-    'NCBITaxon:8364': 'Xenopus tropicalis',
-    'NCBITaxon:9606': 'Homo sapiens',
-    '': ''
-  */
 };
+
+export const fallbackTaxonCurieToNameMapping = () => {
+    return {
+        'NCBITaxon:559292': 'Saccharomyces cerevisiae',
+        'NCBITaxon:6239': 'Caenorhabditis elegans',
+        'NCBITaxon:7955': 'Danio rerio',
+        'NCBITaxon:10116': 'Rattus norvegicus',
+        'NCBITaxon:10090': 'Mus musculus',
+        'NCBITaxon:8355': 'Xenopus laevis',
+        'NCBITaxon:8364': 'Xenopus tropicalis',
+        'NCBITaxon:9606': 'Homo sapiens',
+        '': ''
+    }
+};
+
