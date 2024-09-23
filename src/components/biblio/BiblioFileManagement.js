@@ -32,6 +32,40 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 const BiblioFileManagement = () => {
   const fileUploadingIsUploading = useSelector(state => state.biblio.fileUploadingCount) > 0;
+  const dispatch = useDispatch();
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+
+  // determine accessLevel
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+  let accessLevel = oktaMod;
+
+  if (testerMod !== 'No') { accessLevel = testerMod; }
+  else if (oktaDeveloper) { accessLevel = 'developer'; }
+
+  if (accessLevel === 'developer') {
+    if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
+      accessLevel = 'No';
+    } else {
+      accessLevel = null;
+    }
+  }
+  
+  // get mods in corpus from 'mod_corpus_associations'
+  const modCorpusAssociations = referenceJsonLive['mod_corpus_associations'] || [];
+  const modsInCorpus = modCorpusAssociations
+    .filter(item => item.corpus === true)
+    .map(item => item.mod_abbreviation);
+
+  // determine if user can upload files
+  let canUploadFiles = false;
+
+  if (accessLevel !== 'No') {
+    if (accessLevel === null || modsInCorpus.includes(accessLevel)) {
+      canUploadFiles = true;
+    }
+  }
 
   return (
       <>
@@ -39,8 +73,12 @@ const BiblioFileManagement = () => {
           <BiblioCitationDisplay key="filemanagementCitationDisplay" />
           <AlertDismissibleFileUploadSuccess />
           {fileUploadingIsUploading ? <Spinner animation={"border"}/> : null}
-          <FileUpload main_or_supp="main" />
-          <FileUpload main_or_supp="supplement" />
+          {canUploadFiles && (
+            <>
+              <FileUpload main_or_supp="main" />
+              <FileUpload main_or_supp="supplement" />
+            </>
+          )}
 	  <OpenAccess />
 	  <Workflow />
           <RowDivider />
