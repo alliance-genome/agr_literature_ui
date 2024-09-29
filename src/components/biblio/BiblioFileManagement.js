@@ -35,6 +35,8 @@ const BiblioFileManagement = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
 
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+    
   // determine accessLevel
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
@@ -67,25 +69,58 @@ const BiblioFileManagement = () => {
     }
   }
 
+  const addToCorpus = () => {
+    const url = `${process.env.REACT_APP_RESTAPI}/reference/add_to_corpus/${referenceJsonLive.curie}`;
+    axios.post(url, {}, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      }
+    }).then(res => {
+      dispatch(biblioQueryReferenceCurie(referenceJsonLive.curie));
+      alert('Paper added to corpus successfully');
+    }).catch(error => {
+      console.error('Error adding to corpus:', error);
+      alert('Failed to add paper to corpus');
+    });
+  };
+
   return (
-      <>
-        <Container>
-          <BiblioCitationDisplay key="filemanagementCitationDisplay" />
-          <AlertDismissibleFileUploadSuccess />
-          {fileUploadingIsUploading ? <Spinner animation={"border"}/> : null}
-          {canUploadFiles && (
-            <>
-              <FileUpload main_or_supp="main" />
-              <FileUpload main_or_supp="supplement" />
-            </>
-          )}
-	  <OpenAccess />
-	  <Workflow />
-          <RowDivider />
-          <FileEditor />
-        </Container>
-      </>
+    <>
+      <Container>
+        <BiblioCitationDisplay key="filemanagementCitationDisplay" />
+        <AlertDismissibleFileUploadSuccess />
+        {fileUploadingIsUploading ? <Spinner animation={"border"} /> : null}
+        {canUploadFiles ? (
+          <>
+            <FileUpload main_or_supp="main" />
+            <FileUpload main_or_supp="supplement" />
+          </>
+        ) : (
+          <Row className="justify-content-center  mt-2 mb-2">
+            <Col xs="auto">
+              <div
+                className="form-control biblio-button text-center"
+                type="button"
+                onClick={addToCorpus}
+                style={{
+		  cursor: 'pointer', // make sure it's visually clear that this is clickable
+		  padding: '5px 20px', // adjust padding for better appearance
+		}} 
+              >
+                Add this paper to corpus
+              </div>
+            </Col>
+          </Row>
+        )}
+        <OpenAccess />
+        <Workflow />
+        <RowDivider />
+        <FileEditor />
+      </Container>
+    </>
   );
+
 }
 
 const Workflow = () => {
@@ -118,6 +153,7 @@ const Workflow = () => {
     ([atp, obj]) => (atpMappings[atp] = obj['name'])
   );
 
+  /*
   const referenceFiles = useSelector(state => state.biblio.referenceFiles);
   let referenceFilesWithAccess = referenceFiles.filter(
     referenceFile =>
@@ -127,6 +163,7 @@ const Workflow = () => {
           mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null
       )
   );
+  */
     
   if ( (ateamResults === 0) && (accessToken) ) {
     dispatch(mergeAteamQueryAtp(accessToken, atpParents));
