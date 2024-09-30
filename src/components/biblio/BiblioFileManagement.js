@@ -32,23 +32,117 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 const BiblioFileManagement = () => {
   const fileUploadingIsUploading = useSelector(state => state.biblio.fileUploadingCount) > 0;
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+    
+  // determine accessLevel
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+  let accessLevel = oktaMod;
+
+  if (testerMod !== 'No') {
+    accessLevel = testerMod;
+  } else if (oktaDeveloper) {
+    accessLevel = 'developer';
+  }
+    
+  if (accessLevel === 'developer') {
+    if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
+      accessLevel = 'No';
+    } else {
+      accessLevel = null;
+    }
+  }
+    
+  // get mods in corpus from 'mod_corpus_associations'
+  const modCorpusAssociations = referenceJsonLive['mod_corpus_associations'] || [];
+      
+  const modsInCorpus = modCorpusAssociations
+    .filter(item => item.corpus === 'inside_corpus')
+    .map(item => item.mod_abbreviation);
+    
+  // determine if user can upload files
+  let canUploadFiles = false;
+
+  if (accessLevel !== 'No') {
+    if (accessLevel === null || modsInCorpus.includes(accessLevel)) {
+      canUploadFiles = true;
+    }
+  }
+  
+  return (
+    <>
+      <Container>
+        <BiblioCitationDisplay key="filemanagementCitationDisplay" />
+        <AlertDismissibleFileUploadSuccess />
+        {fileUploadingIsUploading ? <Spinner animation={"border"} /> : null}
+        {canUploadFiles ? (
+          <>
+            <FileUpload main_or_supp="main" />
+            <FileUpload main_or_supp="supplement" />
+          </>
+        ) : (
+          <AddToCorpus accessLevel={accessLevel} referenceCurie={referenceJsonLive.curie} />
+        )}
+        <OpenAccess />
+        <Workflow />
+        <RowDivider />
+        <FileEditor />
+      </Container>
+    </>
+  );
+
+}
+
+const AddToCorpus = ({ accessLevel, referenceCurie }) => {
+  const [alert, setAlert] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const dispatch = useDispatch();
+
+  const addToCorpus = () => {
+    const url = `${process.env.REACT_APP_RESTAPI}/reference/add_to_corpus/${accessLevel}/${referenceCurie}`;
+    axios.post(url, {}, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      }
+    }).then(res => {
+      setAlert("Paper added to corpus successfully!");
+      setShowAlert(true);
+      setTimeout(() => {
+        setShowAlert(false);
+        dispatch(biblioQueryReferenceCurie(referenceCurie));
+      }, 2000);
+    }).catch(error => {
+      setAlert("Error adding to corpus");
+      setShowAlert(true);
+    });
+  };
 
   return (
-      <>
-        <Container>
-          <BiblioCitationDisplay key="filemanagementCitationDisplay" />
-          <AlertDismissibleFileUploadSuccess />
-          {fileUploadingIsUploading ? <Spinner animation={"border"}/> : null}
-          <FileUpload main_or_supp="main" />
-          <FileUpload main_or_supp="supplement" />
-	  <OpenAccess />
-	  <Workflow />
-          <RowDivider />
-          <FileEditor />
-        </Container>
-      </>
+    <>
+      <Row className="justify-content-center mt-2 mb-2">
+        <Col xs="auto">
+          <div
+            className="form-control biblio-button text-center"
+            type="button"
+            onClick={addToCorpus}
+            style={{
+              cursor: 'pointer',
+              padding: '5px 20px',
+            }}
+          >
+            Add this paper to corpus
+          </div>
+        </Col>
+      </Row>
+      {showAlert && alert && <Alert variant={alert.includes("Error") ? "danger" : "success"}>{alert}</Alert>}
+    </>
   );
-}
+};
 
 const Workflow = () => {
   const dispatch = useDispatch();
@@ -63,10 +157,14 @@ const Workflow = () => {
 
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
+  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
   let accessLevel = oktaMod;
-  if (testerMod !== 'No') { accessLevel = testerMod; }
-  // Workflow accessLevel cannot be developer, is mod-specific
 
+  if (testerMod !== 'No') {
+    accessLevel = testerMod;
+  } 
+  // Workflow accessLevel cannot be developer, is mod-specific
+    
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 
   const atpMappings = {
@@ -78,16 +176,6 @@ const Workflow = () => {
   };
   Object.entries(atpOntology['ATP:0000140']).map(
     ([atp, obj]) => (atpMappings[atp] = obj['name'])
-  );
-
-  const referenceFiles = useSelector(state => state.biblio.referenceFiles);
-  let referenceFilesWithAccess = referenceFiles.filter(
-    referenceFile =>
-      referenceJsonLive['copyright_license_open_access'] === true ||
-      referenceFile.referencefile_mods.some(
-        mod =>
-          mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null
-      )
   );
     
   if ( (ateamResults === 0) && (accessToken) ) {
@@ -133,7 +221,7 @@ const Workflow = () => {
 
   // currently we can only transition from "file upload in progress" to "file unavailable"
   const isMainPDFuploaded = modFileStatus[accessLevel]['atpName'] === 'files uploaded';
-  const isDeveloperWithoutTester = oktaMod === 'developer' && testerMod === 'No';
+  const isDeveloperWithoutTester = oktaDeveloper === true && testerMod === 'No';
   const hideFileUnavailableButton = isMainPDFuploaded || isDeveloperWithoutTester || modFileStatus[accessLevel]['atpName'] !== 'file upload in progress';
   
   const handleFileUnavailableClick = () => {
