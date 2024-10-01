@@ -58,6 +58,7 @@ const initialState = {
   referenceCurie: '',
   referenceJsonLive: {},
   editTag: null,
+  filteredTags: null,
   referenceJsonDb: {},
   referenceJsonHasChange: {},
   referenceFiles: [],
@@ -1149,6 +1150,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         editTag: action.payload
+      };
+
+    case 'SET_FILTERED_TAGS':
+      return {
+        ...state,
+        filteredTags: action.payload
       };
      
     case 'UPDATE_XREF_PATTERNS':

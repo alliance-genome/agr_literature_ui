@@ -29,6 +29,7 @@ const TopicEntityTable = () => {
   const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
+  const filteredTags = useSelector(state => state.biblio.filteredTags);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const ecoToName = {
@@ -253,12 +254,12 @@ const CheckDropdownItem = React.forwardRef(
      const newItems = [...items];
      let item=newItems.find(i => i.id === key);
      item.checked = event.target.checked;
-     if (item && item.checked == true){
+     if (item && item.checked === true){
         gridRef.current.api.applyColumnState({
                  state: [{ colId: item.field, hide: false },],
                 });
      }
-     else if (item && item.checked == false) {
+     else if (item && item.checked === false) {
          gridRef.current.api.applyColumnState({
                   state: [{ colId: item.field, hide: true },],
                  });
@@ -341,10 +342,6 @@ const CheckDropdownItem = React.forwardRef(
     return new Date(params.value).toLocaleString();
   };
 
-  const nameFormatter = (params) => {
-    return ecoToName[params.value];
-  }
-
   const GenericTetTableModal = ({ title, body, show, onHide }) => {
     return (
       <Modal show={show} onHide={onHide} centered>
@@ -371,10 +368,10 @@ const CheckDropdownItem = React.forwardRef(
 
   let cols=[
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions},
-      { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
+    { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
     { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, filter: EntityTypeFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity_type)} },
     { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
-      { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
+    { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
     { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
     { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (params) =>   params.data.negated === true ? 'no data': '' },
     { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text", valueGetter: (params) =>   params.data.novel_topic_data === true ? 'new data': ''},
@@ -435,6 +432,18 @@ const CheckDropdownItem = React.forwardRef(
       //If this is causing slowdowns we can likely target specific cells.
       gridRef.current.api.refreshCells({force : true});
   }
+
+    function isExternalFilterPresent() {
+        return filteredTags;
+    }
+
+    function doesExternalFilterPass(node) {
+        if (node.data  && filteredTags){
+            return (filteredTags.validating_tags.includes(node.data.topic_entity_tag_id) || filteredTags.validated_tag === node.data.topic_entity_tag_id);
+        } else {
+            return false;
+        }
+    }
 
   const onGridReady = useCallback(() => {
     //We could use a package here... but its not much code to do this way.
@@ -502,7 +511,9 @@ const CheckDropdownItem = React.forwardRef(
             pagination={true}
             paginationPageSize={25}
             gridOptions={gridOptions}
-            paginationPageSizeSelector={paginationPageSizeSelector}/>
+            paginationPageSizeSelector={paginationPageSizeSelector}
+            isExternalFilterPresent= {isExternalFilterPresent}
+            doesExternalFilterPass= {doesExternalFilterPass} />
                </div>
             </Col>
         </Row>
