@@ -20,7 +20,6 @@ import React from "react";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { saveAs } from 'file-saver';
 
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
@@ -46,59 +45,63 @@ const TopicEntityTable = () => {
     let headers = [];
     let fields = [];
   
-    // Get headers and fields from visible columns only
+    // get headers and fields from visible columns only
     colDefs
-      .filter(col => option === 'allColumns' || !col.hide) // Include hidden columns only for 'allColumns' option
+      .filter(col => option === 'allColumns' || !col.hide) // include hidden columns only for 'allColumns' option
       .forEach(col => {
-        headers.push(col.headerName); // Header row
-        fields.push(col.field); // Corresponding field in data
+        headers.push(col.headerName);
+        fields.push(col.field);
       });
 
-    // Find the index of the Entity column
+    // find the index of the Entity column so later we can add entity curie (in the "entity" field)
     const entityIndex = fields.indexOf("entity_name");
 
-    // Add CURIE field and header next to the Entity column only for download (but not in display)
+    // add entity CURIE field and header next to the Entity column
+    // entity curie is in "entity" field, entity (name) is in "entity_name" field  
     if (entityIndex !== -1) {
-      headers.splice(entityIndex + 1, 0, "Entity CURIE"); // Insert "Entity CURIE" after "Entity"
-      fields.splice(entityIndex + 1, 0, "entity");        // Insert "entity" field after "entity_name"
+      headers.splice(entityIndex + 1, 0, "Entity CURIE"); // insert "Entity CURIE" after "Entity"
+      fields.splice(entityIndex + 1, 0, "entity");        // insert "entity" field after "entity_name"
     }
 
     if (option === "allColumns") {
-      // Download all columns, even hidden ones
+      // download all columns, even hidden ones
       gridRef.current.api.forEachNode((node) => {
         dataToDownload.push(node.data);
       });
     } else if (option === "withoutFilters") {
-      // Download all data without applying filters
+      // download all data without applying filters
       const allData = topicEntityTags;
-      dataToDownload = [...allData]; // Copy all data
+      dataToDownload = [...allData]; // copy all data from API
     } else {
-      // Default download with current filters and shown columns
+      // default download with current filters and shown columns
       gridRef.current.api.forEachNodeAfterFilterAndSort((node) => {
         dataToDownload.push(node.data);
       });
     }
 
-    // Helper function to get nested values
+    // helper function to get nested values
+    // if the field is "topic_name", it will return row.topic_name
+    // if the field is "topic_entity_tag_source.secondary_data_provider_abbreviation",
+    // it will return row.topic_entity_tag_source.secondary_data_provider_abbreviation
     const getNestedValue = (obj, field) => {
       return field.split('.').reduce((acc, key) => acc && acc[key] ? acc[key] : '', obj);
     };
 
-    // Convert headers and data to TSV format
-    const tsvHeaders = headers.join('\t'); // Header row
+    // convert headers and data to TSV format
+    const tsvHeaders = headers.join('\t'); 
     const tsvRows = dataToDownload.map((row) =>
-      fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t') // Use the helper function to get nested values
+      fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
     );
     const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
     const encodedUri = encodeURI(tsvContent);
 
-    // Generate the file name with referenceCurie
+    // generate the file name with referenceCurie
     const fileName = `${referenceCurie}_tet_data_${option}.tsv`;
 
-    // Trigger file download
+    // trigger file download
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', fileName);  // Use the referenceCurie in the file name
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
