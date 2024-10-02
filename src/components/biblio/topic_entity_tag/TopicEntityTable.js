@@ -37,8 +37,75 @@ const TopicEntityTable = () => {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [firstFetch, setFirstFetch] = useState(true);
-
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const gridRef = useRef();
+
+  const handleDownload = (option) => {
+    let dataToDownload = [];
+    let headers = [];
+    let fields = [];
+  
+    // get headers and fields from visible columns only
+    colDefs
+      .filter(col => option === 'allColumns' || !col.hide) // include hidden columns only for 'allColumns' option
+      .forEach(col => {
+        headers.push(col.headerName);
+        fields.push(col.field);
+      });
+
+    // find the index of the Entity column so later we can add entity curie (in the "entity" field)
+    const entityIndex = fields.indexOf("entity_name");
+
+    // add entity CURIE field and header next to the Entity column
+    // entity curie is in "entity" field, entity (name) is in "entity_name" field  
+    if (entityIndex !== -1) {
+      headers.splice(entityIndex + 1, 0, "Entity CURIE"); // insert "Entity CURIE" after "Entity"
+      fields.splice(entityIndex + 1, 0, "entity");        // insert "entity" field after "entity_name"
+    }
+
+    if (option === "allColumns") {
+      // download all columns, even hidden ones
+      gridRef.current.api.forEachNode((node) => {
+        dataToDownload.push(node.data);
+      });
+    } else if (option === "withoutFilters") {
+      // download all data without applying filters
+      const allData = topicEntityTags;
+      dataToDownload = [...allData]; // copy all data from API
+    } else {
+      // default download with current filters and shown columns
+      gridRef.current.api.forEachNodeAfterFilterAndSort((node) => {
+        dataToDownload.push(node.data);
+      });
+    }
+
+    // helper function to get nested values
+    // if the field is "topic_name", it will return row.topic_name
+    // if the field is "topic_entity_tag_source.secondary_data_provider_abbreviation",
+    // it will return row.topic_entity_tag_source.secondary_data_provider_abbreviation
+    const getNestedValue = (obj, field) => {
+      return field.split('.').reduce((acc, key) => acc && acc[key] ? acc[key] : '', obj);
+    };
+
+    // convert headers and data to TSV format
+    const tsvHeaders = headers.join('\t'); 
+    const tsvRows = dataToDownload.map((row) =>
+      fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
+    );
+    const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
+    const encodedUri = encodeURI(tsvContent);
+
+    // generate the file name with referenceCurie
+    const fileName = `${referenceCurie}_tet_data_${option}.tsv`;
+
+    // trigger file download
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
     
   useEffect(() => {
     const fetchData = async () => {
@@ -484,12 +551,32 @@ const CheckDropdownItem = React.forwardRef(
         </div>
       )}
       <Container fluid>
-          <Row>
-            <Col>
-             <div style={{float: "left", padding: "0  0  10px  0"}}>
-                 <CheckboxDropdown items={items} />
+         <Row>
+           <Col>
+             <div className="d-flex justify-content-between" style={{ paddingBottom: '10px' }}>
+               {/* "Hide/Show Columns" Button */}
+               <CheckboxDropdown items={items} />
+            
+               {/* Download Options Button */}
+               <Dropdown className="ms-auto">
+                 <Dropdown.Toggle variant="primary" id="dropdown-download-options">
+                   Download Options
+                 </Dropdown.Toggle>
+
+                 <Dropdown.Menu>
+                   <Dropdown.Item onClick={() => handleDownload('displayedData')}>
+                     Download Displayed Data
+                   </Dropdown.Item>
+                   <Dropdown.Item onClick={() => handleDownload('allColumns')}>
+                     Download All Columns
+                   </Dropdown.Item>
+                   <Dropdown.Item onClick={() => handleDownload('withoutFilters')}>
+                     Download Without Filters
+                   </Dropdown.Item>
+                 </Dropdown.Menu>
+               </Dropdown>
              </div>
-            </Col>
+           </Col>
          </Row>
          <Row>
             <Col>
