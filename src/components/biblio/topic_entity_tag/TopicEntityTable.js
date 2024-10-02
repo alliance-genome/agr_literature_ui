@@ -551,30 +551,32 @@ const CheckDropdownItem = React.forwardRef(
         </div>
       )}
       <Container fluid>
-          <Row>
-            <Col>
+         <Row>
+           <Col>
              <div className="d-flex justify-content-between" style={{ paddingBottom: '10px' }}>
-	       {/* "Hide/Show Columns" Button */}
+               {/* "Hide/Show Columns" Button */}
                <CheckboxDropdown items={items} />
             
-               {/* Default Download Button */}
-               <Button variant="primary" onClick={() => handleDownload('filteredData')}>
-                 Download Filtered Data
-               </Button>
-
-               {/* Dropdown Menu for Advanced Download Options */}
-               <Dropdown show={isDropdownOpen} onToggle={() => setIsDropdownOpen(!isDropdownOpen)}>
-                 <Dropdown.Toggle variant="primary" id="dropdown-basic" className="ms-2">
-                   Advanced Download Options
+               {/* Download Options Button */}
+               <Dropdown className="ms-auto">
+                 <Dropdown.Toggle variant="primary" id="dropdown-download-options">
+                   Download Options
                  </Dropdown.Toggle>
 
                  <Dropdown.Menu>
-                   <Dropdown.Item onClick={() => handleDownload('allColumns')}>Download All Columns</Dropdown.Item>
-                   <Dropdown.Item onClick={() => handleDownload('withoutFilters')}>Download Without Filters</Dropdown.Item>
+                   <Dropdown.Item onClick={() => handleDownload('displayedData')}>
+                     Download Displayed Data
+                   </Dropdown.Item>
+                   <Dropdown.Item onClick={() => handleDownload('allColumns')}>
+                     Download All Columns
+                   </Dropdown.Item>
+                   <Dropdown.Item onClick={() => handleDownload('withoutFilters')}>
+                     Download Without Filters
+                   </Dropdown.Item>
                  </Dropdown.Menu>
                </Dropdown>
              </div>
-            </Col>
+           </Col>
          </Row>
          <Row>
             <Col>
