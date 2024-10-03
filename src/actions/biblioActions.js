@@ -775,6 +775,11 @@ export const setEditTag = (editTag) => ({
   payload: editTag
 });
 
+export const setFilteredTags = (filteredTags) => ({
+  type: 'SET_FILTERED_TAGS',
+  payload: filteredTags
+});
+
 const getRevertButtonFromFontAwesomeElement = (activeElement) => {
   if (activeElement.nodeName === 'BUTTON') { return activeElement; }
   else if (activeElement.nodeName === 'svg') { return activeElement.parentNode; }

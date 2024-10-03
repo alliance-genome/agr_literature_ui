@@ -6,10 +6,11 @@ import Button from 'react-bootstrap/Button';
 import {
     changeFieldEntityAddGeneralField,
     setEditTag,
+    setFilteredTags,
     setTypeaheadName2CurieMap
 } from "../../actions/biblioActions";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faEdit, faTrashAlt} from "@fortawesome/free-solid-svg-icons";
+import {faEdit, faTrashAlt, faSearch} from "@fortawesome/free-solid-svg-icons";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -29,6 +30,23 @@ export default (props) => {
     const [entityBody, setEntityBody] = useState("");
     const [noDataBody, setNoDataBody] = useState("");
     const [novelDataBody, setNovelDataBody] = useState("");
+
+    const ValidatedTagsButton = () => {
+        const filteredTags = useSelector(state => state.biblio.filteredTags);
+        const filterTags = () => {
+          if(filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id){
+              dispatch(setFilteredTags(null));
+          }
+          else{
+              dispatch(setFilteredTags( {validating_tags: props.data.validating_tags, validated_tag: props.data.topic_entity_tag_id}));
+          }
+        }
+        return(
+            props.data.validating_tags.length > 0 ? <Button  size ='sm' variant={ (filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id) ? 'danger' : 'primary'} onClick={() => filterTags()}><FontAwesomeIcon icon={faSearch} /></Button> : null
+        )
+    }
+
+
 
     const handleDeleteClick = async () => {
         let mod = props.data.topic_entity_tag_source.secondary_data_provider_abbreviation;
@@ -137,9 +155,10 @@ export default (props) => {
             <Button onClick={() => handleDeleteClick()} size='sm'><FontAwesomeIcon icon={faTrashAlt}/></Button>
             &nbsp;
             <Button onClick={() => handleEditClick(props.data)} size='sm' variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button>
+            &nbsp;
+            <ValidatedTagsButton/>
+        </div> : <ValidatedTagsButton/>}
 
-
-        </div> : null}
     </span>
     );
 };
