@@ -258,38 +258,6 @@ export default function(state = initialState, action) {
         entityAdd: setEntityResultListEntityAdd
       }
 
-    case 'SET_WORKFLOW_MODAL_TEXT':
-      console.log('SET_WORKFLOW_MODAL_TEXT reducer ' + action.payload);
-      return {
-        ...state,
-        workflowModalText: action.payload
-      }
-    case 'SET_BIBLIO_WORKFLOW_CURATABILITY':
-      console.log('SET_BIBLIO_WORKFLOW_CURATABILITY reducer ');
-      console.log(action.payload);
-      const referenceJsonLiveBiblioEntitySetCuratability = _.cloneDeep(state.referenceJsonLive);
-      referenceJsonLiveBiblioEntitySetCuratability['workflow_curatability']['workflow_tag_id'] = action.payload.value;
-      return {
-        ...state,
-        isUpdatingWorkflowCuratability: true,
-        referenceJsonLive: referenceJsonLiveBiblioEntitySetCuratability
-      }
-    case 'UPDATE_SELECT_BIBLIO_WORKFLOW_CURATABILITY':
-      console.log('UPDATE_SELECT_BIBLIO_WORKFLOW_CURATABILITY reducer ');
-      console.log(action.payload);
-      let workflowModalTextUpdateSelectBiblioWorkflowCuratability = state.workflowModalText;
-      if (action.payload.responseMessage === "update success") {
-        workflowModalTextUpdateSelectBiblioWorkflowCuratability = '';
-      } else {
-        workflowModalTextUpdateSelectBiblioWorkflowCuratability += "<br>\n" + action.payload.responseMessage;
-      }
-      return {
-        ...state,
-        workflowModalText: workflowModalTextUpdateSelectBiblioWorkflowCuratability,
-        getReferenceCurieFlag: true,
-        isUpdatingWorkflowCuratability: false,
-      }
-
     case 'ATEAM_GET_TOPIC_DESCENDANTS':
       // console.log('ATEAM_GET_TOPIC_DESCENDANTS reducer');
       // console.log(action.payload.topicDescendants);

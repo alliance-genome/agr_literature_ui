@@ -34,24 +34,9 @@ const SearchResultItem = ({ reference }) => {
   const dispatch = useDispatch();
 
   const FileDownloadIcon = ({curie}) => {
-      const [mainPDF, setMainPDF] = useState(false);
       const accessToken = useSelector(state => state.isLogged.accessToken);
-      const oktaMod = useSelector(state => state.isLogged.oktaMod);
-      const fetchReferenceFileList = async () => {
-          const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + curie);
-          referencefiles.data.forEach((reference) => {
-              if (reference.file_class === 'main'){
-                  reference.referencefile_mods.forEach((mod) => {
-                      if(mod.mod_abbreviation === oktaMod){
-                          setMainPDF(reference.referencefile_id);
-                      }
-                      else if(mod.created_by ==='load_pmc_metadata' && !mainPDF){
-                          setMainPDF(reference.referencefile_id);
-                      }
-                  })
-              }
-          });
-      }
+      const curiePDFIDsMap = useSelector(state => state.search.curiePDFIDsMap);
+
       const downloadPDFfile = (referencefileId, accessToken) => {
           let url = process.env.REACT_APP_RESTAPI + '/reference/referencefile/download_file/' + referencefileId
           axios({
@@ -68,12 +53,9 @@ const SearchResultItem = ({ reference }) => {
               window.open(pdfUrl, '_blank');
           })
       }
-      if(accessToken && !mainPDF){
-          fetchReferenceFileList();
-      }
 
       return(
-          mainPDF ? <Button className = "file-download-button" onClick={() => downloadPDFfile(mainPDF,accessToken)}><FontAwesomeIcon icon={faFilePdf} size= '3x'/></Button> : null
+          curiePDFIDsMap[curie] ? <Button className = "file-download-button" onClick={() => downloadPDFfile(curiePDFIDsMap[curie], accessToken)}><FontAwesomeIcon icon={faFilePdf} size= '3x'/></Button> : null
       )
   }
     
@@ -106,13 +88,13 @@ const SearchResultItem = ({ reference }) => {
   const determineUrl = (xref) => {
       // always use the URL privided by mod - through DQM submission
       // that is stored in cross_reference.pages
-      // check if 'pages' is an array and not empty
-      if (crossReferenceResults[xref.curie] !== undefined && Array.isArray(crossReferenceResults[xref.curie].pages) && crossReferenceResults[xref.curie].pages.length > 0) {
+      // check if 'pages' is an array and not empty, occasionally debezium records may out of sync with elasticsearch and some crossreference may in elasticsearch but not in debezium, so check first
+      if (xref.curie in crossReferenceResults && crossReferenceResults[xref.curie] !== undefined && Array.isArray(crossReferenceResults[xref.curie].pages) && crossReferenceResults[xref.curie].pages.length > 0) {
 	  // use the URL from the first item in the 'pages' array
 	  return crossReferenceResults[xref.curie].pages[0].url;
       }
       // if 'pages' is not an array or is empty, fall back to the main URL
-      if (crossReferenceResults[xref.curie] !== undefined) {
+      if (xref.curie in crossReferenceResults && crossReferenceResults[xref.curie] !== undefined) {
           return crossReferenceResults[xref.curie].url;
       }
       // if search is out of sync with database, return empty string to prevent UI crashing, but this should not happen on prod or stage

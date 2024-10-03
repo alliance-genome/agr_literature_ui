@@ -5,6 +5,7 @@ export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT'
 export const SEARCH_SET_SEARCH_RESULTS_PAGE = 'SEARCH_SET_SEARCH_RESULTS_PAGE';
 export const SEARCH_SET_SEARCH_RESULTS = 'SEARCH_SET_SEARCH_RESULTS';
 export const SEARCH_SET_CROSS_REFERENCE_RESULTS = 'SEARCH_SET_CROSS_REFERENCE_RESULTS';
+export const SEARCH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS = 'SEARCH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS';
 export const SEARCH_SET_SEARCH_LOADING = 'SEARCH_SET_SEARCH_LOADING';
 export const SEARCH_SET_SEARCH_ERROR = 'SEARCH_SET_SEARCH_ERROR';
 export const SEARCH_SET_SEARCH_FACETS = 'SEARCH_SET_SEARCH_FACETS';
@@ -98,7 +99,8 @@ const getSearchParams = (state) => {
     author_filter: state.search.authorFilter,
     query_fields: state.search.query_fields,
     sort_by_published_date_order: state.search.sortByPublishedDate,
-    partial_match: state.search.partialMatch
+    partial_match: state.search.partialMatch,
+    mod_abbreviation: state.isLogged.oktaMod
   }
 
   const data = state.search.searchFacetsValues;
@@ -153,19 +155,27 @@ export const searchReferences = () => {
     axios.post(restUrl + '/search/references/', params )
 
         .then(res => {
-          const curieValues = res.data.hits.filter(hit => hit.cross_references !== null).flatMap(hit =>
+          const xrefCurieValues = res.data.hits.filter(hit => hit.cross_references !== null).flatMap(hit =>
               hit.cross_references.map(cross_reference => cross_reference.curie)
           );
-          axios.post(restUrl + '/cross_reference/show_all', curieValues)
+          const curies = res.data.hits.map(hit => hit.curie);
+          axios.post(restUrl + '/cross_reference/show_all', xrefCurieValues)
               .then(resXref => {
                 let curieToCrossRefMap = resXref.data.reduce((accumulatedHashTable, currentObject) => {
                   accumulatedHashTable[currentObject.curie] = currentObject;
                   return accumulatedHashTable;
                 }, {});
-                dispatch(setCrossReferenceResults(curieToCrossRefMap));
-                dispatch(setSearchResults(res.data.hits, res.data.return_count));
-                dispatch(setSearchFacets(res.data.aggregations));
-                dispatch(setReadyToFacetSearch(true));
+                axios.post(restUrl + '/reference/referencefile/show_main_pdf_ids_for_curies', {
+                      curies: curies,
+                      mod_abbreviation: params.mod_abbreviation})
+                    .then(resCuriePDFIDsMap => {
+                      dispatch(setCuriePDFIDsMap(resCuriePDFIDsMap.data));
+                      dispatch(setCrossReferenceResults(curieToCrossRefMap));
+                      dispatch(setSearchResults(res.data.hits, res.data.return_count));
+                      dispatch(setSearchFacets(res.data.aggregations));
+                      dispatch(setReadyToFacetSearch(true));
+                    })
+                .catch(err => dispatch(setSearchError(true)));
               })
               .catch(err => dispatch(setSearchError(true)));
         })
@@ -268,6 +278,13 @@ export const setCrossReferenceResults = (crossReferenceResults) => ({
   type: SEARCH_SET_CROSS_REFERENCE_RESULTS,
   payload: {
     crossReferenceResults: crossReferenceResults
+  }
+});
+
+export const setCuriePDFIDsMap = (curiePDFIDsMap) => ({
+  type: SEARCH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS,
+  payload: {
+    curiePDFIDsMap: curiePDFIDsMap
   }
 });
 

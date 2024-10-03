@@ -256,49 +256,6 @@ export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIB
 //   createUpdateButtonBiblioEntityAdd()
 // };
 
-
-export const setBiblioWorkflowCuratability = (value) => ({
-  type: 'SET_BIBLIO_WORKFLOW_CURATABILITY',
-  payload: { value: value }
-});
-
-export const updateSelectBiblioWorkflowCuratability = (accessToken, workflowTagId, payload, method) => { return dispatch => {
-  // console.log(subPath);
-  // console.log(method);
-  const url = (workflowTagId) ? restUrl + '/workflow_tag/' + workflowTagId : restUrl + '/workflow_tag/';
-  console.log(payload);
-  console.log(url);
-  let response_message = 'update success';
-
-  axios({
-      url: url,
-      method: method,
-      headers: {
-        'content-type': 'application/json',
-        'mode': 'cors',
-        'authorization': 'Bearer ' + accessToken
-      },
-      data: payload
-  })
-  .then(res => {
-    console.log(res);
-    if ( ((method === 'PATCH') && (res.status !== 202)) ||
-         ((method === 'DELETE') && (res.status !== 204)) ||
-         ((method === 'POST') && (res.status !== 201)) ) {
-           response_message = 'error: ' + workflowTagId + ' : API status code ' + res.status + ' for method ' + method; }
-    dispatch({
-      type: 'UPDATE_SELECT_BIBLIO_WORKFLOW_CURATABILITY',
-      payload: { workflowTagId: workflowTagId, responseMessage: response_message }
-    })
-  })
-  .catch(err =>
-    dispatch({
-      type: 'UPDATE_SELECT_BIBLIO_WORKFLOW_CURATABILITY',
-      payload: { workflowTagId: workflowTagId, responseMessage: 'error: updateSelectBiblioEntityCuratability failure on workflow_tag_id ' + workflowTagId + ' ' + err }
-    }));
-} };
-
-
 export const setBiblioEntityRemoveEntity = (tetId, value) => ({
   type: 'SET_BIBLIO_ENTITY_REMOVE_ENTITY',
   payload: { tetId: tetId, value: value }
@@ -398,7 +355,7 @@ async function fetchJsonData(url) {
     }
 };
 
-export const sgd_entity_validation = (dispatch, entityType, entityInputList) => {
+export const sgd_entity_validation = (dispatch, entityType, entityInputList, callback) => {
 
     const url = sgdApiBaseUrl + "entity/" + entityType + '/' + entityInputList.join('|').replace(/ /g, '+');
     fetchJsonData(url).then(data => {
@@ -421,14 +378,20 @@ export const sgd_entity_validation = (dispatch, entityType, entityInputList) => 
             }
         }
         dispatch(setEntityResultList(entityResultList));
+	if (callback) {
+          callback(entityResultList); // Call the callback with the result list
+        }
     }).catch(error => {
 	console.error('Error fetching data:', error);
+	if (callback) {
+          callback([]); // Call the callback with an empty list in case of error
+        }
     });
 
 };
 
 
-export const wb_entity_validation = (dispatch, entityType, entityInputList) => {
+export const wb_entity_validation = (dispatch, entityType, entityInputList, callback) => {
     let postData = {
       "datatype": entityType,
       "entities": entityInputList.join('|').replace(/ /g, '+')
@@ -462,184 +425,280 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList) => {
               }
             }
             dispatch(setEntityResultList(entityResultList));
-          }
+	    if (callback) {
+	      callback(entityResultList); // Call the callback with the result list 
+	    }
+        }
     }).catch(error => {
-	console.error('Error fetching data:', error);
+        console.error('Error fetching data:', error);
+        if (callback) {
+          callback([]); // Call the callback with an empty list in case of error                                                                                                     
+        }
     });
 };
 
-export const changeFieldEntityEntityList = (entityText, accessToken, entityIdValidation, taxon, entityType, taxonToMod = undefined) => {
-  return dispatch => {
+
+async function callATeamApi(ateamApiUrl, postData, accessToken) {
+  try {
+    const res = await axios.post(ateamApiUrl, postData, {
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + accessToken
+      }
+    });
+    return res.data.results || [];
+  } catch (err) {
+    console.error("Error in entity lookup API:", err);
+    throw err;
+  }
+}
+
+
+function processApiResults(results, taxon, entityType) {
+  const searchMap = {};
+  const obsoleteMap = {};
+  for (const entityResult of results) {
+    if (['gene', 'allele'].includes(entityType) && entityResult.taxon.curie !== taxon) {
+      continue;
+    }
+    let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
+    let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
+    let systematicName = entityType === "gene" ? entityResult['geneSystematicName']?.displayText?.toLowerCase() ?? "" : "";
+    let otherName = entityType === "construct" ? entityResult['constructFullName']?.displayText?.toLowerCase() ?? "" : "";
+    if (primaryId && name) {
+      if (entityResult.obsolete === true) {
+        obsoleteMap[primaryId.toLowerCase()] = primaryId;
+        obsoleteMap[name] = primaryId;
+        if (systematicName) {
+          obsoleteMap[systematicName] = primaryId;
+        }
+        if (otherName) {
+          obsoleteMap[otherName] = primaryId;
+        }
+      } else {
+        searchMap[primaryId.toLowerCase()] = primaryId;
+        searchMap[name] = primaryId;
+        if (systematicName) {
+          searchMap[systematicName] = primaryId;
+        }
+        if (otherName) {
+          searchMap[otherName] = primaryId;
+        }
+      }
+    }
+  }
+  return { searchMap, obsoleteMap };
+}
+
+
+export const changeFieldEntityEntityList = (entityText, accessToken, entityIdValidation, taxon, entityType, callback) => {
+
+  return async (dispatch) => {
+    if (entityType.includes('allele')) {
+      entityType = 'allele';
+    }
     let entityInputList = [];
     if (entityText && entityText.trim() !== '') {
-      entityInputList = entityText.split('\n').map(element => { return element.trim(); }).filter(item => item !== '');
+      entityInputList = entityText.split('\n').map(element => element.trim()).filter(item => item !== '');
     }
 
-    if ( (entityIdValidation === 'sgd') && (entityType == 'complex' || entityType == 'pathway') ) {	// this could be based solely on entityIdValidation, but keeping the explicit entityType to make it clearer.
-	return sgd_entity_validation(dispatch, entityType, entityInputList)
+    if (entityIdValidation === 'sgd' && (entityType === 'complex' || entityType === 'pathway')) {
+      return sgd_entity_validation(dispatch, entityType, entityInputList, callback);
     }
 
     if (entityIdValidation === 'wb') {
-	return wb_entity_validation(dispatch, entityType, entityInputList)
+      return wb_entity_validation(dispatch, entityType, entityInputList, callback);
     }
-     
+
+    // Default case
     if (entityType.includes('construct')) {
       entityType = 'construct';
     }
     let entityList = entityInputList.map(entity =>
-	entity.normalize("NFC")
-	    .replace(/[\x00-\x1F\x7F-\xFF]/g, '')
-	    .trim()
+      entity.normalize("NFC")
+        .replace(/[\x00-\x1F\x7F-\xFF]/g, '')
+        .trim()
     );
-    const entityQueryString = entityList.join(' ');
-    let searchType = {'AGMs': 'agm', 'strain': 'agm', 'genotype': 'agm', 'fish': 'agm', 'construct': 'construct', 'species': 'ncbitaxonterm', 'gene': 'gene', 'allele': 'allele'}
-    const ateamApiUrl = ateamApiBaseUrl + 'api/' + searchType[entityType] + '/search?limit=100&page=0';  
-    // a-team search fields are different for species vs gene or allele.
-    // sort uses AND for species because only looking for one value, here using OR and filtering to allow multiple species
-    let postData = {
-      "searchFilters": {
-        "nameFilter": {
-          "modEntityId": {
-            "queryString": entityQueryString,
-            "tokenOperator": "OR",
-            "useKeywordFields": true,
-            "queryType": "matchQuery"
-          },
-          "curie": {
-            "queryString": entityQueryString,
-            "tokenOperator": "OR",
-            "useKeywordFields": true,
-            "queryType": "matchQuery"
-          }
-        }
-      }
-    }
-    if (['species', 'strain', 'genotype', 'fish', 'AGMs'].includes(entityType)) {
-      postData["searchFilters"]["nameFilter"]["name"] = {
-        "queryString": entityQueryString,
-        "tokenOperator": "OR"
-      }
-    } else {
-      let searchFilters = {};
-      let filterKey = "curie";
-      if (entityType === "construct"){
-        filterKey = entityType + "FullName.displayText";
-      }
-      else if (entityType === "gene"){
-	filterKey = entityType + "SystematicName.displayText";
-      }
-      entityList.forEach((entity, index) => {
-        let filterKey2 = entityType + "Symbol.displayText";
-        searchFilters[`nameFilter${index + 1}`] = {
-          "modEntityId": {
-              "queryString": entity,
-              "tokenOperator": "OR",
-              "useKeywordFields": true,
-              "queryType": "matchQuery"
-          },
-          [filterKey]: {
-              "queryString": entity,
-              "tokenOperator": "OR",
-              "useKeywordFields": true,
-              "queryType": "matchQuery"
-          },
-          [filterKey2]: {
-              "queryString": entity,
-              "tokenOperator": "OR",
-              "useKeywordFields": true,
-              "queryType": "matchQuery"
+
+    const MAX_RETRIES = 10; // to prevent infinite loops
+    let retries = 0;
+    let notFoundEntityList = [...entityList];
+    let entityResultList = [];
+    let foundEntitiesSet = new Set();
+
+    const searchType = {
+      'AGMs': 'agm', 'strain': 'agm', 'genotype': 'agm', 'fish': 'agm', 'construct': 'construct', 'species': 'ncbitaxonterm',
+      'gene': 'gene', 'allele': 'allele'
+    };
+
+    try {
+      while (notFoundEntityList.length > 0 && retries < MAX_RETRIES) {
+        const entityQueryString = notFoundEntityList.join(' ');
+        const ateamApiUrl = `${ateamApiBaseUrl}api/${searchType[entityType]}/search?limit=100&page=0`;
+        let postData = {
+          "searchFilters": {
+            "nameFilter": {
+              "modEntityId": {
+                "queryString": entityQueryString,
+                "tokenOperator": "OR",
+                "useKeywordFields": true,
+                "queryType": "matchQuery"
+              },
+              "curie": {
+                "queryString": entityQueryString,
+                "tokenOperator": "OR",
+                "useKeywordFields": true,
+                "queryType": "matchQuery"
+              }
+            }
           }
         };
-      });
-      postData["searchFilters"] = searchFilters;
-      postData["searchFilterOperator"] = "OR";
-    }
-    if (['strain', 'genotype', 'fish'].includes(entityType)) {
-      postData["searchFilters"]["subtypeFilters"] = {
-        "subtype.name": {
-          "queryString": entityType,
-          "tokenOperator": "OR"
+        if (['species', 'strain', 'genotype', 'fish', 'AGMs'].includes(entityType)) {
+          postData["searchFilters"]["nameFilter"]["name"] = {
+            "queryString": entityQueryString,
+            "tokenOperator": "OR"
+          };
+        } else {
+          let searchFilters = {};
+          let filterKey = "curie";
+          if (entityType === "construct") {
+            filterKey = entityType + "FullName.displayText";
+          } else if (entityType === "gene") {
+            filterKey = entityType + "SystematicName.displayText";
+          }
+          notFoundEntityList.forEach((entity, index) => {
+            let filterKey2 = entityType + "Symbol.displayText";
+            searchFilters[`nameFilter${index + 1}`] = {
+              "modEntityId": {
+                "queryString": entity,
+                "tokenOperator": "OR",
+                "useKeywordFields": true,
+                "queryType": "matchQuery"
+              },
+              [filterKey]: {
+                "queryString": entity,
+                "tokenOperator": "OR",
+                "useKeywordFields": true,
+                "queryType": "matchQuery"
+              },
+              [filterKey2]: {
+                "queryString": entity,
+                "tokenOperator": "OR",
+                "useKeywordFields": true,
+                "queryType": "matchQuery"
+              }
+            };
+          });
+          postData["searchFilters"] = searchFilters;
+          postData["searchFilterOperator"] = "OR";
         }
-      };
-    }
-    if (!['species', 'construct'].includes(entityType)) {
-      postData["searchFilters"]["taxonFilters"] = {
-        "taxon.curie": {
-          "queryString": taxon,
-          "tokenOperator": "AND",
-          "useKeywordFields": true,
-          "queryType": "matchQuery"
+        if (['strain', 'genotype', 'fish'].includes(entityType)) {
+          postData["searchFilters"]["subtypeFilters"] = {
+            "subtype.name": {
+              "queryString": entityType,
+              "tokenOperator": "OR"
+            }
+          };
+        }
+        if (!['species', 'construct'].includes(entityType)) {
+          postData["searchFilters"]["taxonFilters"] = {
+            "taxon.curie": {
+              "queryString": taxon,
+              "tokenOperator": "AND",
+              "useKeywordFields": true,
+              "queryType": "matchQuery"
+            }
+          };
+        }
+  
+	console.log("HELLO: postData=", JSON.stringify(postData));
+	  
+        // call the A-Team API
+        const results = await callATeamApi(ateamApiUrl, postData, accessToken);
+        const { searchMap, obsoleteMap } = processApiResults(results, taxon, entityType);
+
+        let newlyFoundEntities = [];
+        let stillNotFoundEntities = [];
+
+        for (const entityTypeSymbol of notFoundEntityList) {
+          const lowerCaseSymbol = entityTypeSymbol.toLowerCase();
+          if (searchMap[lowerCaseSymbol]) {
+            entityResultList.push({
+              'entityTypeSymbol': entityTypeSymbol,
+              'curie': searchMap[lowerCaseSymbol]
+            });
+            foundEntitiesSet.add(lowerCaseSymbol);
+            newlyFoundEntities.push(entityTypeSymbol);
+          } else if (obsoleteMap[lowerCaseSymbol]) {
+            entityResultList.push({
+              'entityTypeSymbol': entityTypeSymbol,
+              'curie': 'obsolete entity'
+            });
+            foundEntitiesSet.add(lowerCaseSymbol);
+            newlyFoundEntities.push(entityTypeSymbol);
+          } else {
+            stillNotFoundEntities.push(entityTypeSymbol);
+          }
+        }
+
+        // update notFoundEntityList with entities still not found
+        if (stillNotFoundEntities.length === notFoundEntityList.length) {
+          // no new entities found any more
+          break;
+        } else {
+          notFoundEntityList = stillNotFoundEntities;
+        }
+
+        retries += 1;
+      }
+
+      // after retries, mark remaining entities as 'no Alliance curie'
+      for (const entityTypeSymbol of notFoundEntityList) {
+        entityResultList.push({
+          'entityTypeSymbol': entityTypeSymbol,
+          'curie': 'no Alliance curie'
+        });
+      }
+
+      // check if any entities were found
+      const foundEntity = entityResultList.some(result => result.curie !== 'no Alliance curie');
+
+      if (!foundEntity && entityIdValidation === 'sgd') {
+        return sgd_entity_validation(dispatch, entityType, entityInputList, callback);
+      } else {
+        dispatch(setEntityResultList(entityResultList));
+        if (typeof callback === 'function') {
+          callback(entityResultList);
         }
       }
+
+    } catch (err) {
+	
+      console.error("Error in entity lookup API:", err);
+
+      // handle error and fallback to sgd_entity_validation if entityIdValidation is 'sgd'
+      if (entityIdValidation === 'sgd') {
+        return sgd_entity_validation(dispatch, entityType, entityInputList, callback);
+      }
+
+      dispatch({
+        type: 'SET_ENTITY_MODAL_TEXT',
+        payload: 'Entity lookup API failure: ' + err
+      });
+      if (typeof callback === 'function') {
+         callback([]);
+      }
     }
-  
-    // console.log("postData =" + JSON.stringify(postData, null, 2));
-      
-    axios.post(ateamApiUrl, postData,
-        {
-          headers: {
-            'content-type': 'application/json',
-            'authorization': 'Bearer ' + accessToken
-          }
-        })
-        .then(res => {
-          const searchMap = {};
-	  const obsoleteMap = {};
-          if (res.data.results) {
-            for (const entityResult of res.data.results) {
-	      if (['gene', 'allele'].includes(entityType) && entityResult.taxon.curie !== taxon) {
-                  continue
-              }
-	      let primaryId = entityResult.curie ? entityResult.curie : entityResult.modEntityId;
-	      let name = entityResult.name ? entityResult.name.toLowerCase() : entityResult[entityType + 'Symbol'].displayText.toLowerCase();
-	      let systematicName = entityType === "gene" ? entityResult['geneSystematicName']?.displayText?.toLowerCase() ?? "" : "";
-	      let otherName = entityType === "construct" ? entityResult['constructFullName']?.displayText?.toLowerCase() ?? "" : "";
-              if (primaryId && name) {
-                if (entityResult.obsolete === true) {
-                  obsoleteMap[primaryId.toLowerCase()] = primaryId;
-                  obsoleteMap[name] = primaryId;
-		  if (systematicName) {
-	            obsoleteMap[systematicName] = primaryId;
-		  }
-		  if (otherName) {
-		    obsoleteMap[otherName] = primaryId;
-		  }
-                } else {
-                  searchMap[primaryId.toLowerCase()] = primaryId;
-                  searchMap[name] = primaryId;
-		  if (systematicName) {
-                    searchMap[systematicName] = primaryId;
-                  }  
-		  if (otherName) {
-		    searchMap[otherName] = primaryId;
-		  }
-                }
-              }
-            }
-          }
-          let entityResultList = [];
-          for (const entityTypeSymbol of entityInputList) {
-            if (entityTypeSymbol.toLowerCase() in searchMap) {
-                entityResultList.push({
-                  'entityTypeSymbol': entityTypeSymbol,
-                  'curie': searchMap[entityTypeSymbol.toLowerCase()]
-              });
-            } else if (entityTypeSymbol.toLowerCase() in obsoleteMap) {
-                entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'obsolete entity'});
-            } else {
-                entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no Alliance curie'});
-            }
-          }
-          dispatch(setEntityResultList(entityResultList));
-        })
-        .catch(err =>
-            dispatch({
-              type: 'SET_ENTITY_MODAL_TEXT',
-              payload: 'Entity lookup API failure' + err
-            })
-        );
-  }
-}
+  };
+};
+
+
+/*
+const setEntityResultList = (entityResultList) => ({
+  type: 'SET_ENTITY_RESULT_LIST',
+  payload: { entityResultList: entityResultList }
+});
+*/
 
 export const ateamGetTopicDescendants = (accessToken) => {
   return dispatch => {
@@ -863,6 +922,13 @@ export const getDescendantATPIds = async (accessToken, atpID) => {
 }
 
 export const fetchDisplayTagData = async (accessToken) => {
+  const fallbackDisplayTagData = [
+    { curie: "ATP:0000147", name: "primary display" },
+    { curie: "ATP:0000148", name: "OMICs display" },
+    { curie: "ATP:0000132", name: "additional display" },
+    { curie: "ATP:0000130", name: "review display" }
+  ];
+
   try {
     const response = await axios.get(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/ATP:0000136/descendants`, {
       headers: {
@@ -871,16 +937,14 @@ export const fetchDisplayTagData = async (accessToken) => {
       },
       mode: 'cors'
     });
-    // return response.data.entities;
-    // const displayTagData = response.data.entities.map(x => ({ curie: x.curie, name: x.name }));
-    // return displayTagData;
+
     const displayTagData = response.data.entities
       .filter(x => x.name !== 'other primary display')
       .map(x => ({ curie: x.curie, name: x.name }));
     return displayTagData;
   } catch (error) {
     console.error('Error occurred:', error);
-    throw error;
+    return fallbackDisplayTagData;  // return fallback data if an error occurs
   }
 }
 
@@ -1068,12 +1132,6 @@ export const resetBiblioIsLoading = () => {
 //   };
 // };
 
-export const setWorkflowModalText = (payload) => {
-  return {
-    type: 'SET_WORKFLOW_MODAL_TEXT',
-    payload: payload
-  };
-};
 
 export const setEntityModalText = (payload) => {
   return {
