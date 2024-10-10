@@ -515,6 +515,19 @@ em {
   right: 20px;
 }
 
+.redirect-TET-button{
+  position : absolute;
+  width: 65px;
+  height: 62px;
+  top : 10px;
+  right: 20px;
+  margin-right: 70px ;
+}
+
+
+#TET_icon_id {width: 100%; }
+#TET_text_id{font-size: 10px;}
+
 .wft-bold-header {
   font-weight: bold;
 }

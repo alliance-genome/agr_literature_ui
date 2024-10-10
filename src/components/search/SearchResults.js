@@ -66,13 +66,10 @@ const TETRedirect = ({ curie }) => {
         history.push(`/Biblio/?action=entity&referenceCurie=${curie}`); // Use backticks for template literals
     };
     return (
-         isSignedIn ? <Button
-                          className="redirect-TET-button"
-                          onClick={goToTET}
-                      >
-                          <FontAwesomeIcon icon={faPenSquare}  size='3x'/>
-                          TET editor
-                      </Button> : null
+         isSignedIn ?  <Button  className="redirect-TET-button"  onClick={goToTET}  >
+                          <FontAwesomeIcon icon={faPenSquare} id="TET_icon_id" size='2x'/>
+                          <p id="TET_text_id">TET</p>
+                      </Button>  : null
     );
 };
 
