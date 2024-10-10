@@ -12,7 +12,7 @@ import {Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFilePdf} from "@fortawesome/free-solid-svg-icons";
+import {faFilePdf, faPenSquare} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { useHistory } from "react-router-dom";
 
@@ -66,10 +66,16 @@ const TETRedirect = ({ curie }) => {
         history.push(`/Biblio/?action=entity&referenceCurie=${curie}`); // Use backticks for template literals
     };
     return (
-        isSignedIn ? <Button className = "redirect-to-tet-button" onClick={goToTET}>TET editor</Button> : null
+         isSignedIn ? <Button
+                          className="redirect-TET-button"
+                          onClick={goToTET}
+                      >
+                          <FontAwesomeIcon icon={faPenSquare}  size='3x'/>
+                          TET editor
+                      </Button> : null
     );
 };
-    
+
   function toggleAbstract() {
     setIsExpanded(!isExpanded);
   }
