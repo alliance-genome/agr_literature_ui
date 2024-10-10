@@ -12,9 +12,9 @@ import {Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFilePdf} from "@fortawesome/free-solid-svg-icons";
+import {faFilePdf, faPenSquare} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
-
+import { useHistory } from "react-router-dom";
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -58,7 +58,21 @@ const SearchResultItem = ({ reference }) => {
           curiePDFIDsMap[curie] ? <Button className = "file-download-button" onClick={() => downloadPDFfile(curiePDFIDsMap[curie], accessToken)}><FontAwesomeIcon icon={faFilePdf} size= '3x'/></Button> : null
       )
   }
-    
+
+const TETRedirect = ({ curie }) => {
+    const history = useHistory(); // Correct usage of useHistory
+    const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+    const goToTET = () => {
+        history.push(`/Biblio/?action=entity&referenceCurie=${curie}`); // Use backticks for template literals
+    };
+    return (
+         isSignedIn ?  <Button  className="redirect-TET-button"  onClick={goToTET}  >
+                          <FontAwesomeIcon icon={faPenSquare} id="TET_icon_id" size='2x'/>
+                          <p id="TET_text_id">TET</p>
+                      </Button>  : null
+    );
+};
+
   function toggleAbstract() {
     setIsExpanded(!isExpanded);
   }
@@ -137,7 +151,9 @@ const SearchResultItem = ({ reference }) => {
                       ))
                   ) : null}
               </ul>
+              <TETRedirect curie={reference.curie}/>
             <FileDownloadIcon curie = {reference.curie}/>
+
           </div></Col></Row>
           <div className="searchRow-other">Authors : <span dangerouslySetInnerHTML={{__html: reference.authors ? reference.authors.map((author, i) => ((i ? ' ' : '') + author.name)) : ''}} /></div>
         <div className="searchRow-other">Publication Date: {reference.date_published}</div>
