@@ -964,6 +964,8 @@ export default function(state = initialState, action) {
         curieToNameTaxon: {},
         allSpecies: [],
         allEntities: [],
+        filteredTags: null,
+        editTag: null,
         getReferenceCurieFlag: true
       }
     case 'SET_GET_REFERENCE_CURIE_FLAG':
