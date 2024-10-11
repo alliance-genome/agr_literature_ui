@@ -1,7 +1,7 @@
 import { Spinner } from 'react-bootstrap';
 import {useSelector, useDispatch} from "react-redux";
 import {useEffect, useState, useMemo, useCallback, useRef} from "react";
-import { setCurieToNameTaxon,setAllSpecies, setAllEntities, setAllTopics, setAllEntityTypes} from "../../../actions/biblioActions";
+import {setCurieToNameTaxon,setAllSpecies, setAllEntities, setAllTopics, setAllEntityTypes} from "../../../actions/biblioActions";
 import axios from "axios";
 import {getCurieToNameTaxon} from "./TaxonUtils";
 import Modal from 'react-bootstrap/Modal';
