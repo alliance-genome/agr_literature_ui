@@ -30,9 +30,7 @@ import axios from "axios";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import {AlertAteamApiDown} from "./ATeamAlert";
 
-
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
-
 
 const Sort = () => {
   const modsField = useSelector(state => state.sort.modsField);
@@ -315,7 +313,31 @@ const Sort = () => {
   };
 
     
+  // Function to handle "Outside" button click
+  const handleOutside = (reference, index) => {
+    // Array to hold API calls
+    const forApiArray = [];
 
+    // Update mod_corpus_association to set 'corpus' to false
+    let updateJson = { 'corpus': false, 'mod_corpus_sort_source': 'manual_creation' };
+    let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
+    let method = 'PATCH';
+    let field = null;
+    let subField = null;
+    let array = [subPath, updateJson, method, index, field, subField];
+    forApiArray.push(array);
+
+    // Dispatch the updates
+    let dispatchCount = forApiArray.length;
+    dispatch(setSortUpdating(dispatchCount));
+    for (const arrayData of forApiArray.values()) {
+      arrayData.unshift(accessToken);
+      dispatch(updateButtonSort(arrayData));
+    }
+
+    // Remove the paper from the page
+    dispatch(removeReferenceFromSortLive(index));
+  };
     
     
   function updateSorting() {
@@ -464,7 +486,7 @@ const Sort = () => {
               <Col lg={5} className="Col-general Col-display" style={{backgroundColor: backgroundColor}}><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
 
               <Col lg={2} className="Col-general Col-display" style={{display: 'block', backgroundColor: backgroundColor}}>
-                  <br/><br/>
+		  <br></br><br></br>
                   <Form.Check
                       inline
                       checked={ (reference['mod_corpus_association_corpus'] === null) ? 'checked' : '' }
@@ -473,7 +495,7 @@ const Sort = () => {
                       id={`inside_corpus_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortCorpusToggler(e))}
                   />
-                  <br/><br/>
+		  <br /> 
                   { (activeMod === 'WB') &&
                     <>
                       <Form.Check
@@ -568,8 +590,28 @@ const Sort = () => {
                   <Button variant="secondary" size="sm" onClick={() => handleInside(reference, index)}>
                       Inside
                   </Button>
+                </Col>
 
-              </Col>
+                {/* Outside Corpus Column */}
+                <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
+                    <br /><br />
+                    <Form.Check
+                      inline
+                      checked={(reference['mod_corpus_association_corpus'] === false) ? 'checked' : ''}
+                      type='radio'
+                      label='outside corpus'
+                      id={`outside_corpus_toggle ${index}`}
+                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+                    />
+		    <br /><br /><br /><br />
+                    {/* New Outside Button */}
+		    <div style={{ marginTop: '10px' }}>
+                      <Button variant="danger" size="sm" onClick={() => handleOutside(reference, index)}>
+                        Outside
+                      </Button>
+	            </div>
+                </Col>
+		  
             </Row>
 
             </div>
