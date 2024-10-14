@@ -367,7 +367,7 @@ const Sort = () => {
           <Row>
             <Col lg={12} className="text-center">
               <SortSubmitUpdateRouter />
-              <Button as="input" type="button" disabled={buttonUpdateDisabled} value="Update Sorting" onClick={() => updateSorting()} />{' '}
+              <Button as="input" style={{ backgroundColor: '#6b9ef3', color: 'white', border: 'none' }} type="button" disabled={buttonUpdateDisabled} value="Update Sorting" onClick={() => updateSorting()} />{' '}
             </Col>
           </Row>
         } 
@@ -520,10 +520,10 @@ const Sort = () => {
                   />
                   { (activeMod === 'WB') && <div><br/><NewTaxonModal/></div> }
 	          <br />
-                  <Button variant="primary" size="sm" onClick={() => handleInsideOrOpen(reference, index, true)}>
+                  <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(reference, index, true)}>
                       Inside & Open
                   </Button>{' '}
-                  <Button variant="secondary" size="sm" onClick={() => handleInsideOrOpen(reference, index, false)}>
+                  <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(reference, index, false)}>
                       Inside
                   </Button>
                 </Col>
@@ -542,7 +542,9 @@ const Sort = () => {
 		    <br /><br /><br /><br />
                     {/* New Outside Button */}
 		    <div style={{ marginTop: '10px' }}>
-                      <Button variant="danger" size="sm" onClick={() => handleOutside(reference, index)}>
+		      {/* <Button variant="danger" size="sm" onClick={() => handleOutside(reference, index)}> */}
+		      {/* <Button className="outside-button" size="sm" onClick={() => handleOutside(reference, index)}> */}
+		      <Button variant="outline-secondary" size="sm" onClick={() => handleOutside(reference, index)}>			    
                         Outside
                       </Button>
 	            </div>
@@ -557,7 +559,7 @@ const Sort = () => {
           <RowDivider />
           <Row><Col>
             <SortSubmitUpdateRouter />
-            <Button as="input" type="button" disabled={buttonUpdateDisabled} value="Update Sorting" onClick={() => updateSorting()} />{' '}
+            <Button as="input" style={{ backgroundColor: '#6b9ef3', color: 'white', border: 'none' }} type="button" disabled={buttonUpdateDisabled} value="Update Sorting" onClick={() => updateSorting()} />{' '}
           </Col></Row>
         </Container>
       }
@@ -598,7 +600,7 @@ const NewTaxonModal = () => {
 
   return (
     <>
-      <Button style={{width: "12em"}} onClick={handleShow}>Create New Taxon</Button>
+      <Button variant="outline-primary" size="sm" onClick={handleShow}>Create New Taxon</Button>
       <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title>New Taxon</Modal.Title>
