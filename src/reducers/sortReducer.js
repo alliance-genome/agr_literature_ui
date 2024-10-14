@@ -136,6 +136,13 @@ export default function(state = initialState, action) {
         referencesToSortLive: sortToggleWorkflowReferencesToSortLive
       }
 
+      
+      case 'REMOVE_REFERENCE_FROM_SORT_LIVE':
+        return {
+          ...state,
+          referencesToSortLive: state.referencesToSortLive.filter((_, idx) => idx !== action.payload)
+        };
+      
     case 'UPDATE_BUTTON_SORT':
       // console.log('reducer UPDATE_BUTTON_SORT ' + action.payload.responseMessage);
       // console.log('action.payload'); console.log(action.payload);
@@ -175,4 +182,4 @@ export default function(state = initialState, action) {
       return state;
   }
 }
-  
+

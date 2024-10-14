@@ -16,6 +16,7 @@ import { setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioA
 
 import { changeFieldSortMods } from '../actions/sortActions';
 import { sortButtonModsQuery } from '../actions/sortActions';
+import { removeReferenceFromSortLive } from '../actions/sortActions';
 
 import { changeSortCorpusToggler } from '../actions/sortActions';
 import { changeSortWorkflowToggler } from '../actions/sortActions';
@@ -71,7 +72,6 @@ const Sort = () => {
     fetchSourceId().catch(console.error);
   }, [tetAccessLevel, accessToken]);
 
-  // const [typeaheadName2CurieMap, setTypeaheadName2CurieMap] = useState({});
   let buttonFindDisabled = 'disabled'
   if (modsField) { buttonFindDisabled = ''; }
 
@@ -148,6 +148,176 @@ const Sort = () => {
     return (<>{rowReferencefileElements}</>);
   }
 
+
+
+
+  // Function to handle "Inside & Open" button click
+  const handleInsideAndOpen = (reference, index) => {
+    // Array to hold API calls
+    const forApiArray = [];
+
+    // Update mod_corpus_association to set 'corpus' to true
+    let updateJson = { 'corpus': true, 'mod_corpus_sort_source': 'manual_creation' };
+    let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
+    let method = 'PATCH';
+    let field = null;
+    let subField = null;
+    let array = [subPath, updateJson, method, index, field, subField];
+    forApiArray.push(array);
+
+    // If activeMod === 'WB', handle setting 'reference_type' via 'mod_reference_type'
+    if (activeMod === "WB") {
+      let reference_type = null;
+      if (reference['workflow'] === 'experimental') {
+        reference_type = 'Experimental';
+      } else if (reference['workflow'] === 'not_experimental') {
+        reference_type = 'Not_experimental';
+      } else if (reference['workflow'] === 'meeting') {
+        reference_type = 'Meeting_abstract';
+      }
+      if (reference_type !== null) {
+        updateJson = { 'reference_type': reference_type, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] };
+        subPath = 'reference/mod_reference_type/';
+        method = 'POST';
+        array = [subPath, updateJson, method, index, field, subField];
+        forApiArray.push(array);
+      }
+
+      // Handle species selection
+      if (speciesSelect && speciesSelect[index]) {
+        for (const item of speciesSelect[index].values()) {
+          const taxArray = item.split(" ");
+          updateJson = {
+            'reference_curie': reference['curie'],
+            'entity': taxArray.pop(),     // taxid last element
+            'topic': "ATP:0000123",       // species
+            'entity_type': "ATP:0000123", // species
+            'entity_id_validation': "alliance",
+            'topic_entity_tag_source_id': topicEntitySourceId
+          };
+          subPath = 'topic_entity_tag/';
+          method = 'POST';
+          array = [subPath, updateJson, method, index, field, subField];
+          forApiArray.push(array);
+        }
+      }
+    }
+
+    // Dispatch the updates
+    let dispatchCount = forApiArray.length;
+    dispatch(setSortUpdating(dispatchCount));
+    for (const arrayData of forApiArray.values()) {
+      arrayData.unshift(accessToken);
+      dispatch(updateButtonSort(arrayData));
+    }
+
+    // Remove the paper from the page
+    dispatch(removeReferenceFromSortLive(index));
+
+    // Update speciesSelect state
+    setSpeciesSelect(prevSpeciesSelect => {
+      const newSpeciesSelect = [...prevSpeciesSelect];
+      newSpeciesSelect.splice(index, 1);
+      return newSpeciesSelect;
+    });
+
+    // Update speciesSelectLoading state
+    setSpeciesSelectLoading(prevSpeciesSelectLoading => {
+      const newSpeciesSelectLoading = [...prevSpeciesSelectLoading];
+      newSpeciesSelectLoading.splice(index, 1);
+      return newSpeciesSelectLoading;
+    });
+
+    // Open TET editor in new tab/window
+    const tetEditorUrl = `/TET?action=display&referenceCurie=${reference['curie']}`;
+    window.open(tetEditorUrl, '_blank');
+  };
+
+
+
+
+  // Function to handle "Inside" button click
+  const handleInside = (reference, index) => {
+    // Array to hold API calls
+    const forApiArray = [];
+
+    // Update mod_corpus_association to set 'corpus' to true
+    let updateJson = { 'corpus': true, 'mod_corpus_sort_source': 'manual_creation' };
+    let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
+    let method = 'PATCH';
+    let field = null;
+    let subField = null;
+    let array = [subPath, updateJson, method, index, field, subField];
+    forApiArray.push(array);
+
+    // If activeMod === 'WB', handle setting 'reference_type' via 'mod_reference_type'
+    if (activeMod === "WB") {
+      let reference_type = null;
+      if (reference['workflow'] === 'experimental') {
+        reference_type = 'Experimental';
+      } else if (reference['workflow'] === 'not_experimental') {
+        reference_type = 'Not_experimental';
+      } else if (reference['workflow'] === 'meeting') {
+        reference_type = 'Meeting_abstract';
+      }
+      if (reference_type !== null) {
+        updateJson = { 'reference_type': reference_type, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] };
+        subPath = 'reference/mod_reference_type/';
+        method = 'POST';
+        array = [subPath, updateJson, method, index, field, subField];
+        forApiArray.push(array);
+      }
+
+      // Handle species selection
+      if (speciesSelect && speciesSelect[index]) {
+        for (const item of speciesSelect[index].values()) {
+          const taxArray = item.split(" ");
+          updateJson = {
+            'reference_curie': reference['curie'],
+            'entity': taxArray.pop(),
+            'topic': "ATP:0000123",
+            'entity_type': "ATP:0000123",
+            'entity_id_validation': "alliance",
+            'topic_entity_tag_source_id': topicEntitySourceId
+          };
+          subPath = 'topic_entity_tag/';
+          method = 'POST';
+          array = [subPath, updateJson, method, index, field, subField];
+          forApiArray.push(array);
+        }
+      }
+    }
+
+    // Dispatch the updates
+    let dispatchCount = forApiArray.length;
+    dispatch(setSortUpdating(dispatchCount));
+    for (const arrayData of forApiArray.values()) {
+      arrayData.unshift(accessToken);
+      dispatch(updateButtonSort(arrayData));
+    }
+
+    // Remove the paper from the page
+    dispatch(removeReferenceFromSortLive(index));
+
+    // Update speciesSelect state
+    setSpeciesSelect(prevSpeciesSelect => {
+      const newSpeciesSelect = [...prevSpeciesSelect];
+      newSpeciesSelect.splice(index, 1);
+      return newSpeciesSelect;
+    });
+
+    // Update speciesSelectLoading state
+    setSpeciesSelectLoading(prevSpeciesSelectLoading => {
+      const newSpeciesSelectLoading = [...prevSpeciesSelectLoading];
+      newSpeciesSelectLoading.splice(index, 1);
+      return newSpeciesSelectLoading;
+    });
+  };
+
+    
+
+    
+    
   function updateSorting() {
     const forApiArray = []
     for (const[index, reference] of referencesToSortLive.entries()) {
@@ -269,35 +439,14 @@ const Sort = () => {
             : null
       }
       { referencesToSortLive && referencesToSortLive.length > 0 &&
-        <Container fluid>	    
+        <Container fluid>	   
           <RowDivider />
-          <RowDivider />
-          <Row>
-            <Col lg={8}></Col>
-            <Col lg={1}>
-              <Button variant="outline-primary" as="input" type="button" value="Review" onClick={() => dispatch(sortButtonSetRadiosAll('needs_review'))} />{' '}
-            </Col>
-            <Col lg={2}>
-              <Button variant="outline-primary" as="input" type="button" value="Inside" onClick={() => dispatch(sortButtonSetRadiosAll('inside_corpus'))} />{' '}
-            </Col>
-            <Col lg={1}>
-              <Button variant="outline-primary" as="input" type="button" value="Outside" onClick={() => dispatch(sortButtonSetRadiosAll('outside_corpus'))} />{' '}
-            </Col>
-          </Row>
-          <RowDivider />
-          {/* <Row>
-            <Col lg={6} >Reference</Col>
-            <Col lg={2} >Review </Col>
-            <Col lg={2} >Inside </Col>
-            <Col lg={2} >Outside </Col>
-          </Row>
-          <RowDivider /> */}
-          {referencesToSortLive.map((reference, index) => {
-            // console.log(reference);	// check previous workflow here
+	  {/* Display references with individual radio buttons */}  
+	  {referencesToSortLive.map((reference, index) => {
             const backgroundColor = (reference['prepublication_pipeline'] === true) ? '#f8d7da' : '';
             return (
             <div key={`reference div ${index}`} >
-            <Row key={`reference ${index}`} >
+              <Row key={`reference ${index}`} >	    
               <Col lg={3} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: backgroundColor}} >
                  <div style={{alignSelf: 'flex-start'}} ><b>Title: </b>
                    <span dangerouslySetInnerHTML={{__html: reference['title']}} /></div>
@@ -314,27 +463,17 @@ const Sort = () => {
               </Col>
               <Col lg={5} className="Col-general Col-display" style={{backgroundColor: backgroundColor}}><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
 
-              <Col lg={1} className="Col-general Col-display" style={{display: 'block', justifyContent: 'center', backgroundColor: backgroundColor}}>
+              <Col lg={2} className="Col-general Col-display" style={{display: 'block', backgroundColor: backgroundColor}}>
                   <br/><br/>
                   <Form.Check
                       inline
                       checked={ (reference['mod_corpus_association_corpus'] === null) ? 'checked' : '' }
                       type='radio'
-                      label='needs review'
-                      id={`needs_review_toggle ${index}`}
-                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                  />
-              </Col>
-              <Col lg={2} className="Col-general Col-display" style={{display: 'block', backgroundColor: backgroundColor}}>
-                  <br/><br/>
-                  <Form.Check
-                      inline
-                      checked={ (reference['mod_corpus_association_corpus'] === true) ? 'checked' : '' }
-                      type='radio'
                       label='inside corpus'
                       id={`inside_corpus_toggle ${index}`}
                       onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                  /><br/><br/>
+                  />
+                  <br/><br/>
                   { (activeMod === 'WB') &&
                     <>
                       <Form.Check
@@ -422,17 +561,14 @@ const Sort = () => {
                       selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
                   />
                   { (activeMod === 'WB') && <div><br/><NewTaxonModal/></div> }
-              </Col>
-              <Col lg={1} className="Col-general Col-display" style={{display: 'block', backgroundColor: backgroundColor}}>
-                  <br/><br/>
-                  <Form.Check
-                      inline
-                      checked={ (reference['mod_corpus_association_corpus'] === false) ? 'checked' : '' }
-                      type='radio'
-                      label='outside corpus'
-                      id={`outside_corpus_toggle ${index}`}
-                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                  />
+	          <br />
+                  <Button variant="primary" size="sm" onClick={() => handleInsideAndOpen(reference, index)}>
+                      Inside & Open
+                  </Button>{' '}
+                  <Button variant="secondary" size="sm" onClick={() => handleInside(reference, index)}>
+                      Inside
+                  </Button>
+
               </Col>
             </Row>
 
