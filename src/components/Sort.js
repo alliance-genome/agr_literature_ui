@@ -150,8 +150,8 @@ const Sort = () => {
     return (<>{rowReferencefileElements}</>);
   }
 
-  // function to handle "Inside & Open" button click
-  const handleInsideAndOpen = (reference, index) => {
+  // function to handle "Inside & Open" and "Inside" buttons click 
+  const handleInsideOrOpen = (reference, index, shouldOpenEditor = false) => {
 
     const forApiArray = [];
 
@@ -188,8 +188,8 @@ const Sort = () => {
           const taxArray = item.split(" ");
           updateJson = {
             'reference_curie': reference['curie'],
-            'entity': taxArray.pop(),     // taxid last element
-            'topic': "ATP:0000123",       // species
+            'entity': taxArray.pop(), // taxid last element
+            'topic': "ATP:0000123",   // species
             'entity_type': "ATP:0000123", // species
             'entity_id_validation': "alliance",
             'topic_entity_tag_source_id': topicEntitySourceId
@@ -216,107 +216,32 @@ const Sort = () => {
     // update speciesSelect state
     setSpeciesSelect(prevSpeciesSelect => {
       const newSpeciesSelect = [...prevSpeciesSelect];
-      newSpeciesSelect.splice(index, 1);
+      // remove all species associated with the reference at the given index
+      newSpeciesSelect[index] = []; // clear all species for the reference
       return newSpeciesSelect;
     });
 
     // update speciesSelectLoading state
     setSpeciesSelectLoading(prevSpeciesSelectLoading => {
       const newSpeciesSelectLoading = [...prevSpeciesSelectLoading];
-      newSpeciesSelectLoading.splice(index, 1);
+      // clear the loading state for the reference at the given index	
+      newSpeciesSelectLoading[index] = false; // set to false or remove the entry
       return newSpeciesSelectLoading;
     });
 
-    // open TET editor in new tab/window
-    const tetEditorUrl = `/Biblio/?action=entity&referenceCurie=${reference['curie']}`;
-    window.open(tetEditorUrl, '_blank');
-  };
-
-  // function to handle "Inside" button click
-  const handleInside = (reference, index) => {
-    
-    const forApiArray = [];
-
-    // Update mod_corpus_association to set 'corpus' to true
-    let updateJson = { 'corpus': true, 'mod_corpus_sort_source': 'manual_creation' };
-    let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
-    let method = 'PATCH';
-    let field = null;
-    let subField = null;
-    let array = [subPath, updateJson, method, index, field, subField];
-    forApiArray.push(array);
-
-    // If activeMod === 'WB', handle setting 'reference_type' via 'mod_reference_type'
-    if (activeMod === "WB") {
-      let reference_type = null;
-      if (reference['workflow'] === 'experimental') {
-        reference_type = 'Experimental';
-      } else if (reference['workflow'] === 'not_experimental') {
-        reference_type = 'Not_experimental';
-      } else if (reference['workflow'] === 'meeting') {
-        reference_type = 'Meeting_abstract';
-      }
-      if (reference_type !== null) {
-        updateJson = { 'reference_type': reference_type, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] };
-        subPath = 'reference/mod_reference_type/';
-        method = 'POST';
-        array = [subPath, updateJson, method, index, field, subField];
-        forApiArray.push(array);
-      }
-
-      // Handle species selection
-      if (speciesSelect && speciesSelect[index]) {
-        for (const item of speciesSelect[index].values()) {
-          const taxArray = item.split(" ");
-          updateJson = {
-            'reference_curie': reference['curie'],
-            'entity': taxArray.pop(),
-            'topic': "ATP:0000123",
-            'entity_type': "ATP:0000123",
-            'entity_id_validation': "alliance",
-            'topic_entity_tag_source_id': topicEntitySourceId
-          };
-          subPath = 'topic_entity_tag/';
-          method = 'POST';
-          array = [subPath, updateJson, method, index, field, subField];
-          forApiArray.push(array);
-        }
-      }
+    // optionally open TET editor in a new tab/window if shouldOpenEditor is true
+    if (shouldOpenEditor) {
+      const tetEditorUrl = `/Biblio/?action=entity&referenceCurie=${reference['curie']}`;
+      window.open(tetEditorUrl, '_blank');
     }
-
-    // Dispatch the updates
-    let dispatchCount = forApiArray.length;
-    dispatch(setSortUpdating(dispatchCount));
-    for (const arrayData of forApiArray.values()) {
-      arrayData.unshift(accessToken);
-      dispatch(updateButtonSort(arrayData));
-    }
-
-    // Remove the paper from the page
-    dispatch(removeReferenceFromSortLive(index));
-
-    // Update speciesSelect state
-    setSpeciesSelect(prevSpeciesSelect => {
-      const newSpeciesSelect = [...prevSpeciesSelect];
-      newSpeciesSelect.splice(index, 1);
-      return newSpeciesSelect;
-    });
-
-    // Update speciesSelectLoading state
-    setSpeciesSelectLoading(prevSpeciesSelectLoading => {
-      const newSpeciesSelectLoading = [...prevSpeciesSelectLoading];
-      newSpeciesSelectLoading.splice(index, 1);
-      return newSpeciesSelectLoading;
-    });
   };
-
-    
-  // Function to handle "Outside" button click
+  
+  // function to handle "Outside" button click
   const handleOutside = (reference, index) => {
-    // Array to hold API calls
+
     const forApiArray = [];
 
-    // Update mod_corpus_association to set 'corpus' to false
+    // update mod_corpus_association to set 'corpus' to false
     let updateJson = { 'corpus': false, 'mod_corpus_sort_source': 'manual_creation' };
     let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
     let method = 'PATCH';
@@ -325,7 +250,7 @@ const Sort = () => {
     let array = [subPath, updateJson, method, index, field, subField];
     forApiArray.push(array);
 
-    // Dispatch the updates
+    // dispatch the updates
     let dispatchCount = forApiArray.length;
     dispatch(setSortUpdating(dispatchCount));
     for (const arrayData of forApiArray.values()) {
@@ -333,7 +258,7 @@ const Sort = () => {
       dispatch(updateButtonSort(arrayData));
     }
 
-    // Remove the paper from the page
+    // remove the paper from the page
     dispatch(removeReferenceFromSortLive(index));
   };
     
@@ -595,10 +520,10 @@ const Sort = () => {
                   />
                   { (activeMod === 'WB') && <div><br/><NewTaxonModal/></div> }
 	          <br />
-                  <Button variant="primary" size="sm" onClick={() => handleInsideAndOpen(reference, index)}>
+                  <Button variant="primary" size="sm" onClick={() => handleInsideOrOpen(reference, index, true)}>
                       Inside & Open
                   </Button>{' '}
-                  <Button variant="secondary" size="sm" onClick={() => handleInside(reference, index)}>
+                  <Button variant="secondary" size="sm" onClick={() => handleInsideOrOpen(reference, index, false)}>
                       Inside
                   </Button>
                 </Col>
