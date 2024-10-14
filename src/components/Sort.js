@@ -23,7 +23,6 @@ import { changeSortWorkflowToggler } from '../actions/sortActions';
 import { updateButtonSort } from '../actions/sortActions';
 import { closeSortUpdateAlert } from '../actions/sortActions';
 import { setSortUpdating } from '../actions/sortActions';
-import { sortButtonSetRadiosAll } from '../actions/sortActions';
 import {Spinner} from "react-bootstrap";
 import React, {useEffect, useRef, useState} from "react";
 import axios from "axios";
@@ -35,7 +34,6 @@ const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 const Sort = () => {
   const modsField = useSelector(state => state.sort.modsField);
   const referencesToSortLive = useSelector(state => state.sort.referencesToSortLive);
-  const referencesToSortDb = useSelector(state => state.sort.referencesToSortDb);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const sortType = useSelector(state => state.sort.sortType);
   const sortUpdating = useSelector(state => state.sort.sortUpdating);
@@ -55,9 +53,11 @@ const Sort = () => {
   let accessLevel = oktaMod;
   let activeMod = oktaMod;
   if (testerMod !== 'No') {
-    activeMod = testerMod;
-    accessLevel = testerMod; }
-  else if (oktaDeveloper) { accessLevel = 'developer'; }
+      activeMod = testerMod;
+      accessLevel = testerMod;
+  } else if (oktaDeveloper) {
+      accessLevel = 'developer';
+  }
 
   const tetAccessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
     
@@ -71,10 +71,14 @@ const Sort = () => {
   }, [tetAccessLevel, accessToken]);
 
   let buttonFindDisabled = 'disabled'
-  if (modsField) { buttonFindDisabled = ''; }
+  if (modsField) {
+      buttonFindDisabled = '';
+  }
 
   let buttonUpdateDisabled = ''
-  if (sortUpdating > 0) { buttonUpdateDisabled = 'disabled'; }
+  if (sortUpdating > 0) {
+      buttonUpdateDisabled = 'disabled';
+  }
 
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 
@@ -89,13 +93,13 @@ const Sort = () => {
     const rowReferencefileElements = [];
 
     for (const[index, reference] of referencesToSortLive.entries()) {
-     if (referenceCurie  !== reference['curie']) {continue; }
-     const copyrightLicenseOpenAccess =  (reference['copyright_license_open_access'] !==null && reference['copyright_license_open_access'] === 'True') ? true : false;
-     let is_ok = false;
-     let allowed_mods = [];
+       if (referenceCurie  !== reference['curie']) {continue; }
+       const copyrightLicenseOpenAccess =  (reference['copyright_license_open_access'] !==null && reference['copyright_license_open_access'] === 'True') ? true : false;
+       let is_ok = false;
+       let allowed_mods = [];
 
-     if ( 'referencefiles' in reference && reference['referencefiles'].length > 0) {
-         for (const referencefile of reference['referencefiles'].values()) {
+       if ( 'referencefiles' in reference && reference['referencefiles'].length > 0) {
+          for (const referencefile of reference['referencefiles'].values()) {
              let filename=null;
              let fileclass=null;
              let referencefile_id=null;
@@ -140,21 +144,18 @@ const Sort = () => {
                      {referencefileValue}
                  </div>);
              rowReferencefileElements.push( referencefileRow );
-         }
-      }
+          }
+       }
     }
     return (<>{rowReferencefileElements}</>);
   }
 
-
-
-
-  // Function to handle "Inside & Open" button click
+  // function to handle "Inside & Open" button click
   const handleInsideAndOpen = (reference, index) => {
-    // Array to hold API calls
+
     const forApiArray = [];
 
-    // Update mod_corpus_association to set 'corpus' to true
+    // update mod_corpus_association to set 'corpus' to true
     let updateJson = { 'corpus': true, 'mod_corpus_sort_source': 'manual_creation' };
     let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
     let method = 'PATCH';
@@ -163,7 +164,7 @@ const Sort = () => {
     let array = [subPath, updateJson, method, index, field, subField];
     forApiArray.push(array);
 
-    // If activeMod === 'WB', handle setting 'reference_type' via 'mod_reference_type'
+    // if activeMod === 'WB', handle setting 'reference_type' via 'mod_reference_type'
     if (activeMod === "WB") {
       let reference_type = null;
       if (reference['workflow'] === 'experimental') {
@@ -181,7 +182,7 @@ const Sort = () => {
         forApiArray.push(array);
       }
 
-      // Handle species selection
+      // handle species selection
       if (speciesSelect && speciesSelect[index]) {
         for (const item of speciesSelect[index].values()) {
           const taxArray = item.split(" ");
@@ -201,7 +202,7 @@ const Sort = () => {
       }
     }
 
-    // Dispatch the updates
+    // dispatch the updates
     let dispatchCount = forApiArray.length;
     dispatch(setSortUpdating(dispatchCount));
     for (const arrayData of forApiArray.values()) {
@@ -209,34 +210,31 @@ const Sort = () => {
       dispatch(updateButtonSort(arrayData));
     }
 
-    // Remove the paper from the page
+    // remove the paper from the page
     dispatch(removeReferenceFromSortLive(index));
 
-    // Update speciesSelect state
+    // update speciesSelect state
     setSpeciesSelect(prevSpeciesSelect => {
       const newSpeciesSelect = [...prevSpeciesSelect];
       newSpeciesSelect.splice(index, 1);
       return newSpeciesSelect;
     });
 
-    // Update speciesSelectLoading state
+    // update speciesSelectLoading state
     setSpeciesSelectLoading(prevSpeciesSelectLoading => {
       const newSpeciesSelectLoading = [...prevSpeciesSelectLoading];
       newSpeciesSelectLoading.splice(index, 1);
       return newSpeciesSelectLoading;
     });
 
-    // Open TET editor in new tab/window
-    const tetEditorUrl = `/TET?action=display&referenceCurie=${reference['curie']}`;
+    // open TET editor in new tab/window
+    const tetEditorUrl = `/Biblio/?action=entity&referenceCurie=${reference['curie']}`;
     window.open(tetEditorUrl, '_blank');
   };
 
-
-
-
-  // Function to handle "Inside" button click
+  // function to handle "Inside" button click
   const handleInside = (reference, index) => {
-    // Array to hold API calls
+    
     const forApiArray = [];
 
     // Update mod_corpus_association to set 'corpus' to true
@@ -346,7 +344,6 @@ const Sort = () => {
       if (reference['mod_corpus_association_corpus'] !== null) {
         // console.log(reference['mod_corpus_association_id']);
         // console.log(reference['corpus']);
-        // console.log(referencesToSortDb[index]['corpus']);
         let updateJson = { 'corpus': reference['mod_corpus_association_corpus'], 'mod_corpus_sort_source': 'manual_creation' }
         let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
         const field = null;
@@ -469,7 +466,7 @@ const Sort = () => {
             return (
             <div key={`reference div ${index}`} >
               <Row key={`reference ${index}`} >	    
-              <Col lg={3} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: backgroundColor}} >
+              <Col lg={2} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', backgroundColor: backgroundColor}} >
                  <div style={{alignSelf: 'flex-start'}} ><b>Title: </b>
                    <span dangerouslySetInnerHTML={{__html: reference['title']}} /></div>
                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
@@ -481,15 +478,29 @@ const Sort = () => {
                  ))}
                  <div style={{alignSelf: 'flex-start'}} ><b>Journal:</b> {
                    (reference['resource_title']) ? <span dangerouslySetInnerHTML={{__html: reference['resource_title']}} /> : 'N/A' }</div>
-                <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
+                 <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
               </Col>
               <Col lg={5} className="Col-general Col-display" style={{backgroundColor: backgroundColor}}><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
 
-              <Col lg={2} className="Col-general Col-display" style={{display: 'block', backgroundColor: backgroundColor}}>
-		  <br></br><br></br>
+
+	      {/* Needs Review Column */}  	  
+	      <Col lg={1} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
+		  <br /><br />    
                   <Form.Check
                       inline
                       checked={ (reference['mod_corpus_association_corpus'] === null) ? 'checked' : '' }
+                      type='radio'
+                      label='needs review'
+                      id={`needs_review_toggle ${index}`}
+                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+                  />
+              </Col>
+
+	      <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
+		  <br /><br />
+                  <Form.Check
+                      inline
+                      checked={ (reference['mod_corpus_association_corpus'] === true) ? 'checked' : '' }
                       type='radio'
                       label='inside corpus'
                       id={`inside_corpus_toggle ${index}`}
@@ -597,7 +608,7 @@ const Sort = () => {
                     <br /><br />
                     <Form.Check
                       inline
-                      checked={(reference['mod_corpus_association_corpus'] === false) ? 'checked' : ''}
+                      checked={ (reference['mod_corpus_association_corpus'] === false) ? 'checked' : '' }
                       type='radio'
                       label='outside corpus'
                       id={`outside_corpus_toggle ${index}`}
@@ -611,6 +622,8 @@ const Sort = () => {
                       </Button>
 	            </div>
                 </Col>
+
+		  
 		  
             </Row>
 
