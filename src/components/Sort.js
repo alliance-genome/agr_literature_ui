@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-// import { useHistory } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 
 import Form from 'react-bootstrap/Form';
@@ -29,15 +28,6 @@ import React, {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import {AlertAteamApiDown} from "./ATeamAlert";
-
-// DONE
-// Find Papers to Sort will need to query data once there's an API
-// radio buttons need something in the referencesToSort store to update for what type of value to set it to
-// changeSortCorpusToggler should use a button to update the state of that radio
-// Update Sorting will need to update something once there's an API
-// Better styling for the reference display once we know what data we want to show
-// TODO
-// Toggle All buttons need to also access the store for those radio states
 
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
@@ -255,6 +245,19 @@ const Sort = () => {
             <Col lg={4} ></Col>
           </Row>
         }
+
+        {/* Added space between "Find Papers to Sort" button and "Update Sorting" button */}
+        <RowDivider />
+
+        { referencesToSortLive && referencesToSortLive.length > 0 &&
+          <Row>
+            <Col lg={12} className="text-center">
+              <SortSubmitUpdateRouter />
+              <Button as="input" type="button" disabled={buttonUpdateDisabled} value="Update Sorting" onClick={() => updateSorting()} />{' '}
+            </Col>
+          </Row>
+        } 
+	  
       </Container>
       <AlertAteamApiDown />
       {
@@ -266,7 +269,7 @@ const Sort = () => {
             : null
       }
       { referencesToSortLive && referencesToSortLive.length > 0 &&
-        <Container fluid>
+        <Container fluid>	    
           <RowDivider />
           <RowDivider />
           <Row>
@@ -522,6 +525,7 @@ const SortSubmitUpdating = () => {
   );
 }
 
+
 const AlertDismissibleSortUpdate = () => {
   const dispatch = useDispatch();
   const updateAlert = useSelector(state => state.sort.updateAlert);
@@ -535,6 +539,16 @@ const AlertDismissibleSortUpdate = () => {
   else {
     header = 'Update Failure';
     variant = 'danger'; }
+
+  useEffect(() => {
+    if (updateAlert && updateFailure === 0) {
+      const timer = setTimeout(() => {
+        dispatch(closeSortUpdateAlert());
+      }, 2000); // dismiss after 2 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [updateAlert, updateFailure, dispatch]);
+
   if (updateAlert) {
     return (
       <Alert variant={variant} onClose={() => dispatch(closeSortUpdateAlert())} dismissible>
@@ -546,7 +560,6 @@ const AlertDismissibleSortUpdate = () => {
     );
   } else { return null; }
 }
-
 
 export default Sort
 
