@@ -363,6 +363,8 @@ const Facets = () => {
     const datePublished= useSelector(state => state.search.datePublished);
     const dateCreated = useSelector(state => state.search.dateCreated);
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
+    const testerMod = useSelector(state => state.isLogged.testerMod);
+    const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     // const [showWarning, setShowWarning] = useState(false);
@@ -410,15 +412,15 @@ const Facets = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(()=> {
-        if(modPreferencesLoaded === 'false' && oktaMod !== 'No'){
+        if(modPreferencesLoaded === 'false' && accessLevel !== 'No'){
             dispatch(setModPreferencesLoaded(true));
             if(searchFacetsValues["mods_in_corpus_or_needs_review.keyword"]){
-                if(!searchFacetsValues["mods_in_corpus_or_needs_review.keyword"].includes(oktaMod)) {
-                    dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
+                if(!searchFacetsValues["mods_in_corpus_or_needs_review.keyword"].includes(accessLevel)) {
+                    dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", accessLevel));
                 }
             }
             else {
-                dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", oktaMod));
+                dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", accessLevel));
             }
             if(searchFacetsValues["language.keyword"]){
                 if(!searchFacetsValues["language.keyword"].includes('English')) {
@@ -431,7 +433,7 @@ const Facets = () => {
             dispatch(searchReferences());
 
         }
-    }, [oktaMod]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [accessLevel]) // eslint-disable-line react-hooks/exhaustive-deps
 
 
     /*

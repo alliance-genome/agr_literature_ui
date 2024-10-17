@@ -163,6 +163,15 @@ export const sortButtonSetRadiosAll = (payload) => {
   };
 };
 
+// New action creator: removeReferenceFromSortLive
+export const removeReferenceFromSortLive = (index) => {
+  console.log("action removeReferenceFromSortLive");
+  return {
+    type: 'REMOVE_REFERENCE_FROM_SORT_LIVE',
+    payload: index
+  };
+};
+
 // // replaced by biblioActions : setReferenceCurie + setGetReferenceCurieFlag
 // // export const resetQueryState = () => {
 // //   return {

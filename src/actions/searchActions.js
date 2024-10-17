@@ -100,7 +100,7 @@ const getSearchParams = (state) => {
     query_fields: state.search.query_fields,
     sort_by_published_date_order: state.search.sortByPublishedDate,
     partial_match: state.search.partialMatch,
-    mod_abbreviation: state.isLogged.oktaMod
+    mod_abbreviation: state.isLogged.testerMod !== 'No' ? state.isLogged.testerMod : state.isLogged.oktaMod
   }
 
   const data = state.search.searchFacetsValues;
@@ -158,7 +158,7 @@ export const searchReferences = () => {
           const xrefCurieValues = res.data.hits.filter(hit => hit.cross_references !== null).flatMap(hit =>
               hit.cross_references.map(cross_reference => cross_reference.curie)
           );
-          const curies = res.data.hits.map(hit => hit.curie);
+          const curies = res.data.hits.map(hit => hit.curie);	    
           axios.post(restUrl + '/cross_reference/show_all', xrefCurieValues)
               .then(resXref => {
                 let curieToCrossRefMap = resXref.data.reduce((accumulatedHashTable, currentObject) => {
