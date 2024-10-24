@@ -405,7 +405,9 @@ const FileUpload = ({main_or_supp}) => {
   
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [fileToReUpload, setFileToReUpload] = useState(null);
-
+  const [isErrorMessage, setIsErrorMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+    
   const handleConfirmUpload = () => {
     console.log('Hello Confirm upload');	
     setShowConfirmModal(false);
@@ -423,11 +425,6 @@ const FileUpload = ({main_or_supp}) => {
   };
     
   const uploadFile = (file, uploadIfAlreadyConverted = false) => {
-    //  const reader = new FileReader()
-    //  reader.onabort = () => console.log('file reading was aborted')
-    //  reader.onerror = () => console.log('file reading has failed')
-    //  reader.onload = () => {}
-    //  reader.readAsBinaryString(file);
     const formData = new FormData();
     formData.append("file", file);
     let fileName = "";
@@ -459,16 +456,24 @@ const FileUpload = ({main_or_supp}) => {
         dispatch(setFileUploadingCount(0)); // Reset file uploading count on success
       }).catch((error) => {
         console.error('Upload Error:', error);
-        const errorMessage = error.response && error.response.data && error.response.data.detail
+        const errorDetail = error.response && error.response.data && error.response.data.detail
           ? error.response.data.detail
           : 'An error occurred during the file upload';
-        if (error.response && error.response.status === 422 && errorMessage.includes("File already converted to text")) {
+        if (errorDetail.includes("process is complete before uploading any files")) {
+	  setErrorMessage(errorDetail);
+	  setIsErrorMessage(true); 
+	  setShowConfirmModal(true);
+	  setTimeout(() => {
+	    setShowConfirmModal(false);
+	    setErrorMessage("");
+          }, 8000);
+        } else if (error.response && error.response.status === 422 && errorDetail.includes("File already converted to text")) {
           setFileToReUpload(file);
           setShowConfirmModal(true);
         } else {
-          dispatch(fileUploadResult(`<strong>${file.name}</strong><br/>`, `${errorMessage}<br/>`));
-          dispatch(setFileUploadingCount(0)); // Reset file uploading count on error
+          dispatch(fileUploadResult(`<strong>${file.name}</strong><br/>`, `${errorDetail}<br/>`));
         }
+	dispatch(setFileUploadingCount(0));
       });
     }
   };
@@ -508,12 +513,18 @@ const FileUpload = ({main_or_supp}) => {
 
         <Modal show={showConfirmModal} onHide={handleCancelUpload}>
           <Modal.Header closeButton>
-            <Modal.Title>Confirm Re-upload</Modal.Title>
+	     <Modal.Title>{isErrorMessage ? "File Processing In Progress" : "Confirm Re-upload"}</Modal.Title>
           </Modal.Header>
-          <Modal.Body>Do you really want to re-upload the file and re-run entity extraction pipelines?</Modal.Body>
+          <Modal.Body>
+	     {isErrorMessage ? errorMessage : "Do you really want to re-upload the file and re-run entity extraction pipelines?"}
+          </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={handleCancelUpload}>Cancel</Button>
-            <Button variant="primary" onClick={handleConfirmUpload}>Confirm</Button>
+	    {!isErrorMessage && (
+              <>
+                <Button variant="secondary" onClick={handleCancelUpload}>Cancel</Button>
+                <Button variant="primary" onClick={handleConfirmUpload}>Confirm</Button>
+              </>
+            )}
           </Modal.Footer>
         </Modal>
       
