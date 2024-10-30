@@ -17,7 +17,7 @@ const SearchPagination = () => {
       <Pagination>
         <Pagination.First  onClick={() => changePage('First')} />
         <Pagination.Prev   onClick={() => changePage('Prev')} />
-        <Pagination.Item  disabled>{"Page " + (searchResultsPage) + " of " + Math.ceil(searchResultsCount/searchSizeResultsCount)}</Pagination.Item>
+        <Pagination.Item  disabled>{"Page " + (searchResultsPage) + " of " + Math.ceil(searchResultsCount/searchSizeResultsCount).toLocaleString()}</Pagination.Item>
         <Pagination.Next   onClick={() => changePage('Next')} />
         <Pagination.Last   onClick={() => changePage('Last')} />
       </Pagination>

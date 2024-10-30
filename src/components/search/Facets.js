@@ -266,7 +266,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                         </Col>
                                         <Col xs={3} sm={3}>
                                           <Badge variant="secondary">
-                                            {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && bucket.docs_count !== undefined ? bucket.docs_count.doc_count : bucket.doc_count}
+                                            {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && bucket.docs_count !== undefined ? bucket.docs_count.doc_count.toLocaleString() : bucket.doc_count.toLocaleString()}
                                           </Badge>
                                        </Col>
                                     </Row>

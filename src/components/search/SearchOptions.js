@@ -22,7 +22,7 @@ const SearchOptions = () => {
             <Row>
                 <Col sm={2}>
                     <div className="div-grey-border">
-                        {searchResultsCount > 0 ? searchResultsCount + " results": null}
+                        {searchResultsCount > 0 ? searchResultsCount.toLocaleString() + " results": null}
                     </div>
                 </Col>
                 <Col sm={2}>
