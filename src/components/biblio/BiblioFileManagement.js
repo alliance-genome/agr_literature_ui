@@ -577,7 +577,15 @@ const FileEditor = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceFiles = useSelector(state => state.biblio.referenceFiles);
   const [referencefilesLoading, setReferencefilesLoading] = useState(false);
-
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+    
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+  const accessLevel = testerMod !== 'No' ? testerMod : oktaDeveloper ? 'developer' : oktaMod;
+  
   const fetchReferencefiles = async () => {
     setReferencefilesLoading(true);
     const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
@@ -611,106 +619,183 @@ const FileEditor = () => {
     });
   }
 
-  const deleteReferencefile = (referencefileId, accessToken) => {
-    const url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/" + referencefileId;
-    axios.delete(url, {
-      headers: {
-        "Authorization": "Bearer " + accessToken,
-        "Content-Type": "application/json",
-      }
-    }).then((res) => {
-      fetchReferencefiles().finally();
-    }).catch((error) => {
-      console.log(error)
-    });
-  }
+  const handleKeepManualTETtags = () => {
+    setShowErrorModal(false);
+  };
 
+  const handleDeleteManualTETtags = async () => {
+    try {
+      const deleteUrl = `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/delete_manual_tets/${referenceCurie}/${accessLevel}`;
+      await axios.delete(deleteUrl, {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        }
+      });
+      setShowErrorModal(false);
+      fetchReferencefiles();
+    } catch (err) {
+      const errorDetail = err.response?.data?.detail || "An unexpected error occurred.";
+      console.error("Failed to delete TET tags:", err);
+      setErrorMessage(errorDetail);
+      setShowErrorModal(true);
+    }
+  };
+
+  const deleteReferencefile = async (referencefileId) => {
+    try {
+      const url = `${process.env.REACT_APP_RESTAPI}/reference/referencefile/${referencefileId}`;
+      await axios.delete(url, {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      fetchReferencefiles();
+    } catch (error) {
+      let errorDetail = "An unexpected error occurred while deleting the file";
+      if (error.response && error.response.data && error.response.data.detail) {
+        errorDetail = error.response.data.detail;
+      }
+      if (errorDetail.includes("Curated topic and entity tags")) {
+        setErrorMessage(errorDetail);
+        setShowErrorModal(true);
+      } else {
+        console.error("Delete error:", error);
+        setErrorMessage(errorDetail);
+        setShowErrorModal(true);
+      }
+    }
+  };
+    
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
-          (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation).join(", ");
+          (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation
+      ).join(", ");
       let filename = referenceFile.display_name + '.' + referenceFile.file_extension;
       let referencefileValue = (<div>{filename}</div>);
       if (hasAccess) {
-        referencefileValue = (<div>
-          <button className='button-to-link' onClick={() =>
-              dispatch(downloadReferencefile(referenceFile.referencefile_id, filename, accessToken))
-          }>{filename}</button>
-          &nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}</div>);
+        referencefileValue = (
+          <div>
+            <button
+              className='button-to-link'
+              onClick={() => dispatch(downloadReferencefile(referenceFile.referencefile_id, filename, accessToken))}
+            >
+              {filename}
+            </button>
+            &nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm" /> : null}
+          </div>
+        );
       }
       return (
-          <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className={`Col-general ${cssDisplayLeft} `} lg={{span: 2}}>{referenceFile.file_class}</Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{span: 3}}>{referencefileValue}</Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>{source}</Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>
-              <Form.Control as="select" disabled={!hasAccess}
-                            value={referenceFile.pdf_type === null || referenceFile.pdf_type === 'pdf' ? '' : referenceFile.pdf_type}
-                            onChange={(event) => patchReferencefile(referenceFile.referencefile_id, {"pdf_type": event.target.value === "" ? null : event.target.value}, accessToken)}>
-                <option></option>
-                <option>ocr</option>
-                <option>tif</option>
-                <option>aut</option>
-                <option>html</option>
-              </Form.Control>
-            </Col>
-            <Col className={`Col-general ${cssDisplay} `} lg={{span: 2}}>
-              <Form.Control as="select" disabled={!hasAccess}
-                            value={referenceFile.file_publication_status}
-                            onChange={(event) => patchReferencefile(referenceFile.referencefile_id, {"file_publication_status": event.target.value}, accessToken)}>
-                <option>prepub</option>
-                <option>temp</option>
-                <option>final</option>
-                <option>other</option>
-              </Form.Control>
-            </Col>
-            <Col className={`Col-general ${cssDisplayRight} `} lg={{span: 1}}><Button
-                variant="outline-dark" disabled={!hasAccess} onClick={() => deleteReferencefile(referenceFile.referencefile_id,accessToken)}>
-                <FontAwesomeIcon icon={faTrash}/></Button></Col>
-          </Row>);
+        <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className={`Col-general Col-display-left`} lg={{ span: 2 }}>{referenceFile.file_class}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 3 }}>{referencefileValue}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>{source}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>
+            <Form.Control
+              as="select"
+              disabled={!hasAccess}
+              value={referenceFile.pdf_type === null || referenceFile.pdf_type === 'pdf' ? '' : referenceFile.pdf_type}
+              onChange={(event) => patchReferencefile(referenceFile.referencefile_id, { "pdf_type": event.target.value === "" ? null : event.target.value }, accessToken)}
+            >
+              <option></option>
+              <option>ocr</option>
+              <option>tif</option>
+              <option>aut</option>
+              <option>html</option>
+            </Form.Control>
+          </Col>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>
+            <Form.Control
+              as="select"
+              disabled={!hasAccess}
+              value={referenceFile.file_publication_status}
+              onChange={(event) => patchReferencefile(referenceFile.referencefile_id, { "file_publication_status": event.target.value }, accessToken)}
+            >
+              <option>prepub</option>
+              <option>temp</option>
+              <option>final</option>
+              <option>other</option>
+            </Form.Control>
+          </Col>
+          <Col className="Col-general Col-display-right" lg={{ span: 1 }}>
+            <Button variant="outline-dark" disabled={!hasAccess} onClick={() => deleteReferencefile(referenceFile.referencefile_id)}>
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+          </Col>
+        </Row>
+      );
     });
-  }
-  let cssDisplayLeft = 'Col-display Col-display-left';
-  let cssDisplay = 'Col-display';
-  let cssDisplayRight = 'Col-display Col-display-right';
-  if (displayOrEditor === 'editor') {
-    cssDisplay = 'Col-editor-disabled';
-    cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled';
-  }
-  let rowReferencefileElements = [];
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector(state => state.isLogged.testerMod);
-  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  let accessLevel = oktaMod;
-  if (testerMod !== 'No') { accessLevel = testerMod; }
-    else if (oktaDeveloper) { accessLevel = 'developer'; }
-  // FileEditor accessLevel can be developer to see all files and upload as PMC
-  let referenceFilesWithAccess = referenceFiles
-      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer' || referenceFile.referencefile_mods
-          .some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null));
+  };
 
-  let referenceFilesNoAccess = referenceFiles
-      .filter((referenceFile) => referenceJsonLive["copyright_license_open_access"] !== true && accessLevel !== 'developer' && referenceFile.referencefile_mods
-          .every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null));
+  let rowReferencefileElements = [];
+  const referenceFilesWithAccess = referenceFiles.filter((referenceFile) =>
+    referenceJsonLive["copyright_license_open_access"] === true ||
+    accessLevel === 'developer' ||
+    referenceFile.referencefile_mods.some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null)
+  );
+  const referenceFilesNoAccess = referenceFiles.filter((referenceFile) =>
+    referenceJsonLive["copyright_license_open_access"] !== true &&
+    accessLevel !== 'developer' &&
+    referenceFile.referencefile_mods.every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null)
+  );
 
   referenceFilesWithAccess.sort(reffileCompareFn);
   referenceFilesNoAccess.sort(reffileCompareFn);
-  rowReferencefileElements = [...getDisplayRowsFromReferenceFiles(referenceFilesWithAccess, true),
-    ...getDisplayRowsFromReferenceFiles(referenceFilesNoAccess, false)];
-  const referencefileHeaderRow = (
-      <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={6}>
-        <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}><strong>File Class</strong></Col>
-        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 3 }}><strong>File Name</strong></Col>
-        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>Source</strong></Col>
-        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>Special Pdf Type</strong></Col>
-        <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
-        <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 1 }}><strong>Delete</strong></Col>
-      </Row>);
-  rowReferencefileElements.unshift( referencefileHeaderRow );
+  rowReferencefileElements = [
+    <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={6}>
+      <Col className="Col-general Col-display-left" lg={{ span: 2 }}><strong>File Class</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>File Name</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Source</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Special Pdf Type</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
+      <Col className="Col-general Col-display-right" lg={{ span: 1 }}><strong>Delete</strong></Col>
+    </Row>,
+    ...getDisplayRowsFromReferenceFiles(referenceFilesWithAccess, true),
+    ...getDisplayRowsFromReferenceFiles(referenceFilesNoAccess, false)
+  ];
+
   return (
-      <>
-        {referencefilesLoading ? <Spinner animation={"border"}/> : rowReferencefileElements}
-      </>);
-}
+    <>
+      {referencefilesLoading ? <Spinner animation="border" /> : rowReferencefileElements}
+      <Modal show={showErrorModal} onHide={() => setShowErrorModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {errorMessage.includes("Curated topic and entity tags")
+              ? "Curated Topic Entity Tags/Mod Generated Automated Tags Found"
+              : "Error Report"}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {errorMessage.includes("Curated topic and entity tags") ? (
+            <>
+              <p>{errorMessage}</p>
+              <p>Would you like to:</p>
+              <ul>
+                <li>Keep these tags for your MOD</li>
+                <li>Delete these tags</li>
+              </ul>
+            </>
+          ) : (
+            <p>{errorMessage}</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          {errorMessage.includes("Curated topic and entity tags") ? (
+            <>
+              <Button variant="secondary" onClick={handleKeepManualTETtags}>Keep Tags for My MOD</Button>
+              <Button variant="danger" onClick={handleDeleteManualTETtags}>Delete Tags</Button>
+            </>
+          ) : (
+            <Button variant="secondary" onClick={() => setShowErrorModal(false)}>Close</Button>
+          )}
+        </Modal.Footer>
+      </Modal>
+      
+    </>
+  );
+};
 
 export default BiblioFileManagement;
