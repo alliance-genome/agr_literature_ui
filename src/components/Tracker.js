@@ -148,7 +148,7 @@ const Tracker = () => {
                        dispatch(setTrackerFilter(e.target.value));
                        dispatch(searchMissingFiles(accessLevel));
                      }}>
-           <option value="default">Files Needed</option>
+           <option value="default">Files Needed or In Progress</option>
            <option value="ATP:0000134">Files Uploaded</option>
            <option value="ATP:0000135">File Unavailable</option>
           </Form.Control>
