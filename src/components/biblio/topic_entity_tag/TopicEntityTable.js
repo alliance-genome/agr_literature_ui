@@ -33,9 +33,11 @@ const TopicEntityTable = () => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [selectedCurie, setSelectedCurie] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showCurieModal, setShowCurieModal] = useState(false);
   const [fullNote, setFullNote] = useState('');
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [fullSourceDesc, setFullSourceDesc] = useState('');
+  const [showSourceDescModal, setShowSourceDescModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [firstFetch, setFirstFetch] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -149,6 +151,11 @@ const TopicEntityTable = () => {
   }, [topicEntityTags, biblioUpdatingEntityAdd]);
 
 
+  const handleSourceDescClick = (fullSourceDesc) => {
+    setFullSourceDesc(fullSourceDesc);
+    setShowSourceDescModal(true);
+  };
+
   const handleNoteClick = (fullNote) => {
     setFullNote(fullNote);
     setShowNoteModal(true);
@@ -157,7 +164,7 @@ const TopicEntityTable = () => {
   const handleCurieClick = (curie) => {
     if(curie !== "null:null"){
       setSelectedCurie(curie);
-      setShowModal(true);
+      setShowCurieModal(true);
     }
   }
 
@@ -463,7 +470,7 @@ const CheckDropdownItem = React.forwardRef(
     { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic_entity_tag_source.source_evidence_assertion)}},
     { headerName: "Source Method", field: "topic_entity_tag_source.source_method" },
     { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type" },
-    { headerName: "Source Description", field: "topic_entity_tag_source.description" },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description", onCellClicked: (params) => {handleSourceDescClick(params.value)} },
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter },
@@ -550,11 +557,15 @@ const CheckDropdownItem = React.forwardRef(
     <div>
       {/* Curie Popup */}
       {selectedCurie && (
-          <GenericTetTableModal title="CURIE Information" body={selectedCurie} show={showModal} onHide={() => setShowModal(false)} />
+          <GenericTetTableModal title="CURIE Information" body={selectedCurie} show={showCurieModal} onHide={() => setShowCurieModal(false)} />
       )}
       {/* Note Popup */}
       {showNoteModal && (
           <GenericTetTableModal title="Full Note" body={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
+      )}
+      {/* Source Description Popup */}
+      {showSourceDescModal && (
+          <GenericTetTableModal title="Full Source Description" body={fullSourceDesc} show={showSourceDescModal} onHide={() => setShowSourceDescModal(false)} />
       )}
       {isLoadingData && (
         <div className="text-center">
@@ -592,25 +603,25 @@ const CheckDropdownItem = React.forwardRef(
            </Col>
          </Row>
          <Row>
-            <Col>
-              <div className="ag-theme-quartz" style={{height: 500}}>
-        <AgGridReact
-            ref={gridRef}
-            reactiveCustomComponents
-            rowData={topicEntityTags}
-            onGridReady={onGridReady}
-            getRowId={getRowId}
-            columnDefs={colDefs}
-            onColumnMoved={columnMoved}
-            onRowDataUpdated={rowUpdateEvent}
-            pagination={true}
-            paginationPageSize={25}
-            gridOptions={gridOptions}
-            paginationPageSizeSelector={paginationPageSizeSelector}
-            isExternalFilterPresent= {isExternalFilterPresent}
-            doesExternalFilterPass= {doesExternalFilterPass} />
-               </div>
-            </Col>
+           <Col>
+             <div className="ag-theme-quartz" style={{height: 500}}>
+               <AgGridReact
+                  ref={gridRef}
+                  reactiveCustomComponents
+                  rowData={topicEntityTags}
+                  onGridReady={onGridReady}
+                  getRowId={getRowId}
+                  columnDefs={colDefs}
+                  onColumnMoved={columnMoved}
+                  onRowDataUpdated={rowUpdateEvent}
+                  pagination={true}
+                  paginationPageSize={25}
+                  gridOptions={gridOptions}
+                  paginationPageSizeSelector={paginationPageSizeSelector}
+                  isExternalFilterPresent= {isExternalFilterPresent}
+                  doesExternalFilterPass= {doesExternalFilterPass} />
+              </div>
+           </Col>
         </Row>
       </Container>
     </div>);
