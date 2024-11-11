@@ -124,6 +124,16 @@ const TopicEntityTable = () => {
     try {
         const resultTags = await axios.get(url);
         if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
+          resultTags.data.forEach(arrElement => {
+            if ('validation_by_author' in arrElement) {
+              if (arrElement['validation_by_author'] === 'validated_right_self') { arrElement['validation_by_author'] = ''; }
+              else if (arrElement['validation_by_author'] === 'validated_right') { arrElement['validation_by_author'] = 'agree'; }
+              else if (arrElement['validation_by_author'] === 'validated_wrong') { arrElement['validation_by_author'] = 'disagree'; }
+            }
+            if ('validation_by_professional_biocurator' in arrElement) {
+              if (arrElement['validation_by_professional_biocurator'] === 'validated_right_self') { arrElement['validation_by_professional_biocurator'] = ''; }
+            }
+          });
           setTopicEntityTags(resultTags.data);
           const uniqueSpecies = [...new Set( resultTags.data.map(obj => obj.species)) ];
           const uniqueEntityTypes = [...new Set( resultTags.data.map(obj => obj.entity_type_name))];
