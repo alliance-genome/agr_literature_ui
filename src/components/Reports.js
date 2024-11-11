@@ -5,9 +5,7 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner } from 'react-bootstrap';
 
-const file_upload_process_atp_id = "ATP:0000140";
-
-const WorkflowStatTable = () => {
+const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping }) => {
   const [data, setData] = useState([]);
   const [mods, setMods] = useState([]);
   const [totals, setTotals] = useState({});
@@ -18,15 +16,14 @@ const WorkflowStatTable = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const url = process.env.REACT_APP_RESTAPI + "/workflow_tag/counters/?workflow_process_atp_id=" + file_upload_process_atp_id;
+      const url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
       setIsLoadingData(true);
       try {
         const result = await axios.get(url);
         setData(result.data);
 
         const modsSet = new Set(result.data.map(item => item.mod_abbreviation));
-        const modsArray = Array.from(modsSet);
-        setMods(modsArray);
+        setMods(Array.from(modsSet));
 
         const totalsObj = {};
         result.data.forEach(item => {
@@ -46,28 +43,17 @@ const WorkflowStatTable = () => {
     };
 
     fetchData();
-  }, []);
+  }, [workflowProcessAtpId]);
 
   const getTagCount = (tagName, mod) => {
     const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === mod);
     return item ? item.tag_count : 0;
   };
 
-  const tagNames = ['files uploaded', 'file needed', 'file unavailable', 'file upload in progress'];
-
   const containerStyle = {
     display: 'flex',
     justifyContent: 'center',
-    marginTop: '20px',
-  };
-
-  const tableStyle = {
-    borderCollapse: 'collapse',
-    width: '100%',
-  };
-
-  const formatTagName = (tagName) => {
-      return tagName.replace(/^files?\s/, '').replace(/^upload /, "");
+    marginTop: '15px',
   };
 
   const boldCellStyle = (params) => {
@@ -104,7 +90,7 @@ const WorkflowStatTable = () => {
 
   const rowData = tagNames.map(tagName => {
     const row = { 
-      tag_name: formatTagName(tagName), 
+      tag_name: nameMapping[tagName], 
       total: totals[tagName] || 0 
     };
     mods.forEach(mod => {
@@ -115,8 +101,7 @@ const WorkflowStatTable = () => {
 
   return (
     <div>
-      <h3>Workflow Statistics</h3>
-      <strong style={{ display: 'block', marginTop: '40px' }}>File Upload Current Status</strong>
+      <h5>{title}</h5>
       {isLoadingData ? (
         <div className="text-center">
           <Spinner animation="border" role="status">
@@ -125,7 +110,7 @@ const WorkflowStatTable = () => {
         </div>
       ) : (
         <div style={containerStyle}>
-          <div className="ag-theme-quartz" style={{ height: 500, width: '90%' }}>
+          <div className="ag-theme-quartz" style={{ height: 300, width: '90%' }}>
             <AgGridReact
               key={key}
               ref={gridRef}
@@ -142,4 +127,36 @@ const WorkflowStatTable = () => {
   );
 };
 
-export default WorkflowStatTable;
+const WorkflowStatTablesContainer = () => {
+  const file_upload_name_mapping = {
+      'files uploaded': 'uploaded',
+      'file needed': 'needed',
+      'file unavailable': 'unavailable',
+      'file upload in progress': 'in progress'
+  }
+  const text_conversion_name_mapping = {
+      'file converted to text': 'converted',
+      'text conversion needed': 'needed',
+      'file to text conversion failed': 'falied',
+      'text conversion in progress': 'in progress'
+  }
+  return (
+    <div>
+      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
+      <WorkflowStatTable
+        workflowProcessAtpId="ATP:0000140"
+        title="File Upload Current Status"
+        tagNames={Object.keys(file_upload_name_mapping)}
+	nameMapping={file_upload_name_mapping}
+      />
+      <WorkflowStatTable
+        workflowProcessAtpId="ATP:0000161"
+        title="Text Conversion Current Status"
+        tagNames={Object.keys(text_conversion_name_mapping)}
+        nameMapping={text_conversion_name_mapping}
+      />
+    </div>
+  );
+};
+
+export default WorkflowStatTablesContainer;
