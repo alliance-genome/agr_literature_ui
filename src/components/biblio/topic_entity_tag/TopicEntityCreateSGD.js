@@ -239,7 +239,7 @@ const TopicEntityCreateSGD = () => {
 
   const handleAddAll = async () => {
     for (let index = rows.length - 1; index >= 0; index--) {
-      await createEntities(referenceJsonLive.curie, index, 'complete');
+      await createEntities(referenceJsonLive.curie, index, 'ATP:0000275');
     }
     setRows([createNewRow()]);
   };
@@ -563,7 +563,7 @@ const TopicEntityCreateSGD = () => {
                     variant="outline-primary"
 		    size="sm"
                     disabled={disabledAddButton}
-                    onClick={() => createEntities(referenceJsonLive.curie, index, 'in progress')}
+                    onClick={() => createEntities(referenceJsonLive.curie, index, 'ATP:0000276')}
                   >
                     {biblioUpdatingEntityAdd > 0 ? (
                       <Spinner animation="border" size="sm" />
@@ -573,13 +573,15 @@ const TopicEntityCreateSGD = () => {
                   </Button>
                 }
                 {index === rows.length - 1 && (
-                  <Button
-                    variant="outline-primary"
-                    onClick={handleAddAll}
-                    className="ml-2"
-                  >
-                    Submit All
-                  </Button>
+		  <div style={{ display: 'inline-block', marginLeft: '30px' }}>      
+                    <Button
+                      variant="primary"
+                      onClick={handleAddAll}
+                      className="ml-2"
+                    >
+                      Submit All
+                    </Button>
+		  </div>
                 )}
               </div>
             </Col>
