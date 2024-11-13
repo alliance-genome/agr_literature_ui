@@ -72,69 +72,7 @@ export const RENAME_FACETS = {
     }
 }
 
-//hard code the mapping of workflow tag ids to workflow tag names
-function convertWorkflowTagId(workflowTagId) {
-    let workflowTagMappings = {
-        "ATP:0000141": "file needed",
-        "ATP:0000134": "files uploaded",
-        "ATP:0000135": "file unavailable",
-        "ATP:0000139": "file upload in progress",
-        "ATP:0000109": "author-person curation needed",
-        "ATP:0000243": "community curation correspondence",
-        "ATP:0000242": "data clarification request",
-        "ATP:0000241": "file request",
-        "ATP:0000233": "community curation blocked",
-        "ATP:0000234": "community curation finished",
-        "ATP:0000232": "community curation in progress",
-        "ATP:0000231": "community curation needed",
-        "ATP:0000236": "curation blocked",
-        "ATP:0000239": "curation finished",
-        "ATP:0000237": "curation in progress",
-        "ATP:0000238": "curation needed",
-        "ATP:0000172": "entity extraction",
-        "ATP:0000174": "entity extraction complete",
-        "ATP:0000215": "allele extraction complete",
-        "ATP:0000196": "antibody extraction complete",
-        "ATP:0000214": "gene extraction complete",
-        "ATP:0000203": "species extraction complete",
-        "ATP:0000250": "strain extraction complete",
-        "ATP:0000251": "transgenic allele extraction complete",
-        "ATP:0000187": "entity extraction failed",
-        "ATP:0000217": "allele extraction failed",
-        "ATP:0000188": "antibody extraction failed",
-        "ATP:0000216": "gene extraction failed",
-        "ATP:0000204": "species extraction failed",
-        "ATP:0000270": "strain extraction failed",
-        "ATP:0000267": "transgenic allele extraction failed",
-        "ATP:0000190": "entity extraction in progress",
-        "ATP:0000219": "allele extraction in progress",
-        "ATP:0000195": "antibody extraction in progress",
-        "ATP:0000218": "gene extraction in progress",
-        "ATP:0000205": "species extraction in progress",
-        "ATP:0000271": "strain extraction in progress",
-        "ATP:0000268": "transgenic allele extraction in progress",
-        "ATP:0000173": "entity extraction needed",
-        "ATP:0000221": "allele extraction needed",
-        "ATP:0000175": "antibody extraction needed",
-        "ATP:0000220": "gene extraction needed",
-        "ATP:0000206": "species extraction needed",
-        "ATP:0000272": "strain extraction needed",
-        "ATP:0000269": "transgenic allele extraction needed",
-        "ATP:0000140": "file upload",
-        "ATP:0000161": "text conversion",
-        "ATP:0000163": "file converted to text",
-        "ATP:0000164": "file to text conversion failed",
-        "ATP:0000198": "text conversion in progress",
-        "ATP:0000162": "text conversion needed",
-    }
-    if (workflowTagId in workflowTagMappings) {
-        return workflowTagMappings[workflowTagId]
-    }
-    else {
-        return workflowTagId;
-    }
 
-  }
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["workflow_tags.workflow_tag_id"],
@@ -327,7 +265,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                           {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
                                         </Col>
                                         <Col xs={6} sm={7}>
-                                          <span dangerouslySetInnerHTML={{__html: convertWorkflowTagId(bucket.name) ? convertWorkflowTagId(bucket.name) : convertWorkflowTagId(bucket.key)}} />
+                                          <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
                                         </Col>
                                         <Col xs={3} sm={3}>
                                           <Badge variant="secondary">
