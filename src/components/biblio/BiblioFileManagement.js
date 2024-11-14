@@ -697,10 +697,11 @@ const FileEditor = () => {
             <Form.Control
               as="select"
               disabled={!hasAccess}
-              value={referenceFile.pdf_type === null || referenceFile.pdf_type === 'pdf' ? '' : referenceFile.pdf_type}
+              value={referenceFile.pdf_type}
               onChange={(event) => patchReferencefile(referenceFile.referencefile_id, { "pdf_type": event.target.value === "" ? null : event.target.value }, accessToken)}
-            >
-              <option></option>
+              >
+	      <option></option>
+              <option>pdf</option>
               <option>ocr</option>
               <option>tif</option>
               <option>aut</option>
@@ -749,7 +750,7 @@ const FileEditor = () => {
       <Col className="Col-general Col-display-left" lg={{ span: 2 }}><strong>File Class</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>File Name</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Source</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Special Pdf Type</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>PDF Type</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
       <Col className="Col-general Col-display-right" lg={{ span: 1 }}><strong>Delete</strong></Col>
     </Row>,

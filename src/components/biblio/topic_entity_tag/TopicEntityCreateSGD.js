@@ -239,7 +239,7 @@ const TopicEntityCreateSGD = () => {
 
   const handleAddAll = async () => {
     for (let index = rows.length - 1; index >= 0; index--) {
-      await createEntities(referenceJsonLive.curie, index);
+      await createEntities(referenceJsonLive.curie, index, 'ATP:0000275');
     }
     setRows([createNewRow()]);
   };
@@ -289,7 +289,7 @@ const TopicEntityCreateSGD = () => {
     removeRow(index);
   };
 
-  const createEntities = async (refCurie, index) => {
+  const createEntities = async (refCurie, index, index_wft) => {
     const row = rows[index];
     if (row.topicSelect === null) {
       return;
@@ -320,6 +320,7 @@ const TopicEntityCreateSGD = () => {
           }
           updateJson['entity_type'] = (row.entityTypeSelect === '') ? null : row.entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
+	  updateJson['index_wft'] = index_wft   
           let array = [subPath, updateJson, method];
           forApiArray.push(array);
         }
@@ -327,6 +328,7 @@ const TopicEntityCreateSGD = () => {
     } else if (row.taxonSelect !== '' && row.taxonSelect !== undefined) {
       let updateJson = initializeUpdateJson(refCurie, row);
       updateJson['entity_type'] = (row.entityTypeSelect === '') ? null : row.entityTypeSelect;
+      updateJson['index_wft'] = index_wft
       let array = [subPath, updateJson, method];
       forApiArray.push(array);
     }
@@ -559,8 +561,9 @@ const TopicEntityCreateSGD = () => {
                   :
                   <Button
                     variant="outline-primary"
+		    size="sm"
                     disabled={disabledAddButton}
-                    onClick={() => createEntities(referenceJsonLive.curie, index)}
+                    onClick={() => createEntities(referenceJsonLive.curie, index, 'ATP:0000276')}
                   >
                     {biblioUpdatingEntityAdd > 0 ? (
                       <Spinner animation="border" size="sm" />
@@ -569,14 +572,16 @@ const TopicEntityCreateSGD = () => {
                     )}
                   </Button>
                 }
-                {rows.length > 1 && index === rows.length - 1 && (
-                  <Button
-                    variant="outline-primary"
-                    onClick={handleAddAll}
-                    className="ml-2"
-                  >
-                    Submit All
-                  </Button>
+                {index === rows.length - 1 && (
+		  <div style={{ display: 'inline-block', marginLeft: '30px' }}>      
+                    <Button
+                      variant="primary"
+                      onClick={handleAddAll}
+                      className="ml-2"
+                    >
+                      Submit All
+                    </Button>
+		  </div>
                 )}
               </div>
             </Col>
