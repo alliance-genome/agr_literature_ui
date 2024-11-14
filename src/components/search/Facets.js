@@ -251,7 +251,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 		    let key = facetToInclude.replaceAll(' ', '_');
                     if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key)){
                         key = key + '.keyword';
-                    }console.log("key: " + key); console.log("searchFacets: " + Object.keys(searchFacets).join(','));
+                    }
                     if (key in searchFacets) {
                         let value = searchFacets[key];
                         return (
@@ -280,7 +280,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                <br/>
                             </div>
                         )
-                    } else {console.log("key not in searchFacets: " + key)
+                    } else {
                         return null
                     }
                 }
