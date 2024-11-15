@@ -44,7 +44,8 @@ const initialState = {
     'topics': INITIAL_FACETS_LIMIT,
     'confidence_levels': INITIAL_FACETS_LIMIT,
     'source_methods': INITIAL_FACETS_LIMIT,
-    'source_evidence_assertions': INITIAL_FACETS_LIMIT
+    'source_evidence_assertions': INITIAL_FACETS_LIMIT,
+    'workflow_tags.workflow_tag_id.keyword': INITIAL_FACETS_LIMIT
   },
   searchFacetsShowMore: {},
   searchQuery: "",

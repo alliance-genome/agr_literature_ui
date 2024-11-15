@@ -49,6 +49,7 @@ export const RENAME_FACETS = {
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
+    "workflow_tags.workflow_tag_id.keyword": "Workflow Tag ID",
     "datePubmedAdded": {
         label: "Date Range: Added to PubMed",
         value: (state) => state.search.datePubmedAdded,
@@ -71,8 +72,10 @@ export const RENAME_FACETS = {
     }
 }
 
+
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
+    "Workflow Tags": ["workflow_tags.workflow_tag_id"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name","language"],
     "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
