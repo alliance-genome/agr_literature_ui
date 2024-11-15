@@ -253,6 +253,13 @@ const Create = () => {
     dispatch(setReferenceCurie(referenceCurie));
     history.push("/Biblio/?action=editor&referenceCurie=" + referenceCurie);
   }
+
+  useEffect(() => {
+    if (createRedirectToBiblio) {
+      pushHistory(createRedirectCurie);
+    }
+  }, [createRedirectToBiblio, createRedirectCurie, dispatch, history]); // Dependencies ensure this effect runs when these values change
+
   return (
     <div>
       <ModalGeneric showGenericModal={createModalText !== '' ? true : false} genericModalHeader="Create reference Error"
@@ -263,7 +270,6 @@ const Create = () => {
         updateMessages.map((message, index) => (
           <div key={`message ${index}`}><span style={{color:'red'}}>{message}</span></div> ))
       }
-      {createRedirectToBiblio && pushHistory(createRedirectCurie)}
       <CreateActionRouter />
     </div>
   )
