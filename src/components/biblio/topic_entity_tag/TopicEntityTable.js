@@ -129,6 +129,7 @@ const TopicEntityTable = () => {
               if (arrElement['validation_by_author'] === 'validated_right_self') { arrElement['validation_by_author'] = ''; }
               else if (arrElement['validation_by_author'] === 'validated_right') { arrElement['validation_by_author'] = 'agree'; }
               else if (arrElement['validation_by_author'] === 'validated_wrong') { arrElement['validation_by_author'] = 'disagree'; }
+              else if (arrElement['validation_by_author'] === 'not_validated')   { arrElement['validation_by_author'] = 'no data'; }
             }
             if ('validation_by_professional_biocurator' in arrElement) {
               if (arrElement['validation_by_professional_biocurator'] === 'validated_right_self') { arrElement['validation_by_professional_biocurator'] = ''; }
@@ -201,7 +202,7 @@ const TopicEntityTable = () => {
     { headerName: "Date Created", field: "date_created", id: 12, checked: true},
     { headerName: "Updated By", field: "updated_by", id: 13, checked: false },
     { headerName: "Date Updated", field: "date_updated", id: 14, checked: true},
-    { headerName: "Validation By Author", field: "validation_by_author", id: 15, checked: false },
+    { headerName: "Author Response", field: "validation_by_author", id: 15, checked: false },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 16, checked: false },
     { headerName: "Display Tag", field: "display_tag_name", id: 17, checked: false},
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18, checked: true },
@@ -232,7 +233,7 @@ const TopicEntityTable = () => {
     { headerName: "Date Created", field: "date_created", id: 12, checked: true},
     { headerName: "Updated By", field: "updated_by", id: 13, checked: false },
     { headerName: "Date Updated", field: "date_updated", id: 14, checked: true},
-    { headerName: "Validation By Author", field: "validation_by_author", id: 15, checked: false },
+    { headerName: "Author Response", field: "validation_by_author", id: 15, checked: false },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 16, checked: false },
     { headerName: "Display Tag", field: "display_tag_name", id: 17, checked: true},
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 18, checked: false },
@@ -472,7 +473,7 @@ const CheckDropdownItem = React.forwardRef(
     { headerName: "Date Created", field: "date_created", valueFormatter: dateFormatter },
     { headerName: "Updated By", field: "updated_by" },
     { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
-    { headerName: "Validation By Author", field: "validation_by_author" },
+    { headerName: "Author Response", field: "validation_by_author" },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", cellRenderer: ValidationByCurator},
     { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
