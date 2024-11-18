@@ -154,12 +154,11 @@ const TopicEntityTable = () => {
   }
 
   useEffect(() => {
-      if (firstFetch && topicEntityTags.length > 0) {
+      if (firstFetch || biblioUpdatingEntityAdd) {
+	  fetchTableData();
           setFirstFetch(false);
-      } else {
-          fetchTableData();
-      }
-  }, [topicEntityTags, biblioUpdatingEntityAdd]);
+      } 
+  }, [biblioUpdatingEntityAdd]);
 
 
   const handleSourceDescClick = (fullSourceDesc) => {
