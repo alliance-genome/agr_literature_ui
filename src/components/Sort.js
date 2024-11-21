@@ -60,7 +60,8 @@ const Sort = () => {
   const [selectedCurator, setSelectedCurator] = useState('');
   const [selectedTimeframe, setSelectedTimeframe] = useState('Today');
   const [curatorOptions, setCuratorOptions] = useState([]);
-
+  const [recentlySortedData, setRecentlySortedData] = useState([]);
+    
   let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
   let activeMod = accessLevel;
     
@@ -78,15 +79,72 @@ const Sort = () => {
     buttonUpdateDisabled = 'disabled';
   }
 
-  // Fetch references automatically when component loads
+  // Fetch references when component loads or when relevant dependencies change
   useEffect(() => {
     if (viewMode === 'Sort' && sortUpdating === 0 && accessLevel) {
       console.log('sort DISPATCH sortButtonModsQuery ' + accessLevel + ' sortType ' + sortType);
       dispatch(sortButtonModsQuery(accessLevel, sortType))
     }
-    // If viewMode is 'Recently sorted', we'll handle that separately
   }, [viewMode, sortUpdating, accessLevel, sortType, dispatch]);
 
+  // Fetch recently sorted papers and curator options when viewMode changes to 'Recently sorted'
+  useEffect(() => {
+    if (viewMode === 'Recently sorted' && accessToken && accessLevel) {
+      // Fetch data with default parameters (selectedTimeframe, selectedCurator)
+      fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
+    }
+  }, [viewMode, accessToken, accessLevel]); 
+    
+  // Function to fetch recently sorted papers and curator options
+  const fetchRecentlySortedPapers = (modAbbreviation, day, curatorUid) => {
+    const url = `${process.env.REACT_APP_RESTAPI}/sort/recently_sorted?mod_abbreviation=${modAbbreviation}&day=${day}&curator=${curatorUid}`;
+
+    fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        const { curator_data, data: references } = data;
+
+        // Build curatorOptions from curator_data
+        let curators = Object.entries(curator_data).map(([email, uid]) => ({ email, uid }));
+
+        // Add logged-in user if not already in the list and move to top
+        const loggedInUserEmail = userId; // Email address
+        const loggedInUserUid = uid; // UID
+
+        const loggedInUserIncluded = curators.some(curator => curator.uid === loggedInUserUid);
+
+        if (!loggedInUserIncluded) {
+          curators.unshift({ email: loggedInUserEmail, uid: loggedInUserUid });
+        } else {
+          // Move logged-in user to top
+          const index = curators.findIndex(curator => curator.uid === loggedInUserUid);
+          if (index > 0) {
+            const [loggedInUser] = curators.splice(index, 1);
+            curators.unshift(loggedInUser);
+          }
+        }
+
+        // Update state
+        setCuratorOptions(curators);
+        setRecentlySortedData(references);
+      })
+      .catch(error => {
+        console.error('Error fetching recently sorted papers:', error);
+      });
+  };
+
+  // Handler for 'Find sorted papers' button
+  const handleFindSortedPapers = () => {
+    // Fetch data based on selected curator and timeframe
+    fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
+  }
+
+    
   // Reference file component
   const FileElement = ({ referenceCurie }) => {
 
@@ -322,21 +380,6 @@ const Sort = () => {
 
   }
 
-  // Handler for 'Find sorted papers' button
-  const handleFindSortedPapers = () => {
-    // Placeholder function to handle fetching sorted papers
-    // For now, we'll just log the selected curator and timeframe
-    console.log('Find sorted papers clicked');
-    console.log('Selected curator:', selectedCurator);
-    console.log('Selected timeframe:', selectedTimeframe);
-
-    // TODO: Dispatch action to fetch sorted papers based on selected options
-    // For now, we'll just simulate the behavior
-
-    // Example:
-    // dispatch(fetchSortedPapers(selectedCurator, selectedTimeframe));
-  }
-
   return (
     <div>
       <h4>References for {accessLevel}</h4>
@@ -400,11 +443,9 @@ const Sort = () => {
                       <Form.Group controlId="formCuratorSelect">
                         <Form.Label style={{ fontWeight: 'bold' }}>Who:</Form.Label>
                         <Form.Control as="select" value={selectedCurator} onChange={(e) => setSelectedCurator(e.target.value)}>
-                          <option value="">Select Curator</option>
-                          {/* Placeholder options */}
-                          <option value="Curator1">Curator1</option>
-                          <option value="Curator2">Curator2</option>
-                          {/* TODO: Populate with actual curator options */}
+                          {curatorOptions.map((curator, index) => (
+                            <option key={index} value={curator.uid}>{curator.email}</option>
+                          ))}
                         </Form.Control>
                       </Form.Group>
                     </Col>
@@ -427,12 +468,41 @@ const Sort = () => {
                 </Form>		  
               </Col>
             </Row>
-            {/* TODO: Display references after fetching sorted papers */}
-            {/* For now, we can display a placeholder message */}
             <Row>
               <Col lg={12}>
                 <br />
-                <p>Recently sorted papers will be displayed here.</p>
+                {recentlySortedData && recentlySortedData.length > 0 ? (
+                  <Container fluid>
+                    {recentlySortedData.map((reference, index) => (
+                      <div key={`reference div ${index}`}>
+                        <Row key={`reference ${index}`}>
+                          <Col lg={2} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ alignSelf: 'flex-start' }} ><b>Title: </b>
+                              <span dangerouslySetInnerHTML={{ __html: reference['title'] }} /></div>
+                            <Link to={{ pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie'] }}
+                              style={{ alignSelf: 'flex-start' }} onClick={() => {
+                                dispatch(setReferenceCurie(reference['curie']));
+                                dispatch(setGetReferenceCurieFlag(true));
+                              }} >{reference['curie']}</Link>
+                            {reference['cross_references'].map((xref, index2) => (
+                              <div key={`xref ${index} ${index2}`} style={{ alignSelf: 'flex-start' }} >
+                                <a href={xref['url']} target='_blank' rel="noreferrer" >{xref['curie']}</a></div>
+                            ))}
+                            <div style={{ alignSelf: 'flex-start' }} ><b>Journal:</b> {
+                              (reference['resource_title']) ? <span dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A' }</div>
+                            {/* Include FileElement if needed */}
+                          </Col>
+                          <Col lg={10} className="Col-general Col-display">
+                            <span dangerouslySetInnerHTML={{ __html: reference['abstract'] }} />
+                          </Col>
+                        </Row>
+                        <RowDivider />
+                      </div>
+                    ))}
+                  </Container>
+                ) : (
+                  <p>No sorted papers found.</p>
+                )}
               </Col>
             </Row>
           </>
