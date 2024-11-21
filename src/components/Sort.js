@@ -58,20 +58,16 @@ const Sort = () => {
   if (testerMod !== 'No') {
     activeMod = testerMod;
     accessLevel = testerMod;
-  } else if (oktaDeveloper) {
-    accessLevel = 'developer';
-  }
-
-  const tetAccessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  } 
 
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
-        setTopicEntitySourceId(await getCuratorSourceId(tetAccessLevel, accessToken));
+        setTopicEntitySourceId(await getCuratorSourceId(accessLevel, accessToken));
       }
     }
     fetchSourceId().catch(console.error);
-  }, [tetAccessLevel, accessToken]);
+  }, [accessLevel, accessToken]);
 
   let buttonUpdateDisabled = ''
   if (sortUpdating > 0) {
@@ -80,12 +76,12 @@ const Sort = () => {
 
   // Fetch references automatically when component loads
   useEffect(() => {
-    if (viewMode === 'Sort' && sortUpdating === 0 && tetAccessLevel) {
-      console.log('sort DISPATCH sortButtonModsQuery ' + tetAccessLevel + ' sortType ' + sortType);
-      dispatch(sortButtonModsQuery(tetAccessLevel, sortType))
+    if (viewMode === 'Sort' && sortUpdating === 0 && accessLevel) {
+      console.log('sort DISPATCH sortButtonModsQuery ' + accessLevel + ' sortType ' + sortType);
+      dispatch(sortButtonModsQuery(accessLevel, sortType))
     }
     // If viewMode is 'Recently sorted', we'll handle that separately
-  }, [viewMode, sortUpdating, tetAccessLevel, sortType, dispatch]);
+  }, [viewMode, sortUpdating, accessLevel, sortType, dispatch]);
 
   // Reference file component
   const FileElement = ({ referenceCurie }) => {
@@ -339,7 +335,7 @@ const Sort = () => {
 
   return (
     <div>
-      <h4>References for {tetAccessLevel}</h4>
+      <h4>References for {accessLevel}</h4>
       <Form>
         <Form.Check
           inline
@@ -379,29 +375,37 @@ const Sort = () => {
 
         {viewMode === 'Recently sorted' &&
           <>
-            <Row>
-              <Col lg={12}>
+            <Row className="justify-content-center">
+              <Col lg="auto">
                 <br />
-                <Form inline>
-                  <Button style={{ width: "12em" }} onClick={handleFindSortedPapers}>Find sorted papers</Button>{' '}
-                  <Form.Group controlId="formCuratorSelect">
-                    <Form.Label>Who: </Form.Label>{' '}
-                    <Form.Control as="select" value={selectedCurator} onChange={(e) => setSelectedCurator(e.target.value)}>
-                      <option value="">Select Curator</option>
-                      {/* Placeholder options */}
-                      <option value="Curator1">Curator1</option>
-                      <option value="Curator2">Curator2</option>
-                      {/* TODO: Populate with actual curator options */}
-                    </Form.Control>
-                  </Form.Group>{' '}
-                  <Form.Group controlId="formTimeframeSelect">
-                    <Form.Label>When: </Form.Label>{' '}
-                    <Form.Control as="select" value={selectedTimeframe} onChange={(e) => setSelectedTimeframe(e.target.value)}>
-                      <option value="Today">Today</option>
-                      <option value="Past week">Past week</option>
-                    </Form.Control>
-                  </Form.Group>
-                </Form>
+                <Form>
+                  <Form.Row className="align-items-end">
+                    <Col>
+                      <Form.Group controlId="formCuratorSelect">
+                        <Form.Label>Who:</Form.Label>
+                        <Form.Control as="select" value={selectedCurator} onChange={(e) => setSelectedCurator(e.target.value)}>
+                          <option value="">Select Curator</option>
+                          {/* Placeholder options */}
+                          <option value="Curator1">Curator1</option>
+                          <option value="Curator2">Curator2</option>
+                          {/* TODO: Populate with actual curator options */}
+                        </Form.Control>
+                      </Form.Group>
+                    </Col>
+                    <Col>
+                      <Form.Group controlId="formTimeframeSelect">
+                        <Form.Label>When:</Form.Label>
+                        <Form.Control as="select" value={selectedTimeframe} onChange={(e) => setSelectedTimeframe(e.target.value)}>
+                          <option value="Today">Today</option>
+                          <option value="Past week">Past week</option>
+                        </Form.Control>
+                      </Form.Group>
+                    </Col>
+                    <Col xs="auto">
+                      <Button style={{ marginTop: '30px' }} onClick={handleFindSortedPapers}>Find sorted papers</Button>
+                    </Col>
+                  </Form.Row>
+                </Form>  
               </Col>
             </Row>
             {/* TODO: Display references after fetching sorted papers */}
