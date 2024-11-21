@@ -11,17 +11,23 @@ import Modal from 'react-bootstrap/Modal';
 import InputGroup from 'react-bootstrap/InputGroup';
 import "react-bootstrap-typeahead/css/Typeahead.css";
 
-import { downloadReferencefile, setReferenceCurie } from '../actions/biblioActions';
-import { setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioActions';
+import {
+    downloadReferencefile,
+    setReferenceCurie,
+    setGetReferenceCurieFlag,
+    getCuratorSourceId
+} from '../actions/biblioActions';
 
-import { sortButtonModsQuery } from '../actions/sortActions';
-import { removeReferenceFromSortLive } from '../actions/sortActions';
+import {
+    sortButtonModsQuery,
+    removeReferenceFromSortLive,
+    changeSortCorpusToggler,
+    changeSortWorkflowToggler,
+    updateButtonSort,
+    closeSortUpdateAlert,
+    setSortUpdating
+} from '../actions/sortActions';
 
-import { changeSortCorpusToggler } from '../actions/sortActions';
-import { changeSortWorkflowToggler } from '../actions/sortActions';
-import { updateButtonSort } from '../actions/sortActions';
-import { closeSortUpdateAlert } from '../actions/sortActions';
-import { setSortUpdating } from '../actions/sortActions';
 import { Spinner } from "react-bootstrap";
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
@@ -53,13 +59,9 @@ const Sort = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useState('Today');
   const [curatorOptions, setCuratorOptions] = useState([]);
 
-  let accessLevel = oktaMod;
-  let activeMod = oktaMod;
-  if (testerMod !== 'No') {
-    activeMod = testerMod;
-    accessLevel = testerMod;
-  } 
-
+  let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
+  let activeMod = accessLevel;
+    
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
