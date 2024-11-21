@@ -50,8 +50,10 @@ const Sort = () => {
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-
+  // const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
+  const uid = useSelector(state => state.isLogged.uid);
+  const userId = useSelector(state => state.isLogged.userId);
+    
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   const [viewMode, setViewMode] = useState('Sort'); // New state variable for view mode
@@ -342,21 +344,33 @@ const Sort = () => {
         <Form.Check
           inline
           type='radio'
-          label='Sort'
           name='viewMode'
           id='viewModeSort'
-          checked={viewMode === 'Sort'}
-          onChange={() => setViewMode('Sort')}
-        />
+        >
+	  <Form.Check.Input
+	    type='radio'
+            name='viewMode'
+            id='viewModeSort'
+            checked={viewMode === 'Sort'}
+            onChange={() => setViewMode('Sort')}
+	  />
+          <Form.Check.Label style={{ fontSize: '1.1em' }}>Sort</Form.Check.Label>
+        </Form.Check>
         <Form.Check
           inline
           type='radio'
-          label='Recently sorted'
           name='viewMode'
           id='viewModeRecentlySorted'
-          checked={viewMode === 'Recently sorted'}
-          onChange={() => setViewMode('Recently sorted')}
-        />
+        >
+	  <Form.Check.Input
+	    type='radio'
+            name='viewMode'
+            id='viewModeRecentlySorted'
+            checked={viewMode === 'Recently sorted'}
+            onChange={() => setViewMode('Recently sorted')}
+	  />
+          <Form.Check.Label style={{ fontSize: '1.1em' }}>Recently sorted</Form.Check.Label>
+        </Form.Check>
       </Form>
       <Container>
         {viewMode === 'Sort' &&
@@ -384,7 +398,7 @@ const Sort = () => {
                   <Form.Row className="align-items-end">
                     <Col>
                       <Form.Group controlId="formCuratorSelect">
-                        <Form.Label>Who:</Form.Label>
+                        <Form.Label style={{ fontWeight: 'bold' }}>Who:</Form.Label>
                         <Form.Control as="select" value={selectedCurator} onChange={(e) => setSelectedCurator(e.target.value)}>
                           <option value="">Select Curator</option>
                           {/* Placeholder options */}
@@ -396,18 +410,21 @@ const Sort = () => {
                     </Col>
                     <Col>
                       <Form.Group controlId="formTimeframeSelect">
-                        <Form.Label>When:</Form.Label>
+                        <Form.Label style={{ fontWeight: 'bold' }}>When:</Form.Label>
                         <Form.Control as="select" value={selectedTimeframe} onChange={(e) => setSelectedTimeframe(e.target.value)}>
-                          <option value="Today">Today</option>
-                          <option value="Past week">Past week</option>
+                          <option value="1">Today</option>
+                          <option value="7">Past week</option>
                         </Form.Control>
                       </Form.Group>
                     </Col>
                     <Col xs="auto">
-                      <Button style={{ marginTop: '30px' }} onClick={handleFindSortedPapers}>Find sorted papers</Button>
+                      <Form.Group>
+                        <Form.Label>&nbsp;</Form.Label> {/* Empty label for alignment */}
+                        <Button onClick={handleFindSortedPapers}>Find sorted papers</Button>
+                      </Form.Group>
                     </Col>
                   </Form.Row>
-                </Form>  
+                </Form>		  
               </Col>
             </Row>
             {/* TODO: Display references after fetching sorted papers */}
