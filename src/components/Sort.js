@@ -73,23 +73,19 @@ const Sort = () => {
     fetchSourceId().catch(console.error);
   }, [tetAccessLevel, accessToken]);
 
-  let buttonFindDisabled = 'disabled';
-  if (tetAccessLevel !== 'No' && tetAccessLevel !== undefined && tetAccessLevel !== null) {
-    buttonFindDisabled = '';
-  }
-
   let buttonUpdateDisabled = ''
   if (sortUpdating > 0) {
     buttonUpdateDisabled = 'disabled';
   }
 
+  // Fetch references automatically when component loads
   useEffect(() => {
-    if (viewMode === 'Sort' && getPapersToSortFlag === true && sortUpdating === 0 && tetAccessLevel) {
+    if (viewMode === 'Sort' && sortUpdating === 0 && tetAccessLevel) {
       console.log('sort DISPATCH sortButtonModsQuery ' + tetAccessLevel + ' sortType ' + sortType);
       dispatch(sortButtonModsQuery(tetAccessLevel, sortType))
     }
     // If viewMode is 'Recently sorted', we'll handle that separately
-  }, [viewMode, getPapersToSortFlag, sortUpdating, tetAccessLevel, sortType, dispatch]);
+  }, [viewMode, sortUpdating, tetAccessLevel, sortType, dispatch]);
 
   // Reference file component
   const FileElement = ({ referenceCurie }) => {
@@ -367,27 +363,7 @@ const Sort = () => {
       <Container>
         {viewMode === 'Sort' &&
           <>
-            {(activeMod === 'WB') ?
-              <Row>
-                <Col lg={2} ></Col>
-                <Col lg={8} >
-                  <br />
-                  <Button style={{ width: "12em" }} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(tetAccessLevel, 'needs_review'))}>{isLoading ? <Spinner animation="border" size="sm" /> : "Find Papers to Sort"}</Button>{' '}
-                  <Button style={{ width: "12em" }} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(tetAccessLevel, 'prepublication'))}>{isLoading ? <Spinner animation="border" size="sm" /> : "Prepublication"}</Button>
-                </Col>
-                <Col lg={2} ></Col>
-              </Row>
-              :
-              <Row>
-                <Col lg={4} ></Col>
-                <Col lg={4} >
-                  <br />
-                  <Button style={{ width: "12em" }} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(tetAccessLevel, 'needs_review'))}>{isLoading ? <Spinner animation="border" size="sm" /> : "Find Papers to Sort"}</Button>
-                </Col>
-                <Col lg={4} ></Col>
-              </Row>
-            }
-
+            {/* Removed the "Find Papers to Sort" button */}
             <RowDivider />
 
             {referencesToSortLive && referencesToSortLive.length > 0 &&
