@@ -30,6 +30,9 @@ export const sortButtonModsQuery = (mod, sortType) => dispatch => {
   console.log('in sortButtonModsQuery action');
   // console.log("payload " + payload);
   // https://dev4004-literature-rest.alliancegenome.org/sort/need_review?mod_abbreviation=RGD&count=2
+  if (mod === 'No') {
+      return
+  }
   const sortGetModsQuery = async () => {
     const url = (sortType === 'needs_review') ? 
                 restUrl + '/sort/need_review?count=20&mod_abbreviation=' + mod :
