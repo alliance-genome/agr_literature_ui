@@ -139,12 +139,13 @@ const Sort = () => {
 
   // Handler for 'Find sorted papers' button
   const handleFindSortedPapers = () => {
-    // Fetch data based on selected curator and timeframe
-    if (selectedCurator === null) {
-	selectedCurator = uid;
-	console.log("Hello: reset selectedCurator = uid");
+    let curator = selectedCurator;
+    if (curator === null || curator === undefined) {
+      curator = uid;
+      console.log("reset curator = uid");
+      setSelectedCurator(uid); // Update state for future use
     }
-    fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
+    fetchRecentlySortedPapers(accessLevel, selectedTimeframe, curator);
   }
 
     
@@ -445,7 +446,12 @@ const Sort = () => {
                     <Col>
                       <Form.Group controlId="formCuratorSelect">
                         <Form.Label style={{ fontWeight: 'bold' }}>Who:</Form.Label>
-                        <Form.Control as="select" value={selectedCurator} onChange={(e) => setSelectedCurator(e.target.value)}>
+                        <Form.Control
+			  as="select"
+			  style={{ minWidth: '250px' }}
+			  value={selectedCurator}
+			  onChange={(e) => setSelectedCurator(e.target.value)}
+			>
                           {curatorOptions.map((curator, index) => (
                             <option key={index} value={curator.uid}>{curator.email}</option>
                           ))}
@@ -479,7 +485,7 @@ const Sort = () => {
                     {recentlySortedData.map((reference, index) => (
                       <div key={`reference div ${index}`}>
                         <Row key={`reference ${index}`}>
-                          <Col lg={2} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column' }}>
+                          <Col lg={4} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column' }}>
                             <div style={{ alignSelf: 'flex-start' }} ><b>Title: </b>
                               <span dangerouslySetInnerHTML={{ __html: reference['title'] }} /></div>
                             <Link to={{ pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie'] }}
@@ -495,7 +501,7 @@ const Sort = () => {
                               (reference['resource_title']) ? <span dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A' }</div>
                             {/* Include FileElement if needed */}
                           </Col>
-                          <Col lg={10} className="Col-general Col-display">
+                          <Col lg={8} className="Col-general Col-display">
                             <span dangerouslySetInnerHTML={{ __html: reference['abstract'] }} />
                           </Col>
                         </Row>
