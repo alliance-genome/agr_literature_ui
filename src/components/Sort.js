@@ -57,8 +57,8 @@ const Sort = () => {
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   const [viewMode, setViewMode] = useState('Sort'); // New state variable for view mode
-  const [selectedCurator, setSelectedCurator] = useState('');
-  const [selectedTimeframe, setSelectedTimeframe] = useState('Today');
+  const [selectedCurator, setSelectedCurator] = useState(uid);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1');
   const [curatorOptions, setCuratorOptions] = useState([]);
   const [recentlySortedData, setRecentlySortedData] = useState([]);
     
@@ -89,8 +89,7 @@ const Sort = () => {
 
   // Fetch recently sorted papers and curator options when viewMode changes to 'Recently sorted'
   useEffect(() => {
-    if (viewMode === 'Recently sorted' && accessToken && accessLevel) {
-      // Fetch data with default parameters (selectedTimeframe, selectedCurator)
+    if (viewMode === 'Recently sorted' && accessToken && accessLevel) {	  
       fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
     }
   }, [viewMode, accessToken, accessLevel]); 
@@ -141,6 +140,10 @@ const Sort = () => {
   // Handler for 'Find sorted papers' button
   const handleFindSortedPapers = () => {
     // Fetch data based on selected curator and timeframe
+    if (selectedCurator === null) {
+	selectedCurator = uid;
+	console.log("Hello: reset selectedCurator = uid");
+    }
     fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
   }
 
@@ -382,7 +385,7 @@ const Sort = () => {
 
   return (
     <div>
-      <h4>References for {accessLevel}</h4>
+      <h3>References for {accessLevel}</h3>
       <Form>
         <Form.Check
           inline
