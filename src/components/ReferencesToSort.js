@@ -146,168 +146,186 @@ const ReferencesToSort = ({
     <div key={`reference div ${index}`} >
       <Row key={`reference ${index}`} >
         {/* Reference Details */}
-        <Col lg={2} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor: backgroundColor }} >
-          <div style={{ alignSelf: 'flex-start' }} ><b>Title: </b>
-            <span dangerouslySetInnerHTML={{ __html: reference['title'] }} /></div>
+          <Col lg={2} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor: backgroundColor, padding: '15px'}} >
+          <div style={{ alignSelf: 'flex-start', marginBottom: '10px' }} >
+            <b>Title: </b>
+            <span dangerouslySetInnerHTML={{ __html: reference['title'] }} />
+          </div>
           <Link to={{ pathname: "/Biblio", search: `?action=display&referenceCurie=${reference['curie']}` }}
-            style={{ alignSelf: 'flex-start' }} onClick={() => {
+            style={{ alignSelf: 'flex-start', marginBottom: '10px' }} onClick={() => {
               dispatch(setReferenceCurie(reference['curie']));
               dispatch(setGetReferenceCurieFlag(true));
-            }} >{reference['curie']}</Link>
-          {reference['cross_references'].map((xref, idx) => (
-            <div key={`xref ${index} ${idx}`} style={{ alignSelf: 'flex-start' }} >
-              <a href={xref['url']} target='_blank' rel="noreferrer" >{xref['curie']}</a></div>
-          ))}
-          <div style={{ alignSelf: 'flex-start' }} ><b>Journal:</b> {
-            (reference['resource_title']) ? <span dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A' }</div>
-          {canSort && <FileElement referenceCurie={reference['curie']} />} {/* FileElement Component */}
+            }} >
+            {reference['curie']}
+          </Link>     
+      	  {reference['cross_references'].map((xref, idx) => (
+	    <div key={`xref-${index}-${idx}`} style={{ alignSelf: 'flex-start', marginBottom: '5px' }}>
+	       {xref['url'].endsWith('/') ? (
+		   <span>{xref['curie']}</span>
+	       ) : (
+		   <a href={xref['url']} target='_blank' rel="noreferrer">
+		       {xref['curie']}
+		   </a>
+	       )}
+	    </div>
+	  ))}
+          <div style={{ alignSelf: 'flex-start', marginBottom: '10px' }} >
+            <b>Journal:</b> {
+              (reference['resource_title']) ? <span dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A' 
+            }
+          </div>
+	  { /*    
+	  <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
+            */}
         </Col>
 
         {/* Abstract */}
-        <Col lg={4} className="Col-general Col-display" style={{ backgroundColor: backgroundColor }}>
+        <Col lg={5} className="Col-general Col-display" style={{ backgroundColor: backgroundColor, padding: '15px' }}>
           <span dangerouslySetInnerHTML={{ __html: reference['abstract'] }} />
         </Col>
 
         {/* Needs Review */}
-        <Col lg={1} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-          <br /><br />
+        <Col lg={1}  className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor, padding: '15px' }}>
           <Form.Check
             inline
-            checked={(reference['mod_corpus_association_corpus'] === null) ? 'checked' : ''}
+            checked={(reference['mod_corpus_association_corpus'] === null)}
             type='radio'
-            label='needs review'
+            label='Needs Review'
             id={`needs_review_toggle ${index}`}
             onChange={(e) => dispatch(changeSortCorpusToggler(e))}
           />
         </Col>
 
         {/* Inside Corpus */}
-        <Col lg={3} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-          <br /><br />
-          <Form.Check
-            inline
-            checked={(reference['mod_corpus_association_corpus'] === true) ? 'checked' : ''}
-            type='radio'
-            label='inside corpus'
-            id={`inside_corpus_toggle ${index}`}
-            onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-          />
-          <br />
-          {(activeMod === 'WB') &&
-            <>
-              <Form.Check
-                inline
-                disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
-                checked={(reference['workflow'] === 'experimental') ? 'checked' : ''}
-                type='radio'
-                label='expt'
-                id={`experimental_toggle ${index}`}
-                onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-              /><br />
-              <Form.Check
-                inline
-                disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
-                checked={(reference['workflow'] === 'not_experimental') ? 'checked' : ''}
-                type='radio'
-                label='not expt'
-                id={`not_experimental_toggle ${index}`}
-                onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-              /><br />
-              <Form.Check
-                inline
-                disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
-                checked={(reference['workflow'] === 'meeting') ? 'checked' : ''}
-                type='radio'
-                label='meeting'
-                id={`meeting_toggle ${index}`}
-                onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-              /><br />
-            </>
-          }
-          <Form.Control as="select" id={`primary_select ${index}`} style={{ display: 'none' }}>
-            <option>Experimental</option>
-            <option>Not Experimental</option>
-            <option>Meeting Abstract</option>
-          </Form.Control><br />
-          <AsyncTypeahead
-            multiple
-            disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
-            isLoading={speciesSelectLoading[index]}
-            placeholder="species name"
-            ref={speciesTypeaheadRef}
-            id={`species_select ${index}`}
-            labelKey={`species_select ${index}`}
-            useCache={false}
-            onSearch={(query) => {
-              let n = speciesSelectLoading.length;
-              let a = new Array(n).fill(false);
-              a[index] = true;
-              setSpeciesSelectLoading(a);
+        <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor, padding: '15px' }}>
+          <Form>
+            <Form.Check
+              inline
+              checked={(reference['mod_corpus_association_corpus'] === true)}
+              type='radio'
+              label='Inside Corpus'
+              id={`inside_corpus_toggle ${index}`}
+              onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+            />
+            <br />
+            {(activeMod === 'WB') &&
+              <>
+                <Form.Check
+                  inline
+                  disabled={(reference['mod_corpus_association_corpus'] !== true)}
+                  checked={(reference['workflow'] === 'experimental')}
+                  type='radio'
+                  label='Experimental'
+                  id={`experimental_toggle ${index}`}
+                  onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+                /><br />
+                <Form.Check
+                  inline
+                  disabled={(reference['mod_corpus_association_corpus'] !== true)}
+                  checked={(reference['workflow'] === 'not_experimental')}
+                  type='radio'
+                  label='Not Experimental'
+                  id={`not_experimental_toggle ${index}`}
+                  onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+                /><br />
+                <Form.Check
+                  inline
+                  disabled={(reference['mod_corpus_association_corpus'] !== true)}
+                  checked={(reference['workflow'] === 'meeting')}
+                  type='radio'
+                  label='Meeting Abstract'
+                  id={`meeting_toggle ${index}`}
+                  onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+                /><br />
+              </>
+            }
+            <Form.Control as="select" id={`primary_select ${index}`} style={{ display: 'none' }}>
+              <option>Experimental</option>
+              <option>Not Experimental</option>
+              <option>Meeting Abstract</option>
+            </Form.Control>
+            <br />
+            <AsyncTypeahead
+              multiple
+              disabled={(reference['mod_corpus_association_corpus'] !== true)}
+              isLoading={speciesSelectLoading[index]}
+              placeholder="Species Name"
+              ref={speciesTypeaheadRef}
+              id={`species_select ${index}`}
+              labelKey={`species_select ${index}`}
+              useCache={false}
+              onSearch={(query) => {
+                let n = speciesSelectLoading.length;
+                let a = new Array(n).fill(false);
+                a[index] = true;
+                setSpeciesSelectLoading(a);
 
-              axios.post(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
-                {
-                  "searchFilters": {
-                    "nameFilter": {
-                      "name": {
-                        "queryString": query,
-                        "tokenOperator": "AND"
+                axios.post(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
+                  {
+                    "searchFilters": {
+                      "nameFilter": {
+                        "name": {
+                          "queryString": query,
+                          "tokenOperator": "AND"
+                        }
                       }
-                    }
+                    },
+                    "sortOrders": [],
+                    "aggregations": [],
+                    "nonNullFieldsTable": []
                   },
-                  "sortOrders": [],
-                  "aggregations": [],
-                  "nonNullFieldsTable": []
-                },
-                {
-                  headers: {
-                    'content-type': 'application/json',
-                    'authorization': `Bearer ${accessToken}`
-                  }
-                })
-                .then(res => {
-                  let a = new Array(speciesSelectLoading.length).fill(false);
-                  setSpeciesSelectLoading(a);
-                  if (res.data.results) {
-                    setTypeaheadOptions(res.data.results.map(item => `${item.name} ${item.curie}`));
-                  }
-                })
-                .catch(error => {
-                  console.error('Error searching species:', error);
-                  setSpeciesSelectLoading(new Array(speciesSelectLoading.length).fill(false));
-                });
-            }}
-            onChange={(selected) => {
-              let newArr = [...speciesSelect];
-              newArr[index] = selected;
-              setSpeciesSelect(newArr);
-            }}
-            options={typeaheadOptions}
-            selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
-          />
-          {(activeMod === 'WB') && <div><br /><NewTaxonModal /></div>} {/* NewTaxonModal Component */}
-          <br />
-          <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(true)}>
-            Inside & Open
-          </Button>{' '}
-          <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(false)}>
-            Inside
-          </Button>
+                  {
+                    headers: {
+                      'content-type': 'application/json',
+                      'authorization': `Bearer ${accessToken}`
+                    }
+                  })
+                  .then(res => {
+                    let a = new Array(speciesSelectLoading.length).fill(false);
+                    setSpeciesSelectLoading(a);
+                    if (res.data.results) {
+                      setTypeaheadOptions(res.data.results.map(item => `${item.name} ${item.curie}`));
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Error searching species:', error);
+                    setSpeciesSelectLoading(new Array(speciesSelectLoading.length).fill(false));
+                  });
+              }}
+              onChange={(selected) => {
+                let newArr = [...speciesSelect];
+                newArr[index] = selected;
+                setSpeciesSelect(newArr);
+              }}
+              options={typeaheadOptions}
+              selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
+            />
+            {(activeMod === 'WB') && <div><br /><NewTaxonModal /></div>} {/* NewTaxonModal Component */}
+            <br />
+            <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(true)} style={{ marginRight: '5px', width: '120px' }}>
+              Inside & Open
+            </Button>
+            <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(false)} style={{ width: '80px' }}>
+              Inside
+            </Button>
+          </Form>
         </Col>
 
         {/* Outside Corpus */}
-        <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-          <br /><br />
-          <Form.Check
-            inline
-            checked={(reference['mod_corpus_association_corpus'] === false) ? 'checked' : ''}
-            type='radio'
-            label='outside corpus'
-            id={`outside_corpus_toggle ${index}`}
-            onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-          />
-          <br /><br /><br /><br />
+        <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor, padding: '15px' }}>
+          <Form>
+            <Form.Check
+              inline
+              checked={(reference['mod_corpus_association_corpus'] === false)}
+              type='radio'
+              label='Outside Corpus'
+              id={`outside_corpus_toggle ${index}`}
+              onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+            />
+          </Form>
+          <br /><br /><br />
           <div style={{ marginTop: '10px' }}>
-            <Button variant="outline-secondary" size="sm" onClick={() => handleOutside()}>
+            <Button variant="outline-secondary" size="sm" onClick={() => handleOutside()} >
               Outside
             </Button>
           </div>
