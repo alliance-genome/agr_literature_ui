@@ -354,6 +354,8 @@ const Sort = () => {
               <Col lg={12}>
                 <br />
                 {recentlySortedData && recentlySortedData.length > 0 ? (
+		 <div>      
+                  <SortSubmitUpdateRouter />		      
                   <Container fluid>
                     {recentlySortedData.map((reference, index) => (
                       <ReferencesToSort
@@ -374,6 +376,7 @@ const Sort = () => {
                       />
                     ))}
                   </Container>
+		 </div>
                 ) : (
                   <p>No sorted papers found.</p>
                 )}
