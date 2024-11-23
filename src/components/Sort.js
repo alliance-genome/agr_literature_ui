@@ -48,6 +48,9 @@ const Sort = () => {
   const [curatorOptions, setCuratorOptions] = useState([]);
   const [recentlySortedData, setRecentlySortedData] = useState([]);
 
+  // New State for Toggling Inside/Outside Papers
+  const [showInsidePapers, setShowInsidePapers] = useState(true); // true for inside, false for outside
+
   // Determine Access Level
   let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
   let activeMod = accessLevel;
@@ -78,6 +81,7 @@ const Sort = () => {
   useEffect(() => {
     if (viewMode === 'Recently sorted' && accessToken && accessLevel) {    
       fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
+      setShowInsidePapers(true); // Reset to show inside papers when switching to 'Recently sorted'
     }
   }, [viewMode, accessToken, accessLevel, selectedTimeframe, selectedCurator]); // Added selectedTimeframe and selectedCurator to dependencies
 
@@ -339,14 +343,14 @@ const Sort = () => {
                         </Form.Control>
                       </Form.Group>
                     </Col>
-		      { /*
+                    {/* 
                     <Col md={3} className="d-flex align-items-end">
                       <Button variant="primary" onClick={handleFindSortedPapers} style={{ width: '100%' }}>
                         Find sorted papers
                       </Button>
                     </Col>
-			*/}
-		    <Col md={4} className="d-flex align-items-end">
+                    */}
+                    <Col md={4} className="d-flex align-items-end">
                       <Form.Group>
                         <Form.Label>&nbsp;</Form.Label> {/* Empty label for alignment */}
                         <Button onClick={handleFindSortedPapers}>Find sorted papers</Button>
@@ -356,33 +360,54 @@ const Sort = () => {
                 </Form>		  
               </Col>
             </Row>
+
+            {/* Toggle Button for Inside/Outside Papers */}
+            {recentlySortedData && recentlySortedData.length > 0 && (
+	      <Row className="justify-content-center mb-3" style={{ marginTop: '15px' }}>
+                <Col lg="auto">
+                  <Button
+		    variant="outline-primary"
+		    className="ml-1"
+                    onClick={() => setShowInsidePapers(!showInsidePapers)}
+                  >
+                    {showInsidePapers ? 'Show Outside Papers' : 'Show Inside Papers'}
+                  </Button>
+                </Col>
+              </Row>
+            )}
+
             <Row>
               <Col lg={12}>
                 <br />
                 {recentlySortedData && recentlySortedData.length > 0 ? (
-		 <div>      
-                  <SortSubmitUpdateRouter />		      
-                  <Container fluid>
-                    {recentlySortedData.map((reference, index) => (
-                      <ReferencesToSort
-                        key={`reference div ${index}`}
-                        reference={reference}
-                        index={index}
-                        canSort={false}
-                        speciesSelect={speciesSelect}
-                        setSpeciesSelect={setSpeciesSelect}
-                        speciesSelectLoading={speciesSelectLoading}
-                        setSpeciesSelectLoading={setSpeciesSelectLoading}
-                        typeaheadOptions={typeaheadOptions}
-                        setTypeaheadOptions={setTypeaheadOptions}
-                        speciesTypeaheadRef={speciesTypeaheadRef}
-                        topicEntitySourceId={topicEntitySourceId}
-                        accessToken={accessToken}
-                        activeMod={activeMod}
-                      />
-                    ))}
-                  </Container>
-		 </div>
+                  <div>      
+                    <SortSubmitUpdateRouter />		      
+                    <Container fluid>
+                      {recentlySortedData
+                        .filter(ref => ref['mod_corpus_association_corpus'] === showInsidePapers)
+                        .map((reference, index) => (
+                          <ReferencesToSort
+                            key={`reference div ${index}`}
+                            reference={reference}
+                            index={index}
+                            canSort={false}
+                            speciesSelect={speciesSelect}
+                            setSpeciesSelect={setSpeciesSelect}
+                            speciesSelectLoading={speciesSelectLoading}
+                            setSpeciesSelectLoading={setSpeciesSelectLoading}
+                            typeaheadOptions={typeaheadOptions}
+                            setTypeaheadOptions={setTypeaheadOptions}
+                            speciesTypeaheadRef={speciesTypeaheadRef}
+                            topicEntitySourceId={topicEntitySourceId}
+                            accessToken={accessToken}
+                            activeMod={activeMod}
+                          />
+                        ))}
+                      {recentlySortedData.filter(ref => ref['mod_corpus_association_corpus'] === showInsidePapers).length === 0 && (
+                        <p>No {showInsidePapers ? 'inside' : 'outside'} papers found.</p>
+                      )}
+                    </Container>
+                  </div>
                 ) : (
                   <p>No sorted papers found.</p>
                 )}
