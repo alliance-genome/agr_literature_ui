@@ -1,8 +1,16 @@
+// ReferencesToSort.js
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setReferenceCurie, setGetReferenceCurieFlag } from '../actions/biblioActions';
-import { changeSortCorpusToggler, changeSortWorkflowToggler, updateButtonSort, removeReferenceFromSortLive, setSortUpdating } from '../actions/sortActions';
+import { 
+  changeSortCorpusToggler, 
+  changeSortWorkflowToggler, 
+  updateButtonSort, 
+  removeReferenceFromSortLive, 
+  setSortUpdating 
+} from '../actions/sortActions';
 import { Button, Form, Col, Row } from 'react-bootstrap';
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import { NewTaxonModal, FileElement } from './SortHelper'; // Updated import
@@ -137,6 +145,7 @@ const ReferencesToSort = ({
   return (
     <div key={`reference div ${index}`} >
       <Row key={`reference ${index}`} >
+        {/* Reference Details */}
         <Col lg={2} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor: backgroundColor }} >
           <div style={{ alignSelf: 'flex-start' }} ><b>Title: </b>
             <span dangerouslySetInnerHTML={{ __html: reference['title'] }} /></div>
@@ -153,155 +162,156 @@ const ReferencesToSort = ({
             (reference['resource_title']) ? <span dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A' }</div>
           {canSort && <FileElement referenceCurie={reference['curie']} />} {/* FileElement Component */}
         </Col>
-        <Col lg={5} className="Col-general Col-display" style={{ backgroundColor: backgroundColor }}>
+
+        {/* Abstract */}
+        <Col lg={4} className="Col-general Col-display" style={{ backgroundColor: backgroundColor }}>
           <span dangerouslySetInnerHTML={{ __html: reference['abstract'] }} />
         </Col>
 
-        {canSort && (
-          <>
-            <Col lg={1} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-              <br /><br />
-              <Form.Check
-                inline
-                checked={(reference['mod_corpus_association_corpus'] === null) ? 'checked' : ''}
-                type='radio'
-                label='needs review'
-                id={`needs_review_toggle ${index}`}
-                onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-              />
-            </Col>
+        {/* Needs Review */}
+        <Col lg={1} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
+          <br /><br />
+          <Form.Check
+            inline
+            checked={(reference['mod_corpus_association_corpus'] === null) ? 'checked' : ''}
+            type='radio'
+            label='needs review'
+            id={`needs_review_toggle ${index}`}
+            onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+          />
+        </Col>
 
-            <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-              <br /><br />
+        {/* Inside Corpus */}
+        <Col lg={3} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
+          <br /><br />
+          <Form.Check
+            inline
+            checked={(reference['mod_corpus_association_corpus'] === true) ? 'checked' : ''}
+            type='radio'
+            label='inside corpus'
+            id={`inside_corpus_toggle ${index}`}
+            onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+          />
+          <br />
+          {(activeMod === 'WB') &&
+            <>
               <Form.Check
                 inline
-                checked={(reference['mod_corpus_association_corpus'] === true) ? 'checked' : ''}
-                type='radio'
-                label='inside corpus'
-                id={`inside_corpus_toggle ${index}`}
-                onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-              />
-              <br />
-              {(activeMod === 'WB') &&
-                <>
-                  <Form.Check
-                    inline
-                    disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
-                    checked={(reference['workflow'] === 'experimental') ? 'checked' : ''}
-                    type='radio'
-                    label='expt'
-                    id={`experimental_toggle ${index}`}
-                    onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                  /><br />
-                  <Form.Check
-                    inline
-                    disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
-                    checked={(reference['workflow'] === 'not_experimental') ? 'checked' : ''}
-                    type='radio'
-                    label='not expt'
-                    id={`not_experimental_toggle ${index}`}
-                    onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                  /><br />
-                  <Form.Check
-                    inline
-                    disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
-                    checked={(reference['workflow'] === 'meeting') ? 'checked' : ''}
-                    type='radio'
-                    label='meeting'
-                    id={`meeting_toggle ${index}`}
-                    onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                  /><br />
-                </>
-              }
-              <Form.Control as="select" id={`primary_select ${index}`} style={{ display: 'none' }}>
-                <option>Experimental</option>
-                <option>Not Experimental</option>
-                <option>Meeting Abstract</option>
-              </Form.Control><br />
-              <AsyncTypeahead
-                multiple
                 disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
-                isLoading={speciesSelectLoading[index]}
-                placeholder="species name"
-                ref={speciesTypeaheadRef}
-                id={`species_select ${index}`}
-                labelKey={`species_select ${index}`}
-                useCache={false}
-                onSearch={(query) => {
-                  let n = speciesSelectLoading.length;
-                  let a = new Array(n).fill(false);
-                  a[index] = true;
-                  setSpeciesSelectLoading(a);
-
-                  axios.post(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
-                    {
-                      "searchFilters": {
-                        "nameFilter": {
-                          "name": {
-                            "queryString": query,
-                            "tokenOperator": "AND"
-                          }
-                        }
-                      },
-                      "sortOrders": [],
-                      "aggregations": [],
-                      "nonNullFieldsTable": []
-                    },
-                    {
-                      headers: {
-                        'content-type': 'application/json',
-                        'authorization': `Bearer ${accessToken}`
-                      }
-                    })
-                    .then(res => {
-                      let a = new Array(speciesSelectLoading.length).fill(false);
-                      setSpeciesSelectLoading(a);
-                      if (res.data.results) {
-                        setTypeaheadOptions(res.data.results.map(item => `${item.name} ${item.curie}`));
-                      }
-                    })
-                    .catch(error => {
-                      console.error('Error searching species:', error);
-                      setSpeciesSelectLoading(new Array(speciesSelectLoading.length).fill(false));
-                    });
-                }}
-                onChange={(selected) => {
-                  let newArr = [...speciesSelect];
-                  newArr[index] = selected;
-                  setSpeciesSelect(newArr);
-                }}
-                options={typeaheadOptions}
-                selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
-              />
-              {(activeMod === 'WB') && <div><br /><NewTaxonModal /></div>} {/* NewTaxonModal Component */}
-              <br />
-              <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(true)}>
-                Inside & Open
-              </Button>{' '}
-              <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(false)}>
-                Inside
-              </Button>
-            </Col>
-
-            <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-              <br /><br />
+                checked={(reference['workflow'] === 'experimental') ? 'checked' : ''}
+                type='radio'
+                label='expt'
+                id={`experimental_toggle ${index}`}
+                onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+              /><br />
               <Form.Check
                 inline
-                checked={(reference['mod_corpus_association_corpus'] === false) ? 'checked' : ''}
+                disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
+                checked={(reference['workflow'] === 'not_experimental') ? 'checked' : ''}
                 type='radio'
-                label='outside corpus'
-                id={`outside_corpus_toggle ${index}`}
-                onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-              />
-              <br /><br /><br /><br />
-              <div style={{ marginTop: '10px' }}>
-                <Button variant="outline-secondary" size="sm" onClick={() => handleOutside()}>
-                  Outside
-                </Button>
-              </div>
-            </Col>
-          </>
-        )}
+                label='not expt'
+                id={`not_experimental_toggle ${index}`}
+                onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+              /><br />
+              <Form.Check
+                inline
+                disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
+                checked={(reference['workflow'] === 'meeting') ? 'checked' : ''}
+                type='radio'
+                label='meeting'
+                id={`meeting_toggle ${index}`}
+                onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
+              /><br />
+            </>
+          }
+          <Form.Control as="select" id={`primary_select ${index}`} style={{ display: 'none' }}>
+            <option>Experimental</option>
+            <option>Not Experimental</option>
+            <option>Meeting Abstract</option>
+          </Form.Control><br />
+          <AsyncTypeahead
+            multiple
+            disabled={(reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : ''}
+            isLoading={speciesSelectLoading[index]}
+            placeholder="species name"
+            ref={speciesTypeaheadRef}
+            id={`species_select ${index}`}
+            labelKey={`species_select ${index}`}
+            useCache={false}
+            onSearch={(query) => {
+              let n = speciesSelectLoading.length;
+              let a = new Array(n).fill(false);
+              a[index] = true;
+              setSpeciesSelectLoading(a);
+
+              axios.post(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
+                {
+                  "searchFilters": {
+                    "nameFilter": {
+                      "name": {
+                        "queryString": query,
+                        "tokenOperator": "AND"
+                      }
+                    }
+                  },
+                  "sortOrders": [],
+                  "aggregations": [],
+                  "nonNullFieldsTable": []
+                },
+                {
+                  headers: {
+                    'content-type': 'application/json',
+                    'authorization': `Bearer ${accessToken}`
+                  }
+                })
+                .then(res => {
+                  let a = new Array(speciesSelectLoading.length).fill(false);
+                  setSpeciesSelectLoading(a);
+                  if (res.data.results) {
+                    setTypeaheadOptions(res.data.results.map(item => `${item.name} ${item.curie}`));
+                  }
+                })
+                .catch(error => {
+                  console.error('Error searching species:', error);
+                  setSpeciesSelectLoading(new Array(speciesSelectLoading.length).fill(false));
+                });
+            }}
+            onChange={(selected) => {
+              let newArr = [...speciesSelect];
+              newArr[index] = selected;
+              setSpeciesSelect(newArr);
+            }}
+            options={typeaheadOptions}
+            selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
+          />
+          {(activeMod === 'WB') && <div><br /><NewTaxonModal /></div>} {/* NewTaxonModal Component */}
+          <br />
+          <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(true)}>
+            Inside & Open
+          </Button>{' '}
+          <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(false)}>
+            Inside
+          </Button>
+        </Col>
+
+        {/* Outside Corpus */}
+        <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
+          <br /><br />
+          <Form.Check
+            inline
+            checked={(reference['mod_corpus_association_corpus'] === false) ? 'checked' : ''}
+            type='radio'
+            label='outside corpus'
+            id={`outside_corpus_toggle ${index}`}
+            onChange={(e) => dispatch(changeSortCorpusToggler(e))}
+          />
+          <br /><br /><br /><br />
+          <div style={{ marginTop: '10px' }}>
+            <Button variant="outline-secondary" size="sm" onClick={() => handleOutside()}>
+              Outside
+            </Button>
+          </div>
+        </Col>
       </Row>
       <RowDivider />
     </div>
