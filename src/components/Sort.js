@@ -1,5 +1,3 @@
-// Sort.js
-
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -328,7 +326,7 @@ const Sort = () => {
                         </Form.Control>
                       </Form.Group>
                     </Col>
-                    <Col md={4}>
+                    <Col md={3}>
                       <Form.Group controlId="formTimeframeSelect">
                         <Form.Label style={{ fontWeight: 'bold' }}>When:</Form.Label>
                         <Form.Control
@@ -341,10 +339,18 @@ const Sort = () => {
                         </Form.Control>
                       </Form.Group>
                     </Col>
+		      { /*
                     <Col md={3} className="d-flex align-items-end">
                       <Button variant="primary" onClick={handleFindSortedPapers} style={{ width: '100%' }}>
                         Find sorted papers
                       </Button>
+                    </Col>
+			*/}
+		    <Col md={4} className="d-flex align-items-end">
+                      <Form.Group>
+                        <Form.Label>&nbsp;</Form.Label> {/* Empty label for alignment */}
+                        <Button onClick={handleFindSortedPapers}>Find sorted papers</Button>
+                      </Form.Group>
                     </Col>
                   </Form.Row>
                 </Form>		  
