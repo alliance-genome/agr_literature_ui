@@ -343,13 +343,6 @@ const Sort = () => {
                         </Form.Control>
                       </Form.Group>
                     </Col>
-                    {/* 
-                    <Col md={3} className="d-flex align-items-end">
-                      <Button variant="primary" onClick={handleFindSortedPapers} style={{ width: '100%' }}>
-                        Find sorted papers
-                      </Button>
-                    </Col>
-                    */}
                     <Col md={4} className="d-flex align-items-end">
                       <Form.Group>
                         <Form.Label>&nbsp;</Form.Label> {/* Empty label for alignment */}
@@ -360,28 +353,20 @@ const Sort = () => {
                 </Form>		  
               </Col>
             </Row>
-
-            {/* Toggle Button for Inside/Outside Papers */}
-            {recentlySortedData && recentlySortedData.length > 0 && (
-	      <Row className="justify-content-center mb-3" style={{ marginTop: '15px' }}>
-                <Col lg="auto">
-                  <Button
-		    variant="outline-primary"
-		    className="ml-1"
-                    onClick={() => setShowInsidePapers(!showInsidePapers)}
-                  >
-                    {showInsidePapers ? 'Show Outside Papers' : 'Show Inside Papers'}
-                  </Button>
-                </Col>
-              </Row>
-            )}
-
             <Row>
               <Col lg={12}>
                 <br />
                 {recentlySortedData && recentlySortedData.length > 0 ? (
                   <div>      
-                    <SortSubmitUpdateRouter />		      
+                    <SortSubmitUpdateRouter />
+		    <Button
+                      variant="outline-primary"
+                      className="ml-1"
+                      onClick={() => setShowInsidePapers(!showInsidePapers)}
+                    >
+	              {showInsidePapers ? 'Show Outside Papers' : 'Show Inside Papers'}
+                    </Button>
+		    <p />
                     <Container fluid>
                       {recentlySortedData
                         .filter(ref => ref['mod_corpus_association_corpus'] === showInsidePapers)
