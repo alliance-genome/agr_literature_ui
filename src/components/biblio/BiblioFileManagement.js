@@ -35,7 +35,7 @@ const BiblioFileManagement = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
 
   const accessToken = useSelector(state => state.isLogged.accessToken);
-    
+
   // determine accessLevel
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
@@ -47,7 +47,7 @@ const BiblioFileManagement = () => {
   } else if (oktaDeveloper) {
     accessLevel = 'developer';
   }
-    
+
   if (accessLevel === 'developer') {
     if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
       accessLevel = 'No';
@@ -55,14 +55,14 @@ const BiblioFileManagement = () => {
       accessLevel = null;
     }
   }
-    
+
   // get mods in corpus from 'mod_corpus_associations'
   const modCorpusAssociations = referenceJsonLive['mod_corpus_associations'] || [];
-      
+
   const modsInCorpus = modCorpusAssociations
     .filter(item => item.corpus === 'inside_corpus')
     .map(item => item.mod_abbreviation);
-    
+
   // determine if user can upload files
   let canUploadFiles = false;
 
@@ -71,7 +71,7 @@ const BiblioFileManagement = () => {
       canUploadFiles = true;
     }
   }
-  
+
   return (
     <>
       <Container>
@@ -162,9 +162,9 @@ const Workflow = () => {
 
   if (testerMod !== 'No') {
     accessLevel = testerMod;
-  } 
+  }
   // Workflow accessLevel cannot be developer, is mod-specific
-    
+
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 
   const atpMappings = {
@@ -177,7 +177,7 @@ const Workflow = () => {
   Object.entries(atpOntology['ATP:0000140']).map(
     ([atp, obj]) => (atpMappings[atp] = obj['name'])
   );
-    
+
   if ( (ateamResults === 0) && (accessToken) ) {
     dispatch(mergeAteamQueryAtp(accessToken, atpParents));
   }
@@ -222,19 +222,20 @@ const Workflow = () => {
   // currently we can only transition from "file upload in progress" to "file unavailable"
   const isMainPDFuploaded = modFileStatus[accessLevel]['atpName'] === 'files uploaded';
   const isDeveloperWithoutTester = oktaDeveloper === true && testerMod === 'No';
-  const hideFileUnavailableButton = isMainPDFuploaded || isDeveloperWithoutTester || modFileStatus[accessLevel]['atpName'] !== 'file upload in progress';
-  
-  const handleFileUnavailableClick = () => {
+  const hideFileUnavailableButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
+  const hideInProgressButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
+
+  const handleWorkflowTransition = (newStatusId, alertMessage) => {
     let url =
       process.env.REACT_APP_RESTAPI +
       '/workflow_tag/transition_to_workflow_status';
     let postData = {
       curie_or_reference_id: referenceCurie,
       mod_abbreviation: accessLevel,
-      new_workflow_tag_atp_id: 'ATP:0000135',
+      new_workflow_tag_atp_id: newStatusId,
       transition_type: 'manual',
     };
-    axios
+    return axios
       .post(url, postData, {
         headers: {
           Authorization: 'Bearer ' + accessToken,
@@ -243,7 +244,7 @@ const Workflow = () => {
         },
       })
       .then(res => {
-        setAlert("Transitioned to 'file unavailable' status!");
+        setAlert(alertMessage);
         setShowAlert(true);
         setTimeout(() => {
           setShowAlert(false);
@@ -256,6 +257,20 @@ const Workflow = () => {
       });
   };
 
+  const handleFileUnavailableClick = async () => {
+    if (modFileStatus[accessLevel]['atpName'] === 'file needed') {
+      await handleWorkflowTransition('ATP:0000139', "Transitioned to 'file in progress' status!");
+      await handleWorkflowTransition('ATP:0000135', "Transitioned to 'file unavailable' status!");
+    } else {
+      await handleWorkflowTransition('ATP:0000135', "Transitioned to 'file unavailable' status!");
+    }
+  };
+
+  const handleInProgressClick = async () => {
+    handleWorkflowTransition('ATP:0000139', "Transitioned to 'file in progress' status!");
+  };
+
+
   return (
       <>
         <Row key='workflowFileStatus'>
@@ -263,14 +278,24 @@ const Workflow = () => {
           <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
             <Container>
               {!hideFileUnavailableButton && (
-                <div
+                <span
                   className="form-control biblio-button"
                   type="submit"
                   onClick={handleFileUnavailableClick}
-                  style={{ width: '160px' }}
+                  style={{ width: '160px', display: 'inline', position: 'relative', top: '.3rem', left: '.1rem' }}
                 >
                   file unavailable
-                </div>
+                </span>
+              )}
+              {!hideInProgressButton && (
+                <><span
+                  className="form-control biblio-button"
+                  type="submit"
+                  onClick={handleInProgressClick}
+                  style={{ width: '160px', display: 'inline', position: 'relative', top: '.3rem', left: '.9rem' }}
+                >
+                  in progress
+                </span>&nbsp;&nbsp;</>
               )}
               <RowDivider />
               <Row key="fileStatusDisplay">
@@ -393,7 +418,7 @@ const FileUpload = ({main_or_supp}) => {
   if (testerMod !== 'No') { accessLevel = testerMod; }
     else if (oktaDeveloper) { accessLevel = 'developer'; }
   // FileUpload accessLevel can be developer to see all files and upload as PMC
-    
+
   if (accessLevel === 'developer') {
     if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'prod') {
       accessLevel = 'No';
@@ -402,12 +427,12 @@ const FileUpload = ({main_or_supp}) => {
       accessLevel = null;
     }
   }
-  
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [fileToReUpload, setFileToReUpload] = useState(null);
   const [isErrorMessage, setIsErrorMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-    
+
   const handleConfirmUpload = () => {
     console.log('Hello Confirm upload');	
     setShowConfirmModal(false);
@@ -423,7 +448,7 @@ const FileUpload = ({main_or_supp}) => {
     setFileToReUpload(null);
     dispatch(setFileUploadingCount(0)); // reset file uploading count
   };
-    
+
   const uploadFile = (file, uploadIfAlreadyConverted = false) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -461,7 +486,7 @@ const FileUpload = ({main_or_supp}) => {
           : 'An error occurred during the file upload';
         if (errorDetail.includes("process is complete before uploading any files")) {
 	  setErrorMessage(errorDetail);
-	  setIsErrorMessage(true); 
+	  setIsErrorMessage(true);
 	  setShowConfirmModal(true);
 	  setTimeout(() => {
 	    setShowConfirmModal(false);
@@ -478,7 +503,7 @@ const FileUpload = ({main_or_supp}) => {
     }
   };
 
-    
+
   // https://react-dropzone.js.org/
   const onDrop = useCallback((acceptedFiles) => {
     dispatch(setFileUploadingCount(acceptedFiles.length));
@@ -527,7 +552,6 @@ const FileUpload = ({main_or_supp}) => {
             )}
           </Modal.Footer>
         </Modal>
-      
       </>
   );
 }
@@ -580,12 +604,12 @@ const FileEditor = () => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
-    
+
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
   const accessLevel = testerMod !== 'No' ? testerMod : oktaDeveloper ? 'developer' : oktaMod;
-  
+
   const fetchReferencefiles = async () => {
     setReferencefilesLoading(true);
     const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
@@ -667,7 +691,7 @@ const FileEditor = () => {
       }
     }
   };
-    
+
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
@@ -794,7 +818,6 @@ const FileEditor = () => {
           )}
         </Modal.Footer>
       </Modal>
-      
     </>
   );
 };
