@@ -1,649 +1,432 @@
-import { Link } from 'react-router-dom'
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
-
-import Form from 'react-bootstrap/Form';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import Button from 'react-bootstrap/Button';
-import Alert from 'react-bootstrap/Alert'
-import Modal from 'react-bootstrap/Modal';
-import InputGroup from 'react-bootstrap/InputGroup';
+import {
+    sortButtonModsQuery,
+    removeReferenceFromSortLive,
+    changeSortCorpusToggler,
+    changeSortWorkflowToggler,
+    updateButtonSort,
+    closeSortUpdateAlert,
+    setSortUpdating
+} from '../actions/sortActions';
+import { setReferenceCurie, setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioActions';
+import { Spinner, Form, Container, Row, Col, Button, Alert } from 'react-bootstrap';
 import "react-bootstrap-typeahead/css/Typeahead.css";
-
-import {downloadReferencefile, setReferenceCurie} from '../actions/biblioActions';
-import { setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioActions';
-
-import { changeFieldSortMods } from '../actions/sortActions';
-import { sortButtonModsQuery } from '../actions/sortActions';
-import { removeReferenceFromSortLive } from '../actions/sortActions';
-
-import { changeSortCorpusToggler } from '../actions/sortActions';
-import { changeSortWorkflowToggler } from '../actions/sortActions';
-import { updateButtonSort } from '../actions/sortActions';
-import { closeSortUpdateAlert } from '../actions/sortActions';
-import { setSortUpdating } from '../actions/sortActions';
-import {Spinner} from "react-bootstrap";
-import React, {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
-import {AlertAteamApiDown} from "./ATeamAlert";
+import ReferencesToSort from './ReferencesToSort'; // Updated import
+import { AlertAteamApiDown } from "./ATeamAlert"; // Assuming this is another component
+import PropTypes from 'prop-types';
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
 const Sort = () => {
-  const modsField = useSelector(state => state.sort.modsField);
+  // Selectors
   const referencesToSortLive = useSelector(state => state.sort.referencesToSortLive);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const sortType = useSelector(state => state.sort.sortType);
   const sortUpdating = useSelector(state => state.sort.sortUpdating);
   const getPapersToSortFlag = useSelector(state => state.sort.getPapersToSortFlag);
   const isLoading = useSelector(state => state.sort.isLoading);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const uid = useSelector(state => state.isLogged.uid);
+  const userId = useSelector(state => state.isLogged.userId);
+
   const dispatch = useDispatch();
+
+  // Local State
   const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
   const speciesTypeaheadRef = useRef(null);
   const [speciesSelect, setSpeciesSelect] = useState([]);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector(state => state.isLogged.testerMod);
-  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
-    
-  let accessLevel = oktaMod;
-  let activeMod = oktaMod;
-  if (testerMod !== 'No') {
-      activeMod = testerMod;
-      accessLevel = testerMod;
-  } else if (oktaDeveloper) {
-      accessLevel = 'developer';
-  }
 
-  const tetAccessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
-    
+  const [viewMode, setViewMode] = useState('Sort'); // 'Sort' or 'Recently sorted'
+  const [selectedCurator, setSelectedCurator] = useState(uid);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1');
+  const [curatorOptions, setCuratorOptions] = useState([]);
+  const [recentlySortedData, setRecentlySortedData] = useState([]);
+
+  // New State for Toggling Inside/Outside Papers
+  const [showInsidePapers, setShowInsidePapers] = useState(true); // true for inside, false for outside
+
+  // Determine Access Level
+  let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
+  let activeMod = accessLevel;
+
+  // Fetch Curator Source ID on component mount or when accessLevel/accessToken changes
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
-        setTopicEntitySourceId(await getCuratorSourceId(tetAccessLevel, accessToken));
+        const sourceId = await getCuratorSourceId(accessLevel, accessToken);
+        setTopicEntitySourceId(sourceId);
       }
     }
     fetchSourceId().catch(console.error);
-  }, [tetAccessLevel, accessToken]);
+  }, [accessLevel, accessToken]);
 
-  let buttonFindDisabled = 'disabled'
-  if (modsField) {
-      buttonFindDisabled = '';
-  }
+  // Disable Update Sorting button if sortUpdating > 0
+  let buttonUpdateDisabled = sortUpdating > 0 ? true : false; // Changed to boolean
 
-  let buttonUpdateDisabled = ''
-  if (sortUpdating > 0) {
-      buttonUpdateDisabled = 'disabled';
-  }
-
-  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
-
-  if (getPapersToSortFlag === true && sortUpdating === 0 && modsField) {
-    console.log('sort DISPATCH sortButtonModsQuery ' + modsField + ' sortType ' + sortType);
-    dispatch(sortButtonModsQuery(modsField, sortType))
-  }
-
-  //setup referencefile element
-  const FileElement = ({referenceCurie}) => {
-
-    const rowReferencefileElements = [];
-
-    for (const[index, reference] of referencesToSortLive.entries()) {
-       if (referenceCurie  !== reference['curie']) {continue; }
-       const copyrightLicenseOpenAccess =  (reference['copyright_license_open_access'] !==null && reference['copyright_license_open_access'] === 'True') ? true : false;
-       let is_ok = false;
-       let allowed_mods = [];
-
-       if ( 'referencefiles' in reference && reference['referencefiles'].length > 0) {
-          for (const referencefile of reference['referencefiles'].values()) {
-             let filename=null;
-             let fileclass=null;
-             let referencefile_id=null;
-             if (referencefile.file_class === 'main') {
-                 filename = referencefile.display_name + '.' + referencefile.file_extension;
-                 fileclass = referencefile.file_class;
-                 referencefile_id = referencefile.referencefile_id;
-             } else {
-                 continue;
-             }
-             if ('referencefile_mods' in referencefile && referencefile['referencefile_mods'].length > 0) {
-                 //console.log('referencefile_mod for ' + referenceCurie);
-                 for (const rfm of referencefile['referencefile_mods'].values()) {
-                     if (rfm['mod_abbreviation'] !== null) {
-                         allowed_mods.push(rfm['mod_abbreviation']);
-                         console.log("referencefile_mod for " + referenceCurie + " " + rfm['mod_abbreviation']);
-                     }
-                     if (rfm['mod_abbreviation'] === null || rfm['mod_abbreviation'] === accessLevel) {
-                         is_ok = true;
-                     }
-                 }
-             }
-
-             console.log("file_name:" + filename + 'index:' + index);
-             let referencefileValue = (
-                 <div><b>{reference['file_class']}:&nbsp;</b>{filename} &nbsp;({allowed_mods.join(", ")})</div>);
-             if (copyrightLicenseOpenAccess || accessLevel === 'developer') {
-                 is_ok = true;
-             } else if (accessLevel === 'No') {
-                 is_ok = false;
-                 referencefileValue = (<div><b>{fileclass}:&nbsp;</b>{filename}</div>);
-             }
-             if (is_ok) {
-                 referencefileValue = (<div><b>{fileclass}:&nbsp;</b>
-                     <button className='button-to-link' onClick={() =>
-                         dispatch(downloadReferencefile(referencefile_id, filename, accessToken))
-                     }>{filename}</button>
-                 </div>);
-             }
-             const referencefileRow = (
-                 <div key={filename}>
-                     {referencefileValue}
-                 </div>);
-             rowReferencefileElements.push( referencefileRow );
-          }
-       }
+  // Fetch references when component loads or when relevant dependencies change
+  useEffect(() => {
+    if (viewMode === 'Sort' && sortUpdating === 0 && accessLevel) {
+      console.log('sort DISPATCH sortButtonModsQuery ' + accessLevel + ' sortType ' + sortType);
+      dispatch(sortButtonModsQuery(accessLevel, sortType))
     }
-    return (<>{rowReferencefileElements}</>);
+  }, [viewMode, sortUpdating, accessLevel, sortType, dispatch]);
+
+  // Fetch recently sorted papers and curator options when viewMode changes to 'Recently sorted'
+  useEffect(() => {
+    if (viewMode === 'Recently sorted' && accessToken && accessLevel) {    
+      fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
+      setShowInsidePapers(true); // Reset to show inside papers when switching to 'Recently sorted'
+    }
+  }, [viewMode, accessToken, accessLevel, selectedTimeframe, selectedCurator]); // Added selectedTimeframe and selectedCurator to dependencies
+
+  // Function to fetch recently sorted papers and curator options
+  const fetchRecentlySortedPapers = (modAbbreviation, day, curatorUid) => {
+    const url = `${process.env.REACT_APP_RESTAPI}/sort/recently_sorted?mod_abbreviation=${modAbbreviation}&day=${day}&curator=${curatorUid}`;
+
+    fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        const { curator_data, data: references } = data;
+
+        // Build curatorOptions from curator_data
+        let curators = Object.entries(curator_data).map(([email, uid]) => ({ email, uid }));
+
+        // Add logged-in user if not already in the list and move to top
+        const loggedInUserEmail = userId; // Email address
+        const loggedInUserUid = uid; // UID
+
+        const loggedInUserIncluded = curators.some(curator => curator.uid === loggedInUserUid);
+
+        if (!loggedInUserIncluded) {
+          curators.unshift({ email: loggedInUserEmail, uid: loggedInUserUid });
+        } else {
+          // Move logged-in user to top
+          const index = curators.findIndex(curator => curator.uid === loggedInUserUid);
+          if (index > 0) {
+            const [loggedInUser] = curators.splice(index, 1);
+            curators.unshift(loggedInUser);
+          }
+        }
+
+        // Update state
+        setCuratorOptions(curators);
+        setRecentlySortedData(references);
+      })
+      .catch(error => {
+        console.error('Error fetching recently sorted papers:', error);
+      });
+  };
+
+  // Handler for 'Find sorted papers' button
+  const handleFindSortedPapers = () => {
+    let curator = selectedCurator;
+    console.log(`Selected Curator Before Check: ${curator}`);
+    if (curator === null || curator === undefined) {
+      curator = uid;
+      console.log("Reset curator to uid:", curator);
+      setSelectedCurator(uid); // Update state for future use
+    }
+    console.log(`Fetching papers with curator: ${curator}`);
+    fetchRecentlySortedPapers(accessLevel, selectedTimeframe, curator);
   }
 
-  // function to handle "Inside & Open" and "Inside" buttons click 
-  const handleInsideOrOpen = (reference, index, shouldOpenEditor = false) => {
-
-    const forApiArray = [];
-
-    // update mod_corpus_association to set 'corpus' to true
-    let updateJson = { 'corpus': true, 'mod_corpus_sort_source': 'manual_creation' };
-    let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
-    let method = 'PATCH';
-    let field = null;
-    let subField = null;
-    let array = [subPath, updateJson, method, index, field, subField];
-    forApiArray.push(array);
-
-    // if activeMod === 'WB', handle setting 'reference_type' via 'mod_reference_type'
-    if (activeMod === "WB") {
-      let reference_type = null;
-      if (reference['workflow'] === 'experimental') {
-        reference_type = 'Experimental';
-      } else if (reference['workflow'] === 'not_experimental') {
-        reference_type = 'Not_experimental';
-      } else if (reference['workflow'] === 'meeting') {
-        reference_type = 'Meeting_abstract';
-      }
-      if (reference_type !== null) {
-        updateJson = { 'reference_type': reference_type, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] };
-        subPath = 'reference/mod_reference_type/';
-        method = 'POST';
-        array = [subPath, updateJson, method, index, field, subField];
+  // Function to update sorting
+  function updateSorting() {
+    const forApiArray = []
+    for (const [index, reference] of referencesToSortLive.entries()) {
+      if (reference['mod_corpus_association_corpus'] !== null) {
+        let updateJson = { 'corpus': reference['mod_corpus_association_corpus'], 'mod_corpus_sort_source': 'manual_creation' }
+        let subPath = `reference/mod_corpus_association/${reference['mod_corpus_association_id']}`;
+        const field = null;
+        const subField = null;
+        let method = 'PATCH';
+        let array = [subPath, updateJson, method, index, field, subField]
         forApiArray.push(array);
-      }
-
-      // handle species selection
-      if (speciesSelect && speciesSelect[index]) {
-        for (const item of speciesSelect[index].values()) {
-          const taxArray = item.split(" ");
-          updateJson = {
-            'reference_curie': reference['curie'],
-            'entity': taxArray.pop(), // taxid last element
-            'topic': "ATP:0000123",   // species
-            'entity_type': "ATP:0000123", // species
-            'entity_id_validation': "alliance",
-            'topic_entity_tag_source_id': topicEntitySourceId
-          };
-          subPath = 'topic_entity_tag/';
-          method = 'POST';
-          array = [subPath, updateJson, method, index, field, subField];
-          forApiArray.push(array);
+        if (reference['mod_corpus_association_corpus'] === true && activeMod === "WB") {
+          let reference_type = null;
+          if (reference['workflow'] === 'experimental') { reference_type = 'Experimental'; }
+          else if (reference['workflow'] === 'not_experimental') { reference_type = 'Not_experimental'; }
+          else if (reference['workflow'] === 'meeting') { reference_type = 'Meeting_abstract'; }
+          if (reference_type !== null) {
+            updateJson = { 'reference_type': reference_type, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] }
+            subPath = 'reference/mod_reference_type/';
+            method = 'POST';
+            array = [subPath, updateJson, method, index, field, subField]
+            forApiArray.push(array);
+            if (speciesSelect && speciesSelect[index]) {
+              for (const item of speciesSelect[index].values()) {
+                const taxArray = item.split(" ");
+                updateJson = {
+                  'reference_curie': reference['curie'],
+                  'entity': taxArray.pop(),
+                  'topic': "ATP:0000123",
+                  'entity_type': "ATP:0000123",
+                  'entity_id_validation': "alliance",
+                  'topic_entity_tag_source_id': topicEntitySourceId
+                };
+                subPath = 'topic_entity_tag/';
+                const field = null;
+                const subField = null;
+                method = 'POST';
+                array = [subPath, updateJson, method, index, field, subField]
+                forApiArray.push(array);
+              }
+            }
+          }
         }
       }
     }
 
-    // dispatch the updates
-    let dispatchCount = forApiArray.length;
-    dispatch(setSortUpdating(dispatchCount));
-    for (const arrayData of forApiArray.values()) {
-      arrayData.unshift(accessToken);
-      dispatch(updateButtonSort(arrayData));
-    }
-
-    // remove the paper from the page
-    dispatch(removeReferenceFromSortLive(index));
-
-    // update speciesSelect state
-    setSpeciesSelect(prevSpeciesSelect => {
-      const newSpeciesSelect = [...prevSpeciesSelect];
-      // remove all species associated with the reference at the given index
-      newSpeciesSelect[index] = []; // clear all species for the reference
-      return newSpeciesSelect;
-    });
-
-    // update speciesSelectLoading state
-    setSpeciesSelectLoading(prevSpeciesSelectLoading => {
-      const newSpeciesSelectLoading = [...prevSpeciesSelectLoading];
-      // clear the loading state for the reference at the given index	
-      newSpeciesSelectLoading[index] = false; // set to false or remove the entry
-      return newSpeciesSelectLoading;
-    });
-
-    // optionally open TET editor in a new tab/window if shouldOpenEditor is true
-    if (shouldOpenEditor) {
-      const tetEditorUrl = `/Biblio/?action=entity&referenceCurie=${reference['curie']}`;
-      window.open(tetEditorUrl, '_blank');
-    }
-  };
-  
-  // function to handle "Outside" button click
-  const handleOutside = (reference, index) => {
-
-    const forApiArray = [];
-
-    // update mod_corpus_association to set 'corpus' to false
-    let updateJson = { 'corpus': false, 'mod_corpus_sort_source': 'manual_creation' };
-    let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
-    let method = 'PATCH';
-    let field = null;
-    let subField = null;
-    let array = [subPath, updateJson, method, index, field, subField];
-    forApiArray.push(array);
-
-    // dispatch the updates
-    let dispatchCount = forApiArray.length;
-    dispatch(setSortUpdating(dispatchCount));
-    for (const arrayData of forApiArray.values()) {
-      arrayData.unshift(accessToken);
-      dispatch(updateButtonSort(arrayData));
-    }
-
-    // remove the paper from the page
-    dispatch(removeReferenceFromSortLive(index));
-  };
-    
-    
-  function updateSorting() {
-    const forApiArray = []
-    for (const[index, reference] of referencesToSortLive.entries()) {
-      if (reference['mod_corpus_association_corpus'] !== null) {
-        // console.log(reference['mod_corpus_association_id']);
-        // console.log(reference['corpus']);
-        let updateJson = { 'corpus': reference['mod_corpus_association_corpus'], 'mod_corpus_sort_source': 'manual_creation' }
-        let subPath = 'reference/mod_corpus_association/' + reference['mod_corpus_association_id'];
-        const field = null;
-        const subField = null;
-        let method = 'PATCH';
-        let array = [ subPath, updateJson, method, index, field, subField ]
-        forApiArray.push( array );
-        if (reference['mod_corpus_association_corpus'] === true && activeMod === "WB") {
-          let reference_type = null;
-          if      (reference['workflow'] === 'experimental')     { reference_type = 'Experimental'; }
-          else if (reference['workflow'] === 'not_experimental') { reference_type = 'Not_experimental'; }
-          else if (reference['workflow'] === 'meeting')          { reference_type = 'Meeting_abstract'; }
-          if (reference_type !== null) {
-              updateJson = { 'reference_type': reference_type, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] }
-              subPath = 'reference/mod_reference_type/';
-              method = 'POST';
-              let array = [ subPath, updateJson, method, index, field, subField]
-              forApiArray.push( array ); 
-          if (speciesSelect && speciesSelect[index]) {
-            for ( const item of speciesSelect[index].values() ){
-                const taxArray = item.split(" ");
-                updateJson = {'reference_curie': reference['curie'],
-                              'entity': taxArray.pop(),     // taxid last element
-                              'topic': "ATP:0000123",       // species
-                              'entity_type': "ATP:0000123", // species
-                              'entity_id_validation': "alliance",  // Kimberly said this instead of 'manual'
-                              'topic_entity_tag_source_id': topicEntitySourceId};    
-                subPath = 'topic_entity_tag/';
-                const field = null;
-                const subField = null;
-                let method = 'POST';
-                let array = [ subPath, updateJson, method, index, field, subField ]
-                forApiArray.push( array );
-            }
-          }
-    } } } }
-
     setSpeciesSelect([]);
     setTypeaheadOptions([]);
     setSpeciesSelectLoading([]);
-    speciesTypeaheadRef.current.clear();
+    if (speciesTypeaheadRef.current) {
+      speciesTypeaheadRef.current.clear();
+    }
 
     let dispatchCount = forApiArray.length;
 
     console.log('dispatchCount ' + dispatchCount)
     dispatch(setSortUpdating(dispatchCount))
 
-    for (const arrayData of forApiArray.values()) {
+    for (const arrayData of forApiArray) {
       arrayData.unshift(accessToken)
       dispatch(updateButtonSort(arrayData))
     }
-
   }
 
   return (
     <div>
-      <h4>Select a MOD to find papers to sort for inside / outside corpus</h4>
-      <Container>
-        <Row>
-          <Col lg={5} ></Col>
-          <Col lg={2} >
-            <br/>
-            <Form.Control as="select" name="mods" type="select" htmlSize={mods.length} onChange={(e) => dispatch(changeFieldSortMods(e))} value={modsField !== '' ? modsField : undefined} >
-              {mods.map((optionValue, index) => (
-                  <option key={`mod ${index} ${optionValue}`}>{optionValue}</option>
-              ))}
-            </Form.Control>
-          </Col>
-          <Col lg={5} ></Col>
-        </Row>
-        { (activeMod === 'WB') ?
-          <Row>
-            <Col lg={2} ></Col>
-            <Col lg={8} >
-              <br/>
-              <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'needs_review'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>{' '}
-              <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'prepublication'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Prepublication"}</Button>
-            </Col>
-            <Col lg={2} ></Col>
-          </Row>
-          :
-          <Row>
-            <Col lg={4} ></Col>
-            <Col lg={4} >
-              <br/>
-              <Button style={{width: "12em"}} disabled={buttonFindDisabled} onClick={() => dispatch(sortButtonModsQuery(modsField, 'needs_review'))}>{isLoading ? <Spinner animation="border" size="sm"/> : "Find Papers to Sort"}</Button>
-            </Col>
-            <Col lg={4} ></Col>
-          </Row>
+      <h3>References for {accessLevel}</h3>
+      <Form>
+        <Form.Check
+          inline
+          type='radio'
+          name='viewMode'
+          id='viewModeSort'
+        >
+          <Form.Check.Input
+            type='radio'
+            name='viewMode'
+            id='viewModeSort'
+            checked={viewMode === 'Sort'}
+            onChange={() => setViewMode('Sort')}
+          />
+          <Form.Check.Label style={{ fontSize: '1.1em' }}>Sort</Form.Check.Label>
+        </Form.Check>
+        <Form.Check
+          inline
+          type='radio'
+          name='viewMode'
+          id='viewModeRecentlySorted'
+        >
+          <Form.Check.Input
+            type='radio'
+            name='viewMode'
+            id='viewModeRecentlySorted'
+            checked={viewMode === 'Recently sorted'}
+            onChange={() => setViewMode('Recently sorted')}
+          />
+          <Form.Check.Label style={{ fontSize: '1.1em' }}>Recently sorted</Form.Check.Label>
+        </Form.Check>
+      </Form>
+      <Container fluid>
+        {viewMode === 'Sort' &&
+          <>
+            {/* Removed the "Find Papers to Sort" button */}
+            <RowDivider />
+
+            {referencesToSortLive && referencesToSortLive.length > 0 &&
+              <Row>
+                <Col lg={12} className="text-center">
+                  <SortSubmitUpdateRouter />
+                  <Button
+                    as="input"
+                    style={{ backgroundColor: '#6b9ef3', color: 'white', border: 'none', width: '200px' }} // Set width
+                    type="button"
+                    disabled={buttonUpdateDisabled}
+                    value="Update Sorting"
+                    onClick={() => updateSorting()}
+                  />{' '}
+                </Col>
+              </Row>
+            }
+            {referencesToSortLive && referencesToSortLive.length === 0 && (
+              <div>
+                <br />
+                <p>No Papers to sort</p>
+              </div>
+            )}
+            {referencesToSortLive && referencesToSortLive.length > 0 && (
+              <Container fluid>
+                <RowDivider />
+                {referencesToSortLive.map((reference, index) => (
+                  <ReferencesToSort
+                    key={`reference div ${index}`}
+                    reference={reference}
+                    index={index}
+                    canSort={true}
+                    speciesSelect={speciesSelect}
+                    setSpeciesSelect={setSpeciesSelect}
+                    speciesSelectLoading={speciesSelectLoading}
+                    setSpeciesSelectLoading={setSpeciesSelectLoading}
+                    typeaheadOptions={typeaheadOptions}
+                    setTypeaheadOptions={setTypeaheadOptions}
+                    speciesTypeaheadRef={speciesTypeaheadRef}
+                    topicEntitySourceId={topicEntitySourceId}
+                    accessToken={accessToken}
+                    activeMod={activeMod}
+                  />
+                ))}
+                <RowDivider />
+                <Row><Col>
+                  <SortSubmitUpdateRouter />
+                  <Button
+                    as="input"
+                    style={{ backgroundColor: '#6b9ef3', color: 'white', border: 'none', width: '200px' }} // Set width
+                    type="button"
+                    disabled={buttonUpdateDisabled}
+                    value="Update Sorting"
+                    onClick={() => updateSorting()}
+                  />{' '}
+                </Col></Row>
+              </Container>
+            )}
+          </>
         }
 
-        {/* Added space between "Find Papers to Sort" button and "Update Sorting" button */}
-        <RowDivider />
-
-        { referencesToSortLive && referencesToSortLive.length > 0 &&
-          <Row>
-            <Col lg={12} className="text-center">
-              <SortSubmitUpdateRouter />
-              <Button as="input" style={{ backgroundColor: '#6b9ef3', color: 'white', border: 'none' }} type="button" disabled={buttonUpdateDisabled} value="Update Sorting" onClick={() => updateSorting()} />{' '}
-            </Col>
-          </Row>
-        } 
-	  
+        {viewMode === 'Recently sorted' &&
+          <>
+            <Row className="justify-content-center">
+              <Col lg="auto">
+                <br />
+                <Form>
+                  <Form.Row className="align-items-end">
+                    <Col md={5}>
+                      <Form.Group controlId="formCuratorSelect">
+                        <Form.Label style={{ fontWeight: 'bold' }}>Who:</Form.Label>
+                        <Form.Control
+                          as="select"
+                          style={{ minWidth: '250px' }}
+                          value={selectedCurator}
+                          onChange={(e) => setSelectedCurator(e.target.value)}
+                        >
+                          {curatorOptions.map((curator, index) => (
+                            <option key={index} value={curator.uid}>
+                              {curator.email}
+                            </option>
+                          ))}
+                        </Form.Control>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group controlId="formTimeframeSelect">
+                        <Form.Label style={{ fontWeight: 'bold' }}>When:</Form.Label>
+                        <Form.Control
+                          as="select"
+                          value={selectedTimeframe}
+                          onChange={(e) => setSelectedTimeframe(e.target.value)}
+                        >
+                          <option value="1">Today</option>
+                          <option value="7">Past week</option>
+                        </Form.Control>
+                      </Form.Group>
+                    </Col>
+                    <Col md={4} className="d-flex align-items-end">
+                      <Form.Group>
+                        <Form.Label>&nbsp;</Form.Label> {/* Empty label for alignment */}
+                        <Button onClick={handleFindSortedPapers}>Find sorted papers</Button>
+                      </Form.Group>
+                    </Col>
+                  </Form.Row>
+                </Form>		  
+              </Col>
+            </Row>
+            <Row>
+              <Col lg={12}>
+                <br />
+                {recentlySortedData && recentlySortedData.length > 0 ? (
+                  <div>      
+                    <SortSubmitUpdateRouter />
+		    <Button
+                      variant="outline-primary"
+                      className="ml-1"
+                      onClick={() => setShowInsidePapers(!showInsidePapers)}
+                    >
+	              {showInsidePapers ? 'Show Outside Papers' : 'Show Inside Papers'}
+                    </Button>
+		    <p />
+                    <Container fluid>
+                      {recentlySortedData
+                        .filter(ref => ref['mod_corpus_association_corpus'] === showInsidePapers)
+                        .map((reference, index) => (
+                          <ReferencesToSort
+                            key={`reference div ${index}`}
+                            reference={reference}
+                            index={index}
+                            canSort={false}
+                            speciesSelect={speciesSelect}
+                            setSpeciesSelect={setSpeciesSelect}
+                            speciesSelectLoading={speciesSelectLoading}
+                            setSpeciesSelectLoading={setSpeciesSelectLoading}
+                            typeaheadOptions={typeaheadOptions}
+                            setTypeaheadOptions={setTypeaheadOptions}
+                            speciesTypeaheadRef={speciesTypeaheadRef}
+                            topicEntitySourceId={topicEntitySourceId}
+                            accessToken={accessToken}
+                            activeMod={activeMod}
+                          />
+                        ))}
+                      {recentlySortedData.filter(ref => ref['mod_corpus_association_corpus'] === showInsidePapers).length === 0 && (
+                        <p>No {showInsidePapers ? 'inside' : 'outside'} papers found.</p>
+                      )}
+                    </Container>
+                  </div>
+                ) : (
+                  <p>No sorted papers found.</p>
+                )}
+              </Col>
+            </Row>
+          </>
+        }
       </Container>
       <AlertAteamApiDown />
-      {
-        referencesToSortLive && referencesToSortLive.length === 0 ?
-            <div>
-              <br/>
-              <p>No Papers to sort</p>
-            </div>
-            : null
-      }
-      { referencesToSortLive && referencesToSortLive.length > 0 &&
-        <Container fluid>	   
-          <RowDivider />
-	  {/* Display references with individual radio buttons */}  
-	  {referencesToSortLive.map((reference, index) => {
-            const backgroundColor = (reference['prepublication_pipeline'] === true) ? '#f8d7da' : '';
-            return (
-            <div key={`reference div ${index}`} >
-              <Row key={`reference ${index}`} >	    
-              <Col lg={2} className="Col-general Col-display" style={{display: 'flex', flexDirection: 'column', backgroundColor: backgroundColor}} >
-                 <div style={{alignSelf: 'flex-start'}} ><b>Title: </b>
-                   <span dangerouslySetInnerHTML={{__html: reference['title']}} /></div>
-                 <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference['curie']}}
-                   style={{alignSelf: 'flex-start'}}  onClick={() => { dispatch(setReferenceCurie(reference['curie']));
-                   dispatch(setGetReferenceCurieFlag(true)); }} >{reference['curie']}</Link>
-                 {reference['cross_references'].map((xref, index2) => (
-                   <div key={`xref ${index} ${index2}`} style={{alignSelf: 'flex-start'}} >
-                     <a href={xref['url']} target='_blank' rel="noreferrer" >{xref['curie']}</a></div>
-                 ))}
-                 <div style={{alignSelf: 'flex-start'}} ><b>Journal:</b> {
-                   (reference['resource_title']) ? <span dangerouslySetInnerHTML={{__html: reference['resource_title']}} /> : 'N/A' }</div>
-                 <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
-              </Col>
-              <Col lg={5} className="Col-general Col-display" style={{backgroundColor: backgroundColor}}><span dangerouslySetInnerHTML={{__html: reference['abstract']}} /></Col>
-
-
-	      {/* Needs Review Column */}  	  
-	      <Col lg={1} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-		  <br /><br />    
-                  <Form.Check
-                      inline
-                      checked={ (reference['mod_corpus_association_corpus'] === null) ? 'checked' : '' }
-                      type='radio'
-                      label='needs review'
-                      id={`needs_review_toggle ${index}`}
-                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                  />
-              </Col>
-
-	      <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-		  <br /><br />
-                  <Form.Check
-                      inline
-                      checked={ (reference['mod_corpus_association_corpus'] === true) ? 'checked' : '' }
-                      type='radio'
-                      label='inside corpus'
-                      id={`inside_corpus_toggle ${index}`}
-                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                  />
-		  <br /> 
-                  { (activeMod === 'WB') &&
-                    <>
-                      <Form.Check
-                          inline
-                          disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
-                          checked={ (reference['workflow'] === 'experimental') ? 'checked' : '' }
-                          type='radio'
-                          label='expt'
-                          id={`experimental_toggle ${index}`}
-                          onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                      /><br/>
-                      <Form.Check
-                          inline
-                          disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
-                          checked={ (reference['workflow'] === 'not_experimental') ? 'checked' : '' }
-                          type='radio'
-                          label='not expt'
-                          id={`not_experimental_toggle ${index}`}
-                          onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                      /><br/>
-                      <Form.Check
-                          inline
-                          disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
-                          checked={ (reference['workflow'] === 'meeting') ? 'checked' : '' }
-                          type='radio'
-                          label='meeting'
-                          id={`meeting_toggle ${index}`}
-                          onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
-                      /><br/>
-                    </>
-                  }
-                  <Form.Control as="select" id={`primary_select ${index}`} style={{display: 'none'}}>
-                      <option>Experimental</option>
-                      <option>Not Experimental</option>
-                      <option>Meeting Abstract</option>
-                  </Form.Control><br/>
-                  <AsyncTypeahead
-                      multiple
-                      disabled={ (reference['mod_corpus_association_corpus'] !== true) ? 'disabled' : '' }
-                      isLoading={speciesSelectLoading[index]}
-                      placeholder="species name"
-                      ref={speciesTypeaheadRef}
-                      id={`species_select ${index}`}
-                      labelKey={`species_select ${index}`}
-                      useCache={false}
-                      onSearch={(query) => {
-                          let n = speciesSelectLoading.length
-                          let a = new Array(n); for (let i=0; i<n; ++i) a[i] = false;
-                          a[index] = true;
-                          setSpeciesSelectLoading(a);
-
-                          axios.post(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/search?limit=10&page=0',
-                              {
-                                  "searchFilters": {
-                                      "nameFilter": {
-                                          "name": {
-                                              "queryString": query,
-                                              "tokenOperator": "AND"
-                                          }
-                                      }
-                                  },
-                                  "sortOrders": [],
-                                  "aggregations": [],
-                                  "nonNullFieldsTable": []
-                              },
-                              { headers: {
-                                      'content-type': 'application/json',
-                                      'authorization': 'Bearer ' + accessToken
-                                  }
-                              })
-                              .then(res => {
-                                  let a = new Array(speciesSelectLoading.length); for (let i=0; i<n; ++i) a[i] = false;
-                                  setSpeciesSelectLoading(a);
-                                  if (res.data.results) {
-                                      setTypeaheadOptions(res.data.results.map(item => item.name + ' ' + item.curie));
-                                  }
-                              });
-                      }}
-                      onChange={(selected) => {
-                          let newArr = [...speciesSelect];
-                          newArr[index] = selected;
-                          setSpeciesSelect(newArr);
-                      }}
-                      options={typeaheadOptions}
-                      selected={speciesSelect.length > 0 ? speciesSelect[index] : []}
-                  />
-                  { (activeMod === 'WB') && <div><br/><NewTaxonModal/></div> }
-	          <br />
-                  <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(reference, index, true)}>
-                      Inside & Open
-                  </Button>{' '}
-                  <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(reference, index, false)}>
-                      Inside
-                  </Button>
-                </Col>
-
-                {/* Outside Corpus Column */}
-                <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor: backgroundColor }}>
-                    <br /><br />
-                    <Form.Check
-                      inline
-                      checked={ (reference['mod_corpus_association_corpus'] === false) ? 'checked' : '' }
-                      type='radio'
-                      label='outside corpus'
-                      id={`outside_corpus_toggle ${index}`}
-                      onChange={(e) => dispatch(changeSortCorpusToggler(e))}
-                    />
-		    <br /><br /><br /><br />
-                    {/* New Outside Button */}
-		    <div style={{ marginTop: '10px' }}>
-		      {/* <Button variant="danger" size="sm" onClick={() => handleOutside(reference, index)}> */}
-		      {/* <Button className="outside-button" size="sm" onClick={() => handleOutside(reference, index)}> */}
-		      <Button variant="outline-secondary" size="sm" onClick={() => handleOutside(reference, index)}>			    
-                        Outside
-                      </Button>
-	            </div>
-                </Col>
-
-		  
-		  
-            </Row>
-
-            </div>
-          )} )}
-          <RowDivider />
-          <Row><Col>
-            <SortSubmitUpdateRouter />
-            <Button as="input" style={{ backgroundColor: '#6b9ef3', color: 'white', border: 'none' }} type="button" disabled={buttonUpdateDisabled} value="Update Sorting" onClick={() => updateSorting()} />{' '}
-          </Col></Row>
-        </Container>
-      }
-      <hr/>
+      <hr />
     </div>
   )
 }
 
-const NewTaxonModal = () => {
-  const accessToken = useSelector(state => state.isLogged.accessToken);
-  const [show, setShow] = useState(false);
-  const [taxonId, setTaxonId] = useState('');
-  const [ateamResponse, setAteamResponse] = useState('');
-  const [ateamSuccess, setAteamSuccess] = useState(false);
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
-  const defaultBodyText = "Import NCBI Taxon into A-team system for autocomplete here.\nOnly put in the digits part of the NCBI Taxon ID.\n\n";
-
-  function importTaxon(taxonId) {
-    axios.get(process.env.REACT_APP_ATEAM_API_BASE_URL + 'api/ncbitaxonterm/NCBITaxon:' + taxonId,
-        { headers: {
-            'content-type': 'application/json',
-            'authorization': 'Bearer ' + accessToken
-          }
-        })
-    .then(res => {
-      let success = false;
-      if (('entity' in res.data) && ('curie' in res.data.entity)) { success = true; }
-      if (success) {
-        setAteamResponse(res.data.entity.curie + ' created in A-team system');
-        setAteamSuccess(true);
-      } else {
-        setAteamResponse('unknown failure to create in A-team system');
-        setAteamSuccess(false);
-      }
-    });
-  }
-
-  return (
-    <>
-      <Button variant="outline-primary" size="sm" onClick={handleShow}>Create New Taxon</Button>
-      <Modal show={show} onHide={handleClose}>
-        <Modal.Header closeButton>
-          <Modal.Title>New Taxon</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {defaultBodyText}
-          {(() => {
-            if (ateamResponse !== '') {
-              if (ateamSuccess) { return (<span style={{color:'green'}}>{ateamResponse}</span>) }
-                else { return (<span style={{color:'red'}}>{ateamResponse}</span>) } }
-          })(ateamResponse)}
-          <InputGroup className="mb-2">
-            <Form.Control placeholder="e.g., 2489" type="text"
-                          id="taxonIdField" name="taxonIdField" value={taxonId}
-                          onChange={(e) => setTaxonId(e.target.value)}
-                          onKeyPress={(event) => {
-                            if (event.charCode === 13) { importTaxon(taxonId); }
-                          }}
-            />
-            <Button type="submit" size="sm" onClick={() => importTaxon(taxonId)}>Import NCBI Taxon</Button>
-          </InputGroup>
-        </Modal.Body>
-      </Modal>
-    </>
-  );
-}
-
+// SortSubmitUpdateRouter Component
 const SortSubmitUpdateRouter = () => {
   const sortUpdating = useSelector(state => state.sort.sortUpdating);
 
   if (sortUpdating > 0) {
-    return (<SortSubmitUpdating />); }
+    return (<SortSubmitUpdating />);
+  }
   else {
-    return (<><AlertDismissibleSortUpdate /></>); }
-} // const SortSubmitUpdateRouter
+    return (<><AlertDismissibleSortUpdate /></>);
+  }
+}
 
+// SortSubmitUpdating Component
 const SortSubmitUpdating = () => {
   return (
-    <div className="form-control biblio-updating" >updating Sort data</div>
+    <div className="form-control biblio-updating" >Updating Sort data...</div>
   );
 }
 
-
+// AlertDismissibleSortUpdate Component
 const AlertDismissibleSortUpdate = () => {
   const dispatch = useDispatch();
   const updateAlert = useSelector(state => state.sort.updateAlert);
@@ -653,10 +436,12 @@ const AlertDismissibleSortUpdate = () => {
   let header = 'Update Failure';
   if (updateFailure === 0) {
     header = 'Update Success';
-    variant = 'success'; }
+    variant = 'success';
+  }
   else {
     header = 'Update Failure';
-    variant = 'danger'; }
+    variant = 'danger';
+  }
 
   useEffect(() => {
     if (updateAlert && updateFailure === 0) {
@@ -679,6 +464,4 @@ const AlertDismissibleSortUpdate = () => {
   } else { return null; }
 }
 
-export default Sort
-
-
+export default Sort;

@@ -118,7 +118,7 @@ const TopicEntityTable = () => {
     fetchData();
   }, [accessToken, dispatch]);
 
-  const fetchTableData = async () => {
+  const fetchTableData = useCallback(async () => {
     let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000;
     setIsLoadingData(true);
     try {
@@ -151,14 +151,14 @@ const TopicEntityTable = () => {
     } finally {
       setIsLoadingData(false);
     }
-  }
+  }, [accessToken, referenceCurie, topicEntityTags, dispatch]);
 
   useEffect(() => {
       if (firstFetch || biblioUpdatingEntityAdd) {
 	  fetchTableData();
           setFirstFetch(false);
       } 
-  }, [biblioUpdatingEntityAdd]);
+  }, [firstFetch, biblioUpdatingEntityAdd, fetchTableData]);
 
 
   const handleSourceDescClick = (fullSourceDesc) => {
