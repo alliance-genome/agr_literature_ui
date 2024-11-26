@@ -223,7 +223,7 @@ const Workflow = () => {
   const isMainPDFuploaded = modFileStatus[accessLevel]['atpName'] === 'files uploaded';
   const isDeveloperWithoutTester = oktaDeveloper === true && testerMod === 'No';
   const hideFileUnavailableButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
-  const hideInProgressButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
+  const hideInProgressButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file unavailable');
 
   const handleWorkflowTransition = (newStatusId, alertMessage) => {
     let url =
