@@ -31,9 +31,11 @@ import {useDropzone} from 'react-dropzone';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 const BiblioFileManagement = () => {
+  const dispatch = useDispatch();
   const fileUploadingIsUploading = useSelector(state => state.biblio.fileUploadingCount) > 0;
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-
+  const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(false);
+    
   const accessToken = useSelector(state => state.isLogged.accessToken);
 
   // determine accessLevel
@@ -72,6 +74,11 @@ const BiblioFileManagement = () => {
     }
   }
 
+  const handleFileStatusChange = () => {
+      setWorkflowRefreshTrigger(prev => !prev);
+      dispatch(biblioQueryReferenceCurie(referenceJsonLive.curie));
+  };
+    
   return (
     <>
       <Container>
@@ -87,9 +94,9 @@ const BiblioFileManagement = () => {
           <AddToCorpus accessLevel={accessLevel} referenceCurie={referenceJsonLive.curie} />
         )}
         <OpenAccess />
-        <Workflow />
+        <Workflow workflowRefreshTrigger={workflowRefreshTrigger} />
         <RowDivider />
-        <FileEditor />
+        <FileEditor onFileStatusChange={handleFileStatusChange}/>
       </Container>
     </>
   );
@@ -144,7 +151,7 @@ const AddToCorpus = ({ accessLevel, referenceCurie }) => {
   );
 };
 
-const Workflow = () => {
+const Workflow = ({ workflowRefreshTrigger }) => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"]
@@ -165,6 +172,11 @@ const Workflow = () => {
   }
   // Workflow accessLevel cannot be developer, is mod-specific
 
+  useEffect(() => {
+    // Fetch workflow data whenever the trigger changes
+    dispatch(biblioQueryReferenceCurie(referenceJsonLive.curie));
+  }, [dispatch, referenceJsonLive.curie, workflowRefreshTrigger]);
+   
   const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 
   const atpMappings = {
@@ -589,7 +601,7 @@ export const reffileCompareFn = (a, b) => {
 }
 
 
-const FileEditor = () => {
+const FileEditor = ({ onFileStatusChange }) => {
   const displayOrEditor = 'display';
   const fieldName = 'referencefiles';
 
@@ -638,6 +650,7 @@ const FileEditor = () => {
       }
     }).then((res) => {
       fetchReferencefiles().finally();
+      onFileStatusChange();
     }).catch((error) => {
       console.log(error)
     });
