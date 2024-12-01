@@ -3,7 +3,7 @@ import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
-import { Spinner } from 'react-bootstrap';
+import { Spinner, Tabs, Tab } from 'react-bootstrap';
 
 const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping }) => {
   const [data, setData] = useState([]);
@@ -137,7 +137,7 @@ const WorkflowStatTablesContainer = () => {
   const text_conversion_name_mapping = {
       'file converted to text': 'converted',
       'text conversion needed': 'needed',
-      'file to text conversion failed': 'falied',
+      'file to text conversion failed': 'failed',
       'text conversion in progress': 'in progress'
   }
   return (
@@ -159,4 +159,22 @@ const WorkflowStatTablesContainer = () => {
   );
 };
 
-export default WorkflowStatTablesContainer;
+const ReportsContainer = () => {
+  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN'];
+  return (
+    <div>
+      <Tabs defaultActiveKey="all" id="uncontrolled-tab-example">
+        <Tab eventKey="all" title="All">
+          <WorkflowStatTablesContainer />
+        </Tab>
+        {mods.map(mod => (
+          <Tab key={mod} eventKey={mod} title={mod}>
+            {mod}
+          </Tab>
+        ))}
+      </Tabs>
+    </div>
+  );
+}
+
+export default ReportsContainer;
