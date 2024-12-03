@@ -71,7 +71,6 @@ const AppWithRouterAccess = () => {
         document.title = documentTitle;
     }, [documentTitle]);
     useEffect(() => {
-      console.log('mounting');
       const fetchTaxons = async () => {
         const taxons = await axios.get(process.env.REACT_APP_RESTAPI + "/mod/taxons/default");
         const sortedMods = taxons.data.map(taxon => taxon.mod_abbreviation).sort();
