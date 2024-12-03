@@ -165,7 +165,7 @@ const Workflow = () => {
   }
   // Workflow accessLevel cannot be developer, is mod-specific
 
-  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
+  const mods = useSelector(state => state.app.mods);
 
   const atpMappings = {
     '': 'Pick file status',
