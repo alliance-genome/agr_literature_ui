@@ -165,6 +165,11 @@ const Workflow = () => {
   }
   // Workflow accessLevel cannot be developer, is mod-specific
 
+  useEffect(() => {
+    // Fetch workflow data whenever the trigger changes
+    dispatch(biblioQueryReferenceCurie(referenceJsonLive.curie));
+  }, [dispatch, referenceJsonLive.curie, workflowRefreshTrigger]);
+
   const mods = useSelector(state => state.app.mods);
 
   const atpMappings = {
