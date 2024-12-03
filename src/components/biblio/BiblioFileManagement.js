@@ -176,7 +176,7 @@ const Workflow = ({ workflowRefreshTrigger }) => {
     // Fetch workflow data whenever the trigger changes
     dispatch(biblioQueryReferenceCurie(referenceJsonLive.curie));
   }, [dispatch, referenceJsonLive.curie, workflowRefreshTrigger]);
-
+   
   const mods = useSelector(state => state.app.mods);
 
   const atpMappings = {
@@ -600,7 +600,6 @@ export const reffileCompareFn = (a, b) => {
   return 0;
 }
 
-
 const FileEditor = ({ onFileStatusChange }) => {
   const displayOrEditor = 'display';
   const fieldName = 'referencefiles';
@@ -615,7 +614,9 @@ const FileEditor = ({ onFileStatusChange }) => {
   const [referencefilesLoading, setReferencefilesLoading] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [referencefileIdToPatch, setReferencefileIdToPatch] = useState(null);
+  const [patchDataToApply, setPatchDataToApply] = useState(null);
 
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
@@ -643,7 +644,11 @@ const FileEditor = ({ onFileStatusChange }) => {
 
   const patchReferencefile = (referencefileId, data, accessToken) => {
     const url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/" + referencefileId;
-    axios.patch(url, data, {
+    const dataToSend = {
+        ...data,
+        change_if_already_converted: false
+    };
+    axios.patch(url, dataToSend, {
       headers: {
         "Authorization": "Bearer " + accessToken,
         "Content-Type": "application/json",
@@ -652,9 +657,56 @@ const FileEditor = ({ onFileStatusChange }) => {
       fetchReferencefiles().finally();
       onFileStatusChange();
     }).catch((error) => {
-      console.log(error)
+      console.error('Patch Error:', error);
+      const errorDetail = error.response && error.response.data && error.response.data.detail
+        ? error.response.data.detail
+        : 'An error occurred during the file update';
+      if (errorDetail.includes("File already converted to text")) {
+        setReferencefileIdToPatch(referencefileId);
+        setPatchDataToApply(data);
+        setShowConfirmModal(true);
+      } else {
+        setErrorMessage(errorDetail);
+        setShowErrorModal(true);
+      }
     });
   }
+
+  const handleConfirmPatch = () => {
+    if (referencefileIdToPatch && patchDataToApply) {
+      const url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/" + referencefileIdToPatch;
+      const dataToSend = {
+        ...patchDataToApply,
+        change_if_already_converted: true
+      };
+      axios.patch(url, dataToSend, {
+        headers: {
+          "Authorization": "Bearer " + accessToken,
+          "Content-Type": "application/json",
+        }
+      }).then((res) => {
+        fetchReferencefiles().finally();
+        onFileStatusChange();
+        setReferencefileIdToPatch(null);
+        setPatchDataToApply(null);
+        setShowConfirmModal(false);
+      }).catch((error) => {
+        console.error('Patch Error:', error);
+        const errorDetail = error.response && error.response.data && error.response.data.detail
+          ? error.response.data.detail
+          : 'An error occurred during the file update';
+        setErrorMessage(errorDetail);
+        setShowErrorModal(true);
+        setShowConfirmModal(false);
+      });
+    }
+  };
+
+  const handleCancelPatch = () => {
+    setReferencefileIdToPatch(null);
+    setPatchDataToApply(null);
+    setShowConfirmModal(false);
+  };
 
   const handleKeepManualTETtags = () => {
     setShowErrorModal(false);
@@ -708,7 +760,7 @@ const FileEditor = ({ onFileStatusChange }) => {
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
-          (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation
+        (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation
       ).join(", ");
       let filename = referenceFile.display_name + '.' + referenceFile.file_extension;
       let referencefileValue = (<div>{filename}</div>);
@@ -735,9 +787,14 @@ const FileEditor = ({ onFileStatusChange }) => {
               as="select"
               disabled={!hasAccess}
               value={referenceFile.pdf_type}
-              onChange={(event) => patchReferencefile(referenceFile.referencefile_id, { "pdf_type": event.target.value === "" ? null : event.target.value }, accessToken)}
-              >
-	      <option></option>
+              onChange={(event) => {
+                const newValue = event.target.value === "" ? null : event.target.value;
+                if (referenceFile.pdf_type !== newValue) {
+                    patchReferencefile(referenceFile.referencefile_id, { "pdf_type": newValue }, accessToken);
+                }
+              }}
+            >
+              <option></option>
               <option>pdf</option>
               <option>ocr</option>
               <option>tif</option>
@@ -750,7 +807,12 @@ const FileEditor = ({ onFileStatusChange }) => {
               as="select"
               disabled={!hasAccess}
               value={referenceFile.file_publication_status}
-              onChange={(event) => patchReferencefile(referenceFile.referencefile_id, { "file_publication_status": event.target.value }, accessToken)}
+              onChange={(event) => {
+                const newValue = event.target.value;
+                if (referenceFile.file_publication_status !== newValue) {
+                    patchReferencefile(referenceFile.referencefile_id, { "file_publication_status": newValue }, accessToken);
+                }
+              }}
             >
               <option>prepub</option>
               <option>temp</option>
@@ -798,6 +860,16 @@ const FileEditor = ({ onFileStatusChange }) => {
   return (
     <>
       {referencefilesLoading ? <Spinner animation="border" /> : rowReferencefileElements}
+      <Modal show={showConfirmModal} onHide={handleCancelPatch}>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Update</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Do you really want to change the file properties and re-run text conversion pipeline?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCancelPatch}>Cancel</Button>
+          <Button variant="primary" onClick={handleConfirmPatch}>Confirm</Button>
+        </Modal.Footer>
+      </Modal>
       <Modal show={showErrorModal} onHide={() => setShowErrorModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>
