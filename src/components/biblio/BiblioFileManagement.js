@@ -176,8 +176,8 @@ const Workflow = ({ workflowRefreshTrigger }) => {
     // Fetch workflow data whenever the trigger changes
     dispatch(biblioQueryReferenceCurie(referenceJsonLive.curie));
   }, [dispatch, referenceJsonLive.curie, workflowRefreshTrigger]);
-   
-  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
+
+  const mods = useSelector(state => state.app.mods);
 
   const atpMappings = {
     '': 'Pick file status',

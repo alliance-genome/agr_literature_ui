@@ -21,8 +21,8 @@ import {Modal} from "react-bootstrap";
 
 
 const Download = () => {
-  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
   const dispatch = useDispatch();
+  const mods = useSelector(state => state.app.mods);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const autoDownloadOndemand = useSelector(state => state.download.autoDownloadOndemand);
   const isDownloadingNightly = useSelector(state => state.download.isDownloadingNightly);

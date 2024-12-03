@@ -38,7 +38,11 @@ import { useHistory } from 'react-router-dom';
 // import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
 import { Security, SecureRoute } from '@okta/okta-react';
 import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+
+import { setMods } from '../actions/appActions';
+
+import axios from "axios";
 
 // import { oktaAuthConfig, oktaSignInConfig } from '../config';
 import { oktaAuthConfig } from '../config';
@@ -56,6 +60,7 @@ console.log(oktaAuth);
 
 const AppWithRouterAccess = () => {
     const history = useHistory();
+    const dispatch = useDispatch();
 
     const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
     let documentTitle = 'Literature AGRKB';
@@ -65,6 +70,14 @@ const AppWithRouterAccess = () => {
     useEffect(() => {
         document.title = documentTitle;
     }, [documentTitle]);
+    useEffect(() => {
+      const fetchTaxons = async () => {
+        const taxons = await axios.get(process.env.REACT_APP_RESTAPI + "/mod/taxons/default");
+        const sortedMods = taxons.data.map(taxon => taxon.mod_abbreviation).sort();
+        dispatch(setMods(sortedMods));
+      }
+      fetchTaxons().finally()
+    }, []);
 
     const customAuthHandler = () => {
         history.replace('/loginRequired');
