@@ -1,4 +1,5 @@
 import { combineReducers } from 'redux';
+import appReducer from './appReducer';
 import counterReducer from './counterReducer';
 import loggedReducer from './isLoggedReducer';
 import searchReducer from './searchReducer';
@@ -11,6 +12,7 @@ import trackerReducer from './trackerReducer';
 
 
 export default combineReducers({
+  app: appReducer,
   counter: counterReducer,
   isLogged: loggedReducer,
   //login: isLoggedReducer
