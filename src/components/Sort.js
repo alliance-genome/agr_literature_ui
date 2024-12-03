@@ -14,8 +14,8 @@ import { Spinner, Form, Container, Row, Col, Button, Alert } from 'react-bootstr
 import "react-bootstrap-typeahead/css/Typeahead.css";
 import axios from "axios";
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
-import ReferencesToSort from './ReferencesToSort'; // Updated import
-import { AlertAteamApiDown } from "./ATeamAlert"; // Assuming this is another component
+import ReferencesToSort from './ReferencesToSort'; 
+import { AlertAteamApiDown } from "./ATeamAlert"; 
 import PropTypes from 'prop-types';
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
@@ -35,27 +35,22 @@ const Sort = () => {
 
   const dispatch = useDispatch();
 
-  // Local State
   const [speciesSelectLoading, setSpeciesSelectLoading] = useState([]);
   const speciesTypeaheadRef = useRef(null);
   const [speciesSelect, setSpeciesSelect] = useState([]);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
-  const [viewMode, setViewMode] = useState('Sort'); // 'Sort' or 'Recently sorted'
+  const [viewMode, setViewMode] = useState('Sort'); // 'Sort', 'Prepublication', or 'Recently sorted'
   const [selectedCurator, setSelectedCurator] = useState(uid);
   const [selectedTimeframe, setSelectedTimeframe] = useState('1');
   const [curatorOptions, setCuratorOptions] = useState([]);
   const [recentlySortedData, setRecentlySortedData] = useState([]);
+  const [showInsidePapers, setShowInsidePapers] = useState(true);
 
-  // New State for Toggling Inside/Outside Papers
-  const [showInsidePapers, setShowInsidePapers] = useState(true); // true for inside, false for outside
-
-  // Determine Access Level
   let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
   let activeMod = accessLevel;
 
-  // Fetch Curator Source ID on component mount or when accessLevel/accessToken changes
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
@@ -66,26 +61,32 @@ const Sort = () => {
     fetchSourceId().catch(console.error);
   }, [accessLevel, accessToken]);
 
-  // Disable Update Sorting button if sortUpdating > 0
-  let buttonUpdateDisabled = sortUpdating > 0 ? true : false; // Changed to boolean
+  let buttonUpdateDisabled = sortUpdating > 0;
 
-  // Fetch references when component loads or when relevant dependencies change
   useEffect(() => {
-    if (viewMode === 'Sort' && sortUpdating === 0 && accessLevel) {
-      console.log('sort DISPATCH sortButtonModsQuery ' + accessLevel + ' sortType ' + sortType);
-      dispatch(sortButtonModsQuery(accessLevel, sortType))
+    let mappedSortType = null;
+    if (viewMode === 'Sort') {
+      mappedSortType = 'needs_review';
+    } else if (viewMode === 'Prepublication') {
+      mappedSortType = 'prepublication_pipeline';
+    } else {
+      return;
     }
-  }, [viewMode, sortUpdating, accessLevel, sortType, dispatch]);
+
+    if (mappedSortType && sortUpdating === 0 && accessLevel) {
+      console.log(`Dispatching sortButtonModsQuery with mod: ${accessLevel}, sortType: ${mappedSortType}`);
+      dispatch(sortButtonModsQuery(accessLevel, mappedSortType));
+    }
+  }, [viewMode, sortUpdating, accessLevel, dispatch]);
 
   // Fetch recently sorted papers and curator options when viewMode changes to 'Recently sorted'
   useEffect(() => {
     if (viewMode === 'Recently sorted' && accessToken && accessLevel) {    
       fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
-      setShowInsidePapers(true); // Reset to show inside papers when switching to 'Recently sorted'
+      setShowInsidePapers(true); 
     }
-  }, [viewMode, accessToken, accessLevel, selectedTimeframe, selectedCurator]); // Added selectedTimeframe and selectedCurator to dependencies
+  }, [viewMode, accessToken, accessLevel, selectedTimeframe, selectedCurator]);
 
-  // Function to fetch recently sorted papers and curator options
   const fetchRecentlySortedPapers = (modAbbreviation, day, curatorUid) => {
     const url = `${process.env.REACT_APP_RESTAPI}/sort/recently_sorted?mod_abbreviation=${modAbbreviation}&day=${day}&curator=${curatorUid}`;
 
@@ -98,20 +99,11 @@ const Sort = () => {
       .then(response => response.json())
       .then(data => {
         const { curator_data, data: references } = data;
-
-        // Build curatorOptions from curator_data
         let curators = Object.entries(curator_data).map(([email, uid]) => ({ email, uid }));
-
-        // Add logged-in user if not already in the list and move to top
-        const loggedInUserEmail = userId; // Email address
-        const loggedInUserUid = uid; // UID
-
+        const loggedInUserUid = uid;
         const loggedInUserIncluded = curators.some(curator => curator.uid === loggedInUserUid);
 
-        if (!loggedInUserIncluded) {
-          curators.unshift({ email: loggedInUserEmail, uid: loggedInUserUid });
-        } else {
-          // Move logged-in user to top
+        if (loggedInUserIncluded) {
           const index = curators.findIndex(curator => curator.uid === loggedInUserUid);
           if (index > 0) {
             const [loggedInUser] = curators.splice(index, 1);
@@ -119,9 +111,16 @@ const Sort = () => {
           }
         }
 
-        // Update state
         setCuratorOptions(curators);
         setRecentlySortedData(references);
+
+        if (!curators.some(curator => curator.uid === selectedCurator)) {
+          if (curators.length > 0) {
+            setSelectedCurator(curators[0].uid);
+          } else {
+            setSelectedCurator('');
+          }
+        }
       })
       .catch(error => {
         console.error('Error fetching recently sorted papers:', error);
@@ -151,7 +150,7 @@ const Sort = () => {
         const field = null;
         const subField = null;
         let method = 'PATCH';
-        let array = [subPath, updateJson, method, index, field, subField]
+        let array = [accessToken, subPath, updateJson, method, index, field, subField]
         forApiArray.push(array);
         if (reference['mod_corpus_association_corpus'] === true && activeMod === "WB") {
           let reference_type = null;
@@ -162,7 +161,7 @@ const Sort = () => {
             updateJson = { 'reference_type': reference_type, 'mod_abbreviation': activeMod, 'reference_curie': reference['curie'] }
             subPath = 'reference/mod_reference_type/';
             method = 'POST';
-            array = [subPath, updateJson, method, index, field, subField]
+            array = [accessToken, subPath, updateJson, method, index, field, subField]
             forApiArray.push(array);
             if (speciesSelect && speciesSelect[index]) {
               for (const item of speciesSelect[index].values()) {
@@ -179,7 +178,7 @@ const Sort = () => {
                 const field = null;
                 const subField = null;
                 method = 'POST';
-                array = [subPath, updateJson, method, index, field, subField]
+                array = [accessToken, subPath, updateJson, method, index, field, subField]
                 forApiArray.push(array);
               }
             }
@@ -201,7 +200,6 @@ const Sort = () => {
     dispatch(setSortUpdating(dispatchCount))
 
     for (const arrayData of forApiArray) {
-      arrayData.unshift(accessToken)
       dispatch(updateButtonSort(arrayData))
     }
   }
@@ -225,6 +223,26 @@ const Sort = () => {
           />
           <Form.Check.Label style={{ fontSize: '1.1em' }}>Sort</Form.Check.Label>
         </Form.Check>
+
+        {/* Conditionally render 'Prepublication' radio button if activeMod is 'WB' */}
+        {activeMod === 'WB' && (
+          <Form.Check
+            inline
+            type='radio'
+            name='viewMode'
+            id='viewModePrepublication'
+          >
+            <Form.Check.Input
+              type='radio'
+              name='viewMode'
+              id='viewModePrepublication'
+              checked={viewMode === 'Prepublication'}
+              onChange={() => setViewMode('Prepublication')}
+            />
+            <Form.Check.Label style={{ fontSize: '1.1em' }}>Prepublication</Form.Check.Label>
+          </Form.Check>
+        )}
+
         <Form.Check
           inline
           type='radio'
@@ -242,11 +260,9 @@ const Sort = () => {
         </Form.Check>
       </Form>
       <Container fluid>
-        {viewMode === 'Sort' &&
+        { (viewMode === 'Sort' || viewMode === 'Prepublication') &&
           <>
-            {/* Removed the "Find Papers to Sort" button */}
             <RowDivider />
-
             {referencesToSortLive && referencesToSortLive.length > 0 &&
               <Row>
                 <Col lg={12} className="text-center">
@@ -359,14 +375,14 @@ const Sort = () => {
                 {recentlySortedData && recentlySortedData.length > 0 ? (
                   <div>      
                     <SortSubmitUpdateRouter />
-		    <Button
+                    <Button
                       variant="outline-primary"
                       className="ml-1"
                       onClick={() => setShowInsidePapers(!showInsidePapers)}
                     >
-	              {showInsidePapers ? 'Show Outside Papers' : 'Show Inside Papers'}
+                      {showInsidePapers ? 'Show Outside Papers' : 'Show Inside Papers'}
                     </Button>
-		    <p />
+                    <p />
                     <Container fluid>
                       {recentlySortedData
                         .filter(ref => ref['mod_corpus_association_corpus'] === showInsidePapers)
