@@ -67,7 +67,6 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping 
       field: 'tag_name', 
       flex: 1, 
       cellStyle: boldCellStyle,
-      cellRendererFramework: (params) => <strong>{params.value}</strong>,
       headerClass: 'wft-bold-header'
     },
     { 
@@ -115,7 +114,7 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping 
               rowData={rowData}
               columnDefs={columns}
               pagination={true}
-              paginationPageSize={25}
+              paginationPageSize={20}
               domLayout="autoHeight"
             />
           </div>
