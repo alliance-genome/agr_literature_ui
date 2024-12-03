@@ -62,6 +62,18 @@
   color: white;
 }
 
+#login-nav-dropdown {
+  font-family: 'Roboto', sans-serif;
+  color: white !important;
+  margin-left: 20px;
+}
+
+#tester-nav-dropdown {
+  font-family: 'Roboto', sans-serif;
+  color: white !important;
+  margin-left: 20px;
+}
+
 .navbar_link {
   font-family: 'Roboto', sans-serif;
   color: white !important;
