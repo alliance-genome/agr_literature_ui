@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
@@ -7,11 +8,11 @@ import { Spinner, Tabs, Tab } from 'react-bootstrap';
 
 const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping }) => {
   const [data, setData] = useState([]);
-  const [mods, setMods] = useState([]);
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(0);
 
+  const mods = useSelector(state => state.app.mods);
   const gridRef = useRef();
 
   useEffect(() => {
@@ -21,9 +22,6 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping 
       try {
         const result = await axios.get(url);
         setData(result.data);
-
-        const modsSet = new Set(result.data.map(item => item.mod_abbreviation));
-        setMods(Array.from(modsSet));
 
         const totalsObj = {};
         result.data.forEach(item => {
@@ -160,7 +158,7 @@ const WorkflowStatTablesContainer = () => {
 };
 
 const ReportsContainer = () => {
-  const mods = ['FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN'];
+  const mods = useSelector(state => state.app.mods);
   return (
     <div>
       <Tabs defaultActiveKey="all" id="uncontrolled-tab-example">
