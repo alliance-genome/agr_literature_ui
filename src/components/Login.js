@@ -71,7 +71,7 @@ const Login = ({config}) => {
             </Popup>)
         } else if (authState.isAuthenticated) {
             return(
-	      <NavDropdown title={<FontAwesomeIcon icon={faUserCircle} />} alignRight id="basic-nav-dropdown">
+	      <NavDropdown title={<FontAwesomeIcon icon={faUserCircle} />} alignRight id="login-nav-dropdown">
                 <NavDropdown.Item >{loggedInUser}</NavDropdown.Item>
                 <NavDropdown.Item >
                   <Button as="input" type="button" variant="primary" value="Sign Out" size="sm" onClick={onSignOutClick} />
