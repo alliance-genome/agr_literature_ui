@@ -81,7 +81,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
-const DatePicker = ({facetName,currentValue,setValueFunction}) => {
+export const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     const dispatch = useDispatch();
 
     function formatDateRange(dateRange){
