@@ -1,10 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import { Spinner, Tabs, Tab } from 'react-bootstrap';
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+
+import { DatePicker } from './search/Facets';
+
+import { setDateFileUpload } from '../actions/reportsActions';
+
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
-import { Spinner, Tabs, Tab } from 'react-bootstrap';
 
 const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping }) => {
   const [data, setData] = useState([]);
@@ -96,6 +104,8 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping 
     return row;
   });
 
+  const dateFileUpload = useSelector(state => state.reports.dateFileUpload);
+
   return (
     <div>
       <h5>{title}</h5>
@@ -107,17 +117,28 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping 
         </div>
       ) : (
         <div style={containerStyle}>
-          <div className="ag-theme-quartz" style={{ height: 300, width: '90%' }}>
-            <AgGridReact
-              key={key}
-              ref={gridRef}
-              rowData={rowData}
-              columnDefs={columns}
-              pagination={true}
-              paginationPageSize={20}
-              domLayout="autoHeight"
-            />
-          </div>
+          <Container style={{ width: '90%' }}>
+            <Row>
+              <Col>
+                <DatePicker facetName='Date Range' currentValue={dateFileUpload} setValueFunction={setDateFileUpload} />
+              </Col>
+            </Row>
+            <Row>
+              <Col>
+                <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                  <AgGridReact
+                    key={key}
+                    ref={gridRef}
+                    rowData={rowData}
+                    columnDefs={columns}
+                    pagination={true}
+                    paginationPageSize={20}
+                    domLayout="autoHeight"
+                  />
+                </div>
+              </Col>
+            </Row>
+          </Container>
         </div>
       )}
     </div>
