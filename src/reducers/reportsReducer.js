@@ -17,6 +17,8 @@ export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
     case REPORTS_SET_DATE_FILE_UPLOAD:
+      console.log('reducer REPORTS_SET_DATE_FILE_UPLOAD');
+      console.log(action.payload.dateFileUpload);
       return {
         ...state,
         dateFileUpload: action.payload.dateFileUpload
