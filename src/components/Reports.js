@@ -228,16 +228,17 @@ const ReportsDatePicker = ({ facetName, currentValue, setValueFunction }) => {
         }
     }
 
-//                   <Form.Control as='select' id='license' name='license' style={{width: "10em"}} value={newLicense} onChange={(e) => setNewLicense(e.target.value)} >
   const dateOptions = [ 'Date added to ABC', 'Date Published' ];
-  const newLicense = 'blah';
+  const [newLicense, setNewLicense] = useState('');
+//   const newLicense = 'blah';
   const licenseName = 'bleh';
   const licenseToShow = 'bleh';
 
+//               <Form.Control as='select' id='license' name='license' style={{ width: "12em", marginRight: "3em" }} value={newLicense} >
 //             <h5>{facetName}</h5>
     return(
             <div key={facetName} style={{ display: 'flex', alignItems: 'center', textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em" }}>
-              <Form.Control as='select' id='license' name='license' style={{ width: "12em", marginRight: "3em" }} value={newLicense} >
+              <Form.Control as='select' id='license' name='license' style={{ width: "12em", marginRight: "3em" }} value={newLicense} onChange={(e) => setNewLicense(e.target.value)} >
                 {dateOptions.map((optionValue, index) => (
                     <option value={optionValue} defaultValue={licenseToShow !== '' ? licenseName : null} key={index}>{optionValue}</option>
                 ))}
