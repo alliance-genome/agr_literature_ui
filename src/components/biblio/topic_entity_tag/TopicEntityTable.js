@@ -122,43 +122,41 @@ const TopicEntityTable = () => {
     let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000;
     setIsLoadingData(true);
     try {
-        const resultTags = await axios.get(url);
-        if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
-          resultTags.data.forEach(arrElement => {
-            if ('validation_by_author' in arrElement) {
-              if (arrElement['validation_by_author'] === 'validated_right_self') { arrElement['validation_by_author'] = ''; }
-              else if (arrElement['validation_by_author'] === 'validated_right') { arrElement['validation_by_author'] = 'agree'; }
-              else if (arrElement['validation_by_author'] === 'validated_wrong') { arrElement['validation_by_author'] = 'disagree'; }
-              else if (arrElement['validation_by_author'] === 'not_validated')   { arrElement['validation_by_author'] = 'no data'; }
-            }
-            if ('validation_by_professional_biocurator' in arrElement) {
-              if (arrElement['validation_by_professional_biocurator'] === 'validated_right_self') { arrElement['validation_by_professional_biocurator'] = ''; }
-            }
-          });
-          setTopicEntityTags(resultTags.data);
-          const uniqueSpecies = [...new Set( resultTags.data.map(obj => obj.species)) ];
-          const uniqueEntityTypes = [...new Set( resultTags.data.map(obj => obj.entity_type_name))];
-	  const uniqueTopics = [...new Set( resultTags.data.map(obj => obj.topic_name))];
-	  const uniqueEntities = [...new Set( resultTags.data.map(obj => obj.entity_name))];  
-          dispatch(setAllSpecies(uniqueSpecies));
-          dispatch(setAllEntityTypes(uniqueEntityTypes));
-	  dispatch(setAllTopics(uniqueTopics));
-	  dispatch(setAllEntities(uniqueEntities));  
-          Object.entries(resultTags.data)
+      const resultTags = await axios.get(url);
+      resultTags.data.forEach(arrElement => {
+        if ('validation_by_author' in arrElement) {
+          if (arrElement['validation_by_author'] === 'validated_right_self') { arrElement['validation_by_author'] = ''; }
+          else if (arrElement['validation_by_author'] === 'validated_right') { arrElement['validation_by_author'] = 'agree'; }
+          else if (arrElement['validation_by_author'] === 'validated_wrong') { arrElement['validation_by_author'] = 'disagree'; }
+          else if (arrElement['validation_by_author'] === 'not_validated')   { arrElement['validation_by_author'] = 'no data'; }
         }
+        if ('validation_by_professional_biocurator' in arrElement) {
+          if (arrElement['validation_by_professional_biocurator'] === 'validated_right_self') {
+            arrElement['validation_by_professional_biocurator'] = '';
+          }
+        }
+      });
+      setTopicEntityTags(resultTags.data);
+      const uniqueSpecies = [...new Set(resultTags.data.map(obj => obj.species))];
+      const uniqueEntityTypes = [...new Set(resultTags.data.map(obj => obj.entity_type_name))];
+      const uniqueTopics = [...new Set(resultTags.data.map(obj => obj.topic_name))];
+      const uniqueEntities = [...new Set(resultTags.data.map(obj => obj.entity_name))];
+
+      dispatch(setAllSpecies(uniqueSpecies));
+      dispatch(setAllEntityTypes(uniqueEntityTypes));
+      dispatch(setAllTopics(uniqueTopics));
+      dispatch(setAllEntities(uniqueEntities));     
     } catch (error) {
     console.error("Error fetching data:" + error);
     } finally {
       setIsLoadingData(false);
     }
-  }, [accessToken, referenceCurie, topicEntityTags, dispatch]);
+  }, [accessToken, referenceCurie, dispatch]);
 
   useEffect(() => {
-      if (firstFetch || biblioUpdatingEntityAdd) {
-	  fetchTableData();
-          setFirstFetch(false);
-      } 
-  }, [firstFetch, biblioUpdatingEntityAdd, fetchTableData]);
+      fetchTableData();
+      setFirstFetch(false);
+  }, [biblioUpdatingEntityAdd, fetchTableData]);
 
 
   const handleSourceDescClick = (fullSourceDesc) => {

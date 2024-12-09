@@ -391,7 +391,7 @@ const Sort = () => {
                             key={`reference div ${index}`}
                             reference={reference}
                             index={index}
-                            canSort={false}
+                            canSort={true}
                             speciesSelect={speciesSelect}
                             setSpeciesSelect={setSpeciesSelect}
                             speciesSelectLoading={speciesSelectLoading}
