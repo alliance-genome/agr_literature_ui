@@ -1,5 +1,5 @@
 import {
-  REPORTS_SET_DATE_FILE_UPLOAD
+  REPORTS_SET_DATE_DICT
 } from '../actions/reportsActions';
 
 import _ from "lodash";
@@ -8,7 +8,7 @@ import _ from "lodash";
 
 const initialState = {
 //   datePubmedAdded: "",
-  dateFileUpload: ""
+  dateDict: {}
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -16,12 +16,16 @@ const initialState = {
 export default function(state = initialState, action) {
   // action will have a type.  common to evaluate with a switch
   switch (action.type) {
-    case REPORTS_SET_DATE_FILE_UPLOAD:
-      console.log('reducer REPORTS_SET_DATE_FILE_UPLOAD');
-      console.log(action.payload.dateFileUpload);
+    case REPORTS_SET_DATE_DICT:
+      console.log('reducer REPORTS_SET_DATE_DICT');
+      console.log(action.payload.newDate);
+      console.log(action.payload.modSection);
+      const dateDictCopy = _.cloneDeep(state.dateDict);
+      if (!dateDictCopy[action.payload.modSection]) { dateDictCopy[action.payload.modSection] = {}; }
+      dateDictCopy[action.payload.modSection][action.payload.workflowProcessAtpId] = action.payload.newDate;
       return {
         ...state,
-        dateFileUpload: action.payload.dateFileUpload
+        dateDict: dateDictCopy
       }
     default:
       return state;

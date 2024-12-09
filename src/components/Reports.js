@@ -6,7 +6,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from 'react-bootstrap/Form';
 
-import { setDateFileUpload } from '../actions/reportsActions';
+import { setDateDict } from '../actions/reportsActions';
 
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
@@ -17,7 +17,7 @@ import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 
-const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping }) => {
+const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection }) => {
   const [data, setData] = useState([]);
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -107,7 +107,8 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping 
     return row;
   });
 
-  const dateFileUpload = useSelector(state => state.reports.dateFileUpload);
+  const dateDict = useSelector(state => state.reports.dateDict);
+  const dateValue = ( (dateDict[modSection]) && (dateDict[modSection][workflowProcessAtpId]) ) ? dateDict[modSection][workflowProcessAtpId] : '';
 
   return (
     <div>
@@ -123,7 +124,7 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping 
           <Container fluid style={{ width: '90%' }}>
             <Row>
               <Col>
-                <ReportsDatePicker facetName={workflowProcessAtpId} currentValue={dateFileUpload} setValueFunction={setDateFileUpload} />
+                <ReportsDatePicker facetName={workflowProcessAtpId} currentValue={dateValue} setValueFunction={setDateDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} />
               </Col>
             </Row>
             <Row>
@@ -146,9 +147,9 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping 
       )}
     </div>
   );
-};
+}; // const const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection })
 
-const ReportsDatePicker = ({ facetName, currentValue, setValueFunction }) => {
+const ReportsDatePicker = ({ facetName, currentValue, setValueFunction, workflowProcessAtpId, modSection }) => {
     const dispatch = useDispatch();
 
     function formatDateRange(dateRange){
@@ -187,18 +188,18 @@ const ReportsDatePicker = ({ facetName, currentValue, setValueFunction }) => {
             let lastYear = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
             newDate = formatDateRange([lastYear,today]);
         }
-        dispatch(setValueFunction(newDate));
+        dispatch(setValueFunction(newDate, workflowProcessAtpId, modSection));
 //         dispatch(searchReferences());
     }
 
     function handleDateChange(newDateRangeArr){
         if (newDateRangeArr === null) {
-            dispatch(setValueFunction(''));
+            dispatch(setValueFunction('', workflowProcessAtpId, modSection));
 //             dispatch(setSearchResultsPage(1));
 //             dispatch(searchReferences());
         }
         else if(!isNaN(Date.parse(newDateRangeArr[0])) && !isNaN(Date.parse(newDateRangeArr[1]))){
-            dispatch(setValueFunction(formatDateRange(newDateRangeArr)));
+            dispatch(setValueFunction(formatDateRange(newDateRangeArr), workflowProcessAtpId, modSection));
 //             dispatch(setSearchResultsPage(1));
 //             dispatch(searchReferences());
         }
@@ -230,11 +231,11 @@ const ReportsDatePicker = ({ facetName, currentValue, setValueFunction }) => {
               </div>
             </div>
     )
-} // const ReportsDatePicker = ({ facetName, currentValue, setValueFunction })
+} // const ReportsDatePicker = ({ facetName, currentValue, setValueFunction, workflowProcessAtpId, modSection })
 
 //             <DateRangePicker value={bleh} onChange= { (newDateRangeArr) => { handleDateChange(newDateRangeArr) } } />
 
-const WorkflowStatTablesContainer = () => {
+const WorkflowStatTablesContainer = ({modSection}) => {
   const file_upload_name_mapping = {
       'files uploaded': 'uploaded',
       'file needed': 'needed',
@@ -255,12 +256,14 @@ const WorkflowStatTablesContainer = () => {
         title="File Upload Current Status"
         tagNames={Object.keys(file_upload_name_mapping)}
 	nameMapping={file_upload_name_mapping}
+        modSection={modSection}
       />
       <WorkflowStatTable
         workflowProcessAtpId="ATP:0000161"
         title="Text Conversion Current Status"
         tagNames={Object.keys(text_conversion_name_mapping)}
         nameMapping={text_conversion_name_mapping}
+        modSection={modSection}
       />
     </div>
   );
@@ -272,7 +275,7 @@ const ReportsContainer = () => {
     <div>
       <Tabs defaultActiveKey="all" id="uncontrolled-tab-example">
         <Tab eventKey="all" title="All">
-          <WorkflowStatTablesContainer />
+          <WorkflowStatTablesContainer modSection='All' />
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>

@@ -1,11 +1,13 @@
 
-export const REPORTS_SET_DATE_FILE_UPLOAD = 'REPORTS_SET_DATE_FILE_UPLOAD';
+export const REPORTS_SET_DATE_DICT = 'REPORTS_SET_DATE_DICT';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
-export const setDateFileUpload = (dateFileUpload) => ({
-  type: REPORTS_SET_DATE_FILE_UPLOAD,
+export const setDateDict = (newDate, workflowProcessAtpId, modSection) => ({
+  type: REPORTS_SET_DATE_DICT,
   payload: {
-    dateFileUpload : dateFileUpload
+    newDate : newDate,
+    workflowProcessAtpId : workflowProcessAtpId,
+    modSection : modSection
   }
 });
