@@ -160,38 +160,14 @@ const ReportsDatePicker = ({ facetName, currentValue, setValueFunction }) => {
     function formatToUTCString(dateRange) {
         if (dateRange !== '') {
             let dateStart = new Date (dateRange[0]);
-            let dateEnd = new Date(dateRange[1]);
             let offset = dateStart.getTimezoneOffset();
-            dateStart.setMinutes(dateStart.getMinutes() + offset);
-            dateEnd.setMinutes(dateEnd.getMinutes() + offset);
-            return [dateStart, dateEnd]; 
-//             let parsedDateStart = Date.parse(dateRange[0]) + (offset * 60000);
-//             let parsedDateEnd = Date.parse(dateRange[1]) + (offset * 60000);
-// console.log('parsedDateStart');
-// console.log( parsedDateStart );
-// console.log('parsedDateEnd');
-// console.log( parsedDateEnd );
-//             return [new Date("2017-01-01"), new Date("2017-01-01")]
-//             return [parsedDateStart, parsedDateEnd];
+            let parsedDateStart = new Date(Date.parse(dateRange[0]) + (offset * 60000));
+            let parsedDateEnd = new Date(Date.parse(dateRange[1]) + (offset * 60000));
+            return [parsedDateStart, parsedDateEnd];
         } else {
-// console.log('formatToUTCString blank string');
             return "";
         }
     }
-
-// console.log('currentValue');
-// console.log(currentValue);
-// console.log('formatToUTCString(currentValue)');
-// const blah = formatToUTCString(currentValue)
-// console.log(blah);
-// console.log('blah');
-
-// [ 1483257600000, 1483257600000 ]
-// [ "2017-01-01", "2017-01-01" ]
-//  const bleh = [ 1483257600000, 1483257600000 ]
-//  const bleh = [new Date(), new Date()]
-//  const bleh = [new Date("2017-01-01"), new Date("2017-01-01")]
-//  const bleh = [ "2017-01-01", "2017-01-01" ]
 
     function handleFixedTimeClick(timeframe) {
         var today = new Date();
