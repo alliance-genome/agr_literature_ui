@@ -6,7 +6,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from 'react-bootstrap/Form';
 
-import { setDateDict } from '../actions/reportsActions';
+import { setDateRangeDict, setDateOptionDict } from '../actions/reportsActions';
 
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
@@ -24,6 +24,11 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
   const [key, setKey] = useState(0);
 
   const mods = useSelector(state => state.app.mods);
+  const dateRangeDict = useSelector(state => state.reports.dateRangeDict);
+  const dateRangeValue = ( (dateRangeDict[modSection]) && (dateRangeDict[modSection][workflowProcessAtpId]) ) ? dateRangeDict[modSection][workflowProcessAtpId] : '';
+
+  const dateOptionDict = useSelector(state => state.reports.dateOptionDict);
+  const dateOptionValue = ( (dateOptionDict[modSection]) && (dateOptionDict[modSection][workflowProcessAtpId]) ) ? dateOptionDict[modSection][workflowProcessAtpId] : '';
   const gridRef = useRef();
 
   useEffect(() => {
@@ -107,9 +112,6 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
     return row;
   });
 
-  const dateDict = useSelector(state => state.reports.dateDict);
-  const dateValue = ( (dateDict[modSection]) && (dateDict[modSection][workflowProcessAtpId]) ) ? dateDict[modSection][workflowProcessAtpId] : '';
-
   return (
     <div>
       <h5>{title}</h5>
@@ -124,7 +126,7 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
           <Container fluid style={{ width: '90%' }}>
             <Row>
               <Col>
-                <ReportsDatePicker facetName={workflowProcessAtpId} currentValue={dateValue} setValueFunction={setDateDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} />
+                <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} />
               </Col>
             </Row>
             <Row>
@@ -149,7 +151,7 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
   );
 }; // const const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection })
 
-const ReportsDatePicker = ({ facetName, currentValue, setValueFunction, workflowProcessAtpId, modSection }) => {
+const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection }) => {
     const dispatch = useDispatch();
 
     function formatDateRange(dateRange){
@@ -192,7 +194,7 @@ const ReportsDatePicker = ({ facetName, currentValue, setValueFunction, workflow
 //         dispatch(searchReferences());
     }
 
-    function handleDateChange(newDateRangeArr){
+    function handleDateRangeChange(newDateRangeArr){
         if (newDateRangeArr === null) {
             dispatch(setValueFunction('', workflowProcessAtpId, modSection));
 //             dispatch(setSearchResultsPage(1));
@@ -205,35 +207,32 @@ const ReportsDatePicker = ({ facetName, currentValue, setValueFunction, workflow
         }
     }
 
-  const dateOptions = [ 'Date added to ABC', 'Date Published' ];
-  const [newLicense, setNewLicense] = useState('');
-//   const newLicense = 'blah';
-  const licenseName = 'bleh';
-  const licenseToShow = 'bleh';
+    function handleDateOptionChange(newDateOption){
+        dispatch(setDateOptionDict(newDateOption, workflowProcessAtpId, modSection));
+//         dispatch(setSearchResultsPage(1));
+//         dispatch(searchReferences());
+    }
 
-//               <Form.Control as='select' id='license' name='license' style={{ width: "12em", marginRight: "3em" }} value={newLicense} >
-//             <h5>{facetName}</h5>
+    const dateOptions = [ 'Date Default', 'Date added to ABC', 'Date Published' ];
+
     return(
-            <div key={facetName} style={{ display: 'flex', alignItems: 'center', textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em" }}>
-              <Form.Control as='select' id='license' name='license' style={{ width: "12em", marginRight: "3em" }} value={newLicense} onChange={(e) => setNewLicense(e.target.value)} >
-                {dateOptions.map((optionValue, index) => (
-                    <option value={optionValue} defaultValue={licenseToShow !== '' ? licenseName : null} key={index}>{optionValue}</option>
-                ))}
-              </Form.Control>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <ButtonGroup aria-label="DateSetter" size ="sm" style={{display: "block"}}>
-                  <Button variant="secondary" style={{'borderBottomLeftRadius' : 0}} onClick= { () => { handleFixedTimeClick('Day') } } >Day</Button>
-                  <Button variant="secondary" onClick={ () => { handleFixedTimeClick('Week') } } >Week</Button>
-                  <Button variant="secondary" onClick={ () => { handleFixedTimeClick('Month') } } >Month</Button>
-                  <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick= { () => { handleFixedTimeClick('Year') } } >Year</Button>
-                </ButtonGroup>
-                <DateRangePicker value={formatToUTCString(currentValue)} onChange= { (newDateRangeArr) => { handleDateChange(newDateRangeArr) } } />
-              </div>
-            </div>
+      <div key={facetName} style={{ display: 'flex', alignItems: 'center', textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em" }}>
+        <Form.Control as='select' id='dateOption' name='dateOption' style={{ width: "12em", marginRight: "3em" }} value={dateOptionValue} onChange={(e) => handleDateOptionChange(e.target.value)} >
+          {dateOptions.map((optionValue, index) => ( <option value={optionValue} key={index}>{optionValue}</option> ))}
+        </Form.Control>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <ButtonGroup aria-label="DateSetter" size ="sm" style={{display: "block"}}>
+            <Button variant="secondary" style={{'borderBottomLeftRadius' : 0}} onClick= { () => { handleFixedTimeClick('Day') } } >Day</Button>
+            <Button variant="secondary" onClick={ () => { handleFixedTimeClick('Week') } } >Week</Button>
+            <Button variant="secondary" onClick={ () => { handleFixedTimeClick('Month') } } >Month</Button>
+            <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick= { () => { handleFixedTimeClick('Year') } } >Year</Button>
+          </ButtonGroup>
+          <DateRangePicker value={formatToUTCString(dateRangeValue)} onChange= { (newDateRangeArr) => { handleDateRangeChange(newDateRangeArr) } } />
+        </div>
+      </div>
     )
-} // const ReportsDatePicker = ({ facetName, currentValue, setValueFunction, workflowProcessAtpId, modSection })
+} // const ReportsDatePicker = ({ facetName, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection })
 
-//             <DateRangePicker value={bleh} onChange= { (newDateRangeArr) => { handleDateChange(newDateRangeArr) } } />
 
 const WorkflowStatTablesContainer = ({modSection}) => {
   const file_upload_name_mapping = {
