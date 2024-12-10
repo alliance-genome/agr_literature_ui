@@ -185,7 +185,7 @@ const TopicEntityCreateSGD = () => {
           row.entityTypeSelect !== ""
         ) {
           // const entityIdValidation = (row.entityTypeSelect === complexATP || row.entityTypeSelect === pathwayATP) ? 'sgd' : 'alliance';
-	  const entityIdValidation = 'sgd';  
+          const entityIdValidation = 'sgd';  
           dispatch(
             changeFieldEntityEntityList(
               row.entityText,
@@ -294,12 +294,37 @@ const TopicEntityCreateSGD = () => {
     if (row.topicSelect === null) {
       return;
     }
+
+    // fetch the display tag name based on the selected curie
+    const displayTagName = curieToNameDisplayTag[row.tetdisplayTagSelect] || "";
+
+    // validation: check if display tag is "primary display" or "additional display"
+    if (displayTagName === "primary display" || displayTagName === "additional display") {
+      // check if entityText is entered
+      if (!row.entityText || row.entityText.trim() === "") {
+        setWarningMessage("Entity must be entered when display tag is 'primary display' or 'additional display'.");
+        setTimeout(() => setWarningMessage(""), 8000);
+        return;
+      }
+
+      // check if entityResultList has at least one valid entity
+      const hasValidEntity = row.entityResultList.some(entity => 
+        !['no Alliance curie', 'no SGD curie', 'duplicate', 'obsolete entity'].includes(entity.curie)
+      );
+
+      if (!hasValidEntity) {
+        setWarningMessage("Entity must be validated when display tag is 'primary display' or 'additional display'.");
+        setTimeout(() => setWarningMessage(""), 8000);
+        return;
+      }
+    }
+
     const entityResultList = row.entityResultList || [];
-    const [warningMessage, displayTag] = checkTopicEntitySetDisplayTag(row.entityText,
+    const [warningMsg, displayTag] = checkTopicEntitySetDisplayTag(row.entityText,
       entityResultList,
       row.topicSelect);
-    if (warningMessage) {
-      setWarningMessage(warningMessage)
+    if (warningMsg) {
+      setWarningMessage(warningMsg)
       setTimeout(() => {
         setWarningMessage('');
       }, 8000);
@@ -320,7 +345,7 @@ const TopicEntityCreateSGD = () => {
           }
           updateJson['entity_type'] = (row.entityTypeSelect === '') ? null : row.entityTypeSelect;
           updateJson['entity'] = entityResult.curie;
-	  updateJson['index_wft'] = index_wft   
+          updateJson['index_wft'] = index_wft   
           let array = [subPath, updateJson, method];
           forApiArray.push(array);
         }
@@ -561,7 +586,7 @@ const TopicEntityCreateSGD = () => {
                   :
                   <Button
                     variant="outline-primary"
-		    size="sm"
+                    size="sm"
                     disabled={disabledAddButton}
                     onClick={() => createEntities(referenceJsonLive.curie, index, 'ATP:0000276')}
                   >
@@ -573,7 +598,7 @@ const TopicEntityCreateSGD = () => {
                   </Button>
                 }
                 {index === rows.length - 1 && (
-		  <div style={{ display: 'inline-block', marginLeft: '30px' }}>      
+                  <div style={{ display: 'inline-block', marginLeft: '30px' }}>      
                     <Button
                       variant="primary"
                       onClick={handleAddAll}
@@ -581,7 +606,7 @@ const TopicEntityCreateSGD = () => {
                     >
                       Submit All
                     </Button>
-		  </div>
+                  </div>
                 )}
               </div>
             </Col>
