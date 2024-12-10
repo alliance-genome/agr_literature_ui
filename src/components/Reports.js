@@ -278,7 +278,7 @@ const ReportsContainer = () => {
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>
-            {mod}
+            <WorkflowStatTablesContainer modSection={mod} />
           </Tab>
         ))}
       </Tabs>
