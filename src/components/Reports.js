@@ -31,9 +31,18 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
   const dateOptionValue = ( (dateOptionDict[modSection]) && (dateOptionDict[modSection][workflowProcessAtpId]) ) ? dateOptionDict[modSection][workflowProcessAtpId] : '';
   const gridRef = useRef();
 
+  const mod_abbreviation = (modSection === 'All') ? '' : modSection;
+  const date_range_start = (dateRangeValue === '') ? '': dateRangeValue[0];
+  const date_range_end = (dateRangeValue === '') ? '': dateRangeValue[1];
+  const date_option = (dateOptionValue === '') ? 'default' : dateOptionValue;
+
   useEffect(() => {
     const fetchData = async () => {
-      const url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
+      let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
+      if (mod_abbreviation !== '') { url += `&mod_abbreviation=${mod_abbreviation}`; }
+      if ( (date_range_start !== '') && (date_range_end !== '') ) {
+          url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
+      if ( (date_option !== 'default') && ( (date_range_start === '') ||  (date_range_end === '') ) ) { return; }
       setIsLoadingData(true);
       try {
         const result = await axios.get(url);
@@ -57,7 +66,7 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
     };
 
     fetchData();
-  }, [workflowProcessAtpId]);
+  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end]);
 
   const getTagCount = (tagName, mod) => {
     const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === mod);
@@ -191,34 +200,27 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
             newDate = formatDateRange([lastYear,today]);
         }
         dispatch(setValueFunction(newDate, workflowProcessAtpId, modSection));
-//         dispatch(searchReferences());
     }
 
     function handleDateRangeChange(newDateRangeArr){
         if (newDateRangeArr === null) {
             dispatch(setValueFunction('', workflowProcessAtpId, modSection));
-//             dispatch(setSearchResultsPage(1));
-//             dispatch(searchReferences());
         }
         else if(!isNaN(Date.parse(newDateRangeArr[0])) && !isNaN(Date.parse(newDateRangeArr[1]))){
             dispatch(setValueFunction(formatDateRange(newDateRangeArr), workflowProcessAtpId, modSection));
-//             dispatch(setSearchResultsPage(1));
-//             dispatch(searchReferences());
         }
     }
 
     function handleDateOptionChange(newDateOption){
         dispatch(setDateOptionDict(newDateOption, workflowProcessAtpId, modSection));
-//         dispatch(setSearchResultsPage(1));
-//         dispatch(searchReferences());
     }
 
-    const dateOptions = [ 'Date Default', 'Date added to ABC', 'Date Published' ];
+    const dateOptions = { 'Date Workflow Updated': 'default', 'Date added to ABC': 'reference_created', 'Date Published': 'reference_published', 'Date Inside Corpus': 'inside_corpus' };
 
     return(
       <div key={facetName} style={{ display: 'flex', alignItems: 'center', textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em" }}>
-        <Form.Control as='select' id='dateOption' name='dateOption' style={{ width: "12em", marginRight: "3em" }} value={dateOptionValue} onChange={(e) => handleDateOptionChange(e.target.value)} >
-          {dateOptions.map((optionValue, index) => ( <option value={optionValue} key={index}>{optionValue}</option> ))}
+        <Form.Control as='select' id='dateOption' name='dateOption' style={{ width: "13em", marginRight: "3em" }} value={dateOptionValue} onChange={(e) => handleDateOptionChange(e.target.value)} >
+          {Object.entries(dateOptions).map(([label, value], index) => ( <option value={value} key={index}>{label}</option> ))}
         </Form.Control>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <ButtonGroup aria-label="DateSetter" size ="sm" style={{display: "block"}}>
@@ -278,7 +280,7 @@ const ReportsContainer = () => {
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>
-            <WorkflowStatTablesContainer modSection={mod} />
+            {mod}
           </Tab>
         ))}
       </Tabs>
