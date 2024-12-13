@@ -124,13 +124,6 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
   return (
     <div>
       <h5>{title}</h5>
-      {isLoadingData ? (
-        <div className="text-center">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
-        </div>
-      ) : (
         <div style={containerStyle}>
           <Container fluid style={{ width: '90%' }}>
             <Row>
@@ -140,22 +133,29 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
             </Row>
             <Row>
               <Col>
-                <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
-                  <AgGridReact
-                    key={key}
-                    ref={gridRef}
-                    rowData={rowData}
-                    columnDefs={columns}
-                    pagination={true}
-                    paginationPageSize={20}
-                    domLayout="autoHeight"
-                  />
-                </div>
+                {isLoadingData ? (
+                  <div className="text-center">
+                    <Spinner animation="border" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                  </div>
+                ) : (
+                  <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                    <AgGridReact
+                      key={key}
+                      ref={gridRef}
+                      rowData={rowData}
+                      columnDefs={columns}
+                      pagination={true}
+                      paginationPageSize={20}
+                      domLayout="autoHeight"
+                    />
+                  </div>
+                )}
               </Col>
             </Row>
           </Container>
         </div>
-      )}
     </div>
   );
 }; // const const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection })
