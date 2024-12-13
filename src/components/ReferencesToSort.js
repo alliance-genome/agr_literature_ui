@@ -65,8 +65,7 @@ const ReferencesToSort = ({
         method = 'POST';
         array = [subPath, updateJson, method, index, null, null];
         forApiArray.push(array);
-      }
-
+      }	
       // Handle species selection
       if (speciesSelect && speciesSelect[index]) {
         for (const item of speciesSelect[index].values()) {
@@ -87,6 +86,20 @@ const ReferencesToSort = ({
       }
     }
 
+    if (activeMod === 'SGD' && shouldOpenEditor) {
+	// adding manual indexing in progress  
+        updateJson = {
+	    'mod_abbreviation': activeMod,
+	    'curie_or_reference_id': reference['curie'],
+	    'new_workflow_tag_atp_id': 'ATP:0000276', 
+	    'transition_type': 'manual'
+	};
+        subPath = 'workflow_tag/transition_to_workflow_status';
+        method = 'POST';
+        array = [subPath, updateJson, method, index, null, null];
+        forApiArray.push(array);
+    }
+      
     // Dispatch the updates
     let dispatchCount = forApiArray.length;
     dispatch(setSortUpdating(dispatchCount));
@@ -115,7 +128,7 @@ const ReferencesToSort = ({
     // Optionally open TET editor in a new tab/window if shouldOpenEditor is true
     if (shouldOpenEditor) {
       const tetEditorUrl = `/Biblio/?action=entity&referenceCurie=${reference['curie']}`;
-      window.open(tetEditorUrl, '_blank');
+      window.open(tetEditorUrl, '_blank');  
     }
   };
 
