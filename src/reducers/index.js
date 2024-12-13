@@ -3,6 +3,7 @@ import appReducer from './appReducer';
 import counterReducer from './counterReducer';
 import loggedReducer from './isLoggedReducer';
 import searchReducer from './searchReducer';
+import reportsReducer from './reportsReducer';
 import biblioReducer from './biblioReducer';
 import sortReducer from './sortReducer';
 import createReducer from './createReducer';
@@ -17,6 +18,7 @@ export default combineReducers({
   isLogged: loggedReducer,
   //login: isLoggedReducer
   search: searchReducer,
+  reports: reportsReducer,
   biblio: biblioReducer,
   sort: sortReducer,
   create: createReducer,

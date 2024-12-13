@@ -94,8 +94,8 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         if (dateRange !== ''){
             let dateStart = new Date (dateRange[0]);
             let offset = dateStart.getTimezoneOffset();
-            let parsedDateStart = Date.parse(dateRange[0])  + (offset * 60000);
-            let parsedDateEnd = Date.parse(dateRange[1]) + (offset * 60000);
+            let parsedDateStart = new Date(Date.parse(dateRange[0])  + (offset * 60000));
+            let parsedDateEnd = new Date(Date.parse(dateRange[1]) + (offset * 60000));
             return [parsedDateStart, parsedDateEnd];
         }else{
             return '';
