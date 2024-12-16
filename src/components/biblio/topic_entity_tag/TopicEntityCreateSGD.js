@@ -52,8 +52,7 @@ const TopicEntityCreateSGD = () => {
     (state) => state.biblio.biblioUpdatingEntityAdd
   );
   const entityModalText = useSelector((state) => state.biblio.entityModalText);
-  const [warningMessage, setWarningMessage] = useState("");
-  const [tagExistingMessage, setTagExistingMessage] = useState("");
+  const [warningMessages, setWarningMessages] = useState([]);
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [rows, setRows] = useState([createNewRow()]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
@@ -172,6 +171,33 @@ const TopicEntityCreateSGD = () => {
     }
   }, [editTag, topicEntityTags, dispatch]);
 
+  const addWarningMessage = (msg) => {
+    setWarningMessages(prev => {
+      if (prev.includes(msg)) return prev; // prevent duplicate messages
+      return [...prev, msg];
+    });
+    setTimeout(() => {
+      setWarningMessages(prev => prev.filter(m => m !== msg));
+    }, 16000);
+  };
+
+  useEffect(() => {
+    if (referenceJsonLive?.workflow_tags) {
+      // To prevent adding duplicate messages, create a Set of unique messages
+      const uniqueMessages = new Set();
+      referenceJsonLive.workflow_tags.forEach(tag => {
+        if (tag.updated_by !== uid) {
+          if (tag.workflow_tag_id === "ATP:0000276") {
+            uniqueMessages.add(`${tag.updated_by_email} has started adding the topic/entity tags for this paper.`);
+          } else if (tag.workflow_tag_id === "ATP:0000275") {
+            uniqueMessages.add(`${tag.updated_by_email} has completed adding the topic/entity tags for this paper.`);
+          }
+        }
+      });
+      uniqueMessages.forEach(msg => addWarningMessage(msg));
+    }
+  }, [referenceJsonLive?.workflow_tags, uid]);
+
   const handleEntityValidation = useCallback(
     debounce((index, value) => {
       setRows((prevRows) => {
@@ -208,7 +234,7 @@ const TopicEntityCreateSGD = () => {
         return newRows;
       });
     }, 300),
-    [rows, accessToken, dispatch, curieToNameEntityType]
+    [accessToken, dispatch, curieToNameEntityType]
   );
 
   const handleRowChange = (index, field, value) => {
@@ -239,7 +265,7 @@ const TopicEntityCreateSGD = () => {
 
   const handleAddAll = async () => {
     for (let index = rows.length - 1; index >= 0; index--) {
-      await createEntities(referenceJsonLive.curie, index, 'ATP:0000275');
+      await createEntities(referenceJsonLive.curie, index, 'ATP:0000275'); // Changed to ATP:0000275 for "Submit All"
     }
     setRows([createNewRow()]);
   };
@@ -266,10 +292,8 @@ const TopicEntityCreateSGD = () => {
     const entityResultList = row.entityResultList || [];
     if (entityResultList.length > 1) {
       console.error("Error processing entry: too many entities");
-      dispatch({
-        type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-        payload: { responseMessage: 'Only one entity allowed on edit. Please create additional tags with the add function.', accessLevel: accessLevel }
-      });
+      addWarningMessage('Only one entity is allowed when editing. Please create additional tags using the add function.');
+      return;
     } else {
       let entityResult = entityResultList[0];
       let updateJson = initializeUpdateJson(refCurie, row);
@@ -295,26 +319,24 @@ const TopicEntityCreateSGD = () => {
       return;
     }
 
-    // fetch the display tag name based on the selected curie
+    // Fetch the display tag name based on the selected curie
     const displayTagName = curieToNameDisplayTag[row.tetdisplayTagSelect] || "";
 
-    // validation: check if display tag is "primary display" or "additional display"
+    // Validation: check if display tag is "primary display" or "additional display"
     if (displayTagName === "primary display" || displayTagName === "additional display") {
-      // check if entityText is entered
+      // Check if entityText is entered
       if (!row.entityText || row.entityText.trim() === "") {
-        setWarningMessage("Entity must be entered when display tag is 'primary display' or 'additional display'.");
-        setTimeout(() => setWarningMessage(""), 8000);
+        addWarningMessage("Entity must be entered when display tag is 'primary display' or 'additional display'.");
         return;
       }
 
-      // check if entityResultList has at least one valid entity
+      // Check if entityResultList has at least one valid entity
       const hasValidEntity = row.entityResultList.some(entity => 
         !['no Alliance curie', 'no SGD curie', 'duplicate', 'obsolete entity'].includes(entity.curie)
       );
 
       if (!hasValidEntity) {
-        setWarningMessage("Entity must be validated when display tag is 'primary display' or 'additional display'.");
-        setTimeout(() => setWarningMessage(""), 8000);
+        addWarningMessage("Entity must be validated when display tag is 'primary display' or 'additional display'.");
         return;
       }
     }
@@ -324,10 +346,7 @@ const TopicEntityCreateSGD = () => {
       entityResultList,
       row.topicSelect);
     if (warningMsg) {
-      setWarningMessage(warningMsg)
-      setTimeout(() => {
-        setWarningMessage('');
-      }, 8000);
+      addWarningMessage(warningMsg);
       return;
     }
     dispatch(changeFieldEntityAddDisplayTag(displayTag));
@@ -362,8 +381,8 @@ const TopicEntityCreateSGD = () => {
     const result = await checkForExistingTags(forApiArray, accessToken, accessLevel,
       dispatch, updateButtonBiblioEntityAdd);
     if (result) {
-      setTagExistingMessage(result.html);
-      setIsTagExistingMessageVisible(true);
+      // Assuming result.html is plain text. If it contains HTML, handle accordingly.
+      addWarningMessage(result.html); // Use the unified warning handler
       setExistingTagResponses(result.existingTagResponses);
     }
     dispatch(
@@ -439,20 +458,26 @@ const TopicEntityCreateSGD = () => {
           <h3>Entity and Topic Addition</h3>
         </Col>
       </Row>
-      {warningMessage && (
+
+      {/* === Unified Warning Messages === */}
+      {warningMessages.length > 0 && (
         <Row className="form-group row">
           <Col sm="10">
             <div className="alert alert-warning" role="alert">
-              {warningMessage}
+              {warningMessages.map((msg, idx) => (
+                <div key={idx}>{msg}</div>
+              ))}
             </div>
           </Col>
         </Row>
       )}
-      {isTagExistingMessageVisible && tagExistingMessage && (
+
+      {/* === Existing Tag Existing Message (Handled Separately if Contains HTML) === */}
+      {isTagExistingMessageVisible && existingTagResponses.length > 0 && (
         <Row className="form-group row">
           <Col sm="12">
             <div className="alert alert-warning" role="alert">
-              <div className="table-responsive" dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div>
+              <div className="table-responsive" dangerouslySetInnerHTML={{ __html: existingTagResponses.join('<br/>') }}></div>
               <Button variant="outline-secondary" size="sm" onClick={handleCloseTagExistingMessage}>
                 Close
               </Button>
@@ -460,6 +485,7 @@ const TopicEntityCreateSGD = () => {
           </Col>
         </Row>
       )}
+
       {rows.map((row, index) => (
         <React.Fragment key={index}>
           <Row className="form-group row mb-3">
@@ -556,7 +582,7 @@ const TopicEntityCreateSGD = () => {
                   if (['no Alliance curie', 'no SGD curie', 'obsolete entity'].includes(entityResult.curie)) { colDisplayClass = 'Col-display-warn'; }
                   else if (entityResult.curie === 'duplicate') { colDisplayClass = 'Col-display-grey'; }
                   return (
-                    <Row key={`entityEntityContainerrows ${idx}`}>
+                    <Row key={`entityEntityContainerrows-${idx}`}>
                       <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">{entityResult.entityTypeSymbol}</Col>
                       <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">{entityResult.curie}</Col>
                     </Row>)
