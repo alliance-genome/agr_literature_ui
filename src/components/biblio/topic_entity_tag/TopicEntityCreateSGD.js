@@ -36,6 +36,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
 import { debounce } from 'lodash';
+import Alert from "react-bootstrap/Alert"; // Import Alert
 
 const TopicEntityCreateSGD = () => {
   const dispatch = useDispatch();
@@ -179,6 +180,11 @@ const TopicEntityCreateSGD = () => {
     setTimeout(() => {
       setWarningMessages(prev => prev.filter(m => m !== msg));
     }, 16000);
+  };
+
+  // Handler to remove a specific warning message
+  const handleCloseWarning = (index) => {
+    setWarningMessages(prev => prev.filter((_, idx) => idx !== index));
   };
 
   useEffect(() => {
@@ -463,11 +469,16 @@ const TopicEntityCreateSGD = () => {
       {warningMessages.length > 0 && (
         <Row className="form-group row">
           <Col sm="10">
-            <div className="alert alert-warning" role="alert">
-              {warningMessages.map((msg, idx) => (
-                <div key={idx}>{msg}</div>
-              ))}
-            </div>
+            {warningMessages.map((msg, idx) => (
+              <Alert
+                key={idx}
+                variant="warning"
+                onClose={() => handleCloseWarning(idx)}
+                dismissible
+              >
+                {msg}
+              </Alert>
+            ))}
           </Col>
         </Row>
       )}
