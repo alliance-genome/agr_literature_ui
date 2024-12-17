@@ -177,9 +177,6 @@ const TopicEntityCreateSGD = () => {
       if (prev.includes(msg)) return prev; // prevent duplicate messages
       return [...prev, msg];
     });
-    setTimeout(() => {
-      setWarningMessages(prev => prev.filter(m => m !== msg));
-    }, 16000);
   };
 
   // Handler to remove a specific warning message
