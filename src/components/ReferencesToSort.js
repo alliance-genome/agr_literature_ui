@@ -43,7 +43,12 @@ const ReferencesToSort = ({
     const forApiArray = [];
 
     // Update mod_corpus_association to set 'corpus' to true
-    let updateJson = { 'corpus': true, 'mod_corpus_sort_source': 'manual_creation' };
+    const index_in_progress = activeMod === "SGD";
+    let updateJson = {
+	'corpus': true,
+	'mod_corpus_sort_source': 'manual_creation',
+	'index_in_progress': index_in_progress
+    };
     let subPath = `reference/mod_corpus_association/${reference['mod_corpus_association_id']}`;
     let method = 'PATCH';
     let array = [subPath, updateJson, method, index, null, null];
@@ -86,6 +91,7 @@ const ReferencesToSort = ({
       }
     }
 
+    /*
     if (activeMod === 'SGD' && shouldOpenEditor) {
 	// adding manual indexing in progress  
         updateJson = {
@@ -99,6 +105,7 @@ const ReferencesToSort = ({
         array = [subPath, updateJson, method, index, null, null];
         forApiArray.push(array);
     }
+    */
       
     // Dispatch the updates
     let dispatchCount = forApiArray.length;
