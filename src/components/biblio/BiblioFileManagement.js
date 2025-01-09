@@ -798,6 +798,7 @@ const FileEditor = ({ onFileStatusChange }) => {
               <option>pdf</option>
               <option>ocr</option>
               <option>tif</option>
+	      <option>lib</option>
               <option>aut</option>
               <option>html</option>
             </Form.Control>
