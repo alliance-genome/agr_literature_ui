@@ -1,31 +1,17 @@
 import axios from "axios";
-export const FetchTypeaheadOptions = async (url, query, accessToken) => {
-    try {
-        const response = await axios.post(
-            url,
-            {
-                "searchFilters": {
-                    "nameFilter": {
-                        "name": {
-                            "queryString": query,
-                            "tokenOperator": "AND"
-                        }
-                    }
-                },
-                "sortOrders": [],
-                "aggregations": [],
-                "nonNullFieldsTable": []
-            },
-            {
-                headers: {
-                    'content-type': 'application/json',
-                    'authorization': 'Bearer ' + accessToken
-                }
-            }
-        );
-        return response.data.results;
-    } catch (error) {
-        console.error("Error fetching typeahead options:", error);
-        return [];
+
+export async function FetchTypeaheadOptions(url) {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     }
-};
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+  return response.json();
+}
+
