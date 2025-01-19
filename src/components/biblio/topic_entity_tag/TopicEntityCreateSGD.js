@@ -95,7 +95,7 @@ const TopicEntityCreateSGD = () => {
 
   useEffect(() => {
     const fetchTaxonData = async () => {
-      const taxonData = await getCurieToNameTaxon(accessToken);
+      const taxonData = await getCurieToNameTaxon();
       const modData = await getModToTaxon();
       setCurieToNameTaxon(taxonData);
       setModToTaxon(modData);

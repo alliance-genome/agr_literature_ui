@@ -112,7 +112,7 @@ const TopicEntityTable = () => {
     
   useEffect(() => {
     const fetchData = async () => {
-      const taxonData = await getCurieToNameTaxon(accessToken);
+      const taxonData = await getCurieToNameTaxon();
       dispatch(setCurieToNameTaxon(taxonData));
     };
     fetchData();

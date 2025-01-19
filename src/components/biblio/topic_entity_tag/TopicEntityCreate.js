@@ -87,7 +87,7 @@ const TopicEntityCreate = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const taxonData = await getCurieToNameTaxon(accessToken);
+      const taxonData = await getCurieToNameTaxon();
       const modData = await getModToTaxon();
       taxonData["use_wb"] = "other nematode";
       setCurieToNameTaxon(taxonData);
