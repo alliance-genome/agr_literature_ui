@@ -128,7 +128,7 @@ const TopicEntityTable = () => {
           if (arrElement['validation_by_author'] === 'validated_right_self') { arrElement['validation_by_author'] = ''; }
           else if (arrElement['validation_by_author'] === 'validated_right') { arrElement['validation_by_author'] = 'agree'; }
           else if (arrElement['validation_by_author'] === 'validated_wrong') { arrElement['validation_by_author'] = 'disagree'; }
-          else if (arrElement['validation_by_author'] === 'not_validated')   { arrElement['validation_by_author'] = 'no data'; }
+          else if (arrElement['validation_by_author'] === 'not_validated')   { arrElement['validation_by_author'] = 'no entry'; }
         }
         if ('validation_by_professional_biocurator' in arrElement) {
           if (arrElement['validation_by_professional_biocurator'] === 'validated_right_self') {
