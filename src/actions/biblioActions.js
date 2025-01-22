@@ -437,7 +437,9 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList, call
 
 export const abc_entity_validation = (dispatch, entityType, entityInputList, taxon, callback) => {
 
-    const url = restUrl + "/topic_entity_tag/entity_validation/" + taxon + "/" + entityType + '/' + entityInputList.join('|').replace(/ /g, '+');
+    const entityListStr = entityInputList.join('|');
+    const encodedEntityList = encodeURIComponent(entityListStr);
+    const url = `${restUrl}/topic_entity_tag/entity_validation/${taxon}/${entityType}/${encodedEntityList}`;
     fetchJsonData(url).then(data => {
         const searchMap = {};
 	const obsoleteMap = {};
