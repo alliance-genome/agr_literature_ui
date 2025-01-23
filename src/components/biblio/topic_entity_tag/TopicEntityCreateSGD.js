@@ -8,7 +8,6 @@ import {
   fetchDisplayTagData,
   getCuratorSourceId,
   setBiblioUpdatingEntityAdd,
-  setEntityModalText,
   setEditTag,
   updateButtonBiblioEntityAdd,
 } from "../../../actions/biblioActions";
@@ -24,7 +23,6 @@ import {
 } from "./BiblioEntityUtilsSGD";
 import { getCurieToNameTaxon, getModToTaxon } from "./TaxonUtils";
 import Container from "react-bootstrap/Container";
-import ModalGeneric from "../ModalGeneric";
 import RowDivider from "../RowDivider";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -48,10 +46,9 @@ const TopicEntityCreateSGD = () => {
   const biblioUpdatingEntityAdd = useSelector(
     (state) => state.biblio.biblioUpdatingEntityAdd
   );
-  const entityModalText = useSelector((state) => state.biblio.entityModalText);
 
-  // For warnings
-  const [warningMessages, setWarningMessages] = useState([]);
+  const [messages, setMessages] = useState([]);
+
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
 
@@ -109,7 +106,7 @@ const TopicEntityCreateSGD = () => {
   let taxonList = unsortedTaxonList.sort((a, b) =>
     curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1
   );
-  
+
   useEffect(() => {
     fetchDisplayTagData().then((data) => setDisplayTagData(data));
     dispatch(
@@ -180,15 +177,12 @@ const TopicEntityCreateSGD = () => {
     }
   }, [editTag, topicEntityTags, dispatch]);
 
-  const addWarningMessage = (msg) => {
-    setWarningMessages((prev) => {
-      if (prev.includes(msg)) return prev; // prevent duplicate
-      return [...prev, msg];
-    });
+  const addMessage = (text, variant) => {
+    setMessages((prev) => [...prev, { text, variant }]);
   };
 
-  const handleCloseWarning = (index) => {
-    setWarningMessages((prev) => prev.filter((_, idx) => idx !== index));
+  const handleCloseMessage = (index) => {
+    setMessages((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   useEffect(() => {
@@ -207,7 +201,7 @@ const TopicEntityCreateSGD = () => {
           }
         }
       });
-      uniqueMessages.forEach((msg) => addWarningMessage(msg));
+      uniqueMessages.forEach((msg) => addMessage(msg, "warning"));
     }
   }, [referenceJsonLive?.workflow_tags, uid]);
 
@@ -308,8 +302,9 @@ const TopicEntityCreateSGD = () => {
     const entityResultList = row.entityResultList || [];
     if (entityResultList.length > 1) {
       console.error("Error processing entry: too many entities");
-      addWarningMessage(
-        "Only one entity is allowed when editing. Please create additional tags using the add function."
+      addMessage(
+        "Only one entity is allowed when editing. Please create additional tags using the add function.",
+        "danger"
       );
       return;
     } else {
@@ -340,8 +335,9 @@ const TopicEntityCreateSGD = () => {
     const displayTagName = curieToNameDisplayTag[row.tetdisplayTagSelect] || "";
     if (["primary display", "additional display"].includes(displayTagName)) {
       if (!row.entityText || row.entityText.trim() === "") {
-        addWarningMessage(
-          "Entity must be entered when display tag is 'primary display' or 'additional display'."
+        addMessage(
+          "Entity must be entered when display tag is 'primary display' or 'additional display'.",
+          "danger"
         );
         return;
       }
@@ -350,14 +346,15 @@ const TopicEntityCreateSGD = () => {
           ![
             "no Alliance curie",
             "no SGD curie",
-	    "no mod curie",
+            "no mod curie",
             "duplicate",
             "obsolete entity",
           ].includes(entity.curie)
       );
       if (!hasValidEntity) {
-        addWarningMessage(
-          "Entity must be validated when display tag is 'primary display' or 'additional display'."
+        addMessage(
+          "Entity must be validated when display tag is 'primary display' or 'additional display'.",
+          "danger"
         );
         return;
       }
@@ -370,7 +367,7 @@ const TopicEntityCreateSGD = () => {
       row.topicSelect
     );
     if (warningMsg) {
-      addWarningMessage(warningMsg);
+      addMessage(warningMsg, "danger");
       return;
     }
     dispatch(changeFieldEntityAddDisplayTag(displayTag));
@@ -385,7 +382,7 @@ const TopicEntityCreateSGD = () => {
           ![
             "no Alliance curie",
             "no SGD curie",
-	    "no mod curie",
+            "no mod curie",
             "duplicate",
             "obsolete entity",
           ].includes(entityResult.curie)
@@ -460,10 +457,8 @@ const TopicEntityCreateSGD = () => {
     updateJson["note"] = row.noteText !== "" ? row.noteText : null;
     updateJson["negated"] = false;
     updateJson["confidence_level"] = null;
-    updateJson["topic_entity_tag_source_id"] = topicEntitySourceId;
-    if (row.tetdisplayTagSelect && row.tetdisplayTagSelect !== "") {
-      updateJson["display_tag"] = row.tetdisplayTagSelect;
-    }
+    // This source ID set in the parent effect
+    // updateJson["topic_entity_tag_source_id"] = topicEntitySourceId (done outside)
     return updateJson;
   }
 
@@ -472,7 +467,6 @@ const TopicEntityCreateSGD = () => {
     setExistingTagResponses([]);
   };
 
-  // reorder taxonList so that the mod's default taxon is at the top
   if (accessLevel in modToTaxon) {
     const filteredTaxonList = taxonList.filter((x) => !modToTaxon[accessLevel].includes(x));
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList);
@@ -483,58 +477,82 @@ const TopicEntityCreateSGD = () => {
   );
   const existingTagHtml = existingTagResponses.join("<br/>").trim();
 
+  const [noTetDataLoading, setNoTetDataLoading] = useState(false);
+
+  const handleNoTetDataClick = async () => {
+    setNoTetDataLoading(true);
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/set_no_tet_status/${accessLevel}/${referenceJsonLive.curie}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      console.log("The manual indexing WFT has been successfully set to complete:", response.data);
+      addMessage("The manual indexing WFT has been successfully set to complete.", "success");
+    } catch (error) {
+      console.error("Error processing the manual indexing WFT:", error);
+      addMessage("Failed to process the manual indexing WFT.", "danger");
+    } finally {
+      setNoTetDataLoading(false);
+    }
+  };
+
   return (
     <Container fluid>
-      <ModalGeneric
-        showGenericModal={entityModalText !== ""}
-        genericModalHeader="Entity Error"
-        genericModalBody={entityModalText}
-        onHideAction={() => setEntityModalText("")}
-      />
       <RowDivider />
-      <Row className="form-group row" style={{ display: "flex", alignItems: "center" }}>
-        <Col className="form-label col-form-label" sm="10" align="left">
-          <h3>Entity and Topic Addition</h3>
+      {/* Messages Area */}
+      <Row className="form-group row mb-3">
+        <Col sm="12">
+          {messages.map((msg, idx) => (
+            <Alert
+              key={idx}
+              variant={msg.variant}
+              onClose={() => handleCloseMessage(idx)}
+              dismissible
+            >
+              {msg.text}
+            </Alert>
+          ))}
         </Col>
       </Row>
-      {warningMessages.length > 0 && (
-        <Row className="form-group row">
-          <Col sm="10">
-            {warningMessages.map((msg, idx) => (
-              <Alert
-                key={idx}
-                variant="warning"
-                onClose={() => handleCloseWarning(idx)}
-                dismissible
-              >
-                {msg}
-              </Alert>
-            ))}
-          </Col>
-        </Row>
-      )}
 
+      {/* Existing Tag Messages */}
       {isTagExistingMessageVisible && existingTagHtml && (
-        <Row className="form-group row">
+        <Row className="form-group row mb-3">
           <Col sm="12">
-            <div className="alert alert-warning" role="alert">
+            <Alert variant="warning" onClose={handleCloseTagExistingMessage} dismissible>
               {/* Render the string as HTML, not as literal text */}
               <div
                 className="table-responsive"
                 dangerouslySetInnerHTML={{ __html: existingTagHtml }}
               />
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={handleCloseTagExistingMessage}
-              >
-                Close
-              </Button>
-            </div>
+            </Alert>
           </Col>
         </Row>
       )}
 
+      {/* Title and "No TET data" Button */}
+      <Row className="form-group row mb-3" style={{ alignItems: "center" }}>
+        <Col sm="12" style={{ display: "flex", alignItems: "center" }}>
+          <h3 style={{ marginRight: "10px" }}>Entity and Topic Addition</h3>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={handleNoTetDataClick}
+            disabled={noTetDataLoading}
+          >
+            {noTetDataLoading ? (
+              <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+            ) : (
+              "Done adding TET / No TET data"
+            )}
+          </Button>
+        </Col>
+      </Row>
+
+      {/* Entity Rows */}
       {rows.map((row, index) => (
         <React.Fragment key={index}>
           <Row className="form-group row mb-3">
@@ -634,7 +652,7 @@ const TopicEntityCreateSGD = () => {
                       [
                         "no Alliance curie",
                         "no SGD curie",
-			"no mod curie",
+                        "no mod curie",
                         "obsolete entity",
                       ].includes(entityResult.curie)
                     ) {
@@ -744,19 +762,6 @@ function createNewRow() {
     noteText: "",
     entityResultList: [],
   };
-}
-
-function initializeUpdateJson(refCurie, row) {
-  const updateJson = {};
-  updateJson["reference_curie"] = refCurie;
-  updateJson["topic"] = row.topicSelect;
-  updateJson["species"] = row.taxonSelect;
-  updateJson["note"] = row.noteText !== "" ? row.noteText : null;
-  updateJson["negated"] = false;
-  updateJson["confidence_level"] = null;
-  // This source ID set in the parent effect
-  // updateJson["topic_entity_tag_source_id"] = topicEntitySourceId (done outside)
-  return updateJson;
 }
 
 export default TopicEntityCreateSGD;
