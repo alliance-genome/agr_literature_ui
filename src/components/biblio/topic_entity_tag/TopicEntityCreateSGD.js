@@ -457,8 +457,11 @@ const TopicEntityCreateSGD = () => {
     updateJson["note"] = row.noteText !== "" ? row.noteText : null;
     updateJson["negated"] = false;
     updateJson["confidence_level"] = null;
-    // This source ID set in the parent effect
-    // updateJson["topic_entity_tag_source_id"] = topicEntitySourceId (done outside)
+    updateJson["topic_entity_tag_source_id"] = topicEntitySourceId;
+
+    if (row.tetdisplayTagSelect && row.tetdisplayTagSelect !== "") {
+       updateJson["display_tag"] = row.tetdisplayTagSelect;
+    }   
     return updateJson;
   }
 
