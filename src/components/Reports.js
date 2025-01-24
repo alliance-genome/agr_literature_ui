@@ -50,10 +50,14 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
 
         const totalsObj = {};
         result.data.forEach(item => {
-          if (!totalsObj[item.workflow_tag_name]) {
-            totalsObj[item.workflow_tag_name] = 0;
+          //if (!totalsObj[item.workflow_tag_name]) {
+          //  totalsObj[item.workflow_tag_name] = 0;
+          //}
+          //totalsObj[item.workflow_tag_name] += item.tag_count;
+            // console.log("mod_abbreviation:" + item.mod_abbreviation + " number:" + item.tag_count)
+          if (item.mod_abbreviation=="All"){
+             totalsObj[item.workflow_tag_name] = item.tag_count;
           }
-          totalsObj[item.workflow_tag_name] += item.tag_count;
         });
         setTotals(totalsObj);
 
@@ -113,7 +117,7 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
   const rowData = tagNames.map(tagName => {
     const row = { 
       tag_name: nameMapping[tagName], 
-      total: totals[tagName] || 0 
+      total: totals[tagName] || 0
     };
     mods.forEach(mod => {
       row[mod] = getTagCount(tagName, mod);
