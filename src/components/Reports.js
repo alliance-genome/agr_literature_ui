@@ -280,27 +280,14 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
       //if ( (date_option !== 'default') && ( (date_range_start === '') ||  (date_range_end === '') ) ) { return; }
       setIsLoadingData(true);
       try {
-          console.log('calling url ' + url);
         const result = await axios.get(url);
-        // console.log(result);
-        console.log(result.data);
-        setData(result.data[1]);
-        setHeader(result.data[2])
-        // setData([[1,2,3],[4,5,6]]);
-        //const totalsObj = {};
-        //result.data.forEach(item => {
-        //  if (!totalsObj[item.workflow_tag_name]) {
-        //    totalsObj[item.workflow_tag_name] = 0;
-        //  }
-        //  totalsObj[item.workflow_tag_name] += item.tag_count;
-        //});
-        //setTotals(totalsObj);
+        setData(result.data[0]);
+        setHeader(result.data[1])
 
         setKey(prevKey => prevKey + 1);
       } catch (error) {
         console.error('wfsMt: Error fetching data:', error);
       } finally {
-          console.log("FINALLY");
         setIsLoadingData(false);
       }
     };
@@ -308,10 +295,6 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
     fetchData();
   }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end]);
 
-  //const getTagCount = (tagName, mod) => {
-  //  const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === mod);
-  //  return item ? item.tag_count : 0;
-  //};
 
   const containerStyle = {
     display: 'flex',
@@ -329,27 +312,22 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
     const columns = [
         ...header.map(mod => ({
       headerName: mod,
+            children: [
+                {headerName: '#',
+                field: mod + '_num'},
+                {headerName: '%',
+                field: mod + '_perc'}
+            ],
       field: mod,
       flex: 1,
       cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header'
-    })),
+    }))
   ];
+    columns[0] = {headerName: '', field: 'status'}
 
 
-  //const rowData = tagNames.map(tagName => {
-  //  const row = {
-  //    tag_name: nameMapping[tagName],
-  //    total: totals[tagName] || 0
-  //  };
-  //  mods.forEach(mod => {
-  //    row[mod] = getTagCount(tagName, mod);
-  //  });
-  //  return row;
-  //});
-  console.log("Data: " + data);
-  console.log("Headers" + header)
-  console.log("Col: " + columns);
+
   return (
     <div>
       <h5>{title}</h5>
