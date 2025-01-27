@@ -251,6 +251,7 @@ const WorkflowStatModTablesContainer = ({modSection}) => {
 
 const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
   const [data, setData] = useState([]);
+  const [header, setHeader] = useState([]);
   //const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(100);
@@ -281,10 +282,11 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
       try {
           console.log('calling url ' + url);
         const result = await axios.get(url);
-        console.log(result);
+        // console.log(result);
         console.log(result.data);
-        setData(result.data);
-
+        setData(result.data[1]);
+        setHeader(result.data[2])
+        // setData([[1,2,3],[4,5,6]]);
         //const totalsObj = {};
         //result.data.forEach(item => {
         //  if (!totalsObj[item.workflow_tag_name]) {
@@ -324,22 +326,8 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
     return null;
   };
 
-  const columns = [
-    {
-      headerName: '',
-      field: 'tag_name',
-      flex: 1,
-      cellStyle: boldCellStyle,
-      headerClass: 'wft-bold-header'
-    },
-    {
-      headerName: 'Total',
-      field: 'total',
-      flex: 1,
-      cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header'
-    },
-    ...mods.map(mod => ({
+    const columns = [
+        ...header.map(mod => ({
       headerName: mod,
       field: mod,
       flex: 1,
@@ -347,6 +335,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
       headerClass: 'wft-bold-header'
     })),
   ];
+
 
   //const rowData = tagNames.map(tagName => {
   //  const row = {
@@ -358,7 +347,9 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
   //  });
   //  return row;
   //});
-
+  console.log("Data: " + data);
+  console.log("Headers" + header)
+  console.log("Col: " + columns);
   return (
     <div>
       <h5>{title}</h5>
@@ -379,6 +370,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                       ref={gridRef}
                       rowData={data}
                       pagination={true}
+                      columnDefs={columns}
                       paginationPageSize={20}
                       domLayout="autoHeight"
                     />
@@ -430,7 +422,7 @@ const ReportsContainer = () => {
   const mods = useSelector(state => state.app.mods);
   return (
     <div>
-      <Tabs defaultActiveKey="all" id="uncontrolled-tab-example">
+      <Tabs mountOnEnter="true" defaultActiveKey="all" id="uncontrolled-tab-example">
         <Tab eventKey="all" title="All">
           <WorkflowStatTablesContainer modSection='All' />
         </Tab>
