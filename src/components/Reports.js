@@ -240,6 +240,132 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
 } // const ReportsDatePicker = ({ facetName, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection })
 
 
+const WorkflowStatModTablesContainer = ({modSection}) => {
+  return (
+    <div>
+      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
+      <WorkflowStatModTable
+        workflowProcessAtpId="ATP:0000165"
+        title="Reference Classification Status"
+        modSection={modSection}
+      />
+    </div>
+  );
+};
+
+const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
+  const [data, setData] = useState([]);
+  const [header, setHeader] = useState([]);
+  //const [totals, setTotals] = useState({});
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [key, setKey] = useState(100);
+
+  const mods = useSelector(state => state.app.mods);
+  const dateRangeDict = useSelector(state => state.reports.dateRangeDict);
+  const dateRangeValue = ( (dateRangeDict[modSection]) && (dateRangeDict[modSection][workflowProcessAtpId]) ) ? dateRangeDict[modSection][workflowProcessAtpId] : '';
+
+  const dateOptionDict = useSelector(state => state.reports.dateOptionDict);
+  const dateOptionValue = ( (dateOptionDict[modSection]) && (dateOptionDict[modSection][workflowProcessAtpId]) ) ? dateOptionDict[modSection][workflowProcessAtpId] : '';
+  const gridRef = useRef();
+
+  const mod_abbreviation = (modSection === 'All') ? '' : modSection;
+  const date_range_start = (dateRangeValue === '') ? '': dateRangeValue[0];
+  const date_range_end = (dateRangeValue === '') ? '': dateRangeValue[1];
+  const date_option = (dateOptionValue === '') ? 'default' : dateOptionValue;
+
+  useEffect(() => {
+    const fetchData = async () => {
+        console.log("mods is " + mods);
+        console.log("mod abbr " + mod_abbreviation);
+      let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/reports/${workflowProcessAtpId}/${mod_abbreviation}`;
+      // if (mod_abbreviation !== '') { url += `&mod_abbreviation=${mod_abbreviation}`; }
+      //if ( (date_range_start !== '') && (date_range_end !== '') ) {
+      //    url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
+      //if ( (date_option !== 'default') && ( (date_range_start === '') ||  (date_range_end === '') ) ) { return; }
+      setIsLoadingData(true);
+      try {
+        const result = await axios.get(url);
+        setData(result.data[0]);
+        setHeader(result.data[1])
+
+        setKey(prevKey => prevKey + 1);
+      } catch (error) {
+        console.error('wfsMt: Error fetching data:', error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end]);
+
+
+  const containerStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '15px',
+  };
+
+  const boldCellStyle = (params) => {
+    if (params.colDef.field === 'tag_name') {
+      return { fontWeight: 'bold' };
+    }
+    return null;
+  };
+
+    const columns = [
+        ...header.map(mod => ({
+      headerName: mod,
+            children: [
+                {headerName: '#',
+                field: mod + '_num'},
+                {headerName: '%',
+                field: mod + '_perc'}
+            ],
+      field: mod,
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header'
+    }))
+  ];
+    columns[0] = {headerName: '', field: 'status'}
+
+
+
+  return (
+    <div>
+      <h5>{title}</h5>
+        <div style={containerStyle}>
+          <Container fluid style={{ width: '90%' }}>
+            <Row>
+              <Col>
+                {isLoadingData ? (
+                  <div className="text-center">
+                    <Spinner animation="border" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                  </div>
+                ) : (
+                  <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                    <AgGridReact
+                      key={key}
+                      ref={gridRef}
+                      rowData={data}
+                      pagination={true}
+                      columnDefs={columns}
+                      paginationPageSize={20}
+                      domLayout="autoHeight"
+                    />
+                  </div>
+                )}
+              </Col>
+            </Row>
+          </Container>
+        </div>
+    </div>
+  );
+}; // const const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection })
+
 const WorkflowStatTablesContainer = ({modSection}) => {
   const file_upload_name_mapping = {
       'files uploaded': 'uploaded',
@@ -278,13 +404,14 @@ const ReportsContainer = () => {
   const mods = useSelector(state => state.app.mods);
   return (
     <div>
-      <Tabs defaultActiveKey="all" id="uncontrolled-tab-example">
+      <Tabs mountOnEnter="true" defaultActiveKey="all" id="uncontrolled-tab-example">
         <Tab eventKey="all" title="All">
           <WorkflowStatTablesContainer modSection='All' />
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>
             {mod}
+              <WorkflowStatModTablesContainer modSection={mod} />
           </Tab>
         ))}
       </Tabs>
