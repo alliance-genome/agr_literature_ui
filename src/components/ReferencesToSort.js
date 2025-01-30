@@ -38,16 +38,15 @@ const ReferencesToSort = ({
 
   const backgroundColor = (reference['prepublication_pipeline'] === true) ? '#f8d7da' : '';
 
-  // Handler for "Inside & Open" and "Inside" buttons
-  const handleInsideOrOpen = (shouldOpenEditor = false) => {
+  // Handler for "Inside & Open", "Inside & Done", and "Inside" buttons
+  const handleInsideOrOpen = (shouldOpenEditor, index_wft_id) => {
+    activeMod !== "SGD" && (index_wft_id = null);	
     const forApiArray = [];
-
     // Update mod_corpus_association to set 'corpus' to true
-    const index_in_progress = activeMod === "SGD";
     let updateJson = {
 	'corpus': true,
 	'mod_corpus_sort_source': 'manual_creation',
-	'index_in_progress': index_in_progress
+	'index_wft_id': index_wft_id
     };
     let subPath = `reference/mod_corpus_association/${reference['mod_corpus_association_id']}`;
     let method = 'PATCH';
@@ -322,10 +321,13 @@ const ReferencesToSort = ({
             />
             {(activeMod === 'WB') && <div><br /><NewTaxonModal /></div>} {/* NewTaxonModal Component */}
             <br />
-            <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(true)} style={{ marginRight: '5px', width: '120px' }}>
+            <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(true, 'ATP:0000276')} style={{ marginRight: '5px', width: '120px' }}>
               Inside & Open
             </Button>
-            <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(false)} style={{ width: '80px' }}>
+	    <Button variant="outline-success" size="sm" onClick={() => handleInsideOrOpen(false, 'ATP:0000275')} style={{ marginRight: '5px', width: '120px' }}>
+	      Inside & Done
+            </Button>  
+            <Button variant="outline-secondary" size="sm" onClick={() => handleInsideOrOpen(false, 'ATP:0000274')} style={{ width: '80px' }}>
               Inside
             </Button>
           </Form>
