@@ -16,6 +16,8 @@ import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import { NewTaxonModal, FileElement } from './SortHelper'; // Updated import
 import PropTypes from 'prop-types';
 import axios from 'axios'; // Added import
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEdit, faCheck, faCheckCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
@@ -44,9 +46,9 @@ const ReferencesToSort = ({
     const forApiArray = [];
     // Update mod_corpus_association to set 'corpus' to true
     let updateJson = {
-	'corpus': true,
-	'mod_corpus_sort_source': 'manual_creation',
-	'index_wft_id': index_wft_id
+      'corpus': true,
+      'mod_corpus_sort_source': 'manual_creation',
+      'index_wft_id': index_wft_id
     };
     let subPath = `reference/mod_corpus_association/${reference['mod_corpus_association_id']}`;
     let method = 'PATCH';
@@ -92,13 +94,13 @@ const ReferencesToSort = ({
 
     /*
     if (activeMod === 'SGD' && shouldOpenEditor) {
-	// adding manual indexing in progress  
+      // adding manual indexing in progress  
         updateJson = {
-	    'mod_abbreviation': activeMod,
-	    'curie_or_reference_id': reference['curie'],
-	    'new_workflow_tag_atp_id': 'ATP:0000276', 
-	    'transition_type': 'manual'
-	};
+        'mod_abbreviation': activeMod,
+        'curie_or_reference_id': reference['curie'],
+        'new_workflow_tag_atp_id': 'ATP:0000276', 
+        'transition_type': 'manual'
+      };
         subPath = 'workflow_tag/transition_to_workflow_status';
         method = 'POST';
         array = [subPath, updateJson, method, index, null, null];
@@ -161,6 +163,15 @@ const ReferencesToSort = ({
     dispatch(removeReferenceFromSortLive(index));
   };
 
+  // Function to determine button variant based on activeMod and button type
+  const getButtonVariant = (buttonType) => {
+    if (activeMod === 'SGD') {
+      if (buttonType === 'insideDone') return 'outline-success';
+      if (buttonType === 'inside') return 'outline-secondary';
+    }
+    return 'outline-primary';
+  };
+
   return (
     <div key={`reference div ${index}`} >
       <Row key={`reference ${index}`} >
@@ -178,23 +189,23 @@ const ReferencesToSort = ({
             {reference['curie']}
           </Link>     
       	  {reference['cross_references'].map((xref, idx) => (
-	    <div key={`xref-${index}-${idx}`} style={{ alignSelf: 'flex-start', marginBottom: '5px' }}>
-	       {xref['url'].endsWith('/') ? (
-		   <span>{xref['curie']}</span>
-	       ) : (
-		   <a href={xref['url']} target='_blank' rel="noreferrer">
-		       {xref['curie']}
-		   </a>
-	       )}
-	    </div>
-	  ))}
+    	    <div key={`xref-${index}-${idx}`} style={{ alignSelf: 'flex-start', marginBottom: '5px' }}>
+    	       {xref['url'].endsWith('/') ? (
+    		   <span>{xref['curie']}</span>
+    	       ) : (
+    		   <a href={xref['url']} target='_blank' rel="noreferrer">
+    		       {xref['curie']}
+    		   </a>
+    	       )}
+    	    </div>
+    	  ))}
           <div style={{ alignSelf: 'flex-start', marginBottom: '10px' }} >
             <b>Journal:</b> {
               (reference['resource_title']) ? <span dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A' 
             }
           </div>
-	  { /*    
-	  <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
+    	  { /*    
+    	  <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
             */}
         </Col>
 
@@ -321,14 +332,29 @@ const ReferencesToSort = ({
             />
             {(activeMod === 'WB') && <div><br /><NewTaxonModal /></div>} {/* NewTaxonModal Component */}
             <br />
-            <Button variant="outline-primary" size="sm" onClick={() => handleInsideOrOpen(true, 'ATP:0000276')} style={{ marginRight: '5px', width: '120px' }}>
-              Inside & Open
+            <Button 
+              variant="outline-primary" 
+              size="sm" 
+              onClick={() => handleInsideOrOpen(true, 'ATP:0000276')} 
+              style={{ marginRight: '5px', width: '120px' }}
+            >
+              <FontAwesomeIcon icon={faEdit} /> Inside & Open
             </Button>
-	    <Button variant="outline-success" size="sm" onClick={() => handleInsideOrOpen(false, 'ATP:0000275')} style={{ marginRight: '5px', width: '120px' }}>
-	      Inside & Done
+            <Button 
+              variant={getButtonVariant('insideDone')} 
+              size="sm" 
+              onClick={() => handleInsideOrOpen(false, 'ATP:0000275')} 
+              style={{ marginRight: '5px', width: '120px' }}
+            >
+              <FontAwesomeIcon icon={faCheck} /> Inside & Done
             </Button>  
-            <Button variant="outline-secondary" size="sm" onClick={() => handleInsideOrOpen(false, 'ATP:0000274')} style={{ width: '80px' }}>
-              Inside
+            <Button 
+              variant={getButtonVariant('inside')} 
+              size="sm" 
+              onClick={() => handleInsideOrOpen(false, 'ATP:0000274')} 
+              style={{ width: '80px' }}
+            >
+              <FontAwesomeIcon icon={faCheckCircle} /> Inside
             </Button>
           </Form>
         </Col>
@@ -347,8 +373,12 @@ const ReferencesToSort = ({
           </Form>
           <br /><br /><br />
           <div style={{ marginTop: '10px' }}>
-            <Button variant="outline-secondary" size="sm" onClick={() => handleOutside()} >
-              Outside
+            <Button 
+              variant="outline-primary" 
+              size="sm" 
+              onClick={() => handleOutside()} 
+            >
+              <FontAwesomeIcon icon={faTimes} /> Outside
             </Button>
           </div>
         </Col>
