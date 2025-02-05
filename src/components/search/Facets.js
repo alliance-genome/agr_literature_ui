@@ -81,6 +81,64 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
+const WorkflowTagsFacet = ({ aggregations, onSelectTerm }) => {
+  const subcatsAgg = aggregations?.workflow_tags_subcategories?.buckets;
+  if (!subcatsAgg) return null;
+
+  // convert subcategory keys into labels.
+  const formatSubcategoryLabel = (subcatKey) => {
+    switch (subcatKey) {
+      case 'file_workflow':
+        return 'File Workflow';
+      case 'reference_classification':
+        return 'Reference Classification';
+      case 'entity_extraction':
+        return 'Entity Extraction';
+      case 'manual_indexing':
+        return 'Manual Indexing';
+      default:
+        return subcatKey;
+    }
+  };
+
+  return (
+    <div className="workflow-tags-facet">
+      <h5>Workflow Tags</h5>
+      {Object.keys(subcatsAgg).map((subcatKey) => {
+        const subcatData = subcatsAgg[subcatKey];
+        // Filter out terms with zero count.
+        const termBuckets =
+          subcatData.terms && subcatData.terms.buckets
+            ? subcatData.terms.buckets.filter((term) => term.doc_count > 0)
+            : [];
+        if (termBuckets.length === 0) return null;
+        return (
+          <div key={subcatKey} className="workflow-subcategory">
+            <div className="subcategory-header">
+              <span className="subcategory-title">{formatSubcategoryLabel(subcatKey)}</span>
+              <span className="subcategory-count">({subcatData.doc_count})</span>
+            </div>
+            <ul className="subcategory-terms list-unstyled">
+              {termBuckets.map((term) => (
+                <li key={term.key} className="term-item">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => onSelectTerm(term.key)}
+                    className="term-button"
+                  >
+                    {term.key} <Badge variant="secondary">{term.doc_count}</Badge>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     const dispatch = useDispatch();
 
@@ -485,7 +543,18 @@ const Facets = () => {
                                        />
 				   </>
                                 )}
-                                {facetCategory === 'Date Range' ? <DateFacet facetsToInclude={facetsInCategory}/> : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
+				{facetCategory === 'Date Range' ? (
+				    <DateFacet facetsToInclude={facetsInCategory} />
+				) : facetCategory === 'Workflow Tags' ? (
+				    <WorkflowTagsFacet
+					aggregations={searchFacets}
+					onSelectTerm={(term) => {
+					    dispatch(addFacetValue("workflow_tags.workflow_tag_id.keyword", term));
+					}}
+				    />
+                                ) : (
+				    <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS} />
+				)}                       
                             </div>
                         </Collapse>
                     </div>
