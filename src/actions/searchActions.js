@@ -141,7 +141,14 @@ const getSearchParams = (state) => {
   if(state.search.dateCreated){
     params.date_created = state.search.dateCreated;
   }
-    
+
+  const WORKFLOW_FACETS = ["file_workflow", "manual_indexing", "entity_extraction", "reference_classification"];
+  Object.keys(data).forEach(key => {
+    if (!TET_FACETS_LIST.includes(key) || WORKFLOW_FACETS.includes(key)) {
+        facetsValues[key] = data[key];
+    }
+  });
+
   //console.log("searchParams =" + JSON.stringify(params, null, 2));
     
   return params;
