@@ -252,11 +252,15 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
 		    let key = facetToInclude.replaceAll(' ', '_');
-                    if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key)){
+                if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'file_workflow', 'manual_indexing', 'reference_classification', 'entity_extraction'].includes(key)){
                         key = key + '.keyword';
                     }
                     if (key in searchFacets) {
                         let value = searchFacets[key];
+			// Don't render facet if there are no buckets
+			if (!value.buckets || value.buckets.length === 0) {
+                            return null;
+			}
                         return (
                             <div key={facetToInclude} className="facet-container">
                                <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
