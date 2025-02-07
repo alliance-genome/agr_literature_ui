@@ -49,7 +49,6 @@ export const RENAME_FACETS = {
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
-    //"workflow_tags.workflow_tag_id.keyword": "Workflow Tag ID",
     "file_workflow": "File workflow",
     "manual_indexing": "Manual indexing",
     "reference_classification": "Reference classification",
