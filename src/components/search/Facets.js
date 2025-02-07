@@ -49,7 +49,10 @@ export const RENAME_FACETS = {
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
-    "workflow_tags.workflow_tag_id.keyword": "Workflow Tag ID",
+    "file_workflow": "File workflow",
+    "reference_classification": "Reference classification",
+    "entity_extraction": "Entity extraction",
+    "manual_indexing": "Manual indexing",
     "datePubmedAdded": {
         label: "Date Range: Added to PubMed",
         value: (state) => state.search.datePubmedAdded,
@@ -75,7 +78,7 @@ export const RENAME_FACETS = {
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
-    "Workflow Tags": ["workflow_tags.workflow_tag_id"],
+    "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing"], 
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name","language"],
     "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
@@ -249,11 +252,15 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
 		    let key = facetToInclude.replaceAll(' ', '_');
-                    if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key)){
+                if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'file_workflow', 'manual_indexing', 'reference_classification', 'entity_extraction'].includes(key)){
                         key = key + '.keyword';
                     }
                     if (key in searchFacets) {
                         let value = searchFacets[key];
+			// Don't render facet if there are no buckets
+			if (!value.buckets || value.buckets.length === 0) {
+                            return null;
+			}
                         return (
                             <div key={facetToInclude} className="facet-container">
                                <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
