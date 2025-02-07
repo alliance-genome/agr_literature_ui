@@ -50,8 +50,9 @@ export const RENAME_FACETS = {
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
     "file_workflow": "File workflow",
-    "manual_indexing": "Manual indexing",
     "reference_classification": "Reference classification",
+    "entity_extraction": "Entity extraction",
+    "manual_indexing": "Manual indexing",
     "datePubmedAdded": {
         label: "Date Range: Added to PubMed",
         value: (state) => state.search.datePubmedAdded,
