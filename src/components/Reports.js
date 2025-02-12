@@ -5,6 +5,7 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from 'react-bootstrap/Form';
+import * as d3 from 'd3'
 
 import { setDateRangeDict, setDateOptionDict } from '../actions/reportsActions';
 
@@ -270,21 +271,55 @@ const WorkflowStatTablesContainer = ({modSection}) => {
   );
 };
 
+const WorkflowDiagram = () => {
+
+    const [tagData, setTagData] = useState([]);
+    useEffect(() => {
+        const fetchDiagramData = async () => {
+            let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/workflow_diagram/All`;
+            try {
+                const result = await axios.get(url);
+                setTagData(result.data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                //do things
+            }
+        }
+        fetchDiagramData();
+    },[]);
+
+    const svgCanvas = d3.select('#canvas')
+        .append("svg")
+        .attr("width", 600)
+        .attr("height", 400)
+        .style("border", "1px solid black")
+
+    return(
+        <div id="canvas"></div>
+    )
+}
+
 const ReportsContainer = () => {
   const mods = useSelector(state => state.app.mods);
   return (
-    <div>
-      <Tabs defaultActiveKey="all" id="uncontrolled-tab-example">
-        <Tab eventKey="all" title="All">
-          <WorkflowStatTablesContainer modSection='All' />
-        </Tab>
-        {mods.map(mod => (
-          <Tab key={mod} eventKey={mod} title={mod}>
-            {mod}
+      <div>
+        <div>
+          <Tabs defaultActiveKey="all" id="uncontrolled-tab-example">
+            <Tab eventKey="all" title="All">
+              <WorkflowStatTablesContainer modSection='All' />
+            </Tab>
+            {mods.map(mod => (
+              <Tab key={mod} eventKey={mod} title={mod}>
+                {mod}
+              </Tab>
+            ))}
+          <Tab eventKey="diagram" title="Workflow Diagram">
+              <WorkflowDiagram />
           </Tab>
-        ))}
-      </Tabs>
-    </div>
+          </Tabs>
+        </div>
+      </div>
   );
 }
 
