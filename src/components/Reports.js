@@ -164,7 +164,17 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                   </div>
                 ) : (
                   <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
-                    <DownloadDropdownOptionsButton />
+                    {(() => {
+                      if ( (modSection === 'SGD') && ( workflowProcessAtpId === "ATP:0000273") ) {
+                        return (
+                          <DownloadDropdownOptionsButton
+                            gridRef={gridRef}
+                            colDefs={columns}
+                            rowData={rowData}
+                            fileNameFront="SGD_manual_indexing" />
+                        ) }
+                      return null
+                    })()}
                     <AgGridReact
                       key={key}
                       ref={gridRef}
