@@ -6,6 +6,8 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from 'react-bootstrap/Form';
 
+import { DownloadDropdownOptionsButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
+
 import { setDateRangeDict, setDateOptionDict } from '../actions/reportsActions';
 
 import axios from 'axios';
@@ -17,7 +19,7 @@ import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 
-const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection }) => {
+const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, column_type }) => {
   const [data, setData] = useState([]);
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -90,40 +92,57 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
     return null;
   };
 
-  const columns = [
-    { 
-      headerName: '', 
-      field: 'tag_name', 
-      flex: 1, 
+  let columns = [
+    {
+      headerName: '',
+      field: 'tag_name',
+      flex: 1,
       cellStyle: boldCellStyle,
       headerClass: 'wft-bold-header'
     },
-    { 
-      headerName: 'Total', 
-      field: 'total', 
-      flex: 1, 
+    {
+      headerName: 'Total',
+      field: 'total',
+      flex: 1,
       cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header'
-    },
-    ...mods.map(mod => ({
-      headerName: mod, 
-      field: mod, 
-      flex: 1, 
-      cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header'
-    })),
+    }
   ];
+  if (column_type === 'all_mods') {
+    columns = [
+      ...columns,
+      ...mods.map(mod => ({
+        headerName: mod,
+        field: mod,
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header'
+      })),
+    ];
+  }
 
-  const rowData = tagNames.map(tagName => {
-    const row = { 
-      tag_name: nameMapping[tagName], 
-      total: totals[tagName] || 0
-    };
-    mods.forEach(mod => {
-      row[mod] = getTagCount(tagName, mod);
+  let rowData = [];
+  if (column_type === 'all_mods') {
+    rowData = tagNames.map(tagName => {
+      const row = {
+        tag_name: nameMapping[tagName],
+        total: totals[tagName] || 0
+      };
+      mods.forEach(mod => {
+        row[mod] = getTagCount(tagName, mod);
+      });
+      return row;
     });
-    return row;
-  });
+  }
+  else if (column_type === 'two_column') {
+    rowData = tagNames.map(tagName => {
+      const row = {
+        tag_name: nameMapping[tagName],
+        total: getTagCount(tagName, modSection)
+      };
+      return row;
+    });
+  }
 
   return (
     <div>
@@ -145,6 +164,7 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
                   </div>
                 ) : (
                   <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                    <DownloadDropdownOptionsButton />
                     <AgGridReact
                       key={key}
                       ref={gridRef}
@@ -162,7 +182,7 @@ const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping,
         </div>
     </div>
   );
-}; // const const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection })
+}; // const const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection })
 
 const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection }) => {
     const dispatch = useDispatch();
@@ -244,6 +264,26 @@ const WorkflowStatModTablesContainer = ({modSection}) => {
   return (
     <div>
       <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
+            {(() => {
+              if (modSection === 'SGD') {
+                const manual_indexing_name_mapping = {
+                    'manual indexing needed': 'needed',
+                    'manual indexing complete': 'complete',
+                    'manual indexing in progress': 'in progress'
+                }
+                return (
+                  <WorkflowStatTableCounters
+                    workflowProcessAtpId="ATP:0000273"
+                    title="Reference Manually Indexing"
+                    tagNames={Object.keys(manual_indexing_name_mapping)}
+                    nameMapping={manual_indexing_name_mapping}
+                    modSection={modSection}
+                    column_type="two_column"
+                  />
+                  ) }
+              return null
+            })()}
+
       <WorkflowStatModTable
         workflowProcessAtpId="ATP:0000165"
         title="Reference Classification Status"
@@ -313,8 +353,8 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
     return null;
   };
 
-    const columns = [
-        ...header.map(mod => ({
+  const columns = [
+      ...header.map(mod => ({
       headerName: mod,
             children: [
                 {headerName: '#',
@@ -328,8 +368,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
       headerClass: 'wft-bold-header'
     }))
   ];
-    columns[0] = {headerName: '', field: 'status'}
-
+  columns[0] = {headerName: '', field: 'status'}
 
 
   return (
@@ -364,7 +403,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
         </div>
     </div>
   );
-}; // const const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection })
+}; // const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection })
 
 const WorkflowStatTablesContainer = ({modSection}) => {
   const file_upload_name_mapping = {
@@ -382,19 +421,21 @@ const WorkflowStatTablesContainer = ({modSection}) => {
   return (
     <div>
       <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
-      <WorkflowStatTable
+      <WorkflowStatTableCounters
         workflowProcessAtpId="ATP:0000140"
         title="File Upload Current Status"
         tagNames={Object.keys(file_upload_name_mapping)}
 	nameMapping={file_upload_name_mapping}
         modSection={modSection}
+        column_type="all_mods"
       />
-      <WorkflowStatTable
+      <WorkflowStatTableCounters
         workflowProcessAtpId="ATP:0000161"
         title="Text Conversion Current Status"
         tagNames={Object.keys(text_conversion_name_mapping)}
         nameMapping={text_conversion_name_mapping}
         modSection={modSection}
+        column_type="all_mods"
       />
     </div>
   );

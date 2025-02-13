@@ -21,6 +21,29 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
+export const DownloadDropdownOptionsButton = ({}) => {
+  return(
+               <Dropdown className="ms-auto">
+                 <Dropdown.Toggle variant="primary" id="dropdown-download-options">
+                   Download Options
+                 </Dropdown.Toggle>
+
+                 <Dropdown.Menu>
+                   <Dropdown.Item onClick={() => console.log('displayedData')}>
+                     Download Displayed Data
+                   </Dropdown.Item>
+                   <Dropdown.Item onClick={() => console.log('allColumns')}>
+                     Download All Columns
+                   </Dropdown.Item>
+                   <Dropdown.Item onClick={() => console.log('withoutFilters')}>
+                     Download Without Filters
+                   </Dropdown.Item>
+                 </Dropdown.Menu>
+               </Dropdown>
+  );
+};
+
+
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -335,9 +358,9 @@ const CheckDropdownItem = React.forwardRef(
     );
   }
 );
-
-  const CheckboxDropdown =  ({ items }) => {
-   const handleChecked = (key, event) => {
+            
+const CheckboxDropdown =  ({ items }) => {
+  const handleChecked = (key, event) => {
     //console.log('touch item here:' + key + " status: " + event.target.checked);
      const newItems = [...items];
      let item=newItems.find(i => i.id === key);
@@ -588,25 +611,8 @@ const CheckDropdownItem = React.forwardRef(
              <div className="d-flex justify-content-between" style={{ paddingBottom: '10px' }}>
                {/* "Hide/Show Columns" Button */}
                <CheckboxDropdown items={items} />
-            
-               {/* Download Options Button */}
-               <Dropdown className="ms-auto">
-                 <Dropdown.Toggle variant="primary" id="dropdown-download-options">
-                   Download Options
-                 </Dropdown.Toggle>
 
-                 <Dropdown.Menu>
-                   <Dropdown.Item onClick={() => handleDownload('displayedData')}>
-                     Download Displayed Data
-                   </Dropdown.Item>
-                   <Dropdown.Item onClick={() => handleDownload('allColumns')}>
-                     Download All Columns
-                   </Dropdown.Item>
-                   <Dropdown.Item onClick={() => handleDownload('withoutFilters')}>
-                     Download Without Filters
-                   </Dropdown.Item>
-                 </Dropdown.Menu>
-               </Dropdown>
+               <DownloadDropdownOptionsButton />
              </div>
            </Col>
          </Row>
