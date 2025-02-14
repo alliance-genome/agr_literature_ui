@@ -96,9 +96,6 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     return null;
   };
 
-//         width: 200,
-//         maxWidth: 200,
-//       "children":[{"headerName":"","field":"tag_name"}],
   let columns = [
     {
       headerName: '',
@@ -127,7 +124,6 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       })),
     ];
   }
-//   columns = [{"headerName":"","field":"status"},{"headerName":"overall","children":[{"headerName":"#","field":"overall_num"},{"headerName":"%","field":"overall_perc"}],"field":"overall","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"},{"headerName":"catalytic activity","children":[{"headerName":"#","field":"catalytic activity_num"},{"headerName":"%","field":"catalytic activity_perc"}],"field":"catalytic activity","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"},{"headerName":"expression","children":[{"headerName":"#","field":"expression_num"},{"headerName":"%","field":"expression_perc"}],"field":"expression","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"}]
 
   let rowData = [];
   if (column_type === 'all_mods') {
