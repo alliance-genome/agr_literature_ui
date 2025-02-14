@@ -15,6 +15,9 @@ import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSync } from '@fortawesome/free-solid-svg-icons';
+
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
@@ -24,6 +27,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(0);
+  const [countResync, setCountResync] = useState(0);
 
   const mods = useSelector(state => state.app.mods);
   const dateRangeDict = useSelector(state => state.reports.dateRangeDict);
@@ -72,7 +76,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     };
 
     fetchData();
-  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end]);
+  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end, countResync]);
 
   const getTagCount = (tagName, mod) => {
     const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === mod);
@@ -87,7 +91,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
 
   const boldCellStyle = (params) => {
     if (params.colDef.field === 'tag_name') {
-      return { fontWeight: 'bold' };
+      return { fontWeight: 'bold', textAlign: 'left' };
     }
     return null;
   };
@@ -144,6 +148,9 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     });
   }
 
+  const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+  const fileNameFront = `${modSection}_${title}`.replace(/ /g,"_");
+
   return (
     <div>
       <h5>{title}</h5>
@@ -152,6 +159,23 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
             <Row>
               <Col>
                 <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} />
+              </Col>
+              <Col>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setCountResync(countResync + 1) }
+                  style={{ marginRight: '5px', width: '120px' }}
+                >
+                  <FontAwesomeIcon icon={faSync} /> Resync Table
+                </Button>
+              </Col>
+              <Col>
+                <DownloadDropdownOptionsButton
+                  gridRef={gridRef}
+                  colDefs={columns}
+                  rowData={rowData}
+                  fileNameFront={fileNameFront} />
               </Col>
             </Row>
             <Row>
@@ -164,25 +188,15 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                   </div>
                 ) : (
                   <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
-                    {(() => {
-                      if ( (modSection === 'SGD') && ( workflowProcessAtpId === "ATP:0000273") ) {
-                        return (
-                          <DownloadDropdownOptionsButton
-                            gridRef={gridRef}
-                            colDefs={columns}
-                            rowData={rowData}
-                            fileNameFront="SGD_manual_indexing" />
-                        ) }
-                      return null
-                    })()}
                     <AgGridReact
                       key={key}
                       ref={gridRef}
                       rowData={rowData}
                       columnDefs={columns}
-                      pagination={true}
+                      pagination={false}
                       paginationPageSize={20}
                       domLayout="autoHeight"
+                      gridOptions = {gridOptions}
                     />
                   </div>
                 )}
@@ -356,30 +370,25 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
     marginTop: '15px',
   };
 
-  const boldCellStyle = (params) => {
-    if (params.colDef.field === 'tag_name') {
-      return { fontWeight: 'bold' };
-    }
-    return null;
-  };
-
   const columns = [
       ...header.map(mod => ({
       headerName: mod,
             children: [
                 {headerName: '#',
-                field: mod + '_num'},
+                 cellStyle: { textAlign: 'left' },
+                 field: mod + '_num'},
                 {headerName: '%',
-                field: mod + '_perc'}
+                 cellStyle: { textAlign: 'left' },
+                 field: mod + '_perc'}
             ],
       field: mod,
       flex: 1,
-      cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header'
     }))
   ];
-  columns[0] = {headerName: '', field: 'status'}
+  columns[0] = {headerName: '', field: 'status', cellStyle: { fontWeight: 'bold', textAlign: 'left' }}
 
+  const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
 
   return (
     <div>
@@ -400,10 +409,11 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                       key={key}
                       ref={gridRef}
                       rowData={data}
-                      pagination={true}
+                      pagination={false}
                       columnDefs={columns}
                       paginationPageSize={20}
                       domLayout="autoHeight"
+                      gridOptions = {gridOptions}
                     />
                   </div>
                 )}
