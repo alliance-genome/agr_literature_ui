@@ -87,11 +87,14 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
 
   const boldCellStyle = (params) => {
     if (params.colDef.field === 'tag_name') {
-      return { fontWeight: 'bold' };
+      return { fontWeight: 'bold', textAlign: 'left' };
     }
     return null;
   };
 
+//         width: 200,
+//         maxWidth: 200,
+//       "children":[{"headerName":"","field":"tag_name"}],
   let columns = [
     {
       headerName: '',
@@ -120,6 +123,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       })),
     ];
   }
+//   columns = [{"headerName":"","field":"status"},{"headerName":"overall","children":[{"headerName":"#","field":"overall_num"},{"headerName":"%","field":"overall_perc"}],"field":"overall","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"},{"headerName":"catalytic activity","children":[{"headerName":"#","field":"catalytic activity_num"},{"headerName":"%","field":"catalytic activity_perc"}],"field":"catalytic activity","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"},{"headerName":"expression","children":[{"headerName":"#","field":"expression_num"},{"headerName":"%","field":"expression_perc"}],"field":"expression","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"}]
 
   let rowData = [];
   if (column_type === 'all_mods') {
@@ -142,7 +146,12 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       };
       return row;
     });
+console.log('rowData');
+console.log(rowData);
   }
+
+  const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+//   const gridOptions = { }
 
   return (
     <div>
@@ -180,9 +189,10 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                       ref={gridRef}
                       rowData={rowData}
                       columnDefs={columns}
-                      pagination={true}
+                      pagination={false}
                       paginationPageSize={20}
                       domLayout="autoHeight"
+                      gridOptions = {gridOptions}
                     />
                   </div>
                 )}
@@ -336,6 +346,12 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
       try {
         const result = await axios.get(url);
         setData(result.data[0]);
+console.log('data');
+console.log(data);
+console.log(JSON.stringify(data));
+console.log('header');
+console.log(header);
+console.log(JSON.stringify(header));
         setHeader(result.data[1])
 
         setKey(prevKey => prevKey + 1);
@@ -356,31 +372,40 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
     marginTop: '15px',
   };
 
-  const boldCellStyle = (params) => {
-    if (params.colDef.field === 'tag_name') {
-      return { fontWeight: 'bold' };
-    }
-    return null;
-  };
-
   const columns = [
       ...header.map(mod => ({
       headerName: mod,
             children: [
                 {headerName: '#',
-                field: mod + '_num'},
+                 cellStyle: { textAlign: 'left' },
+                 field: mod + '_num'},
                 {headerName: '%',
-                field: mod + '_perc'}
+                 cellStyle: { textAlign: 'left' },
+                 field: mod + '_perc'}
             ],
       field: mod,
       flex: 1,
-      cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header'
     }))
   ];
-  columns[0] = {headerName: '', field: 'status'}
+  columns[0] = {headerName: '', field: 'status', cellStyle: { fontWeight: 'bold', textAlign: 'left' }}
 
+console.log('columns');
+console.log(columns);
+console.log(JSON.stringify(columns));
+console.log('gridRef');
+console.log(gridRef);
+console.log(typeof gridRef);
+//     display: 'flex',
+//     justifyContent: 'center',
+//     marginTop: '15px',
 
+// const data = [{"status":"complete","overall_num":"0","overall_perc":"0.00","catalytic activity_num":"0","catalytic activity_perc":"0.00","expression_num":"0","expression_perc":"0.00"},{"status":"in progress","overall_num":"0","overall_perc":"0.00","catalytic activity_num":"0","catalytic activity_perc":"0.00","expression_num":"0","expression_perc":"0.00"},{"status":"failed","overall_num":"0","overall_perc":"0.00","catalytic activity_num":"0","catalytic activity_perc":"0.00","expression_num":"0","expression_perc":"0.00"},{"status":"needed","overall_num":"0","overall_perc":"0.00","catalytic activity_num":"50270","catalytic activity_perc":"100.0","expression_num":"50270","expression_perc":"100.0"}]
+// const header = ["status","overall","catalytic activity","expression"]
+// const columns = [{"headerName":"","field":"status"},{"headerName":"overall","children":[{"headerName":"#","field":"overall_num"},{"headerName":"%","field":"overall_perc"}],"field":"overall","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"},{"headerName":"catalytic activity","children":[{"headerName":"#","field":"catalytic activity_num"},{"headerName":"%","field":"catalytic activity_perc"}],"field":"catalytic activity","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"},{"headerName":"expression","children":[{"headerName":"#","field":"expression_num"},{"headerName":"%","field":"expression_perc"}],"field":"expression","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"}]
+
+  const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+//   const gridOptions = { }
   return (
     <div>
       <h5>{title}</h5>
@@ -400,10 +425,11 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                       key={key}
                       ref={gridRef}
                       rowData={data}
-                      pagination={true}
+                      pagination={false}
                       columnDefs={columns}
                       paginationPageSize={20}
                       domLayout="autoHeight"
+                      gridOptions = {gridOptions}
                     />
                   </div>
                 )}
