@@ -15,6 +15,9 @@ import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSync } from '@fortawesome/free-solid-svg-icons';
+
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
@@ -24,6 +27,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(0);
+  const [countResync, setCountResync] = useState(0);
 
   const mods = useSelector(state => state.app.mods);
   const dateRangeDict = useSelector(state => state.reports.dateRangeDict);
@@ -72,7 +76,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     };
 
     fetchData();
-  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end]);
+  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end, countResync]);
 
   const getTagCount = (tagName, mod) => {
     const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === mod);
@@ -146,12 +150,10 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       };
       return row;
     });
-console.log('rowData');
-console.log(rowData);
   }
 
   const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
-//   const gridOptions = { }
+  const fileNameFront = `${modSection}_${title}`.replace(/ /g,"_");
 
   return (
     <div>
@@ -161,6 +163,23 @@ console.log(rowData);
             <Row>
               <Col>
                 <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} />
+              </Col>
+              <Col>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setCountResync(countResync + 1) }
+                  style={{ marginRight: '5px', width: '120px' }}
+                >
+                  <FontAwesomeIcon icon={faSync} /> Resync Table
+                </Button>
+              </Col>
+              <Col>
+                <DownloadDropdownOptionsButton
+                  gridRef={gridRef}
+                  colDefs={columns}
+                  rowData={rowData}
+                  fileNameFront={fileNameFront} />
               </Col>
             </Row>
             <Row>
@@ -173,17 +192,6 @@ console.log(rowData);
                   </div>
                 ) : (
                   <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
-                    {(() => {
-                      if ( (modSection === 'SGD') && ( workflowProcessAtpId === "ATP:0000273") ) {
-                        return (
-                          <DownloadDropdownOptionsButton
-                            gridRef={gridRef}
-                            colDefs={columns}
-                            rowData={rowData}
-                            fileNameFront="SGD_manual_indexing" />
-                        ) }
-                      return null
-                    })()}
                     <AgGridReact
                       key={key}
                       ref={gridRef}
@@ -346,12 +354,6 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
       try {
         const result = await axios.get(url);
         setData(result.data[0]);
-console.log('data');
-console.log(data);
-console.log(JSON.stringify(data));
-console.log('header');
-console.log(header);
-console.log(JSON.stringify(header));
         setHeader(result.data[1])
 
         setKey(prevKey => prevKey + 1);
@@ -390,22 +392,8 @@ console.log(JSON.stringify(header));
   ];
   columns[0] = {headerName: '', field: 'status', cellStyle: { fontWeight: 'bold', textAlign: 'left' }}
 
-console.log('columns');
-console.log(columns);
-console.log(JSON.stringify(columns));
-console.log('gridRef');
-console.log(gridRef);
-console.log(typeof gridRef);
-//     display: 'flex',
-//     justifyContent: 'center',
-//     marginTop: '15px',
-
-// const data = [{"status":"complete","overall_num":"0","overall_perc":"0.00","catalytic activity_num":"0","catalytic activity_perc":"0.00","expression_num":"0","expression_perc":"0.00"},{"status":"in progress","overall_num":"0","overall_perc":"0.00","catalytic activity_num":"0","catalytic activity_perc":"0.00","expression_num":"0","expression_perc":"0.00"},{"status":"failed","overall_num":"0","overall_perc":"0.00","catalytic activity_num":"0","catalytic activity_perc":"0.00","expression_num":"0","expression_perc":"0.00"},{"status":"needed","overall_num":"0","overall_perc":"0.00","catalytic activity_num":"50270","catalytic activity_perc":"100.0","expression_num":"50270","expression_perc":"100.0"}]
-// const header = ["status","overall","catalytic activity","expression"]
-// const columns = [{"headerName":"","field":"status"},{"headerName":"overall","children":[{"headerName":"#","field":"overall_num"},{"headerName":"%","field":"overall_perc"}],"field":"overall","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"},{"headerName":"catalytic activity","children":[{"headerName":"#","field":"catalytic activity_num"},{"headerName":"%","field":"catalytic activity_perc"}],"field":"catalytic activity","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"},{"headerName":"expression","children":[{"headerName":"#","field":"expression_num"},{"headerName":"%","field":"expression_perc"}],"field":"expression","flex":1,"cellStyle":{"textAlign":"left"},"headerClass":"wft-bold-header"}]
-
   const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
-//   const gridOptions = { }
+
   return (
     <div>
       <h5>{title}</h5>
