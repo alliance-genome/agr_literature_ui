@@ -109,7 +109,7 @@ export default function(state = initialState, action) {
     case 'CHANGE_SORT_CORPUS_TOGGLER':
       console.log('reducer CHANGE_SORT_CORPUS_TOGGLER');
       console.log(action.payload);
-      let corpusArray = action.payload.split(" ");
+      let corpusArray = action.payload.split("-");
       let fieldCorpusValue = corpusArray[0].replace(/_toggle$/, '');
       let indexReferenceCorpus = corpusArray[1];
       let sortToggleCorpusReferencesToSortLive = JSON.parse(JSON.stringify(state.referencesToSortLive))
@@ -126,7 +126,7 @@ export default function(state = initialState, action) {
     case 'CHANGE_SORT_WORKFLOW_TOGGLER':
       console.log('reducer CHANGE_SORT_WORKFLOW_TOGGLER');
       console.log(action.payload);
-      let workflowArray = action.payload.split(" ");
+      let workflowArray = action.payload.split("-");
       let fieldWorkflowValue = workflowArray[0].replace(/_toggle$/, '');
       let indexReferenceWorkflow = workflowArray[1];
       let sortToggleWorkflowReferencesToSortLive = JSON.parse(JSON.stringify(state.referencesToSortLive))
