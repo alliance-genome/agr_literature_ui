@@ -67,14 +67,14 @@ const BreadCrumbs = () => {
                             return (
 				<BreadcrumbItem
                                     key={facet + value + "_breadcrumb"}
-				    label={`${RENAME_FACETS[facet]?.label || facet.replace('.keyword', '').replace(/_/g, ' ')}: ${displayValue}`}
+				    label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + displayValue}
 				    onRemove={() => handleRemoveFacet(facet, value)}
 				/>
 			    );
                         }) : (
                             <BreadcrumbItem
                                 key={facet + "_breadcrumb"}
-                                label={RENAME_FACETS[facet]?.label || facet.replace('.keyword', '').replace(/_/g, ' ')}
+				label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' '))}
                                 onRemove={() => handleRemoveDate(RENAME_FACETS[facet].action)}
                             />
                         )
