@@ -62,17 +62,18 @@ const BreadCrumbs = () => {
             <Row>
                 <Col style={{ textAlign: "left" }}>
                     {Object.entries(searchFacetsValues).map(([facet, values]) => (
-                        Array.isArray(values) ? values.map(value => (
-			    const displayValue = getDisplayName(facet, value);
-                            <BreadcrumbItem
-                                key={facet + value + "_breadcrumb"}
-				label={`${RENAME_FACETS[facet]?.label || facet.replace('.keyword', '').replace(/_/g, ' ')}: ${displayValue}`}
-				onRemove={() => handleRemoveFacet(facet, value)}
-                            />
-                        )) : (
+                        Array.isArray(values) ? values.map(value => {
+			    const displayValue = (getDisplayName(facet, value));
+                            return (
+				<BreadcrumbItem
+                                    key={facet + value + "_breadcrumb"}
+				    label={`${RENAME_FACETS[facet]?.label || facet.replace('.keyword', '').replace(/_/g, ' ')}: ${displayValue}`}
+				    onRemove={() => handleRemoveFacet(facet, value)}
+				/>
+			    );
+                        }) : (
                             <BreadcrumbItem
                                 key={facet + "_breadcrumb"}
-				
                                 label={RENAME_FACETS[facet]?.label || facet.replace('.keyword', '').replace(/_/g, ' ')}
                                 onRemove={() => handleRemoveDate(RENAME_FACETS[facet].action)}
                             />
