@@ -49,7 +49,7 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         oktaGroups: jsonToken.Groups,
         uid: jsonToken.uid}
     case 'SIGN_OUT':
-      return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, testerMod: 'No', uid: null}
+      return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, testerMod: 'No', uid: null, accessToken: null}
     default:
       return state;
   }
