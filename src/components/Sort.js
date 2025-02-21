@@ -269,7 +269,7 @@ const Sort = () => {
                   <SortSubmitUpdateRouter />
                   <Button
                     as="input"
-                    style={{ backgroundColor: '#6b9ef3', color: 'white', border: 'none', width: '200px' }} // Set width
+                    style={{ width: '200px' }} // Set width
                     type="button"
                     disabled={buttonUpdateDisabled}
                     value="Update Sorting"
@@ -310,7 +310,7 @@ const Sort = () => {
                   <SortSubmitUpdateRouter />
                   <Button
                     as="input"
-                    style={{ backgroundColor: '#6b9ef3', color: 'white', border: 'none', width: '200px' }} // Set width
+                    style={{ width: '200px' }} // Set width
                     type="button"
                     disabled={buttonUpdateDisabled}
                     value="Update Sorting"
