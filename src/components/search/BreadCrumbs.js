@@ -18,6 +18,7 @@ import { RENAME_FACETS } from "./Facets";
 import BreadcrumbItem from "./BreadCrumbItem";
 
 const BreadCrumbs = () => {
+    const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
@@ -26,6 +27,13 @@ const BreadCrumbs = () => {
     const dateCreated = useSelector(state => state.search.dateCreated);
     const dispatch = useDispatch();
 
+    const getDisplayName = (facet, value) => {
+        const facetData = searchFacets[facet];
+        if (!facetData?.buckets) return value;
+        const bucket = facetData.buckets.find(b => b.key === value);
+        return bucket?.name || value;
+    };
+    
     const handleRemoveDate = (action) => {
         dispatch(action());
         dispatch(searchReferences());
@@ -54,16 +62,19 @@ const BreadCrumbs = () => {
             <Row>
                 <Col style={{ textAlign: "left" }}>
                     {Object.entries(searchFacetsValues).map(([facet, values]) => (
-                        Array.isArray(values) ? values.map(value => (
-                            <BreadcrumbItem
-                                key={facet + value + "_breadcrumb"}
-                                label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value}
-                                onRemove={() => handleRemoveFacet(facet, value)}
-                            />
-                        )) : (
+                        Array.isArray(values) ? values.map(value => {
+			    const displayValue = (getDisplayName(facet, value));
+                            return (
+				<BreadcrumbItem
+                                    key={facet + value + "_breadcrumb"}
+				    label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + displayValue}
+				    onRemove={() => handleRemoveFacet(facet, value)}
+				/>
+			    );
+                        }) : (
                             <BreadcrumbItem
                                 key={facet + "_breadcrumb"}
-                                label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' '))}
+				label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' '))}
                                 onRemove={() => handleRemoveDate(RENAME_FACETS[facet].action)}
                             />
                         )
