@@ -33,7 +33,34 @@ const BreadCrumbs = () => {
         const bucket = facetData.buckets.find(b => b.key === value);
         return bucket?.name || value;
     };
+
+    const isExceptionFacet = (facet) => {
+	// Match either:
+	// 1. language.keyword (Bibliographic Data's language)
+	// 2. Any Alliance Metadata facets
+       return facet === 'language.keyword' || facet.startsWith('mods_');
+    };
     
+    const getFacetLabel = (facet, value) => {
+        const displayValue = getDisplayName(facet, value);
+        const categoryName = RENAME_FACETS[facet]?.label || 
+                            facet.replace('.keyword', '')
+                                 .replaceAll('_', ' ');
+        
+        return isExceptionFacet(facet) ? `${categoryName}: ${displayValue}` : displayValue;
+    };
+
+    const getExcludedFacetLabel = (facet, value) => {
+        const displayValue = getDisplayName(facet, value);
+        const categoryName = RENAME_FACETS[facet]?.label || 
+                            facet.replace('.keyword', '')
+                                 .replaceAll('_', ' ');
+        
+        return isExceptionFacet(facet) ? 
+            `Exclude ${categoryName}: ${displayValue}` : 
+            `Exclude ${displayValue}`;
+    };
+
     const handleRemoveDate = (action) => {
         dispatch(action());
         dispatch(searchReferences());
@@ -63,11 +90,10 @@ const BreadCrumbs = () => {
                 <Col style={{ textAlign: "left" }}>
                     {Object.entries(searchFacetsValues).map(([facet, values]) => (
                         Array.isArray(values) ? values.map(value => {
-			    const displayValue = (getDisplayName(facet, value));
                             return (
 				<BreadcrumbItem
                                     key={facet + value + "_breadcrumb"}
-				    label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + displayValue}
+				    label={getFacetLabel(facet, value)}
 				    onRemove={() => handleRemoveFacet(facet, value)}
 				/>
 			    );
@@ -83,7 +109,7 @@ const BreadCrumbs = () => {
                         values.map(value =>
                             <BreadcrumbItem
                                 key={facet + value + "_breadcrumb"}
-                                label={`Exclude ${(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' ')) + ": " + value}`}
+                                label={getExcludedFacetLabel(facet, value)}
                                 onRemove={() => dispatch(removeExcludedFacetValue(facet, value))}
                             />
                         )
