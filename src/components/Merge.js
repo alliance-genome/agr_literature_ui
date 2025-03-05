@@ -1,7 +1,7 @@
 // import { Link } from 'react-router-dom'
 // import { useHistory } from "react-router-dom";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldInput } from '../actions/mergeActions';
@@ -33,8 +33,7 @@ import Badge from 'react-bootstrap/Badge'
 import Alert from 'react-bootstrap/Alert'
 import Tooltip from 'react-bootstrap/Tooltip'
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
-import {Spinner} from "react-bootstrap";
-import {Modal} from "react-bootstrap";
+import {Modal, Spinner} from "react-bootstrap";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
@@ -184,6 +183,7 @@ const MergeSelectionSection = () => {
   );
 }
 
+
 const MergeCompletedMergeModal = () => {
   const dispatch = useDispatch();
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
@@ -191,33 +191,94 @@ const MergeCompletedMergeModal = () => {
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
   const updateFailure = useSelector(state => state.merge.updateFailure);
   const updateMessages = useSelector(state => state.merge.updateMessages);
+
   const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
   const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
   const url1e = '/Biblio/?action=entity&referenceCurie=' + referenceMeta1.curie;
 
-  const modalBody = updateFailure ? 
-                    <Modal.Body><a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into
-<a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>
-                      Contact a developer with the error message:<br/><br/>
-                      Merge Completion Failure<br/>
-                      {updateMessages.map((message, index) => (
-                        <div key={`${message} ${index}`}>{message}</div>
-                      ))}</Modal.Body> :
-                    <Modal.Body>{referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>Information associated with {referenceMeta2.curie} has been removed.
-                      { ( (referenceMeta1['referenceJson']['topic_entity_tags'].length > 0) || (referenceMeta2['referenceJson']['topic_entity_tags'].length > 0) ) && (<div><br />See <a href={url1e} target="_blank" rel="noreferrer noopener">topic entity tag</a> data.<br/></div>) }
-                      </Modal.Body>
-  const modalHeader = updateFailure ? 
-                      <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
-                      <Modal.Header closeButton><Modal.Title>Merge Complete</Modal.Title></Modal.Header>
+  // Check if any message indicates that the merge is still processing.
+  const processingText = "is currently being processed. Please wait until it is complete before merging the papers.";
+  const fullProcessingMessage =
+    (updateMessages && updateMessages.find(message => message.includes(processingText))) ||
+    processingText;
+  const isProcessing = updateMessages && updateMessages.some(message => message.includes(processingText));
 
-  // if wanting to simply hide modal and show form in previous state.  currently resetting form to original values.
-  // <Modal size="lg" show={completionMergeHappened} onHide={() => dispatch(setCompletionMergeHappened(false))} >
+  // If processing, start a countdown timer.
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  useEffect(() => {
+    if (isProcessing) {
+      const timer = setInterval(() => {
+        setSecondsLeft(prev => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [isProcessing]);
 
-  return (<Modal size="lg" show={completionMergeHappened} backdrop="static" onHide={() => dispatch(mergeResetReferences())} >
-           {modalHeader}
-           {modalBody}
-          </Modal>);
-}
+  let modalHeader = null;
+  let modalBody = null;
+
+  // Show processing branch if processing message is found—even if updateFailure is true.
+  if (isProcessing) {
+    modalHeader = (
+      <Modal.Header closeButton>
+        <Modal.Title>Processing Merge</Modal.Title>
+      </Modal.Header>
+    );
+    modalBody = (
+      <Modal.Body>
+        {fullProcessingMessage}<br /><br />
+        {secondsLeft > 0 ? (
+          <>
+            <Spinner animation="border" size="sm" /> Please wait... {secondsLeft} seconds remaining.
+          </>
+        ) : (
+          "The paper is now unlocked. You may try merging again."
+        )}
+      </Modal.Body>
+    );
+  } else if (updateFailure) {
+    modalHeader = (
+      <Modal.Header closeButton>
+        <Modal.Title>Error</Modal.Title>
+      </Modal.Header>
+    );
+    modalBody = (
+      <Modal.Body>
+        <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into 
+        <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>
+        Contact a developer with the error message:<br/><br/>
+        Merge Completion Failure<br/>
+        {updateMessages.map((message, index) => (
+          <div key={`${message}-${index}`}>{message}</div>
+        ))}
+      </Modal.Body>
+    );
+  } else {
+    modalHeader = (
+      <Modal.Header closeButton>
+        <Modal.Title>Merge Complete</Modal.Title>
+      </Modal.Header>
+    );
+    modalBody = (
+      <Modal.Body>
+        {referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>
+        Information associated with {referenceMeta2.curie} has been removed.
+        {((referenceMeta1['referenceJson']['topic_entity_tags'].length > 0) ||
+          (referenceMeta2['referenceJson']['topic_entity_tags'].length > 0)) && (
+          <div><br />See <a href={url1e} target="_blank" rel="noreferrer noopener">topic entity tag</a> data.<br/></div>
+        )}
+      </Modal.Body>
+    );
+  }
+
+  return (
+    <Modal size="lg" show={completionMergeHappened} backdrop="static" onHide={() => dispatch(mergeResetReferences())}>
+      {modalHeader}
+      {modalBody}
+    </Modal>
+  );
+};
+
 
 const MergeDataTransferredModal = () => {
   const dispatch = useDispatch();
