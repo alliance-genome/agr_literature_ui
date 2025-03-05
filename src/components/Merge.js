@@ -75,6 +75,18 @@ const GenerateFieldLabel = (fieldName, isLocked) => {
   return (<div className={`div-merge div-merge-grey`}>{fieldName}</div>);
 }
 
+const completeMergeReferences = (dispatch, accessToken, referenceMeta1, referenceMeta2) => {
+  let subPath = 'reference/merge/' + referenceMeta2.curie + '/' + referenceMeta1.curie;
+  let array = [ subPath, null, 'POST', 0, null, null ];
+  array.unshift('mergeComplete');
+  array.unshift(accessToken);
+  console.log('completing merge');
+  console.log(array);
+  dispatch(setDataTransferHappened(false));
+  dispatch(setMergeCompleting(1));
+  dispatch(mergeButtonApiDispatch(array));
+};
+
 const GenerateIsLocked = (fieldName, hasPmid) => {
   if ( (fieldsPubmedOnly.includes(fieldName)) || ( (hasPmid) && (fieldsPubmedLocked.includes(fieldName)) ) ) { 
     return 'lock'; }
@@ -186,6 +198,7 @@ const MergeSelectionSection = () => {
 
 const MergeCompletedMergeModal = () => {
   const dispatch = useDispatch();
+  const accessToken = useSelector(state => state.isLogged.accessToken);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
@@ -196,23 +209,46 @@ const MergeCompletedMergeModal = () => {
   const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
   const url1e = '/Biblio/?action=entity&referenceCurie=' + referenceMeta1.curie;
 
-  // Check if any message indicates that the merge is still processing.
+  // waiting message text - what the API returns when paper is locked)
   const processingText = "is currently being processed. Please wait until it is complete before merging the papers.";
   const fullProcessingMessage =
     (updateMessages && updateMessages.find(message => message.includes(processingText))) ||
     processingText;
   const isProcessing = updateMessages && updateMessages.some(message => message.includes(processingText));
 
-  // If processing, start a countdown timer.
-  const [secondsLeft, setSecondsLeft] = useState(60);
+  // start countdown from 5 minutes (300 seconds)
+  const [secondsLeft, setSecondsLeft] = useState(300);
+  // new state to track if the paper has unlocked (API no longer returns waiting message text)
+  const [paperUnlocked, setPaperUnlocked] = useState(false);
+
+  // countdown timer effect (runs only while a job is running for a paper)
   useEffect(() => {
-    if (isProcessing) {
+    if (isProcessing && !paperUnlocked) {
       const timer = setInterval(() => {
         setSecondsLeft(prev => (prev > 0 ? prev - 1 : 0));
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [isProcessing]);
+  }, [isProcessing, paperUnlocked]);
+
+  // call the API endpoint until paper unlocks.
+  useEffect(() => {
+    let pollingInterval;
+    if (isProcessing && !paperUnlocked) {
+      pollingInterval = setInterval(() => {
+	// calling merge endpoint to check and complete the merge if the job is unlocked
+        completeMergeReferences(dispatch, accessToken, referenceMeta1, referenceMeta2);
+        // check if the waiting message is no longer in updateMessages
+        if (updateMessages && !updateMessages.some(message => message.includes(processingText))) {
+          setPaperUnlocked(true);
+          setSecondsLeft(0); // clear the countdown timer
+          clearInterval(pollingInterval);
+        }
+      }, 5000);
+    }
+    return () => clearInterval(pollingInterval);
+  }, [isProcessing, paperUnlocked, updateMessages, processingText]);
+
 
   let modalHeader = null;
   let modalBody = null;
@@ -231,6 +267,8 @@ const MergeCompletedMergeModal = () => {
           <>
             <Spinner animation="border" size="sm" /> Please wait... {secondsLeft} seconds remaining.
           </>
+	) : (!paperUnlocked && secondsLeft === 0) ? (
+          "The paper is still locked. Please try again later."	
         ) : (
           "The paper is now unlocked. You may try merging again."
         )}
@@ -314,24 +352,8 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
   const mergeCompletingCount = useSelector(state => state.merge.mergeCompletingCount);
 //   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
 
-  function completeMergeReferences() {
-    // old API and merged_into in reference table
-    // let updateJsonReferenceMain = { 'merged_into_reference_curie': referenceMeta1.curie };
-    // let subPath = 'reference/' + referenceMeta2.curie;
-    // let array = [ subPath, updateJsonReferenceMain, 'PATCH', 0, null, null];
-    let subPath = 'reference/merge/' + referenceMeta2.curie + '/' + referenceMeta1.curie;
-    let array = [ subPath, null, 'POST', 0, null, null];
-    array.unshift('mergeComplete');
-    array.unshift(accessToken);
-    console.log('completing merge');
-    console.log(array);
-    dispatch(setDataTransferHappened(false));
-    dispatch(setMergeCompleting(1));
-    dispatch(mergeButtonApiDispatch(array));
-  }
-
   return (<>
-           <Button variant='primary' onClick={() => completeMergeReferences()} >
+           <Button variant='primary' onClick={() => completeMergeReferences(dispatch, accessToken, referenceMeta1, referenceMeta2)} >
              {mergeCompletingCount > 0 ? <Spinner animation="border" size="sm"/> : "Complete Merge"}</Button>
           </>
          );
