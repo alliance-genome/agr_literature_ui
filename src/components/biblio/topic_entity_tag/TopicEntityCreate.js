@@ -662,7 +662,10 @@ const TopicEntityCreate = () => {
                 onSearch={async (query) => {
 	          setTopicSelectLoading(true);	    
                   try {
-                    const url =`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
+                    let url =`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
+                    if (accessLevel) {
+                      url += "?mod_abbr=" + accessLevel
+                    }
                     const results = await FetchTypeaheadOptions(url);
                     if (!Array.isArray(results)) {
                        throw new Error("Invalid response format");
