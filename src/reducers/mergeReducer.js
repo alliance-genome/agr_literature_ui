@@ -332,7 +332,7 @@ export default function(state = initialState, action) {
       console.log('reducer MERGE_BUTTON_API_DISPATCH ' + action.payload.responseMessage);
       console.log('action.payload'); console.log(action.payload);
       let newUpdateFailure = 0;
-      let newArrayUpdateMessages = state.updateMessages;
+      let newArrayUpdateMessages = []
       // let getReferenceCurieFlagUpdateButton = false;			// biblio redirect to biblio 
       // let hasChangeUpdateButton = state.referenceJsonHasChange;	// biblio set update button color if any changes
       if (action.payload.responseMessage === "update success") {

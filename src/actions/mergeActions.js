@@ -42,6 +42,15 @@ export const mergeSwapKeep = () => { return { type: 'MERGE_SWAP_KEEP' }; };
 
 export const mergeSwapKeepPmid = () => { return { type: 'MERGE_SWAP_KEEP_PMID' }; };
 
+export const MERGE_UPDATE_MESSAGES = 'MERGE_UPDATE_MESSAGES';
+
+export const mergeUpdateMessages = (payload) => {
+  return {
+    type: MERGE_UPDATE_MESSAGES,
+    payload: payload
+  };
+};
+
 export const mergeSwapPairSimple = (fieldName) => { 
   console.log("action mergeSwapPairSimple " + fieldName);
   return { type: 'MERGE_SWAP_PAIR_SIMPLE',
