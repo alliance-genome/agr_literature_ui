@@ -210,50 +210,63 @@ const MergeCompletedMergeModal = () => {
   const url1e = '/Biblio/?action=entity&referenceCurie=' + referenceMeta1.curie;
 
   // waiting message text - what the API returns when paper is locked)
-  const processingText = "is currently being processed. Please wait until it is complete before merging the papers.";
+  const processingText =
+    "is currently being processed. Please wait until it is complete before merging the papers.";
   const fullProcessingMessage =
     (updateMessages && updateMessages.find(message => message.includes(processingText))) ||
     processingText;
-  const isProcessing = updateMessages && updateMessages.some(message => message.includes(processingText));
+  const isProcessing =
+    updateMessages && updateMessages.some(message => message.includes(processingText));
 
   // start countdown from 5 minutes (300 seconds)
   const [secondsLeft, setSecondsLeft] = useState(300);
   // new state to track if the paper has unlocked (API no longer returns waiting message text)
   const [paperUnlocked, setPaperUnlocked] = useState(false);
 
-  // countdown timer effect (runs only while a job is running for a paper)
+  // countdown timer effect (run only if paper still locked, and there is time remaining.)
   useEffect(() => {
-    if (isProcessing && !paperUnlocked) {
+    if (isProcessing && !paperUnlocked && secondsLeft > 0) {
       const timer = setInterval(() => {
-        setSecondsLeft(prev => (prev > 0 ? prev - 1 : 0));
+        setSecondsLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [isProcessing, paperUnlocked]);
+  }, [isProcessing, paperUnlocked, secondsLeft]);
 
-  // call the API endpoint until paper unlocks.
+  // call completeMergeReferences() every 10 seconds
+  // until the warning message is no longer returned (or until the countdown reaches 0).
   useEffect(() => {
     let pollingInterval;
-    if (isProcessing && !paperUnlocked) {
+    if (isProcessing && !paperUnlocked && secondsLeft > 0) {
       pollingInterval = setInterval(() => {
-	// calling merge endpoint to check and complete the merge if the job is unlocked
+        // Call your helper function to trigger the merge API call.
+	  console.log("HELLO start calling API endpoint..."); 
         completeMergeReferences(dispatch, accessToken, referenceMeta1, referenceMeta2);
-        // check if the waiting message is no longer in updateMessages
-        if (updateMessages && !updateMessages.some(message => message.includes(processingText))) {
-          setPaperUnlocked(true);
-          setSecondsLeft(0); // clear the countdown timer
-          clearInterval(pollingInterval);
-        }
-      }, 5000);
+	  console.log("HELLO end calling API endpoint...");
+	  console.log("HELLO secondsLeft=", secondsLeft);
+	  console.log("HELLO updateMessages=", updateMessages); 
+      }, 10000);
     }
     return () => clearInterval(pollingInterval);
-  }, [isProcessing, paperUnlocked, updateMessages, processingText]);
+  }, [isProcessing, paperUnlocked, secondsLeft, dispatch, accessToken, referenceMeta1, referenceMeta2]);
 
+  // when updateMessages no longer contain the warning text, mark the paper as unlocked.
+  useEffect(() => {
+    if (isProcessing && updateMessages && !updateMessages.some(msg => msg.includes(processingText))) {
+      setPaperUnlocked(true);
+      setSecondsLeft(0);
+    }
+  }, [updateMessages, isProcessing, processingText]);
 
   let modalHeader = null;
   let modalBody = null;
 
-  // Show processing branch if processing message is found—even if updateFailure is true.
   if (isProcessing) {
     modalHeader = (
       <Modal.Header closeButton>
@@ -262,13 +275,16 @@ const MergeCompletedMergeModal = () => {
     );
     modalBody = (
       <Modal.Body>
-        {fullProcessingMessage}<br /><br />
+        {fullProcessingMessage}
+        <br />
+        <br />
         {secondsLeft > 0 ? (
           <>
-            <Spinner animation="border" size="sm" /> Please wait... {secondsLeft} seconds remaining.
+            <Spinner animation="border" size="sm" /> Please wait... {secondsLeft} seconds
+            remaining.
           </>
-	) : (!paperUnlocked && secondsLeft === 0) ? (
-          "The paper is still locked. Please try again later."	
+        ) : (!paperUnlocked && secondsLeft === 0) ? (
+          "The paper is still locked. Please try again later."
         ) : (
           "The paper is now unlocked. You may try merging again."
         )}
@@ -282,10 +298,19 @@ const MergeCompletedMergeModal = () => {
     );
     modalBody = (
       <Modal.Body>
-        <a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into 
-        <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>
-        Contact a developer with the error message:<br/><br/>
-        Merge Completion Failure<br/>
+        <a href={url2} target="_blank" rel="noreferrer noopener">
+          {referenceMeta2.curie}
+        </a>{" "}
+        has failed to merge into{" "}
+        <a href={url1} target="_blank" rel="noreferrer noopener">
+          {referenceMeta1.curie}
+        </a>
+        .<br />
+        Contact a developer with the error message:
+        <br />
+        <br />
+        Merge Completion Failure
+        <br />
         {updateMessages.map((message, index) => (
           <div key={`${message}-${index}`}>{message}</div>
         ))}
@@ -299,18 +324,35 @@ const MergeCompletedMergeModal = () => {
     );
     modalBody = (
       <Modal.Body>
-        {referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>
+        {referenceMeta2.curie} has been merged into{" "}
+        <a href={url1} target="_blank" rel="noreferrer noopener">
+          {referenceMeta1.curie}
+        </a>
+        .<br />
         Information associated with {referenceMeta2.curie} has been removed.
-        {((referenceMeta1['referenceJson']['topic_entity_tags'].length > 0) ||
-          (referenceMeta2['referenceJson']['topic_entity_tags'].length > 0)) && (
-          <div><br />See <a href={url1e} target="_blank" rel="noreferrer noopener">topic entity tag</a> data.<br/></div>
+        {((referenceMeta1["referenceJson"]["topic_entity_tags"].length > 0) ||
+          (referenceMeta2["referenceJson"]["topic_entity_tags"].length > 0)) && (
+          <div>
+            <br />
+            See{" "}
+            <a href={url1e} target="_blank" rel="noreferrer noopener">
+              topic entity tag
+            </a>{" "}
+            data.
+            <br />
+          </div>
         )}
       </Modal.Body>
     );
   }
 
   return (
-    <Modal size="lg" show={completionMergeHappened} backdrop="static" onHide={() => dispatch(mergeResetReferences())}>
+    <Modal
+      size="lg"
+      show={completionMergeHappened}
+      backdrop="static"
+      onHide={() => dispatch(mergeResetReferences())}
+    >
       {modalHeader}
       {modalBody}
     </Modal>
