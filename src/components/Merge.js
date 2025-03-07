@@ -1,7 +1,7 @@
 // import { Link } from 'react-router-dom'
 // import { useHistory } from "react-router-dom";
-import { useState, useEffect } from "react";
 import axios from "axios";
+import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldInput } from '../actions/mergeActions';
@@ -33,7 +33,8 @@ import Badge from 'react-bootstrap/Badge'
 import Alert from 'react-bootstrap/Alert'
 import Tooltip from 'react-bootstrap/Tooltip'
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
-import {Modal, Spinner} from "react-bootstrap";
+import {Spinner} from "react-bootstrap";
+import {Modal} from "react-bootstrap";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
@@ -75,18 +76,6 @@ const GenerateFieldLabel = (fieldName, isLocked) => {
   return (<div className={`div-merge div-merge-grey`}>{fieldName}</div>);
 }
 
-const completeMergeReferences = (dispatch, accessToken, referenceMeta1, referenceMeta2) => {
-  let subPath = 'reference/merge/' + referenceMeta2.curie + '/' + referenceMeta1.curie;
-  let array = [ subPath, null, 'POST', 0, null, null ];
-  array.unshift('mergeComplete');
-  array.unshift(accessToken);
-  console.log('completing merge');
-  console.log(array);
-  dispatch(setDataTransferHappened(false));
-  dispatch(setMergeCompleting(1));
-  dispatch(mergeButtonApiDispatch(array));
-};
-
 const GenerateIsLocked = (fieldName, hasPmid) => {
   if ( (fieldsPubmedOnly.includes(fieldName)) || ( (hasPmid) && (fieldsPubmedLocked.includes(fieldName)) ) ) { 
     return 'lock'; }
@@ -98,6 +87,7 @@ const GenerateIsLocked = (fieldName, hasPmid) => {
 }
 
 const MergeSelectionSection = () => {
+  const dispatch = useDispatch();
   // const keepReference = useSelector(state => state.merge.keepReference);
   const isLoadingReferences = useSelector(state => state.merge.isLoadingReferences);
   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
@@ -115,6 +105,121 @@ const MergeSelectionSection = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const ateamResults = useSelector(state => state.merge.ateamResults);
   const atpParents = useSelector(state => state.merge.atpParents);
+
+  // New state variables for lock status
+  const [lockedCuries, setLockedCuries] = useState([]);
+  const [lockMessages, setLockMessages] = useState({});
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(120); // 2 minutes in seconds
+  const [timerId, setTimerId] = useState(null);
+  const [canMerge, setCanMerge] = useState(false);
+  const lockedCuriesRef = useRef([]);
+    
+  // Check lock status when references are successfully queried
+  useEffect(() => {
+    if (queryDoubleSuccess) {
+      checkLockStatus();
+    }
+  }, [queryDoubleSuccess]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (timerId) {
+        clearInterval(timerId.interval);
+        clearInterval(timerId.pollInterval);
+      }
+    };
+  }, [timerId]);
+
+  const checkLockStatus = async () => {
+    const ref1 = referenceMeta1.input;
+    const ref2 = referenceMeta2.input;
+    try {
+      console.log("Checking lock status for ", ref1, ref2);  
+      const responses = await Promise.all([
+        axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${ref1}`),
+        axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${ref2}`)
+      ]);
+      const lockedRefs = [];
+      const messages = {};
+      responses.forEach((response, index) => {
+        const curie = index === 0 ? ref1 : ref2;
+        if (response.data.locked) {
+          lockedRefs.push(curie);
+          messages[curie] = response.data.message;
+        }
+      });
+      if (lockedRefs.length > 0) {
+        setLockedCuries(lockedRefs);
+	lockedCuriesRef.current = lockedRefs; 
+        setLockMessages(messages);
+        setShowLockModal(true);
+	startCountdown();
+	setCanMerge(false);
+      } else {
+	setCanMerge(true);  
+      }	  
+    } catch (error) {
+      console.error("Error checking lock status:", error);
+      setCanMerge(false);
+    }
+  };
+
+  const startCountdown = (curiesToCheck) => {
+    setRemainingTime(120);
+    const interval = setInterval(() => {
+      setRemainingTime(prev => {
+        if (prev <= 0) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    const pollInterval = setInterval(async () => {
+      const stillLocked = await checkLocksAgain(curiesToCheck);
+      if (stillLocked.length === 0) {
+        clearInterval(interval);
+        clearInterval(pollInterval);
+        setShowLockModal(false);
+      } else {
+        setLockedCuries(stillLocked);
+      }
+    }, 10000);
+
+    setTimerId({ interval, pollInterval });
+  };
+
+  const checkLocksAgain = async (curies = []) => {
+    try {
+      if (!Array.isArray(curies)) {
+        console.error("Invalid curies array:", curies);
+        return [];
+      }
+      const responses = await Promise.all(
+        curies.map(curie => axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${curie}`))
+      );
+      const stillLocked = [];
+      const newMessages = { ...lockMessages };
+      responses.forEach((response, index) => {
+        const curie = curies[index];
+        if (response.data.locked) {
+          stillLocked.push(curie);
+          newMessages[curie] = response.data.message;
+        } else {
+          newMessages[curie] = `The paper ${curie} is unlocked. You can start merging the papers now.`;
+        }
+      });
+      setLockMessages(newMessages);
+      return stillLocked;
+    } catch (error) {
+      console.error("Error rechecking lock status:", error);
+      return curies; // Assume still locked on error
+    }
+  };
+
 
   // swap icon fa-exchange
   // left arrow icon fa-arrow-left 
@@ -135,7 +240,6 @@ const MergeSelectionSection = () => {
     else if (referenceMeta2.queryRefSuccess === true) { curie2Class = 'span-merge-message-success'; }
     else if (referenceMeta2.queryRefSuccess === false) { curie2Class = 'span-merge-message-failure'; }
   
-  const dispatch = useDispatch();
   if ( (ateamResults === 0) && (accessToken) ) {
     dispatch(mergeAteamQueryAtp(accessToken, atpParents));
   }
@@ -173,6 +277,38 @@ const MergeSelectionSection = () => {
       <RowDivider />
     </Container>
 
+    {/* Lock Status Modal */}
+    <Modal show={showLockModal} onHide={() => setShowLockModal(false)} backdrop="static">
+        <Modal.Header closeButton>
+          <Modal.Title>Paper Lock Status</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {lockedCuries.map(curie => (
+            <div key={curie}>
+              {remainingTime > 0 ? (
+                <>
+                  <p>{lockMessages[curie]}</p>
+                  <Spinner animation="border" size="sm" /> Checking again in {Math.floor(remainingTime / 60)}m {remainingTime % 60}s...
+                </>
+              ) : (
+                <p>The paper {curie} is still locked. Please check back later.</p>
+              )}
+            </div>
+          ))}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowLockModal(false);
+            if (timerId) {
+              clearInterval(timerId.interval);
+              clearInterval(timerId.pollInterval);
+            }
+          }}>
+            Close
+          </Button>
+        </Modal.Footer>
+    </Modal>
+     
     {(() => {
       if (queryDoubleSuccess) { return (
         <>
@@ -195,170 +331,40 @@ const MergeSelectionSection = () => {
   );
 }
 
-
 const MergeCompletedMergeModal = () => {
   const dispatch = useDispatch();
-  const accessToken = useSelector(state => state.isLogged.accessToken);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
   const referenceMeta2 = useSelector(state => state.merge.referenceMeta2);
   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
   const updateFailure = useSelector(state => state.merge.updateFailure);
   const updateMessages = useSelector(state => state.merge.updateMessages);
-
   const url1 = '/Biblio/?action=display&referenceCurie=' + referenceMeta1.curie;
   const url2 = '/Biblio/?action=display&referenceCurie=' + referenceMeta2.curie;
   const url1e = '/Biblio/?action=entity&referenceCurie=' + referenceMeta1.curie;
 
-  // waiting message text - what the API returns when paper is locked)
-  const processingText =
-    "is currently being processed. Please wait until it is complete before merging the papers.";
-  const fullProcessingMessage =
-    (updateMessages && updateMessages.find(message => message.includes(processingText))) ||
-    processingText;
-  const isProcessing =
-    updateMessages && updateMessages.some(message => message.includes(processingText));
+  const modalBody = updateFailure ? 
+                    <Modal.Body><a href={url2} target="_blank" rel="noreferrer noopener">{referenceMeta2.curie}</a> has failed to merge into
+<a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>
+                      Contact a developer with the error message:<br/><br/>
+                      Merge Completion Failure<br/>
+                      {updateMessages.map((message, index) => (
+                        <div key={`${message} ${index}`}>{message}</div>
+                      ))}</Modal.Body> :
+                    <Modal.Body>{referenceMeta2.curie} has been merged into <a href={url1} target="_blank" rel="noreferrer noopener">{referenceMeta1.curie}</a>.<br/>Information associated with {referenceMeta2.curie} has been removed.
+                      { ( (referenceMeta1['referenceJson']['topic_entity_tags'].length > 0) || (referenceMeta2['referenceJson']['topic_entity_tags'].length > 0) ) && (<div><br />See <a href={url1e} target="_blank" rel="noreferrer noopener">topic entity tag</a> data.<br/></div>) }
+                      </Modal.Body>
+  const modalHeader = updateFailure ? 
+                      <Modal.Header closeButton><Modal.Title>Error</Modal.Title></Modal.Header> :
+                      <Modal.Header closeButton><Modal.Title>Merge Complete</Modal.Title></Modal.Header>
 
-  // start countdown from 5 minutes (300 seconds)
-  const [secondsLeft, setSecondsLeft] = useState(300);
-  // new state to track if the paper has unlocked (API no longer returns waiting message text)
-  const [paperUnlocked, setPaperUnlocked] = useState(false);
+  // if wanting to simply hide modal and show form in previous state.  currently resetting form to original values.
+  // <Modal size="lg" show={completionMergeHappened} onHide={() => dispatch(setCompletionMergeHappened(false))} >
 
-  // countdown timer effect (run only if paper still locked, and there is time remaining.)
-  useEffect(() => {
-    if (isProcessing && !paperUnlocked && secondsLeft > 0) {
-      const timer = setInterval(() => {
-        setSecondsLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [isProcessing, paperUnlocked, secondsLeft]);
-
-  // call completeMergeReferences() every 10 seconds
-  // until the warning message is no longer returned (or until the countdown reaches 0).
-  useEffect(() => {
-    let pollingInterval;
-    if (isProcessing && !paperUnlocked && secondsLeft > 0) {
-      pollingInterval = setInterval(() => {
-        // Call your helper function to trigger the merge API call.
-	  console.log("HELLO start calling API endpoint..."); 
-        completeMergeReferences(dispatch, accessToken, referenceMeta1, referenceMeta2);
-	  console.log("HELLO end calling API endpoint...");
-	  console.log("HELLO secondsLeft=", secondsLeft);
-	  console.log("HELLO updateMessages=", updateMessages); 
-      }, 10000);
-    }
-    return () => clearInterval(pollingInterval);
-  }, [isProcessing, paperUnlocked, secondsLeft, dispatch, accessToken, referenceMeta1, referenceMeta2]);
-
-  // when updateMessages no longer contain the warning text, mark the paper as unlocked.
-  useEffect(() => {
-    if (isProcessing && updateMessages && !updateMessages.some(msg => msg.includes(processingText))) {
-      setPaperUnlocked(true);
-      setSecondsLeft(0);
-    }
-  }, [updateMessages, isProcessing, processingText]);
-
-  let modalHeader = null;
-  let modalBody = null;
-
-  if (isProcessing) {
-    modalHeader = (
-      <Modal.Header closeButton>
-        <Modal.Title>Processing Merge</Modal.Title>
-      </Modal.Header>
-    );
-    modalBody = (
-      <Modal.Body>
-        {fullProcessingMessage}
-        <br />
-        <br />
-        {secondsLeft > 0 ? (
-          <>
-            <Spinner animation="border" size="sm" /> Please wait... {secondsLeft} seconds
-            remaining.
-          </>
-        ) : (!paperUnlocked && secondsLeft === 0) ? (
-          "The paper is still locked. Please try again later."
-        ) : (
-          "The paper is now unlocked. You may try merging again."
-        )}
-      </Modal.Body>
-    );
-  } else if (updateFailure) {
-    modalHeader = (
-      <Modal.Header closeButton>
-        <Modal.Title>Error</Modal.Title>
-      </Modal.Header>
-    );
-    modalBody = (
-      <Modal.Body>
-        <a href={url2} target="_blank" rel="noreferrer noopener">
-          {referenceMeta2.curie}
-        </a>{" "}
-        has failed to merge into{" "}
-        <a href={url1} target="_blank" rel="noreferrer noopener">
-          {referenceMeta1.curie}
-        </a>
-        .<br />
-        Contact a developer with the error message:
-        <br />
-        <br />
-        Merge Completion Failure
-        <br />
-        {updateMessages.map((message, index) => (
-          <div key={`${message}-${index}`}>{message}</div>
-        ))}
-      </Modal.Body>
-    );
-  } else {
-    modalHeader = (
-      <Modal.Header closeButton>
-        <Modal.Title>Merge Complete</Modal.Title>
-      </Modal.Header>
-    );
-    modalBody = (
-      <Modal.Body>
-        {referenceMeta2.curie} has been merged into{" "}
-        <a href={url1} target="_blank" rel="noreferrer noopener">
-          {referenceMeta1.curie}
-        </a>
-        .<br />
-        Information associated with {referenceMeta2.curie} has been removed.
-        {((referenceMeta1["referenceJson"]["topic_entity_tags"].length > 0) ||
-          (referenceMeta2["referenceJson"]["topic_entity_tags"].length > 0)) && (
-          <div>
-            <br />
-            See{" "}
-            <a href={url1e} target="_blank" rel="noreferrer noopener">
-              topic entity tag
-            </a>{" "}
-            data.
-            <br />
-          </div>
-        )}
-      </Modal.Body>
-    );
-  }
-
-  return (
-    <Modal
-      size="lg"
-      show={completionMergeHappened}
-      backdrop="static"
-      onHide={() => dispatch(mergeResetReferences())}
-    >
-      {modalHeader}
-      {modalBody}
-    </Modal>
-  );
-};
-
+  return (<Modal size="lg" show={completionMergeHappened} backdrop="static" onHide={() => dispatch(mergeResetReferences())} >
+           {modalHeader}
+           {modalBody}
+          </Modal>);
+}
 
 const MergeDataTransferredModal = () => {
   const dispatch = useDispatch();
@@ -394,8 +400,24 @@ const MergeSubmitCompleteMergeUpdateButton = () => {
   const mergeCompletingCount = useSelector(state => state.merge.mergeCompletingCount);
 //   const completionMergeHappened = useSelector(state => state.merge.completionMergeHappened);
 
+  function completeMergeReferences() {
+    // old API and merged_into in reference table
+    // let updateJsonReferenceMain = { 'merged_into_reference_curie': referenceMeta1.curie };
+    // let subPath = 'reference/' + referenceMeta2.curie;
+    // let array = [ subPath, updateJsonReferenceMain, 'PATCH', 0, null, null];
+    let subPath = 'reference/merge/' + referenceMeta2.curie + '/' + referenceMeta1.curie;
+    let array = [ subPath, null, 'POST', 0, null, null];
+    array.unshift('mergeComplete');
+    array.unshift(accessToken);
+    console.log('completing merge');
+    console.log(array);
+    dispatch(setDataTransferHappened(false));
+    dispatch(setMergeCompleting(1));
+    dispatch(mergeButtonApiDispatch(array));
+  }
+
   return (<>
-           <Button variant='primary' onClick={() => completeMergeReferences(dispatch, accessToken, referenceMeta1, referenceMeta2)} >
+           <Button variant='primary' onClick={() => completeMergeReferences()} >
              {mergeCompletingCount > 0 ? <Spinner animation="border" size="sm"/> : "Complete Merge"}</Button>
           </>
          );
