@@ -114,7 +114,10 @@ const MergeSelectionSection = () => {
   const [timerId, setTimerId] = useState(null);
   const [canMerge, setCanMerge] = useState(false);
   const [timeoutOccurred, setTimeoutOccurred] = useState(false);
-  const lockedCuriesRef = useRef([]);
+  const lockedCuriesRef = useRef([]);  
+  const remainingTimeRef = useRef(120);
+  const countdownIntervalRef = useRef(null);
+  const pollIntervalRef = useRef(null);
     
   // Check lock status when references are successfully queried
   useEffect(() => {
@@ -167,43 +170,76 @@ const MergeSelectionSection = () => {
     }
   };
 
-  const startCountdown = (curiesToCheck) => {
-    setRemainingTime(120);
-    setTimeoutOccurred(false);
-    const interval = setInterval(() => {
-      setRemainingTime(prev => {
-        if (prev <= 0) {
-	  setTimeoutOccurred(true);
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
+
+
+    
+const startCountdown = () => {
+  const initialTime = 120;
+  setRemainingTime(initialTime);
+  remainingTimeRef.current = initialTime;
+  setTimeoutOccurred(false);
+
+  // Start the countdown timer:
+  countdownIntervalRef.current = setInterval(() => {
+    // Compute new time from the ref:
+    const newTime = remainingTimeRef.current - 1;
+    remainingTimeRef.current = newTime;
+    setRemainingTime(newTime);
+    if (newTime <= 0) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+  }, 1000);
+
+  // Start the polling interval (every 10 seconds):
+  pollIntervalRef.current = setInterval(async () => {
+    if (remainingTimeRef.current <= 0) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+      return;
+    }
+
+    // Capture the current locked papers:
+    const currentLocked = [...lockedCuriesRef.current];
+
+    // Check their lock status:
+    const stillLocked = await checkLocksAgain(currentLocked);
+    lockedCuriesRef.current = stillLocked;
+    setLockedCuries(stillLocked);
+
+    // If none are locked, update messages and eventually close the modal:
+    if (stillLocked.length === 0) {
+      currentLocked.forEach(curie => {
+        setLockMessages(prev => ({
+          ...prev,
+          [curie]: `The paper ${curie} is unlocked. You can start merging now.`
+        }));
       });
-    }, 1000);
 
-    const pollInterval = setInterval(async () => {
-      if (remainingTime <= 0) {
-        clearInterval(pollInterval);
-        return;
-      }
-
-      const currentLocked = [...lockedCuriesRef.current];
-      if (currentLocked.length === 0) return;
-
-      const stillLocked = await checkLocksAgain(currentLocked);
-      lockedCuriesRef.current = stillLocked;
-      setLockedCuries(stillLocked);
-
-      if (stillLocked.length === 0) {
-        clearInterval(interval);
-        clearInterval(pollInterval);
+      // Delay closure so the user has time to read the message.
+      setTimeout(() => {
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
         setShowLockModal(false);
         setCanMerge(true);
-      }
-    }, 10000);
+      }, 3000); // Adjust delay as needed
+    }
+  }, 10000);
+};
 
-    setTimerId({ interval, pollInterval });
-  };
+
+
+
+
+
+
+    
 
   const checkLocksAgain = async (curies = []) => {
     try {
@@ -304,49 +340,59 @@ const MergeSelectionSection = () => {
       <Modal.Header closeButton={timeoutOccurred || lockedCuries.length === 0}>
         <Modal.Title>Paper Lock Status</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
-        {lockedCuries.map(curie => (
-          <div key={curie} className="mb-3">
-            <div>{lockMessages[curie]}</div>
-            {!timeoutOccurred && (
-              <div className="mt-2">
+	  
+
+  <Modal.Body>
+    {lockedCuries.length > 0 ? (
+      lockedCuries.map(curie => (
+        <div key={curie} className="mb-3">
+          <div>{lockMessages[curie]}</div>
+          <div className="mt-2">
+            {remainingTime > 0 ? (
+              <>
                 <Spinner animation="border" size="sm" />
                 <span className="ms-2">
-                  Checking again in {Math.ceil(remainingTime / 60)}m {remainingTime % 60}s
+                  Checking again in {Math.floor(remainingTime / 60)}m {remainingTime % 60}s
                 </span>
-              </div>
-            )}
-            {timeoutOccurred && (
-              <div className="text-danger mt-2">
-                Lock check timeout reached. You may:
-                <ul>
-                  <li>Check back later</li>
-                  <li>Contact a developer with the error message</li>
-                </ul>
-              </div>
+              </>
+            ) : (
+              <span className="ms-2">Timer expired.</span>
             )}
           </div>
+        </div>
+      ))
+    ) : (
+      <div className="mb-3">
+        {Object.keys(lockMessages).map(curie => (
+          <div key={curie}>{lockMessages[curie]}</div>
         ))}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button 
-          variant="secondary" 
-          onClick={() => {
-            if (timerId) {
-              clearInterval(timerId.interval);
-              clearInterval(timerId.pollInterval);
-            }
-	    dispatch(mergeResetReferences());
-	    setShowLockModal(false);
-	    setCanMerge(false);
-            setLockedCuries([]);
-            setLockMessages({});
-            setTimeoutOccurred(false);
-          }}
-        >
-          Cancel Merge
-        </Button>
-      </Modal.Footer>
+      </div>
+    )}
+  </Modal.Body>
+  {/* Only render the Cancel Merge button if there are still locked papers */}
+  {lockedCuries.length > 0 && (
+    <Modal.Footer>
+      <Button variant="secondary" onClick={() => {
+         if (countdownIntervalRef.current) {
+           clearInterval(countdownIntervalRef.current);
+           countdownIntervalRef.current = null;
+         }
+         if (pollIntervalRef.current) {
+           clearInterval(pollIntervalRef.current);
+           pollIntervalRef.current = null;
+         }
+         dispatch(mergeResetReferences());
+         setShowLockModal(false);
+         setCanMerge(false);
+         setLockedCuries([]);
+         setLockMessages({});
+         setTimeoutOccurred(false);
+      }}>
+         Cancel Merge
+      </Button>
+    </Modal.Footer>
+  )}
+      
     </Modal>
      
     {(() => {
