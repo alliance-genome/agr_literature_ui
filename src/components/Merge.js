@@ -113,6 +113,7 @@ const MergeSelectionSection = () => {
   const [remainingTime, setRemainingTime] = useState(120); // 2 minutes in seconds
   const [timerId, setTimerId] = useState(null);
   const [canMerge, setCanMerge] = useState(false);
+  const [timeoutOccurred, setTimeoutOccurred] = useState(false);
   const lockedCuriesRef = useRef([]);
     
   // Check lock status when references are successfully queried
@@ -168,9 +169,11 @@ const MergeSelectionSection = () => {
 
   const startCountdown = (curiesToCheck) => {
     setRemainingTime(120);
+    setTimeoutOccurred(false);
     const interval = setInterval(() => {
       setRemainingTime(prev => {
         if (prev <= 0) {
+	  setTimeoutOccurred(true);
           clearInterval(interval);
           return 0;
         }
@@ -179,13 +182,23 @@ const MergeSelectionSection = () => {
     }, 1000);
 
     const pollInterval = setInterval(async () => {
-      const stillLocked = await checkLocksAgain(curiesToCheck);
+      if (remainingTime <= 0) {
+        clearInterval(pollInterval);
+        return;
+      }
+
+      const currentLocked = [...lockedCuriesRef.current];
+      if (currentLocked.length === 0) return;
+
+      const stillLocked = await checkLocksAgain(currentLocked);
+      lockedCuriesRef.current = stillLocked;
+      setLockedCuries(stillLocked);
+
       if (stillLocked.length === 0) {
         clearInterval(interval);
         clearInterval(pollInterval);
         setShowLockModal(false);
-      } else {
-        setLockedCuries(stillLocked);
+        setCanMerge(true);
       }
     }, 10000);
 
@@ -194,30 +207,31 @@ const MergeSelectionSection = () => {
 
   const checkLocksAgain = async (curies = []) => {
     try {
-      if (!Array.isArray(curies)) {
-        console.error("Invalid curies array:", curies);
-        return [];
-      }
       const responses = await Promise.all(
-        curies.map(curie => axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${curie}`))
+        curies.map(curie =>
+          axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${curie}`)
+            .catch(() => ({ data: { locked: true } }))
+        ) 
       );
       const stillLocked = [];
-      const newMessages = { ...lockMessages };
       responses.forEach((response, index) => {
         const curie = curies[index];
         if (response.data.locked) {
           stillLocked.push(curie);
-          newMessages[curie] = response.data.message;
         } else {
-          newMessages[curie] = `The paper ${curie} is unlocked. You can start merging the papers now.`;
+          setLockMessages(prev => ({
+            ...prev,
+            [curie]: `The paper ${curie} is unlocked. You can start merging now.`
+          }));
         }
       });
-      setLockMessages(newMessages);
+  
       return stillLocked;
     } catch (error) {
       console.error("Error rechecking lock status:", error);
-      return curies; // Assume still locked on error
+      return curies; // Return original list on error
     }
+	  
   };
 
 
@@ -278,35 +292,61 @@ const MergeSelectionSection = () => {
     </Container>
 
     {/* Lock Status Modal */}
-    <Modal show={showLockModal} onHide={() => setShowLockModal(false)} backdrop="static">
-        <Modal.Header closeButton>
-          <Modal.Title>Paper Lock Status</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {lockedCuries.map(curie => (
-            <div key={curie}>
-              {remainingTime > 0 ? (
-                <>
-                  <p>{lockMessages[curie]}</p>
-                  <Spinner animation="border" size="sm" /> Checking again in {Math.floor(remainingTime / 60)}m {remainingTime % 60}s...
-                </>
-              ) : (
-                <p>The paper {curie} is still locked. Please check back later.</p>
-              )}
-            </div>
-          ))}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => {
-            setShowLockModal(false);
+    <Modal
+      show={showLockModal}
+      onHide={() => {
+        if (timeoutOccurred || lockedCuries.length === 0) {
+          setShowLockModal(false);
+        }
+      }} 
+      backdrop="static"
+    >	  
+      <Modal.Header closeButton={timeoutOccurred || lockedCuries.length === 0}>
+        <Modal.Title>Paper Lock Status</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {lockedCuries.map(curie => (
+          <div key={curie} className="mb-3">
+            <div>{lockMessages[curie]}</div>
+            {!timeoutOccurred && (
+              <div className="mt-2">
+                <Spinner animation="border" size="sm" />
+                <span className="ms-2">
+                  Checking again in {Math.ceil(remainingTime / 60)}m {remainingTime % 60}s
+                </span>
+              </div>
+            )}
+            {timeoutOccurred && (
+              <div className="text-danger mt-2">
+                Lock check timeout reached. You may:
+                <ul>
+                  <li>Check back later</li>
+                  <li>Contact a developer with the error message</li>
+                </ul>
+              </div>
+            )}
+          </div>
+        ))}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button 
+          variant="secondary" 
+          onClick={() => {
             if (timerId) {
               clearInterval(timerId.interval);
               clearInterval(timerId.pollInterval);
             }
-          }}>
-            Close
-          </Button>
-        </Modal.Footer>
+	    dispatch(mergeResetReferences());
+	    setShowLockModal(false);
+	    setCanMerge(false);
+            setLockedCuries([]);
+            setLockMessages({});
+            setTimeoutOccurred(false);
+          }}
+        >
+          Cancel Merge
+        </Button>
+      </Modal.Footer>
     </Modal>
      
     {(() => {
