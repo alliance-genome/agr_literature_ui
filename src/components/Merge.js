@@ -88,7 +88,6 @@ const GenerateIsLocked = (fieldName, hasPmid) => {
 
 const MergeSelectionSection = () => {
   const dispatch = useDispatch();
-  // const keepReference = useSelector(state => state.merge.keepReference);
   const isLoadingReferences = useSelector(state => state.merge.isLoadingReferences);
   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
@@ -106,34 +105,39 @@ const MergeSelectionSection = () => {
   const ateamResults = useSelector(state => state.merge.ateamResults);
   const atpParents = useSelector(state => state.merge.atpParents);
 
-  const [lockedCuries, setLockedCuries] = useState([]);
-  const [lockMessages, setLockMessages] = useState({});
+  // for paper lock check
   const [showLockModal, setShowLockModal] = useState(false);
   const [remainingTime, setRemainingTime] = useState(120);
-  const [timerId, setTimerId] = useState(null);
   const [canMerge, setCanMerge] = useState(false);
   const [timeoutOccurred, setTimeoutOccurred] = useState(false);
-  const lockedCuriesRef = useRef([]);  
+  const lockedCuriesRef = useRef([]);
   const remainingTimeRef = useRef(120);
   const countdownIntervalRef = useRef(null);
   const pollIntervalRef = useRef(null);
-    
-  // check lock status when references are successfully queried
+  const [lockMessages, setLockMessages] = useState({});  
+  const [lockedCuries, setLockedCuries] = useState([]);
+  
+  
+  // initiates the process of checking whether either paper is locked
+  // when both references are successfully queried
   useEffect(() => {
     if (queryDoubleSuccess) {
       checkLockStatus();
     }
   }, [queryDoubleSuccess]);
 
-  // Cleanup timers on unmount
+  // cleanup timers whenever the component unmounts
+  // make sure that there are no leftover intervals running in the background
   useEffect(() => {
     return () => {
-      if (timerId) {
-        clearInterval(timerId.interval);
-        clearInterval(timerId.pollInterval);
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
       }
     };
-  }, [timerId]);
+  }, []);
 
   const checkLockStatus = async () => {
     const ref1 = referenceMeta1.input;
@@ -154,10 +158,10 @@ const MergeSelectionSection = () => {
         }
       });
       if (lockedRefs.length > 0) {
+	setShowLockModal(true);
         setLockedCuries(lockedRefs);
 	lockedCuriesRef.current = lockedRefs; 
         setLockMessages(messages);
-        setShowLockModal(true);
 	startCountdown();
 	setCanMerge(false);
       } else {
@@ -168,33 +172,36 @@ const MergeSelectionSection = () => {
       setCanMerge(false);
     }
   };
-
+    
   const startCountdown = () => {
     const initialTime = 120;
     setRemainingTime(initialTime);
     remainingTimeRef.current = initialTime;
     setTimeoutOccurred(false);
 
-    // Start the countdown timer:
+    // start the countdown timer:
     countdownIntervalRef.current = setInterval(() => {
       const newTime = remainingTimeRef.current - 1;
       remainingTimeRef.current = newTime;
       setRemainingTime(newTime);
       if (newTime <= 0) {
+	// clears this interval so that the timer stops
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
     }, 1000);
 
-    // Start the polling interval (every 10 seconds):
+    // start the polling interval (every 10 seconds):
     pollIntervalRef.current = setInterval(async () => {
-      // Stop polling if countdown is done.
+      // clears the polling interval and stops further execution
       if (remainingTimeRef.current <= 0) {
         clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
+        pollIntervalRef.current = null; 
         return;
       }
 
+      // copies the current locked references from lockedCuriesRef.current
+      // so can check each of them again to see if it is unlocked	
       const currentLocked = [...lockedCuriesRef.current];
       const stillLocked = await checkLocksAgain(currentLocked);
       lockedCuriesRef.current = stillLocked;
@@ -209,7 +216,8 @@ const MergeSelectionSection = () => {
           }));
         });
 
-        // Delay closing the modal so the message remains visible.
+	  
+        // delay closing the modal so the message remains visible.
         setTimeout(() => {
           if (countdownIntervalRef.current) {
             clearInterval(countdownIntervalRef.current);
@@ -239,7 +247,8 @@ const MergeSelectionSection = () => {
         const curie = curies[index];
         if (response.data.locked) {
           stillLocked.push(curie);
-        } else {
+        }
+	else {
           setLockMessages(prev => ({
             ...prev,
             [curie]: `The paper ${curie} is unlocked. You can start merging now.`
@@ -250,7 +259,7 @@ const MergeSelectionSection = () => {
       return stillLocked;
     } catch (error) {
       console.error("Error rechecking lock status:", error);
-      return curies; // Return original list on error
+      return curies;
     }
 	  
   };
@@ -335,7 +344,7 @@ const MergeSelectionSection = () => {
                   <>
                     <Spinner animation="border" size="sm" />
                     <span className="ms-2">
-                      Checking again in {Math.floor(remainingTimeRef.current / 60)}m{" "}
+                      Rechecking in {Math.floor(remainingTimeRef.current / 60)}m{" "}
                       {remainingTimeRef.current % 60}s
                     </span>
                  </>
