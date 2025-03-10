@@ -1,7 +1,7 @@
 // import { Link } from 'react-router-dom'
 // import { useHistory } from "react-router-dom";
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 
 import { changeFieldInput } from '../actions/mergeActions';
@@ -87,7 +87,7 @@ const GenerateIsLocked = (fieldName, hasPmid) => {
 }
 
 const MergeSelectionSection = () => {
-  // const keepReference = useSelector(state => state.merge.keepReference);
+  const dispatch = useDispatch();
   const isLoadingReferences = useSelector(state => state.merge.isLoadingReferences);
   const pmidKeepReference = useSelector(state => state.merge.pmidKeepReference);
   const referenceMeta1 = useSelector(state => state.merge.referenceMeta1);
@@ -104,6 +104,166 @@ const MergeSelectionSection = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const ateamResults = useSelector(state => state.merge.ateamResults);
   const atpParents = useSelector(state => state.merge.atpParents);
+
+  // for paper lock check
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(120);
+  const [canMerge, setCanMerge] = useState(false);
+  const [timeoutOccurred, setTimeoutOccurred] = useState(false);
+  const lockedCuriesRef = useRef([]);
+  const remainingTimeRef = useRef(120);
+  const countdownIntervalRef = useRef(null);
+  const pollIntervalRef = useRef(null);
+  const [lockMessages, setLockMessages] = useState({});  
+  const [lockedCuries, setLockedCuries] = useState([]);
+  
+  
+  // initiates the process of checking whether either paper is locked
+  // when both references are successfully queried
+  useEffect(() => {
+    if (queryDoubleSuccess) {
+      checkLockStatus();
+    }
+  }, [queryDoubleSuccess]);
+
+  // cleanup timers whenever the component unmounts
+  // make sure that there are no leftover intervals running in the background
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const checkLockStatus = async () => {
+    const ref1 = referenceMeta1.input;
+    const ref2 = referenceMeta2.input;
+    try {
+      console.log("Checking lock status for ", ref1, ref2);  
+      const responses = await Promise.all([
+        axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${ref1}`),
+        axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${ref2}`)
+      ]);
+      const lockedRefs = [];
+      const messages = {};
+      responses.forEach((response, index) => {
+        const curie = index === 0 ? ref1 : ref2;
+        if (response.data.locked) {
+          lockedRefs.push(curie);
+          messages[curie] = response.data.message;
+        }
+      });
+      if (lockedRefs.length > 0) {
+	setShowLockModal(true);
+        setLockedCuries(lockedRefs);
+	lockedCuriesRef.current = lockedRefs; 
+        setLockMessages(messages);
+	startCountdown();
+	setCanMerge(false);
+      } else {
+	setCanMerge(true);  
+      }	  
+    } catch (error) {
+      console.error("Error checking lock status:", error);
+      setCanMerge(false);
+    }
+  };
+    
+  const startCountdown = () => {
+    const initialTime = 120;
+    setRemainingTime(initialTime);
+    remainingTimeRef.current = initialTime;
+    setTimeoutOccurred(false);
+
+    // start the countdown timer:
+    countdownIntervalRef.current = setInterval(() => {
+      const newTime = remainingTimeRef.current - 1;
+      remainingTimeRef.current = newTime;
+      setRemainingTime(newTime);
+      if (newTime <= 0) {
+	// clears this interval so that the timer stops
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+    }, 1000);
+
+    // start the polling interval (every 10 seconds):
+    pollIntervalRef.current = setInterval(async () => {
+      // clears the polling interval and stops further execution
+      if (remainingTimeRef.current <= 0) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null; 
+        return;
+      }
+
+      // copies the current locked references from lockedCuriesRef.current
+      // so can check each of them again to see if it is unlocked	
+      const currentLocked = [...lockedCuriesRef.current];
+      const stillLocked = await checkLocksAgain(currentLocked);
+      lockedCuriesRef.current = stillLocked;
+      setLockedCuries(stillLocked);
+
+      if (stillLocked.length === 0) {
+        // For each paper that was locked, update its message.
+        currentLocked.forEach(curie => {
+          setLockMessages(prev => ({
+            ...prev,
+            [curie]: `The paper ${curie} is unlocked. You can start merging now.`
+          }));
+        });
+
+	  
+        // delay closing the modal so the message remains visible.
+        setTimeout(() => {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          setShowLockModal(false);
+          setCanMerge(true);
+        }, 300000); // will close automatically in 5min 
+      }
+    }, 10000);
+  };
+ 
+  const checkLocksAgain = async (curies = []) => {
+    try {
+      const responses = await Promise.all(
+        curies.map(curie =>
+          axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${curie}`)
+            .catch(() => ({ data: { locked: true } }))
+        ) 
+      );
+      const stillLocked = [];
+      responses.forEach((response, index) => {
+        const curie = curies[index];
+        if (response.data.locked) {
+          stillLocked.push(curie);
+        }
+	else {
+          setLockMessages(prev => ({
+            ...prev,
+            [curie]: `The paper ${curie} is unlocked. You can start merging now.`
+          }));
+        }
+      });
+  
+      return stillLocked;
+    } catch (error) {
+      console.error("Error rechecking lock status:", error);
+      return curies;
+    }
+	  
+  };
+
 
   // swap icon fa-exchange
   // left arrow icon fa-arrow-left 
@@ -124,7 +284,6 @@ const MergeSelectionSection = () => {
     else if (referenceMeta2.queryRefSuccess === true) { curie2Class = 'span-merge-message-success'; }
     else if (referenceMeta2.queryRefSuccess === false) { curie2Class = 'span-merge-message-failure'; }
   
-  const dispatch = useDispatch();
   if ( (ateamResults === 0) && (accessToken) ) {
     dispatch(mergeAteamQueryAtp(accessToken, atpParents));
   }
@@ -162,6 +321,77 @@ const MergeSelectionSection = () => {
       <RowDivider />
     </Container>
 
+    {/* Lock Status Modal */}
+    <Modal
+      show={showLockModal}
+      onHide={() => {
+        if (timeoutOccurred || lockedCuries.length === 0) {
+          setShowLockModal(false);
+        }
+      }} 
+      backdrop="static"
+    >	  
+      <Modal.Header closeButton={timeoutOccurred || lockedCuries.length === 0}>
+        <Modal.Title>Paper Lock Status</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {lockedCuries.length > 0 ? (
+          lockedCuries.map(curie => (
+            <div key={curie} className="mb-3">
+              <div>{lockMessages[curie]}</div>
+              <div className="mt-2">
+                {remainingTimeRef.current > 0 ? (
+                  <>
+                    <Spinner animation="border" size="sm" />
+                    <span className="ms-2">
+                      Rechecking in {Math.floor(remainingTimeRef.current / 60)}m{" "}
+                      {remainingTimeRef.current % 60}s
+                    </span>
+                 </>
+                ) : (
+	          <span className="ms-2">
+                    The paper {curie} is still locked. Please check back later.
+	          </span>
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="mb-3">
+            {Object.keys(lockMessages).map(curie => (
+              <div key={curie}>{lockMessages[curie]}</div>
+            ))}
+          </div>
+        )}
+      </Modal.Body>
+      {/* Only show the Cancel Merge button if there are still locked papers */}
+      {lockedCuries.length > 0 && (
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
+              }
+              if (pollIntervalRef.current) {
+                clearInterval(pollIntervalRef.current);
+                pollIntervalRef.current = null;
+              }
+              dispatch(mergeResetReferences());
+              setShowLockModal(false);
+              setCanMerge(false);
+              setLockedCuries([]);
+              setLockMessages({});
+              setTimeoutOccurred(false);
+            }}
+          >
+            Cancel Merge
+          </Button>
+        </Modal.Footer>
+      )}
+    </Modal>
+     
     {(() => {
       if (queryDoubleSuccess) { return (
         <>
