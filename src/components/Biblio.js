@@ -339,13 +339,6 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
       referencefileValue = (
         <div>
           <button className='button-to-link' onClick={ () => dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken)) } >
-            { (devOrStageOrProd === 'stage') ?
-              <OverlayTrigger
-                placement="right"
-                delay={{ show: 250, hide: 400 }}
-                overlay={<Tooltip id="button-tooltip-2">Go to Production; PDFs are deleted after one week on stage and may not be available.</Tooltip>} >
-                <div>{filename}</div>
-              </OverlayTrigger> : <div>{filename}</div> }
           </button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}
         </div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
