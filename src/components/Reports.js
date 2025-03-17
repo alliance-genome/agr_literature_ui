@@ -8,7 +8,7 @@ import Form from 'react-bootstrap/Form';
 
 import { DownloadDropdownOptionsButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
-import { setDateRangeDict, setDateOptionDict } from '../actions/reportsActions';
+import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict } from '../actions/reportsActions';
 
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
@@ -22,12 +22,21 @@ import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 
-const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, column_type }) => {
+const file_upload_name_mapping = {
+    'files uploaded': 'uploaded',
+    'file needed': 'needed',
+    'file unavailable': 'unavailable',
+    'file upload in progress': 'in progress'
+}
+
+const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType }) => {
   const [data, setData] = useState([]);
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(0);
   const [countResync, setCountResync] = useState(0);
+  const [dateRangeHeaders, setDateRangeHeaders] = useState([]);
+  const [dateRangeData, setDateRangeData] = useState({});
 
   const mods = useSelector(state => state.app.mods);
   const dateRangeDict = useSelector(state => state.reports.dateRangeDict);
@@ -35,6 +44,8 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
 
   const dateOptionDict = useSelector(state => state.reports.dateOptionDict);
   const dateOptionValue = ( (dateOptionDict[modSection]) && (dateOptionDict[modSection][workflowProcessAtpId]) ) ? dateOptionDict[modSection][workflowProcessAtpId] : '';
+  const dateFrequencyDict = useSelector(state => state.reports.dateFrequencyDict);
+  const dateFrequencyValue = ( (dateFrequencyDict[modSection]) && (dateFrequencyDict[modSection][workflowProcessAtpId]) ) ? dateFrequencyDict[modSection][workflowProcessAtpId] : 'year';
   const gridRef = useRef();
 
   const mod_abbreviation = (modSection === 'All') ? '' : modSection;
@@ -49,6 +60,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       if ( (date_range_start !== '') && (date_range_end !== '') ) {
           url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
       if ( (date_option !== 'default') && ( (date_range_start === '') ||  (date_range_end === '') ) ) { return; }
+      if (dateFrequencyValue !== '') { url += `&date_frequency=${dateFrequencyValue}`; }
       setIsLoadingData(true);
       try {
         const result = await axios.get(url);
@@ -67,6 +79,35 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
         });
         setTotals(totalsObj);
 
+        if (columnType === 'date_range') {
+          setDateRangeData(() => {
+            const newData = {};
+            result.data.forEach(item => {
+              if (!newData[item['workflow_tag_id']]) {
+                newData[item['workflow_tag_id']] = {};
+              }
+              newData[item['workflow_tag_id']][item['time_period']] = item['tag_count'];
+            });
+            return newData;
+          });
+          setDateRangeHeaders(() => {
+            const newHeaders = [];
+            result.data.forEach(item => {
+              if (!newHeaders.includes(item['time_period'])) {
+                newHeaders.push(item['time_period']);
+              }
+            });
+            if (dateFrequencyValue === 'month') {
+              return newHeaders.sort((a, b) => {	// sort by date
+                const dateA = new Date(a.split(" ").join(" 1,"));
+                const dateB = new Date(b.split(" ").join(" 1,"));
+                return dateA - dateB;
+              });
+            }
+            return newHeaders.sort();			// sort normally
+          });
+        }
+
         setKey(prevKey => prevKey + 1);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -76,7 +117,12 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     };
 
     fetchData();
-  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end, countResync]);
+  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end, countResync, dateFrequencyValue]);
+
+  const getTagCountDateRange = (tagName, mod, dateRange) => {
+    const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === mod && d.time_period === dateRange);
+    return item && typeof item.tag_count === 'number' ? item.tag_count.toLocaleString() : "0";
+  };
 
   const getTagCount = (tagName, mod) => {
     const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === mod);
@@ -96,7 +142,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     return null;
   };
 
-  let columns = [
+  let defaultColumns = [
     {
       headerName: '',
       field: 'tag_name',
@@ -112,7 +158,8 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       headerClass: 'wft-bold-header'
     }
   ];
-  if (column_type === 'all_mods') {
+  let columns = defaultColumns;
+  if (columnType === 'all_mods') {
     columns = [
       ...columns,
       ...mods.map(mod => ({
@@ -124,9 +171,21 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       })),
     ];
   }
+  else if (columnType === 'date_range') {
+    columns = [
+      ...columns,
+      ...dateRangeHeaders.map(dateRangeHeader => ({
+        headerName: dateRangeHeader,
+        field: dateRangeHeader,
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header'
+      })),
+    ];
+  }
 
   let rowData = [];
-  if (column_type === 'all_mods') {
+  if (columnType === 'all_mods') {
     rowData = tagNames.map(tagName => {
       const row = {
         tag_name: nameMapping[tagName],
@@ -138,12 +197,30 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       return row;
     });
   }
-  else if (column_type === 'two_column') {
+  else if (columnType === 'two_column') {
     rowData = tagNames.map(tagName => {
       const row = {
         tag_name: nameMapping[tagName],
         total: getTagCount(tagName, modSection)
       };
+      return row;
+    });
+  }
+  else if (columnType === 'date_range') {
+    rowData = tagNames.map(tagName => {
+      let total = 0;
+      const row = {
+        tag_name: nameMapping[tagName],
+      };
+      dateRangeHeaders.forEach(dateRange => {
+        const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === modSection && d.time_period === dateRange);
+        if (item && typeof item.tag_count === 'number') {
+          total += item.tag_count;
+          row[dateRange] = item.tag_count.toLocaleString(); }
+        else {
+          row[dateRange] = "0"; }
+      });
+      row['total'] = total;
       return row;
     });
   }
@@ -158,7 +235,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
           <Container fluid style={{ width: '90%' }}>
             <Row>
               <Col>
-                <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} />
+                <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} columnType={columnType} dateFrequencyValue={dateFrequencyValue} />
               </Col>
               <Col>
                 <Button
@@ -206,9 +283,9 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
         </div>
     </div>
   );
-}; // const const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection })
+}; // const const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType })
 
-const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection }) => {
+const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection, columnType, dateFrequencyValue }) => {
     const dispatch = useDispatch();
 
     function formatDateRange(dateRange){
@@ -263,7 +340,13 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
         dispatch(setDateOptionDict(newDateOption, workflowProcessAtpId, modSection));
     }
 
+    function handleDateFrequencyChange(newDateFrequency){
+        dispatch(setDateFrequencyDict(newDateFrequency, workflowProcessAtpId, modSection));
+    }
+
     const dateOptions = { 'Date Workflow Updated': 'default', 'Date added to ABC': 'reference_created', 'Date Published': 'reference_published', 'Date Inside Corpus': 'inside_corpus' };
+    const dateFrequencies = { 'year': 'year', 'month': 'month', 'week': 'week' };
+
 
     return(
       <div key={facetName} style={{ display: 'flex', alignItems: 'center', textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em" }}>
@@ -279,15 +362,32 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
           </ButtonGroup>
           <DateRangePicker value={formatToUTCString(dateRangeValue)} onChange= { (newDateRangeArr) => { handleDateRangeChange(newDateRangeArr) } } />
         </div>
+          {(() => {
+            if (columnType === 'date_range') { return(
+              <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: "2em", paddingBottom: "0.5em" }}>
+                Report Frequency  <Form.Control as='select' id='dateFrequency' name='dateFrequency' style={{ width: "13em", marginRight: "3em" }} value={dateFrequencyValue} onChange={(e) => handleDateFrequencyChange(e.target.value)} >
+                  {Object.entries(dateFrequencies).map(([label, value], index) => ( <option value={value} key={index}>{label}</option> ))}
+                </Form.Control></div>); }
+            return null
+          })()}
       </div>
     )
-} // const ReportsDatePicker = ({ facetName, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection })
+} // const ReportsDatePicker = ({ facetName, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection, columnType, dateFrequencyValue })
 
 
 const WorkflowStatModTablesContainer = ({modSection}) => {
   return (
     <div>
       <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
+                  <WorkflowStatTableCounters
+                    workflowProcessAtpId="ATP:0000140"
+                    title="File Upload Current Status"
+                    tagNames={Object.keys(file_upload_name_mapping)}
+                    nameMapping={file_upload_name_mapping}
+                    modSection={modSection}
+                    columnType="date_range"
+                  />
+
             {(() => {
               if (modSection === 'SGD') {
                 const manual_indexing_name_mapping = {
@@ -302,7 +402,7 @@ const WorkflowStatModTablesContainer = ({modSection}) => {
                     tagNames={Object.keys(manual_indexing_name_mapping)}
                     nameMapping={manual_indexing_name_mapping}
                     modSection={modSection}
-                    column_type="two_column"
+                    columnType="two_column"
                   />
                   ) }
               return null
@@ -426,12 +526,6 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
 }; // const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection })
 
 const WorkflowStatTablesContainer = ({modSection}) => {
-  const file_upload_name_mapping = {
-      'files uploaded': 'uploaded',
-      'file needed': 'needed',
-      'file unavailable': 'unavailable',
-      'file upload in progress': 'in progress'
-  }
   const text_conversion_name_mapping = {
       'file converted to text': 'converted',
       'text conversion needed': 'needed',
@@ -447,7 +541,7 @@ const WorkflowStatTablesContainer = ({modSection}) => {
         tagNames={Object.keys(file_upload_name_mapping)}
 	nameMapping={file_upload_name_mapping}
         modSection={modSection}
-        column_type="all_mods"
+        columnType="all_mods"
       />
       <WorkflowStatTableCounters
         workflowProcessAtpId="ATP:0000161"
@@ -455,7 +549,7 @@ const WorkflowStatTablesContainer = ({modSection}) => {
         tagNames={Object.keys(text_conversion_name_mapping)}
         nameMapping={text_conversion_name_mapping}
         modSection={modSection}
-        column_type="all_mods"
+        columnType="all_mods"
       />
     </div>
   );
