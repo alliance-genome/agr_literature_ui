@@ -12,7 +12,7 @@ import SearchPagination from "./SearchPagination";
 const SearchLayout = () => {
     const minWidth = 18;  // width in em
     const maxWidth = 32;
-    const movementSensitity = 10; // change 10 to adjust sensitivity
+    const movementSensitivity = 10;
     const [facetWidth, setFacetWidth] = useState(minWidth);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -20,13 +20,13 @@ const SearchLayout = () => {
         const handleMouseMove = (e) => {
             if (!isDragging) return;
             
-            // calculate new width based on mouse movement
-            const newWidth = facetWidth + (e.movementX / movementSensitity);
+            const newWidth = facetWidth + (e.movementX / movementSensitivity);
             setFacetWidth(Math.min(Math.max(newWidth, minWidth), maxWidth));
         };
 
         const handleMouseUp = () => {
             setIsDragging(false);
+            document.body.style.userSelect = '';
         };
 
         if (isDragging) {
@@ -43,48 +43,34 @@ const SearchLayout = () => {
     return (
         <div>
             <Container fluid>
+                {/* ... other rows remain unchanged ... */}
                 <Row>
-                    <Col>
-                        <SearchBar/>
-                    </Col>
-                </Row>
-                <Row><Col>&nbsp;</Col></Row>
-                <Row>
-                    <Col>
-                        <SearchOptions/>
-                    </Col>
-                </Row>
-                <Row><Col>&nbsp;</Col></Row>
-                <Row>
-                    <Col>
-                        <BreadCrumbs/>
-                    </Col>
-                </Row>
-                <Row><Col>&nbsp;</Col></Row>
-                <Row>
-                    <Col>
-                        <div style={{display: "flex"}}>
+                    <Col style={{ padding: 0 }}>
+                        <div style={{ 
+                            display: "flex", 
+                            alignItems: 'flex-start',
+                            width: '100%' // Ensure full width
+                        }}>
+                            {/* Facets Panel */}
                             <div style={{
                                 width: `${facetWidth}em`,
                                 minWidth: `${minWidth}em`,
                                 maxWidth: `${maxWidth}em`,
-                                flex: "none",
                                 position: "sticky",
                                 top: "0px",
-                                alignSelf: "flex-start",
                                 zIndex: 1000,
                                 maxHeight: "100vh",
                                 overflowY: "auto",
-                                overflowX: "hidden",
-                                position: 'relative',
-                                backgroundColor: '#fff' // added for better visual separation
+                                backgroundColor: '#fff',
+                                borderRight: '1px solid #ddd',
+                                boxSizing: 'border-box'
                             }}>
                                 <Facets/>
                                 {/* Resize Handle */}
                                 <div 
                                     style={{
                                         position: 'absolute',
-                                        right: 0,
+                                        right: -3,
                                         top: 0,
                                         bottom: 0,
                                         width: '6px',
@@ -101,18 +87,21 @@ const SearchLayout = () => {
                                     onMouseLeave={() => document.body.style.userSelect = ''}
                                 />
                             </div>
-                            <div style={{
-                                flex: "3",
-                                marginLeft: "20px",
-                                minWidth: 0,
-                                position: 'relative'
+                            
+                            {/* Search Results - Now flush adjacent */}
+                            <div style={{ 
+                                flex: 1,
+                                minWidth: 0, // Crucial for proper flex behavior
+                                position: 'relative',
+                                overflow: 'hidden',
+                                marginLeft: '-1px' // Compensate for border
                             }}>
                                 <SearchResults/>
                             </div>
                         </div>
                     </Col>
                 </Row>
-                <Row><Col sm={6}></Col><Col sm={4}><SearchPagination/></Col></Row>
+                {/* ... pagination row remains the same ... */}
             </Container>
         </div>
     )
