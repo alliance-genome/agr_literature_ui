@@ -1,6 +1,7 @@
 import {
   REPORTS_SET_DATE_RANGE_DICT,
-  REPORTS_SET_DATE_OPTION_DICT
+  REPORTS_SET_DATE_OPTION_DICT,
+  REPORTS_SET_DATE_FREQUENCY_DICT
 } from '../actions/reportsActions';
 
 import _ from "lodash";
@@ -10,7 +11,8 @@ import _ from "lodash";
 const initialState = {
 //   datePubmedAdded: "",
   dateRangeDict: {},
-  dateOptionDict: {}
+  dateOptionDict: {},
+  dateFrequencyDict: {}
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -25,7 +27,6 @@ export default function(state = initialState, action) {
       const dateRangeDictCopy = _.cloneDeep(state.dateRangeDict);
       if (!dateRangeDictCopy[action.payload.modSection]) { dateRangeDictCopy[action.payload.modSection] = {}; }
       dateRangeDictCopy[action.payload.modSection][action.payload.workflowProcessAtpId] = action.payload.newDateRange;
-console.log(dateRangeDictCopy);
       return {
         ...state,
         dateRangeDict: dateRangeDictCopy
@@ -38,10 +39,21 @@ console.log(dateRangeDictCopy);
       const dateOptionDictCopy = _.cloneDeep(state.dateOptionDict);
       if (!dateOptionDictCopy[action.payload.modSection]) { dateOptionDictCopy[action.payload.modSection] = {}; }
       dateOptionDictCopy[action.payload.modSection][action.payload.workflowProcessAtpId] = action.payload.newDateOption;
-console.log(dateOptionDictCopy);
       return {
         ...state,
         dateOptionDict: dateOptionDictCopy
+      }
+    case REPORTS_SET_DATE_FREQUENCY_DICT:
+      console.log('reducer REPORTS_SET_DATE_FREQUENCY_DICT');
+      console.log(action.payload.newDateFrequency);
+      console.log(action.payload.workflowProcessAtpId);
+      console.log(action.payload.modSection);
+      const dateFrequencyDictCopy = _.cloneDeep(state.dateFrequencyDict);
+      if (!dateFrequencyDictCopy[action.payload.modSection]) { dateFrequencyDictCopy[action.payload.modSection] = {}; }
+      dateFrequencyDictCopy[action.payload.modSection][action.payload.workflowProcessAtpId] = action.payload.newDateFrequency;
+      return {
+        ...state,
+        dateFrequencyDict: dateFrequencyDictCopy
       }
     default:
       return state;
