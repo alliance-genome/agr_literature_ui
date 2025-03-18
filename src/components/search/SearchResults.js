@@ -59,7 +59,7 @@ const SearchResultItem = ({ reference }) => {
       )
   }
 
-const TETRedirect = ({ curie }) => {
+  const TETRedirect = ({ curie }) => {
     const history = useHistory(); // Correct usage of useHistory
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
     const goToTET = () => {
@@ -71,7 +71,7 @@ const TETRedirect = ({ curie }) => {
                           <p id="TET_text_id">TET</p>
                       </Button>  : null
     );
-};
+  };
 
   function toggleAbstract() {
     setIsExpanded(!isExpanded);
@@ -174,24 +174,23 @@ const TETRedirect = ({ curie }) => {
 
 
 const SearchResults = () => {
-
     const searchResults = useSelector(state => state.search.searchResults);
     const searchSuccess = useSelector(state => state.search.searchSuccess);
     const searchError = useSelector(state => state.search.searchError);
     const dispatch = useDispatch();
 
     return (
-        <div>
+        <div style={{ width: '95%', margin: '0 auto' }}>
             {
                 searchResults.length > 0 && searchSuccess ?
-		<Container>
-		    {searchResults.map((reference, index) => (
-			<SearchResultItem key={`reference-${index}`} reference={reference} />
-		    ))}
-		</Container> : null
-            } 
+                    <Container fluid style={{ padding: 0 }}>
+                        {searchResults.map((reference, index) => (
+                            <SearchResultItem key={`reference-${index}`} reference={reference} />
+                        ))}
+                    </Container> : null
+            }
             {
-                 searchResults.length === 0 && searchSuccess ?
+                searchResults.length === 0 && searchSuccess ?
                     <div>
                         No Results found
                     </div> : null
