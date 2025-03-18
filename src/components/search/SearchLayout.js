@@ -10,9 +10,9 @@ import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
 
 const SearchLayout = () => {
-    const minWidth = 18;  // width in em
-    const maxWidth = 32;
-    const movementSensitivity = 10;
+    const minWidth = 288;  // 18em = 288px (assuming 16px base)
+    const maxWidth = 512;  // 32em = 512px
+    const movementSensitivity = 5; // More precise control
     const [facetWidth, setFacetWidth] = useState(minWidth);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -20,7 +20,7 @@ const SearchLayout = () => {
         const handleMouseMove = (e) => {
             if (!isDragging) return;
             
-            const newWidth = facetWidth + (e.movementX / movementSensitivity);
+            const newWidth = facetWidth + e.movementX;
             setFacetWidth(Math.min(Math.max(newWidth, minWidth), maxWidth));
         };
 
@@ -42,35 +42,50 @@ const SearchLayout = () => {
 
     return (
         <div>
-            <Container fluid>
-                {/* ... other rows remain unchanged ... */}
+            <Container fluid style={{ padding: 0 }}>
                 <Row>
+                    <Col style={{ padding: 0 }}>
+                        <SearchBar/>
+                    </Col>
+                </Row>
+                <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
+                <Row>
+                    <Col style={{ padding: 0 }}>
+                        <SearchOptions/>
+                    </Col>
+                </Row>
+                <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
+                <Row>
+                    <Col style={{ padding: 0 }}>
+                        <BreadCrumbs/>
+                    </Col>
+                </Row>
+                <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
+                <Row style={{ margin: 0 }}>
                     <Col style={{ padding: 0 }}>
                         <div style={{ 
                             display: "flex", 
-                            alignItems: 'flex-start',
-                            width: '100%' // Ensure full width
+                            width: '100%',
+                            position: 'relative'
                         }}>
                             {/* Facets Panel */}
                             <div style={{
-                                width: `${facetWidth}em`,
-                                minWidth: `${minWidth}em`,
-                                maxWidth: `${maxWidth}em`,
+                                width: `${facetWidth}px`,
+                                minWidth: `${minWidth}px`,
+                                maxWidth: `${maxWidth}px`,
                                 position: "sticky",
                                 top: "0px",
                                 zIndex: 1000,
-                                maxHeight: "100vh",
+                                height: "100vh",
                                 overflowY: "auto",
                                 backgroundColor: '#fff',
-                                borderRight: '1px solid #ddd',
-                                boxSizing: 'border-box'
                             }}>
                                 <Facets/>
                                 {/* Resize Handle */}
                                 <div 
                                     style={{
                                         position: 'absolute',
-                                        right: -3,
+                                        right: 0,
                                         top: 0,
                                         bottom: 0,
                                         width: '6px',
@@ -79,7 +94,8 @@ const SearchLayout = () => {
                                         zIndex: 1001,
                                         transition: 'background-color 0.2s',
                                         ':hover': {
-                                            backgroundColor: 'rgba(0, 0, 0, 0.2)'
+                                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                            width: '8px'
                                         }
                                     }}
                                     onMouseDown={() => setIsDragging(true)}
@@ -88,20 +104,20 @@ const SearchLayout = () => {
                                 />
                             </div>
                             
-                            {/* Search Results - Now flush adjacent */}
+                            {/* Search Results - Now Flush Adjacent */}
                             <div style={{ 
                                 flex: 1,
-                                minWidth: 0, // Crucial for proper flex behavior
+                                minWidth: 0,
                                 position: 'relative',
-                                overflow: 'hidden',
-                                marginLeft: '-1px' // Compensate for border
+				margin: 0,
+				padding: 0
                             }}>
                                 <SearchResults/>
                             </div>
                         </div>
                     </Col>
                 </Row>
-                {/* ... pagination row remains the same ... */}
+                <Row><Col sm={6}></Col><Col sm={4}><SearchPagination/></Col></Row>
             </Container>
         </div>
     )
