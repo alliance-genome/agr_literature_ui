@@ -3,6 +3,8 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
+import axios from "axios";
+import Modal from 'react-bootstrap/Modal';
 
 import { RowDisplayMeshTerms } from './BiblioDisplay';
 import { RowDisplayCopyrightLicense } from './BiblioDisplay';
@@ -172,28 +174,112 @@ const AlertDismissibleBiblioUpdate = () => {
   const updateAlert = useSelector(state => state.biblio.updateAlert);
   const updateFailure = useSelector(state => state.biblio.updateFailure);
   const updateMessages = useSelector(state => state.biblio.updateMessages);
-  let variant = 'danger';
-  let header = 'Update Failure';
-  if (updateFailure === 0) {
-    header = 'Update Success';
-    variant = 'success'; }
-  else {
-    header = 'Update Failure';
-    variant = 'danger'; }
-  if (updateAlert) {
-    if (updateFailure === 0) {
-      setTimeout(() => {
-        dispatch(closeBiblioUpdateAlert())
-      }, 2000) }
-    return (
-      <Alert variant={variant} onClose={() => dispatch(closeBiblioUpdateAlert())} dismissible>
-        <Alert.Heading>{header}</Alert.Heading>
-        {updateMessages.map((message, index) => (
-          <div key={`${message} ${index}`}>{message}</div>
-        ))}
-      </Alert>
-    );
-  } else { return null; }
+  const biblioEditorModalText = useSelector(state => state.biblio.biblioEditorModalText);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+    
+  const [showTetModal, setShowTetModal] = useState(false);
+  const [tetErrorMessage, setTetErrorMessage] = useState("");
+  const [modCorpusAssociationId, setModCorpusAssociationId] = useState(null);
+
+
+  useEffect(() => {
+    if (biblioEditorModalText.includes("Curated topic and entity tags")) {
+      const idMatch = biblioEditorModalText.match(/mod_corpus_association_id\s*=\s*(\d+)/);
+      if (idMatch) {
+        setModCorpusAssociationId(idMatch[1]);
+      }
+      const displayMessage = biblioEditorModalText.replace(/mod_corpus_association_id\s*=\s*\d+/, "");
+      setTetErrorMessage(displayMessage);
+      setShowTetModal(true);
+      dispatch(setBiblioEditorModalText(''));
+    }
+  }, [biblioEditorModalText, dispatch]);
+
+  useEffect(() => {
+    if (updateAlert && updateFailure > 0) {
+      const curatedTagsMessage = updateMessages.find(msg => 
+        msg.includes("Curated topic and entity tags")
+      );
+      if (curatedTagsMessage) {
+        const idMatch = curatedTagsMessage.match(/mod_corpus_association_id\s*=\s*(\d+)/);
+        if (idMatch) {
+          setModCorpusAssociationId(idMatch[1]);
+        }
+        setTetErrorMessage(
+          "Curated topic and entity tags or automated tags generated from your MOD " +
+          "are associated with this reference. Please check with the curator who added these tags."
+        );
+        setShowTetModal(true);
+        dispatch(closeBiblioUpdateAlert());
+      }
+    }
+  }, [updateAlert, updateMessages, dispatch]);
+
+
+  const handleDeleteTetTagsAndPaper = async () => {
+    if (!modCorpusAssociationId) {
+      return;
+    }
+    const url = `${process.env.REACT_APP_RESTAPI}/reference/mod_corpus_association/${modCorpusAssociationId}`;
+    try {
+      await axios.patch(url,
+        { 'corpus': false, 'force_out': true },
+        { headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" } }
+      );
+      setShowTetModal(false);
+      setModCorpusAssociationId(null);
+      window.location.reload();
+    } catch (err) {
+      console.error("Failed to delete workflow / TET tags and remove the paper from mod corpus:", err);
+      const errorDetail = err.response?.data?.detail || err.response?.data?.message || "Deletion failed";
+      dispatch(setBiblioEditorModalText(errorDetail));
+    }
+  };
+
+  const handleCloseTetModal = () => {
+    setShowTetModal(false);
+    setModCorpusAssociationId(null);
+    setTetErrorMessage("");
+  };
+
+  const variant = updateFailure === 0 ? 'success' : 'danger';
+  const header = updateFailure === 0 ? 'Update Success' : 'Update Failure';
+
+  return (
+    <>
+      {/* Curated Tags Modal */}
+      <Modal show={showTetModal} onHide={handleCloseTetModal}>
+        <Modal.Header closeButton>
+          <Modal.Title>Curated Topic/Entity Tags Found</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>{tetErrorMessage}</p>
+          {modCorpusAssociationId && (
+            <p className="text-muted small">Association ID: {modCorpusAssociationId}</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseTetModal}>
+            Keep Tags and Paper
+          </Button>
+          <Button variant="danger" onClick={handleDeleteTetTagsAndPaper}>
+            Delete Tags and Paper
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Regular Alert (for non-curated-tag messages) */}
+      {updateAlert && !showTetModal ? (
+        <Alert variant={variant} onClose={() => dispatch(closeBiblioUpdateAlert())} dismissible>
+          <Alert.Heading>{header}</Alert.Heading>
+          {updateMessages.map((message, index) => (
+            <div key={`${message} ${index}`}>{message}</div>
+          ))}
+        </Alert>
+      ) : null}
+
+    </>
+  );
 }
 
 const BiblioSubmitUpdating = () => {

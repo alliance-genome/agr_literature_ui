@@ -21,29 +21,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
-const TopicEntityTable = () => {
-  const dispatch = useDispatch();
-  const accessToken = useSelector(state => state.isLogged.accessToken);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const testerMod = useSelector((state) => state.isLogged.testerMod);
-  const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
-  const [topicEntityTags, setTopicEntityTags] = useState([]);
-  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
-  const filteredTags = useSelector(state => state.biblio.filteredTags);
-  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [selectedCurie, setSelectedCurie] = useState(null);
-  const [showCurieModal, setShowCurieModal] = useState(false);
-  const [fullNote, setFullNote] = useState('');
-  const [showNoteModal, setShowNoteModal] = useState(false);
-  const [fullSourceDesc, setFullSourceDesc] = useState('');
-  const [showSourceDescModal, setShowSourceDescModal] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [firstFetch, setFirstFetch] = useState(true);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const gridRef = useRef();
-
-  const handleDownload = (option) => {
+export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNameFront) => {
     let dataToDownload = [];
     let headers = [];
     let fields = [];
@@ -98,8 +76,7 @@ const TopicEntityTable = () => {
     const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
     const encodedUri = encodeURI(tsvContent);
 
-    // generate the file name with referenceCurie
-    const fileName = `${referenceCurie}_tet_data_${option}.tsv`;
+    const fileName = `${fileNameFront}_${option}.tsv`;
 
     // trigger file download
     const link = document.createElement('a');
@@ -110,9 +87,55 @@ const TopicEntityTable = () => {
     document.body.removeChild(link);
   };
     
+
+export const DownloadDropdownOptionsButton = ({option, gridRef, colDefs, rowData, fileNameFront}) => {
+  return(
+    <Dropdown className="ms-auto">
+      <Dropdown.Toggle variant="primary" id="dropdown-download-options">
+        Download Options
+      </Dropdown.Toggle>
+
+      <Dropdown.Menu>
+        <Dropdown.Item onClick={() => handleDownload('displayedData', gridRef, colDefs, rowData, fileNameFront)}>
+          Download Displayed Data
+        </Dropdown.Item>
+        <Dropdown.Item onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront)}>
+          Download All Columns
+        </Dropdown.Item>
+        <Dropdown.Item onClick={() => handleDownload('withoutFilters', gridRef, colDefs, rowData, fileNameFront)}>
+          Download Without Filters
+        </Dropdown.Item>
+      </Dropdown.Menu>
+    </Dropdown>
+  );
+};
+
+
+const TopicEntityTable = () => {
+  const dispatch = useDispatch();
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const testerMod = useSelector((state) => state.isLogged.testerMod);
+  const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
+  const [topicEntityTags, setTopicEntityTags] = useState([]);
+  const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
+  const filteredTags = useSelector(state => state.biblio.filteredTags);
+  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [selectedCurie, setSelectedCurie] = useState(null);
+  const [showCurieModal, setShowCurieModal] = useState(false);
+  const [fullNote, setFullNote] = useState('');
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [fullSourceDesc, setFullSourceDesc] = useState('');
+  const [showSourceDescModal, setShowSourceDescModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [firstFetch, setFirstFetch] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const gridRef = useRef();
+
   useEffect(() => {
     const fetchData = async () => {
-      const taxonData = await getCurieToNameTaxon(accessToken);
+      const taxonData = await getCurieToNameTaxon();
       dispatch(setCurieToNameTaxon(taxonData));
     };
     fetchData();
@@ -335,9 +358,9 @@ const CheckDropdownItem = React.forwardRef(
     );
   }
 );
-
-  const CheckboxDropdown =  ({ items }) => {
-   const handleChecked = (key, event) => {
+            
+const CheckboxDropdown =  ({ items }) => {
+  const handleChecked = (key, event) => {
     //console.log('touch item here:' + key + " status: " + event.target.checked);
      const newItems = [...items];
      let item=newItems.find(i => i.id === key);
@@ -560,6 +583,9 @@ const CheckDropdownItem = React.forwardRef(
     return (params) => params.data.topic_entity_tag_id;
   }, []);
 
+  // generate the file name with referenceCurie
+  const fileNameFront = `${referenceCurie}_tet_data`;
+
   return (
 
     <div>
@@ -588,25 +614,11 @@ const CheckDropdownItem = React.forwardRef(
              <div className="d-flex justify-content-between" style={{ paddingBottom: '10px' }}>
                {/* "Hide/Show Columns" Button */}
                <CheckboxDropdown items={items} />
-            
-               {/* Download Options Button */}
-               <Dropdown className="ms-auto">
-                 <Dropdown.Toggle variant="primary" id="dropdown-download-options">
-                   Download Options
-                 </Dropdown.Toggle>
-
-                 <Dropdown.Menu>
-                   <Dropdown.Item onClick={() => handleDownload('displayedData')}>
-                     Download Displayed Data
-                   </Dropdown.Item>
-                   <Dropdown.Item onClick={() => handleDownload('allColumns')}>
-                     Download All Columns
-                   </Dropdown.Item>
-                   <Dropdown.Item onClick={() => handleDownload('withoutFilters')}>
-                     Download Without Filters
-                   </Dropdown.Item>
-                 </Dropdown.Menu>
-               </Dropdown>
+               <DownloadDropdownOptionsButton
+                 gridRef={gridRef}
+                 colDefs={colDefs}
+                 rowData={topicEntityTags}
+                 fileNameFront={fileNameFront} />
              </div>
            </Col>
          </Row>
@@ -633,6 +645,6 @@ const CheckDropdownItem = React.forwardRef(
         </Row>
       </Container>
     </div>);
-} // const EntityTable
+} // const TopicEntityTable
 
 export default TopicEntityTable;

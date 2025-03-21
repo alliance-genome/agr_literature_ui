@@ -35,8 +35,8 @@ export const sortButtonModsQuery = (mod, sortType) => dispatch => {
   }
   const sortGetModsQuery = async () => {
     const url = (sortType === 'needs_review') ? 
-                restUrl + '/sort/need_review?count=20&mod_abbreviation=' + mod :
-                restUrl + '/sort/prepublication_pipeline?count=20&mod_abbreviation=' + mod;
+                restUrl + '/sort/need_review?count=100&mod_abbreviation=' + mod :
+                restUrl + '/sort/prepublication_pipeline?count=100&mod_abbreviation=' + mod;
     // console.log(url);
     const res = await fetch(url, {
       method: 'GET',

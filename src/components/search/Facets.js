@@ -49,7 +49,10 @@ export const RENAME_FACETS = {
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
-    "workflow_tags.workflow_tag_id.keyword": "Workflow Tag ID",
+    "file_workflow": "File workflow",
+    "reference_classification": "Reference classification",
+    "entity_extraction": "Entity extraction",
+    "manual_indexing": "Manual indexing",
     "datePubmedAdded": {
         label: "Date Range: Added to PubMed",
         value: (state) => state.search.datePubmedAdded,
@@ -75,7 +78,7 @@ export const RENAME_FACETS = {
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
-    "Workflow Tags": ["workflow_tags.workflow_tag_id"],
+    "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing"], 
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name","language"],
     "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
@@ -191,7 +194,16 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status","mod reference types", "category", "pubmed types"];
+    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types"];
+    const [openSubFacets, setOpenSubFacets] = useState(new Set());
+
+    const toggleSubFacet = (subFacetLabel) => {
+        const newOpenSubFacets = new Set([...openSubFacets]);
+        newOpenSubFacets.has(subFacetLabel) ?
+            newOpenSubFacets.delete(subFacetLabel) :
+            newOpenSubFacets.add(subFacetLabel);
+        setOpenSubFacets(newOpenSubFacets);
+    };
 
     const StandardFacetCheckbox = ({facet, value}) => {
         return(
@@ -247,46 +259,73 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     return (
         <div className="facet-container">
-            {Object.entries(searchFacets).length > 0 && facetsToInclude.map(facetToInclude => {
-		    let key = facetToInclude.replaceAll(' ', '_');
-                    if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key)){
-                        key = key + '.keyword';
-                    }
-                    if (key in searchFacets) {
-                        let value = searchFacets[key];
-                        return (
-                            <div key={facetToInclude} className="facet-container">
-                               <h5>{renameFacets.hasOwnProperty(key) ? renameFacets[key] : key.replace('.keyword', '').replaceAll('_', ' ')}</h5>
-                               {facetToInclude === 'authors.name' ? <AuthorFilter/> : ''}
-			       {value.buckets && value.buckets.map(bucket => (
-                                  <Container key={bucket.key}>
-                                     <Row className="align-items-center facet-item">
-                                        <Col xs={3} sm={2}>
-                                          {negatedFacetCategories.includes(facetToInclude) ? <NegatedFacetCheckbox facet = {key} value ={bucket.key}/> : <StandardFacetCheckbox facet = {key} value ={bucket.key}/>}
-                                        </Col>
-                                        <Col xs={6} sm={7}>
-                                          <span dangerouslySetInnerHTML={{__html: bucket.name ? bucket.name : bucket.key}} />
-                                        </Col>
-                                        <Col xs={3} sm={3}>
-                                          <Badge variant="secondary">
-                                            {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && bucket.docs_count !== undefined ? bucket.docs_count.doc_count.toLocaleString() : bucket.doc_count.toLocaleString()}
-                                          </Badge>
-                                       </Col>
-                                    </Row>
-                                 </Container>
-
-			       ))}
-                               <ShowMoreLessAllButtons facetLabel={key} facetValue={value} />
-                               <br/>
-                            </div>
-                        )
-                    } else {
-                        return null
-                    }
+            {facetsToInclude.map(facetToInclude => {
+                let key = facetToInclude.replaceAll(' ', '_');
+                if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 
+                     'file_workflow', 'manual_indexing', 'reference_classification', 'entity_extraction'].includes(key)) {
+                    key = key + '.keyword';
                 }
-            )}
+                
+                if (!searchFacets[key]?.buckets?.length) return null;
+
+                const displayName = renameFacets[key] || key.replace(/(\.keyword|_)/g, ' ');
+                const isOpen = openSubFacets.has(facetToInclude);
+
+                return (
+                    <div key={facetToInclude} style={{ marginLeft: '15px', marginBottom: '5px' }}>
+                        <Button
+                            variant="light"
+                            size="md"
+                            onClick={() => toggleSubFacet(facetToInclude)}
+                            style={{ 
+                                textAlign: 'left',
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                fontSize: '1rem' // slightly smaller than main categories
+                            }}
+                        >
+                            {isOpen ? 
+                                <IoIosArrowDropdownCircle style={{ marginRight: '8px', fontSize: '1.2rem' }} /> : 
+                                <IoIosArrowDroprightCircle style={{ marginRight: '8px', fontSize: '1.2rem' }} />
+                            }
+                            {displayName}
+                        </Button>
+                        
+                        <Collapse in={isOpen}>
+                            <div style={{ marginLeft: '20px' }}>
+                                {facetToInclude === 'authors.name' && <AuthorFilter />}
+                                {searchFacets[key].buckets.map(bucket => (
+                                    <Container key={bucket.key}>
+                                        <Row className="align-items-center facet-item">
+                                            <Col xs={3} sm={2}>
+                                                {negatedFacetCategories.includes(facetToInclude) ? 
+                                                    <NegatedFacetCheckbox facet={key} value={bucket.key} /> : 
+                                                    <StandardFacetCheckbox facet={key} value={bucket.key} />
+                                                }
+                                            </Col>
+                                            <Col xs={6} sm={7}>
+                                                <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
+                                            </Col>
+                                            <Col xs={3} sm={3}>
+                                                <Badge variant="secondary">
+                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && 
+                                                     bucket.docs_count !== undefined ? 
+                                                     bucket.docs_count.doc_count.toLocaleString() : 
+                                                     bucket.doc_count.toLocaleString()}
+                                                </Badge>
+                                            </Col>
+                                        </Row>
+                                    </Container>
+                                ))}
+                                <ShowMoreLessAllButtons facetLabel={key} facetValue={searchFacets[key]} />
+                            </div>
+                        </Collapse>
+                    </div>
+                );
+            })}
         </div>
-    )
+    );
 }
 
 const AuthorFilter = () => {

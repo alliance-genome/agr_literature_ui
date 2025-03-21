@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import {
-  ateamGetTopicDescendants,
   getDescendantATPIds,
   changeFieldEntityAddGeneralField,
   changeFieldEntityAddTaxonSelect,
@@ -88,7 +87,7 @@ const TopicEntityCreate = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const taxonData = await getCurieToNameTaxon(accessToken);
+      const taxonData = await getCurieToNameTaxon();
       const modData = await getModToTaxon();
       taxonData["use_wb"] = "other nematode";
       setCurieToNameTaxon(taxonData);
@@ -161,8 +160,8 @@ const TopicEntityCreate = () => {
   };
 
   useEffect(() => {
-    getDescendantATPIds(accessToken, "ATP:0000005").then((data) => setGeneDescendants(data));
-    getDescendantATPIds(accessToken, "ATP:0000006").then((data) => setAlleleDescendants(data));
+    getDescendantATPIds("ATP:0000005").then((data) => setGeneDescendants(data));
+    getDescendantATPIds("ATP:0000006").then((data) => setAlleleDescendants(data));
   }, [accessLevel, accessToken, dispatch]);
 
   useEffect(() => {
@@ -260,13 +259,6 @@ const TopicEntityCreate = () => {
     };
     fetchSourceId().catch(console.error);
   }, [accessLevel, accessToken]);
-
-  const topicDescendants = useSelector((state) => state.biblio.topicDescendants);
-  useEffect(() => {
-    if (topicDescendants.size === 0 && accessToken !== null) {
-      dispatch(ateamGetTopicDescendants(accessToken));
-    }
-  }, [topicDescendants, accessToken, dispatch]);
 
   useEffect(() => {
     if (taxonSelect === "use_wb" && taxonSelectWB !== "" && taxonSelectWB !== undefined && entityTypeSelect !== "") {
@@ -499,7 +491,7 @@ const TopicEntityCreate = () => {
       
     if (row.entityResultList && row.entityResultList.length > 0) {
       for (const entityResult of row.entityResultList.values()) {
-        if (!["no Alliance curie", "duplicate", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie"].includes(entityResult.curie)) {
+          if (!["no Alliance curie", "duplicate", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"].includes(entityResult.curie)) {
           let entityIdValidation = "alliance";
           if (row.taxonSelect === "use_wb" && row.taxonSelectWB && row.entityTypeSelect) {
             entityIdValidation = "WB";
@@ -670,23 +662,21 @@ const TopicEntityCreate = () => {
                 onSearch={async (query) => {
 	          setTopicSelectLoading(true);	    
                   try {
-                    const results = await FetchTypeaheadOptions(
-                      `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/atpterm/search?limit=10&page=0`,
-                      query,
-                      accessToken
-		    );
-
-		    const filteredResults = (results || [])
-                      .filter((item) => !item.obsolete)
-                      .map((item) => [item.name, item.curie]);
-
-                    dispatch(setTypeaheadName2CurieMap(Object.fromEntries(filteredResults)));
-
-                    setTypeaheadOptions(
-                      filteredResults
-		        .filter((item) => topicDescendants.has(item[1]))
-			  .map((item) => item[0])
-                    );
+                    let url =`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
+                    if (accessLevel) {
+                      url += "?mod_abbr=" + accessLevel
+                    }
+                    const results = await FetchTypeaheadOptions(url);
+                    if (!Array.isArray(results)) {
+                       throw new Error("Invalid response format");
+                    }
+		    const nameToCurie = {};
+		    for (const item of results) {
+			nameToCurie[item.name] = item.curie;
+		    }
+                    
+		    dispatch(setTypeaheadName2CurieMap(nameToCurie));
+		    setTypeaheadOptions(Object.keys(nameToCurie));
                   } catch (error) {
                     console.error("Error during topic search:", error);
                     setTypeaheadOptions([]);
@@ -794,18 +784,16 @@ const TopicEntityCreate = () => {
                   ref={speciesTypeaheadRef}
                   onSearch={async (query) => {
 	            setSpeciesSelectLoading(true);
-		    try {
-		      const results = await FetchTypeaheadOptions(
-                        `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
-                        query,
-                        accessToken
-                      );
+                    try {
+                      const url = `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_species/${encodeURIComponent(query)}`;
+                      const results = await FetchTypeaheadOptions(url);
+
                       setSpeciesSelectLoading(false);
                       if (results) {
-                        setTypeaheadOptions(results.map((item) => item.name + " " + item.curie));
+                        setTypeaheadOptions(results.map((item) => `${item.name} ${item.curie}`));
                       }
                     } catch (error) {
-		       console.error("Error fetching typeahead options:", error);
+                       console.error("Error fetching typeahead options:", error);
                         setSpeciesSelectLoading(false);
                     }
 		  }}
@@ -840,7 +828,7 @@ const TopicEntityCreate = () => {
                   row.entityResultList.length > 0 &&
                   row.entityResultList.map((entityResult, idx) => {
                     let colDisplayClass = "Col-display";
-                    if (["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie"].includes(entityResult.curie)) {
+                      if (["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"].includes(entityResult.curie)) {
                       colDisplayClass = "Col-display-warn";
                     } else if (entityResult.curie === "duplicate") {
                       colDisplayClass = "Col-display-grey";

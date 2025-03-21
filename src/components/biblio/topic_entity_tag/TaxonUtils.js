@@ -44,55 +44,49 @@ export const getModToTaxon = async () => {
 
 };
 
-export const getCurieToNameTaxon = async (accessToken) => {
-  const taxonData = await getModToTaxon();  
-  const taxon_ids = Object.values(taxonData).flat().join(' ') + ' NCBITaxon:9606';  
-  const taxonToNameMapping = {'': ''};
+export const getCurieToNameTaxon = async () => {
+  const taxonData = await getModToTaxon();
+
+  // flatten into an array of taxon IDs
+  // add "NCBITaxon:9606" for human
+  const allTaxons = Object.values(taxonData).flat().concat("NCBITaxon:9606");
+
+  // make them unique
+  const uniqueTaxonIDs = [...new Set(allTaxons)];
+  const taxonToNameMapping = { "": "" };
   try {
-    const response = await axios.post(
-      `${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=20&page=0`,
-      {
-        "searchFilters": {
-          "nameFilter": {
-            "curie": {
-              "queryString": taxon_ids,
-              "tokenOperator": "OR",
-              "useKeywordFields": true,
-              "queryType": "matchQuery"
-            }
+    const restUrl = process.env.REACT_APP_RESTAPI;
+    const requests = uniqueTaxonIDs.map(async (taxonID) => {
+      const url = `${restUrl}/topic_entity_tag/search_species/${encodeURIComponent(taxonID)}`;
+      const response = await axios.get(url, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      // this endpoint returns something like: [{ curie: "...", name: "..." }]
+      const data = response.data;
+
+      if (Array.isArray(data)) {
+        for (const obj of data) {
+          if (obj.curie && obj.name) {
+            taxonToNameMapping[obj.curie] = obj.name;
           }
         }
-      },
-      {
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer ' + accessToken
-        }
       }
-    );
+    });
 
-    // console.log("API Response:", JSON.stringify(response.data.results));
-
-    if (response.data.results) {
-      for (const entityResult of response.data.results) {
-        if (entityResult.curie && entityResult.name) {
-          //taxonToNameMapping[entityResult.curie] = entityResult.name.split(" NCBITaxon")[0];
-	  taxonToNameMapping[entityResult.curie] = entityResult.name;  
-        }
-      }
-    }
-
-    if (Object.keys(taxonToNameMapping).filter(key => key !== '').length < 8) {
+    // Wait for all requests to finish
+    await Promise.all(requests);
+    if (
+      Object.keys(taxonToNameMapping).filter((key) => key !== "").length < 8
+    ) {
       return fallbackTaxonCurieToNameMapping();
     }
     return taxonToNameMapping;
-
   } catch (error) {
-    console.error('Failed to fetch Curie to Name Taxon data', error);
-    //return {};
+    console.error("Failed to fetch Curie to Name Taxon data", error);
     return fallbackTaxonCurieToNameMapping();
   }
-
 };
 
 export const fallbackTaxonCurieToNameMapping = () => {
