@@ -17,6 +17,7 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
+import {render} from "@testing-library/react";
 
 const WorkflowStatTable = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection }) => {
   const [data, setData] = useState([]);
@@ -274,29 +275,118 @@ const WorkflowStatTablesContainer = ({modSection}) => {
 const WorkflowDiagram = () => {
 
     const [tagData, setTagData] = useState([]);
+
+    const svgRef = useRef();
+
     useEffect(() => {
         const fetchDiagramData = async () => {
             let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/workflow_diagram/All`;
             try {
                 const result = await axios.get(url);
                 setTagData(result.data);
+                let nestedData = {tag: "ATP:0000141", children :[]};
             } catch (error) {
                 console.error('Error fetching data:', error);
             } finally {
-                //do things
+
             }
         }
         fetchDiagramData();
     },[]);
 
-    const svgCanvas = d3.select('#canvas')
-        .append("svg")
-        .attr("width", 600)
-        .attr("height", 400)
-        .style("border", "1px solid black")
+    useEffect(() => {
+        const svg = d3.select(svgRef.current);
+        svg.selectAll("*").remove();
+        const rootNode= "ATP:0000141";
+        const maxWidth = 12; //Number of boxes wide max
+        const maxHeight = 30; //Max rows
+        const boxWidth = 340;
+        const boxHeight = 50;
+        const txtPadding = 5;
+        const x = d3.scaleLinear([0, maxWidth+1], [0, 4500]);
+        const y = d3.scaleLinear([0, maxHeight+1], [0, 4000]);
+
+        let renderedTags = [];
+        let spaceUsed = [];
+
+        const renderNode = (node, row, column) => {
+            let nodeData = tagData.find(x=>x.tag ===node)
+            renderedTags.push(node);
+
+            //This is inefficent.
+            spaceUsed.push({row,column});
+            if(!nodeData){
+                nodeData = {tag: node, transitions_to : ''}
+            }
+
+            let currentNode = svg.append("g")
+            currentNode.append("text")
+                .datum(nodeData)
+                .attr("class", "tag")
+                .attr("x", x(column)+txtPadding)
+                .attr("y", y(row)- (boxHeight/2) +20   )
+                .text(nodeData.tag)
+                .on("mouseover", function(d){
+                    console.log(d);
+                })
+            currentNode.append("text")
+                .attr("x", x(column)+txtPadding)
+                .attr("y", y(row)- (boxHeight/2)+40)
+                .text(nodeData.tag_name)
+
+            currentNode.append("rect")
+                .attr("width", boxWidth)
+                .attr("height", boxHeight)
+                .attr("x", x(column))
+                .attr("y", y(row)-(boxHeight/2))
+                .style("fill-opacity", 0)
+                .style("stroke-width", 1)
+                .style("stroke", "black");
+
+            if(nodeData.transitions_to){
+                let distinctTransitions = [...new Set(nodeData.transitions_to)];
+
+                //Filter out already rendered tags
+                distinctTransitions = distinctTransitions.filter( function( tag ) {
+                    return !renderedTags.includes( tag );
+                });
+                let childColumn = Math.max(column - distinctTransitions.length +1, 1);
+                //WE NEED To remove dupes first so we know how many nodes are below
+                distinctTransitions.forEach(childNode => {
+                    //Looking for space
+                    for(let i=0;spaceUsed.length>i;i++){
+                        if(spaceUsed[i].row === row+1 && spaceUsed[i].column === childColumn){
+                            childColumn++;
+                            i = 0;
+                            console.log("check next column");
+                        }
+
+                    }
+                    svg.append("line")          // attach a line
+                        .style("stroke", "black")  // colour the line
+                        .attr("x1", x(column)+(boxWidth/2))     // x position of the first end of the line
+                        .attr("y1", y(row)+(boxHeight/2))      // y position of the first end of the line
+                        .attr("x2", x(childColumn)+(boxWidth/2))     // x position of the second end of the line
+                        .attr("y2", y(row+1)-(boxHeight/2));
+                    renderNode(childNode, row+1, childColumn)
+                    childColumn++;
+                })
+            }
+        }
+
+
+        //var result = tagData.find(node=>node.tag ===rootNode);
+        if(tagData){
+            renderNode(rootNode, 1, 4 );
+            console.log(spaceUsed);
+        }
+
+    }, [tagData]);
+
+
 
     return(
-        <div id="canvas"></div>
+        <svg ref={svgRef} width={4500} height={4000}></svg>
     )
 }
 
