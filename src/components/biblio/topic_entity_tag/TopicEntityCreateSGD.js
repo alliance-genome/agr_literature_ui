@@ -486,7 +486,7 @@ const TopicEntityCreateSGD = () => {
     setNoTetDataLoading(true);
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/set_no_tet_status/${accessLevel}/${referenceJsonLive.curie}`,
+        `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/set_no_tet_status/${accessLevel}/${referenceJsonLive.curie}/${uid}`,
         {},
         {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -508,17 +508,21 @@ const TopicEntityCreateSGD = () => {
       {/* Messages Area */}
       <Row className="form-group row mb-3">
         <Col sm="12">
-          {messages.map((msg, idx) => (
-            <Alert
-              key={idx}
-              variant={msg.variant}
-              onClose={() => handleCloseMessage(idx)}
-              dismissible
-            >
-              {msg.text}
-            </Alert>
-          ))}
-        </Col>
+          {messages
+            .filter((msg, index, self) =>
+              index === self.findIndex(m => m.text === msg.text)
+            )
+            .map((msg, idx) => (
+              <Alert
+                key={idx}
+                variant={msg.variant}
+                onClose={() => handleCloseMessage(idx)}
+                dismissible
+              >
+                {msg.text}
+              </Alert>
+            ))}
+	</Col>
       </Row>
 
       {/* Existing Tag Messages */}
