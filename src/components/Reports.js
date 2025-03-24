@@ -555,13 +555,131 @@ const WorkflowStatTablesContainer = ({modSection}) => {
   );
 };
 
+const QCReportTablesContainer = ({modSection}) => {
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const containerStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '15px',
+  };
+
+  const [key, setKey] = useState(0);
+  const gridRef = useRef();
+  let rowData = [];
+  const boldCellStyle = (params) => {
+    if (params.colDef.field === 'tag_name') {
+      return { fontWeight: 'bold', textAlign: 'left' };
+    }
+    return null;
+  };
+  const columns = [
+    {
+      headerName: 'Status',
+      field: 'tag_name',
+      flex: 1,
+      cellStyle: boldCellStyle,
+      headerClass: 'wft-bold-header'
+    },
+    {
+      headerName: 'Entity Type',
+      field: 'total',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header'
+    },
+    {
+      headerName: 'Curie',
+      field: 'total',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header'
+    },
+    {
+      headerName: 'Entity Name',
+      field: 'total',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header'
+    }
+  ];
+  const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+//       let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
+      const url = 'https://dev.alliancegenome.org/logs_dev/obsolete_entity_report.log';
+      setIsLoadingData(true);
+      try {
+        const result = await axios.get(url);
+// Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at https://dev.alliancegenome.org/logs_dev/obsolete_entity_report.log. (Reason: CORS header 'Access-Control-Allow-Origin' missing). Status code: 200.
+// Needs  Access-Control-Allow-Origin: *  Serverside
+        console.log('result');
+        console.log(result);
+        console.log('result.data');
+        console.log(result.data);
+        setData(result.data);
+        setKey(prevKey => prevKey + 1);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+
+  return (
+    <div>
+      <h3 style={{ marginBottom: '30px' }}>QC Reports</h3>
+      <div style={containerStyle}>
+        <Container fluid style={{ width: '90%' }}>
+          <Row>
+            <Col>
+              {isLoadingData ? (
+                <div className="text-center">
+                  <Spinner animation="border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                </div>
+              ) : (
+                <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                  <AgGridReact
+                    key={key}
+                    ref={gridRef}
+                    rowData={rowData}
+                    columnDefs={columns}
+                    pagination={false}
+                    paginationPageSize={20}
+                    domLayout="autoHeight"
+                    gridOptions = {gridOptions}
+                  />
+                </div>
+              )}
+            </Col>
+          </Row>
+        </Container>
+      </div>
+    </div>
+  );
+};
+
 const ReportsContainer = () => {
   const mods = useSelector(state => state.app.mods);
   return (
     <div>
       <Tabs mountOnEnter="true" defaultActiveKey="all" id="uncontrolled-tab-example">
         <Tab eventKey="all" title="All">
-          <WorkflowStatTablesContainer modSection='All' />
+          <Tabs mountOnEnter="true" defaultActiveKey="all_qcreport" id="all-stats-tab">
+            <Tab eventKey="all_stats" title="Workflow Statistics">
+              <WorkflowStatTablesContainer modSection='All' />
+            </Tab>
+            <Tab eventKey="all_qcreport" title="QC Reports">
+              <QCReportTablesContainer modSection='All' />
+            </Tab>
+          </Tabs>
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>
