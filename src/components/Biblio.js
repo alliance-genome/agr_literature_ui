@@ -339,6 +339,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
       referencefileValue = (
         <div>
           <button className='button-to-link' onClick={ () => dispatch(downloadReferencefile(referencefileDict['referencefile_id'], filename, accessToken)) } >
+            <div>{filename}</div>
           </button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}
         </div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
