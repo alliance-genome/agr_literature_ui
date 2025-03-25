@@ -8,7 +8,7 @@ import Form from 'react-bootstrap/Form';
 
 import { DownloadDropdownOptionsButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
-import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict } from '../actions/reportsActions';
+import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict } from '../actions/reportsActions';
 
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
@@ -556,6 +556,8 @@ const WorkflowStatTablesContainer = ({modSection}) => {
 };
 
 const QCReportTablesContainer = ({modSection}) => {
+  const qcreportDict = useSelector(state => state.reports.qcreportDict);
+
   const [isLoadingData, setIsLoadingData] = useState(false);
   const containerStyle = {
     display: 'flex',
@@ -605,10 +607,10 @@ const QCReportTablesContainer = ({modSection}) => {
   const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
   const [data, setData] = useState([]);
 
+
   useEffect(() => {
     const fetchData = async () => {
-//       let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
-      const url = 'https://dev.alliancegenome.org/logs_dev/obsolete_entity_report.log';
+      const url = `${process.env.REACT_APP_RESTAPI}/check/check_obsolete_entities`;
       setIsLoadingData(true);
       try {
         const result = await axios.get(url);
@@ -627,8 +629,9 @@ const QCReportTablesContainer = ({modSection}) => {
       }
     };
 
-    fetchData();
-  }, []);
+    if (qcreportDict['date-produced'] === null) {
+      fetchData(); }
+  }, [qcreportDict]);
 
 
   return (
