@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Spinner, Tabs, Tab, Button, ButtonGroup } from 'react-bootstrap';
 import Container from "react-bootstrap/Container";
@@ -556,7 +556,8 @@ const WorkflowStatTablesContainer = ({modSection}) => {
 };
 
 const QCReportTablesContainer = ({modSection}) => {
-  const qcreportDict = useSelector(state => state.reports.qcreportDict);
+  const dispatch = useDispatch();
+  const qcReportDict = useSelector(state => state.reports.qcReportDict);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
   const containerStyle = {
@@ -567,46 +568,9 @@ const QCReportTablesContainer = ({modSection}) => {
 
   const [key, setKey] = useState(0);
   const gridRef = useRef();
-  let rowData = [];
-  const boldCellStyle = (params) => {
-    if (params.colDef.field === 'tag_name') {
-      return { fontWeight: 'bold', textAlign: 'left' };
-    }
-    return null;
-  };
-  const columns = [
-    {
-      headerName: 'Status',
-      field: 'tag_name',
-      flex: 1,
-      cellStyle: boldCellStyle,
-      headerClass: 'wft-bold-header'
-    },
-    {
-      headerName: 'Entity Type',
-      field: 'total',
-      flex: 1,
-      cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header'
-    },
-    {
-      headerName: 'Curie',
-      field: 'total',
-      flex: 1,
-      cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header'
-    },
-    {
-      headerName: 'Entity Name',
-      field: 'total',
-      flex: 1,
-      cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header'
-    }
-  ];
   const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
-  const [data, setData] = useState([]);
 
+  const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -614,14 +578,9 @@ const QCReportTablesContainer = ({modSection}) => {
       setIsLoadingData(true);
       try {
         const result = await axios.get(url);
-// Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at https://dev.alliancegenome.org/logs_dev/obsolete_entity_report.log. (Reason: CORS header 'Access-Control-Allow-Origin' missing). Status code: 200.
-// Needs  Access-Control-Allow-Origin: *  Serverside
-        console.log('result');
-        console.log(result);
-        console.log('result.data');
-        console.log(result.data);
-        setData(result.data);
+        dispatch(setQcreportDict(result.data));
         setKey(prevKey => prevKey + 1);
+        // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -629,15 +588,31 @@ const QCReportTablesContainer = ({modSection}) => {
       }
     };
 
-    if (qcreportDict['date-produced'] === null) {
+    if (qcReportDict['date-produced'] === null) {
       fetchData(); }
-  }, [qcreportDict]);
+  }, [qcReportDict]);
 
+  const columnDefs = [
+    { headerName: "Entity Type", field: "entity_type", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Entity Status", field: "entity_status", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Entity Curie", field: "entity_curie", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Entity Name", field: "entity_name", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
+  ];
+
+  let rowData = [];
+  if ( ( qcReportDict["obsolete_entities"] !== null) && ( modSection in qcReportDict["obsolete_entities"] ) ) {
+    rowData = qcReportDict["obsolete_entities"][modSection].map(item => ({
+      entity_type: item.entity_type,
+      entity_status: item.entity_status,
+      entity_curie: item.entity_curie,
+      entity_name: item.entity_name || "N/A"
+    }));
+  }
 
   return (
     <div>
       <h3 style={{ marginBottom: '30px' }}>QC Reports</h3>
-      <div style={containerStyle}>
+      <div>
         <Container fluid style={{ width: '90%' }}>
           <Row>
             <Col>
@@ -648,46 +623,61 @@ const QCReportTablesContainer = ({modSection}) => {
                   </Spinner>
                 </div>
               ) : (
-                <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                 {( qcReportDict["'date-produced'"] !== null) &&
+                  (<div style={{ textAlign: 'left' }}>Date Produced: {qcReportDict['date-produced']}<br /><br /></div>) }
+                 {( ( qcReportDict["obsolete_entities"] !== null) && ( modSection in qcReportDict["obsolete_entities"] ) ) ? (
                   <AgGridReact
                     key={key}
                     ref={gridRef}
                     rowData={rowData}
-                    columnDefs={columns}
-                    pagination={false}
-                    paginationPageSize={20}
+                    columnDefs={columnDefs}
+                    pagination={true}
+                    paginationPageSize={10}
+                    paginationPageSizeSelector={paginationPageSizeSelector}
                     domLayout="autoHeight"
                     gridOptions = {gridOptions}
                   />
+                  ) : (<div> No obsolete or deleted entities for {modSection}</div>)}
                 </div>
               )}
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <div style={{ textAlign: 'left' }}>
+                <br />Link to report history
+              </div>
             </Col>
           </Row>
         </Container>
       </div>
     </div>
   );
-};
+}; // const QCReportTablesContainer
 
 const ReportsContainer = () => {
   const mods = useSelector(state => state.app.mods);
   return (
     <div>
-      <Tabs mountOnEnter="true" defaultActiveKey="all" id="uncontrolled-tab-example">
+      <Tabs mountOnEnter="true" defaultActiveKey="all" id="mods-tabs">
         <Tab eventKey="all" title="All">
-          <Tabs mountOnEnter="true" defaultActiveKey="all_qcreport" id="all-stats-tab">
+          <Tabs mountOnEnter="true" defaultActiveKey="all_stats" id="all-reports-tabs">
             <Tab eventKey="all_stats" title="Workflow Statistics">
               <WorkflowStatTablesContainer modSection='All' />
-            </Tab>
-            <Tab eventKey="all_qcreport" title="QC Reports">
-              <QCReportTablesContainer modSection='All' />
             </Tab>
           </Tabs>
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>
-            {mod}
-              <WorkflowStatModTablesContainer modSection={mod} />
+            <Tabs mountOnEnter="true" defaultActiveKey={`${mod}_qcreport`} id={`${mod}_reports-tabs`}>
+              <Tab eventKey={`${mod}_stats`} title="Workflow Statistics">
+                <WorkflowStatModTablesContainer modSection={mod} />
+              </Tab>
+              <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
+                <QCReportTablesContainer modSection={mod} />
+              </Tab>
+            </Tabs>
           </Tab>
         ))}
       </Tabs>
