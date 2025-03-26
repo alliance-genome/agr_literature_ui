@@ -264,7 +264,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                     </Spinner>
                   </div>
                 ) : (
-                  <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                  <div className="ag-theme-quartz" style={{ width: '100%' }}>
                     <AgGridReact
                       key={key}
                       ref={gridRef}
@@ -274,7 +274,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                       paginationPageSize={20}
                       domLayout="autoHeight"
                       gridOptions = {gridOptions}
-                    />
+                    /><br/><br/><br/>
                   </div>
                 )}
               </Col>
@@ -504,7 +504,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                     </Spinner>
                   </div>
                 ) : (
-                  <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                  <div className="ag-theme-quartz" style={{ width: '100%' }}>
                     <AgGridReact
                       key={key}
                       ref={gridRef}
@@ -514,7 +514,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                       paginationPageSize={20}
                       domLayout="autoHeight"
                       gridOptions = {gridOptions}
-                    />
+                    /><br/><br/><br/>
                   </div>
                 )}
               </Col>
@@ -638,7 +638,7 @@ const QCReportTablesContainer = ({modSection}) => {
                     domLayout="autoHeight"
                     gridOptions = {gridOptions}
                   />
-                  ) : (<div> No obsolete or deleted entities for {modSection}</div>)}
+                  ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No obsolete or deleted entities for {modSection}</div>)}
                 </div>
               )}
             </Col>
@@ -646,7 +646,7 @@ const QCReportTablesContainer = ({modSection}) => {
           <Row>
             <Col>
               <div style={{ textAlign: 'left' }}>
-                <br />Link to report history
+                <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
               </div>
             </Col>
           </Row>
@@ -670,7 +670,7 @@ const ReportsContainer = () => {
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>
-            <Tabs mountOnEnter="true" defaultActiveKey={`${mod}_qcreport`} id={`${mod}_reports-tabs`}>
+            <Tabs mountOnEnter="true" defaultActiveKey={`${mod}_stats`} id={`${mod}_reports-tabs`}>
               <Tab eventKey={`${mod}_stats`} title="Workflow Statistics">
                 <WorkflowStatModTablesContainer modSection={mod} />
               </Tab>
