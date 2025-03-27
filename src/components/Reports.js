@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Spinner, Tabs, Tab, Button, ButtonGroup } from 'react-bootstrap';
 import Container from "react-bootstrap/Container";
@@ -9,7 +9,7 @@ import * as d3 from 'd3'
 
 import { DownloadDropdownOptionsButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
-import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict } from '../actions/reportsActions';
+import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict } from '../actions/reportsActions';
 
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
@@ -266,7 +266,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                     </Spinner>
                   </div>
                 ) : (
-                  <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                  <div className="ag-theme-quartz" style={{ width: '100%' }}>
                     <AgGridReact
                       key={key}
                       ref={gridRef}
@@ -276,7 +276,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                       paginationPageSize={20}
                       domLayout="autoHeight"
                       gridOptions = {gridOptions}
-                    />
+                    /><br/><br/><br/>
                   </div>
                 )}
               </Col>
@@ -506,7 +506,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                     </Spinner>
                   </div>
                 ) : (
-                  <div className="ag-theme-quartz" style={{ height: 300, width: '100%' }}>
+                  <div className="ag-theme-quartz" style={{ width: '100%' }}>
                     <AgGridReact
                       key={key}
                       ref={gridRef}
@@ -516,7 +516,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                       paginationPageSize={20}
                       domLayout="autoHeight"
                       gridOptions = {gridOptions}
-                    />
+                    /><br/><br/><br/>
                   </div>
                 )}
               </Col>
@@ -556,6 +556,107 @@ const WorkflowStatTablesContainer = ({modSection}) => {
     </div>
   );
 };
+
+const QCReportTablesContainer = ({modSection}) => {
+  const dispatch = useDispatch();
+  const qcReportDict = useSelector(state => state.reports.qcReportDict);
+
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const containerStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '15px',
+  };
+
+  const [key, setKey] = useState(0);
+  const gridRef = useRef();
+  const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+
+  const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const url = `${process.env.REACT_APP_RESTAPI}/check/check_obsolete_entities`;
+      setIsLoadingData(true);
+      try {
+        const result = await axios.get(url);
+        dispatch(setQcreportDict(result.data));
+        setKey(prevKey => prevKey + 1);
+        // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    if (qcReportDict['date-produced'] === null) {
+      fetchData(); }
+  }, [qcReportDict]);
+
+  const columnDefs = [
+    { headerName: "Entity Type", field: "entity_type", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Entity Status", field: "entity_status", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Entity Curie", field: "entity_curie", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Entity Name", field: "entity_name", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
+  ];
+
+  let rowData = [];
+  if ( ( qcReportDict["obsolete_entities"] !== null) && ( modSection in qcReportDict["obsolete_entities"] ) ) {
+    rowData = qcReportDict["obsolete_entities"][modSection].map(item => ({
+      entity_type: item.entity_type,
+      entity_status: item.entity_status,
+      entity_curie: item.entity_curie,
+      entity_name: item.entity_name || "N/A"
+    }));
+  }
+
+  return (
+    <div>
+      <h3 style={{ marginBottom: '30px' }}>QC Reports</h3>
+      <div>
+        <Container fluid style={{ width: '90%' }}>
+          <Row>
+            <Col>
+              {isLoadingData ? (
+                <div className="text-center">
+                  <Spinner animation="border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                </div>
+              ) : (
+                <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                 {( qcReportDict["'date-produced'"] !== null) &&
+                  (<div style={{ textAlign: 'left' }}>Date Produced: {qcReportDict['date-produced']}<br /><br /></div>) }
+                 {( ( qcReportDict["obsolete_entities"] !== null) && ( modSection in qcReportDict["obsolete_entities"] ) ) ? (
+                  <AgGridReact
+                    key={key}
+                    ref={gridRef}
+                    rowData={rowData}
+                    columnDefs={columnDefs}
+                    pagination={true}
+                    paginationPageSize={10}
+                    paginationPageSizeSelector={paginationPageSizeSelector}
+                    domLayout="autoHeight"
+                    gridOptions = {gridOptions}
+                  />
+                  ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No obsolete or deleted entities for {modSection}</div>)}
+                </div>
+              )}
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <div style={{ textAlign: 'left' }}>
+                <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+    </div>
+  );
+}; // const QCReportTablesContainer
 
 const WorkflowDiagram = () => {
 
@@ -679,20 +780,31 @@ const ReportsContainer = () => {
   const mods = useSelector(state => state.app.mods);
   return (
     <div>
-      <Tabs mountOnEnter="true" defaultActiveKey="all" id="uncontrolled-tab-example">
+      <Tabs mountOnEnter="true" defaultActiveKey="all" id="mods-tabs">
         <Tab eventKey="all" title="All">
-          <WorkflowStatTablesContainer modSection='All' />
+          <Tabs mountOnEnter="true" defaultActiveKey="all_stats" id="all-reports-tabs">
+            <Tab eventKey="all_stats" title="Workflow Statistics">
+              <WorkflowStatTablesContainer modSection='All' />
+            </Tab>
+          </Tabs>
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>
-            {mod}
-              <WorkflowStatModTablesContainer modSection={mod} />
+            <Tabs mountOnEnter="true" defaultActiveKey={`${mod}_stats`} id={`${mod}_reports-tabs`}>
+              <Tab eventKey={`${mod}_stats`} title="Workflow Statistics">
+                <WorkflowStatModTablesContainer modSection={mod} />
+              </Tab>
+              <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
+                <QCReportTablesContainer modSection={mod} />
+              </Tab>
+            </Tabs>
           </Tab>
-          <Tab eventKey="diagram" title="Workflow Diagram">
-              <WorkflowDiagram />
-          </Tabs>
-        </div>
-      </div>
+        ))}
+      <Tab eventKey="diagram" title="Workflow Diagram">
+          <WorkflowDiagram />
+      </Tab>
+      </Tabs>
+    </div>
   );
 }
 

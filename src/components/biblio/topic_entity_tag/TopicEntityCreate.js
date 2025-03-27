@@ -27,6 +27,7 @@ import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
 import { debounce } from 'lodash';
+import Alert from "react-bootstrap/Alert";
 
 const TopicEntityCreate = () => {
   const dispatch = useDispatch();
@@ -73,6 +74,8 @@ const TopicEntityCreate = () => {
   ]);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const inputRefs = useRef([]);
+
+  const [messages, setMessages] = useState([]);
 
   const curieToNameMap = Object.fromEntries(
     Object.entries(typeaheadName2CurieMap).map(([name, curie]) => [curie, name])
@@ -212,6 +215,14 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
     }
   }, [editTag, topicEntityTags, dispatch]);
+
+  const addMessage = (text, variant) => {
+    setMessages((prev) => [...prev, { text, variant }]);
+  };
+
+  const handleCloseMessage = (index) => {
+    setMessages((prev) => prev.filter((_, idx) => idx !== index));
+  };
     
   useEffect(() => {
     if (editTag === null) {
@@ -391,6 +402,28 @@ const TopicEntityCreate = () => {
     [rows, accessToken, dispatch, curieToNameEntityType]
   );
 
+  const [noTetDataLoading, setNoTetDataLoading] = useState(false);
+
+  const handleNoTetDataClick = async () => {
+    setNoTetDataLoading(true);
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/set_no_tet_status/${accessLevel}/${referenceJsonLive.curie}/${uid}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      console.log("The manual indexing WFT has been successfully set to complete:", response.data);
+      addMessage("The manual indexing WFT has been successfully set to complete.", "success");
+    } catch (error) {
+      console.error("Error processing the manual indexing WFT:", error);
+      addMessage("Failed to process the manual indexing WFT.", "danger");
+    } finally {
+      setNoTetDataLoading(false);
+    }
+  };
+    
   const handleSpeciesSelection = (index, selectedSpecies) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
@@ -479,7 +512,27 @@ const TopicEntityCreate = () => {
       return newRows;
     });
   };
- 
+
+  useEffect(() => {
+    if (referenceJsonLive?.workflow_tags) {
+      const uniqueMessages = new Set();
+      referenceJsonLive.workflow_tags.forEach((tag) => {
+        if (tag.updated_by !== uid) {
+          if (tag.workflow_tag_id === "ATP:0000276") {
+            uniqueMessages.add(
+              `${tag.updated_by_email} has started adding the topic/entity tags for this paper.`
+            );
+          } else if (tag.workflow_tag_id === "ATP:0000275") {
+            uniqueMessages.add(
+              `${tag.updated_by_email} has completed adding the topic/entity tags for this paper.`
+            );
+          }
+        }
+      });
+      uniqueMessages.forEach((msg) => addMessage(msg, "warning"));
+    }
+  }, [referenceJsonLive?.workflow_tags, uid]);
+
   async function createEntities(refCurie, index) {	
     const row = rows[index]
     if (!row.topicSelect) {
@@ -594,11 +647,32 @@ const TopicEntityCreate = () => {
     let filteredTaxonList = taxonList.filter((x) => !modToTaxon[accessLevel].includes(x));
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList);
   }
-
+    
   // const disabledEntityList = taxonSelect === "" || taxonSelect === undefined;
 
   return (
     <Container fluid>
+      <RowDivider />
+      {/* Messages Area */}
+      <Row className="form-group row mb-3">
+        <Col sm="12">
+	  {messages
+            .filter((msg, index, self) =>
+              index === self.findIndex(m => m.text === msg.text)
+            )
+            .map((msg, idx) => (
+              <Alert
+                key={idx}
+                variant={msg.variant}
+                onClose={() => handleCloseMessage(idx)}
+                dismissible
+              >
+                {msg.text}
+              </Alert>
+           ))}
+        </Col>
+      </Row>
+
       <ModalGeneric
         showGenericModal={entityModalText !== "" ? true : false}
         genericModalHeader="Entity Error"
@@ -618,11 +692,28 @@ const TopicEntityCreate = () => {
           </Col>
         </Row>
       )}
-      <Row className="form-group row">
-        <Col className="form-label col-form-label" sm="3">
-          <h3>Entity and Topic Addition</h3>
+
+
+      {/* Title and "No TET data" Button */}
+      <Row className="form-group row mb-3" style={{ alignItems: "center" }}>
+        <Col sm="12" style={{ display: "flex", alignItems: "center" }}>
+          <h3 style={{ marginRight: "10px" }}>Entity and Topic Addition</h3>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={handleNoTetDataClick}
+            disabled={noTetDataLoading}
+          >
+            {noTetDataLoading ? (
+              <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+            ) : (
+              "Done adding TET / No TET data"
+            )}
+          </Button>
         </Col>
       </Row>
+
+
       <Row className="form-group row">
         <Col className="div-grey-border" sm="2">
           topic
