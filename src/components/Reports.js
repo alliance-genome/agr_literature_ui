@@ -47,7 +47,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
   const dateOptionDict = useSelector(state => state.reports.dateOptionDict);
   const dateOptionValue = ( (dateOptionDict[modSection]) && (dateOptionDict[modSection][workflowProcessAtpId]) ) ? dateOptionDict[modSection][workflowProcessAtpId] : '';
   const dateFrequencyDict = useSelector(state => state.reports.dateFrequencyDict);
-  const dateFrequencyValue = ( (dateFrequencyDict[modSection]) && (dateFrequencyDict[modSection][workflowProcessAtpId]) ) ? dateFrequencyDict[modSection][workflowProcessAtpId] : 'year';
+  const dateFrequencyValue = ( (dateFrequencyDict[modSection]) && (dateFrequencyDict[modSection][workflowProcessAtpId]) ) ? dateFrequencyDict[modSection][workflowProcessAtpId] : '';
   const gridRef = useRef();
 
   const mod_abbreviation = (modSection === 'All') ? '' : modSection;
@@ -74,7 +74,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
           //  totalsObj[item.workflow_tag_name] = 0;
           //}
           //totalsObj[item.workflow_tag_name] += item.tag_count;
-            // console.log("mod_abbreviation:" + item.mod_abbreviation + " number:" + item.tag_count)
+             //console.log("url:"+url + "\nwprkflowProcessAtpId:" + workflowProcessAtpId + "  tagNames"+ tagNames + " column type:"+ columnType+ " workflow_tag_name:"+item.workflow_tag_name +  " mod_abbreviation:" + item.mod_abbreviation + " number:" + item.tag_count)
           if (item.mod_abbreviation=="All"){
              totalsObj[item.workflow_tag_name] = item.tag_count?.toLocaleString();
           }
