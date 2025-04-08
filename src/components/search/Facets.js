@@ -23,7 +23,7 @@ import {
     removeDateCreated
 } from '../../actions/searchActions';
 import Form from 'react-bootstrap/Form';
-import {Badge, Button, Collapse, ButtonGroup} from 'react-bootstrap';
+import {Badge, Button, Collapse, ButtonGroup, OverlayTrigger, Tooltip} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
 import {INITIAL_FACETS_LIMIT} from '../../reducers/searchReducer';
 import Container from "react-bootstrap/Container";
@@ -197,6 +197,24 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types"];
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
+    const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
+
+    // fetch source method descriptions if 'source_methods' is included
+    useEffect(() => {
+        if (facetsToInclude.includes('source_methods')) {
+            fetch(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source/all')
+                .then(response => response.json())
+                .then(data => {
+                    const mapping = {};
+                    data.forEach(item => {
+                        mapping[item.source_method.toLowerCase()] = item.description;
+                    });
+                    setSourceMethodDescriptions(mapping);
+                })
+                .catch(err => console.error("Error fetching source method descriptions:", err));
+        }
+    }, [facetsToInclude]);
+    
     const toggleSubFacet = (subFacetLabel) => {
         const newOpenSubFacets = new Set([...openSubFacets]);
         newOpenSubFacets.has(subFacetLabel) ?
@@ -305,28 +323,42 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                 }
                                             </Col>
                                             <Col xs={6} sm={7}>
-                                                <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
-                                            </Col>
-                                            <Col xs={3} sm={3}>
-                                                <Badge variant="secondary">
-                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) && 
-                                                     bucket.docs_count !== undefined ? 
-                                                     bucket.docs_count.doc_count.toLocaleString() : 
-                                                     bucket.doc_count.toLocaleString()}
-                                                </Badge>
-                                            </Col>
-                                        </Row>
+                                                {key === 'source_methods' ? (
+                                                    <OverlayTrigger
+                                                        placement="right"
+                                                        overlay={
+                                                            <Tooltip id={`tooltip-${bucket.key}`}>                                                                    
+                                                                {sourceMethodDescriptions[bucket.key] || 'No description available.'}                                 
+                                                            </Tooltip>
+                                                        }
+                                                    >                                                                                                                 
+                                                        <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />                                      
+                                                    </OverlayTrigger>                                                                                                 
+                                                ) : (                                                                                                                 
+                                                    <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
+                                                )}                                                                                                                    
+                                            </Col>                                                                                                                    
+                                            <Col xs={3} sm={3}>                                                                                                       
+                                                <Badge variant="secondary">                                                                                           
+                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) &&
+                                                        bucket.docs_count !== undefined ?
+                                                        bucket.docs_count.doc_count.toLocaleString() :
+                                                        bucket.doc_count.toLocaleString()}                                                                            
+                                                </Badge>                                                                                                              
+                                            </Col>                                                                                                                    
+                                        </Row>                                                                                                                        
                                     </Container>
-                                ))}
-                                <ShowMoreLessAllButtons facetLabel={key} facetValue={searchFacets[key]} />
-                            </div>
-                        </Collapse>
+                                ))}                                                                                                                                   
+                                <ShowMoreLessAllButtons facetLabel={key} facetValue={searchFacets[key]} />                                                            
+                            </div>                                                                                                                                    
+                        </Collapse>                                                                                                                                   
                     </div>
                 );
             })}
         </div>
     );
-}
+};
+
 
 const AuthorFilter = () => {
   const authorFilter = useSelector(state => state.search.authorFilter);
