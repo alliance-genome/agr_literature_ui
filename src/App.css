@@ -543,3 +543,17 @@ em {
 .wft-bold-header {
   font-weight: bold;
 }
+
+.wft-header-bg {
+  background-color: #e3f2fd !important;  /* Light blue */
+  border-bottom: 1px solid #dee2e6;     /* Add border for better separation */
+}
+
+/* Alternating row colors */
+.ag-theme-alpine .ag-row-odd {
+  background-color: #f8f9fa;  /* Light grey */
+}
+
+.ag-theme-alpine .ag-row-even {
+  background-color: #e9ecef;  /* Darker grey */
+}
