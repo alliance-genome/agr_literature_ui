@@ -14,7 +14,8 @@ import {
   SEARCH_SET_MOD_PREFERENCES_LOADED, SEARCH_SET_APPLY_TO_SINGLE_TAG,
   SEARCH_SET_READY_TO_FACET_SEARCH, SEARCH_REMOVE_DATE_PUBMED_ADDED,
   SEARCH_REMOVE_DATE_PUBMED_MODIFIED, SEARCH_REMOVE_DATE_PUBLISHED,
-  SEARCH_REMOVE_DATE_CREATED, SEARCH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS
+  SEARCH_REMOVE_DATE_CREATED, SEARCH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS,
+  SEARCH_SET_CURRENT_ABORT_CONTROLLER
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -60,7 +61,8 @@ const initialState = {
   partialMatch:"true",
   modPreferencesLoaded:"false",
   applyToSingleTag: true,
-  curiePDFIDsMap: {}
+  curiePDFIDsMap: {},
+  currentAbortController: null  
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -317,7 +319,18 @@ export default function(state = initialState, action) {
                 ...state,
                 dateCreated: ''
             };
-
+        case 'SEARCH_SET_CURRENT_ABORT_CONTROLLER':
+            return {
+                ...state,
+                currentAbortController: action.payload,
+            };
+        // Clear out the controller once the request is complete or fails
+        case 'SEARCH_SUCCESS':
+        case 'SEARCH_FAILURE':
+            return {
+                ...state,
+                currentAbortController: null,
+            };
 //     case 'FETCH_POSTS':
 //       console.log('in postReducer case FETCH_POSTS');
 //       return {

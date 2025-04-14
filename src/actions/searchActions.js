@@ -34,6 +34,7 @@ export const SEARCH_REMOVE_DATE_PUBMED_ADDED = "SEARCH_REMOVE_DATE_PUBMED_ADDED"
 export const SEARCH_REMOVE_DATE_PUBMED_MODIFIED = "SEARCH_REMOVE_DATE_PUBMED_MODIFIED"
 export const SEARCH_REMOVE_DATE_PUBLISHED = "SEARCH_REMOVE_DATE_PUBLISHED"
 export const SEARCH_REMOVE_DATE_CREATED = "SEARCH_REMOVE_DATE_CREATED"
+export const SEARCH_SET_CURRENT_ABORT_CONTROLLER = 'SEARCH_SET_CURRENT_ABORT_CONTROLLER';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"]
 
@@ -155,38 +156,70 @@ const getSearchParams = (state) => {
 }
 
 export const searchReferences = () => {
-  return (dispatch,getState) => {
+  return (dispatch, getState) => {
     const state = getState();
+
+    // cancel any previous request if it exists.
+    if (state.search.currentAbortController) {
+      state.search.currentAbortController.cancel("Cancelled in favor of new search request");
+    }
+
+    // create a new CancelToken source for the current request.
+    const cancelSource = axios.CancelToken.source();
+    dispatch(setCurrentAbortController(cancelSource));
+
     dispatch(setSearchLoading());
     let params = getSearchParams(state);
-    axios.post(restUrl + '/search/references/', params )
 
-        .then(res => {
-          const xrefCurieValues = res.data.hits.filter(hit => hit.cross_references !== null).flatMap(hit =>
-              hit.cross_references.map(cross_reference => cross_reference.curie)
-          );
-          const curies = res.data.hits.map(hit => hit.curie);	    
-          axios.post(restUrl + '/cross_reference/show_all', xrefCurieValues)
-              .then(resXref => {
-                let curieToCrossRefMap = resXref.data.reduce((accumulatedHashTable, currentObject) => {
-                  accumulatedHashTable[currentObject.curie] = currentObject;
-                  return accumulatedHashTable;
-                }, {});
-                axios.post(restUrl + '/reference/referencefile/show_main_pdf_ids_for_curies', {
-                      curies: curies,
-                      mod_abbreviation: params.mod_abbreviation})
-                    .then(resCuriePDFIDsMap => {
-                      dispatch(setCuriePDFIDsMap(resCuriePDFIDsMap.data));
-                      dispatch(setCrossReferenceResults(curieToCrossRefMap));
-                      dispatch(setSearchResults(res.data.hits, res.data.return_count));
-                      dispatch(setSearchFacets(res.data.aggregations));
-                      dispatch(setReadyToFacetSearch(true));
-                    })
-                .catch(err => dispatch(setSearchError(true)));
-              })
-              .catch(err => dispatch(setSearchError(true)));
-        })
-        .catch(err => dispatch(setSearchError(true)));
+    // main search request with cancel token.
+    axios.post(restUrl + '/search/references/', params, { cancelToken: cancelSource.token })
+      .then(res => {
+        const xrefCurieValues = res.data.hits
+          .filter(hit => hit.cross_references !== null)
+          .flatMap(hit => hit.cross_references.map(cr => cr.curie));
+        const curies = res.data.hits.map(hit => hit.curie);
+	
+        axios.post(restUrl + '/cross_reference/show_all', xrefCurieValues, { cancelToken: cancelSource.token })
+          .then(resXref => {
+            let curieToCrossRefMap = resXref.data.reduce((acc, cur) => {
+              acc[cur.curie] = cur;
+              return acc;
+            }, {});
+
+            axios.post(restUrl + '/reference/referencefile/show_main_pdf_ids_for_curies', {
+              curies: curies,
+              mod_abbreviation: params.mod_abbreviation
+            }, { cancelToken: cancelSource.token })
+            .then(resCuriePDFIDsMap => {
+              dispatch(setCuriePDFIDsMap(resCuriePDFIDsMap.data));
+              dispatch(setCrossReferenceResults(curieToCrossRefMap));
+              dispatch(setSearchResults(res.data.hits, res.data.return_count));
+              dispatch(setSearchFacets(res.data.aggregations));
+              dispatch(setReadyToFacetSearch(true));
+            })
+            .catch(err => {
+              if (axios.isCancel(err)) {
+                console.log("Request cancelled: " + err.message);
+              } else {
+                dispatch(setSearchError(true));
+              }
+            });
+          })
+          .catch(err => {
+            if (axios.isCancel(err)) {
+              console.log("Request cancelled: " + err.message);
+            } else {
+              dispatch(setSearchError(true));
+            }
+          });
+      })
+      .catch(err => {
+        if (axios.isCancel(err)) {
+          console.log("Request cancelled: " + err.message);
+        } else {
+          dispatch(setSearchError(true));
+        }
+      });
   }
 }
 
@@ -420,4 +453,9 @@ export const removeDatePublished = () => ({
 
 export const removeDateCreated = () => ({
     type: 'SEARCH_REMOVE_DATE_CREATED'
+});
+
+export const setCurrentAbortController = (cancelSource) => ({
+  type: SEARCH_SET_CURRENT_ABORT_CONTROLLER,
+  payload: cancelSource
 });
