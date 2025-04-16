@@ -618,6 +618,11 @@ const QCReportTablesContainer = ({modSection}) => {
         <Container fluid style={{ width: '90%' }}>
           <Row>
             <Col>
+              <h4 style={{ textAlign: 'left' }}>TET Table Deleted or Obsoleted Entities</h4>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
               {isLoadingData ? (
                 <div className="text-center">
                   <Spinner animation="border" role="status">
