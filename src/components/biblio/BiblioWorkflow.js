@@ -54,18 +54,35 @@ const BiblioWorkflow = () => {
 
   useEffect(() => {
     const fetchCurationData = async () => {
-      const curationUrl = process.env.REACT_APP_RESTAPI + `/reference/get_tet_info/${referenceCurie}?mod_abbreviation=${accessLevel}`;
+      const curationUrl =
+        process.env.REACT_APP_RESTAPI +
+        `/reference/get_tet_info/${referenceCurie}?mod_abbreviation=${accessLevel}`;
       setIsLoadingCurationData(true);
       try {
         const result = await axios.get(curationUrl);
-        const processedCurationData = Object.entries(result.data).map(([topic, info]) => ({
-          topic,
-          has_data: info.has_data === true || info.has_data === 'true' || info.has_data === 1,
-          novel_data: info.novel_data === true || info.novel_data === 'true' || info.novel_data === 1,
-          no_data: info.no_data === true || info.no_data === 'true' || info.no_data === 1,
-          topic_source: Array.isArray(info.topic_source) ? info.topic_source.join(', ') : info.topic_source,
-          topic_added: info.topic_added,
-        }));
+
+        const processedCurationData = Object.entries(result.data)
+          .map(([topic, info]) => ({
+            topic,
+            has_data:
+              info.has_data === true ||
+              info.has_data === 'true' ||
+              info.has_data === 1,
+            novel_data:
+              info.novel_data === true ||
+              info.novel_data === 'true' ||
+              info.novel_data === 1,
+            no_data:
+              info.no_data === true ||
+              info.no_data === 'true' ||
+              info.no_data === 1,
+            topic_source: Array.isArray(info.topic_source)
+              ? info.topic_source.join(', ')
+              : info.topic_source,
+            topic_added: info.topic_added,
+          }))
+          .sort((a, b) => a.topic.localeCompare(b.topic));
+
         setCurationData(processedCurationData);
       } catch (error) {
         console.error('Error fetching curation data:', error);
@@ -73,8 +90,9 @@ const BiblioWorkflow = () => {
         setIsLoadingCurationData(false);
       }
     };
+
     fetchCurationData();
-  }, [data, referenceCurie, accessLevel]);
+  }, [referenceCurie, accessLevel]); 
 
   const columns = [
       {

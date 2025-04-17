@@ -271,103 +271,111 @@ const ReferencesToSort = ({
               <option>Not Experimental</option>
               <option>Meeting Abstract</option>
             </Form.Control>
-            <br />
-            <AsyncTypeahead
-              multiple
-              disabled={reference['mod_corpus_association_corpus'] !== true}
-              isLoading={speciesSelectLoading[index]}
-              placeholder="Species Name"
-              ref={speciesTypeaheadRef}
-              id={`species_select-${index}`}
-              labelKey={`species_select-${index}`}
-              useCache={false}
-              onSearch={(query) => {
-                const loadingState = new Array(speciesSelectLoading.length).fill(false);
-                loadingState[index] = true;
-                setSpeciesSelectLoading(loadingState);
+	    <br />
+	    {activeMod !== 'FB' && (
+              <>   
+                <AsyncTypeahead
+                  multiple
+                  disabled={reference['mod_corpus_association_corpus'] !== true}
+                  isLoading={speciesSelectLoading[index]}
+                  placeholder="Species Name"
+                  ref={speciesTypeaheadRef}
+                  id={`species_select-${index}`}
+                  labelKey={`species_select-${index}`}
+                  useCache={false}
+                  onSearch={(query) => {
+                    const loadingState = new Array(speciesSelectLoading.length).fill(false);
+                    loadingState[index] = true;
+                    setSpeciesSelectLoading(loadingState);
 
-                axios.post(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
-                  {
-                    "searchFilters": {
-                      "nameFilter": {
-                        "name": {
-                          "queryString": query,
-                          "tokenOperator": "AND"
+                    axios.post(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
+                      {
+                        "searchFilters": {
+                          "nameFilter": {
+                            "name": {
+                              "queryString": query,
+                              "tokenOperator": "AND"
+                            }
+                          }
+                        },
+                        "sortOrders": [],
+                        "aggregations": [],
+                        "nonNullFieldsTable": []
+                      },
+                      {
+                        headers: {
+                          'content-type': 'application/json',
+                          'authorization': `Bearer ${accessToken}`
                         }
-                      }
-                    },
-                    "sortOrders": [],
-                    "aggregations": [],
-                    "nonNullFieldsTable": []
-                  },
-                  {
-                    headers: {
-                      'content-type': 'application/json',
-                      'authorization': `Bearer ${accessToken}`
-                    }
-                  })
-                  .then(res => {
-                    const updatedLoading = new Array(speciesSelectLoading.length).fill(false);
-                    setSpeciesSelectLoading(updatedLoading);
-                    if (res.data.results) {
-                      setTypeaheadOptions(res.data.results.map(item => `${item.name} ${item.curie}`));
-                    }
-                  })
-                  .catch(error => {
-                    console.error('Error searching species:', error);
-                    setSpeciesSelectLoading(new Array(speciesSelectLoading.length).fill(false));
-                  });
-              }}
-              onChange={(selected) => {
-                const newSpeciesSelect = [...speciesSelect];
-                newSpeciesSelect[index] = selected;
-                setSpeciesSelect(newSpeciesSelect);
-              }}
-              options={typeaheadOptions}
-              selected={speciesSelect[index] || []}
-            />
-            {activeMod === 'WB' && (
-              <div className="mt-3">
-                <NewTaxonModal />
-              </div>
+                      })
+                      .then(res => {
+                        const updatedLoading = new Array(speciesSelectLoading.length).fill(false);
+                        setSpeciesSelectLoading(updatedLoading);
+                        if (res.data.results) {
+                          setTypeaheadOptions(res.data.results.map(item => `${item.name} ${item.curie}`));
+                        }
+                      })
+                      .catch(error => {
+                        console.error('Error searching species:', error);
+                        setSpeciesSelectLoading(new Array(speciesSelectLoading.length).fill(false));
+                      });
+                  }}
+                  onChange={(selected) => {
+                    const newSpeciesSelect = [...speciesSelect];
+                    newSpeciesSelect[index] = selected;
+                    setSpeciesSelect(newSpeciesSelect);
+                  }}
+                  options={typeaheadOptions}
+                  selected={speciesSelect[index] || []}
+                />
+                {activeMod === 'WB' && (
+                  <div className="mt-3">
+                    <NewTaxonModal />
+                  </div>
+                )}
+	        <br />
+	      </>
             )}
-            <br />
             {/* Button Group with Fixed Width and No Wrapping */}
             <div className="d-flex flex-column gap-3">
-              <Button 
-                variant="outline-primary" 
-                size="sm" 
-	        onClick={() => handleInsideOrOpen(true, 'ATP:0000276')} 
-                style={{
-                  width: '150px',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <FontAwesomeIcon icon={faEdit} style={{ marginRight: '8px' }} /> Inside & Open
-              </Button>
-              <div style={{ height: '7px' }} /> {/* This adds vertical space */}
-              <Button 
-                variant={getButtonVariant('insideDone')} 
-                size="sm" 
-                onClick={() => handleInsideOrOpen(false, 'ATP:0000275')} 
-                style={{
-                  width: '150px',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}		
-              >
-                <FontAwesomeIcon icon={faCheck} style={{ marginRight: '8px' }} /> Inside & Done
-              </Button>
-              <div style={{ height: '7px' }} /> {/* This adds vertical space */}
+              {activeMod !== 'FB' && (
+		<>
+                  <Button 
+                    variant="outline-primary" 
+                    size="sm" 
+	            onClick={() => handleInsideOrOpen(true, 'ATP:0000276')} 
+                    style={{
+                      width: '150px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faEdit} style={{ marginRight: '8px' }} /> Inside & Open
+                  </Button>
+                  <div style={{ height: '7px' }} /> {/* This adds vertical space */}
+                  <Button 
+                    variant={getButtonVariant('insideDone')} 
+                    size="sm" 
+                    onClick={() => handleInsideOrOpen(false, 'ATP:0000275')} 
+                    style={{
+                      width: '150px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}		
+                  >
+                    <FontAwesomeIcon icon={faCheck} style={{ marginRight: '8px' }} /> Inside & Done
+                  </Button>
+                  <div style={{ height: '7px' }} /> {/* This adds vertical space */}
+		</>
+	      )}
               <Button 
                 variant={getButtonVariant('inside')} 
                 size="sm" 
@@ -399,7 +407,11 @@ const ReferencesToSort = ({
               id={`outside_corpus_toggle-${index}`}
               onChange={(e) => dispatch(changeSortCorpusToggler(e))}
             />
-            <div style={{ height: '85px' }} /> {/* This adds vertical space */}
+	    {activeMod !== 'FB' ? (
+              <div style={{ height: '85px' }} />
+	    ) : (
+	      <div style={{ height: '24px' }} />
+	    )}	
             {/* Outside Button with Fixed Width and No Wrapping */}
             <div className="d-flex flex-column gap-2">
               <Button 
