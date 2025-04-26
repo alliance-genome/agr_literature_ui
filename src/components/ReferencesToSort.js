@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setReferenceCurie, setGetReferenceCurieFlag } from '../actions/biblioActions';
 import { 
@@ -168,51 +169,84 @@ const ReferencesToSort = ({
     return 'outline-primary';
   };
 
+  const orderedAuthorsLive = [];
+  for (const value of reference['authors'].values()) {
+    let index = value['order'] - 1;
+    if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'order' field value of 0
+    orderedAuthorsLive[index] = value; }
+  const [showAllAuthors, setShowAllAuthors] = useState(false);
+  const fullAuthorNames = orderedAuthorsLive.map(dict => dict['name']).join('; ');
+  const isTruncated = fullAuthorNames.length > 70;
+  let displayedAuthors = fullAuthorNames;
+  if (!showAllAuthors && isTruncated) {
+    const namesArray = fullAuthorNames.split('; ');
+    let result = '';
+    for (let i = 0; i < namesArray.length; i++) {
+      const next = result ? result + '; ' + namesArray[i] : namesArray[i];
+      if (next.length > 70) break;
+      result = next;
+    }
+    displayedAuthors = result + '…';
+  }
+
   return (
     <div key={`reference-div-${index}`}>
       <Row key={`reference-row-${index}`}>
         {/* Reference Details */}
-        <Col lg={2} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor, padding: '15px' }}>
-          <div style={{ alignSelf: 'flex-start', marginBottom: '10px' }}>
-            <strong>Title:</strong>
-            <span dangerouslySetInnerHTML={{ __html: reference['title'] }} />
+        <Col lg={7} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor, padding: '.5rem' }}>
+          <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
+            <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: reference['title'] }} />
+            <br />
+            <span style={{ fontStyle: 'italic', paddingBottom: '.5rem' }} dangerouslySetInnerHTML={{ __html: displayedAuthors }} />
+            {isTruncated && (
+              <button
+                onClick={() => setShowAllAuthors(prev => !prev)}
+                style={{ marginLeft: '0.5rem', background: 'none', border: 'none', color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+               {showAllAuthors ? 'Show Less' : 'Show All'}
+              </button>
+            )}
           </div>
-          <Link 
-            to={{ pathname: "/Biblio", search: `?action=display&referenceCurie=${reference['curie']}` }}
-            style={{ alignSelf: 'flex-start', marginBottom: '10px' }}
-            onClick={() => {
-              dispatch(setReferenceCurie(reference['curie']));
-              dispatch(setGetReferenceCurieFlag(true));
-            }}
-          >
-            {reference['curie']}
-          </Link>
-          {reference['cross_references'].map((xref, idx) => (
-            <div key={`xref-${index}-${idx}`} style={{ alignSelf: 'flex-start', marginBottom: '5px' }}>
-              {xref['url'].endsWith('/') ? (
-                <span>{xref['curie']}</span>
-              ) : (
-                <a href={xref['url']} target='_blank' rel="noreferrer">
-                  {xref['curie']}
-                </a>
-              )}
-            </div>
-          ))}
-          <div style={{ alignSelf: 'flex-start', marginBottom: '10px' }}>
-            <strong>Journal:</strong> {reference['resource_title'] ? <span dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A'}
+          <span style={{ paddingBottom: '.5rem' }} dangerouslySetInnerHTML={{ __html: reference['abstract'] }} />
+          <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
+            <strong>Journal:</strong> {reference['resource_title'] ? <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A'}
+            <Link 
+              to={{ pathname: "/Biblio", search: `?action=display&referenceCurie=${reference['curie']}` }}
+              style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}
+              onClick={() => {
+                dispatch(setReferenceCurie(reference['curie']));
+                dispatch(setGetReferenceCurieFlag(true));
+              }}
+            >
+              {reference['curie']}
+            </Link>
+            {reference['cross_references']?.length > 0 && <span style={{ margin: '0 .25rem' }}> | </span>}
+            <span>
+              {reference['cross_references']
+                .map((xref, idx) => {
+                  const content = xref['url'].endsWith('/') ? (
+                    <span key={`xref-${idx}`}>{xref['curie']}</span>
+                  ) : (
+                    <a key={`xref-${idx}`} href={xref['url']} target='_blank' rel='noreferrer'>
+                      {xref['curie']}
+                    </a>
+                  );
+                  return content;
+                })
+                .reduce((acc, curr, idx) => (idx === 0 ? [curr] : [...acc, ' | ', curr]), [])}
+            </span>
+          </div>
+          <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
+            <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: reference['category'].replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()), }} />
+            <span dangerouslySetInnerHTML={{ __html: reference['pubmed_publication_status'] }} />
           </div>
           {/*
           <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
           */}
         </Col>
 
-        {/* Abstract */}
-        <Col lg={5} className="Col-general Col-display" style={{ backgroundColor, padding: '15px' }}>
-          <span dangerouslySetInnerHTML={{ __html: reference['abstract'] }} />
-        </Col>
-
         {/* Needs Review */}
-        <Col lg={1} className="Col-general Col-display" style={{ display: 'block', backgroundColor, padding: '15px' }}>
+        <Col lg={1} className="Col-general Col-display" style={{ display: 'block', backgroundColor, padding: '.9rem' }}>
           <Form.Check
             inline
             checked={reference['mod_corpus_association_corpus'] === null}
@@ -224,7 +258,7 @@ const ReferencesToSort = ({
         </Col>
 
         {/* Inside Corpus */}
-        <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor, padding: '15px' }}>
+        <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor, padding: '.9rem' }}>
           <Form>
             <Form.Check
               inline
@@ -397,7 +431,7 @@ const ReferencesToSort = ({
         </Col>
 
         {/* Outside Corpus */}
-        <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor, padding: '15px' }}>
+        <Col lg={2} className="Col-general Col-display" style={{ display: 'block', backgroundColor, padding: '.9rem' }}>
           <Form>
             <Form.Check
               inline
