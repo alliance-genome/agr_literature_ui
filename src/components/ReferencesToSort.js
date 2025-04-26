@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setReferenceCurie, setGetReferenceCurieFlag } from '../actions/biblioActions';
 import { 
@@ -168,17 +169,47 @@ const ReferencesToSort = ({
     return 'outline-primary';
   };
 
+  const orderedAuthorsLive = [];
+  for (const value of reference['authors'].values()) {
+    let index = value['order'] - 1;
+    if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'order' field value of 0
+    orderedAuthorsLive[index] = value; }
+  const [showAllAuthors, setShowAllAuthors] = useState(false);
+  const fullAuthorNames = orderedAuthorsLive.map(dict => dict['name']).join('; ');
+  const isTruncated = fullAuthorNames.length > 70;
+  let displayedAuthors = fullAuthorNames;
+  if (!showAllAuthors && isTruncated) {
+    const namesArray = fullAuthorNames.split('; ');
+    let result = '';
+    for (let i = 0; i < namesArray.length; i++) {
+      const next = result ? result + '; ' + namesArray[i] : namesArray[i];
+      if (next.length > 70) break;
+      result = next;
+    }
+    displayedAuthors = result + '…';
+  }
+
   return (
     <div key={`reference-div-${index}`}>
       <Row key={`reference-row-${index}`}>
         {/* Reference Details */}
         <Col lg={7} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor, padding: '.5rem' }}>
           <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
-            <span style={{ fontWeight: 'bold'}} dangerouslySetInnerHTML={{ __html: reference['title'] }} />
+            <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: reference['title'] }} />
+            <br />
+            <span style={{ fontStyle: 'italic', paddingBottom: '.5rem' }} dangerouslySetInnerHTML={{ __html: displayedAuthors }} />
+            {isTruncated && (
+              <button
+                onClick={() => setShowAllAuthors(prev => !prev)}
+                style={{ marginLeft: '0.5rem', background: 'none', border: 'none', color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+               {showAllAuthors ? 'Show Less' : 'Show All'}
+              </button>
+            )}
           </div>
           <span style={{ paddingBottom: '.5rem' }} dangerouslySetInnerHTML={{ __html: reference['abstract'] }} />
           <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
-            <strong>Journal:</strong> {reference['resource_title'] ? <span style={{ marginRight: '.5rem' }} dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A'}
+            <strong>Journal:</strong> {reference['resource_title'] ? <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A'}
             <Link 
               to={{ pathname: "/Biblio", search: `?action=display&referenceCurie=${reference['curie']}` }}
               style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}
@@ -206,7 +237,8 @@ const ReferencesToSort = ({
             </span>
           </div>
           <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
-            <span dangerouslySetInnerHTML={{ __html: reference['category'] }} />
+            <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: reference['category'].replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()), }} />
+            <span dangerouslySetInnerHTML={{ __html: reference['pubmed_publication_status'] }} />
           </div>
           {/*
           <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
