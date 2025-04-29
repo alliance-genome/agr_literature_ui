@@ -237,8 +237,8 @@ const ReferencesToSort = ({
             </span>
           </div>
           <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
-            <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: reference['category'].replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()), }} />
-            <span dangerouslySetInnerHTML={{ __html: reference['pubmed_publication_status'] }} />
+            <strong>Alliance Category:</strong> <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: reference['category'].replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()), }} />
+            <strong>Pub Status:</strong> <span dangerouslySetInnerHTML={{ __html: reference['pubmed_publication_status'] }} />
           </div>
           {/*
           <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
