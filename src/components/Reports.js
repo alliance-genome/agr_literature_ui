@@ -810,10 +810,9 @@ const WorkflowDiagram = () => {
 
 const ReportsContainer = () => {
   const mods = useSelector(state => state.app.mods);
-// put this back
   return (
     <div>
-      <Tabs mountOnEnter="true" defaultActiveKey="WB" id="mods-tabs">
+      <Tabs mountOnEnter="true" defaultActiveKey="all" id="mods-tabs">
         <Tab eventKey="all" title="All">
           <Tabs mountOnEnter="true" defaultActiveKey="all_stats" id="all-reports-tabs">
             <Tab eventKey="all_stats" title="Workflow Statistics">

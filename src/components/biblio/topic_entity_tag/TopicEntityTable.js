@@ -26,12 +26,6 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     let headers = [];
     let fields = [];
 
-console.log('handleDownload option');
-console.log(option);
-  
-console.log('handleDownload topicEntityTags');
-console.log(topicEntityTags);
-  
     // get headers and fields from visible columns only
     colDefs
       .filter(col => option === 'allColumns' || !col.hide) // include hidden columns only for 'allColumns' option
@@ -53,8 +47,6 @@ console.log(topicEntityTags);
     if ( (option === "allColumns") || (option === "multiHeader") ) {
       // download all columns, even hidden ones
       gridRef.current.api.forEachNode((node) => {
-console.log('node.data');
-console.log(node.data);
         dataToDownload.push(node.data);
       });
     } else if (option === "withoutFilters") {
@@ -67,11 +59,6 @@ console.log(node.data);
         dataToDownload.push(node.data);
       });
     }
-
-console.log('headers');
-console.log(headers);
-console.log('fields');
-console.log(fields);
 
     if (option === "multiHeader") {
       headers = headers.flatMap(header =>
@@ -90,17 +77,12 @@ console.log(fields);
       return field.split('.').reduce((acc, key) => acc && acc[key] ? acc[key] : '', obj);
     };
 
-console.log('headers');
-console.log(headers);
-console.log('fields');
-console.log(fields);
     // convert headers and data to TSV format
     const tsvHeaders = headers.join('\t'); 
     const tsvRows = dataToDownload.map((row) =>
       fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
     );
     const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
-console.log(tsvContent);
     const encodedUri = encodeURI(tsvContent);
 
     const fileName = `${fileNameFront}_${option}.tsv`;
