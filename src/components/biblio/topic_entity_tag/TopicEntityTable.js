@@ -118,8 +118,6 @@ export const DownloadAllColumnsButton = ({option, gridRef, colDefs, rowData, fil
 };
 
 export const DownloadDropdownOptionsButton = ({option, gridRef, colDefs, rowData, fileNameFront}) => {
-  console.log('DownloadDropdownOptionsButton');
-  console.log(option);
   return(
     <Dropdown className="ms-auto">
       <Dropdown.Toggle variant="primary" id="dropdown-download-options">
