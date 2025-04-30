@@ -25,6 +25,12 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     let dataToDownload = [];
     let headers = [];
     let fields = [];
+
+console.log('handleDownload option');
+console.log(option);
+  
+console.log('handleDownload topicEntityTags');
+console.log(topicEntityTags);
   
     // get headers and fields from visible columns only
     colDefs
@@ -47,6 +53,8 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     if (option === "allColumns") {
       // download all columns, even hidden ones
       gridRef.current.api.forEachNode((node) => {
+console.log('node.data');
+console.log(node.data);
         dataToDownload.push(node.data);
       });
     } else if (option === "withoutFilters") {
@@ -83,12 +91,24 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', fileName);
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+//     link.click();
+//     document.body.removeChild(link);
+};
     
 
+export const DownloadAllColumnsButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
+  return(
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront)}
+    >{buttonLabel}</Button>
+  );
+};
+
 export const DownloadDropdownOptionsButton = ({option, gridRef, colDefs, rowData, fileNameFront}) => {
+  console.log('DownloadDropdownOptionsButton');
+  console.log(option);
   return(
     <Dropdown className="ms-auto">
       <Dropdown.Toggle variant="primary" id="dropdown-download-options">
