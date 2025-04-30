@@ -25,7 +25,7 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     let dataToDownload = [];
     let headers = [];
     let fields = [];
-  
+
     // get headers and fields from visible columns only
     colDefs
       .filter(col => option === 'allColumns' || !col.hide) // include hidden columns only for 'allColumns' option
@@ -44,7 +44,7 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
       fields.splice(entityIndex + 1, 0, "entity");        // insert "entity" field after "entity_name"
     }
 
-    if (option === "allColumns") {
+    if ( (option === "allColumns") || (option === "multiHeader") ) {
       // download all columns, even hidden ones
       gridRef.current.api.forEachNode((node) => {
         dataToDownload.push(node.data);
@@ -58,6 +58,15 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
       gridRef.current.api.forEachNodeAfterFilterAndSort((node) => {
         dataToDownload.push(node.data);
       });
+    }
+
+    if (option === "multiHeader") {
+      headers = headers.flatMap(header =>
+        header === "" ? "status" : [`${header}_num`, `${header}_perc`]
+      );
+      fields = fields.flatMap(field =>
+        field === "status" ? [field] : [`${field}_num`, `${field}_perc`]
+      );
     }
 
     // helper function to get nested values
@@ -85,8 +94,28 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+};
     
+
+export const DownloadMultiHeaderButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
+  return(
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={() => handleDownload('multiHeader', gridRef, colDefs, rowData, fileNameFront)}
+    >{buttonLabel}</Button>
+  );
+};
+
+export const DownloadAllColumnsButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
+  return(
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront)}
+    >{buttonLabel}</Button>
+  );
+};
 
 export const DownloadDropdownOptionsButton = ({option, gridRef, colDefs, rowData, fileNameFront}) => {
   return(

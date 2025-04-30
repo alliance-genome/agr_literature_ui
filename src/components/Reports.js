@@ -7,7 +7,7 @@ import Col from "react-bootstrap/Col";
 import Form from 'react-bootstrap/Form';
 import * as d3 from 'd3'
 
-import { DownloadDropdownOptionsButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
+import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
 import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict } from '../actions/reportsActions';
 
@@ -250,11 +250,12 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                 </Button>
               </Col>
               <Col>
-                <DownloadDropdownOptionsButton
+                <DownloadAllColumnsButton
                   gridRef={gridRef}
                   colDefs={columns}
                   rowData={rowData}
-                  fileNameFront={fileNameFront} />
+                  fileNameFront={fileNameFront}
+                  buttonLabel="Download" />
               </Col>
             </Row>
             <Row>
@@ -425,6 +426,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
   //const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(100);
+  const [countResync, setCountResync] = useState(0);
 
   const mods = useSelector(state => state.app.mods);
   const dateRangeDict = useSelector(state => state.reports.dateRangeDict);
@@ -463,7 +465,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
     };
 
     fetchData();
-  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end]);
+  }, [workflowProcessAtpId, dateOptionValue, date_range_start, date_range_end, countResync]);
 
 
   const containerStyle = {
@@ -491,12 +493,37 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
   columns[0] = {headerName: '', field: 'status', cellStyle: { fontWeight: 'bold', textAlign: 'left' }}
 
   const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+  const fileNameFront = `${modSection}_${title}`.replace(/ /g,"_");
 
   return (
     <div>
       <h5>{title}</h5>
         <div style={containerStyle}>
           <Container fluid style={{ width: '90%' }}>
+            <Row style={{ paddingBottom: "0.5em" }}>
+              <Col lg={4}>
+              </Col>
+              <Col lg={2}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setCountResync(countResync + 1) }
+                  style={{ marginRight: '5px', width: '120px' }}
+                >
+                  <FontAwesomeIcon icon={faSync} /> Resync Table
+                </Button>
+              </Col>
+              <Col lg={2}>
+                <DownloadMultiHeaderButton
+                  gridRef={gridRef}
+                  colDefs={columns}
+                  rowData={data}
+                  fileNameFront={fileNameFront}
+                  buttonLabel="Download" />
+              </Col>
+              <Col lg={4}>
+              </Col>
+            </Row>
             <Row>
               <Col>
                 {isLoadingData ? (
