@@ -50,7 +50,7 @@ console.log(topicEntityTags);
       fields.splice(entityIndex + 1, 0, "entity");        // insert "entity" field after "entity_name"
     }
 
-    if (option === "allColumns") {
+    if ( (option === "allColumns") || (option === "multiHeader") ) {
       // download all columns, even hidden ones
       gridRef.current.api.forEachNode((node) => {
 console.log('node.data');
@@ -68,6 +68,20 @@ console.log(node.data);
       });
     }
 
+console.log('headers');
+console.log(headers);
+console.log('fields');
+console.log(fields);
+
+    if (option === "multiHeader") {
+      headers = headers.flatMap(header =>
+        header === "" ? "status" : [`${header}_num`, `${header}_perc`]
+      );
+      fields = fields.flatMap(field =>
+        field === "status" ? [field] : [`${field}_num`, `${field}_perc`]
+      );
+    }
+
     // helper function to get nested values
     // if the field is "topic_name", it will return row.topic_name
     // if the field is "topic_entity_tag_source.secondary_data_provider_abbreviation",
@@ -76,12 +90,17 @@ console.log(node.data);
       return field.split('.').reduce((acc, key) => acc && acc[key] ? acc[key] : '', obj);
     };
 
+console.log('headers');
+console.log(headers);
+console.log('fields');
+console.log(fields);
     // convert headers and data to TSV format
     const tsvHeaders = headers.join('\t'); 
     const tsvRows = dataToDownload.map((row) =>
       fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
     );
     const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
+console.log(tsvContent);
     const encodedUri = encodeURI(tsvContent);
 
     const fileName = `${fileNameFront}_${option}.tsv`;
@@ -91,10 +110,20 @@ console.log(node.data);
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', fileName);
     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
     
+
+export const DownloadMultiHeaderButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
+  return(
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={() => handleDownload('multiHeader', gridRef, colDefs, rowData, fileNameFront)}
+    >{buttonLabel}</Button>
+  );
+};
 
 export const DownloadAllColumnsButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
   return(

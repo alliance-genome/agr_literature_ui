@@ -7,7 +7,7 @@ import Col from "react-bootstrap/Col";
 import Form from 'react-bootstrap/Form';
 import * as d3 from 'd3'
 
-import { DownloadAllColumnsButton, DownloadDropdownOptionsButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
+import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
 import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict } from '../actions/reportsActions';
 
@@ -514,11 +514,12 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                 </Button>
               </Col>
               <Col lg={2}>
-                <DownloadDropdownOptionsButton
+                <DownloadMultiHeaderButton
                   gridRef={gridRef}
                   colDefs={columns}
                   rowData={data}
-                  fileNameFront={fileNameFront} />
+                  fileNameFront={fileNameFront}
+                  buttonLabel="Download" />
               </Col>
               <Col lg={4}>
               </Col>
