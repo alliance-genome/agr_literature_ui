@@ -239,7 +239,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
               <Col>
                 <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} columnType={columnType} dateFrequencyValue={dateFrequencyValue} />
               </Col>
-              <Col>
+              <Col style={{ textAlign: "right" }}>
                 <Button
                   variant="primary"
                   size="sm"
@@ -248,8 +248,6 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                 >
                   <FontAwesomeIcon icon={faSync} /> Resync Table
                 </Button>
-              </Col>
-              <Col>
                 <DownloadAllColumnsButton
                   gridRef={gridRef}
                   colDefs={columns}
@@ -501,9 +499,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
         <div style={containerStyle}>
           <Container fluid style={{ width: '90%' }}>
             <Row style={{ paddingBottom: "0.5em" }}>
-              <Col lg={4}>
-              </Col>
-              <Col lg={2}>
+              <Col style={{ textAlign: "right" }}>
                 <Button
                   variant="primary"
                   size="sm"
@@ -512,16 +508,12 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                 >
                   <FontAwesomeIcon icon={faSync} /> Resync Table
                 </Button>
-              </Col>
-              <Col lg={2}>
                 <DownloadMultiHeaderButton
                   gridRef={gridRef}
                   colDefs={columns}
                   rowData={data}
                   fileNameFront={fileNameFront}
                   buttonLabel="Download" />
-              </Col>
-              <Col lg={4}>
               </Col>
             </Row>
             <Row>
