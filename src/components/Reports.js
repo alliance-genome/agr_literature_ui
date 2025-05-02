@@ -562,11 +562,13 @@ const QCReportTablesContainer = ({modSection}) => {
   const qcReportDict = useSelector(state => state.reports.qcReportDict);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const containerStyle = {
-    display: 'flex',
-    justifyContent: 'center',
-    marginTop: '15px',
-  };
+
+  // Not used? Remove?
+  // const containerStyle = {
+  //  display: 'flex',
+  //  justifyContent: 'center',
+  //  marginTop: '15px',
+  //};
 
   const [key, setKey] = useState(0);
   const gridRef = useRef();
@@ -663,6 +665,31 @@ const QCReportTablesContainer = ({modSection}) => {
   );
 }; // const QCReportTablesContainer
 
+const QCReportRetractedPapers = ({modSection}) => {
+    return (
+        <div>
+            <Container fluid style={{ width: '90%' }}>
+                <Row>
+                    <Col>
+                        <h4 style={{ textAlign: 'left' }}>Retracted References with Manual Tags</h4>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <div style={{ textAlign: 'left' }}>
+                            <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
+                        </div>
+                    </Col>
+                </Row>
+            </Container>
+        </div>
+    );
+};
 const WorkflowDiagram = () => {
 
     const [tagData, setTagData] = useState([]);
@@ -801,6 +828,7 @@ const ReportsContainer = () => {
               </Tab>
               <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
                 <QCReportTablesContainer modSection={mod} />
+                <QCReportRetractedPapers modSelection={mod} />
               </Tab>
             </Tabs>
           </Tab>
