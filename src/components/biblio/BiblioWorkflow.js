@@ -380,7 +380,6 @@ const BiblioWorkflow = () => {
       })
       .finally(() => {
         setReloadCurationDataTable(prevKey => prevKey + 1);
-//         setIsLoadingCurationData(false);
       });
     });
   };
