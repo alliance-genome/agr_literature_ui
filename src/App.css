@@ -550,10 +550,10 @@ em {
 }
 
 /* Alternating row colors */
-.ag-theme-alpine .ag-row-odd {
-  background-color: #f8f9fa;  /* Light grey */
+.ag-theme-quartz .ag-row-striped-dark {
+  background-color: #e9ecef;  /* Darker grey */
 }
 
-.ag-theme-alpine .ag-row-even {
-  background-color: #e9ecef;  /* Darker grey */
+.ag-theme-quartz .ag-row-striped-light {
+  background-color: #f8f9fa;  /* Light grey */
 }
