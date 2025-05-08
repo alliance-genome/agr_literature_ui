@@ -19,6 +19,9 @@ const BiblioWorkflow = () => {
   let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
 
   const gridRef = useRef();
+  const [gridApi, setGridApi] = useState(null);
+  const onGridReady = (params) => { setGridApi(params.api); };
+
   const [data, setData] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(0);
@@ -69,12 +72,15 @@ const BiblioWorkflow = () => {
           label: entity.name,
         }));
         setCurationStatusOptions(options);
+        if (gridApi && options.length > 0) {
+          gridApi.resetRowHeights();
+        }
       } catch (error) {
         console.error('Error fetching ateam curation status options:', error);
       }
     };
     fetchCurationStatuses();
-  }, [accessToken]);
+  }, [accessToken, gridApi]);
 
   useEffect(() => {
     const fetchCurationData = async () => {
@@ -429,6 +435,7 @@ const BiblioWorkflow = () => {
                 return !isValidCurationStatus && value ? 80 : 42; // taller if warning shown
               }}
               onCellValueChanged={onCellValueChanged}
+              onGridReady={onGridReady}
             />
           </div>
         </div>
