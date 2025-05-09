@@ -111,7 +111,7 @@ const BiblioWorkflow = () => {
               curation_status_id: info.curst_curation_status_id || 'new',
               curation_status: info.curst_curation_status || null,
               curation_status_updated: formatedCurstDateUpdated,
-              curator: (info.updated_by_email !== null) ? info.updated_by_email : info.updated_by,
+              curator: (info.curst_updated_by_email !== null) ? info.curst_updated_by_email : info.curst_updated_by,
               note: info.curst_note || null,
               controlled_note: info.curst_controlled_note || null,
               has_data: info.tet_info_has_data,
