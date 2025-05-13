@@ -4,7 +4,8 @@ import axios from "axios";
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
-import Spinner from "react-bootstrap/Spinner";
+import Modal from 'react-bootstrap/Modal';
+import Spinner from 'react-bootstrap/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons';
 
@@ -26,9 +27,10 @@ const BiblioWorkflow = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(0);
   const [curationData, setCurationData] = useState([]);
-  const [isLoadingCurationData, setIsLoadingCurationData] = useState(false);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
   const [reloadCurationDataTable, setReloadCurationDataTable] = useState(0);
+  const [showApiErrorModal, setShowApiErrorModal] = useState(false);
+  const [apiErrorMessage, setApiErrorMessage] = useState('');
 
   useEffect(() => {
     const fetchWFTdata = async () => {
@@ -87,7 +89,6 @@ const BiblioWorkflow = () => {
       const curationUrl =
         process.env.REACT_APP_RESTAPI +
         `/curation_status/aggregated_curation_status_and_tet_info/${referenceCurie}/${accessLevel}`;
-      setIsLoadingCurationData(true);
       try {
         const result = await axios.get(curationUrl);
 
@@ -128,13 +129,22 @@ const BiblioWorkflow = () => {
         setCurationData(processedCurationData);
       } catch (error) {
         console.error('Error fetching curation data:', error);
-      } finally {
-        setIsLoadingCurationData(false);
       }
     };
 
     fetchCurationData();
   }, [referenceCurie, accessLevel, reloadCurationDataTable]);
+
+  const GenericWorkflowTableModal = ({ title, body, show, onHide }) => {
+    return (
+      <Modal show={show} onHide={onHide} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>{title}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{body}</Modal.Body>
+      </Modal>
+    );
+  };
 
   const columns = [
       {
@@ -325,7 +335,7 @@ const BiblioWorkflow = () => {
     justifyContent: 'center',
   };
 
-  const onCellValueChanged = (params) => {
+  const onCellValueChanged = async (params) => {
     if (params.column.getColId() === 'curation_status') {
       const newValue = params.newValue;
       const oldValue = params.oldValue;
@@ -349,12 +359,16 @@ const BiblioWorkflow = () => {
       console.log("json_data: ");
       console.log(json_data);
 
-      updateCurationStatus(subPath, method, json_data)
+      try {
+        await updateCurationStatus(subPath, method, json_data);
+      } catch (err) {
+        // Error is already logged and modal shown by updateCurationStatus, but you can log more if needed
+        console.warn("Failed to update curation status", err);
+      }
     }
   };
 
   const updateCurationStatus = (subPath, method, json_data) => {
-    setIsLoadingCurationData(true);
     const url = process.env.REACT_APP_RESTAPI + subPath;
     return new Promise((resolve, reject) => {
       axios({
@@ -380,7 +394,9 @@ const BiblioWorkflow = () => {
         }
       })
       .catch((err) => {
-        const errorMessage = `error: ${url} ${err}`;
+        const errorMessage = (<>API error: reload page to see what's in the database.<br/><br/>Debug:<br/>url: {url}<br/>payload: {JSON.stringify(json_data)}<br/>error: {err.toString()}</>)
+        setApiErrorMessage(errorMessage);
+        setShowApiErrorModal(true);
         console.error(errorMessage);
         reject(new Error(errorMessage));
       })
@@ -417,29 +433,26 @@ const BiblioWorkflow = () => {
       <strong style={{ display: 'block', margin: '20px 0 10px' }}>
         Curation
       </strong>
-      {isLoadingCurationData ? (
-        <div className="text-center">
-          <Spinner animation="border" role="status" />
+      <div style={containerStyle}>
+        {showApiErrorModal && (
+          <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
+        )}
+        <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 40 }}>
+          <AgGridReact
+            rowData={curationData}
+            columnDefs={curationColumns}
+            domLayout="autoHeight"
+            getRowClass={(params) => (params.node.rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light')}
+            getRowHeight={(params) => {
+              const value = params.data?.curation_status;
+              const isValidCurationStatus = curationStatusOptions.some(opt => opt.value === value);
+              return !isValidCurationStatus && value ? 80 : 42; // taller if warning shown
+            }}
+            onCellValueChanged={onCellValueChanged}
+            onGridReady={onGridReady}
+          />
         </div>
-      ) : (
-        <div style={containerStyle}>
-          <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 40 }}>
-            <AgGridReact
-              rowData={curationData}
-              columnDefs={curationColumns}
-              domLayout="autoHeight"
-              getRowClass={(params) => (params.node.rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light')}
-              getRowHeight={(params) => {
-                const value = params.data?.curation_status;
-                const isValidCurationStatus = curationStatusOptions.some(opt => opt.value === value);
-                return !isValidCurationStatus && value ? 80 : 42; // taller if warning shown
-              }}
-              onCellValueChanged={onCellValueChanged}
-              onGridReady={onGridReady}
-            />
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
