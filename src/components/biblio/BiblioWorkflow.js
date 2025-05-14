@@ -320,13 +320,22 @@ const BiblioWorkflow = () => {
 	filter: true
       },
       {
-	headerName: 'Note',
-	field: 'note',
-	flex: 1,
-	cellStyle: { textAlign: 'left' },
-	headerClass: 'wft-bold-header wft-header-bg',
-	sortable: true,
-	filter: true
+        headerName: 'Note',
+        field: 'note',
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
+        editable: (params) => {
+          // note is only editable if curation_status is valid
+          return curationStatusOptions.some(option => option.value === params.data?.curation_status);
+        },
+        cellEditor: 'agLargeTextCellEditor',
+        cellEditorPopup: true,
+        cellEditorParams: {
+            maxLength: 2000
+        },
+        sortable: true,
+        filter: true
       },
   ];
 
@@ -336,35 +345,38 @@ const BiblioWorkflow = () => {
   };
 
   const onCellValueChanged = async (params) => {
-    if (params.column.getColId() === 'curation_status') {
-      const newValue = params.newValue;
-      const oldValue = params.oldValue;
-      const rowData = params.data;
-      console.log('Curation status changed from', oldValue, 'to', newValue);
-      console.log('Row data:', rowData);
-      console.log('Curation Status Id:', rowData.curation_status_id);
+    const colId = params.column.getColId();
+    const newValue = params.newValue;
+    const oldValue = params.oldValue;
+    const rowData = params.data;
 
-      let subPath = "/curation_status/";
-      let method = "PATCH";
-      let json_data = { curation_status: rowData.curation_status };
-      if (rowData.curation_status_id === 'new') {
-        method = "POST";
-        json_data["mod_abbreviation"] = accessLevel;
-        json_data["topic"] = rowData.topic_curie;
-        json_data["reference_curie"] = referenceCurie; }
-      else {
-        subPath = "/curation_status/" + rowData.curation_status_id; }
-      console.log("subPath: ", subPath);
-      console.log("method: ", method);
-      console.log("json_data: ");
-      console.log(json_data);
+    if (newValue === oldValue) return;	// no change
+    if (colId !== 'curation_status' && colId !== 'note') return;	// Only handle specific fields
 
-      try {
-        await updateCurationStatus(subPath, method, json_data);
-      } catch (err) {
-        // Error is already logged and modal shown by updateCurationStatus, but you can log more if needed
-        console.warn("Failed to update curation status", err);
-      }
+    console.log(`${colId} changed from`, oldValue, 'to', newValue);
+    console.log('Row data:', rowData);
+    console.log('Curation Status Id:', rowData.curation_status_id);
+
+    let subPath = "/curation_status/";
+    let method = "PATCH";
+    let json_data = { [colId]: newValue };
+    if (rowData.curation_status_id === 'new') {
+      method = "POST";
+      json_data["mod_abbreviation"] = accessLevel;
+      json_data["topic"] = rowData.topic_curie;
+      json_data["reference_curie"] = referenceCurie; }
+    else {
+      subPath = "/curation_status/" + rowData.curation_status_id; }
+    console.log("subPath: ", subPath);
+    console.log("method: ", method);
+    console.log("json_data: ");
+    console.log(json_data);
+
+    try {
+      await updateCurationStatus(subPath, method, json_data);
+    } catch (err) {
+      // Error is already logged and modal shown by updateCurationStatus, but you can log more if needed
+      console.warn("Failed to update curation status", err);
     }
   };
 
