@@ -453,6 +453,7 @@ const BiblioWorkflow = () => {
           <AgGridReact
             rowData={curationData}
             columnDefs={curationColumns}
+            singleClickEdit={true}
             domLayout="autoHeight"
             getRowClass={(params) => (params.node.rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light')}
             getRowHeight={(params) => {
