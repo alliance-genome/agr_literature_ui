@@ -441,8 +441,16 @@ const Facets = () => {
     const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
-    // const [showWarning, setShowWarning] = useState(false);
+    const seaValues = useSelector(state => state.search.searchFacetsValues['source_evidence_assertions'] || []);
+    const hasGroupSEA = seaValues.some(v => v === 'ECO:0006155' || v === 'ECO:0007669');
     const dispatch = useDispatch();
+
+    // Whenever a group-SEA is selected, turn off applyToSingleTag
+    useEffect(() => {
+      if (hasGroupSEA && applyToSingleTag) {
+        dispatch(setApplyToSingleTag(false));
+      }
+    }, [hasGroupSEA, applyToSingleTag, dispatch]);
 
     const handleCheckboxChange = (event) => {
         dispatch(setApplyToSingleTag(event.target.checked));
@@ -552,7 +560,13 @@ const Facets = () => {
 					   label="apply selections to single tag"
 					   checked={applyToSingleTag}
 					   onChange={handleCheckboxChange}
-					   style={{ display: 'inline-block', marginLeft: '30px', fontSize: '0.8rem' }}
+					   disabled={hasGroupSEA}
+					   style={{
+					       display: 'inline-block',
+					       marginLeft: '30px',
+					       fontSize: '0.8rem',
+					       opacity: hasGroupSEA ? 0.5 : 1
+					   }}
                                        />
 				   </>
                                 )}
