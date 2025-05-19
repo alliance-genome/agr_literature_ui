@@ -2,7 +2,8 @@ import {
   REPORTS_SET_DATE_RANGE_DICT,
   REPORTS_SET_DATE_OPTION_DICT,
   REPORTS_SET_DATE_FREQUENCY_DICT,
-  REPORTS_SET_QCREPORT_DICT
+  REPORTS_SET_QCREPORT_DICT,
+  REPORTS_SET_QCREPORT_REDACTED_PAPERS
 } from '../actions/reportsActions';
 
 import _ from "lodash";
@@ -14,7 +15,8 @@ const initialState = {
   dateRangeDict: {},
   dateOptionDict: {},
   dateFrequencyDict: {},
-  qcReportDict: { 'date-produced': null, 'obsolete_entities': null }
+  qcReportDict: { 'date-produced': null, 'obsolete_entities': null },
+  qcReportRedactedPapers: {'date-produced': null, 'redacted-references': null},
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -63,6 +65,11 @@ export default function(state = initialState, action) {
       return {
         ...state,
         qcReportDict: action.payload.qcReportDict
+      }
+    case REPORTS_SET_QCREPORT_REDACTED_PAPERS:
+      return {
+        ...state,
+        qcReportRedactedPapers: action.payload.qcReportRedactedPapers
       }
     default:
       return state;

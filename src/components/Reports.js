@@ -9,7 +9,7 @@ import * as d3 from 'd3'
 
 import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
-import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict } from '../actions/reportsActions';
+import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict, setQcreportRecactedPapers } from '../actions/reportsActions';
 
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
@@ -581,11 +581,6 @@ const QCReportTablesContainer = ({modSection}) => {
   const qcReportDict = useSelector(state => state.reports.qcReportDict);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const containerStyle = {
-    display: 'flex',
-    justifyContent: 'center',
-    marginTop: '15px',
-  };
 
   const [key, setKey] = useState(0);
   const gridRef = useRef();
@@ -621,6 +616,8 @@ const QCReportTablesContainer = ({modSection}) => {
   ];
 
   let rowData = [];
+
+
   if ( ( qcReportDict["obsolete_entities"] !== null) && ( modSection in qcReportDict["obsolete_entities"] ) ) {
     rowData = qcReportDict["obsolete_entities"][modSection].map(item => ({
       entity_type: item.entity_type,
@@ -682,6 +679,93 @@ const QCReportTablesContainer = ({modSection}) => {
   );
 }; // const QCReportTablesContainer
 
+const QCReportRetractedPapers = ({modSection}) => {
+    const [isLoadingData, setIsLoadingData] = useState(false);
+    const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+    const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
+    const qcReportRedactedPapers = useSelector(state => state.reports.qcReportRedactedPapers);
+
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const url = `${process.env.REACT_APP_RESTAPI}/check/check_redacted_references_with_tags`;
+            setIsLoadingData(true);
+            try {
+                const result = await axios.get(url);
+                dispatch(setQcreportRecactedPapers(result.data));
+                //setKey(prevKey => prevKey + 1);
+                // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setIsLoadingData(false);
+            }
+        };
+        if (qcReportRedactedPapers['date-produced'] === null) {fetchData(); }
+    }, [qcReportRedactedPapers]);
+
+    const columnDefs = [
+        { headerName: "Reference ID", field: "reference_id", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+        { headerName: "Reference Status", field: "reference_status", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
+    ];
+
+    let rowData = [];
+
+    if ( ( qcReportRedactedPapers["redacted-references"] !== null) && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) {
+        rowData = qcReportRedactedPapers["redacted-references"][modSection].map(item => ({
+            reference_id: item.reference_id,
+            reference_status: 'Retracted'
+        }));
+    }
+
+
+    return (
+        <div>
+            <Container fluid style={{ width: '90%' }}>
+                <Row>
+                    <Col>
+                        <h4 style={{ textAlign: 'left' }}>Retracted References with Manual Tags</h4>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        {isLoadingData ? (
+                            <div className="text-center">
+                                <Spinner animation="border" role="status">
+                                    <span className="visually-hidden">Loading...</span>
+                                </Spinner>
+                            </div>
+                        ) : (
+                            <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                                {( qcReportRedactedPapers["'date-produced'"] !== null) &&
+                                    (<div style={{ textAlign: 'left' }}>Date Produced: {qcReportRedactedPapers['date-produced']}<br /><br /></div>) }
+                                {( ( qcReportRedactedPapers["redacted-references"] !== null) && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) ? (
+                                    <AgGridReact
+                                        rowData={rowData}
+                                        columnDefs={columnDefs}
+                                        pagination={true}
+                                        paginationPageSize={10}
+                                        paginationPageSizeSelector={paginationPageSizeSelector}
+                                        domLayout="autoHeight"
+                                        gridOptions = {gridOptions}
+                                    />
+                                ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No retracted papers with manual tags for {modSection}</div>)}
+                            </div>
+                        )}
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <div style={{ textAlign: 'left' }}>
+                            <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
+                        </div>
+                    </Col>
+                </Row>
+            </Container>
+        </div>
+    );
+};
 const WorkflowDiagram = () => {
 
     const [tagData, setTagData] = useState([]);
@@ -820,6 +904,7 @@ const ReportsContainer = () => {
               </Tab>
               <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
                 <QCReportTablesContainer modSection={mod} />
+                <QCReportRetractedPapers modSection={mod} />
               </Tab>
             </Tabs>
           </Tab>
