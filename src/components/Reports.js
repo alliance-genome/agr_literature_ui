@@ -695,8 +695,17 @@ const QCReportRetractedPapers = ({modSection}) => {
     }, [qcReportRedactedPapers, dispatch]);
 
     const columnDefs = [
-        { headerName: "Reference ID", field: "reference_id", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
-        { headerName: "Reference Status", field: "reference_status", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
+        { headerName: "Reference ID",
+            field: "reference_id",
+            cellRenderer: props => {
+                return <a href={process.env.REACT_APP_UI_URL+"/Biblio?action=display&referenceCurie="+props.value}>{props.value}</a>
+            },
+            flex:1, cellStyle: { textAlign: 'left' },
+            headerClass: 'wft-bold-header' },
+        {
+            headerName: "Reference Status",
+            field: "reference_status",
+            flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
     ];
 
     let rowData = [];
