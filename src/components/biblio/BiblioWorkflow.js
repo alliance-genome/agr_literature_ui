@@ -27,6 +27,7 @@ const BiblioWorkflow = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(0);
   const [curationData, setCurationData] = useState([]);
+  const [curationWholePaperData, setCurationWholePaperData] = useState({});
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
   const [reloadCurationDataTable, setReloadCurationDataTable] = useState(0);
   const [showApiErrorModal, setShowApiErrorModal] = useState(false);
@@ -126,7 +127,26 @@ const BiblioWorkflow = () => {
           })
           .sort((a, b) => a.topic_name.localeCompare(b.topic_name));
 
-        setCurationData(processedCurationData);
+        const wholePaperEntry = processedCurationData.find(item => item.topic_curie === 'ATP:0000002') || {
+          topic_name: 'topic tag',
+          topic_curie: 'ATP:0000002',
+          curation_status_id: 'new',
+          curation_status: null,
+          curation_status_updated: null,
+          curator: null,
+          note: null,
+          controlled_note: null,
+          has_data: null,
+          novel_data: null,
+          no_data: null,
+          topic_source: null,
+          topic_added: null,
+        };
+        const restOfCurationData = processedCurationData
+          .filter(item => item.topic_curie !== 'ATP:0000002')
+          .sort((a, b) => a.topic_name.localeCompare(b.topic_name));
+        setCurationWholePaperData(wholePaperEntry || null);
+        setCurationData(restOfCurationData);
       } catch (error) {
         console.error('Error fetching curation data:', error);
       }
@@ -203,6 +223,63 @@ const BiblioWorkflow = () => {
 
   const renderNovelData = (params) => {
     return params.value ? <FontAwesomeIcon icon={faCheck} style={{ color: 'green', fontWeight: 'bold' }} /> : null;
+  };
+
+
+  const CurationStatusWholePaper = () => {
+    const handleChange = async (e, field) => {
+      const newValue = e.target.value;
+      let json_data = {};
+      if (field === 'curation_status') {
+        if (newValue === (curationWholePaperData.curation_status ?? "")) { return; }
+        json_data = { curation_status: newValue }; }
+      else if (field === "note") {
+        if (newValue === (curationWholePaperData.note ?? "")) return;
+        if (curationWholePaperData.curation_status_id === 'new') {
+          console.warn("Note can't be saved until a curation status exists.");
+          return;
+        }
+        json_data = { note: newValue }; }
+      let subPath = "/curation_status/";
+      let method = "PATCH";
+      if (curationWholePaperData.curation_status_id === 'new') {
+        method = "POST";
+        json_data["mod_abbreviation"] = accessLevel;
+        json_data["topic"] = curationWholePaperData.topic_curie;
+        json_data["reference_curie"] = referenceCurie; }
+      else {
+        subPath = "/curation_status/" + curationWholePaperData.curation_status_id; }
+      try {
+        await updateCurationStatus(subPath, method, json_data);
+      } catch (err) {
+        console.warn("Failed to update curation status", err);
+      }
+    };
+    const isValidCurationStatus = curationStatusOptions.some(option => option.value === curationWholePaperData.curation_status);
+    return (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ width: '80%', textAlign: 'left', margin: '2em 0' }}>
+        {!isValidCurationStatus && curationWholePaperData.curation_status && (
+          <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}> INVALID ATP ID: Choose Another </div> )}
+        <span> Whole Paper: </span>
+        <select value={curationWholePaperData.curation_status ?? ""} onChange={(e) => handleChange(e, "curation_status")} style={{ width: "8rem" }}>
+          {!isValidCurationStatus && curationWholePaperData.curation_status && (
+            <option value={curationWholePaperData.curation_status}>{curationWholePaperData.curation_status}</option>)}
+          {!curationWholePaperData.curation_status && ( <option value=""></option> )}
+          {curationStatusOptions.map(option => ( <option key={option.value} value={option.value}> {option.label} </option> ))}
+        </select>
+        <span style={{ margin: '0 0 0 2em' }}>{curationWholePaperData.curator} </span>
+        <span style={{ margin: '0 0 0 2em' }}>{curationWholePaperData.curation_status_updated}</span>
+        <br />
+        <textarea
+          defaultValue={curationWholePaperData.note}
+          disabled={curationWholePaperData.curation_status_id === 'new'}
+          style={{ width: '100%', marginTop: '1em', backgroundColor: curationWholePaperData.curation_status_id === 'new' ? '#f0f0f0' : 'white', }}
+          onBlur={(e) => handleChange(e, "note")}
+        />
+      </div>
+    </div>
+    );
   };
 
   const CurationStatusRenderer = (props) => {
@@ -445,6 +522,7 @@ const BiblioWorkflow = () => {
       <strong style={{ display: 'block', margin: '20px 0 10px' }}>
         Curation
       </strong>
+      <CurationStatusWholePaper />
       <div style={containerStyle}>
         {showApiErrorModal && (
           <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
