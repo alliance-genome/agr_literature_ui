@@ -31,6 +31,14 @@ const file_upload_name_mapping = {
     'file upload in progress': 'in progress'
 }
 
+const convertDate = (date) => {
+    if (date){
+        return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3")
+    } else {
+        return null
+    }
+}
+
 const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType }) => {
   const [data, setData] = useState([]);
   const [totals, setTotals] = useState({});
@@ -648,7 +656,7 @@ const QCReportTablesContainer = ({modSection}) => {
               ) : (
                 <div className="ag-theme-quartz" style={{ width: '100%' }}>
                  {( qcReportDict["'date-produced'"] !== null) &&
-                  (<div style={{ textAlign: 'left' }}>Date Produced: {qcReportDict['date-produced']}<br /><br /></div>) }
+                  (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportDict['date-produced'])}<br /><br /></div>) }
                  {( ( qcReportDict["obsolete_entities"] !== null) && ( modSection in qcReportDict["obsolete_entities"] ) ) ? (
                   <AgGridReact
                     key={key}
@@ -703,11 +711,20 @@ const QCReportRetractedPapers = ({modSection}) => {
             }
         };
         if (qcReportRedactedPapers['date-produced'] === null) {fetchData(); }
-    }, [qcReportRedactedPapers]);
+    }, [qcReportRedactedPapers, dispatch]);
 
     const columnDefs = [
-        { headerName: "Reference ID", field: "reference_id", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
-        { headerName: "Reference Status", field: "reference_status", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
+        { headerName: "Reference ID",
+            field: "reference_id",
+            cellRenderer: props => {
+                return <a href={process.env.REACT_APP_UI_URL+"/Biblio?action=display&referenceCurie="+props.value}>{props.value}</a>
+            },
+            flex:1, cellStyle: { textAlign: 'left' },
+            headerClass: 'wft-bold-header' },
+        {
+            headerName: "Reference Status",
+            field: "reference_status",
+            flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
     ];
 
     let rowData = [];
@@ -739,7 +756,7 @@ const QCReportRetractedPapers = ({modSection}) => {
                         ) : (
                             <div className="ag-theme-quartz" style={{ width: '100%' }}>
                                 {( qcReportRedactedPapers["'date-produced'"] !== null) &&
-                                    (<div style={{ textAlign: 'left' }}>Date Produced: {qcReportRedactedPapers['date-produced']}<br /><br /></div>) }
+                                    (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportRedactedPapers['date-produced'])}<br /><br /></div>) }
                                 {( ( qcReportRedactedPapers["redacted-references"] !== null) && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) ? (
                                     <AgGridReact
                                         rowData={rowData}
@@ -904,6 +921,7 @@ const ReportsContainer = () => {
               </Tab>
               <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
                 <QCReportTablesContainer modSection={mod} />
+                <hr/>
                 <QCReportRetractedPapers modSection={mod} />
               </Tab>
             </Tabs>
