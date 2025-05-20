@@ -4,6 +4,7 @@ import axios from "axios";
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
+import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 import Spinner from 'react-bootstrap/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -225,6 +226,27 @@ const BiblioWorkflow = () => {
     return params.value ? <FontAwesomeIcon icon={faCheck} style={{ color: 'green', fontWeight: 'bold' }} /> : null;
   };
 
+  const setDataTopicsInProgress = async () => {
+    const entriesToUpdate = curationData.filter(entry =>
+      entry.curation_status_id === "new" &&
+      (entry.has_data === true || entry.novel_data === true)
+    );
+    const updatePromises = entriesToUpdate.map(entry => {
+      const json_data = {
+        curation_status: 'ATP:0000237',
+        mod_abbreviation: accessLevel,
+        topic: entry.topic_curie,
+        reference_curie: referenceCurie
+      };
+      const subPath = "/curation_status/";
+      const method = "POST";
+      return updateCurationStatus(subPath, method, json_data)
+        .catch(err => {
+          console.warn(`Failed to update curation status for ${entry.topic_name} ${entry.topic_curie}`, err);
+        });
+    });
+    await Promise.all(updatePromises);
+  }
 
   const CurationStatusWholePaper = () => {
     const handleChange = async (e, field) => {
@@ -232,6 +254,7 @@ const BiblioWorkflow = () => {
       let json_data = {};
       if (field === 'curation_status') {
         if (newValue === (curationWholePaperData.curation_status ?? "")) { return; }
+        if (newValue === 'ATP:0000237') { setDataTopicsInProgress(); }
         json_data = { curation_status: newValue }; }
       else if (field === "note") {
         if (newValue === (curationWholePaperData.note ?? "")) return;
@@ -271,10 +294,15 @@ const BiblioWorkflow = () => {
         <span style={{ margin: '0 0 0 2em' }}>{curationWholePaperData.curator} </span>
         <span style={{ margin: '0 0 0 2em' }}>{curationWholePaperData.curation_status_updated}</span>
         <br />
-        <textarea
+        <Form.Control
+          as="textarea"
           defaultValue={curationWholePaperData.note}
           disabled={curationWholePaperData.curation_status_id === 'new'}
-          style={{ width: '100%', marginTop: '1em', backgroundColor: curationWholePaperData.curation_status_id === 'new' ? '#f0f0f0' : 'white', }}
+          style={{
+            width: '100%',
+            marginTop: '1em',
+            backgroundColor: curationWholePaperData.curation_status_id === 'new' ? '#f0f0f0' : 'white',
+          }}
           onBlur={(e) => handleChange(e, "note")}
         />
       </div>
