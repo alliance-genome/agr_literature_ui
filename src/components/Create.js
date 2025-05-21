@@ -1,7 +1,7 @@
 // import { Link } from 'react-router-dom'
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
 
 import { setReferenceCurie } from '../actions/biblioActions';
@@ -240,7 +240,7 @@ const Create = () => {
   const updateFailure = useSelector(state => state.create.updateFailure);
   const createModalText = useSelector(state => state.create.createModalText);
   const dispatch = useDispatch();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   function pushHistory(referenceCurie) {
     console.log('history push');
@@ -251,7 +251,7 @@ const Create = () => {
     // Warning: Cannot update during an existing state transition (such as within `render`). Render methods should be a pure function of props and state.
     dispatch(setGetReferenceCurieFlag(true));
     dispatch(setReferenceCurie(referenceCurie));
-    history.push("/Biblio/?action=editor&referenceCurie=" + referenceCurie);
+    navigate("/Biblio/?action=editor&referenceCurie=" + referenceCurie);
   }
 
   useEffect(() => {

@@ -14,7 +14,6 @@ import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilePdf, faPenSquare} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
-import { useHistory } from "react-router-dom";
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -118,11 +117,11 @@ const SearchResultItem = ({ reference }) => {
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" > 
-        <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+        <div className="searchRow-title"><Link to={`/Biblio?action=display&referenceCurie=${reference.curie}`} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
           <Row><Col><div className="searchRow-xref">
               <ul>
                   <li>
-                      <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
+                      <Link to={`/Biblio?action=display&referenceCurie=${reference.curie}`}
                             onClick={() => {
                                 dispatch(setReferenceCurie(reference.curie));
                                 dispatch(setGetReferenceCurieFlag(true));

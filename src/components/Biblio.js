@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import {useHistory, useLocation} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
 
 import RowDivider from './biblio/RowDivider';
 
@@ -437,7 +437,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
 
 const BiblioIdQuery = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
-  const history = useHistory();
+  const navigate = useNavigate();
   const [idQuery, setIdQuery] = useState('');
   const [error, setError] = useState(''); // state to store the error message
   const [showAlert, setShowAlert] = useState(false);
@@ -456,7 +456,7 @@ const BiblioIdQuery = () => {
       biblioActionTogglerSelected = 'rawtopicentity'; }
     let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + refCurie
     setIdQuery('');
-    history.push(newUrl);
+    navigate(newUrl);
   }
 
   const queryIdAndLoadReference = (refId) => {

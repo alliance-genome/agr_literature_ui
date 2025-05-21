@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 //import { BrowserRouter, Route } from 'react-router-dom'
 //import history from "../history";
 // console.log('Router is needed in AppWithRouterAccess.js or pages like https://dev3001.alliancegenome.org/Biblio?action=editor&referenceCurie=AGR:AGR-Reference-0000829611 will not display')
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import NavigationBar from './NavigationBar'
 import NotLoggedInBar from './NotLoggedInBar'
 import Search from './Search'
@@ -33,10 +33,9 @@ import LoginRequired from './LoginRequired'
 // import NavDropdown from 'react-bootstrap/NavDropdown';
 // import Glyphicon from 'react-bootstrap/Glyphicon';
 import React from 'react';
-// import { useHistory, Switch } from 'react-router-dom';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 // import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
-import { Security, SecureRoute } from '@okta/okta-react';
+import { Security, useOktaAuth } from '@okta/okta-react';
 import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
 import { useSelector, useDispatch } from 'react-redux';
 
@@ -49,6 +48,24 @@ import { oktaAuthConfig } from '../config';
 
 const oktaAuth = new OktaAuth(oktaAuthConfig);
 
+// Custom SecureRoute component for React Router v6
+const SecureRoute = ({ children }) => {
+    const { authState } = useOktaAuth();
+    const navigate = useNavigate();
+    
+    React.useEffect(() => {
+        if (authState?.isAuthenticated === false) {
+            navigate('/loginRequired', { replace: true });
+        }
+    }, [authState, navigate]);
+    
+    if (!authState || !authState.isAuthenticated) {
+        return null;
+    }
+    
+    return children;
+};
+
 // No secrets here so print out for sanity checking.
 console.log("UI_URL -> " + process.env.REACT_APP_UI_URL);
 console.log("UI_RESTAPI-> " + process.env.REACT_APP_RESTAPI);
@@ -59,7 +76,7 @@ console.log(Router);
 console.log(oktaAuth);
 
 const AppWithRouterAccess = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const dispatch = useDispatch();
 
     const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
@@ -80,11 +97,11 @@ const AppWithRouterAccess = () => {
     }, []);
 
     const customAuthHandler = () => {
-        history.replace('/loginRequired');
+        navigate('/loginRequired', { replace: true });
     };
 
     const restoreOriginalUri = async (_oktaAuth, originalUri) => {
-        history.replace(toRelativeUrl(originalUri, window.location.origin));
+        navigate(toRelativeUrl(originalUri, window.location.origin), { replace: true });
     };
 
     const oktaMod = useSelector(state => state.isLogged.oktaMod);
@@ -102,23 +119,25 @@ const AppWithRouterAccess = () => {
                 <NavigationBar />
                 <NotLoggedInBar />
                 <br />
-                <Route path='/' exact={true} component={Search}/>
-                <Route path='/search' component={Search} />
-                <Route path='/biblio' component={Biblio} />
-                <Route path='/sort' component={Sort} />
-                <Route path='/flags' component={Flags} />
-                <Route path='/files' component={Files} />
-                <Route path='/mining' component={Mining} />
-                <Route path='/ontomate' component={Ontomate} />
-                <Route path='/textpresso' component={Textpresso} />
-                <SecureRoute path='/create' component={Create} />
-                <Route path='/merge' component={Merge} />
-		<Route path='/reports' component={Reports} />
-                <Route path='/download' component={Download} />
-                <Route path='/about' component={About} />
-                <Route path='/tracker' component={Tracker} />
-                {/*<Route path = '/swaggerUI' component={SwaggerComp} />*/}
-                <Route path = '/loginRequired' component={LoginRequired} />
+                <Routes>
+                    <Route path='/' element={<Search />} />
+                    <Route path='/search' element={<Search />} />
+                    <Route path='/biblio' element={<Biblio />} />
+                    <Route path='/sort' element={<Sort />} />
+                    <Route path='/flags' element={<Flags />} />
+                    <Route path='/files' element={<Files />} />
+                    <Route path='/mining' element={<Mining />} />
+                    <Route path='/ontomate' element={<Ontomate />} />
+                    <Route path='/textpresso' element={<Textpresso />} />
+                    <Route path='/create' element={<SecureRoute><Create /></SecureRoute>} />
+                    <Route path='/merge' element={<Merge />} />
+                    <Route path='/reports' element={<Reports />} />
+                    <Route path='/download' element={<Download />} />
+                    <Route path='/about' element={<About />} />
+                    <Route path='/tracker' element={<Tracker />} />
+                    {/*<Route path = '/swaggerUI' element={<SwaggerComp />} />*/}
+                    <Route path = '/loginRequired' element={<LoginRequired />} />
+                </Routes>
             </div>
         </Security>
     );
