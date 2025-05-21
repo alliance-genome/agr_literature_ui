@@ -34,7 +34,6 @@ import LoginRequired from './LoginRequired'
 // import Glyphicon from 'react-bootstrap/Glyphicon';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-// import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
 import { Security, useOktaAuth } from '@okta/okta-react';
 import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
 import { useSelector, useDispatch } from 'react-redux';
