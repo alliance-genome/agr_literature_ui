@@ -3,7 +3,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import {Link} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import {
     setGetReferenceCurieFlag,
     setReferenceCurie
@@ -59,10 +59,10 @@ const SearchResultItem = ({ reference }) => {
   }
 
   const TETRedirect = ({ curie }) => {
-    const history = useHistory(); // Correct usage of useHistory
+    const navigate = useNavigate();
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
     const goToTET = () => {
-        history.push(`/Biblio/?action=entity&referenceCurie=${curie}`); // Use backticks for template literals
+        navigate(`/Biblio/?action=entity&referenceCurie=${curie}`);
     };
     return (
          isSignedIn ?  <Button  className="redirect-TET-button"  onClick={goToTET}  >
