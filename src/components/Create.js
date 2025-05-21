@@ -258,7 +258,7 @@ const Create = () => {
     if (createRedirectToBiblio) {
       pushHistory(createRedirectCurie);
     }
-  }, [createRedirectToBiblio, createRedirectCurie, dispatch, history]); // Dependencies ensure this effect runs when these values change
+  }, [createRedirectToBiblio, createRedirectCurie, dispatch, navigate]); // Dependencies ensure this effect runs when these values change
 
   return (
     <div>

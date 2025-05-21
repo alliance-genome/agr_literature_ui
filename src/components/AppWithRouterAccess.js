@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 //import { BrowserRouter, Route } from 'react-router-dom'
 //import history from "../history";
 // console.log('Router is needed in AppWithRouterAccess.js or pages like https://dev3001.alliancegenome.org/Biblio?action=editor&referenceCurie=AGR:AGR-Reference-0000829611 will not display')
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import NavigationBar from './NavigationBar'
 import NotLoggedInBar from './NotLoggedInBar'
 import Search from './Search'
