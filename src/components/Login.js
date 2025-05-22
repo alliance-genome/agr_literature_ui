@@ -48,7 +48,7 @@ const Login = ({config}) => {
         console.log('error logging in', err);
     };
 
-    if (authState.isPending) {
+    if (!authState || authState.isPending) { // MODIFIED LINE: Added !authState check
         console.log("is pending")
         return null; }
 
