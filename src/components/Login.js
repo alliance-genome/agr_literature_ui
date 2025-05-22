@@ -30,6 +30,9 @@ const Login = ({config}) => {
     // const [userId, setUserId] = useState('');
     const dispatch = useDispatch();
     useEffect(() => {
+        if (!authState) { // Added null check for authState
+            return;
+        }
         if (!authState.isAuthenticated) {
             // When user isn't authenticated, forget any user info
             dispatch(signOut())
