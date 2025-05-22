@@ -28,7 +28,7 @@ const BiblioWorkflow = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [key, setKey] = useState(0);
   const [curationData, setCurationData] = useState([]);
-  const [curationWholePaperData, setCurationWholePaperData] = useState({});
+  const [curationWholePaperData, setCurationWholePaperData] = useState([]);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
   const [reloadCurationDataTable, setReloadCurationDataTable] = useState(0);
   const [showApiErrorModal, setShowApiErrorModal] = useState(false);
@@ -146,7 +146,8 @@ const BiblioWorkflow = () => {
         const restOfCurationData = processedCurationData
           .filter(item => item.topic_curie !== 'ATP:0000002')
           .sort((a, b) => a.topic_name.localeCompare(b.topic_name));
-        setCurationWholePaperData(wholePaperEntry || null);
+        wholePaperEntry.topic_name = 'Whole Paper';
+        setCurationWholePaperData([wholePaperEntry]);
         setCurationData(restOfCurationData);
       } catch (error) {
         console.error('Error fetching curation data:', error);
@@ -280,33 +281,23 @@ const BiblioWorkflow = () => {
     };
     const isValidCurationStatus = curationStatusOptions.some(option => option.value === curationWholePaperData.curation_status);
     return (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '80%', textAlign: 'left', margin: '2em 0' }}>
-        {!isValidCurationStatus && curationWholePaperData.curation_status && (
-          <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}> INVALID ATP ID: Choose Another </div> )}
-        <span> Whole Paper: </span>
-        <select value={curationWholePaperData.curation_status ?? ""} onChange={(e) => handleChange(e, "curation_status")} style={{ width: "8rem" }}>
-          {!isValidCurationStatus && curationWholePaperData.curation_status && (
-            <option value={curationWholePaperData.curation_status}>{curationWholePaperData.curation_status}</option>)}
-          {!curationWholePaperData.curation_status && ( <option value=""></option> )}
-          {curationStatusOptions.map(option => ( <option key={option.value} value={option.value}> {option.label} </option> ))}
-        </select>
-        <span style={{ margin: '0 0 0 2em' }}>{curationWholePaperData.curator} </span>
-        <span style={{ margin: '0 0 0 2em' }}>{curationWholePaperData.curation_status_updated}</span>
-        <br />
-        <Form.Control
-          as="textarea"
-          defaultValue={curationWholePaperData.note}
-          disabled={curationWholePaperData.curation_status_id === 'new'}
-          style={{
-            width: '100%',
-            marginTop: '1em',
-            backgroundColor: curationWholePaperData.curation_status_id === 'new' ? '#f0f0f0' : 'white',
-          }}
-          onBlur={(e) => handleChange(e, "note")}
-        />
+      <div style={containerStyle}>
+        {showApiErrorModal && (
+          <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
+        )}
+        <div className="ag-theme-quartz" style={{ width: '80%', height: 45, marginBottom: 40 }}>
+          <AgGridReact
+            rowData={curationWholePaperData}
+            columnDefs={curationWholePaperColumns}
+            singleClickEdit={true}
+            domLayout="normal"
+            getRowClass={() => 'ag-row-striped-light'}
+            popupParent={document.body}
+            headerHeight={0}
+            onCellValueChanged={onCellValueChanged}
+          />
+        </div>
       </div>
-    </div>
     );
   };
 
@@ -327,6 +318,54 @@ const BiblioWorkflow = () => {
     </div>
     );
   };
+
+  const curationWholePaperColumns = [
+      {
+	headerName: 'Topic for curation',
+	field: 'topic_name',
+	flex: 1,
+	cellStyle: { textAlign: 'left' },
+	headerClass: 'wft-bold-header wft-header-bg',
+      },
+      {
+        headerName: 'Curation Status',
+        field: 'curation_status',
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
+        cellRenderer: CurationStatusRenderer,
+      },
+      {
+	headerName: 'Curator',
+	field: 'curator',
+	flex: 1,
+	cellStyle: { textAlign: 'left' },
+	headerClass: 'wft-bold-header wft-header-bg',
+      },
+      {
+	headerName: 'Curation Status updated',
+	field: 'curation_status_updated',
+	flex: 1,
+	cellStyle: { textAlign: 'left' },
+	headerClass: 'wft-bold-header wft-header-bg',
+      },
+      {
+        headerName: 'Note',
+        field: 'note',
+        flex: 4,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
+        editable: (params) => {
+          // note is only editable if curation_status is valid
+          return curationStatusOptions.some(option => option.value === params.data?.curation_status);
+        },
+        cellEditor: 'agLargeTextCellEditor',
+        cellEditorPopup: true,
+        cellEditorParams: {
+          maxLength: 2000
+        },
+      },
+  ];
 
   const curationColumns = [
       {
@@ -458,6 +497,8 @@ const BiblioWorkflow = () => {
     if (newValue === oldValue) return;	// no change
     if (colId !== 'curation_status' && colId !== 'note') return;	// Only handle specific fields
 
+    if (colId === 'curation_status' && rowData.topic_name === 'Whole Paper' && newValue === 'ATP:0000237') { setDataTopicsInProgress(); }
+
     console.log(`${colId} changed from`, oldValue, 'to', newValue);
     console.log('Row data:', rowData);
     console.log('Curation Status Id:', rowData.curation_status_id);
@@ -567,6 +608,7 @@ const BiblioWorkflow = () => {
               const isValidCurationStatus = curationStatusOptions.some(opt => opt.value === value);
               return !isValidCurationStatus && value ? 80 : 42; // taller if warning shown
             }}
+            popupParent={document.body}
             onCellValueChanged={onCellValueChanged}
             onGridReady={onGridReady}
           />
