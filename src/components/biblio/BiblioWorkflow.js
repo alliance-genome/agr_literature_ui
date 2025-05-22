@@ -249,7 +249,7 @@ const BiblioWorkflow = () => {
     await Promise.all(updatePromises);
   }
 
-  const CurationStatusWholePaperAgGrid = () => {
+  const CurationStatusWholePaper = () => {
     const handleChange = async (e, field) => {
       const newValue = e.target.value;
       let json_data = {};
@@ -300,68 +300,6 @@ const BiblioWorkflow = () => {
       </div>
     );
   };
-
-//   const CurationStatusWholePaperTextarea = () => {
-//     const handleChange = async (e, field) => {
-//       const newValue = e.target.value;
-//       let json_data = {};
-//       if (field === 'curation_status') {
-//         if (newValue === (curationWholePaperData[0]?.curation_status ?? "")) { return; }
-//         if (newValue === 'ATP:0000237') { setDataTopicsInProgress(); }
-//         json_data = { curation_status: newValue }; }
-//       else if (field === "note") {
-//         if (newValue === (curationWholePaperData[0]?.note ?? "")) return;
-//         if (curationWholePaperData[0]?.curation_status_id === 'new') {
-//           console.warn("Note can't be saved until a curation status exists.");
-//           return;
-//         }
-//         json_data = { note: newValue }; }
-//       let subPath = "/curation_status/";
-//       let method = "PATCH";
-//       if (curationWholePaperData[0]?.curation_status_id === 'new') {
-//         method = "POST";
-//         json_data["mod_abbreviation"] = accessLevel;
-//         json_data["topic"] = curationWholePaperData[0]?.topic_curie;
-//         json_data["reference_curie"] = referenceCurie; }
-//       else {
-//         subPath = "/curation_status/" + curationWholePaperData[0]?.curation_status_id; }
-//       try {
-//         await updateCurationStatus(subPath, method, json_data);
-//       } catch (err) {
-//         console.warn("Failed to update curation status", err);
-//       }
-//     };
-//     const isValidCurationStatus = curationStatusOptions.some(option => option.value === curationWholePaperData[0]?.curation_status);
-//     return (
-//     <div style={{ display: 'flex', justifyContent: 'center' }}>
-//       <div style={{ width: '80%', textAlign: 'left', margin: '2em 0' }}>
-//         {!isValidCurationStatus && curationWholePaperData[0]?.curation_status && (
-//           <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}> INVALID ATP ID: Choose Another </div> )}
-//         <span> Whole Paper: </span>
-//         <select value={curationWholePaperData[0]?.curation_status ?? ""} onChange={(e) => handleChange(e, "curation_status")} style={{ width: "8rem" }}>
-//           {!isValidCurationStatus && curationWholePaperData[0]?.curation_status && (
-//             <option value={curationWholePaperData[0]?.curation_status}>{curationWholePaperData[0]?.curation_status}</option>)}
-//           {!curationWholePaperData[0]?.curation_status && ( <option value=""></option> )}
-//           {curationStatusOptions.map(option => ( <option key={option.value} value={option.value}> {option.label} </option> ))}
-//         </select>
-//         <span style={{ margin: '0 0 0 2em' }}>{curationWholePaperData[0]?.curator} </span>
-//         <span style={{ margin: '0 0 0 2em' }}>{curationWholePaperData[0]?.curation_status_updated}</span>
-//         <br />
-//         <Form.Control
-//           as="textarea"
-//           defaultValue={curationWholePaperData[0]?.note}
-//           disabled={curationWholePaperData[0]?.curation_status_id === 'new'}
-//           style={{
-//             width: '100%',
-//             marginTop: '1em',
-//             backgroundColor: curationWholePaperData[0]?.curation_status_id === 'new' ? '#f0f0f0' : 'white',
-//           }}
-//           onBlur={(e) => handleChange(e, "note")}
-//         />
-//       </div>
-//     </div>
-//     );
-//   };
 
   const CurationStatusRenderer = (props) => {
     const handleChange = (e) => {
@@ -627,7 +565,6 @@ const BiblioWorkflow = () => {
   };
 
 
-//       <CurationStatusWholePaperTextarea />
   return (
     <div>
       {/* File Upload Status Section */}
@@ -654,7 +591,7 @@ const BiblioWorkflow = () => {
       <strong style={{ display: 'block', margin: '20px 0 10px' }}>
         Curation
       </strong>
-      <CurationStatusWholePaperAgGrid />
+      <CurationStatusWholePaper />
       <div style={containerStyle}>
         {showApiErrorModal && (
           <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
