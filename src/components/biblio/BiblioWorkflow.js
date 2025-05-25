@@ -359,6 +359,13 @@ const BiblioWorkflow = () => {
           // note is only editable if curation_status is valid
           return curationStatusOptions.some(option => option.value === params.data?.curation_status);
         },
+        cellRenderer: (params) => {
+          const isValidCurationStatus = curationStatusOptions.some(option => option.value === params.data?.curation_status);
+          // note is only displayed if it has data, placeholder displayed only if curation_status is valid
+          if (params.value) { return params.value; }
+          else if (isValidCurationStatus) { return 'Add Note here'; }
+          else { return ''; }
+        },
         cellEditor: 'agLargeTextCellEditor',
         cellEditorPopup: true,
         cellEditorParams: {
