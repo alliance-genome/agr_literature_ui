@@ -30,6 +30,7 @@ const BiblioWorkflow = () => {
   const [curationData, setCurationData] = useState([]);
   const [curationWholePaperData, setCurationWholePaperData] = useState([]);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
+  const [controlledNoteOptions, setControlledNoteOptions] = useState([]);
   const [reloadCurationDataTable, setReloadCurationDataTable] = useState(0);
   const [showApiErrorModal, setShowApiErrorModal] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState('');
@@ -63,20 +64,67 @@ const BiblioWorkflow = () => {
 
   useEffect(() => {
     const fetchCurationStatuses = async () => {
-      const url = process.env.REACT_APP_ATEAM_API_BASE_URL + "api/atpterm/ATP:0000230/children";
+      const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
+      const urls = {
+        curationStatus: `${baseUrl}api/atpterm/ATP:0000230/children`,
+        controlledNote1: `${baseUrl}api/atpterm/ATP:0000227/`,
+        controlledNote2: `${baseUrl}api/atpterm/ATP:0000227/descendants`,
+        controlledNote3: `${baseUrl}api/atpterm/ATP:0000208/`,
+        controlledNote4: `${baseUrl}api/atpterm/ATP:0000208/descendants`,
+      };
       try {
-        const result = await axios.get(url, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        const options = result.data.entities.map((entity) => ({
+// DELETE THIS
+//         const result = await axios.get(url, {
+//           headers: {
+//             'Authorization': `Bearer ${accessToken}`,
+//             'Content-Type': 'application/json',
+//           }
+//         });
+//         const options = result.data.entities.map((entity) => ({
+//           value: entity.curie,
+//           label: entity.name,
+//         }));
+//         setCurationStatusOptions(options);
+//         if (gridApi && options.length > 0) {
+//           gridApi.resetRowHeights();
+//         }
+        const headers = {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        };
+        const [curationStatusResult, controlledNoteResult1, controlledNoteResult2, controlledNoteResult3, controlledNoteResult4] = await Promise.all([
+          axios.get(urls.curationStatus, { headers }),
+          axios.get(urls.controlledNote1, { headers }),
+          axios.get(urls.controlledNote2, { headers }),
+          axios.get(urls.controlledNote3, { headers }),
+          axios.get(urls.controlledNote4, { headers }),
+        ]);
+        const curationStatusOptionsObjs = Array.isArray(curationStatusResult.data.entities)
+          ? curationStatusResult.data.entities.map(entity => ({
+              value: entity.curie,
+              label: entity.name,
+            }))
+          : [];
+        const normalizeEntities = (data) => {
+          if (Array.isArray(data.entities)) return data.entities;
+          if (data.entity) return [data.entity];
+          return [];
+        };
+        const controlledNoteResultEntities1 = normalizeEntities(controlledNoteResult1.data);
+        const controlledNoteResultEntities2 = normalizeEntities(controlledNoteResult2.data);
+        const controlledNoteResultEntities3 = normalizeEntities(controlledNoteResult3.data);
+        const controlledNoteResultEntities4 = normalizeEntities(controlledNoteResult4.data);
+        const controlledNoteOptionsObjs = [...controlledNoteResultEntities1, ...controlledNoteResultEntities2,
+            ...controlledNoteResultEntities3, ...controlledNoteResultEntities4].map(entity => ({
           value: entity.curie,
           label: entity.name,
         }));
-        setCurationStatusOptions(options);
-        if (gridApi && options.length > 0) {
+console.log('Curation options:')
+console.log(curationStatusOptionsObjs);
+console.log('Controlled note options:', controlledNoteOptionsObjs);
+        setCurationStatusOptions(curationStatusOptionsObjs);
+        setControlledNoteOptions(controlledNoteOptionsObjs);
+        if (gridApi && (curationStatusOptionsObjs.length > 0 || controlledNoteOptionsObjs.length > 0)) {
           gridApi.resetRowHeights();
         }
       } catch (error) {
@@ -306,11 +354,22 @@ const BiblioWorkflow = () => {
       props.node.setDataValue(props.colDef.field, e.target.value);
     };
     const isValidCurationStatus = curationStatusOptions.some(option => option.value === props.value);
+    const rowIndex = props.node?.rowIndex;
+    const rowClass = rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light';
     return (
-    <div>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', boxSizing: 'border-box',
+        padding: '4px 8px', // optional for inner padding
+      }}>
       {!isValidCurationStatus && props.value && (
         <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}> INVALID ATP ID: Choose Another </div> )}
-      <select value={props.value ?? ""} onChange={handleChange} style={{ width: "8rem" }}>
+      <select
+        value={props.value ?? ""}
+        onChange={handleChange}
+        className={rowClass}
+        style={{ width: '100%', height: '100%', border: '1px solid #ccc', borderRadius: '6px', }}
+      >
         {!isValidCurationStatus && props.value && ( <option value={props.value}>{props.value}</option>)}
         {!props.value && ( <option value=""></option> )}
         {curationStatusOptions.map(option => ( <option key={option.value} value={option.value}> {option.label} </option> ))}
@@ -467,6 +526,17 @@ const BiblioWorkflow = () => {
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
+        editable: (params) => {
+          // note is only editable if curation_status is valid
+          return curationStatusOptions.some(option => option.value === params.data?.curation_status);
+        },
+        cellEditor: 'agSelectCellEditor',
+        cellEditorParams: {
+            values: controlledNoteOptions.map(option => option.label),
+// this isn't right, it's only getting the label, not the value.  could try to do stuff, if installing agRichSelectCellEditor, but maybe can just map the label to the value when the data updates
+            valueListMaxHeight: 120,
+            valueListMaxWidth: 180
+        },
 	sortable: true,
 	filter: true
       },
