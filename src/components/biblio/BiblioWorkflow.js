@@ -67,10 +67,10 @@ const BiblioWorkflow = () => {
       const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
       const urls = {
         curationStatus: `${baseUrl}api/atpterm/ATP:0000230/children`,
-        controlledNote1: `${baseUrl}api/atpterm/ATP:0000227/`,
-        controlledNote2: `${baseUrl}api/atpterm/ATP:0000227/descendants`,
-        controlledNote3: `${baseUrl}api/atpterm/ATP:0000208/`,
-        controlledNote4: `${baseUrl}api/atpterm/ATP:0000208/descendants`,
+        controlledNote1: `${baseUrl}api/atpterm/ATP:0000208/`,
+        controlledNote2: `${baseUrl}api/atpterm/ATP:0000208/descendants`,
+        controlledNote3: `${baseUrl}api/atpterm/ATP:0000227/`,
+        controlledNote4: `${baseUrl}api/atpterm/ATP:0000227/descendants`,
       };
       try {
 // DELETE THIS
@@ -114,7 +114,8 @@ const BiblioWorkflow = () => {
         const controlledNoteResultEntities2 = normalizeEntities(controlledNoteResult2.data);
         const controlledNoteResultEntities3 = normalizeEntities(controlledNoteResult3.data);
         const controlledNoteResultEntities4 = normalizeEntities(controlledNoteResult4.data);
-        const controlledNoteOptionsObjs = [...controlledNoteResultEntities1, ...controlledNoteResultEntities2,
+        const controlledNoteOptionsObjs = [
+            ...controlledNoteResultEntities1, ...controlledNoteResultEntities2,
             ...controlledNoteResultEntities3, ...controlledNoteResultEntities4].map(entity => ({
           value: entity.curie,
           label: entity.name,
@@ -349,32 +350,30 @@ console.log('Controlled note options:', controlledNoteOptionsObjs);
     );
   };
 
-  const CurationStatusRenderer = (props) => {
-    const handleChange = (e) => {
-      props.node.setDataValue(props.colDef.field, e.target.value);
-    };
-    const isValidCurationStatus = curationStatusOptions.some(option => option.value === props.value);
-    const rowIndex = props.node?.rowIndex;
+  const GeneralizedDropdownRenderer = ({ value, node, colDef, options, validateFn, errorMessage, isDisabled = false, }) => {
+    const isValid = validateFn ? validateFn(value) : true;
+    const rowIndex = node?.rowIndex;
     const rowClass = rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light';
+    const handleChange = (e) => { node.setDataValue(colDef.field, e.target.value); };
     return (
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: '4px 8px',
         display: 'flex', flexDirection: 'column', justifyContent: 'center', boxSizing: 'border-box',
-        padding: '4px 8px', // optional for inner padding
       }}>
-      {!isValidCurationStatus && props.value && (
-        <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}> INVALID ATP ID: Choose Another </div> )}
-      <select
-        value={props.value ?? ""}
-        onChange={handleChange}
-        className={rowClass}
-        style={{ width: '100%', height: '100%', border: '1px solid #ccc', borderRadius: '6px', }}
-      >
-        {!isValidCurationStatus && props.value && ( <option value={props.value}>{props.value}</option>)}
-        {!props.value && ( <option value=""></option> )}
-        {curationStatusOptions.map(option => ( <option key={option.value} value={option.value}> {option.label} </option> ))}
-      </select>
-    </div>
+        {!isValid && value && (
+          <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}>{errorMessage ?? "Invalid value"}</div>)}
+        <select
+          value={value ?? ""}
+          onChange={handleChange}
+          className={rowClass}
+          disabled={isDisabled}
+          style={{ width: '100%', height: '100%', border: '1px solid #ccc', borderRadius: '6px', }}
+        >
+          {!isValid && value && <option value={value}>{value}</option>}
+          {(!value || colDef.field === 'controlled_note') && <option value=""></option>}
+          {options.map(opt => ( <option key={opt.value} value={opt.value}>{opt.label}</option>))}
+        </select>
+      </div>
     );
   };
 
@@ -392,7 +391,16 @@ console.log('Controlled note options:', controlledNoteOptionsObjs);
         flex: 1,
         cellStyle: { textAlign: 'left' },
         headerClass: 'wft-bold-header wft-header-bg',
-        cellRenderer: CurationStatusRenderer,
+        cellRenderer: GeneralizedDropdownRenderer,
+        cellRendererParams: (params) => ({
+          value: params.value,
+          node: params.node,
+          colDef: params.colDef,
+          options: curationStatusOptions, // Assumes format: [{ value, label }]
+          validateFn: (val) => curationStatusOptions.some(option => option.value === val),
+          errorMessage: 'INVALID ATP ID: Choose Another',
+          isDisabled: false,
+        })
       },
       {
 	headerName: 'Curator',
@@ -449,7 +457,16 @@ console.log('Controlled note options:', controlledNoteOptionsObjs);
         flex: 1,
         cellStyle: { textAlign: 'left' },
         headerClass: 'wft-bold-header wft-header-bg',
-        cellRenderer: CurationStatusRenderer,
+        cellRenderer: GeneralizedDropdownRenderer,
+        cellRendererParams: (params) => ({
+          value: params.value,
+          node: params.node,
+          colDef: params.colDef,
+          options: curationStatusOptions, // Assumes format: [{ value, label }]
+          validateFn: (val) => curationStatusOptions.some(option => option.value === val),
+          errorMessage: 'INVALID ATP ID: Choose Another',
+          isDisabled: false,
+        }),
         sortable: true,
         filter: true,
       },
@@ -526,16 +543,18 @@ console.log('Controlled note options:', controlledNoteOptionsObjs);
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
-        editable: (params) => {
-          // note is only editable if curation_status is valid
-          return curationStatusOptions.some(option => option.value === params.data?.curation_status);
-        },
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-            values: controlledNoteOptions.map(option => option.label),
-// this isn't right, it's only getting the label, not the value.  could try to do stuff, if installing agRichSelectCellEditor, but maybe can just map the label to the value when the data updates
-            valueListMaxHeight: 120,
-            valueListMaxWidth: 180
+        cellRenderer: GeneralizedDropdownRenderer,
+        cellRendererParams: (params) => {
+          const isValidCurationStatus = curationStatusOptions.some(option => option.value === params.data?.curation_status);
+          return {
+            value: params.value,
+            node: params.node,
+            colDef: params.colDef,
+            options: controlledNoteOptions, // Assumes format: [{ value, label }]
+            validateFn: (val) => controlledNoteOptions.some(option => option.value === val),
+            errorMessage: 'INVALID Controlled Note: Choose Another',
+            isDisabled: !isValidCurationStatus,
+          };
         },
 	sortable: true,
 	filter: true
@@ -572,7 +591,7 @@ console.log('Controlled note options:', controlledNoteOptionsObjs);
     const rowData = params.data;
 
     if (newValue === oldValue) return;	// no change
-    if (colId !== 'curation_status' && colId !== 'note') return;	// Only handle specific fields
+    if (colId !== 'curation_status' && colId !== 'controlled_note' && colId !== 'note') return;	// Only handle specific fields
 
     if (colId === 'curation_status' && rowData.topic_name === 'Whole Paper' && newValue === 'ATP:0000237') { setDataTopicsInProgress(); }
 
