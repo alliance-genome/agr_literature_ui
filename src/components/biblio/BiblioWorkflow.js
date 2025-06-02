@@ -73,21 +73,6 @@ const BiblioWorkflow = () => {
         controlledNote4: `${baseUrl}api/atpterm/ATP:0000227/descendants`,
       };
       try {
-// DELETE THIS
-//         const result = await axios.get(url, {
-//           headers: {
-//             'Authorization': `Bearer ${accessToken}`,
-//             'Content-Type': 'application/json',
-//           }
-//         });
-//         const options = result.data.entities.map((entity) => ({
-//           value: entity.curie,
-//           label: entity.name,
-//         }));
-//         setCurationStatusOptions(options);
-//         if (gridApi && options.length > 0) {
-//           gridApi.resetRowHeights();
-//         }
         const headers = {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -120,9 +105,6 @@ const BiblioWorkflow = () => {
           value: entity.curie,
           label: entity.name,
         }));
-console.log('Curation options:')
-console.log(curationStatusOptionsObjs);
-console.log('Controlled note options:', controlledNoteOptionsObjs);
         setCurationStatusOptions(curationStatusOptionsObjs);
         setControlledNoteOptions(controlledNoteOptionsObjs);
         if (gridApi && (curationStatusOptionsObjs.length > 0 || controlledNoteOptionsObjs.length > 0)) {
