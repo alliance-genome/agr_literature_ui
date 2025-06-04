@@ -130,15 +130,18 @@ const BiblioWorkflow = () => {
             // Convert Date to "Month Day, Year" if present
             let formatedCurstDateUpdated = null;
             if (info.curst_date_updated) {
-              const date = new Date(info.curst_date_updated);
+              // const date = new Date(info.curst_date_updated);
+              const [year, month, day] = info.curst_date_updated.split('-');
+              const date = new Date(year, month - 1, day); // month is 0-based
               formatedCurstDateUpdated = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', });
             }
             let formatedTetInfoDateCreated = null;
             if (info.tet_info_date_created) {
-              const date = new Date(info.tet_info_date_created);
+              // const date = new Date(info.tet_info_date_created);
+              const [year, month, day] = info.tet_info_date_created.split('-');
+              const date = new Date(year, month - 1, day); // month is 0-based
               formatedTetInfoDateCreated = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', });
             }
-
             return {
               topic_name: info.topic_name,
               topic_curie: info.topic_curie,
