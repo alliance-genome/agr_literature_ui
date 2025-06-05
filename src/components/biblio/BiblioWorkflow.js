@@ -59,23 +59,39 @@ const BiblioWorkflow = () => {
           'community curation': 'Community Curation',
           'manual indexing': 'Manual Indexing',
         };
-        const rows = sectionOrder.map(sectionKey => {
-          const sectionInfo = respData[sectionKey] || {};
-          const allTagsObj = sectionInfo.all_workflow_tags || {};
-          const currentArr = sectionInfo.current_workflow_tag || [];
-          const currentValue = currentArr.length > 0
-            ? currentArr[0].workflow_tag_id
-            : '';
-          const options = Object.entries(allTagsObj).map(([id, label]) => ({
-            value: id,
-            label: label,
-          }));
-          return {
-            section: sectionDisplayNames[sectionKey],
-            workflow_tag: currentValue,
-            options: options,
-          };
-        });
+
+        const rows = sectionOrder
+          .filter(sectionKey => sectionKey in respData)
+          .map(sectionKey => {
+            const sectionInfo = respData[sectionKey] || {};
+            const allTagsObj = sectionInfo.all_workflow_tags || {};
+            const currentArr = sectionInfo.current_workflow_tag || [];
+
+            // Extract email and date_updated from current_workflow_tag[0], if present
+            let currentValue = '';
+            let email = '';
+            let date_updated = '';
+            if (currentArr.length > 0) {
+              const currentTag = currentArr[0];
+              currentValue = currentTag.workflow_tag_id;
+              email = currentTag.email;
+              date_updated = currentTag.date_updated;
+            }
+
+            const options = Object.entries(allTagsObj).map(([id, label]) => ({
+              value: id,
+              label: label,
+            }));
+
+            return {
+              section: sectionDisplayNames[sectionKey],
+              workflow_tag: currentValue,
+              email,
+              date_updated,
+              options,
+            };
+          });
+
         setIndexingWorkflowData(rows);
       } catch (error) {
         console.error('Error fetching workflow overview:', error);
@@ -84,7 +100,7 @@ const BiblioWorkflow = () => {
 
     fetchIndexingWorkflowOverview();
   }, [referenceCurie, accessLevel, accessToken]);
-  
+ 
   useEffect(() => {
     const fetchWFTdata = async () => {
       const url = process.env.REACT_APP_RESTAPI + "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
@@ -251,38 +267,6 @@ const BiblioWorkflow = () => {
       </Modal>
     );
   };
-
-  const indexingWorkflowColumns = [
-    {
-      headerName: 'Workflow Process',
-      field: 'section',
-      flex: 1,
-      cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header wft-header-bg',
-      sortable: true,
-      filter: true,
-    },
-    {
-      headerName: 'Current Status',
-      field: 'workflow_tag',
-      flex: 1,
-      cellStyle: { textAlign: 'left' },
-      headerClass: 'wft-bold-header wft-header-bg',
-      cellRenderer: GeneralizedDropdownRenderer,
-      cellRendererParams: (params) => ({
-        value: params.value,
-        node: params.node,
-        colDef: params.colDef,
-        options: params.data.options,
-        validateFn: (val) => params.data.options.some(opt => opt.value === val),
-        errorMessage: 'INVALID ATP ID',
-        isDisabled: false,
-      }),
-      sortable: true,
-      filter: true,
-    },
-  ];
-
     
   const columns = [
       {
@@ -417,28 +401,63 @@ const BiblioWorkflow = () => {
     );
   };
 
-  const GeneralizedDropdownRenderer = ({ value, node, colDef, options, validateFn, errorMessage, isDisabled = false, }) => {
+  const GeneralizedDropdownRenderer = ({
+    value,
+    node,
+    colDef,
+    options,
+    validateFn,
+    errorMessage,
+    isDisabled = false,
+  }) => {
     const isValid = validateFn ? validateFn(value) : true;
     const rowIndex = node?.rowIndex;
-    const rowClass = rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light';
-    const handleChange = (e) => { node.setDataValue(colDef.field, e.target.value); };
+    const rowClass = rowIndex % 2 === 0
+      ? 'ag-row-striped-dark'
+      : 'ag-row-striped-light';
+
+    const handleChange = (e) => {
+      node.setDataValue(colDef.field, e.target.value);
+    };
+
     return (
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: '4px 8px',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center', boxSizing: 'border-box',
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        padding: '4px 8px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
       }}>
         {!isValid && value && (
-          <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}>{errorMessage ?? "Invalid value"}</div>)}
+          <div style={{
+            color: 'red',
+            fontSize: '0.8em',
+            marginBottom: '2px'
+          }}>
+            {errorMessage ?? "Invalid value"}
+          </div>
+        )}
         <select
           value={value ?? ""}
           onChange={handleChange}
           className={rowClass}
           disabled={isDisabled}
-          style={{ width: '100%', height: '100%', border: '1px solid #ccc', borderRadius: '6px', }}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: '1px solid #ccc',
+            borderRadius: '6px',
+          }}
         >
-          {!isValid && value && <option value={value}>{value}</option>}
-          {(!value || colDef.field === 'controlled_note') && <option value=""></option>}
-          {options.map(opt => ( <option key={opt.value} value={opt.value}>{opt.label}</option>))}
+          {/* Always include an empty option so it can be unset */}
+          <option value=""></option>
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </select>
       </div>
     );
@@ -646,6 +665,55 @@ const BiblioWorkflow = () => {
       },
   ];
 
+  const indexingWorkflowColumns = [
+    {
+      headerName: 'Workflow Process',
+      field: 'section',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Current Status',
+      field: 'workflow_tag',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      cellRenderer: GeneralizedDropdownRenderer,
+      cellRendererParams: (params) => ({
+        value: params.value,
+        node: params.node,
+        colDef: params.colDef,
+        options: params.data.options,
+        validateFn: (val) => params.data.options.some(opt => opt.value === val),
+        errorMessage: 'INVALID ATP ID',
+        isDisabled: false,
+      }),
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Email',
+      field: 'email',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Date Updated',
+      field: 'date_updated',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+  ];
+
   const containerStyle = {
     display: 'flex',
     justifyContent: 'center',
@@ -740,7 +808,7 @@ const BiblioWorkflow = () => {
         </div>
       ) : (
         <div style={containerStyle}>
-            <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 10 }}>
+            <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 10}}>
             <AgGridReact
               rowData={data}
               columnDefs={columns}
@@ -750,19 +818,36 @@ const BiblioWorkflow = () => {
         </div>
       )}
 
+
       {/* Manual Indexing and Community Curation Section */}
-      <strong style={{ display: 'block', margin: '20px 0 10px' }}>
-        Manual Indexing and Community Curation
-      </strong>
-      <div style={containerStyle}>
-        <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 40 }}>
-          <AgGridReact
-            rowData={indexingWorkflowData}
-            columnDefs={ indexingWorkflowColumns}
-            domLayout="autoHeight"
-          />
-        </div>
-      </div>
+      {['WB', 'SGD', 'FB', 'ZFIN'].includes(accessLevel) && (
+        <>
+          <strong style={{ display: 'block', margin: '20px 0 10px' }}>
+            Manual Indexing and Community Curation
+          </strong>
+          <div style={containerStyle}>
+            <div
+              className="ag-theme-quartz"
+              style={{
+                width: '80%',
+                height: `${indexingWorkflowData.length * 45}px`,
+                marginBottom: 10,
+              }}
+            >
+              <AgGridReact
+                rowData={indexingWorkflowData}
+                columnDefs={indexingWorkflowColumns}
+                singleClickEdit={true}
+                domLayout="normal"
+                headerHeight={0}
+                rowHeight={45}
+                getRowClass={() => 'ag-row-striped-light'}
+                popupParent={document.body}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Curation Section */}
       <strong style={{ display: 'block', margin: '20px 0 10px' }}>
