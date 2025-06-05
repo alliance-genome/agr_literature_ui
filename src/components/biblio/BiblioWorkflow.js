@@ -34,7 +34,57 @@ const BiblioWorkflow = () => {
   const [reloadCurationDataTable, setReloadCurationDataTable] = useState(0);
   const [showApiErrorModal, setShowApiErrorModal] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState('');
+  const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
 
+  useEffect(() => {
+    const fetchIndexingWorkflowOverview = async () => {
+      const url =
+        `${process.env.REACT_APP_RESTAPI}` +
+        `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
+      try {
+        const res = await axios.get(url, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        const respData = res.data || {};
+        const sectionOrder = [
+          'indexing priority',
+          'community curation',
+          'manual indexing'
+        ];
+        const sectionDisplayNames = {
+          'indexing priority': 'Indexing Priority',
+          'community curation': 'Community Curation',
+          'manual indexing': 'Manual Indexing',
+        };
+        const rows = sectionOrder.map(sectionKey => {
+          const sectionInfo = respData[sectionKey] || {};
+          const allTagsObj = sectionInfo.all_workflow_tags || {};
+          const currentArr = sectionInfo.current_workflow_tag || [];
+          const currentValue = currentArr.length > 0
+            ? currentArr[0].workflow_tag_id
+            : '';
+          const options = Object.entries(allTagsObj).map(([id, label]) => ({
+            value: id,
+            label: label,
+          }));
+          return {
+            section: sectionDisplayNames[sectionKey],
+            workflow_tag: currentValue,
+            options: options,
+          };
+        });
+        setIndexingWorkflowData(rows);
+      } catch (error) {
+        console.error('Error fetching workflow overview:', error);
+      }
+    };
+
+    fetchIndexingWorkflowOverview();
+  }, [referenceCurie, accessLevel, accessToken]);
+  
   useEffect(() => {
     const fetchWFTdata = async () => {
       const url = process.env.REACT_APP_RESTAPI + "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
@@ -202,6 +252,38 @@ const BiblioWorkflow = () => {
     );
   };
 
+  const indexingWorkflowColumns = [
+    {
+      headerName: 'Workflow Process',
+      field: 'section',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Current Status',
+      field: 'workflow_tag',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      cellRenderer: GeneralizedDropdownRenderer,
+      cellRendererParams: (params) => ({
+        value: params.value,
+        node: params.node,
+        colDef: params.colDef,
+        options: params.data.options,
+        validateFn: (val) => params.data.options.some(opt => opt.value === val),
+        errorMessage: 'INVALID ATP ID',
+        isDisabled: false,
+      }),
+      sortable: true,
+      filter: true,
+    },
+  ];
+
+    
   const columns = [
       {
 	  headerName: 'MOD',
@@ -667,6 +749,20 @@ const BiblioWorkflow = () => {
           </div>
         </div>
       )}
+
+      {/* Manual Indexing and Community Curation Section */}
+      <strong style={{ display: 'block', margin: '20px 0 10px' }}>
+        Manual Indexing and Community Curation
+      </strong>
+      <div style={containerStyle}>
+        <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 40 }}>
+          <AgGridReact
+            rowData={indexingWorkflowData}
+            columnDefs={ indexingWorkflowColumns}
+            domLayout="autoHeight"
+          />
+        </div>
+      </div>
 
       {/* Curation Section */}
       <strong style={{ display: 'block', margin: '20px 0 10px' }}>
