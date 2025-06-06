@@ -406,55 +406,24 @@ const BiblioWorkflow = () => {
     );
   };
 
-  const GeneralizedDropdownRenderer = ({
-    value,
-    node,
-    colDef,
-    options,
-    validateFn,
-    errorMessage,
-    isDisabled = false,
-  }) => {
+const GeneralizedDropdownRenderer = ({ value, node, colDef, options, validateFn, errorMessage, isDisabled = false, }) => {
     const isValid = validateFn ? validateFn(value) : true;
     const rowIndex = node?.rowIndex;
-    const rowClass = rowIndex % 2 === 0
-      ? 'ag-row-striped-dark'
-      : 'ag-row-striped-light';
-
-    const handleChange = (e) => {
-      node.setDataValue(colDef.field, e.target.value);
-    };
-
+    const rowClass = rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light';
+    const handleChange = (e) => { node.setDataValue(colDef.field, e.target.value); };
     return (
       <div style={{
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        padding: '4px 8px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        boxSizing: 'border-box',
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: '4px 8px',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', boxSizing: 'border-box',
       }}>
         {!isValid && value && (
-          <div style={{
-            color: 'red',
-            fontSize: '0.8em',
-            marginBottom: '2px'
-          }}>
-            {errorMessage ?? "Invalid value"}
-          </div>
-        )}
+            <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}>{errorMessage ?? "Invalid value"}</div>)}
         <select
           value={value ?? ""}
           onChange={handleChange}
           className={rowClass}
           disabled={isDisabled}
-          style={{
-            width: '100%',
-            height: '100%',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-          }}
+	  style={{ width: '100%', height: '100%', border: '1px solid #ccc', borderRadius: '6px', }}
         >
           {/* Always include an empty option so it can be unset */}
           <option value=""></option>
@@ -879,7 +848,7 @@ const BiblioWorkflow = () => {
         </div>
       ) : (
         <div style={containerStyle}>
-            <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 10}}>
+            <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 10 }}>
             <AgGridReact
               rowData={data}
               columnDefs={columns}
