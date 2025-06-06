@@ -36,8 +36,7 @@ const BiblioWorkflow = () => {
   const [apiErrorMessage, setApiErrorMessage] = useState('');
   const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
 
-  useEffect(() => {
-    const fetchIndexingWorkflowOverview = async () => {
+  const fetchIndexingWorkflowOverview = useCallback(async () => {
       const url =
         `${process.env.REACT_APP_RESTAPI}` +
         `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
@@ -71,11 +70,13 @@ const BiblioWorkflow = () => {
             let currentValue = '';
             let email = '';
             let date_updated = '';
+	    let reference_workflow_tag_id = null;  
             if (currentArr.length > 0) {
               const currentTag = currentArr[0];
               currentValue = currentTag.workflow_tag_id;
               email = currentTag.email;
-              date_updated = currentTag.date_updated;
+	      date_updated = currentTag.date_updated;
+	      reference_workflow_tag_id = currentArr[0].reference_workflow_tag_id;	
             }
 
             const options = Object.entries(allTagsObj).map(([id, label]) => ({
@@ -88,7 +89,8 @@ const BiblioWorkflow = () => {
               workflow_tag: currentValue,
               email,
               date_updated,
-              options,
+	      options,
+	      reference_workflow_tag_id, 	
             };
           });
 
@@ -96,11 +98,12 @@ const BiblioWorkflow = () => {
       } catch (error) {
         console.error('Error fetching workflow overview:', error);
       }
-    };
+  }
 
+  useEffect(() => {
     fetchIndexingWorkflowOverview();
   }, [referenceCurie, accessLevel, accessToken]);
- 
+
   useEffect(() => {
     const fetchWFTdata = async () => {
       const url = process.env.REACT_APP_RESTAPI + "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
@@ -719,6 +722,72 @@ const BiblioWorkflow = () => {
     justifyContent: 'center',
   };
 
+  const onIndexingWorkflowCellValueChanged = useCallback(async (params) => {
+    if (params.column.getColId() !== 'workflow_tag') return;
+  
+    const { data, oldValue, newValue } = params;
+    if (newValue === oldValue) return;
+
+    try {
+      if (data.reference_workflow_tag_id) {
+        // Existing tag - PATCH
+        await patchWorkflowTag(
+          data.reference_workflow_tag_id, 
+          { workflow_tag_id: newValue }
+        );
+      } else {
+        // New tag - POST
+        await postWorkflowTag({
+          reference_curie: referenceCurie,
+          mod_abbreviation: accessLevel,
+          workflow_tag_id: newValue
+        });
+      }
+    
+      // Refresh data after successful update
+      fetchIndexingWorkflowOverview();
+    } catch (error) {
+      const errorMessage = `API error: ${error.message}`;
+      setApiErrorMessage(errorMessage);
+      setShowApiErrorModal(true);
+      console.error('Error updating workflow tag:', error);
+    }
+  }, [referenceCurie, accessLevel, accessToken, fetchIndexingWorkflowOverview]);
+
+  // Helper function for POST request
+  const postWorkflowTag = async (data) => {
+    const url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/`;
+    const response = await axios.post(url, data, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.status !== 201) {
+      throw new Error(`POST failed with status ${response.status}`);
+    }
+  
+    return response.data;
+  };
+
+  // Helper function for PATCH request
+  const patchWorkflowTag = async (id, data) => {
+    const url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/${id}`;
+    const response = await axios.patch(url, data, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  
+    if (response.status !== 202) {
+      throw new Error(`PATCH failed with status ${response.status}`);
+    }
+  
+    return response.data;
+  };
+    
   const onCellValueChanged = async (params) => {
     const colId = params.column.getColId();
     const newValue = params.newValue;
@@ -843,6 +912,7 @@ const BiblioWorkflow = () => {
                 rowHeight={45}
                 getRowClass={() => 'ag-row-striped-light'}
                 popupParent={document.body}
+		onCellValueChanged={onIndexingWorkflowCellValueChanged}  
               />
             </div>
           </div>
