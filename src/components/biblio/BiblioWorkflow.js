@@ -36,6 +36,7 @@ const BiblioWorkflow = () => {
   const [apiErrorMessage, setApiErrorMessage] = useState('');
   const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
 
+  // Fetch “indexing-community” overview and store email/date_updated/reference_workflow_tag_id
   useEffect(() => {
     const fetchIndexingWorkflowOverview = async () => {
       const url =
@@ -67,15 +68,17 @@ const BiblioWorkflow = () => {
             const allTagsObj = sectionInfo.all_workflow_tags || {};
             const currentArr = sectionInfo.current_workflow_tag || [];
 
-            // Extract email and date_updated from current_workflow_tag[0], if present
+            // Extract current_workflow_tag fields if present
             let currentValue = '';
             let email = '';
             let date_updated = '';
+            let reference_workflow_tag_id = null;
             if (currentArr.length > 0) {
               const currentTag = currentArr[0];
               currentValue = currentTag.workflow_tag_id;
               email = currentTag.email;
               date_updated = currentTag.date_updated;
+              reference_workflow_tag_id = currentTag.reference_workflow_tag_id;
             }
 
             const options = Object.entries(allTagsObj).map(([id, label]) => ({
@@ -88,6 +91,7 @@ const BiblioWorkflow = () => {
               workflow_tag: currentValue,
               email,
               date_updated,
+              reference_workflow_tag_id,
               options,
             };
           });
@@ -674,6 +678,7 @@ const BiblioWorkflow = () => {
       headerClass: 'wft-bold-header wft-header-bg',
       sortable: true,
       filter: true,
+      editable: false	
     },
     {
       headerName: 'Current Status',
@@ -681,6 +686,7 @@ const BiblioWorkflow = () => {
       flex: 1,
       cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header wft-header-bg',
+      editable: true,
       cellRenderer: GeneralizedDropdownRenderer,
       cellRendererParams: (params) => ({
         value: params.value,
@@ -702,6 +708,7 @@ const BiblioWorkflow = () => {
       headerClass: 'wft-bold-header wft-header-bg',
       sortable: true,
       filter: true,
+      editable: false
     },
     {
       headerName: 'Date Updated',
@@ -711,6 +718,7 @@ const BiblioWorkflow = () => {
       headerClass: 'wft-bold-header wft-header-bg',
       sortable: true,
       filter: true,
+      editable: false
     },
   ];
 
@@ -719,6 +727,71 @@ const BiblioWorkflow = () => {
     justifyContent: 'center',
   };
 
+  const onIndexingWorkflowCellValueChanged = async (params) => {
+    const colId = params.column.getColId();
+    if (colId !== 'workflow_tag') return;
+
+    const newValue = params.newValue;
+    const oldValue = params.oldValue;
+    const rowData = params.data;
+
+    // nothing changed → skip
+    if (newValue === oldValue) return;
+
+    const { reference_workflow_tag_id } = rowData;
+
+    if (!reference_workflow_tag_id && newValue) {
+      // **CREATE** a new WFT row
+      const subPath = "/workflow_tag/";
+      const json_data = {
+        workflow_tag_id: newValue,
+        mod_abbreviation: accessLevel,
+        reference_curie: referenceCurie
+      };
+      try {
+        const res = await axios.post(
+          process.env.REACT_APP_RESTAPI + subPath,
+          json_data,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            }
+          }
+        );
+        // response returns { reference_workflow_tag_id: <new-id>, … }
+        const created = res.data;
+        // Store the newly returned reference_workflow_tag_id into this row’s data
+        params.node.setDataValue(
+          'reference_workflow_tag_id',
+          created.reference_workflow_tag_id
+        );
+      } catch (error) {
+        console.error('Error creating workflow tag:', error);
+      }
+    } else if (reference_workflow_tag_id && newValue) {
+      // **UPDATE** an existing WFT row
+      const subPath = `/workflow_tag/${reference_workflow_tag_id}`;
+      const json_data = {
+        workflow_tag_id: newValue
+      };
+      try {
+        await axios.patch(
+          process.env.REACT_APP_RESTAPI + subPath,
+          json_data,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Error updating workflow tag:', error);
+      }
+    }
+  };
+    
   const onCellValueChanged = async (params) => {
     const colId = params.column.getColId();
     const newValue = params.newValue;
@@ -843,7 +916,8 @@ const BiblioWorkflow = () => {
                 rowHeight={45}
                 getRowClass={() => 'ag-row-striped-light'}
                 popupParent={document.body}
-              />
+		onCellValueChanged={onIndexingWorkflowCellValueChanged}
+	      />
             </div>
           </div>
         </>
