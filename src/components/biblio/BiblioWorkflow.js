@@ -406,7 +406,7 @@ const BiblioWorkflow = () => {
     );
   };
 
-const GeneralizedDropdownRenderer = ({ value, node, colDef, options, validateFn, errorMessage, isDisabled = false, }) => {
+  const GeneralizedDropdownRenderer = ({ value, node, colDef, options, validateFn, errorMessage, isDisabled = false, }) => {
     const isValid = validateFn ? validateFn(value) : true;
     const rowIndex = node?.rowIndex;
     const rowClass = rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light';
@@ -417,7 +417,7 @@ const GeneralizedDropdownRenderer = ({ value, node, colDef, options, validateFn,
         display: 'flex', flexDirection: 'column', justifyContent: 'center', boxSizing: 'border-box',
       }}>
         {!isValid && value && (
-            <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}>{errorMessage ?? "Invalid value"}</div>)}
+          <div style={{ color: 'red', fontSize: '0.8em', marginBottom: '2px' }}>{errorMessage ?? "Invalid value"}</div>)}
         <select
           value={value ?? ""}
           onChange={handleChange}
