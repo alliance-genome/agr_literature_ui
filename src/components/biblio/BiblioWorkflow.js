@@ -36,7 +36,8 @@ const BiblioWorkflow = () => {
   const [apiErrorMessage, setApiErrorMessage] = useState('');
   const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
 
-  const fetchIndexingWorkflowOverview = useCallback(async () => {
+  const fetchIndexingWorkflowOverview = useCallback(
+    async () => {
       const url =
         `${process.env.REACT_APP_RESTAPI}` +
         `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
@@ -66,17 +67,16 @@ const BiblioWorkflow = () => {
             const allTagsObj = sectionInfo.all_workflow_tags || {};
             const currentArr = sectionInfo.current_workflow_tag || [];
 
-            // Extract email and date_updated from current_workflow_tag[0], if present
             let currentValue = '';
             let email = '';
             let date_updated = '';
-	    let reference_workflow_tag_id = null;  
+            let reference_workflow_tag_id = null;
             if (currentArr.length > 0) {
               const currentTag = currentArr[0];
               currentValue = currentTag.workflow_tag_id;
               email = currentTag.email;
-	      date_updated = currentTag.date_updated;
-	      reference_workflow_tag_id = currentArr[0].reference_workflow_tag_id;	
+              date_updated = currentTag.date_updated;
+              reference_workflow_tag_id = currentArr[0].reference_workflow_tag_id;
             }
 
             const options = Object.entries(allTagsObj).map(([id, label]) => ({
@@ -89,8 +89,8 @@ const BiblioWorkflow = () => {
               workflow_tag: currentValue,
               email,
               date_updated,
-	      options,
-	      reference_workflow_tag_id, 	
+              options,
+              reference_workflow_tag_id,
             };
           });
 
@@ -98,11 +98,13 @@ const BiblioWorkflow = () => {
       } catch (error) {
         console.error('Error fetching workflow overview:', error);
       }
-  }
+    },
+    [referenceCurie, accessLevel, accessToken]  // <- dependency array for useCallback
+  );
 
   useEffect(() => {
     fetchIndexingWorkflowOverview();
-  }, [referenceCurie, accessLevel, accessToken]);
+  }, [fetchIndexingWorkflowOverview]);
 
   useEffect(() => {
     const fetchWFTdata = async () => {
