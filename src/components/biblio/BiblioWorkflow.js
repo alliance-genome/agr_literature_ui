@@ -9,6 +9,7 @@ import Modal from 'react-bootstrap/Modal';
 import Spinner from 'react-bootstrap/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons';
+import { postWorkflowTag, patchWorkflowTag } from './WorkflowTagService'
 
 const file_upload_process_atp_id = "ATP:0000140";
 
@@ -423,15 +424,11 @@ const BiblioWorkflow = () => {
           onChange={handleChange}
           className={rowClass}
           disabled={isDisabled}
-	  style={{ width: '100%', height: '100%', border: '1px solid #ccc', borderRadius: '6px', }}
+          style={{ width: '100%', height: '100%', border: '1px solid #ccc', borderRadius: '6px', }}
         >
-          {/* Always include an empty option so it can be unset */}
-          <option value=""></option>
-          {options.map(opt => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
+          {!isValid && value && <option value={value}>{value}</option>}
+          {(!value || colDef.field === 'controlled_note') && <option value=""></option>}
+          {options.map(opt => ( <option key={opt.value} value={opt.value}>{opt.label}</option>))}
         </select>
       </div>
     );
@@ -704,15 +701,19 @@ const BiblioWorkflow = () => {
         // Existing tag - PATCH
         await patchWorkflowTag(
           data.reference_workflow_tag_id, 
-          { workflow_tag_id: newValue }
+          { workflow_tag_id: newValue },
+	  accessToken
         );
       } else {
         // New tag - POST
-        await postWorkflowTag({
-          reference_curie: referenceCurie,
-          mod_abbreviation: accessLevel,
-          workflow_tag_id: newValue
-        });
+        await postWorkflowTag(
+	  {
+              reference_curie: referenceCurie,
+              mod_abbreviation: accessLevel,
+              workflow_tag_id: newValue
+          },
+	  accessToken
+	);
       }
     
       // Refresh data after successful update
@@ -724,40 +725,6 @@ const BiblioWorkflow = () => {
       console.error('Error updating workflow tag:', error);
     }
   }, [referenceCurie, accessLevel, accessToken, fetchIndexingWorkflowOverview]);
-
-  // Helper function for POST request
-  const postWorkflowTag = async (data) => {
-    const url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/`;
-    const response = await axios.post(url, data, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.status !== 201) {
-      throw new Error(`POST failed with status ${response.status}`);
-    }
-  
-    return response.data;
-  };
-
-  // Helper function for PATCH request
-  const patchWorkflowTag = async (id, data) => {
-    const url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/${id}`;
-    const response = await axios.patch(url, data, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
-  
-    if (response.status !== 202) {
-      throw new Error(`PATCH failed with status ${response.status}`);
-    }
-  
-    return response.data;
-  };
     
   const onCellValueChanged = async (params) => {
     const colId = params.column.getColId();
