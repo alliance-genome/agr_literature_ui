@@ -9,6 +9,7 @@ import Modal from 'react-bootstrap/Modal';
 import Spinner from 'react-bootstrap/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons';
+import { postWorkflowTag, patchWorkflowTag } from './WorkflowTagService'
 
 const file_upload_process_atp_id = "ATP:0000140";
 
@@ -34,6 +35,77 @@ const BiblioWorkflow = () => {
   const [reloadCurationDataTable, setReloadCurationDataTable] = useState(0);
   const [showApiErrorModal, setShowApiErrorModal] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState('');
+  const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
+
+  const fetchIndexingWorkflowOverview = useCallback(
+    async () => {
+      const url =
+        `${process.env.REACT_APP_RESTAPI}` +
+        `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
+      try {
+        const res = await axios.get(url, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        const respData = res.data || {};
+        const sectionOrder = [
+          'indexing priority',
+          'community curation',
+          'manual indexing'
+        ];
+        const sectionDisplayNames = {
+          'indexing priority': 'Indexing Priority',
+          'community curation': 'Community Curation',
+          'manual indexing': 'Manual Indexing',
+        };
+
+        const rows = sectionOrder
+          .filter(sectionKey => sectionKey in respData)
+          .map(sectionKey => {
+            const sectionInfo = respData[sectionKey] || {};
+            const allTagsObj = sectionInfo.all_workflow_tags || {};
+            const currentArr = sectionInfo.current_workflow_tag || [];
+
+            let currentValue = '';
+            let email = '';
+            let date_updated = '';
+            let reference_workflow_tag_id = null;
+            if (currentArr.length > 0) {
+              const currentTag = currentArr[0];
+              currentValue = currentTag.workflow_tag_id;
+              email = currentTag.email;
+              date_updated = currentTag.date_updated;
+              reference_workflow_tag_id = currentArr[0].reference_workflow_tag_id;
+            }
+
+            const options = Object.entries(allTagsObj).map(([id, label]) => ({
+              value: id,
+              label: label,
+            }));
+
+            return {
+              section: sectionDisplayNames[sectionKey],
+              workflow_tag: currentValue,
+              email,
+              date_updated,
+              options,
+              reference_workflow_tag_id,
+            };
+          });
+
+        setIndexingWorkflowData(rows);
+      } catch (error) {
+        console.error('Error fetching workflow overview:', error);
+      }
+    },
+    [referenceCurie, accessLevel, accessToken]  // <- dependency array for useCallback
+  );
+
+  useEffect(() => {
+    fetchIndexingWorkflowOverview();
+  }, [fetchIndexingWorkflowOverview]);
 
   useEffect(() => {
     const fetchWFTdata = async () => {
@@ -199,7 +271,7 @@ const BiblioWorkflow = () => {
       </Modal>
     );
   };
-
+    
   const columns = [
       {
 	  headerName: 'MOD',
@@ -562,11 +634,96 @@ const BiblioWorkflow = () => {
       },
   ];
 
+  const indexingWorkflowColumns = [
+    {
+      headerName: 'Workflow Process',
+      field: 'section',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Current Status',
+      field: 'workflow_tag',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      cellRenderer: GeneralizedDropdownRenderer,
+      cellRendererParams: (params) => ({
+        value: params.value,
+        node: params.node,
+        colDef: params.colDef,
+        options: params.data.options,
+        validateFn: (val) => params.data.options.some(opt => opt.value === val),
+        errorMessage: 'INVALID ATP ID',
+        isDisabled: false,
+      }),
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Email',
+      field: 'email',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Date Updated',
+      field: 'date_updated',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+  ];
+
   const containerStyle = {
     display: 'flex',
     justifyContent: 'center',
   };
 
+  const onIndexingWorkflowCellValueChanged = useCallback(async (params) => {
+    if (params.column.getColId() !== 'workflow_tag') return;
+  
+    const { data, oldValue, newValue } = params;
+    if (newValue === oldValue) return;
+
+    try {
+      if (data.reference_workflow_tag_id) {
+        // Existing tag - PATCH
+        await patchWorkflowTag(
+          data.reference_workflow_tag_id, 
+          { workflow_tag_id: newValue },
+	  accessToken
+        );
+      } else {
+        // New tag - POST
+        await postWorkflowTag(
+	  {
+              reference_curie: referenceCurie,
+              mod_abbreviation: accessLevel,
+              workflow_tag_id: newValue
+          },
+	  accessToken
+	);
+      }
+    
+      // Refresh data after successful update
+      fetchIndexingWorkflowOverview();
+    } catch (error) {
+      const errorMessage = `API error: ${error.message}`;
+      setApiErrorMessage(errorMessage);
+      setShowApiErrorModal(true);
+      console.error('Error updating workflow tag:', error);
+    }
+  }, [referenceCurie, accessLevel, accessToken, fetchIndexingWorkflowOverview]);
+    
   const onCellValueChanged = async (params) => {
     const colId = params.column.getColId();
     const newValue = params.newValue;
@@ -664,6 +821,37 @@ const BiblioWorkflow = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Manual Indexing and Community Curation Section */}
+      {['WB', 'SGD', 'FB', 'ZFIN'].includes(accessLevel) && (
+        <>
+          <strong style={{ display: 'block', margin: '20px 0 10px' }}>
+            Manual Indexing and Community Curation
+          </strong>
+          <div style={containerStyle}>
+            <div
+              className="ag-theme-quartz"
+              style={{
+                width: '80%',
+                height: `${indexingWorkflowData.length * 45}px`,
+                marginBottom: 10,
+              }}
+            >
+              <AgGridReact
+                rowData={indexingWorkflowData}
+                columnDefs={indexingWorkflowColumns}
+                singleClickEdit={true}
+                domLayout="normal"
+                headerHeight={0}
+                rowHeight={43}
+                getRowClass={() => 'ag-row-striped-light'}
+                popupParent={document.body}
+		onCellValueChanged={onIndexingWorkflowCellValueChanged}  
+              />
+            </div>
+          </div>
+        </>
       )}
 
       {/* Curation Section */}
