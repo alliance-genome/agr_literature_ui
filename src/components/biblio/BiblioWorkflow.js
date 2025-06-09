@@ -825,7 +825,6 @@ const BiblioWorkflow = () => {
         </div>
       )}
 
-
       {/* Manual Indexing and Community Curation Section */}
       {['WB', 'SGD', 'FB', 'ZFIN'].includes(accessLevel) && (
         <>
@@ -847,7 +846,7 @@ const BiblioWorkflow = () => {
                 singleClickEdit={true}
                 domLayout="normal"
                 headerHeight={0}
-                rowHeight={45}
+                rowHeight={43}
                 getRowClass={() => 'ag-row-striped-light'}
                 popupParent={document.body}
 		onCellValueChanged={onIndexingWorkflowCellValueChanged}  
