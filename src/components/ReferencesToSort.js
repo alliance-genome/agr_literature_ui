@@ -211,7 +211,7 @@ const ReferencesToSort = ({
           <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
             <strong>Journal:</strong> {reference['resource_title'] ? <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: reference['resource_title'] }} /> : 'N/A'}
             <Link 
-              to={{ pathname: "/Biblio", search: `?action=display&referenceCurie=${reference['curie']}` }}
+              to={`/Biblio?action=display&referenceCurie=${reference['curie']}`}
               style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}
               onClick={() => {
                 dispatch(setReferenceCurie(reference['curie']));

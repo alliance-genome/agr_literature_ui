@@ -30,6 +30,9 @@ const Login = ({config}) => {
     // const [userId, setUserId] = useState('');
     const dispatch = useDispatch();
     useEffect(() => {
+        if (!authState) { // Added null check for authState
+            return;
+        }
         if (!authState.isAuthenticated) {
             // When user isn't authenticated, forget any user info
             dispatch(signOut())
@@ -48,7 +51,7 @@ const Login = ({config}) => {
         console.log('error logging in', err);
     };
 
-    if (authState.isPending) {
+    if (!authState || authState.isPending) { // MODIFIED LINE: Added !authState check
         console.log("is pending")
         return null; }
 

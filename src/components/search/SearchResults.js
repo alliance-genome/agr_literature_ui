@@ -3,7 +3,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import {Link} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import {
     setGetReferenceCurieFlag,
     setReferenceCurie
@@ -14,7 +14,6 @@ import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilePdf, faPenSquare} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
-import { useHistory } from "react-router-dom";
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -60,10 +59,10 @@ const SearchResultItem = ({ reference }) => {
   }
 
   const TETRedirect = ({ curie }) => {
-    const history = useHistory(); // Correct usage of useHistory
+    const navigate = useNavigate();
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
     const goToTET = () => {
-        history.push(`/Biblio/?action=entity&referenceCurie=${curie}`); // Use backticks for template literals
+        navigate(`/Biblio/?action=entity&referenceCurie=${curie}`);
     };
     return (
          isSignedIn ?  <Button  className="redirect-TET-button"  onClick={goToTET}  >
@@ -118,11 +117,11 @@ const SearchResultItem = ({ reference }) => {
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" > 
-        <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+        <div className="searchRow-title"><Link to={`/Biblio?action=display&referenceCurie=${reference.curie}`} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
           <Row><Col><div className="searchRow-xref">
               <ul>
                   <li>
-                      <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
+                      <Link to={`/Biblio?action=display&referenceCurie=${reference.curie}`}
                             onClick={() => {
                                 dispatch(setReferenceCurie(reference.curie));
                                 dispatch(setGetReferenceCurieFlag(true));

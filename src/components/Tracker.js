@@ -188,7 +188,7 @@ const Tracker = () => {
         <tbody>
         { missingFileResults.map((reference, index) => (
           <tr key={`missingFile ${reference} ${index}`}>
-            <td><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}>{reference.curie}</Link></td>
+            <td><Link to={`/Biblio?action=display&referenceCurie=${reference.curie}`}>{reference.curie}</Link></td>
             <td><XrefElement xref={reference.mod_curie}/></td>
             <td><XrefElement xref={reference.pmid}/></td>
             <td><XrefElement xref={reference.doi}/></td>
