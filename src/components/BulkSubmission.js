@@ -101,7 +101,8 @@ const BulkSubmission = () => {
         <Row className="mt-3 justify-content-center align-items-center">
           {/* MOD pulldown */}
           <Col xs="auto">
-            <Form.Group controlId="modSelect" className="text-center">
+            <div style={{ height: '13px' }} /> 
+	    <Form.Group controlId="modSelect" className="text-center">
               <Form.Control
                 as="select"
                 value={selectedMod}
@@ -130,9 +131,9 @@ const BulkSubmission = () => {
               {isDragActive ? (
                  <p>Drop archive here...</p>
               ) : (
-                <p>Drag & drop a SINGLE archive file here, or click to select</p>
+                <p>Drag & drop a SINGLE PDF or archive file here, or click to select</p>
               )}
-		<em>(zip, tar, gz, tgz, pdf only)</em>
+		<em>(zip, tar, tar.gz, tgz, pdf only)</em>
             </div>
 
             {acceptedFiles.length > 0 && (
