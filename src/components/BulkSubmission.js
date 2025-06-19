@@ -20,6 +20,7 @@ const BulkSubmission = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
 
+  // Determine default MOD
   const accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
   const defaultMod = (accessLevel && mods.includes(accessLevel))
     ? accessLevel
@@ -32,6 +33,7 @@ const BulkSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // Sync selectedMod when accessLevel or mods change
   useEffect(() => {
     if (accessLevel && mods.includes(accessLevel)) {
       setSelectedMod(accessLevel);
@@ -41,6 +43,7 @@ const BulkSubmission = () => {
   const handleModChange = e => setSelectedMod(e.target.value);
 
   const onDrop = useCallback(files => {
+    // Deduplicate by path or name
     const uniqueNames = Array.from(new Set(files.map(f => f.path || f.name)));
     const uniqueFiles = uniqueNames.map(name =>
       files.find(f => (f.path || f.name) === name)
@@ -107,9 +110,22 @@ const BulkSubmission = () => {
       const filePubStatus = 'final';
       const pdfType       = fileExt.toLowerCase() === 'pdf' ? 'pdf' : '';
 
+      let display_name_without_extension;
+      const lastDotIndex = displayName.lastIndexOf('.');
+
+      // Check if a dot exists and it's not the first character (to handle cases like ".bashrc")
+      if (lastDotIndex !== -1 && lastDotIndex > 0) {
+        display_name_without_extension = displayName.substring(0, lastDotIndex);
+      } else {
+        // If no dot or if the dot is the first character, keep the original name
+        display_name_without_extension = displayName;
+      }
+
+      console.log(display_name_without_extension); // For "123.pdf" -> "123", for "my.document.pdf" -> "my.document"
+	
       url = `${base}/reference/referencefile/file_upload/` +
             `?reference_curie=${encodeURIComponent(referenceCurie)}` +
-            `&display_name=${encodeURIComponent(displayName)}` +
+            `&display_name=${encodeURIComponent(display_name_without_extension)}` +
             `&file_class=${fileClass}` +
             `&file_publication_status=${filePubStatus}` +
             `&file_extension=${fileExt}` +
