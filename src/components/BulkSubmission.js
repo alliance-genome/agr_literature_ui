@@ -20,7 +20,6 @@ const BulkSubmission = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
 
-  // Determine default MOD
   const accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
   const defaultMod = (accessLevel && mods.includes(accessLevel))
     ? accessLevel
@@ -33,7 +32,6 @@ const BulkSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Sync selectedMod when accessLevel or mods change
   useEffect(() => {
     if (accessLevel && mods.includes(accessLevel)) {
       setSelectedMod(accessLevel);
@@ -43,7 +41,6 @@ const BulkSubmission = () => {
   const handleModChange = e => setSelectedMod(e.target.value);
 
   const onDrop = useCallback(files => {
-    // Deduplicate by path or name
     const uniqueNames = Array.from(new Set(files.map(f => f.path || f.name)));
     const uniqueFiles = uniqueNames.map(name =>
       files.find(f => (f.path || f.name) === name)
@@ -122,8 +119,8 @@ const BulkSubmission = () => {
             `&upload_if_already_converted=true`;
     }
 
-    // Try up to 5 times on network errors
-    const maxAttempts = 5;
+    // Try up to 10 times on network errors
+    const maxAttempts = 10;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const resp = await fetch(url, {
