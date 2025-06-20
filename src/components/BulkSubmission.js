@@ -20,7 +20,6 @@ const BulkSubmission = () => {
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
 
-  // Determine default MOD
   const accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
   const defaultMod = (accessLevel && mods.includes(accessLevel))
     ? accessLevel
@@ -33,7 +32,6 @@ const BulkSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Sync selectedMod when accessLevel or mods change
   useEffect(() => {
     if (accessLevel && mods.includes(accessLevel)) {
       setSelectedMod(accessLevel);
@@ -43,7 +41,7 @@ const BulkSubmission = () => {
   const handleModChange = e => setSelectedMod(e.target.value);
 
   const onDrop = useCallback(files => {
-    // Deduplicate by path or name
+    // get a list of unique file names
     const uniqueNames = Array.from(new Set(files.map(f => f.path || f.name)));
     const uniqueFiles = uniqueNames.map(name =>
       files.find(f => (f.path || f.name) === name)
@@ -54,16 +52,18 @@ const BulkSubmission = () => {
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    multiple: true,
-    webkitdirectory: true,
-    directory: true
+    onDrop, // gets called with the File[] whenever files/folders are dropped or selected
+    multiple: true, // allow more than one file at a time
+    webkitdirectory: true, // tell the file input to accept directory trees, not just individual files.
+    directory: true // allow dropping (and selecting) entire folders/directories
   });
 
   const isArchive = filename => /\.(zip|tar|tgz|tar\.gz|gz)$/i.test(filename);
 
   const makeReferenceCurie = (filename, mod) => {
-    const id = filename.split(/[_\.]/)[0];
+    // It takes the very first piece ([0]), so for "12345_John2017.pdf" or "12345.pdf"
+    // you’ll get "12345" as id.	
+    const id = filename.split(/[_\.]/)[0]; 
     if (/^[0-9]{15}$/.test(id)) return `AGRKB:${id}`;
     if (mod === 'WB') return `WB:WBPaper${id}`;
     return `PMID:${id}`;
@@ -75,23 +75,25 @@ const BulkSubmission = () => {
     let url;
 
     if (isArchive(file.name)) {
-      // Archive => bulk endpoint
+      // upload archive file => bulk endpoint
       formData.append('archive', file);
       url = `${base}/reference/referencefile/bulk_upload_archive/` +
             `?mod_abbreviation=${encodeURIComponent(selectedMod)}`;
     } else {
-      // Single file => file_upload endpoint
+      // upload one file at a time => file_upload endpoint
       formData.append('file', file);
 
-      // Normalize and split path
+      // normalize and split path for dropped folder
+      // picks the full path if we dropped in a folder, or just the filename otherwise.
+      // strips off any leading / characters
       const rel = (file.path || file.name).replace(/^\/+/, '');
       const parts = rel.split(/[\\/]+/);
 
-      // Detect supplement by checking second-to-last segment is numeric
+      // detect supplement by checking second-to-last segment is numeric
       let isSupp = false;
       let idSegment;
       if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 2])) {
-        isSupp = true;
+        isSupp = true;  
         idSegment = parts[parts.length - 2];
       }
 
@@ -150,7 +152,7 @@ const BulkSubmission = () => {
         }
         return { status: 'success', message: 'Uploaded' };
       } catch (err) {
-        // Only retry on network-level failures
+        // only retry on network-level failures
         const isNetworkError = err.message === 'Failed to fetch'
                              || err.message.includes('NetworkError')
                              || err.message.includes('Connection reset');
@@ -177,6 +179,7 @@ const BulkSubmission = () => {
     const statuses = {};
     for (let file of acceptedFiles) {
       const key = file.path || file.name;
+      // add an entry { status: 'pending' } so the UI can show “Uploading…”
       statuses[key] = { status: 'pending', message: '' };
       setUploadStatuses({ ...statuses });
 
