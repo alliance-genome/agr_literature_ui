@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
+import axios from 'axios';
 import {
   Container,
   Row,
@@ -15,9 +17,10 @@ import { useDropzone } from 'react-dropzone';
 import { extractArchive } from './FileExtractor';
 
 const BulkSubmission = () => {
-  // Redux state
+  const history = useHistory();
   const mods = useSelector(state => state.app.mods);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const base = process.env.REACT_APP_RESTAPI;
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
 
@@ -26,7 +29,6 @@ const BulkSubmission = () => {
     ? accessLevel
     : (mods[0] || '');
 
-  // Component state
   const [selectedMod, setSelectedMod] = useState(defaultMod);
   const [acceptedFiles, setAcceptedFiles] = useState([]);
   const [uploadStatuses, setUploadStatuses] = useState({});
@@ -44,7 +46,7 @@ const BulkSubmission = () => {
   const handleModChange = e => setSelectedMod(e.target.value);
 
   const onDrop = useCallback(files => {
-    // Get a list of unique file names
+    // get a list of unique file names
     const uniqueNames = Array.from(new Set(files.map(f => f.path || f.name)));
     const uniqueFiles = uniqueNames.map(name =>
       files.find(f => (f.path || f.name) === name)
@@ -84,7 +86,7 @@ const BulkSubmission = () => {
     const rel = path || file.path || file.name;
     const parts = rel.replace(/^\/+/, '').split(/[\\/]+/);
 
-    // Ddtect supplement by checking second-to-last segment is numeric
+    // detect supplement by checking second-to-last segment is numeric
     let isSupp = false;
     let idSegment;
     if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 2])) {
@@ -150,7 +152,7 @@ const BulkSubmission = () => {
                              err.message.includes('NetworkError') ||
                              err.message.includes('Connection reset');
         if (isNetworkError && attempt < maxAttempts) {
-          // small backoff then retry
+          // wait 500ms × current attempt count before trying again
           await new Promise(r => setTimeout(r, 500 * attempt));
           continue;
         }
@@ -173,11 +175,11 @@ const BulkSubmission = () => {
     setExtractedFiles([]);
 
     try {
-      // Process archives first
+      // process archives first
       const archives = acceptedFiles.filter(file => isArchive(file.name));
       const nonArchives = acceptedFiles.filter(file => !isArchive(file.name));
       
-      // Extract archive files
+      // extract archive files
       let allExtractedFiles = [];
       if (archives.length > 0) {
         setIsExtracting(true);
@@ -187,7 +189,7 @@ const BulkSubmission = () => {
             const extractedFiles = await extractArchive(archive);
             allExtractedFiles = [...allExtractedFiles, ...extractedFiles];
             
-            // Update status for archive
+            // update status for archive
             setUploadStatuses(prev => ({
               ...prev,
               [archive.name]: { 
@@ -243,7 +245,34 @@ const BulkSubmission = () => {
     }
   };
 
-  // Combine original files and extracted files for display
+  /**
+   * Open (or reuse) a tab named "_filemanagement", look up the AGRKB curie
+   * for a XREF ID (PMID:… or WB:WBPaper…), then navigate it into the filemanagement tab
+   */
+  const handleManageClick = async key => {
+    // compute the raw curie exactly as in uploadSingle
+    const rawCurie = computeReferenceCurie(key);
+    // open the tab upfront
+    const win = window.open('', '_filemanagement');
+    try {
+      // pick the right endpoint
+      const url = rawCurie.startsWith('AGRKB:')
+        ? `${base}/reference/${encodeURIComponent(rawCurie)}`
+        : `${base}/cross_reference/${encodeURIComponent(rawCurie)}`;
+      const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      // response brings back AGRKB curie
+      const agrCurie = res.data.reference_curie ?? res.data.curie;
+      // navigate the opened tab
+      win.location = `/Biblio/?action=filemanagement&referenceCurie=${agrCurie}`;
+    } catch (err) {
+      console.error('Could not map to AGRKB curie:', err);
+      win.close();
+    }
+  };
+    
+  // combine original files and extracted files for display
   const allFilesToDisplay = [
     ...acceptedFiles.map(file => ({
       path: file.path || file.name,
@@ -262,6 +291,21 @@ const BulkSubmission = () => {
   const totalCount = allFilesToDisplay.length;
   const progress = totalCount ? (completedCount / totalCount) * 100 : 0;
 
+   // helper to compute exactly the same referenceCurie logic as uploadSingle
+  const computeReferenceCurie = path => {
+    const parts = path.replace(/^\/+/, '').split(/[\\/]+/);
+    if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 2])) {
+      // a supplement under folder named numeric
+      const idSeg = parts[parts.length - 2];
+      return selectedMod === 'WB'
+        ? `WB:WBPaper${idSeg}`
+       : `PMID:${idSeg}`;
+    }
+    // otherwise, look at the filename
+    const filename = parts[parts.length - 1];
+    return makeReferenceCurie(filename, selectedMod);
+  };
+  
   return (
     <Container className="mt-4">
       <Row className="justify-content-center">
@@ -333,6 +377,7 @@ const BulkSubmission = () => {
               <thead className="thead-light">
                 <tr>
                   <th>File Path</th>
+		  <th>File Mgmt</th>  
                   <th>Status</th>
                   <th>Message</th>
                 </tr>
@@ -341,10 +386,45 @@ const BulkSubmission = () => {
                 {allFilesToDisplay.map(file => {
                   const key = file.path;
                   const st = uploadStatuses[key] || { status: 'idle', message: '' };
-                  
+		  const isSuccess = st.status === 'success';
                   return (
                     <tr key={key}>
-                      <td className="small text-nowrap">{file.path}</td>
+	              <td className="small text-nowrap">{file.path}</td>	
+
+                      <td className="text-center">
+                        {st.status === 'pending' ? (
+                          // uploading state
+                          <Spinner animation="border" size="sm" />
+                        ) : st.status === 'success' ? (
+                          // uploaded → clickable folder
+                          <button
+                            type="button"
+                            onClick={() => handleManageClick(key)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              fontSize: '1.2em',
+                              color: '#0d6efd',
+                              cursor: 'pointer'
+                            }}
+                            title="Go to File Management"
+                          >
+                            🗂️
+                          </button>
+                        ) : (
+                          // idle state
+                          <span
+                            role="img"
+                            aria-label="Pending reference"
+                            style={{ fontSize: '1.2em', color: '#6c757d' }}
+                            title="Will enable when uploaded"
+                          >
+                            📁
+                          </span>
+                        )}
+                      </td>
+
                       <td className="text-center">
                         {st.status === 'pending' ? (
                           <span className="text-primary">
