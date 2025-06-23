@@ -20,6 +20,7 @@ import Create from './Create'
 import Merge from './Merge'
 import Reports from './Reports'
 import Download from './Download'
+import BulkSubmission from './BulkSubmission'
 import About from './About'
 import Tracker from './Tracker'
 // import Login from './Login'
@@ -115,6 +116,7 @@ const AppWithRouterAccess = () => {
                 <Route path='/merge' component={Merge} />
 		<Route path='/reports' component={Reports} />
                 <Route path='/download' component={Download} />
+		<Route path='/bulkSubmission' component={BulkSubmission} />
                 <Route path='/about' component={About} />
                 <Route path='/tracker' component={Tracker} />
                 {/*<Route path = '/swaggerUI' component={SwaggerComp} />*/}

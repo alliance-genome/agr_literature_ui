@@ -36,6 +36,7 @@ const NavigationBar = () => {
       <Nav.Link className="navbar_link" as={Link} to="/merge">Merge</Nav.Link>
       <Nav.Link className="navbar_link" as={Link} to="/reports">Reports</Nav.Link>
       <Nav.Link className="navbar_link" as={Link} to="/download">Download</Nav.Link>
+      <Nav.Link className="navbar_link" as={Link} to="/bulkSubmission">Bulk Submission</Nav.Link>
       <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
     </Nav>
     <Nav>
