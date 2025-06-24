@@ -422,6 +422,12 @@ const WorkflowStatModTablesContainer = ({modSection}) => {
         title="Reference Classification Status"
         modSection={modSection}
       />
+
+      <WorkflowStatModTable
+        workflowProcessAtpId="ATP:0000172"
+        title="Entity Extraction Status"
+        modSection={modSection}
+      />
     </div>
   );
 };
