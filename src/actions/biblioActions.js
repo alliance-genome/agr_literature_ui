@@ -122,6 +122,18 @@ export const changeFieldReferenceRelationsJson = (e) => {
   };
 };
 
+export const deleteFieldAuthorsReferenceJson = (e) => {
+  console.log('action delete field authors json ' + e.target.id + ' to delete');
+//   console.log(e);
+  const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
+  return {
+    type: 'DELETE_FIELD_AUTHORS_REFERENCE_JSON',
+    payload: {
+      field: activeElement.id
+    }
+  };
+};
+
 export const changeFieldAuthorsReferenceJson = (e) => {
   console.log('action change field authors json ' + e.target.id + ' to ' + e.target.value + ' checked ' + e.target.checked);
   return {

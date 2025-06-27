@@ -551,6 +551,29 @@ export default function(state = initialState, action) {
         }
       }
 
+    case 'DELETE_FIELD_AUTHORS_REFERENCE_JSON':
+      console.log(action.payload);
+      let fieldIdAuthorsDelete = action.payload.field.replace(/^delete /, '');
+      let authorArrayDelete = fieldIdAuthorsDelete.split(" ");
+      let fieldAuthorsDelete = authorArrayDelete[0];
+      let indexAuthorsDelete = authorArrayDelete[1];
+
+      let deleteAuthorsChange = state.referenceJsonLive[fieldAuthorsDelete];
+      deleteAuthorsChange[indexAuthorsDelete]['needsChange'] = true;
+      deleteAuthorsChange[indexAuthorsDelete]['deleteMe'] = true;
+
+      let hasChangeAuthorsFieldDelete = state.referenceJsonHasChange
+      hasChangeAuthorsFieldDelete[fieldIdAuthorsDelete] = 'diff'
+
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          referenceJsonHasChange: hasChangeAuthorsFieldDelete,
+          [fieldAuthorsDelete]: deleteAuthorsChange
+        }
+      }
+
     case 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON':
       // console.log('action.payload'); console.log(action.payload);
       let authorInfoArray = action.payload.field.split(" ");
