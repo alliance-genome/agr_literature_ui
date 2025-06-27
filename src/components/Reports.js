@@ -795,6 +795,86 @@ const QCReportRetractedPapers = ({modSection}) => {
         </div>
     );
 };
+
+const QCObsoletePmids = ({ modSection }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const result = await axios.get(
+          `${process.env.REACT_APP_RESTAPI}/check/check_obsolete_pmids`
+        );
+        setData(result.data);
+      } catch (error) {
+        console.error('Error fetching obsolete PMIDs:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const produced = data?.['date-produced'];
+  const pmids = data?.obsolete_pmids?.[modSection] || [];
+
+  return (
+    <Container fluid style={{ width: '90%' }}>
+      <Row style={{ paddingTop: '1em', paddingBottom: '0.5em' }}>
+        <Col>
+          <h4 style={{ textAlign: 'left' }}>PMIDs obsoleted this month</h4>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col style={{ textAlign: 'left' }}>
+          {isLoading ? (
+            <div className="text-center">
+              <Spinner animation="border" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </Spinner>
+            </div>
+          ) : (
+            <>
+              {produced && (
+                <div style={{ textAlign: 'left' }}>
+                  Date Produced: {convertDate(produced)}
+                  <br /><br />
+                </div>
+              )}
+
+              {pmids.length > 0 ? (
+                <ul style={{ margin: 0, paddingLeft: '1.5em', textAlign: 'left' }}>
+                  {pmids.map(pmid => (
+                    <li key={pmid}>{pmid}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div style={{ textAlign: 'left', fontWeight: 'bold' }}>
+                  No obsolete PMIDs this month for {modSection}
+                </div>
+              )}
+
+              <div style={{ textAlign: 'left', marginTop: '0.5em' }}>
+                <a
+                  href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  report history
+                </a>
+              </div>
+            </>
+          )}
+        </Col>
+      </Row>
+    </Container>
+  );
+};
+
+
 const WorkflowDiagram = () => {
 
     const [tagData, setTagData] = useState([]);
@@ -935,6 +1015,8 @@ const ReportsContainer = () => {
                 <QCReportTablesContainer modSection={mod} />
                 <hr/>
                 <QCReportRetractedPapers modSection={mod} />
+		  <hr/>
+		<QCObsoletePmids modSection={mod} />
               </Tab>
             </Tabs>
           </Tab>
