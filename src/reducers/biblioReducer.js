@@ -813,7 +813,7 @@ export default function(state = initialState, action) {
       }
 
     case 'BIBLIO_REVERT':
-      console.log('BIBLIO_REVERT'); console.log(action.payload);
+      // console.log('BIBLIO_REVERT'); console.log(action.payload);
       let fieldIdRevert = action.payload.field.replace(/^revert /, '');
       let stringArrayRevert = fieldIdRevert.split(" ");
       let fieldStringArrayRevert = stringArrayRevert[0];
@@ -824,7 +824,6 @@ export default function(state = initialState, action) {
         let indexStringArrayRevert = stringArrayRevert[1];
         revertValue[indexStringArrayRevert] = JSON.parse(JSON.stringify(state.referenceJsonDb[fieldStringArrayRevert][indexStringArrayRevert])) }
       else if (action.payload.type === 'author_array') {
-console.log('author_array');
         // undoing an author delete does not need to reorder authors, because author order gap compression will happen on button update
         let indexDomAuthorRevert = parseInt(stringArrayRevert[1]);
         let indexStoreAuthorRevert = getStoreAuthorIndexFromDomIndex(indexDomAuthorRevert, state.referenceJsonLive[fieldStringArrayRevert])
