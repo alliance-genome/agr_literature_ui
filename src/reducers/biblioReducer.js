@@ -632,19 +632,7 @@ export default function(state = initialState, action) {
         console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
         // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
         for (let authorReorderDict of newAuthorInfoChange) {
-// console.log('authorReorderDict')
-// console.log(authorReorderDict)
-// console.log('newAuthorInfoChange')
-// console.log(newAuthorInfoChange)
-// console.log('oldAuthorOrder')
-// console.log(oldAuthorOrder)
-// console.log('authorReorderDict ' + authorReorderDict + " newAuthorInfoChange " + newAuthorInfoChange + " oldAuthorOrder " + oldAuthorOrder)
-// console.log(
-//   'authorReorderDict ' + JSON.stringify(authorReorderDict) +
-//   ' newAuthorInfoChange ' + JSON.stringify(newAuthorInfoChange) +
-//   ' oldAuthorOrder ' + oldAuthorOrder
-// );
-console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
+        // console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
           if (newAuthorOrder < oldAuthorOrder) {
             if (authorReorderDict['order'] === oldAuthorOrder) {
               authorReorderDict['needsChange'] = true;
@@ -837,7 +825,7 @@ console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
         revertValue[indexStringArrayRevert] = JSON.parse(JSON.stringify(state.referenceJsonDb[fieldStringArrayRevert][indexStringArrayRevert])) }
       else if (action.payload.type === 'author_array') {
 console.log('author_array');
-// TODO add undo order change from delete here
+        // undoing an author delete does not need to reorder authors, because author order gap compression will happen on button update
         let indexDomAuthorRevert = parseInt(stringArrayRevert[1]);
         let indexStoreAuthorRevert = getStoreAuthorIndexFromDomIndex(indexDomAuthorRevert, state.referenceJsonLive[fieldStringArrayRevert])
 //         console.log('author revert indexDomAuthorRevert ' + indexDomAuthorRevert + ' indexStoreAuthorRevert ' + indexStoreAuthorRevert )
