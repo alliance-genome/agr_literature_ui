@@ -552,7 +552,6 @@ export default function(state = initialState, action) {
       }
 
     case 'DELETE_FIELD_AUTHORS_REFERENCE_JSON':
-// TODO add order change from delete here
       console.log(action.payload);
       let fieldIdAuthorDelete = action.payload.field.replace(/^delete /, '');
       let authorArrayDelete = fieldIdAuthorDelete.split(" ");
@@ -561,57 +560,21 @@ export default function(state = initialState, action) {
 
       let deleteAuthorChange = state.referenceJsonLive[fieldAuthorDelete];
       let indexAuthorDelete = getStoreAuthorIndexFromDomIndex(indexDomAuthorDelete, deleteAuthorChange)
-// this seems to correctly set an author to be deleted
+      // this correctly sets an author to be deleted
       deleteAuthorChange[indexAuthorDelete]['needsChange'] = true;
       deleteAuthorChange[indexAuthorDelete]['deleteMe'] = true;
-
-console.log('indexDomAuthorDelete')
-console.log(indexDomAuthorDelete)
-console.log('indexAuthorDelete')
-console.log(indexAuthorDelete)
-console.log('deleteAuthorChange')
-console.log(deleteAuthorChange)
 
       let hasChangeAuthorFieldDelete = state.referenceJsonHasChange
       hasChangeAuthorFieldDelete[fieldIdAuthorDelete] = 'diff'
 
-      let startingAuthorOrder = indexDomAuthorDelete + 1
-      console.log('reorder down all authors with order higher than ' + startingAuthorOrder)
-      // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
-      for (let authorReorderDict of deleteAuthorChange) {
-// // console.log(
-// //   'authorReorderDict ' + JSON.stringify(authorReorderDict) +
-// //   ' deleteAuthorChange ' + JSON.stringify(deleteAuthorChange) +
-// //   ' startingAuthorOrder ' + startingAuthorOrder
-// // );
-console.log({ authorReorderDict, deleteAuthorChange, startingAuthorOrder });
-        if (authorReorderDict['order'] > startingAuthorOrder) {
-console.log('authorReorderDict[order]')
-console.log(authorReorderDict['order'])
-console.log('startingAuthorOrder')
-console.log(startingAuthorOrder)
-// this seems to correctly reorder down other authors, but then the deleted author has the same order as a renumbered one, and disappears
-          authorReorderDict['needsChange'] = true;
-          authorReorderDict['order'] -= 1 } }
-
-//         let oldAuthorOrder = indexDomAuthorInfo + 1
-//         let newAuthorOrder = parseInt(authorInfoNewValue)
-//         console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
-//         for (let authorReorderDict of newAuthorInfoChange) {
-//           if (newAuthorOrder < oldAuthorOrder) {
-//             if (authorReorderDict['order'] === oldAuthorOrder) {
-//               authorReorderDict['needsChange'] = true;
-//               authorReorderDict['order'] = newAuthorOrder }
-//             else if ( (authorReorderDict['order'] >= newAuthorOrder) && (authorReorderDict['order'] < oldAuthorOrder) ) {
-//               authorReorderDict['needsChange'] = true;
-//               authorReorderDict['order'] += 1 } }
-//           else if (newAuthorOrder > oldAuthorOrder) {
-//             if (authorReorderDict['order'] === oldAuthorOrder) {
-//               authorReorderDict['needsChange'] = true;
-//               authorReorderDict['order'] = newAuthorOrder }
-//             else if ( (authorReorderDict['order'] <= newAuthorOrder) && (authorReorderDict['order'] > oldAuthorOrder) ) {
-//               authorReorderDict['needsChange'] = true;
-//               authorReorderDict['order'] -= 1 } } }
+      // this would correctly reorder down other authors, but then the deleted author has the same order as a renumbered one,
+      // and disappears, so ceri decided we should reorder with a separate call after editing, and purposely show the curators
+      // the pre-deletion author order in the UI
+      // let startingAuthorOrder = indexDomAuthorDelete + 1
+      // for (let authorReorderDict of deleteAuthorChange) {
+      //   if (authorReorderDict['order'] > startingAuthorOrder) {
+      //     authorReorderDict['needsChange'] = true;
+      //     authorReorderDict['order'] -= 1 } }
 
       return {
         ...state,
