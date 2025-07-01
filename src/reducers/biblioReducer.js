@@ -67,7 +67,7 @@ const initialState = {
   queryFailure: false,
   getReferenceCurieFlag: true,
   meshExpand: 'short',
-  authorExpand: 'first',
+  authorExpand: 'detailed',
   supplementExpand: 'tarball',
   hasPmid: false,
   updateAlert: 0,
@@ -552,30 +552,32 @@ export default function(state = initialState, action) {
       }
 
     case 'DELETE_FIELD_AUTHORS_REFERENCE_JSON':
+// TODO add order change from delete here
       console.log(action.payload);
-      let fieldIdAuthorsDelete = action.payload.field.replace(/^delete /, '');
-      let authorArrayDelete = fieldIdAuthorsDelete.split(" ");
-      let fieldAuthorsDelete = authorArrayDelete[0];
-      let indexAuthorsDelete = authorArrayDelete[1];
+      let fieldIdAuthorDelete = action.payload.field.replace(/^delete /, '');
+      let authorArrayDelete = fieldIdAuthorDelete.split(" ");
+      let fieldAuthorDelete = authorArrayDelete[0];
+      let indexDomAuthorDelete = parseInt(authorArrayDelete[1]);
 
-      let deleteAuthorsChange = state.referenceJsonLive[fieldAuthorsDelete];
-      deleteAuthorsChange[indexAuthorsDelete]['needsChange'] = true;
-      deleteAuthorsChange[indexAuthorsDelete]['deleteMe'] = true;
+      let deleteAuthorChange = state.referenceJsonLive[fieldAuthorDelete];
+      let indexAuthorDelete = getStoreAuthorIndexFromDomIndex(indexDomAuthorDelete, deleteAuthorChange)
+      deleteAuthorChange[indexAuthorDelete]['needsChange'] = true;
+      deleteAuthorChange[indexAuthorDelete]['deleteMe'] = true;
 
-      let hasChangeAuthorsFieldDelete = state.referenceJsonHasChange
-      hasChangeAuthorsFieldDelete[fieldIdAuthorsDelete] = 'diff'
+      let hasChangeAuthorFieldDelete = state.referenceJsonHasChange
+      hasChangeAuthorFieldDelete[fieldIdAuthorDelete] = 'diff'
 
       return {
         ...state,
         referenceJsonLive: {
           ...state.referenceJsonLive,
-          referenceJsonHasChange: hasChangeAuthorsFieldDelete,
-          [fieldAuthorsDelete]: deleteAuthorsChange
+          referenceJsonHasChange: hasChangeAuthorFieldDelete,
+          [fieldAuthorDelete]: deleteAuthorChange
         }
       }
 
     case 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON':
-      // console.log('action.payload'); console.log(action.payload);
+      console.log('action.payload'); console.log(action.payload);
       let authorInfoArray = action.payload.field.split(" ");
       let fieldAuthorInfo = authorInfoArray[0];
 //       let indexAuthorInfo = authorInfoArray[1];
@@ -618,9 +620,22 @@ export default function(state = initialState, action) {
       else if (subfieldAuthorInfo === 'order') {
         let oldAuthorOrder = indexDomAuthorInfo + 1
         let newAuthorOrder = parseInt(authorInfoNewValue)
-        // console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
+        console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
         // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
         for (let authorReorderDict of newAuthorInfoChange) {
+// console.log('authorReorderDict')
+// console.log(authorReorderDict)
+// console.log('newAuthorInfoChange')
+// console.log(newAuthorInfoChange)
+// console.log('oldAuthorOrder')
+// console.log(oldAuthorOrder)
+// console.log('authorReorderDict ' + authorReorderDict + " newAuthorInfoChange " + newAuthorInfoChange + " oldAuthorOrder " + oldAuthorOrder)
+// console.log(
+//   'authorReorderDict ' + JSON.stringify(authorReorderDict) +
+//   ' newAuthorInfoChange ' + JSON.stringify(newAuthorInfoChange) +
+//   ' oldAuthorOrder ' + oldAuthorOrder
+// );
+console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
           if (newAuthorOrder < oldAuthorOrder) {
             if (authorReorderDict['order'] === oldAuthorOrder) {
               authorReorderDict['needsChange'] = true;
@@ -801,7 +816,7 @@ export default function(state = initialState, action) {
       }
 
     case 'BIBLIO_REVERT':
-      // console.log('BIBLIO_REVERT'); console.log(action.payload);
+      console.log('BIBLIO_REVERT'); console.log(action.payload);
       let fieldIdRevert = action.payload.field.replace(/^revert /, '');
       let stringArrayRevert = fieldIdRevert.split(" ");
       let fieldStringArrayRevert = stringArrayRevert[0];
@@ -812,6 +827,8 @@ export default function(state = initialState, action) {
         let indexStringArrayRevert = stringArrayRevert[1];
         revertValue[indexStringArrayRevert] = JSON.parse(JSON.stringify(state.referenceJsonDb[fieldStringArrayRevert][indexStringArrayRevert])) }
       else if (action.payload.type === 'author_array') {
+console.log('author_array');
+// TODO add undo order change from delete here
         let indexDomAuthorRevert = parseInt(stringArrayRevert[1]);
         let indexStoreAuthorRevert = getStoreAuthorIndexFromDomIndex(indexDomAuthorRevert, state.referenceJsonLive[fieldStringArrayRevert])
 //         console.log('author revert indexDomAuthorRevert ' + indexDomAuthorRevert + ' indexStoreAuthorRevert ' + indexStoreAuthorRevert )
