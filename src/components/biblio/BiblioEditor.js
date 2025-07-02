@@ -28,6 +28,7 @@ import { changeFieldCrossReferencesReferenceJson } from '../../actions/biblioAct
 import { deleteFieldCrossReferencesReferenceJson } from '../../actions/biblioActions';
 import { changeFieldReferenceRelationsJson } from '../../actions/biblioActions';
 import { changeFieldAuthorsReferenceJson } from '../../actions/biblioActions';
+import { deleteFieldAuthorsReferenceJson } from '../../actions/biblioActions';
 import { biblioAddNewRowString } from '../../actions/biblioActions';
 import { biblioAddNewAuthorAffiliation } from '../../actions/biblioActions';
 import { biblioAddNewRowDict } from '../../actions/biblioActions';
@@ -360,7 +361,25 @@ const BiblioSubmitUpdateButton = () => {
 
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
       const authorFields = [ 'order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations' ];
+      let survivingAuthors = [];		// Track non-deleted authors with original order
+      let hasAuthorDeletion = false
       for (const[index, authorDict] of referenceJsonLive['authors'].entries()) {
+        if (('deleteMe' in authorDict) && (authorDict['deleteMe'] === true)) {	// always check for delete first
+          hasAuthorDeletion = true
+          let subPath = 'author/' + authorDict['author_id'];
+          let field = null;
+          let subField = null;
+          let method = 'DELETE';
+          let array = [ subPath, updateJson, method, index, field, subField ]
+          forApiArray.push( array );
+          continue;	// skip to next author
+        }
+        if ('author_id' in authorDict) {
+          // Keep a copy of original order for comparison later
+          survivingAuthors.push({
+            authorDict: authorDict,
+            originalOrder: authorDict.order
+          }); }
         if (('needsChange' in authorDict) && ('author_id' in authorDict)) {
           let updateJson = { 'reference_curie': referenceCurie }
           for (const field of authorFields.values()) {
@@ -390,7 +409,26 @@ const BiblioSubmitUpdateButton = () => {
             method = 'PATCH' }
           let array = [ subPath, updateJson, method, index, field, subField ]
           forApiArray.push( array );
-    } } }
+      } }
+      if (hasAuthorDeletion) {
+        survivingAuthors.sort((a, b) => a.originalOrder - b.originalOrder);	// Sort by original order
+        for (let i = 0; i < survivingAuthors.length; i++) {			// Reassign order field and detect changes
+          const { authorDict, originalOrder } = survivingAuthors[i];
+          let humanOrder = i + 1;
+          if (authorDict.order !== humanOrder) {
+            // Update local value
+            authorDict.order = humanOrder;
+            // Add PATCH just for new order value
+            let updateJson = { reference_curie: referenceCurie, order: humanOrder };
+            let subPath = 'author/' + authorDict['author_id'];
+            let index = null;
+            let field = null;
+            let subField = null;
+            let method = 'PATCH';
+            let array = [ subPath, updateJson, method, index, field, subField ]
+            forApiArray.push( array );
+      } } }
+    }
 
     if ('relations' in referenceJsonLive && referenceJsonLive['relations'] !== null) {
       let field = 'relations';
@@ -493,7 +531,7 @@ const BiblioSubmitUpdateButton = () => {
     dispatch(setBiblioUpdating(dispatchCount))
 
     // set flag to update citation once all these api calls are done
-//     dispatch(setUpdateCitationFlag(true))	// citation now updates from database triggers
+    // dispatch(setUpdateCitationFlag(true))	// citation now updates from database triggers
 
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken)
@@ -1078,6 +1116,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
 
   function getStoreAuthorIndexFromDomIndex(indexDomAuthorInfo, newAuthorInfoChange) {
+    if (!(indexDomAuthorInfo in newAuthorInfoChange)) { return 0; }
     let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']        // replace placeholder with index from store order value matches dom
     for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
       if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) {
@@ -1089,11 +1128,12 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   rowAuthorsElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="editor" />);
   const orderedAuthors = [];
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
+    let highestAuthorOrder = 0;		// previously was using referenceJsonLive['authors'].length, but there could be a gap in the order from db
     for (const value  of referenceJsonLive['authors'].values()) {
+      if (value['order'] > highestAuthorOrder) { highestAuthorOrder = value['order']; }
       let index = value['order'] - 1;
       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
       orderedAuthors[index] = value; }
-//     for (const[index, authorDict] of referenceJsonLive['authors'].entries()) { }
 
     if (authorExpand === 'first') {
       if ((orderedAuthors.length > 0) && (typeof orderedAuthors[0] !== 'undefined') && ('name' in orderedAuthors[0])) {
@@ -1121,11 +1161,10 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         if ('affiliations' in authorDict && authorDict['affiliations'] !== null) {
           affiliationsLength = authorDict['affiliations'].length }
 
-//         let otherColSizeName = 7; let otherColSizeNames = 4; let otherColSizeOrcid = 2; let otherColSizeAffiliation = 9;
         let otherColSizeName = 7; let otherColSizeNames = 5; let otherColSizeAffiliation = 10;
-//         let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-        let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-        // if (disabled === 'disabled') { revertElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
+//         let buttonsElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+        let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldAuthorsReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>);
+        // if (disabled === 'disabled') { buttonsElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
         let disabledName = disabled
         // if first or last name, make name be concatenation of both and disable editing name
         if ( ( (authorDict['first_name'] !== null) && (authorDict['first_name'] !== '') ) ||
@@ -1201,51 +1240,64 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
                if (referenceJsonLive[fieldName][indexStoreAuthorDb]['corresponding_author'] === true) { correspondingChecked = 'checked'; }
                else { correspondingChecked = ''; } }
 
-        rowAuthorsElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index} name`} className={`${rowEvenness}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
-            <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabledName} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
-            <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
-            <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} minNumber="1" maxNumber={`${referenceJsonLive['authors'].length}`} dispatchAction={changeFieldAuthorsReferenceJson} />
-            {revertElement}
-          </Form.Group>);
-//             <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
-//             <ColEditorSimple key={`colElement ${fieldName} ${index} order`} fieldType="input" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} dispatchAction={changeFieldAuthorsReferenceJson} />
-        rowAuthorsElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index} first last`} className={`${rowEvenness}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >first last </Col>
-            <ColEditorSimple key={`colElement ${fieldName} ${index} first_name`} fieldType="input" fieldName={fieldName} colSize="5" value={authorDict['first_name']} updatedFlag={updatedDict['first_name']} placeholder="first name" disabled={disabled} fieldKey={`${fieldName} ${index} first_name`} dispatchAction={changeFieldAuthorsReferenceJson} />
-            <ColEditorSimple key={`colElement ${fieldName} ${index} last_name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeNames} value={authorDict['last_name']} updatedFlag={updatedDict['last_name']} placeholder="last name" disabled={disabled} fieldKey={`${fieldName} ${index} last_name`} dispatchAction={changeFieldAuthorsReferenceJson} />
-          </Form.Group>);
+        const authorDeleted = (('deleteMe' in authorDict) && (authorDict['deleteMe'] === true)) ? true : false;
 
-        rowAuthorsElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index} role`} className={`${rowEvenness}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >role </Col>
-            <Col sm="1" > </Col>
-            <ColEditorCheckbox key={`colElement ${fieldName} ${index} corresponding_author`} colSize="2" label="corresponding" updatedFlag={updatedDict['corresponding_author']} disabled="" fieldKey={`${fieldName} ${index} corresponding_author`} checked={correspondingChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
-            <ColEditorCheckbox key={`colElement ${fieldName} ${index} first_author`} colSize="7" label="first author" updatedFlag={updatedDict['first_author']} disabled="" fieldKey={`${fieldName} ${index} first_author`} checked={firstAuthorChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
-          </Form.Group>);
-        rowAuthorsElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index} orcid`} className={`${rowEvenness}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >person identifier </Col>
-            <ColEditorSelect key={`colElement ${fieldName} ${index} orcidPrefix`} fieldType="select" fieldName={fieldName} colSize="2" value="ORCID" updatedFlag="" placeholder="curie" disabled="disabled" fieldKey={`${fieldName} ${index} orcid prefix`} enumType="personXrefPrefix" dispatchAction="" />
-            <ColEditorSimple key={`colElement ${fieldName} ${index} orcid`} fieldType="input" fieldName={fieldName} colSize="8"  value={orcidValue} updatedFlag={updatedDict['orcid']} placeholder="orcid" disabled={disabled} fieldKey={`${fieldName} ${index} orcid`} dispatchAction={changeFieldAuthorsReferenceJson} />
-          </Form.Group>);
-
-        if ('affiliations' in authorDict && authorDict['affiliations'] !== null && authorDict['affiliations'].length > 0) {
-          for (const[indexAff, affiliationsValue] of authorDict['affiliations'].entries()) {
-            rowAuthorsElements.push(
-              <Form.Group as={Row} key={`${fieldName} ${index} affiliations ${indexAff}`} className={`${rowEvenness}`}>
-                <Col className="Col-general form-label col-form-label" sm="2" >affiliations {index + 1} {indexAff + 1}</Col>
-                <ColEditorSimple key={`colElement ${fieldName} ${index} affiliations ${indexAff}`} fieldType="input" fieldName={fieldName} colSize={otherColSizeAffiliation}  value={affiliationsValue} updatedFlag={updatedDict['affiliations'][indexAff]} placeholder="affiliations" disabled={disabled} fieldKey={`${fieldName} ${index} affiliations ${indexAff}`} dispatchAction={changeFieldAuthorsReferenceJson} />
-              </Form.Group>);
-        } }
-        if (disabled === '') {
+        if (authorDeleted) {
           rowAuthorsElements.push(
-            <Row key={`${fieldName} ${index} affiliations`} className={`form-group row ${rowEvenness}`} >
-              <Col className="Col-general form-label col-form-label" sm="2" >auth {index + 1} add affiliations</Col>
-              <Col sm="10" ><div id={`${fieldName} ${index} affiliations`} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewAuthorAffiliation(e))} >add affiliations</div></Col>
-            </Row>);
+            <Form.Group as={Row} key={`${fieldName} ${index}`}>
+              <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+              <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSizeName} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {authorDict['order']} - {authorDict['name']}</Col>
+              {buttonsElement}
+            </Form.Group>);
+}
+        else {
+          rowAuthorsElements.push(
+            <Form.Group as={Row} key={`${fieldName} ${index} name`} className={`${rowEvenness}`}>
+              <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
+              <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabledName} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
+              <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
+              <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} minNumber="1"
+ maxNumber={`${referenceJsonLive['authors'].length}`} dispatchAction={changeFieldAuthorsReferenceJson} />
+              {buttonsElement}
+            </Form.Group>);
+              // <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
+              // <ColEditorSimple key={`colElement ${fieldName} ${index} order`} fieldType="input" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} dispatchAction={changeFieldAuthorsReferenceJson} />
+          rowAuthorsElements.push(
+            <Form.Group as={Row} key={`${fieldName} ${index} first last`} className={`${rowEvenness}`}>
+              <Col className="Col-general form-label col-form-label" sm="2" >first last </Col>
+              <ColEditorSimple key={`colElement ${fieldName} ${index} first_name`} fieldType="input" fieldName={fieldName} colSize="5" value={authorDict['first_name']} updatedFlag={updatedDict['first_name']} placeholder="first name" disabled={disabled} fieldKey={`${fieldName} ${index} first_name`} dispatchAction={changeFieldAuthorsReferenceJson} />
+              <ColEditorSimple key={`colElement ${fieldName} ${index} last_name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeNames} value={authorDict['last_name']} updatedFlag={updatedDict['last_name']} placeholder="last name" disabled={disabled} fieldKey={`${fieldName} ${index} last_name`} dispatchAction={changeFieldAuthorsReferenceJson} />
+            </Form.Group>);
+
+          rowAuthorsElements.push(
+            <Form.Group as={Row} key={`${fieldName} ${index} role`} className={`${rowEvenness}`}>
+              <Col className="Col-general form-label col-form-label" sm="2" >role </Col>
+              <Col sm="1" > </Col>
+              <ColEditorCheckbox key={`colElement ${fieldName} ${index} corresponding_author`} colSize="2" label="corresponding" updatedFlag={updatedDict['corresponding_author']} disabled="" fieldKey={`${fieldName} ${index} corresponding_author`} checked={correspondingChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
+              <ColEditorCheckbox key={`colElement ${fieldName} ${index} first_author`} colSize="7" label="first author" updatedFlag={updatedDict['first_author']} disabled="" fieldKey={`${fieldName} ${index} first_author`} checked={firstAuthorChecked} dispatchAction={changeFieldAuthorsReferenceJson} />
+            </Form.Group>);
+          rowAuthorsElements.push(
+            <Form.Group as={Row} key={`${fieldName} ${index} orcid`} className={`${rowEvenness}`}>
+              <Col className="Col-general form-label col-form-label" sm="2" >person identifier </Col>
+              <ColEditorSelect key={`colElement ${fieldName} ${index} orcidPrefix`} fieldType="select" fieldName={fieldName} colSize="2" value="ORCID" updatedFlag="" placeholder="curie" disabled="disabled" fieldKey={`${fieldName} ${index} orcid prefix`} enumType="personXrefPrefix" dispatchAction="" />
+              <ColEditorSimple key={`colElement ${fieldName} ${index} orcid`} fieldType="input" fieldName={fieldName} colSize="8"  value={orcidValue} updatedFlag={updatedDict['orcid']} placeholder="orcid" disabled={disabled} fieldKey={`${fieldName} ${index} orcid`} dispatchAction={changeFieldAuthorsReferenceJson} />
+            </Form.Group>);
+
+          if ('affiliations' in authorDict && authorDict['affiliations'] !== null && authorDict['affiliations'].length > 0) {
+            for (const[indexAff, affiliationsValue] of authorDict['affiliations'].entries()) {
+              rowAuthorsElements.push(
+                <Form.Group as={Row} key={`${fieldName} ${index} affiliations ${indexAff}`} className={`${rowEvenness}`}>
+                  <Col className="Col-general form-label col-form-label" sm="2" >affiliations {index + 1} {indexAff + 1}</Col>
+                  <ColEditorSimple key={`colElement ${fieldName} ${index} affiliations ${indexAff}`} fieldType="input" fieldName={fieldName} colSize={otherColSizeAffiliation}  value={affiliationsValue} updatedFlag={updatedDict['affiliations'][indexAff]} placeholder="affiliations" disabled={disabled} fieldKey={`${fieldName} ${index} affiliations ${indexAff}`} dispatchAction={changeFieldAuthorsReferenceJson} />
+                </Form.Group>);
+          } }
+          if (disabled === '') {
+            rowAuthorsElements.push(
+              <Row key={`${fieldName} ${index} affiliations`} className={`form-group row ${rowEvenness}`} >
+                <Col className="Col-general form-label col-form-label" sm="2" >auth {index + 1} add affiliations</Col>
+                <Col sm="10" ><div id={`${fieldName} ${index} affiliations`} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewAuthorAffiliation(e))} >add affiliations</div></Col>
+              </Row>);
+          }
         }
     } } // else if (authorExpand === 'detailed')
   } // if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null)

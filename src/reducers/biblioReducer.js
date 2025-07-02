@@ -551,6 +551,40 @@ export default function(state = initialState, action) {
         }
       }
 
+    case 'DELETE_FIELD_AUTHORS_REFERENCE_JSON':
+      console.log(action.payload);
+      let fieldIdAuthorDelete = action.payload.field.replace(/^delete /, '');
+      let authorArrayDelete = fieldIdAuthorDelete.split(" ");
+      let fieldAuthorDelete = authorArrayDelete[0];
+      let indexDomAuthorDelete = parseInt(authorArrayDelete[1]);
+
+      let deleteAuthorChange = state.referenceJsonLive[fieldAuthorDelete];
+      let indexAuthorDelete = getStoreAuthorIndexFromDomIndex(indexDomAuthorDelete, deleteAuthorChange)
+      // this correctly sets an author to be deleted
+      deleteAuthorChange[indexAuthorDelete]['needsChange'] = true;
+      deleteAuthorChange[indexAuthorDelete]['deleteMe'] = true;
+
+      let hasChangeAuthorFieldDelete = state.referenceJsonHasChange
+      hasChangeAuthorFieldDelete[fieldIdAuthorDelete] = 'diff'
+
+      // this would correctly reorder down other authors, but then the deleted author has the same order as a renumbered one,
+      // and disappears, so ceri decided we should reorder with a separate call after editing, and purposely show the curators
+      // the pre-deletion author order in the UI
+      // let startingAuthorOrder = indexDomAuthorDelete + 1
+      // for (let authorReorderDict of deleteAuthorChange) {
+      //   if (authorReorderDict['order'] > startingAuthorOrder) {
+      //     authorReorderDict['needsChange'] = true;
+      //     authorReorderDict['order'] -= 1 } }
+
+      return {
+        ...state,
+        referenceJsonLive: {
+          ...state.referenceJsonLive,
+          referenceJsonHasChange: hasChangeAuthorFieldDelete,
+          [fieldAuthorDelete]: deleteAuthorChange
+        }
+      }
+
     case 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON':
       // console.log('action.payload'); console.log(action.payload);
       let authorInfoArray = action.payload.field.split(" ");
@@ -598,6 +632,7 @@ export default function(state = initialState, action) {
         // console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
         // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
         for (let authorReorderDict of newAuthorInfoChange) {
+        // console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
           if (newAuthorOrder < oldAuthorOrder) {
             if (authorReorderDict['order'] === oldAuthorOrder) {
               authorReorderDict['needsChange'] = true;
@@ -789,6 +824,7 @@ export default function(state = initialState, action) {
         let indexStringArrayRevert = stringArrayRevert[1];
         revertValue[indexStringArrayRevert] = JSON.parse(JSON.stringify(state.referenceJsonDb[fieldStringArrayRevert][indexStringArrayRevert])) }
       else if (action.payload.type === 'author_array') {
+        // undoing an author delete does not need to reorder authors, because author order gap compression will happen on button update
         let indexDomAuthorRevert = parseInt(stringArrayRevert[1]);
         let indexStoreAuthorRevert = getStoreAuthorIndexFromDomIndex(indexDomAuthorRevert, state.referenceJsonLive[fieldStringArrayRevert])
 //         console.log('author revert indexDomAuthorRevert ' + indexDomAuthorRevert + ' indexStoreAuthorRevert ' + indexStoreAuthorRevert )
