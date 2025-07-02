@@ -629,7 +629,7 @@ export default function(state = initialState, action) {
       else if (subfieldAuthorInfo === 'order') {
         let oldAuthorOrder = indexDomAuthorInfo + 1
         let newAuthorOrder = parseInt(authorInfoNewValue)
-        console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
+        // console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
         // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
         for (let authorReorderDict of newAuthorInfoChange) {
         // console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });

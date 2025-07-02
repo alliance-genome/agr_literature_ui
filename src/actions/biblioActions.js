@@ -37,7 +37,6 @@ export const changeFieldArrayReferenceJson = (e) => {
 
 export const deleteFieldModReferenceReferenceJson = (e) => {
   console.log('action delete field mod reference json ' + e.target.id + ' to delete');
-//   console.log(e);
   const activeElement = getRevertButtonFromFontAwesomeElement(e.target);
   return {
     type: 'DELETE_FIELD_MOD_REFERENCE_REFERENCE_JSON',
