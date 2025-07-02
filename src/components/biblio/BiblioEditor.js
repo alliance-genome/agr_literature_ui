@@ -361,7 +361,25 @@ const BiblioSubmitUpdateButton = () => {
 
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
       const authorFields = [ 'order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations' ];
+      let survivingAuthors = [];		// Track non-deleted authors with original order
+      let hasAuthorDeletion = false
       for (const[index, authorDict] of referenceJsonLive['authors'].entries()) {
+        if (('deleteMe' in authorDict) && (authorDict['deleteMe'] === true)) {	// always check for delete first
+          hasAuthorDeletion = true
+          let subPath = 'author/' + authorDict['author_id'];
+          let field = null;
+          let subField = null;
+          let method = 'DELETE';
+          let array = [ subPath, updateJson, method, index, field, subField ]
+          forApiArray.push( array );
+          continue;	// skip to next author
+        }
+        if ('author_id' in authorDict) {
+          // Keep a copy of original order for comparison later
+          survivingAuthors.push({
+            authorDict: authorDict,
+            originalOrder: authorDict.order
+          }); }
         if (('needsChange' in authorDict) && ('author_id' in authorDict)) {
           let updateJson = { 'reference_curie': referenceCurie }
           for (const field of authorFields.values()) {
@@ -391,7 +409,26 @@ const BiblioSubmitUpdateButton = () => {
             method = 'PATCH' }
           let array = [ subPath, updateJson, method, index, field, subField ]
           forApiArray.push( array );
-    } } }
+      } }
+      if (hasAuthorDeletion) {
+        survivingAuthors.sort((a, b) => a.originalOrder - b.originalOrder);	// Sort by original order
+        for (let i = 0; i < survivingAuthors.length; i++) {			// Reassign order field and detect changes
+          const { authorDict, originalOrder } = survivingAuthors[i];
+          let humanOrder = i + 1;
+          if (authorDict.order !== humanOrder) {
+            // Update local value
+            authorDict.order = humanOrder;
+            // Add PATCH just for new order value
+            let updateJson = { reference_curie: referenceCurie, order: humanOrder };
+            let subPath = 'author/' + authorDict['author_id'];
+            let index = null;
+            let field = null;
+            let subField = null;
+            let method = 'PATCH';
+            let array = [ subPath, updateJson, method, index, field, subField ]
+            forApiArray.push( array );
+      } } }
+    }
 
     if ('relations' in referenceJsonLive && referenceJsonLive['relations'] !== null) {
       let field = 'relations';
@@ -494,7 +531,7 @@ const BiblioSubmitUpdateButton = () => {
     dispatch(setBiblioUpdating(dispatchCount))
 
     // set flag to update citation once all these api calls are done
-//     dispatch(setUpdateCitationFlag(true))	// citation now updates from database triggers
+    // dispatch(setUpdateCitationFlag(true))	// citation now updates from database triggers
 
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken)
@@ -1079,6 +1116,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
 
   function getStoreAuthorIndexFromDomIndex(indexDomAuthorInfo, newAuthorInfoChange) {
+    if (!(indexDomAuthorInfo in newAuthorInfoChange)) { return 0; }
     let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']        // replace placeholder with index from store order value matches dom
     for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
       if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) {
@@ -1090,11 +1128,12 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   rowAuthorsElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="editor" />);
   const orderedAuthors = [];
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
+    let highestAuthorOrder = 0;		// previously was using referenceJsonLive['authors'].length, but there could be a gap in the order from db
     for (const value  of referenceJsonLive['authors'].values()) {
+      if (value['order'] > highestAuthorOrder) { highestAuthorOrder = value['order']; }
       let index = value['order'] - 1;
       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
       orderedAuthors[index] = value; }
-//     for (const[index, authorDict] of referenceJsonLive['authors'].entries()) { }
 
     if (authorExpand === 'first') {
       if ((orderedAuthors.length > 0) && (typeof orderedAuthors[0] !== 'undefined') && ('name' in orderedAuthors[0])) {
@@ -1217,7 +1256,8 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
               <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
               <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabledName} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
               <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
-              <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} minNumber="1" maxNumber={`${referenceJsonLive['authors'].length}`} dispatchAction={changeFieldAuthorsReferenceJson} />
+              <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} minNumber="1"
+ maxNumber={`${referenceJsonLive['authors'].length}`} dispatchAction={changeFieldAuthorsReferenceJson} />
               {buttonsElement}
             </Form.Group>);
               // <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
