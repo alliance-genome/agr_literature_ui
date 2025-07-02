@@ -67,7 +67,7 @@ const initialState = {
   queryFailure: false,
   getReferenceCurieFlag: true,
   meshExpand: 'short',
-  authorExpand: 'detailed',
+  authorExpand: 'first',
   supplementExpand: 'tarball',
   hasPmid: false,
   updateAlert: 0,
