@@ -586,7 +586,7 @@ export default function(state = initialState, action) {
       }
 
     case 'CHANGE_FIELD_AUTHORS_REFERENCE_JSON':
-      console.log('action.payload'); console.log(action.payload);
+      // console.log('action.payload'); console.log(action.payload);
       let authorInfoArray = action.payload.field.split(" ");
       let fieldAuthorInfo = authorInfoArray[0];
 //       let indexAuthorInfo = authorInfoArray[1];
