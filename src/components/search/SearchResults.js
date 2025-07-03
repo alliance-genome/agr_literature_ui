@@ -199,7 +199,7 @@ const SearchResults = () => {
                 <Modal.Header closeButton>
                     <Modal.Title>Error</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>Couldn't search references</Modal.Body>
+                <Modal.Body>Couldn't search references : {searchError}</Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => dispatch(setSearchError(false))}>
                         Close
