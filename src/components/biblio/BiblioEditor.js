@@ -1154,6 +1154,17 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         </Row>); }
 
     else if (authorExpand === 'detailed') {
+      // Warning row for curators not to create and delete authors at the same time.  The UI cannot handle gaps in the author list based on the
+      // db author order from the API.  When a delete is sent to the API, it triggers comparing the author orders to what they should be, but
+      // the newly created author does not have an author_id from the database yet, so it cannot update its order to flatten the order gap.
+      // An API endpoint to flatten author orders would fix it, replace the  if (hasAuthorDeletion) { survivingAuthors  code.
+      // UI is not meant to handle gaps in order, it could be reworked to.
+      rowAuthorsElements.push(
+        <Row key="author editing warning" className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general "></Col>
+          <Col className="Col-general " lg={{ span: 10 }}>
+            <span style={{color: 'red'}}>Warning: Deleting and Creating an author at the same time will break the UI for the created Authors. Do each of those actions separately and press the Update Biblio Data between them.</span></Col>
+        </Row>);
       for (const[index, authorDict] of orderedAuthors.entries()) {
         if (typeof authorDict === 'undefined') { continue; }
         let rowEvenness = (index % 2 === 0) ? 'row-even' : 'row-odd'
@@ -1257,7 +1268,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
               <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabledName} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
               <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
               <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} minNumber="1"
- maxNumber={`${referenceJsonLive['authors'].length}`} dispatchAction={changeFieldAuthorsReferenceJson} />
+ maxNumber={highestAuthorOrder} dispatchAction={changeFieldAuthorsReferenceJson} />
               {buttonsElement}
             </Form.Group>);
               // <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
