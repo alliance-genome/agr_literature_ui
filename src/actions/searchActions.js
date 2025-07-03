@@ -62,7 +62,17 @@ export const fetchInitialFacets = (facetsLimits) => {
       return_facets_only: true
     })
         .then(res => {
-          dispatch(setSearchFacets(res.data.aggregations));
+          if (
+            res.data &&
+            !res.data.hits &&
+            !res.data.aggregations &&
+            res.data.error
+          ) {
+            dispatch(setSearchError('Elasticsearch has an error, index may be rebuilding.  Detailed error message: ' + res.data.error));
+          } else {
+            dispatch(setSearchFacets(res.data.aggregations));
+          }
+          // dispatch(setSearchFacets(res.data.aggregations));
         })
         .catch();
   }
@@ -174,28 +184,44 @@ export const searchReferences = () => {
     // main search request with cancel token.
     axios.post(restUrl + '/search/references/', params, { cancelToken: cancelSource.token })
       .then(res => {
-        const xrefCurieValues = res.data.hits
-          .filter(hit => hit.cross_references !== null)
-          .flatMap(hit => hit.cross_references.map(cr => cr.curie));
-        const curies = res.data.hits.map(hit => hit.curie);
-	
-        axios.post(restUrl + '/cross_reference/show_all', xrefCurieValues, { cancelToken: cancelSource.token })
-          .then(resXref => {
-            let curieToCrossRefMap = resXref.data.reduce((acc, cur) => {
-              acc[cur.curie] = cur;
-              return acc;
-            }, {});
+        if (
+          res.data &&
+          !res.data.hits &&
+          !res.data.aggregations &&
+          res.data.error
+        ) {
+          dispatch(setSearchError('Elasticsearch has an error, index may be rebuilding.  Detailed error message: ' + res.data.error));
+        } else {
+          const xrefCurieValues = res.data.hits
+            .filter(hit => hit.cross_references !== null)
+            .flatMap(hit => hit.cross_references.map(cr => cr.curie));
+          const curies = res.data.hits.map(hit => hit.curie);
 
-            axios.post(restUrl + '/reference/referencefile/show_main_pdf_ids_for_curies', {
-              curies: curies,
-              mod_abbreviation: params.mod_abbreviation
-            }, { cancelToken: cancelSource.token })
-            .then(resCuriePDFIDsMap => {
-              dispatch(setCuriePDFIDsMap(resCuriePDFIDsMap.data));
-              dispatch(setCrossReferenceResults(curieToCrossRefMap));
-              dispatch(setSearchResults(res.data.hits, res.data.return_count));
-              dispatch(setSearchFacets(res.data.aggregations));
-              dispatch(setReadyToFacetSearch(true));
+          axios.post(restUrl + '/cross_reference/show_all', xrefCurieValues, { cancelToken: cancelSource.token })
+            .then(resXref => {
+              let curieToCrossRefMap = resXref.data.reduce((acc, cur) => {
+                acc[cur.curie] = cur;
+                return acc;
+              }, {});
+
+              axios.post(restUrl + '/reference/referencefile/show_main_pdf_ids_for_curies', {
+                curies: curies,
+                mod_abbreviation: params.mod_abbreviation
+              }, { cancelToken: cancelSource.token })
+              .then(resCuriePDFIDsMap => {
+                dispatch(setCuriePDFIDsMap(resCuriePDFIDsMap.data));
+                dispatch(setCrossReferenceResults(curieToCrossRefMap));
+                dispatch(setSearchResults(res.data.hits, res.data.return_count));
+                dispatch(setSearchFacets(res.data.aggregations));
+                dispatch(setReadyToFacetSearch(true));
+              })
+              .catch(err => {
+                if (axios.isCancel(err)) {
+                  console.log("Request cancelled: " + err.message);
+                } else {
+                  dispatch(setSearchError(true));
+                }
+              });
             })
             .catch(err => {
               if (axios.isCancel(err)) {
@@ -204,14 +230,7 @@ export const searchReferences = () => {
                 dispatch(setSearchError(true));
               }
             });
-          })
-          .catch(err => {
-            if (axios.isCancel(err)) {
-              console.log("Request cancelled: " + err.message);
-            } else {
-              dispatch(setSearchError(true));
-            }
-          });
+          }
       })
       .catch(err => {
         if (axios.isCancel(err)) {
@@ -231,7 +250,16 @@ export const filterFacets = () => {
 
     axios.post(restUrl + '/search/references/', params)
         .then(res => {
-          dispatch(setSearchFacets(res.data.aggregations));
+          if (
+            res.data &&
+            !res.data.hits &&
+            !res.data.aggregations &&
+            res.data.error
+          ) {
+            dispatch(setSearchError('Elasticsearch has an error, index may be rebuilding.  Detailed error message: ' + res.data.error));
+          } else {
+            dispatch(setSearchFacets(res.data.aggregations));
+          }
         })
         .catch(err => dispatch(setSearchError(true)));
   }
