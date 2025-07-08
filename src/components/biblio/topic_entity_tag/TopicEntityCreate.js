@@ -203,7 +203,7 @@ const TopicEntityCreate = () => {
           taxonSelect: editRow.species || "",
           negated: editRow.noDataCheckbox || null,
           novel_topic_data: editRow.novelCheckbox || false,
-	  confidence_score: editRow.confidence_score || false,  
+	  confidence_score: editRow.confidence_score || null,  
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",
           noteText: editRow.note || "",
