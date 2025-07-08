@@ -203,6 +203,7 @@ const TopicEntityCreate = () => {
           taxonSelect: editRow.species || "",
           negated: editRow.noDataCheckbox || null,
           novel_topic_data: editRow.novelCheckbox || false,
+	  confidence_score: editRow.confidence_score || false,  
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",
           noteText: editRow.note || "",
@@ -331,6 +332,7 @@ const TopicEntityCreate = () => {
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
 	novel_topic_data: row.novelCheckbox || false,
+	confidence_score: null,
 	confidence_level: null,
 	topic_entity_tag_source_id: topicEntitySourceId || null
     }
