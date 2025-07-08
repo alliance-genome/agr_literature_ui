@@ -456,6 +456,7 @@ const TopicEntityCreateSGD = () => {
     updateJson["species"] = row.taxonSelect;
     updateJson["note"] = row.noteText !== "" ? row.noteText : null;
     updateJson["negated"] = false;
+    updateJson["confidence_score"] = null;  
     updateJson["confidence_level"] = null;
     updateJson["topic_entity_tag_source_id"] = topicEntitySourceId;
 
