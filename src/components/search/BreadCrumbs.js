@@ -95,7 +95,7 @@ const BreadCrumbs = () => {
         const citation = hit.citation || '';
         const crossReferences = (hit.cross_references || [])
           .map(ref => ref.curie)
-          .join(',');
+          .join(' | ');
         return `${curie}\t${crossReferences}\t${citation}`;
       });
     }
