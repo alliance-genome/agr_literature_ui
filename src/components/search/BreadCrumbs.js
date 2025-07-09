@@ -12,7 +12,8 @@ import {
     removeDatePubmedAdded,
     removeDatePubmedModified,
     removeDatePublished,
-    removeDateCreated
+    removeDateCreated,
+    downloadSearchReferences
 } from "../../actions/searchActions";
 import { RENAME_FACETS } from "./Facets";
 import BreadcrumbItem from "./BreadCrumbItem";
@@ -25,6 +26,7 @@ const BreadCrumbs = () => {
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePublished = useSelector(state => state.search.datePublished);
     const dateCreated = useSelector(state => state.search.dateCreated);
+    const searchResultsCount = useSelector(state => state.search.searchResultsCount);
     const dispatch = useDispatch();
 
     const getDisplayName = (facet, value) => {
@@ -84,49 +86,100 @@ const BreadCrumbs = () => {
     const dateKeys = ["datePubmedAdded", "datePubmedModified", "datePublished", "dateCreated"];
     const dateValues = { datePubmedAdded, datePubmedModified, datePublished, dateCreated };
 
+    const downloadButtonLabel = (searchResultsCount > 1000) ? 'Download 1000 Results' : 'Download';
+
+    function mapHitsToLines(data) {
+      if (!data || !data.hits) return [];
+      return data.hits.map(hit => {
+        const curie = hit.curie || '';
+        const citation = hit.citation || '';
+        const crossReferences = (hit.cross_references || [])
+          .map(ref => ref.curie)
+          .join(',');
+        return `${curie}\t${crossReferences}\t${citation}`;
+      });
+    }
+
+    const handleSearchDownload = async () => {
+      try {
+        // console.log('handleSearchDownload');
+        const resultPromise = dispatch(downloadSearchReferences()); // thunk returns a promise
+        console.log('Waiting for search download...');
+        const data = await resultPromise;
+        // console.log('Downloaded data:', data);
+        const tsvRows = mapHitsToLines(data);
+        // console.log(tsvRows.join('\n'));
+        const tsvHeaders = 'IDs\tcross references ids\tlong citation';
+        const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
+        const encodedUri = encodeURI(tsvContent);
+        const fileName = 'abc_search_results_download.tsv';
+
+        // trigger file download
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error('Error downloading search references:', error);
+      }
+    };
+
     return (
         <Container fluid>
             <Row>
                 <Col style={{ textAlign: "left" }}>
-                    {Object.entries(searchFacetsValues).map(([facet, values]) => (
-                        Array.isArray(values) ? values.map(value => {
-                            return (
-				<BreadcrumbItem
+                    <div className="d-flex justify-content-between" style={{ paddingBottom: '10px' }}>
+                      <div>
+                        {Object.entries(searchFacetsValues).map(([facet, values]) => (
+                            Array.isArray(values) ? values.map(value => {
+                                return (
+                                    <BreadcrumbItem
+                                            key={facet + value + "_breadcrumb"}
+                                        label={getFacetLabel(facet, value)}
+                                        onRemove={() => handleRemoveFacet(facet, value)}
+                                    />
+                                );
+                            }) : (
+                                <BreadcrumbItem
+                                    key={facet + "_breadcrumb"}
+                                    label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' '))}
+                                    onRemove={() => handleRemoveDate(RENAME_FACETS[facet].action)}
+                                />
+                            )
+                        ))}
+                        {Object.entries(searchExcludedFacetsValues).map(([facet, values]) =>
+                            values.map(value =>
+                                <BreadcrumbItem
                                     key={facet + value + "_breadcrumb"}
-				    label={getFacetLabel(facet, value)}
-				    onRemove={() => handleRemoveFacet(facet, value)}
-				/>
-			    );
-                        }) : (
-                            <BreadcrumbItem
-                                key={facet + "_breadcrumb"}
-				label={(RENAME_FACETS.hasOwnProperty(facet) ? RENAME_FACETS[facet].label || RENAME_FACETS[facet] : facet.replace('.keyword', '').replaceAll('_', ' '))}
-                                onRemove={() => handleRemoveDate(RENAME_FACETS[facet].action)}
-                            />
-                        )
-                    ))}
-                    {Object.entries(searchExcludedFacetsValues).map(([facet, values]) =>
-                        values.map(value =>
-                            <BreadcrumbItem
-                                key={facet + value + "_breadcrumb"}
-                                label={getExcludedFacetLabel(facet, value)}
-                                onRemove={() => dispatch(removeExcludedFacetValue(facet, value))}
-                            />
-                        )
-                    )}
-                    {dateKeys.map(key => {
-                        const dateFacet = RENAME_FACETS[key];
-                        const dateValue = dateValues[key];
-                        return dateValue && (
-                            <BreadcrumbItem
-                                key={`${key}_breadcrumb`}
-                                label={dateFacet.label}
-                                onRemove={() => handleRemoveDate(dateFacet.action)}
-                            />
-                        );
-                    })}
-                    {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || dateKeys.some(key => dateValues[key])) &&
-                        <Button onClick={handleClearAll}>Clear All</Button>}
+                                    label={getExcludedFacetLabel(facet, value)}
+                                    onRemove={() => dispatch(removeExcludedFacetValue(facet, value))}
+                                />
+                            )
+                        )}
+                        {dateKeys.map(key => {
+                            const dateFacet = RENAME_FACETS[key];
+                            const dateValue = dateValues[key];
+                            return dateValue && (
+                                <BreadcrumbItem
+                                    key={`${key}_breadcrumb`}
+                                    label={dateFacet.label}
+                                    onRemove={() => handleRemoveDate(dateFacet.action)}
+                                />
+                            );
+                        })}
+                        {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || dateKeys.some(key => dateValues[key])) &&
+                            <Button onClick={handleClearAll}>Clear All</Button>}
+                      </div>
+                      <div>
+                        <Button
+                          variant="primary"
+                          size="md"
+                          onClick={() => handleSearchDownload()}
+                        >{downloadButtonLabel}</Button>
+                      </div>
+                    </div>
                 </Col>
             </Row>
         </Container>

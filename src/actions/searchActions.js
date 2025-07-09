@@ -165,6 +165,57 @@ const getSearchParams = (state) => {
   return params;
 }
 
+export const downloadSearchReferences = () => {
+console.log('downloadSearchReferences');
+  return (dispatch, getState) => {
+    const state = getState();
+console.log('state');
+console.log(state);
+
+// ???
+    const cancelSource = axios.CancelToken.source();
+
+    let params = getSearchParams(state);
+console.log('params')
+console.log(params)
+    params.size_result_count = 1000;	// always download up to 1000 results
+
+    // main search request with cancel token.
+    return axios.post(restUrl + '/search/references/', params, { cancelToken: cancelSource.token })
+      .then(res => {
+        if (
+          res.data &&
+          !res.data.hits &&
+          !res.data.aggregations &&
+          res.data.error
+        ) {
+// do we want a search error ?
+          dispatch(setSearchError('Elasticsearch has an error, index may be rebuilding.  Detailed error message: ' + res.data.error));
+          return Promise.reject(res.data.error);
+        } else {
+console.log('res.data')
+console.log(res.data)
+//           const xrefCurieValues = res.data.hits
+//             .filter(hit => hit.cross_references !== null)
+//             .flatMap(hit => hit.cross_references.map(cr => cr.curie));
+//           const curies = res.data.hits.map(hit => hit.curie);
+// console.log('curies')
+// console.log(curies)
+          return res.data; // Return hits
+        }
+      })
+      .catch(err => {
+        if (axios.isCancel(err)) {
+          console.log("Request cancelled: " + err.message);
+        } else {
+          dispatch(setSearchError(true));
+        }
+        return Promise.reject(err);
+      });
+  }
+}
+
+
 export const searchReferences = () => {
   return (dispatch, getState) => {
     const state = getState();
