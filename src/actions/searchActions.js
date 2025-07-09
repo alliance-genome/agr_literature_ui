@@ -165,6 +165,37 @@ const getSearchParams = (state) => {
   return params;
 }
 
+export const downloadSearchReferences = () => {
+  return (dispatch, getState) => {
+    const state = getState();
+    let params = getSearchParams(state);
+    params.size_result_count = 1000;	// always download up to 1000 results
+    return axios.post(restUrl + '/search/references/', params)
+      .then(res => {
+        if (
+          res.data &&
+          !res.data.hits &&
+          !res.data.aggregations &&
+          res.data.error
+        ) {
+          dispatch(setSearchError('Elasticsearch has an error, index may be rebuilding.  Detailed error message: ' + res.data.error));
+          return Promise.reject(res.data.error);
+        } else {
+          return res.data; // Return all data in case curators later want count in download file
+        }
+      })
+      .catch(err => {
+        if (axios.isCancel(err)) {
+          console.log("Request cancelled: " + err.message);
+        } else {
+          dispatch(setSearchError(true));
+        }
+        return Promise.reject(err);
+      });
+  }
+}
+
+
 export const searchReferences = () => {
   return (dispatch, getState) => {
     const state = getState();

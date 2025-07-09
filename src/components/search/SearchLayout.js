@@ -40,7 +40,7 @@ const SearchLayout = () => {
 
     return (
         <div>
-            <Container fluid style={{ padding: 0 }}>
+            <Container fluid>
                 <Row>
                     <Col style={{ padding: 0 }}>
                         <SearchBar/>
