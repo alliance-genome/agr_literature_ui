@@ -102,13 +102,10 @@ const BreadCrumbs = () => {
 
     const handleSearchDownload = async () => {
       try {
-        // console.log('handleSearchDownload');
         const resultPromise = dispatch(downloadSearchReferences()); // thunk returns a promise
         console.log('Waiting for search download...');
         const data = await resultPromise;
-        // console.log('Downloaded data:', data);
         const tsvRows = mapHitsToLines(data);
-        // console.log(tsvRows.join('\n'));
         const tsvHeaders = 'IDs\tcross references ids\tlong citation';
         const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
         const encodedUri = encodeURI(tsvContent);
