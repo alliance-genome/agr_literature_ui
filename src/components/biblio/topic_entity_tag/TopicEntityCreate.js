@@ -201,8 +201,8 @@ const TopicEntityCreate = () => {
 	  topicSelectValue: curieToNameMap[editRow.topic] || "",
           entityTypeSelect: editRow.entity_type || "",
           taxonSelect: editRow.species || "",
-          negated: editRow.noDataCheckbox || null,
-          novel_topic_data: editRow.novelCheckbox || false,
+          noDataCheckbox: editRow.negated || false,
+          novelCheckbox: editRow.novel_topic_data || false,
 	  confidence_score: editRow.confidence_score || null,  
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",
@@ -332,6 +332,7 @@ const TopicEntityCreate = () => {
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
 	novel_topic_data: row.novelCheckbox || false,
+	data_novelty: row.novelCheckbox ? "ATP:0000321" : null,
 	confidence_score: null,
 	confidence_level: null,
 	topic_entity_tag_source_id: topicEntitySourceId || null
