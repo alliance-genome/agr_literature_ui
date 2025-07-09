@@ -458,6 +458,7 @@ const TopicEntityCreateSGD = () => {
     updateJson["negated"] = false;
     updateJson["confidence_score"] = null;  
     updateJson["confidence_level"] = null;
+    updateJson["data_novelty"] = null;
     updateJson["topic_entity_tag_source_id"] = topicEntitySourceId;
 
     if (row.tetdisplayTagSelect && row.tetdisplayTagSelect !== "") {
