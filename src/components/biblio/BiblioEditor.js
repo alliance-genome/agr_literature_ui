@@ -359,76 +359,87 @@ const BiblioSubmitUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
+
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
       const authorFields = [ 'order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations' ];
-      let survivingAuthors = [];		// Track non-deleted authors with original order
-      let hasAuthorDeletion = false
-      for (const[index, authorDict] of referenceJsonLive['authors'].entries()) {
-        if (('deleteMe' in authorDict) && (authorDict['deleteMe'] === true)) {	// always check for delete first
-          hasAuthorDeletion = true
+
+      // 1. Delete authors marked for deletion
+      for (const [index, authorDict] of referenceJsonLive['authors'].entries()) {
+        if (authorDict.deleteMe === true) {
           let subPath = 'author/' + authorDict['author_id'];
-          let field = null;
-          let subField = null;
           let method = 'DELETE';
-          let array = [ subPath, updateJson, method, index, field, subField ]
-          forApiArray.push( array );
-          continue;	// skip to next author
+          let array = [subPath, updateJson, method, index, null, null];
+          forApiArray.push(array);
         }
-        if ('author_id' in authorDict) {
-          // Keep a copy of original order for comparison later
-          survivingAuthors.push({
-            authorDict: authorDict,
-            originalOrder: authorDict.order
-          }); }
-        if (('needsChange' in authorDict) && ('author_id' in authorDict)) {
-          let updateJson = { 'reference_curie': referenceCurie }
-          for (const field of authorFields.values()) {
+      }
+
+      // 2. Collect surviving authors (not deleted), keep original order
+      let survivingAuthors = referenceJsonLive['authors']
+        .filter(authorDict => !(authorDict.deleteMe === true))
+        .map(authorDict => ({
+          authorDict,
+          originalOrder: authorDict.order
+        }));
+      // Sort by original order
+      survivingAuthors.sort((a, b) => a.originalOrder - b.originalOrder);
+
+      // 3. Reassign order and track if order changed
+      for (let i = 0; i < survivingAuthors.length; i++) {
+        let { authorDict, originalOrder } = survivingAuthors[i];
+        let newOrder = i + 1;
+        authorDict.order = newOrder;  // update local order
+        survivingAuthors[i].orderChanged = (originalOrder !== newOrder);
+      }
+
+      // 4. Patch existing authors (with author_id !== 'new') if needsChange or reordered
+      for (const { authorDict, orderChanged } of survivingAuthors) {
+        if (authorDict.author_id !== 'new' && (authorDict.needsChange || orderChanged)) {
+          let updateJson = { reference_curie: referenceCurie };
+          for (const field of authorFields) {
             if (field in authorDict) {
-              updateJson[field] = authorDict[field]
-              if (field === 'orcid') {		// orcids just pass the orcid string, not the whole dict
-                let orcidValue = null;
-                // if author orcid has object instead of string
-                // if ( (authorDict['orcid'] !== null) && ('curie' in authorDict['orcid']) &&
-                //      (authorDict['orcid']['curie'] !== null) && (authorDict['orcid']['curie'] !== '') ) {
-                //   orcidValue = authorDict['orcid']['curie'].toUpperCase();
-                //   if (!( orcidValue.match(/^ORCID:(.*)$/) ) ) {
-                //     orcidValue = 'ORCID:' + orcidValue; } }
-                if (authorDict['orcid'] !== null) {
-                  orcidValue = authorDict['orcid'].toUpperCase();
-                  if ( (orcidValue !== '') && (!( orcidValue.match(/^ORCID:(.*)$/) ) ) ) {
-                    orcidValue = 'ORCID:' + orcidValue; } }
-                updateJson['orcid'] = orcidValue; } } }
+              if (field === 'orcid' && authorDict['orcid'] !== null) {
+                let orcidValue = authorDict['orcid'].toUpperCase();
+                if (orcidValue !== '' && !orcidValue.match(/^ORCID:(.*)$/)) {
+                  orcidValue = 'ORCID:' + orcidValue;
+                }
+                updateJson['orcid'] = orcidValue;
+              } else if (field !== 'orcid') {
+                updateJson[field] = authorDict[field];
+              }
+            }
+          }
+          let subPath = 'author/' + authorDict['author_id'];
+          let method = 'PATCH';
+          let array = [subPath, updateJson, method, null, null, null];
+          forApiArray.push(array);
+        }
+      }
+
+      // 5. Create new authors (author_id === 'new') with POST and correct order
+      for (const { authorDict } of survivingAuthors) {
+        if (authorDict.author_id === 'new') {
+          let updateJson = { reference_curie: referenceCurie };
+          for (const field of authorFields) {
+            if (field in authorDict) {
+              if (field === 'orcid' && authorDict['orcid'] !== null) {
+                let orcidValue = authorDict['orcid'].toUpperCase();
+                if (orcidValue !== '' && !orcidValue.match(/^ORCID:(.*)$/)) {
+                  orcidValue = 'ORCID:' + orcidValue;
+                }
+                updateJson['orcid'] = orcidValue;
+              } else if (field !== 'orcid') {
+                updateJson[field] = authorDict[field];
+              }
+            }
+          }
           let subPath = 'author/';
           let method = 'POST';
-          let field = 'authors';
-          let subField = 'author_id';
-          if (authorDict['author_id'] !== 'new') {
-            subPath = 'author/' + authorDict['author_id'];
-            field = null;
-            subField = null;
-            method = 'PATCH' }
-          let array = [ subPath, updateJson, method, index, field, subField ]
-          forApiArray.push( array );
-      } }
-      if (hasAuthorDeletion) {
-        survivingAuthors.sort((a, b) => a.originalOrder - b.originalOrder);	// Sort by original order
-        for (let i = 0; i < survivingAuthors.length; i++) {			// Reassign order field and detect changes
-          const { authorDict, originalOrder } = survivingAuthors[i];
-          let humanOrder = i + 1;
-          if (authorDict.order !== humanOrder) {
-            // Update local value
-            authorDict.order = humanOrder;
-            // Add PATCH just for new order value
-            let updateJson = { reference_curie: referenceCurie, order: humanOrder };
-            let subPath = 'author/' + authorDict['author_id'];
-            let index = null;
-            let field = null;
-            let subField = null;
-            let method = 'PATCH';
-            let array = [ subPath, updateJson, method, index, field, subField ]
-            forApiArray.push( array );
-      } } }
+          let array = [subPath, updateJson, method, null, 'authors', 'author_id'];
+          forApiArray.push(array);
+        }
+      }
     }
+
 
     if ('relations' in referenceJsonLive && referenceJsonLive['relations'] !== null) {
       let field = 'relations';
@@ -1154,17 +1165,18 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         </Row>); }
 
     else if (authorExpand === 'detailed') {
+      // Remove warning row because author edit + delete + reorder + create at the same time seems to work, but if it doesn't, bring it back
       // Warning row for curators not to create and delete authors at the same time.  The UI cannot handle gaps in the author list based on the
       // db author order from the API.  When a delete is sent to the API, it triggers comparing the author orders to what they should be, but
       // the newly created author does not have an author_id from the database yet, so it cannot update its order to flatten the order gap.
       // An API endpoint to flatten author orders would fix it, replace the  if (hasAuthorDeletion) { survivingAuthors  code.
       // UI is not meant to handle gaps in order, it could be reworked to.
-      rowAuthorsElements.push(
-        <Row key="author editing warning" className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general "></Col>
-          <Col className="Col-general " lg={{ span: 10 }}>
-            <span style={{color: 'red'}}>Warning: Deleting and Creating an author at the same time will break the UI for the created Authors. Do each of those actions separately and press the Update Biblio Data between them.</span></Col>
-        </Row>);
+      // rowAuthorsElements.push(
+      //   <Row key="author editing warning" className="Row-general" xs={2} md={4} lg={6}>
+      //     <Col className="Col-general "></Col>
+      //     <Col className="Col-general " lg={{ span: 10 }}>
+      //       <span style={{color: 'red'}}>Warning: Deleting and Creating an author at the same time will break the UI for the created Authors. Do each of those actions separately and press the Update Biblio Data between them.</span></Col>
+      //   </Row>);
       for (const[index, authorDict] of orderedAuthors.entries()) {
         if (typeof authorDict === 'undefined') { continue; }
         let rowEvenness = (index % 2 === 0) ? 'row-even' : 'row-odd'
