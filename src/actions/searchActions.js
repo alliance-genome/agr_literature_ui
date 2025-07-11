@@ -68,7 +68,7 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-function processCombinedTETFacets(data, tetNestedFacetsValues) {
+function processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, negated_facets_values) {
   const non_empty_facets = TET_FACETS_LIST.filter(tet_facet_label => data[tet_facet_label] &&
       data[tet_facet_label].length > 0)
   if (non_empty_facets.length > 0) {
@@ -77,6 +77,15 @@ function processCombinedTETFacets(data, tetNestedFacetsValues) {
             non_empty_facets.map(tet_facet_label => [`topic_entity_tags.${tet_facet_label.slice(0, -1)}.keyword`,
               data[tet_facet_label][0]])
         )
+    );
+  }
+  const non_empty_negated_facets = TET_FACETS_LIST.filter(tet_facet_label => negated_facets_values[tet_facet_label] &&
+      negated_facets_values[tet_facet_label].length > 0)
+
+  //This can only be confidence level right now.
+  if (non_empty_negated_facets.length > 0) {
+    tetNestedNegatedFacetsValues.push(
+        {"topic_entity_tags.confidence_level.keyword" :negated_facets_values.confidence_levels}
     );
   }
 }
@@ -106,9 +115,11 @@ const getSearchParams = (state) => {
 
   const data = state.search.searchFacetsValues;
   const tetNestedFacetsValues = [];
+  const tetNestedNegatedFacetsValues = [];
+  //delete tetNestedFacetsValues
   const facetsValues = {};
   if (state.search.applyToSingleTag) {
-      processCombinedTETFacets(data, tetNestedFacetsValues);
+      processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, params.negated_facets_values);
   } else {
       TET_FACETS_LIST.forEach(key => {
 	  if (data[key]) {
@@ -127,7 +138,8 @@ const getSearchParams = (state) => {
   params.facets_values = facetsValues;
   params.tet_nested_facets_values = {
       "apply_to_single_tag": state.search.applyToSingleTag,
-      "tet_facets_values": tetNestedFacetsValues
+      "tet_facets_values": tetNestedFacetsValues,
+      "tet_facets_negative_values": tetNestedNegatedFacetsValues
   };
     
   if(state.search.datePubmedModified){
