@@ -117,7 +117,6 @@ const getSearchParams = (state) => {
   params.negated_facets_values  = negated_facets_values;
   const tetNestedFacetsValues = [];
   const tetNestedNegatedFacetsValues = [];
-  //delete tetNestedFacetsValues
   const facetsValues = {};
   if (state.search.applyToSingleTag) {
       processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, negated_facets);
