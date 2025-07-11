@@ -233,7 +233,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                         if (evt.target.checked) {
                             dispatch(addFacetValue(facet, value));
                             if(facet === 'topics'  && !searchExcludedFacetsValues.confidence_levels  && !searchFacetsValues.confidence_levels) {
-                                console.log("Adding the NEG", searchExcludedFacetsValues);
                                 dispatch(addExcludedFacetValue('confidence_levels', 'NEG'));
                             }
                         } else {
@@ -264,7 +263,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 dispatch(addExcludedFacetValue(facet, value));
             } else if (!excludedChecked){
                 dispatch(addExcludedFacetValue(facet, value));
-                console.log(facet,value);
             } else {
                 dispatch(removeExcludedFacetValue(facet, value));
             }
