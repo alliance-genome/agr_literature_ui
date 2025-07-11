@@ -104,7 +104,6 @@ const getSearchParams = (state) => {
     query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
     size_result_count: state.search.searchSizeResultsCount,
     page: state.search.searchResultsPage,
-    negated_facets_values: state.search.searchExcludedFacetsValues,
     facets_limits: state.search.searchFacetsLimits,
     author_filter: state.search.authorFilter,
     query_fields: state.search.query_fields,
@@ -112,14 +111,16 @@ const getSearchParams = (state) => {
     partial_match: state.search.partialMatch,
     mod_abbreviation: state.isLogged.testerMod !== 'No' ? state.isLogged.testerMod : state.isLogged.oktaMod
   }
-
   const data = state.search.searchFacetsValues;
+  const negated_facets= state.search.searchExcludedFacetsValues;
+  const {confidence_levels, ...negated_facets_values} = negated_facets;
+  params.negated_facets_values  = negated_facets_values;
   const tetNestedFacetsValues = [];
   const tetNestedNegatedFacetsValues = [];
   //delete tetNestedFacetsValues
   const facetsValues = {};
   if (state.search.applyToSingleTag) {
-      processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, params.negated_facets_values);
+      processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, negated_facets);
   } else {
       TET_FACETS_LIST.forEach(key => {
 	  if (data[key]) {
@@ -161,9 +162,6 @@ const getSearchParams = (state) => {
         facetsValues[key] = data[key];
     }
   });
-
-  //console.log("searchParams =" + JSON.stringify(params, null, 2));
-    
   return params;
 }
 
