@@ -78,7 +78,7 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-function processCombinedTETFacets(data, tetNestedFacetsValues) {
+function processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, negated_facets_values) {
   const non_empty_facets = TET_FACETS_LIST.filter(tet_facet_label => data[tet_facet_label] &&
       data[tet_facet_label].length > 0)
   if (non_empty_facets.length > 0) {
@@ -87,6 +87,15 @@ function processCombinedTETFacets(data, tetNestedFacetsValues) {
             non_empty_facets.map(tet_facet_label => [`topic_entity_tags.${tet_facet_label.slice(0, -1)}.keyword`,
               data[tet_facet_label][0]])
         )
+    );
+  }
+  const non_empty_negated_facets = TET_FACETS_LIST.filter(tet_facet_label => negated_facets_values[tet_facet_label] &&
+      negated_facets_values[tet_facet_label].length > 0)
+
+  //This can only be confidence level right now.
+  if (non_empty_negated_facets.length > 0) {
+    tetNestedNegatedFacetsValues.push(
+        {"topic_entity_tags.confidence_level.keyword" :negated_facets_values.confidence_levels}
     );
   }
 }
@@ -105,7 +114,6 @@ const getSearchParams = (state) => {
     query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
     size_result_count: state.search.searchSizeResultsCount,
     page: state.search.searchResultsPage,
-    negated_facets_values: state.search.searchExcludedFacetsValues,
     facets_limits: state.search.searchFacetsLimits,
     author_filter: state.search.authorFilter,
     query_fields: state.search.query_fields,
@@ -113,12 +121,15 @@ const getSearchParams = (state) => {
     partial_match: state.search.partialMatch,
     mod_abbreviation: state.isLogged.testerMod !== 'No' ? state.isLogged.testerMod : state.isLogged.oktaMod
   }
-
   const data = state.search.searchFacetsValues;
+  const negated_facets= state.search.searchExcludedFacetsValues;
+  const {confidence_levels, ...negated_facets_values} = negated_facets;
+  params.negated_facets_values  = negated_facets_values;
   const tetNestedFacetsValues = [];
+  const tetNestedNegatedFacetsValues = [];
   const facetsValues = {};
   if (state.search.applyToSingleTag) {
-      processCombinedTETFacets(data, tetNestedFacetsValues);
+      processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, negated_facets);
   } else {
       TET_FACETS_LIST.forEach(key => {
 	  if (data[key]) {
@@ -137,7 +148,8 @@ const getSearchParams = (state) => {
   params.facets_values = facetsValues;
   params.tet_nested_facets_values = {
       "apply_to_single_tag": state.search.applyToSingleTag,
-      "tet_facets_values": tetNestedFacetsValues
+      "tet_facets_values": tetNestedFacetsValues,
+      "tet_facets_negative_values": tetNestedNegatedFacetsValues
   };
     
   if(state.search.datePubmedModified){
@@ -159,9 +171,6 @@ const getSearchParams = (state) => {
         facetsValues[key] = data[key];
     }
   });
-
-  //console.log("searchParams =" + JSON.stringify(params, null, 2));
-    
   return params;
 }
 
