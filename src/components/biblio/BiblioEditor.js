@@ -365,7 +365,7 @@ const BiblioSubmitUpdateButton = () => {
 
       // 1. Delete authors marked for deletion
       for (const [index, authorDict] of referenceJsonLive['authors'].entries()) {
-        if (authorDict.deleteMe === true) {
+        if (authorDict.deleteMe === true && authorDict.author_id !== 'new') {
           let subPath = 'author/' + authorDict['author_id'];
           let method = 'DELETE';
           let array = [subPath, updateJson, method, index, null, null];
