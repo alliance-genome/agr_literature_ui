@@ -615,7 +615,7 @@ const CheckboxDropdown =  ({ items }) => {
     }
   },[]);
   const getRowId = useMemo(() => {
-    return (params) => params.data.topic_entity_tag_id;
+    return (params) => String(params.data.topic_entity_tag_id);
   }, []);
 
   // generate the file name with referenceCurie
