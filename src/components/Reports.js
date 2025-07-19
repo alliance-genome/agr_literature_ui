@@ -9,7 +9,7 @@ import * as d3 from 'd3'
 
 import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
-import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict, setQcreportRecactedPapers, setQcreportDuplicateOrcids } from '../actions/reportsActions';
+import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportObsoleteEntities, setQcreportRecactedPapers, setQcreportDuplicateOrcids } from '../actions/reportsActions';
 
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
@@ -596,9 +596,9 @@ const WorkflowStatTablesContainer = ({modSection}) => {
   );
 };
 
-const QCReportTablesContainer = ({modSection}) => {
+const QCReportObsoleteEntities = ({modSection}) => {
   const dispatch = useDispatch();
-  const qcReportDict = useSelector(state => state.reports.qcReportDict);
+  const qcReportObsoleteEntities = useSelector(state => state.reports.qcReportObsoleteEntities);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
 
@@ -614,7 +614,7 @@ const QCReportTablesContainer = ({modSection}) => {
       setIsLoadingData(true);
       try {
         const result = await axios.get(url);
-        dispatch(setQcreportDict(result.data));
+        dispatch(setQcreportObsoleteEntities(result.data));
         setKey(prevKey => prevKey + 1);
         // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
       } catch (error) {
@@ -624,9 +624,9 @@ const QCReportTablesContainer = ({modSection}) => {
       }
     };
 
-    if (qcReportDict['date-produced'] === null) {
+    if (qcReportObsoleteEntities['date-produced'] === null) {
       fetchData(); }
-  }, [qcReportDict]);
+  }, [qcReportObsoleteEntities]);
 
   const columnDefs = [
     { headerName: "Entity Type", field: "entity_type", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
@@ -638,8 +638,8 @@ const QCReportTablesContainer = ({modSection}) => {
   let rowData = [];
 
 
-  if ( ( qcReportDict["obsolete_entities"] !== null) && ( modSection in qcReportDict["obsolete_entities"] ) ) {
-    rowData = qcReportDict["obsolete_entities"][modSection].map(item => ({
+  if ( ( qcReportObsoleteEntities["obsolete_entities"] !== null) && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) {
+    rowData = qcReportObsoleteEntities["obsolete_entities"][modSection].map(item => ({
       entity_type: item.entity_type,
       entity_status: item.entity_status,
       entity_curie: item.entity_curie,
@@ -667,9 +667,9 @@ const QCReportTablesContainer = ({modSection}) => {
                 </div>
               ) : (
                 <div className="ag-theme-quartz" style={{ width: '100%' }}>
-                 {( qcReportDict["'date-produced'"] !== null) &&
-                  (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportDict['date-produced'])}<br /><br /></div>) }
-                 {( ( qcReportDict["obsolete_entities"] !== null) && ( modSection in qcReportDict["obsolete_entities"] ) ) ? (
+                 {( qcReportObsoleteEntities["'date-produced'"] !== null) &&
+                  (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportObsoleteEntities['date-produced'])}<br /><br /></div>) }
+                 {( ( qcReportObsoleteEntities["obsolete_entities"] !== null) && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) ? (
                   <AgGridReact
                     key={key}
                     ref={gridRef}
@@ -697,7 +697,7 @@ const QCReportTablesContainer = ({modSection}) => {
       </div>
     </div>
   );
-}; // const QCReportTablesContainer
+}; // const QCReportObsoleteEntities
 
 const QCReportRetractedPapers = ({modSection}) => {
     const [isLoadingData, setIsLoadingData] = useState(false);
@@ -1118,7 +1118,7 @@ const ReportsContainer = () => {
                 <WorkflowStatModTablesContainer modSection={mod} />
               </Tab>
               <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
-                <QCReportTablesContainer modSection={mod} />
+                <QCReportObsoleteEntities modSection={mod} />
                   <hr/>
                 <QCReportRetractedPapers modSection={mod} />
 		  <hr/>
