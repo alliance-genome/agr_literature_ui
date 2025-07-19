@@ -9,7 +9,7 @@ import * as d3 from 'd3'
 
 import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
-import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict, setQcreportRecactedPapers } from '../actions/reportsActions';
+import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportDict, setQcreportRecactedPapers, setQcreportDuplicateOrcids } from '../actions/reportsActions';
 
 import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
@@ -875,6 +875,112 @@ const QCObsoletePmids = ({ modSection }) => {
 };
 
 
+const QCReportDuplicateOrcids = ({ modSection }) => {
+  const dispatch = useDispatch();
+  const qcReportDuplicateOrcids = useSelector(state => state.reports.qcReportDuplicateOrcids);
+
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  const [key, setKey] = useState(0);
+  const gridRef = useRef();
+  const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+
+  const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const url = `${process.env.REACT_APP_RESTAPI}/check/check_duplicate_orcids`;
+      setIsLoadingData(true);
+      try {
+        const result = await axios.get(url);
+        dispatch(setQcreportDuplicateOrcids(result.data));
+        setKey(prevKey => prevKey + 1);
+        // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    if (qcReportDuplicateOrcids['date-produced'] === null) {
+      fetchData(); }
+  }, [qcReportDuplicateOrcids]);
+
+    const columnDefs = [
+      { headerName: "Reference ID",
+          field: "reference_curie",
+          cellRenderer: props => {
+              return <a href={process.env.REACT_APP_UI_URL+"/Biblio?action=display&referenceCurie="+props.value}>{props.value}</a>
+          },
+          flex:1, cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header' },
+      { headerName: "ORCID", field: "orcid", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+      { headerName: "Author Names", field: "author_names", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
+    ];
+
+  let rowData = [];
+  if ( ( qcReportDuplicateOrcids["duplicate_orcids"] !== null) && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) {
+    rowData = qcReportDuplicateOrcids["duplicate_orcids"][modSection].map(item => ({
+      reference_curie: item.reference_curie,
+      orcid: item.orcid,
+      author_names: item.author_names
+    }));
+  }
+
+  return (
+    <div>
+      <h3 style={{ marginBottom: '30px' }}>QC Reports</h3>
+      <div>
+        <Container fluid style={{ width: '90%' }}>
+          <Row>
+            <Col>
+              <h4 style={{ textAlign: 'left' }}>Duplicate ORCIDs</h4>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              {isLoadingData ? (
+                <div className="text-center">
+                  <Spinner animation="border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                </div>
+              ) : (
+                <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                 {( qcReportDuplicateOrcids["'date-produced'"] !== null) &&
+                  (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportDuplicateOrcids['date-produced'])}<br /><br /></div>) }
+                 {( ( qcReportDuplicateOrcids["duplicate_orcids"] !== null) && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) ? (
+                  <AgGridReact
+                    key={key}
+                    ref={gridRef}
+                    rowData={rowData}
+                    columnDefs={columnDefs}
+                    pagination={true}
+                    paginationPageSize={10}
+                    paginationPageSizeSelector={paginationPageSizeSelector}
+                    domLayout="autoHeight"
+                    gridOptions = {gridOptions}
+                  />
+                  ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No duplicate ORCIDs for {modSection}</div>)}
+                </div>
+              )}
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <div style={{ textAlign: 'left' }}>
+                <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+    </div>
+  );
+}; // const QCReportDuplicateOrcids
+
+
 const WorkflowDiagram = () => {
 
     const [tagData, setTagData] = useState([]);
@@ -1013,10 +1119,12 @@ const ReportsContainer = () => {
               </Tab>
               <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
                 <QCReportTablesContainer modSection={mod} />
-                <hr/>
+                  <hr/>
                 <QCReportRetractedPapers modSection={mod} />
 		  <hr/>
 		<QCObsoletePmids modSection={mod} />
+		  <hr/>
+		<QCReportDuplicateOrcids modSection={mod} />
               </Tab>
             </Tabs>
           </Tab>
