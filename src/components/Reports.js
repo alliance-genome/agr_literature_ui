@@ -632,18 +632,43 @@ const QCReportObsoleteEntities = ({modSection}) => {
     { headerName: "Entity Type", field: "entity_type", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
     { headerName: "Entity Status", field: "entity_status", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
     { headerName: "Entity Curie", field: "entity_curie", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
-    { headerName: "Entity Name", field: "entity_name", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
+    { headerName: "Entity Name", field: "entity_name", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Reference Count", field: "reference_count", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Reference Curies", field: "reference_curies", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header',
+      cellRenderer: (params) => {
+        const values = params.value?.split(',').map(s => s.trim()).filter(Boolean);
+        if (!values?.length) return null;
+        return (
+          <span>
+            {values.map((val, index) => {
+              const isAGRKB = val.startsWith("AGRKB:");
+              return (
+                <span key={index}>
+                  {isAGRKB ? (
+                    <a href={`${process.env.REACT_APP_UI_URL}/Biblio?action=display&referenceCurie=${val}`} target="_blank" rel="noopener noreferrer" >{val}</a>
+                  ) : (
+                    val
+                  )}
+                  {index < values.length - 1 ? ', ' : ''}
+                </span>
+              );
+            })}
+          </span>
+        );
+      }
+    }
   ];
 
   let rowData = [];
-
 
   if ( ( qcReportObsoleteEntities["obsolete_entities"] !== null) && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) {
     rowData = qcReportObsoleteEntities["obsolete_entities"][modSection].map(item => ({
       entity_type: item.entity_type,
       entity_status: item.entity_status,
       entity_curie: item.entity_curie,
-      entity_name: item.entity_name || "N/A"
+      entity_name: item.entity_name || "N/A",
+      reference_count: item.reference_count,
+      reference_curies: item.reference_curies
     }));
   }
 
