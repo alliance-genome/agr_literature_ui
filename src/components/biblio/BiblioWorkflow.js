@@ -472,9 +472,31 @@ const BiblioWorkflow = () => {
 	headerClass: 'wft-bold-header wft-header-bg',
       },
       {
+	headerName: 'Controlled Note',
+	field: 'controlled_note',
+	flex: 1,
+	cellStyle: { textAlign: 'left' },
+	headerClass: 'wft-bold-header wft-header-bg',
+        cellRenderer: GeneralizedDropdownRenderer,
+        cellRendererParams: (params) => {
+          const isValidCurationStatus = curationStatusOptions.some(option => option.value === params.data?.curation_status);
+          return {
+            value: params.value,
+            node: params.node,
+            colDef: params.colDef,
+            options: controlledNoteOptions, // Assumes format: [{ value, label }]
+            validateFn: (val) => controlledNoteOptions.some(option => option.value === val),
+            errorMessage: 'INVALID Controlled Note: Choose Another',
+            isDisabled: !isValidCurationStatus,
+          };
+        },
+	sortable: true,
+	filter: true
+      },
+      {
         headerName: 'Note',
         field: 'note',
-        flex: 4,
+        flex: 3,
         cellStyle: { textAlign: 'left' },
         headerClass: 'wft-bold-header wft-header-bg',
         editable: (params) => {
