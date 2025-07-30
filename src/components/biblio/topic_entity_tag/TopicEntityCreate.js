@@ -800,15 +800,60 @@ const TopicEntityCreate = () => {
                 <Form.Check
                   inline
                   type="checkbox"
+                  id={`newDataCheckbox-${index}`}
+                  checked={row.newDataCheckbox}
+                  disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox }
+                  onChange={(evt) => {
+                    const updatedRows = [...rows];
+                    updatedRows[index] = { ...updatedRows[index], newDataCheckbox: evt.target.checked };
+                    setRows(updatedRows);
+                  }}
+                />
+                <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox ? 'gray' : 'inherit', }} >New Data</span>
+                <br />
+                <span style={{ display: 'inline-block', width: '1rem' }} />
+                <Form.Check
+                  inline
+                  type="checkbox"
+                  id={`newToDbCheckbox-${index}`}
+                  checked={row.newToDbCheckbox}
+                  disabled={ row.newDataCheckbox || row.noDataCheckbox }
+                  onChange={(evt) => {
+                    const updatedRows = [...rows];
+                    updatedRows[index] = { ...updatedRows[index], newToDbCheckbox: evt.target.checked };
+                    setRows(updatedRows);
+                  }}
+                />
+                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox ? 'gray' : 'inherit', }} >New to DB</span>
+                <br />
+                <span style={{ display: 'inline-block', width: '1rem' }} />
+                <Form.Check
+                  inline
+                  type="checkbox"
+                  id={`newToFieldCheckbox-${index}`}
+                  checked={row.newToFieldCheckbox}
+                  disabled={ row.newDataCheckbox || row.noDataCheckbox }
+                  onChange={(evt) => {
+                    const updatedRows = [...rows];
+                    updatedRows[index] = { ...updatedRows[index], newToFieldCheckbox: evt.target.checked };
+                    setRows(updatedRows);
+                  }}
+                />
+                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox ? 'gray' : 'inherit', }} >New to Field</span>
+                <br />
+                <Form.Check
+                  inline
+                  type="checkbox"
                   id={`noDataCheckbox-${index}`}
                   checked={row.noDataCheckbox}
+                  disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox }
                   onChange={(evt) => {
                     const updatedRows = [...rows];
                     updatedRows[index] = { ...updatedRows[index], noDataCheckbox: evt.target.checked };
                     setRows(updatedRows);
                   }}
                 />
-                No Data
+                <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
                 <br />
                 <Form.Check
                   inline
@@ -821,7 +866,7 @@ const TopicEntityCreate = () => {
                     setRows(updatedRows);
                   }}
                 />
-                Novel Data
+                REMOVE this
               </div>
             </Col>
             <Col sm="1">
