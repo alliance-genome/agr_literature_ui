@@ -538,7 +538,7 @@ const TopicEntityCreate = () => {
     }
   }, [referenceJsonLive?.workflow_tags, uid]);
 
-  async function createEntities(refCurie, index) {	
+  async function createEntities(refCurie, index) {
     const row = rows[index]
     if (!row.topicSelect) {
       return;
@@ -817,14 +817,14 @@ const TopicEntityCreate = () => {
                   type="checkbox"
                   id={`newToDbCheckbox-${index}`}
                   checked={row.newToDbCheckbox}
-                  disabled={ row.newDataCheckbox || row.noDataCheckbox }
+                  disabled={ row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToFieldCheckbox) }
                   onChange={(evt) => {
                     const updatedRows = [...rows];
                     updatedRows[index] = { ...updatedRows[index], newToDbCheckbox: evt.target.checked };
                     setRows(updatedRows);
                   }}
                 />
-                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox ? 'gray' : 'inherit', }} >New to DB</span>
+                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToFieldCheckbox) ? 'gray' : 'inherit', }} >New to DB</span>
                 <br />
                 <span style={{ display: 'inline-block', width: '1rem' }} />
                 <Form.Check
@@ -832,14 +832,14 @@ const TopicEntityCreate = () => {
                   type="checkbox"
                   id={`newToFieldCheckbox-${index}`}
                   checked={row.newToFieldCheckbox}
-                  disabled={ row.newDataCheckbox || row.noDataCheckbox }
+                  disabled={ row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToDbCheckbox) }
                   onChange={(evt) => {
                     const updatedRows = [...rows];
                     updatedRows[index] = { ...updatedRows[index], newToFieldCheckbox: evt.target.checked };
                     setRows(updatedRows);
                   }}
                 />
-                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox ? 'gray' : 'inherit', }} >New to Field</span>
+                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToDbCheckbox) ? 'gray' : 'inherit', }} >New to Field</span>
                 <br />
                 <Form.Check
                   inline
