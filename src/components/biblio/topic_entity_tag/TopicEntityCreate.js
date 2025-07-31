@@ -324,7 +324,7 @@ const TopicEntityCreate = () => {
     return keyByValue.map((e) => e[0])[0];
   };
 
-  function initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation) {
+  function initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation, dataNoveltyAtp) {
     let json_data = {
 	reference_curie: refCurie,
 	topic: row.topicSelect || null,
@@ -332,7 +332,7 @@ const TopicEntityCreate = () => {
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
 	novel_topic_data: row.novelCheckbox || false,
-	data_novelty: row.novelCheckbox ? "ATP:0000321" : null,
+	data_novelty: dataNoveltyAtp,
 	confidence_score: null,
 	confidence_level: null,
 	topic_entity_tag_source_id: topicEntitySourceId || null
@@ -538,6 +538,16 @@ const TopicEntityCreate = () => {
     }
   }, [referenceJsonLive?.workflow_tags, uid]);
 
+  function getDataNoveltyAtpArray(row) {
+    const dataNoveltyAtpArray = [];
+    if (row.newDataCheckbox) { dataNoveltyAtpArray.push('ATP:0000321'); }
+    else if ( row.newToDbCheckbox || row.newToFieldCheckbox ) {
+      if (row.newToDbCheckbox) { dataNoveltyAtpArray.push('ATP:0000228'); }
+      if (row.newToFieldCheckbox) { dataNoveltyAtpArray.push('ATP:0000229'); } }
+    else { dataNoveltyAtpArray.push('ATP:0000335'); }
+    return dataNoveltyAtpArray;
+  }
+
   async function createEntities(refCurie, index) {
     const row = rows[index]
     if (!row.topicSelect) {
@@ -546,42 +556,66 @@ const TopicEntityCreate = () => {
     const forApiArray = [];
     const subPath = "topic_entity_tag/";
     const method = "POST";
+
+//                   checked={row.newDataCheckbox}
+//                   checked={row.newToDbCheckbox}
+//                   checked={row.newToFieldCheckbox}
+//                   checked={row.noDataCheckbox}
       
-    if (row.entityResultList && row.entityResultList.length > 0) {
-      for (const entityResult of row.entityResultList.values()) {
-          if (!["no Alliance curie", "duplicate", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"].includes(entityResult.curie)) {
-          let entityIdValidation = "alliance";
-          if (row.taxonSelect === "use_wb" && row.taxonSelectWB && row.entityTypeSelect) {
-            entityIdValidation = "WB";
+// 	data_novelty: row.novelCheckbox ? "ATP:0000321" : null,
+// ATP:0000321 new data
+// ATP:0000228 new to database
+// ATP:0000229 new to field
+// ATP:0000335 data novelty
+// ATP:0000334 existing data
+//     const dataNoveltyAtpArray = [];
+//     if (row.newDataCheckbox) { dataNoveltyAtpArray.push('ATP:0000321'); }
+//     else if ( row.newToDbCheckbox || row.newToFieldCheckbox ) {
+//       if (row.newToDbCheckbox) { dataNoveltyAtpArray.push('ATP:0000228'); }
+//       if (row.newToFieldCheckbox) { dataNoveltyAtpArray.push('ATP:0000229'); } }
+//     else { dataNoveltyAtpArray.push('ATP:0000335'); }
+
+    const dataNoveltyAtpArray = getDataNoveltyAtpArray(row);
+    for (const dataNoveltyAtp of dataNoveltyAtpArray.values()) {
+      if (row.entityResultList && row.entityResultList.length > 0) {
+        for (const entityResult of row.entityResultList.values()) {
+            if (!["no Alliance curie", "duplicate", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"].includes(entityResult.curie)) {
+            let entityIdValidation = "alliance";
+            if (row.taxonSelect === "use_wb" && row.taxonSelectWB && row.entityTypeSelect) {
+              entityIdValidation = "WB";
+            }
+            let entityCurie = entityResult.curie;
+            if (row.topicSelect === speciesATP) {
+                entityCurie = entityResult;
+            } 
+            const updateJson = initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation, dataNoveltyAtp)
+
+            if (entityIdValidation === "WB") {
+              updateJson["entity_id_validation"] = "WB";
+              updateJson["species"] = row.taxonSelectWB;
+            }
+
+            // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
+            forApiArray.push([subPath, updateJson, method]);
           }
-	  let entityCurie = entityResult.curie;
-	  if (row.topicSelect === speciesATP) {
-	      entityCurie = entityResult;
-	  } 
-	  const updateJson = initializeUpdateJson(refCurie, row, entityCurie, entityIdValidation)
-
-	  if (entityIdValidation === "WB") {
-            updateJson["entity_id_validation"] = "WB";
-	    updateJson["species"] = row.taxonSelectWB;
-          }
-
-	  // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
-	    
-          forApiArray.push([subPath, updateJson, method]);
-
-	}
-      }	
-    } else if (row.taxonSelect !== "" && row.taxonSelect !== undefined) {
-      //const updateJson = initializeUpdateJson(refCurie, row, null, "alliance");
-      const updateJson = initializeUpdateJson(refCurie, row);
-      // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));     
-      forApiArray.push([subPath, updateJson, method]);
-    }
+        }	
+      } else if (row.taxonSelect !== "" && row.taxonSelect !== undefined) {
+        //const updateJson = initializeUpdateJson(refCurie, row, null, "alliance");
+        const updateJson = initializeUpdateJson(refCurie, row, null, null, dataNoveltyAtp);
+        // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));     
+        forApiArray.push([subPath, updateJson, method]);
+    } }
     
     if (forApiArray.length === 0) {
       console.error("No valid data to submit.");
       return;
     }  
+
+//     for (const arrayData of forApiArray.values()) {
+//       console.log(arrayData[0]);
+//       console.log(arrayData[1]);
+//       console.log(arrayData[2]);
+//     }
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
@@ -612,6 +646,7 @@ const TopicEntityCreate = () => {
     const subPath = "topic_entity_tag/" + editTag;
     const method = "PATCH";
     const entityResultList = row.entityResultList || [];  
+    const dataNoveltyAtpArray = getDataNoveltyAtpArray(row);
     if (entityResultList.length > 1) {
       console.error("Error processing entry: too many entities");
       dispatch({
@@ -621,9 +656,18 @@ const TopicEntityCreate = () => {
           accessLevel: accessLevel,
         },
       });
+    } else if (dataNoveltyAtpArray.length > 1) {
+      console.error("Error processing entry: too many Data Novelty ATP values");
+      dispatch({
+        type: "UPDATE_BUTTON_BIBLIO_ENTITY_ADD",
+        payload: {
+          responseMessage: "Only one data novelty value allowed on edit. Please create additional tags with the add function.",
+          accessLevel: accessLevel,
+        },
+      });
     } else {
       let entityResult = entityResultList[0];
-      let updateJson = initializeUpdateJson(refCurie, row);
+      let updateJson = initializeUpdateJson(refCurie, row, null, null, dataNoveltyAtpArray[0]);
       updateJson["entity_id_validation"] = (row.entityTypeSelect) === "" ? null : "alliance";
       updateJson["entity_type"] = (row.entityTypeSelect) === "" ? null : row.entityTypeSelect;
       updateJson["species"] = (row.taxonSelect) === "" ? null : row.taxonSelect;
