@@ -53,6 +53,9 @@ const TopicEntityCreate = () => {
   const taxonSelectWB = useSelector((state) => state.biblio.entityAdd.taxonSelectWB);
   const noDataCheckbox = useSelector((state) => state.biblio.entityAdd.noDataCheckbox);
   const novelCheckbox = useSelector((state) => state.biblio.entityAdd.novelCheckbox);
+  const newDataCheckbox = useSelector((state) => state.biblio.entityAdd.newDataCheckbox);
+  const newToDbCheckbox = useSelector((state) => state.biblio.entityAdd.newToDbCheckbox);
+  const newToFieldCheckbox = useSelector((state) => state.biblio.entityAdd.newToFieldCheckbox);
   const entityTypeSelect = useSelector((state) => state.biblio.entityAdd.entityTypeSelect);
   const entityResultList = useSelector((state) => state.biblio.entityAdd.entityResultList);
   const topicEntitySourceId = useSelector((state) => state.biblio.topicEntitySourceId);
@@ -203,6 +206,9 @@ const TopicEntityCreate = () => {
           taxonSelect: editRow.species || "",
           noDataCheckbox: editRow.negated || false,
           novelCheckbox: editRow.novel_topic_data || false,
+          newDataCheckbox: editRow.data_novelty === 'ATP:0000321' ? true : false,
+          newToDbCheckbox: editRow.data_novelty === 'ATP:0000228' ? true : false,
+          newToFieldCheckbox: editRow.data_novelty === 'ATP:0000229' ? true : false,
 	  confidence_score: editRow.confidence_score || null,  
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",

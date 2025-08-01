@@ -112,6 +112,12 @@ export default (props) => {
             else{
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: row.species } }));
             }
+            if (row.data_novelty === 'ATP:0000321') {
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'newDataCheckbox', value: true } })); }
+            else if (row.data_novelty === 'ATP:0000228') {
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'newToDbCheckbox', value: true } })); }
+            else if (row.data_novelty === 'ATP:0000229') {
+                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'newToFieldCheckbox', value: true } })); }
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: row.novel_topic_data } }));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: row.negated } }));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: row.note ? row.note : '' } }));
