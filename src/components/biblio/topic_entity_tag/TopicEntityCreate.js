@@ -682,6 +682,8 @@ const TopicEntityCreate = () => {
     } else {
       let entityResult = entityResultList[0];
       let updateJson = initializeUpdateJson(refCurie, row, null, null, dataNoveltyAtpArray[0]);
+      delete updateJson["topic_entity_tag_source_id"];	// initializeUpdateJson populates this but API will fail if sent with PATCH request
+      delete updateJson["reference_curie"];		// initializeUpdateJson populates this but API will fail if sent with PATCH request
       updateJson["entity_id_validation"] = (row.entityTypeSelect) === "" ? null : "alliance";
       updateJson["entity_type"] = (row.entityTypeSelect) === "" ? null : row.entityTypeSelect;
       updateJson["species"] = (row.taxonSelect) === "" ? null : row.taxonSelect;
