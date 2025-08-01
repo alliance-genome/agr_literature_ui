@@ -261,6 +261,10 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "notetextarea", value: "" } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "noDataCheckbox", value: false } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "novelCheckbox", value: false } }));
+// IS THIS NEEDED ?
+//       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newDataCheckbox", value: false } }));
+//       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToDbCheckbox", value: false } }));
+//       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToFieldCheckbox", value: false } }));
     }
   }, [topicSelect, dispatch]);
 
@@ -365,6 +369,10 @@ const TopicEntityCreate = () => {
       entityText: "",
       noteText: "",
       entityResultList: [],
+// IS THIS NEEDED ?
+//    newDataCheckbox: false,
+//    newToDbCheckbox: false,
+//    newToFieldCheckbox: false,
       noDataCheckbox: false,
       novelCheckbox: false
     };
