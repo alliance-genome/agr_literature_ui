@@ -71,7 +71,7 @@ const TopicEntityCreate = () => {
   const [modToTaxon, setModToTaxon] = useState({});
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
-  const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);  
+  const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
   const [rows, setRows] = useState([
     { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", entityResultList: [] }
   ]);
@@ -83,7 +83,7 @@ const TopicEntityCreate = () => {
   const curieToNameMap = Object.fromEntries(
     Object.entries(typeaheadName2CurieMap).map(([name, curie]) => [curie, name])
   );
-    
+
   const taxonToMod = {};
   for (const [mod, taxons] of Object.entries(modToTaxon)) {
     taxons.forEach((taxon) => {
@@ -146,7 +146,7 @@ const TopicEntityCreate = () => {
     "ATP:0000026": "fish",
     "ATP:0000013": "transgenic construct",
     "ATP:0000110": "transgenic allele",
-    "ATP:0000093": "sequence targeting reagent"  
+    "ATP:0000093": "sequence targeting reagent"
   };
   const entityTypeList = [
     "",
@@ -159,7 +159,7 @@ const TopicEntityCreate = () => {
     "ATP:0000025",
     "ATP:0000026",
     "ATP:0000013",
-    "ATP:0000093"  
+    "ATP:0000093"
   ];
   const speciesATP = "ATP:0000123";
   const renderView = (row) => {
@@ -180,7 +180,7 @@ const TopicEntityCreate = () => {
             Authorization: `Bearer ${accessToken}`
           }
         });
-	console.log("TET response.data=", response.data)  
+	console.log("TET response.data=", response.data)
         setTopicEntityTags(response.data);
       } catch (error) {
         console.error("Error fetching topic entity tags:", error);
@@ -209,7 +209,7 @@ const TopicEntityCreate = () => {
           newDataCheckbox: editRow.data_novelty === 'ATP:0000321' ? true : false,
           newToDbCheckbox: editRow.data_novelty === 'ATP:0000228' ? true : false,
           newToFieldCheckbox: editRow.data_novelty === 'ATP:0000229' ? true : false,
-	  confidence_score: editRow.confidence_score || null,  
+	  confidence_score: editRow.confidence_score || null,
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",
           noteText: editRow.note || "",
@@ -232,8 +232,8 @@ const TopicEntityCreate = () => {
   const handleCloseMessage = (index) => {
     setMessages((prev) => prev.filter((_, idx) => idx !== index));
   };
-    
-  useEffect(() => {
+
+  useEffect(() => {	// this whole section might not do anything, can't tell if topicSelect is used at all
     if (editTag === null) {
       if (entityTypeList.includes(topicSelect)) {
         dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityTypeSelect", value: topicSelect } }));
@@ -261,10 +261,9 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "notetextarea", value: "" } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "noDataCheckbox", value: false } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "novelCheckbox", value: false } }));
-// IS THIS NEEDED ?
-//       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newDataCheckbox", value: false } }));
-//       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToDbCheckbox", value: false } }));
-//       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToFieldCheckbox", value: false } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: "newDataCheckbox", value: false } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToDbCheckbox", value: false } }));
+      dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToFieldCheckbox", value: false } }));
     }
   }, [topicSelect, dispatch]);
 
@@ -369,10 +368,9 @@ const TopicEntityCreate = () => {
       entityText: "",
       noteText: "",
       entityResultList: [],
-// IS THIS NEEDED ?
-//    newDataCheckbox: false,
-//    newToDbCheckbox: false,
-//    newToFieldCheckbox: false,
+      newDataCheckbox: false,
+      newToDbCheckbox: false,
+      newToFieldCheckbox: false,
       noDataCheckbox: false,
       novelCheckbox: false
     };
@@ -469,7 +467,6 @@ const TopicEntityCreate = () => {
 	currentRow.topicSelect = value || "";
 
 	if (!currentRow.isCloned) {
-	      
           if (entityTypeList.includes(value)) {
             currentRow.entityTypeSelect = value;
           } else {
@@ -481,11 +478,14 @@ const TopicEntityCreate = () => {
           }
 
 	  if (value === "" || value === null) {
+            currentRow.newDataCheckbox = false;
+            currentRow.newToDbCheckbox = false;
+            currentRow.newToFieldCheckbox = false;
+            currentRow.noDataCheckbox = false;
             currentRow.entityText = ""; // clear the entity text
             currentRow.entityResultList = []; // clear the entity list
             currentRow.selectedSpecies = []; // clear any selected species in the typeahead
 	  }
-
 	}
       }
 
@@ -575,7 +575,7 @@ const TopicEntityCreate = () => {
 //                   checked={row.newToDbCheckbox}
 //                   checked={row.newToFieldCheckbox}
 //                   checked={row.noDataCheckbox}
-      
+
 // 	data_novelty: row.novelCheckbox ? "ATP:0000321" : null,
 // ATP:0000321 new data
 // ATP:0000228 new to database
@@ -616,14 +616,14 @@ const TopicEntityCreate = () => {
       } else if (row.taxonSelect !== "" && row.taxonSelect !== undefined) {
         //const updateJson = initializeUpdateJson(refCurie, row, null, "alliance");
         const updateJson = initializeUpdateJson(refCurie, row, null, null, dataNoveltyAtp);
-        // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));     
+        // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
         forApiArray.push([subPath, updateJson, method]);
     } }
-    
+
     if (forApiArray.length === 0) {
       console.error("No valid data to submit.");
       return;
-    }  
+    }
 
 //     for (const arrayData of forApiArray.values()) {
 //       console.log(arrayData[0]);
@@ -659,7 +659,7 @@ const TopicEntityCreate = () => {
     }
     const subPath = "topic_entity_tag/" + editTag;
     const method = "PATCH";
-    const entityResultList = row.entityResultList || [];  
+    const entityResultList = row.entityResultList || [];
     const dataNoveltyAtpArray = getDataNoveltyAtpArray(row);
     if (entityResultList.length > 1) {
       console.error("Error processing entry: too many entities");
@@ -710,7 +710,7 @@ const TopicEntityCreate = () => {
     let filteredTaxonList = taxonList.filter((x) => !modToTaxon[accessLevel].includes(x));
     taxonList = modToTaxon[accessLevel].concat(filteredTaxonList);
   }
-    
+
   // const disabledEntityList = taxonSelect === "" || taxonSelect === undefined;
 
   return (
@@ -814,7 +814,7 @@ const TopicEntityCreate = () => {
                 ref={topicTypeaheadRef}
                 id={`topicTypeahead-${index}`}
                 onSearch={async (query) => {
-	          setTopicSelectLoading(true);	    
+	          setTopicSelectLoading(true);
                   try {
                     let url =`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
                     if (accessLevel) {
@@ -828,7 +828,7 @@ const TopicEntityCreate = () => {
 		    for (const item of results) {
 			nameToCurie[item.name] = item.curie;
 		    }
-                    
+
 		    dispatch(setTypeaheadName2CurieMap(nameToCurie));
 		    setTypeaheadOptions(Object.keys(nameToCurie));
                   } catch (error) {
@@ -836,17 +836,17 @@ const TopicEntityCreate = () => {
                     setTypeaheadOptions([]);
                   } finally {
 	            setTopicSelectLoading(false);
-		  }  
+		  }
                 }}
                 onChange={(selected) => {
                   if (selected.length > 0) {
                     const selectedCurie = typeaheadName2CurieMap[selected[0]];
 		    const selectedValue = selected[0];
                     handleRowChange(index, 'topicSelect', selectedCurie);
-		    handleRowChange(index, "topicSelectValue", selectedValue);  
+		    handleRowChange(index, "topicSelectValue", selectedValue);
                   } else {
 		    handleRowChange(index, 'topicSelect', "");
-		    handleRowChange(index, "topicSelectValue", "");  
+		    handleRowChange(index, "topicSelectValue", "");
 		  }
                 }}
                 options={typeaheadOptions}
@@ -924,7 +924,7 @@ const TopicEntityCreate = () => {
                     setRows(updatedRows);
                   }}
                 />
-                REMOVE this
+                REMOVE this {topicSelect}
               </div>
             </Col>
             <Col sm="1">
@@ -956,7 +956,7 @@ const TopicEntityCreate = () => {
                   </option>
                 ))}
               </Form.Control>
-	      	      
+
               {row.taxonSelect === "use_wb" && (
 	        <Form.Control
                   as="select"
@@ -967,7 +967,7 @@ const TopicEntityCreate = () => {
                 >
 	          {taxonListWB.map((option, idx) => (
                     <option key={idx} value={option}>
-                       {curieToNameTaxonWB[option]}   
+                       {curieToNameTaxonWB[option]}
                     </option>
 		  ))}
                 </Form.Control>	
@@ -976,7 +976,7 @@ const TopicEntityCreate = () => {
             <Col className="form-label col-form-label" sm="2">
               {renderView(row) === "autocomplete" ? (
 	        <AsyncTypeahead
-		  id={`species-typeahead-${index}`}  
+		  id={`species-typeahead-${index}`}
                   multiple
                   isLoading={speciesSelectLoading}
                   placeholder="enter species name"
@@ -1000,7 +1000,7 @@ const TopicEntityCreate = () => {
                     const extractedStrings = selected
                       .map((specie) => {
                         const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-			return match ? `${match[2]}` : null;   
+			return match ? `${match[2]}` : null;
                       })
 	              .filter((item) => item);
 
@@ -1016,7 +1016,7 @@ const TopicEntityCreate = () => {
                   as="textarea"
                   id={`entitytextarea-${index}`}
                   value={row.entityText}
-                  onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}	    
+                  onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}
                 />
               )}
             </Col>
@@ -1069,20 +1069,20 @@ const TopicEntityCreate = () => {
               <Button variant="outline-secondary"  onClick={() => cloneRow(index)} style={{ marginRight: '10px' }}>
                 Clone row
               </Button>
-              {rows.length - 1 === index && (      
+              {rows.length - 1 === index && (
                 <Button variant="outline-secondary"  onClick={() => setRows([...rows, createNewRow()])}>
                   New row
                 </Button>
               )}
             </Col>
-            {rows.length - 1 === index && rows.length > 1 && (	   
+            {rows.length - 1 === index && rows.length > 1 && (
               <Col sm="6" className="d-flex justify-content-end align-items-center">
                 <Button variant="outline-primary" onClick={handleSubmitAll}>
                   Submit All
                 </Button>
               </Col>
             )}
-          </Row>  
+          </Row>
         </React.Fragment>
       ))}
     </Container>
