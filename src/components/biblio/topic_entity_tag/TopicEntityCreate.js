@@ -571,24 +571,6 @@ const TopicEntityCreate = () => {
     const subPath = "topic_entity_tag/";
     const method = "POST";
 
-//                   checked={row.newDataCheckbox}
-//                   checked={row.newToDbCheckbox}
-//                   checked={row.newToFieldCheckbox}
-//                   checked={row.noDataCheckbox}
-
-// 	data_novelty: row.novelCheckbox ? "ATP:0000321" : null,
-// ATP:0000321 new data
-// ATP:0000228 new to database
-// ATP:0000229 new to field
-// ATP:0000335 data novelty
-// ATP:0000334 existing data
-//     const dataNoveltyAtpArray = [];
-//     if (row.newDataCheckbox) { dataNoveltyAtpArray.push('ATP:0000321'); }
-//     else if ( row.newToDbCheckbox || row.newToFieldCheckbox ) {
-//       if (row.newToDbCheckbox) { dataNoveltyAtpArray.push('ATP:0000228'); }
-//       if (row.newToFieldCheckbox) { dataNoveltyAtpArray.push('ATP:0000229'); } }
-//     else { dataNoveltyAtpArray.push('ATP:0000335'); }
-
     const dataNoveltyAtpArray = getDataNoveltyAtpArray(row);
     for (const dataNoveltyAtp of dataNoveltyAtpArray.values()) {
       if (row.entityResultList && row.entityResultList.length > 0) {
@@ -624,12 +606,6 @@ const TopicEntityCreate = () => {
       console.error("No valid data to submit.");
       return;
     }
-
-//     for (const arrayData of forApiArray.values()) {
-//       console.log(arrayData[0]);
-//       console.log(arrayData[1]);
-//       console.log(arrayData[2]);
-//     }
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
