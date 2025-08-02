@@ -15,7 +15,6 @@ const defaultEntityAdd = {
   'taxonSelect': '',
   'taxonSelectWB': '',
   'noDataCheckbox': false,
-  'novelCheckbox': false,
   'newDataCheckbox': false,
   'newToDbCheckbox': false,
   'newToFieldCheckbox': false,

@@ -52,7 +52,6 @@ const TopicEntityCreate = () => {
   const taxonSelect = useSelector((state) => state.biblio.entityAdd.taxonSelect);
   const taxonSelectWB = useSelector((state) => state.biblio.entityAdd.taxonSelectWB);
   const noDataCheckbox = useSelector((state) => state.biblio.entityAdd.noDataCheckbox);
-  const novelCheckbox = useSelector((state) => state.biblio.entityAdd.novelCheckbox);
   const newDataCheckbox = useSelector((state) => state.biblio.entityAdd.newDataCheckbox);
   const newToDbCheckbox = useSelector((state) => state.biblio.entityAdd.newToDbCheckbox);
   const newToFieldCheckbox = useSelector((state) => state.biblio.entityAdd.newToFieldCheckbox);
@@ -205,7 +204,6 @@ const TopicEntityCreate = () => {
           entityTypeSelect: editRow.entity_type || "",
           taxonSelect: editRow.species || "",
           noDataCheckbox: editRow.negated || false,
-          novelCheckbox: editRow.novel_topic_data || false,
           newDataCheckbox: editRow.data_novelty === 'ATP:0000321' ? true : false,
           newToDbCheckbox: editRow.data_novelty === 'ATP:0000228' ? true : false,
           newToFieldCheckbox: editRow.data_novelty === 'ATP:0000229' ? true : false,
@@ -260,7 +258,6 @@ const TopicEntityCreate = () => {
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "entitytextarea", value: "" } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "notetextarea", value: "" } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "noDataCheckbox", value: false } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "novelCheckbox", value: false } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newDataCheckbox", value: false } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToDbCheckbox", value: false } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToFieldCheckbox", value: false } }));
@@ -340,7 +337,6 @@ const TopicEntityCreate = () => {
 	species: row.taxonSelect || null,
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
-	novel_topic_data: row.novelCheckbox || false,
 	data_novelty: dataNoveltyAtp,
 	confidence_score: null,
 	confidence_level: null,
@@ -371,8 +367,7 @@ const TopicEntityCreate = () => {
       newDataCheckbox: false,
       newToDbCheckbox: false,
       newToFieldCheckbox: false,
-      noDataCheckbox: false,
-      novelCheckbox: false
+      noDataCheckbox: false
     };
   }
 
@@ -890,19 +885,6 @@ const TopicEntityCreate = () => {
                   }}
                 />
                 <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
-                <br />
-                <Form.Check
-                  inline
-                  type="checkbox"
-                  id={`novelCheckbox-${index}`}
-                  checked={row.novelCheckbox}
-                  onChange={(evt) => {
-                    const updatedRows = [...rows];
-                    updatedRows[index] = { ...updatedRows[index], novelCheckbox: evt.target.checked };
-                    setRows(updatedRows);
-                  }}
-                />
-                REMOVE this {topicSelect}
               </div>
             </Col>
             <Col sm="1">
