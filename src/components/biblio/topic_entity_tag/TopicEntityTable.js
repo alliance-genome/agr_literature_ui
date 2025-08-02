@@ -510,6 +510,14 @@ const CheckboxDropdown =  ({ items }) => {
     return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
   };
 
+  const dataNoveltyMap = {
+    "ATP:0000321": "new data",
+    "ATP:0000228": "new to database",
+    "ATP:0000229": "new to field",
+    "ATP:0000335": " ",
+    "ATP:0000334": "existing data"
+  };
+
   let cols=[
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions},
     { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
@@ -519,7 +527,7 @@ const CheckboxDropdown =  ({ items }) => {
     { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
     { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (params) =>   params.data.negated === true ? 'no data': '' },
     { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text", valueGetter: (params) =>   params.data.novel_topic_data === true ? 'new data': ''},
-    { headerName: "Data Novelty", field: "data_novelty" },
+    { headerName: "Data Novelty", field: "data_novelty", valueGetter: (params) => dataNoveltyMap[params.data.data_novelty] || params.data.data_novelty },
     { headerName: "Confidence Score", field:"confidence_score" },  
     { headerName: "Confidence Level", field:"confidence_level" },
     { headerName: "Created By", field: "created_by"},
