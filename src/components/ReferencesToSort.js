@@ -224,12 +224,13 @@ const ReferencesToSort = ({
             <span>
               {reference['cross_references']
                 .map((xref, idx) => {
+                  const obsoleteTag = xref.is_obsolete ?
+                    (<span key={`obsolete-${idx}`} style={{ color: 'red', marginRight: '4px' }}>obsolete</span>) : null;
                   const content = xref['url'].endsWith('/') ? (
-                    <span key={`xref-${idx}`}>{xref['curie']}</span>
+                    <span key={`xref-${idx}`}>{obsoleteTag}{xref['curie']}</span>
                   ) : (
-                    <a key={`xref-${idx}`} href={xref['url']} target='_blank' rel='noreferrer'>
-                      {xref['curie']}
-                    </a>
+                    <span key={`xref-${idx}`}>{obsoleteTag}
+                      <a key={`xref-${idx}`} href={xref['url']} target='_blank' rel='noreferrer'>{xref['curie']}</a></span>
                   );
                   return content;
                 })
