@@ -757,6 +757,14 @@ const FileEditor = ({ onFileStatusChange }) => {
     }
   };
 
+  // Create a mapping of display_name to TEI files
+  const teiFilesMap = {};
+  referenceFiles.forEach(file => {
+    if (file.file_class === 'tei') {
+      teiFilesMap[file.display_name] = file;
+    }
+  });
+
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
@@ -777,12 +785,37 @@ const FileEditor = ({ onFileStatusChange }) => {
           </div>
         );
       }
+    
+      // Look for TEI file
+      const teiFile = referenceFiles.find(
+        file => file.file_class === 'tei' && file.display_name === referenceFile.display_name
+      );
+    
+      let teiFileDisplay = null;
+      if (teiFile) {
+        const teiFilename = `${teiFile.display_name}.${teiFile.file_extension}`;
+        teiFileDisplay = hasAccess ? (
+          <div>
+            <button
+              className='button-to-link'
+              onClick={() => dispatch(downloadReferencefile(teiFile.referencefile_id, teiFilename, accessToken))}
+            >
+              {teiFilename}
+            </button>
+            &nbsp;{loadingFileNames.has(teiFilename) ? <Spinner animation="border" size="sm" /> : null}
+          </div>
+        ) : (
+          <div>{teiFilename}</div>
+        );
+      }
+
       return (
         <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
           <Col className={`Col-general Col-display-left`} lg={{ span: 2 }}>{referenceFile.file_class}</Col>
           <Col className="Col-general Col-display" lg={{ span: 3 }}>{referencefileValue}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 2 }}>{source}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 2 }}>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>{teiFileDisplay}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 1 }}>{source}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 1 }}>
             <Form.Control
               as="select"
               disabled={!hasAccess}
@@ -790,7 +823,7 @@ const FileEditor = ({ onFileStatusChange }) => {
               onChange={(event) => {
                 const newValue = event.target.value === "" ? null : event.target.value;
                 if (referenceFile.pdf_type !== newValue) {
-                    patchReferencefile(referenceFile.referencefile_id, { "pdf_type": newValue }, accessToken);
+                  patchReferencefile(referenceFile.referencefile_id, { "pdf_type": newValue }, accessToken);
                 }
               }}
             >
@@ -798,7 +831,7 @@ const FileEditor = ({ onFileStatusChange }) => {
               <option>pdf</option>
               <option>ocr</option>
               <option>tif</option>
-	      <option>lib</option>
+              <option>lib</option>
               <option>aut</option>
               <option>html</option>
             </Form.Control>
@@ -811,7 +844,7 @@ const FileEditor = ({ onFileStatusChange }) => {
               onChange={(event) => {
                 const newValue = event.target.value;
                 if (referenceFile.file_publication_status !== newValue) {
-                    patchReferencefile(referenceFile.referencefile_id, { "file_publication_status": newValue }, accessToken);
+                  patchReferencefile(referenceFile.referencefile_id, { "file_publication_status": newValue }, accessToken);
                 }
               }}
             >
@@ -830,17 +863,21 @@ const FileEditor = ({ onFileStatusChange }) => {
       );
     });
   };
-
+          
   let rowReferencefileElements = [];
+  // Filter out TEI files from the main display
   const referenceFilesWithAccess = referenceFiles.filter((referenceFile) =>
-    referenceJsonLive["copyright_license_open_access"] === true ||
+    (referenceJsonLive["copyright_license_open_access"] === true ||
     accessLevel === 'developer' ||
-    referenceFile.referencefile_mods.some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null)
+    referenceFile.referencefile_mods.some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null)) &&
+    referenceFile.file_class !== 'tei'  // Exclude TEI files
   );
+
   const referenceFilesNoAccess = referenceFiles.filter((referenceFile) =>
-    referenceJsonLive["copyright_license_open_access"] !== true &&
+    (referenceJsonLive["copyright_license_open_access"] !== true &&
     accessLevel !== 'developer' &&
-    referenceFile.referencefile_mods.every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null)
+    referenceFile.referencefile_mods.every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null)) &&
+    referenceFile.file_class !== 'tei'  // Exclude TEI files
   );
 
   referenceFilesWithAccess.sort(reffileCompareFn);
@@ -849,8 +886,9 @@ const FileEditor = ({ onFileStatusChange }) => {
     <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={6}>
       <Col className="Col-general Col-display-left" lg={{ span: 2 }}><strong>File Class</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>File Name</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Source</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>PDF Type</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Converted File</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>Source</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>PDF Type</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
       <Col className="Col-general Col-display-right" lg={{ span: 1 }}><strong>Delete</strong></Col>
     </Row>,
