@@ -354,7 +354,7 @@ const BiblioWorkflow = () => {
   }
 
   const CurationStatusWholePaper = () => {
-    const handleChange = async (e, field) => {
+    const handleChange = async (e, field) => {	// this function doesn't seem to be used anywhere, functionality is in onCellValueChanged
       const newValue = e.target.value;
       let json_data = {};
       if (field === 'curation_status') {
@@ -761,6 +761,14 @@ const BiblioWorkflow = () => {
 
     if (colId === 'curation_status' && rowData.topic_name === 'Whole Paper' && newValue === 'ATP:0000237') { setDataTopicsInProgress(); }
 
+    // DELETE if curation_status is being cleared
+    const isClearingCurationStatus = (
+      colId === 'curation_status' &&
+      (oldValue ?? "") !== "" && // was something
+      newValue === "" &&
+      rowData.curation_status_id !== 'new' // can't delete something that hasn't been posted
+    );
+
     console.log(`${colId} changed from`, oldValue, 'to', newValue);
     console.log('Row data:', rowData);
     console.log('Curation Status Id:', rowData.curation_status_id);
@@ -774,6 +782,7 @@ const BiblioWorkflow = () => {
       json_data["topic"] = rowData.topic_curie;
       json_data["reference_curie"] = referenceCurie; }
     else {
+      if (isClearingCurationStatus) { method = 'DELETE'; json_data = null; }
       subPath = "/curation_status/" + rowData.curation_status_id; }
     console.log("subPath: ", subPath);
     console.log("method: ", method);
