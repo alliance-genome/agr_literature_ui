@@ -81,13 +81,7 @@ const BiblioFileManagement = () => {
     
   return (
     <>
-      <Container
-        style={{
-          maxWidth: '90vw',         // let it go to 90% of viewport width
-          paddingLeft: '1.5rem',
-          paddingRight: '1.5rem'
-        }}
-      >
+      <Container>
         <BiblioCitationDisplay key="filemanagementCitationDisplay" />
         <AlertDismissibleFileUploadSuccess />
         {fileUploadingIsUploading ? <Spinner animation={"border"} /> : null}
@@ -835,10 +829,10 @@ const FileEditor = ({ onFileStatusChange }) => {
       return (
         <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
           <Col className={`Col-general Col-display-left`} lg={{ span: 2 }}>{referenceFile.file_class}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 3 }}>{referencefileValue}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 3 }}>{teiFileDisplay}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>{referencefileValue}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>{teiFileDisplay}</Col>
           <Col className="Col-general Col-display" lg={{ span: 1 }}>{source}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 1 }}>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>
             <Form.Control
               as="select"
               disabled={!hasAccess}
@@ -859,7 +853,7 @@ const FileEditor = ({ onFileStatusChange }) => {
               <option>html</option>
             </Form.Control>
           </Col>
-          <Col className="Col-general Col-display" lg={{ span: 1 }}>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>
             <Form.Control
               as="select"
               disabled={!hasAccess}
@@ -908,11 +902,11 @@ const FileEditor = ({ onFileStatusChange }) => {
   rowReferencefileElements = [
     <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={6}>
       <Col className="Col-general Col-display-left" lg={{ span: 2 }}><strong>File Class</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>File Name</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>Converted File</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Name</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Converted File</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>Source</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>PDF Type</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>File Publication Status</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>PDF Type</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
       <Col className="Col-general Col-display-right" lg={{ span: 1 }}><strong>Delete</strong></Col>
     </Row>,
     ...getDisplayRowsFromReferenceFiles(referenceFilesWithAccess, true),
