@@ -425,7 +425,11 @@ const BiblioWorkflow = () => {
           style={{ width: '100%', height: '100%', border: '1px solid #ccc', borderRadius: '6px', }}
         >
           {!isValid && value && <option value={value}>{value}</option>}
-          {(!value || colDef.field === 'controlled_note') && <option value=""></option>}
+          {(
+            !value ||
+            colDef.field === 'controlled_note' ||
+            (colDef.field === 'curation_status' && !node?.data?.controlled_note && !node?.data?.note)
+          ) && <option value=""></option>}
           {options.map(opt => ( <option key={opt.value} value={opt.value}>{opt.label}</option>))}
         </select>
       </div>
