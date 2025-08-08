@@ -84,8 +84,8 @@ const BulkSubmission = () => {
                       : suffix;
         return [`WB:WBPaper${id}`, pdfType, filePubStatus];
       } else {
-        return [`WB:WBPaper${id}`, 'pdf', 'final'];
         console.log(`No regex match for ${filename}`);
+        return [`WB:WBPaper${id}`, 'pdf', 'final'];
       }
     }
     return [`PMID:${id}`, 'pdf', 'final'];
