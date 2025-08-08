@@ -70,9 +70,25 @@ const BulkSubmission = () => {
     // It takes the very first piece ([0]), so for "12345_John2017.pdf" or "12345.pdf"
     // you’ll get "12345" as id.
     const id = filename.split(/[_\.]/)[0]; 
-    if (/^[0-9]{15}$/.test(id)) return `AGRKB:${id}`;
-    if (mod === 'WB') return `WB:WBPaper${id}`;
-    return `PMID:${id}`;
+    if (/^[0-9]{15}$/.test(id)) return [`AGRKB:${id}`, 'pdf', 'final'];
+    if (mod === 'WB') {
+      // For WB also capture the last _text part and treat it differently to generate a pdfType and filePubStatus
+      const regex = /^(\d+)(?:_[a-zA-Z0-9]+)*_([a-zA-Z0-9]+)\.pdf$/;
+      const match = filename.match(regex);
+      if (match) {
+        const numberPart = match[1];
+        const suffix = match[2];
+        const filePubStatus = (suffix === 'temp') ? 'temp' : 'final';
+        const pdfType = (suffix === 'temp') ? 'pdf'
+                      : (suffix === 'htm') ? 'html'
+                      : suffix;
+        return [`WB:WBPaper${id}`, pdfType, filePubStatus];
+      } else {
+        return [`WB:WBPaper${id}`, 'pdf', 'final'];
+        console.log(`No regex match for ${filename}`);
+      }
+    }
+    return [`PMID:${id}`, 'pdf', 'final'];
   };
 
   const uploadSingle = async (file, path = null) => {
@@ -94,20 +110,19 @@ const BulkSubmission = () => {
       idSegment = parts[parts.length - 2];
     }
 
-    let referenceCurie;
+    const displayName = file.name;
+    const fileExt = file.name.split('.').pop();
+    let referenceCurie, pdfType, filePubStatus;
     const fileClass = isSupp ? 'supplement' : 'main';
     if (isSupp) {
       referenceCurie = selectedMod === 'WB'
         ? `WB:WBPaper${idSegment}`
         : `PMID:${idSegment}`;
+      filePubStatus = 'final';
+      pdfType = fileExt.toLowerCase() === 'pdf' ? 'pdf' : '';
     } else {
-      referenceCurie = makeReferenceCurie(file.name, selectedMod);
+      [referenceCurie, pdfType, filePubStatus] = makeReferenceCurie(file.name, selectedMod);
     }
-
-    const displayName = file.name;
-    const fileExt = file.name.split('.').pop();
-    const filePubStatus = 'final';
-    const pdfType = fileExt.toLowerCase() === 'pdf' ? 'pdf' : '';
 
     let display_name_without_extension;
     const lastDotIndex = displayName.lastIndexOf('.');
@@ -303,7 +318,7 @@ const BulkSubmission = () => {
     }
     // otherwise, look at the filename
     const filename = parts[parts.length - 1];
-    return makeReferenceCurie(filename, selectedMod);
+    return makeReferenceCurie(filename, selectedMod)[0];
   };
   
   return (
