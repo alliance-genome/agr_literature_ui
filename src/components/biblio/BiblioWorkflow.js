@@ -36,22 +36,62 @@ const BiblioWorkflow = () => {
   const [showApiErrorModal, setShowApiErrorModal] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState('');
   const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
+  
+  const REST = process.env.REACT_APP_RESTAPI;
 
+  const fmtScore = (s) => (s == null ? '' : Number.isFinite(Number(s)) ? Number(s).toFixed(2) : s);
+    
+  // --- NEW: fetch Indexing Priority row from the new endpoint
+  const fetchIndexingPriorityRow = useCallback(async () => {
+    const url = `${REST}/indexing_priority/get_priority_tag/${referenceCurie}`;
+    const headers = {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+    const res = await axios.get(url, { headers });
+    const payload = res.data || {};
+    const allTags = payload.all_priority_tags || {};
+    const current = Array.isArray(payload.current_priority_tag) ? payload.current_priority_tag : [];
+
+    const ip = current[0] || null;
+
+    const options = Object.entries(allTags).map(([value, label]) => ({
+      value, label,
+    }));
+
+    return {
+      section: 'Indexing Priority',
+      workflow_tag: ip?.indexing_priority ?? '',
+      confidence_score: fmtScore(ip?.confidence_score),
+      email: ip?.updated_by_email ?? '',
+      date_updated: ip?.date_updated ?? '',
+      options,
+      // use a distinct field for the new PATCH target
+      indexing_priority_id: ip?.indexing_priority_id ?? null,
+    };
+  }, [REST, referenceCurie, accessToken]);
+
+  // Existing: fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
     async () => {
       const url =
-        `${process.env.REACT_APP_RESTAPI}` +
+        `${REST}` +
         `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
       try {
-        const res = await axios.get(url, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        const respData = res.data || {};
+	const headers = {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        };
+	  
+        // fetch both in parallel
+	const [wftRes, ipRow] = await Promise.all([
+          axios.get(url, { headers }),
+          fetchIndexingPriorityRow()
+        ]);
+	  
+        const respData = wftRes.data || {};
         const sectionOrder = [
-          'indexing priority',
+          'indexing priority', // we will override with ipRow
           'community curation',
           'manual indexing'
         ];
@@ -61,8 +101,9 @@ const BiblioWorkflow = () => {
           'manual indexing': 'Manual Indexing',
         };
 
-        const rows = sectionOrder
+        const rowsFromWFT = sectionOrder
           .filter(sectionKey => sectionKey in respData)
+	  .filter(sectionKey => sectionKey !== 'indexing priority') // exclude; replaced by ipRow
           .map(sectionKey => {
             const sectionInfo = respData[sectionKey] || {};
             const allTagsObj = sectionInfo.all_workflow_tags || {};
@@ -88,19 +129,21 @@ const BiblioWorkflow = () => {
             return {
               section: sectionDisplayNames[sectionKey],
               workflow_tag: currentValue,
+	      confidence_score: '',	
               email,
               date_updated,
               options,
-              reference_workflow_tag_id,
+              reference_workflow_tag_id, // used by workflow_tag PATCH/POST
             };
           });
-
-        setIndexingWorkflowData(rows);
+	// Put the Indexing Priority row first, then the other two
+	const combinedRows = [ipRow, ...rowsFromWFT];  
+        setIndexingWorkflowData(combinedRows);
       } catch (error) {
         console.error('Error fetching workflow overview:', error);
       }
     },
-    [referenceCurie, accessLevel, accessToken]  // <- dependency array for useCallback
+      [REST, referenceCurie, accessLevel, accessToken, fetchIndexingPriorityRow]
   );
 
   useEffect(() => {
@@ -109,7 +152,7 @@ const BiblioWorkflow = () => {
 
   useEffect(() => {
     const fetchWFTdata = async () => {
-      const url = process.env.REACT_APP_RESTAPI + "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
+      const url = REST + "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
       setIsLoadingData(true);
       try {
         const result = await axios.get(url, {
@@ -132,7 +175,7 @@ const BiblioWorkflow = () => {
       }
     };
     fetchWFTdata();
-  }, [referenceCurie, accessToken]);
+  }, [REST, referenceCurie, accessToken]);
 
   useEffect(() => {
     const fetchCurationStatuses = async () => {
@@ -192,7 +235,7 @@ const BiblioWorkflow = () => {
   useEffect(() => {
     const fetchCurationData = async () => {
       const curationUrl =
-        process.env.REACT_APP_RESTAPI +
+        REST +
         `/curation_status/aggregated_curation_status_and_tet_info/${referenceCurie}/${accessLevel}`;
       try {
         const result = await axios.get(curationUrl);
@@ -259,7 +302,7 @@ const BiblioWorkflow = () => {
     };
 
     fetchCurationData();
-  }, [referenceCurie, accessLevel, reloadCurationDataTable]);
+  }, [REST, referenceCurie, accessLevel, reloadCurationDataTable]);
 
   const GenericWorkflowTableModal = ({ title, body, show, onHide }) => {
     return (
@@ -690,6 +733,15 @@ const BiblioWorkflow = () => {
       filter: true,
     },
     {
+      headerName: 'Confidence Score',
+      field: 'confidence_score',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
       headerName: 'Email',
       field: 'email',
       flex: 1,
@@ -714,6 +766,7 @@ const BiblioWorkflow = () => {
     justifyContent: 'center',
   };
 
+  // --- UPDATED: When indexing priority row changes, call the new PATCH; others unchanged
   const onIndexingWorkflowCellValueChanged = useCallback(async (params) => {
     if (params.column.getColId() !== 'workflow_tag') return;
   
@@ -721,34 +774,50 @@ const BiblioWorkflow = () => {
     if (newValue === oldValue) return;
 
     try {
-      if (data.reference_workflow_tag_id) {
-        // Existing tag - PATCH
-        await patchWorkflowTag(
-          data.reference_workflow_tag_id, 
-          { workflow_tag_id: newValue },
-	  accessToken
-        );
+      if (data.section === 'Indexing Priority') {
+        // require an existing record to patch
+        if (!data.indexing_priority_id) {
+          const msg = 'No existing indexing priority record to patch.';
+          setApiErrorMessage(msg);
+          setShowApiErrorModal(true);
+          return;
+        }
+        const url = `${REST}/indexing_priority/${data.indexing_priority_id}`;
+        await axios.patch(url, { indexing_priority: newValue }, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
       } else {
-        // New tag - POST
-        await postWorkflowTag(
-	  {
+        // keep existing behavior for workflow tags
+        if (data.reference_workflow_tag_id) {
+          await patchWorkflowTag(
+            data.reference_workflow_tag_id,
+            { workflow_tag_id: newValue },
+            accessToken
+          );
+        } else {
+          await postWorkflowTag(
+            {
               reference_curie: referenceCurie,
               mod_abbreviation: accessLevel,
               workflow_tag_id: newValue
-          },
-	  accessToken
-	);
+            },
+            accessToken
+          );
+        }
       }
-    
+
       // Refresh data after successful update
       fetchIndexingWorkflowOverview();
     } catch (error) {
       const errorMessage = `API error: ${error.message}`;
       setApiErrorMessage(errorMessage);
       setShowApiErrorModal(true);
-      console.error('Error updating workflow tag:', error);
+      console.error('Error updating workflow/indexing priority:', error);
     }
-  }, [referenceCurie, accessLevel, accessToken, fetchIndexingWorkflowOverview]);
+  }, [REST, referenceCurie, accessLevel, accessToken, fetchIndexingWorkflowOverview]);
     
   const onCellValueChanged = async (params) => {
     const colId = params.column.getColId();
