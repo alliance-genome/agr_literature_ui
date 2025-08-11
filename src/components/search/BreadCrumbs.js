@@ -69,8 +69,14 @@ const BreadCrumbs = () => {
     };
 
     const handleRemoveFacet = (facet, value) => {
+
+        //Remove NOT Confidence Levels if no topic is selected.
+        if(facet === 'topics' && searchExcludedFacetsValues.confidence_levels){
+            searchExcludedFacetsValues.confidence_levels.forEach(confidence_level => {
+                dispatch(removeExcludedFacetValue('confidence_levels', confidence_level))
+            })
+        }
         dispatch(removeFacetValue(facet, value));
-        dispatch(searchReferences());
     };
 
     const handleClearAll = () => {
