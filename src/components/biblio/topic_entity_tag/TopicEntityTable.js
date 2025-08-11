@@ -622,6 +622,21 @@ const CheckboxDropdown =  ({ items }) => {
       }
     }
   },[]);
+
+  const onColumnResize = useCallback((params)=>{
+      let colState = gridRef.current.api.getColumnState();
+      //Only Trigger on autoresize
+      if(params.source === 'autosizeColumns') {
+          colState.forEach((element) => {
+              if (element.colId === 'note' && element.width > 300){
+                  gridRef.current.api.applyColumnState({
+                      state: [{ colId: 'note', width: 300 },],
+                  });
+              }
+          })
+      }
+  },[])
+
   const getRowId = useMemo(() => {
     return (params) => String(params.data.topic_entity_tag_id);
   }, []);
@@ -673,6 +688,7 @@ const CheckboxDropdown =  ({ items }) => {
                   reactiveCustomComponents
                   rowData={topicEntityTags}
                   onGridReady={onGridReady}
+                  onColumnResized={onColumnResize}
                   getRowId={getRowId}
                   columnDefs={colDefs}
                   onColumnMoved={columnMoved}
