@@ -231,7 +231,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 <Form.Check inline type="checkbox"
                     checked={searchFacetsValues.hasOwnProperty(facet) && searchFacetsValues[facet].includes(value)}
                     onChange={(evt) => {
-                        console.log(facet,value);
                         if (evt.target.checked) {
                             dispatch(addFacetValue(facet, value));
                             if(facet === 'topics'  && !searchExcludedFacetsValues.confidence_levels  && !searchFacetsValues.confidence_levels) {
