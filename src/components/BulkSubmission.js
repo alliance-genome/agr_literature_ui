@@ -79,7 +79,7 @@ const BulkSubmission = () => {
       if (match) {
         const numberPart = match[1];
         let suffix = match[2].toLowerCase();
-        if (suffix === 'temp') { return [`WB:WBPaper${numberPart}`, 'pdf', 'temp']; }
+        if (suffix === 'temp') { return [`WB:WBPaper${id}`, 'pdf', 'temp']; }
         if (suffix === 'htm') { suffix = 'html'; }
         const pdfType = allowedPdfTypes.includes(suffix) ? suffix : 'pdf';
         return [`WB:WBPaper${id}`, pdfType, 'final'];
