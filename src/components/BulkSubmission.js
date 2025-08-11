@@ -68,8 +68,9 @@ const BulkSubmission = () => {
 
   const makeReferenceCurie = (filename, mod) => {
     // It takes the very first piece ([0]), so for "12345_John2017.pdf" or "12345.pdf"
-    // you’ll get "12345" as id.
+    // you'll get "12345" as id.
     const id = filename.split(/[_\.]/)[0]; 
+    const allowedPdfTypes = ['aut', 'htm', 'html', 'lib', 'ocr', 'temp', 'tif'];
     if (/^[0-9]{15}$/.test(id)) return [`AGRKB:${id}`, 'pdf', 'final'];
     if (mod === 'WB') {
       // For WB also capture the last _text part and treat it differently to generate a pdfType and filePubStatus
@@ -77,12 +78,11 @@ const BulkSubmission = () => {
       const match = filename.match(regex);
       if (match) {
         const numberPart = match[1];
-        const suffix = match[2];
-        const filePubStatus = (suffix === 'temp') ? 'temp' : 'final';
-        const pdfType = (suffix === 'temp') ? 'pdf'
-                      : (suffix === 'htm') ? 'html'
-                      : suffix;
-        return [`WB:WBPaper${id}`, pdfType, filePubStatus];
+        let suffix = match[2].toLowerCase();
+        if (suffix === 'temp') { return [`WB:WBPaper${id}`, 'pdf', 'temp']; }
+        if (suffix === 'htm') { suffix = 'html'; }
+        const pdfType = allowedPdfTypes.includes(suffix) ? suffix : 'pdf';
+        return [`WB:WBPaper${id}`, pdfType, 'final'];
       } else {
         console.log(`No regex match for ${filename}`);
         return [`WB:WBPaper${id}`, 'pdf', 'final'];
