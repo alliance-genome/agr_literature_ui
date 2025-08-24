@@ -759,6 +759,51 @@ const BiblioWorkflow = () => {
       sortable: true,
       filter: true,
     },
+    {
+      headerName: 'Controlled Note',
+      field: 'controlled_note',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      cellRenderer: GeneralizedDropdownRenderer,
+      cellRendererParams: (params) => {
+        const isValidCurationStatus = params.data?.options?.some(option => option.value === params.data?.workflow_tag);
+        return {
+          value: params.value,
+          node: params.node,
+          colDef: params.colDef,
+          options: controlledNoteOptions, // Assumes format: [{ value, label }]
+          validateFn: (val) => controlledNoteOptions.some(option => option.value === val),
+          errorMessage: 'INVALID Controlled Note: Choose Another',
+          isDisabled: !isValidCurationStatus,
+        };
+      },
+      sortable: true,
+      filter: true
+    },
+    {
+      headerName: 'Note',
+      field: 'note',
+      flex: 3,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      editable: (params) => {
+        // note is only editable if workflow_tag is valid
+        return params.data?.options?.some(option => option.value === params.data?.workflow_tag);
+      },
+      cellRenderer: (params) => {
+        const isValidCurationStatus = params.data?.options?.some(option => option.value === params.data?.workflow_tag);
+        // note is only displayed if it has data, placeholder displayed only if workflow_tag is valid
+        if (params.value) { return params.value; }
+        else if (isValidCurationStatus) { return 'Add Note here'; }
+        else { return ''; }
+      },
+      cellEditor: 'agLargeTextCellEditor',
+      cellEditorPopup: true,
+      cellEditorParams: {
+        maxLength: 2000
+      },
+    },
   ];
 
   const containerStyle = {
@@ -768,22 +813,29 @@ const BiblioWorkflow = () => {
 
   // --- UPDATED: When indexing priority row changes, call the new PATCH; others unchanged
   const onIndexingWorkflowCellValueChanged = useCallback(async (params) => {
-    if (params.column.getColId() !== 'workflow_tag') return;
-  
-    const { data, oldValue, newValue } = params;
+//     if (params.column.getColId() !== 'workflow_tag') return;
+    const colId = params.column.getColId();
+    const newValue = params.newValue;
+    const oldValue = params.oldValue;
+    const rowData = params.data;
+   
     if (newValue === oldValue) return;
-
+   
+    // Columns we want to support editing
+    const editableFields = ['workflow_tag', 'controlled_note', 'note'];
+    if (!editableFields.includes(colId)) return;
+  
     try {
-      if (data.section === 'Indexing Priority') {
+      if (rowData.section === 'Indexing Priority') {
         // require an existing record to patch
-        if (!data.indexing_priority_id) {
+        if (!rowData.indexing_priority_id) {
           const msg = 'No existing indexing priority record to patch.';
           setApiErrorMessage(msg);
           setShowApiErrorModal(true);
           return;
         }
-        const url = `${REST}/indexing_priority/${data.indexing_priority_id}`;
-        await axios.patch(url, { indexing_priority: newValue }, {
+        const url = `${REST}/indexing_priority/${rowData.indexing_priority_id}`;
+        await axios.patch(url, { [colId]: newValue }, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
@@ -791,13 +843,14 @@ const BiblioWorkflow = () => {
         });
       } else {
         // keep existing behavior for workflow tags
-        if (data.reference_workflow_tag_id) {
+        if (rowData.reference_workflow_tag_id) {
           await patchWorkflowTag(
-            data.reference_workflow_tag_id,
-            { workflow_tag_id: newValue },
+            rowData.reference_workflow_tag_id,
+            { [colId]: newValue },
             accessToken
           );
-        } else {
+        } else if (colId === 'workflow_tag') {
+          // Only post if creating new workflow tag AND the change was to 'workflow_tag'
           await postWorkflowTag(
             {
               reference_curie: referenceCurie,
@@ -806,6 +859,12 @@ const BiblioWorkflow = () => {
             },
             accessToken
           );
+        } else {
+          // Trying to edit controlled_note/note but no existing workflow tag
+          const msg = 'No existing workflow tag record to patch.';
+          setApiErrorMessage(msg);
+          setShowApiErrorModal(true);
+          return;
         }
       }
 
