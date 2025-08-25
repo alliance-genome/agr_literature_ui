@@ -110,16 +110,27 @@ function processSingleFacet(facetArray, facetKey, tetNestedFacetsValues) {
 }
 
 const getSearchParams = (state) => {
+  const query =
+    state.search.searchQuery
+      .replace(/\|/g, '\\|')          // escape literal pipes
+      .replace(/\+/g, '\\+')          // escape literal pluses
+      .replace(/\bOR\b/gi, '|')       // ONLY standalone OR
+      .replace(/\bAND\b/gi, '+')      // ONLY standalone AND
+      .trim();
+  const author_filter = String(state.search.authorFilter ?? '').trim();  
   let params = {
-    query: state.search.searchQuery.replace(/\|/g,'\\|').replace(/\+/g,'\\+').replace(/OR/g,"|").replace(/AND/g,"+").trim(),
+    query: query,
     size_result_count: state.search.searchSizeResultsCount,
     page: state.search.searchResultsPage,
     facets_limits: state.search.searchFacetsLimits,
-    author_filter: state.search.authorFilter,
     query_fields: state.search.query_fields,
     sort_by_published_date_order: state.search.sortByPublishedDate,
     partial_match: state.search.partialMatch,
     mod_abbreviation: state.isLogged.testerMod !== 'No' ? state.isLogged.testerMod : state.isLogged.oktaMod
+  }
+  // Only add author_filter if it has a value
+  if (author_filter) {
+    params.author_filter = author_filter;
   }
   const data = state.search.searchFacetsValues;
   const negated_facets= state.search.searchExcludedFacetsValues;
@@ -171,6 +182,7 @@ const getSearchParams = (state) => {
         facetsValues[key] = data[key];
     }
   });
+  console.log('POST /search/references payload', params);    
   return params;
 }
 
