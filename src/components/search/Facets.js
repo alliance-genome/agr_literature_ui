@@ -381,26 +381,21 @@ const AuthorFilter = () => {
     <InputGroup size="sm" className="mb-3" style ={{width: "85%"}}>
     <Form.Control inline="true" type="text" id="authorFilter" name="authorFilter" placeholder="Filter Authors (case sensitive)" value={authorFilter}
                   onChange={(e) => dispatch(setAuthorFilter(e.target.value))}
-		  onKeyDown={(e) => {
-		      if (e.key === 'Enter') {
-			  dispatch(setSearchResultsPage(1));
-			  dispatch(searchReferences());   // run full search so hits update
-		      }
-		  }}
+                  onKeyPress={(event) => {
+                      if (event.charCode === 13) {
+                          dispatch(filterFacets())
+                      }
+                  }}
     />
     <Button inline="true" style={{width: "4em"}} size="sm"
       onClick={() => {
-         dispatch(setSearchResultsPage(1));
-         dispatch(searchReferences());     // run full search so hits update
-      }}
-    >
-	Filter
-    </Button>
-    <Button variant="danger" size = "sm"
+        dispatch(filterFacets())
+      }}>Filter</Button>
+      <Button variant="danger" size = "sm"
         onClick={() => {
           dispatch(setAuthorFilter(''));
           dispatch(filterFacets())
-    }}>X</Button></InputGroup>
+      }}>X</Button></InputGroup>
   )
 }
 
