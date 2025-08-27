@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
+import axios from "axios";
 import {
     addFacetValue,
     addExcludedFacetValue,
@@ -191,7 +192,7 @@ const DateFacet = ({facetsToInclude}) => {
 }
 
 const Facet = ({facetsToInclude, renameFacets}) => {
-
+    const accessToken = useSelector((state) => state.isLogged.accessToken);
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
@@ -200,6 +201,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
+    const [sourceEvidenceAssertionDescriptions, setSourceEvidenceAssertionDescriptions] = useState({});
 
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
@@ -216,7 +218,42 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 .catch(err => console.error("Error fetching source method descriptions:", err));
         }
     }, [facetsToInclude]);
-    
+
+    useEffect(() => {
+        if (facetsToInclude.includes('source_evidence_assertions') && searchFacets['source_evidence_assertions'].buckets !== undefined) {
+            const fetchData = async () => {
+                const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
+                const headers = {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                };
+                const buckets = searchFacets['source_evidence_assertions'].buckets;
+                const mapping = {};
+                for (const bucket of buckets) {
+                  const upperKey = bucket.key.toUpperCase();
+                  let url = '';
+
+                  if (upperKey.startsWith('ATP')) {
+                      url = `${baseUrl}api/atpterm/${upperKey}`;
+                  } else if (upperKey.startsWith('ECO')) {
+                      url = `${baseUrl}api/ecoterm/${upperKey}`;
+                  } else {
+                      console.warn(`Unknown prefix in bucket.key: ${bucket.key}`);
+                      continue; // Skip this bucket
+                  }
+                  try {
+                    const result = await axios.get(url, { headers })
+                    mapping[bucket.key] = result.data.entity.definition;
+                  } catch (error) {
+                    console.error('Error fetching ateam curation status options:', error);
+                  }
+                }
+                setSourceEvidenceAssertionDescriptions(mapping);
+            }
+            fetchData();
+        }
+    }, [facetsToInclude]);
+
     const toggleSubFacet = (subFacetLabel) => {
         const newOpenSubFacets = new Set([...openSubFacets]);
         newOpenSubFacets.has(subFacetLabel) ?
@@ -336,12 +373,13 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                 }
                                             </Col>
                                             <Col xs={6} sm={7}>
-                                                {key === 'source_methods' ? (
+                                                {(key === 'source_methods' || key === 'source_evidence_assertions') ? (
                                                     <OverlayTrigger
                                                         placement="right"
                                                         overlay={
-                                                            <Tooltip id={`tooltip-${bucket.key}`}>                                                                    
-                                                                {sourceMethodDescriptions[bucket.key] || 'No description available.'}                                 
+                                                            <Tooltip id={`tooltip-${bucket.key}`}>                                                                                                                    {(key === 'source_methods'
+                                                                    ? sourceMethodDescriptions[bucket.key]
+                                                                    : sourceEvidenceAssertionDescriptions[bucket.key]) || 'No description available.'}
                                                             </Tooltip>
                                                         }
                                                     >                                                                                                                 
