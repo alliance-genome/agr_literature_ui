@@ -220,7 +220,11 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     }, [facetsToInclude]);
 
     useEffect(() => {
-        if (facetsToInclude.includes('source_evidence_assertions') && searchFacets['source_evidence_assertions'].buckets !== undefined) {
+        if (
+            facetsToInclude.includes('source_evidence_assertions') &&
+            searchFacets['source_evidence_assertions'] &&
+            searchFacets['source_evidence_assertions'].buckets
+        ) {
             const fetchData = async () => {
                 const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
                 const headers = {
@@ -252,7 +256,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
             }
             fetchData();
         }
-    }, [facetsToInclude]);
+    }, [facetsToInclude, searchFacets]);
 
     const toggleSubFacet = (subFacetLabel) => {
         const newOpenSubFacets = new Set([...openSubFacets]);
