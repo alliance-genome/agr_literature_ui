@@ -38,6 +38,24 @@ import 'react-calendar/dist/Calendar.css';
 import LoadingOverlay from "../LoadingOverlay";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheckSquare, faMinusSquare} from "@fortawesome/free-solid-svg-icons";
+import sgdIcon from '../../images/sgd_icon.png';
+import mgiIcon from '../../images/mgi_icon.png';
+import rgdIcon from '../../images/rgd_icon.png';
+import wbIcon from '../../images/wb_icon.png';
+import fbIcon from '../../images/fb_icon.png';
+import xbIcon from '../../images/xb_icon.png';
+import zfinIcon from '../../images/zfin_icon.png';
+
+const MOD_ICONS = {
+  SGD: sgdIcon,
+  MGI: mgiIcon,
+  RGD: rgdIcon,
+  WB: wbIcon,
+  FB: fbIcon,
+  XB: xbIcon,
+  ZFIN: zfinIcon,
+};
+
 
 export const RENAME_FACETS = {
     "category.keyword": "alliance category",
@@ -203,6 +221,30 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
     const [sourceEvidenceAssertionDescriptions, setSourceEvidenceAssertionDescriptions] = useState({});
 
+    const [modRefTypeToMods, setModRefTypeToMods] = useState({});
+
+    useEffect(() => {
+      const needs = facetsToInclude.includes('mod reference types') || facetsToInclude.includes('mod_reference_types');
+      if (!needs) return;
+
+      const url = process.env.REACT_APP_RESTAPI + '/reference/mod_reference_type/utils/mod_reftype_to_mods'
+      if (!url) {
+        console.log("REACT_APP_MOD_REF_TYPE_ENDPOINT is not set; icons for mod reference types will not render.");
+        return;
+      }
+      (async () => {
+        try {
+          const r = await fetch(url, { headers: { 'Authorization': accessToken ? `Bearer ${accessToken}` : undefined }});
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const data = await r.json(); // { 'Book': ['MGI','SGD','WB', 'XB', 'ZFIN'], ... }
+          setModRefTypeToMods(data || {});
+        } catch (e) {
+          console.log("Failed to load mod-ref-type map:", e);
+        }
+      })();
+    }, [facetsToInclude, accessToken]);
+
+    
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
         if (facetsToInclude.includes('source_methods')) {
@@ -328,6 +370,31 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         )
     }
 
+    const renderModIcons = (refTypeLabel /* string from bucket.key */) => {
+      const mods = modRefTypeToMods?.[refTypeLabel] || [];
+      if (!mods.length) return null;
+
+      return (
+        <span style={{ marginRight: 6, display: 'inline-flex', gap: 4, verticalAlign: 'middle' }}>
+          {mods.slice(0, 5).map((mod) => {
+            const src = MOD_ICONS[mod];
+            if (!src) return null; 
+            return (
+              <img
+                key={`${refTypeLabel}-${mod}`}
+                src={src}
+                alt={mod}
+                width={20}
+                height={20}
+                style={{ imageRendering: 'crisp-edges', verticalAlign: 'text-bottom' }}
+                title={mod}
+              />
+            );
+          })}
+        </span>
+      );
+    };
+
     return (
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
@@ -342,6 +409,9 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
                 const displayName = renameFacets[key] || key.replace(/(\.keyword|_)/g, ' ');
                 const isOpen = openSubFacets.has(facetToInclude);
+
+		// --- detect the specific facet for mod reference types ---
+		const isModRefTypeFacet = (key === 'mod_reference_types.keyword');
 
                 return (
                     <div key={facetToInclude} style={{ marginLeft: '15px', marginBottom: '5px' }}>
@@ -391,7 +461,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                     </OverlayTrigger>                                                                                                 
                                                 ) : (                                                                                                                 
                                                     <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
-                                                )}                                                                                                                    
+                                                )}                                                                                                                                                {isModRefTypeFacet && renderModIcons(bucket.key)}
                                             </Col>                                                                                                                    
                                             <Col xs={3} sm={3}>                                                                                                       
                                                 <Badge variant="secondary">                                                                                           
