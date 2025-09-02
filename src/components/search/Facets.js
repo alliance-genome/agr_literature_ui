@@ -376,7 +376,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
       return (
         <span style={{ marginRight: 6, display: 'inline-flex', gap: 4, verticalAlign: 'middle' }}>
-          {mods.slice(0, 5).map((mod) => {
+          {mods.map((mod) => {
             const src = MOD_ICONS[mod];
             if (!src) return null; 
             return (
