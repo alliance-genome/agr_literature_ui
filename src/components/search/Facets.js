@@ -220,7 +220,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
     const [sourceEvidenceAssertionDescriptions, setSourceEvidenceAssertionDescriptions] = useState({});
-     const SEA_child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
+    const SEA_child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
 
     const [modRefTypeToMods, setModRefTypeToMods] = useState({});
 
