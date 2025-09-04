@@ -201,11 +201,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
 
-    const SEA_Sorting = [
-        {key: "ECO:0007669", children:[{key:"eco:0008004"},{key:"eco:0008021"}]},
-        {key: "ECO:0006155", children:[{key:"atp:0000035"},{key:"atp:0000036"}]}
-    ];
-
     const SEA_child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
 
 
@@ -307,10 +302,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 }
                 
                 if (!searchFacets[key]?.buckets?.length) return null;
-
-                if(facetToInclude === 'source_evidence_assertions'){
-                    console.log(searchFacets[key].buckets,facetToInclude, SEA_Sorting);
-                }
 
                 const displayName = renameFacets[key] || key.replace(/(\.keyword|_)/g, ' ');
                 const isOpen = openSubFacets.has(facetToInclude);
