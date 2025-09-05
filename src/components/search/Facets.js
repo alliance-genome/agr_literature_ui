@@ -220,12 +220,14 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
     const [sourceEvidenceAssertionDescriptions, setSourceEvidenceAssertionDescriptions] = useState({});
+    const SEA_child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
 
     const [modRefTypeToMods, setModRefTypeToMods] = useState({});
 
     useEffect(() => {
       const needs = facetsToInclude.includes('mod reference types') || facetsToInclude.includes('mod_reference_types');
       if (!needs) return;
+
 
       const url = process.env.REACT_APP_RESTAPI + '/reference/mod_reference_type/utils/mod_reftype_to_mods'
       if (!url) {
@@ -244,7 +246,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
       })();
     }, [facetsToInclude, accessToken]);
 
-    
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
         if (facetsToInclude.includes('source_methods')) {
@@ -439,15 +440,18 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                 {facetToInclude === 'authors.name' && <AuthorFilter />}
                                 {searchFacets[key].buckets.map(bucket => (
                                     <Container key={bucket.key}>
-                                        <Row className="align-items-center facet-item">
-                                            <Col xs={3} sm={2}>
+                                        <Row className="facet-item">
+
+                                            <Col xs={3} sm={2} className={SEA_child_terms.includes(bucket.key) ? 'facet-indent' : null}>
                                                 {negatedFacetCategories.includes(facetToInclude) ? 
                                                     <NegatedFacetCheckbox facet={key} value={bucket.key} /> : 
                                                     <StandardFacetCheckbox facet={key} value={bucket.key} />
                                                 }
                                             </Col>
-                                            <Col xs={6} sm={7}>
+
+                                            <Col xs={6} sm={7} className={SEA_child_terms.includes(bucket.key) ? 'facet-indent-text' : null}>
                                                 {(key === 'source_methods' || key === 'source_evidence_assertions') ? (
+
                                                     <OverlayTrigger
                                                         placement="right"
                                                         overlay={
