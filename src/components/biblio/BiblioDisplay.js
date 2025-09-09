@@ -53,7 +53,7 @@ import { fieldsSimple, fieldsArrayString, fieldsBooleanDisplayOnly, fieldsOrdere
 // keywords
 // mesh_terms
 
-const getLabel = (name) => (name === 'category' ? 'alliance category' : name);
+const getLabel = (name) => (name === 'category' ? 'alliance_category' : name);
 
 export const RowDisplaySimple = ({fieldName, value, updatedFlag}) => {
     const label = getLabel(fieldName); 

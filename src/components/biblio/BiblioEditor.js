@@ -65,7 +65,7 @@ import {useEffect, useState} from "react";
 // console.log(location.state);  }
 
 // Label mapping (display only)
-const getLabel = (name) => (name === 'category' ? 'alliance category' : name);
+const getLabel = (name) => (name === 'category' ? 'alliance_category' : name);
 
 export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'resource_curie', 'resource_title' ];
 export const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
