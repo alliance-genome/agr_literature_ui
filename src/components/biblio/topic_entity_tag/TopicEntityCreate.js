@@ -13,6 +13,7 @@ import {
   updateButtonBiblioEntityAdd,
   setTopicEntitySourceId,
   setEditTag,
+  biblioQueryReferenceCurie,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
 import { getCurieToNameTaxon, getModToTaxon } from "./TaxonUtils";
@@ -316,8 +317,8 @@ const TopicEntityCreate = () => {
       })
     );
   }, [modToTaxon, accessLevel]);
-  
-    
+
+
   useEffect(() => {
     if (tagExistingMessage) {
       setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd);
@@ -414,28 +415,41 @@ const TopicEntityCreate = () => {
     [rows, accessToken, dispatch, curieToNameEntityType]
   );
 
-  const [noTetDataLoading, setNoTetDataLoading] = useState(false);
+  const [tetDataLoading, setTetDataLoading] = useState(false);
 
-  const handleNoTetDataClick = async () => {
-    setNoTetDataLoading(true);
+  const handleTetDataClick = async (action) => {
+    setTetDataLoading(true);
+
+    const atpMap = {
+      inProgress: "ATP:0000276",
+      complete: "ATP:0000275",
+    };
+
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/set_no_tet_status/${accessLevel}/${referenceJsonLive.curie}/${uid}`,
-        {},
+        `${process.env.REACT_APP_RESTAPI}/workflow_tag/transition_to_workflow_status`,
+        {
+          curie_or_reference_id: referenceJsonLive.curie,
+          mod_abbreviation: accessLevel,
+          new_workflow_tag_atp_id: atpMap[action],
+          transition_type: "manual",
+        },
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
-      console.log("The manual indexing WFT has been successfully set to complete:", response.data);
-      addMessage("The manual indexing WFT has been successfully set to complete.", "success");
+
+      console.log(`The manual indexing WFT has been successfully set to ${action}:`, response.data);
+      addMessage(`The manual indexing WFT has been successfully set to ${action}.`, "success");
+      dispatch(biblioQueryReferenceCurie(referenceJsonLive.curie));	// fetch referenceJsonLive from db after successful update
     } catch (error) {
-      console.error("Error processing the manual indexing WFT:", error);
-      addMessage("Failed to process the manual indexing WFT.", "danger");
+      console.error(`Error setting WFT to ${action}:`, error);
+      addMessage(`Failed to set WFT to ${action}.`, "danger");
     } finally {
-      setNoTetDataLoading(false);
+      setTetDataLoading(false);
     }
   };
-    
+
   const handleSpeciesSelection = (index, selectedSpecies) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
@@ -443,8 +457,8 @@ const TopicEntityCreate = () => {
       newRows[index].isSpeciesSelected = selectedSpecies.length > 0;  // Ensure this is updated correctly
       return newRows;
     });
-  };  
-    
+  };
+
   const handleRowChange = (index, field, value) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
@@ -734,18 +748,38 @@ const TopicEntityCreate = () => {
       <Row className="form-group row mb-3" style={{ alignItems: "center" }}>
         <Col sm="12" style={{ display: "flex", alignItems: "center" }}>
           <h3 style={{ marginRight: "10px" }}>Entity and Topic Addition</h3>
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={handleNoTetDataClick}
-            disabled={noTetDataLoading}
-          >
-            {noTetDataLoading ? (
-              <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
-            ) : (
-              "Done adding TET / No TET data"
-            )}
-          </Button>
+
+          {["inProgress", "complete"].map((statusKey) => {
+            const workflowTagId = statusKey === "inProgress" ? "ATP:0000276" : "ATP:0000275";
+            const isTagged = referenceJsonLive?.workflow_tags?.some(
+              (tag) => tag.mod_abbreviation === accessLevel && tag.workflow_tag_id === workflowTagId
+            );
+
+            const buttonText = statusKey === "inProgress"
+              ? "In progress adding TET data"
+              : "Done adding TET / No TET data";
+
+            const disabledText = statusKey === "inProgress"
+              ? "Is In Progress adding TET"
+              : "Is Done adding TET";
+
+            return (
+              <Button
+                key={statusKey}
+                variant={isTagged ? "outline-secondary" : "outline-primary"}
+                size="sm"
+                disabled={isTagged || tetDataLoading}
+                onClick={!isTagged ? () => handleTetDataClick(statusKey) : undefined}
+                style={{ marginRight: statusKey === "inProgress" ? "10px" : undefined }}
+              >
+                {tetDataLoading && !isTagged ? (
+                  <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                ) : (
+                  isTagged ? disabledText : buttonText
+                )}
+              </Button>
+            );
+          })}
         </Col>
       </Row>
 
