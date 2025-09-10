@@ -301,6 +301,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
 
   // for (const[index, referencefileDict] of referenceJsonLive['referencefiles'].filter(x => x['file_class'] === 'main').entries())
   const rowReferencefileSupplementElements = []
+  let hasAddedFigure = false;  // Track if the first figure has been added
   let hasAccessToTarball = false;
   referenceFiles.sort(reffileCompareFn);
   for (const[index, referencefileDict] of referenceFiles.entries()) {
@@ -343,15 +344,20 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
           </button>&nbsp;{loadingFileNames.has(filename) ? <Spinner animation="border" size="sm"/> : null}
         </div>); }
 //       rowReferencefileElements.push(<RowDisplaySimple key={`referencefile ${index}`} fieldName={fieldName} value={referencefileValue} updatedFlag='' />);
+
+    const isFigure = referencefileDict['file_class'] === 'figure';
+    const isFirstFigure = isFigure && !hasAddedFigure;
+    if (isFigure && !hasAddedFigure) { hasAddedFigure = true; }
     const referencefileRow = (
         <Row key={`referencefiles ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-          <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}>referencefiles</Col>
+          <Col className={`Col-general ${cssDisplayLeft} `} lg={{ span: 2 }}>{isFigure ? 'figures' : 'curation files'}</Col>
           <Col className={`Col-general ${cssDisplay} `} lg={{ span: 2 }}>{referencefileDict['file_class']}</Col>
           <Col className={`Col-general ${cssDisplayRight} `} lg={{ span: 8 }}>{referencefileValue}</Col>
         </Row>);
     if (referencefileDict['file_class'] === 'main') {
       rowReferencefileElements.push( referencefileRow ); }
     else {
+      if (isFirstFigure) { rowReferencefileSupplementElements.push(<RowDivider key="figureDivider" />); }
       rowReferencefileSupplementElements.push( referencefileRow ); } }
 
   if (rowReferencefileSupplementElements.length > 0) {
