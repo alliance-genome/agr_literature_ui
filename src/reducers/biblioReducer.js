@@ -91,7 +91,7 @@ const deriveCuratability = (referenceJson) => {
         referenceJson['workflow_curatability'] = workflowTag; }
       else if (workflowTag.workflow_tag_id === 'ATP:0000106') {
         referenceJson['workflow_curatability'] = workflowTag; }
-} } }
+    } } }
 
 const validateMcaPrefixDup = (mcaJsonLive) => {
   if (mcaJsonLive === null) { return ''; }
@@ -100,7 +100,7 @@ const validateMcaPrefixDup = (mcaJsonLive) => {
     if ('mod_abbreviation' in crossRefDict) {
       let mcaMod = crossRefDict['mod_abbreviation']
       if (mcaMod in prefixDict) { prefixDict[mcaMod] += 1; }
-        else { prefixDict[mcaMod] = 1; } } }
+      else { prefixDict[mcaMod] = 1; } } }
   let modalTextError = '';
   for (const mcaMod in prefixDict) {
     if (prefixDict[mcaMod] > 1) {
@@ -116,7 +116,7 @@ const validateXrefPrefixDup = (xrefJsonLive, fieldName) => {
     if ('curie' in crossRefDict) {                  // pre-existing entries need delete or update
       let valueLiveCuriePrefix = splitCurie(crossRefDict['curie'], 'prefix');
       if (valueLiveCuriePrefix in prefixDict) { prefixDict[valueLiveCuriePrefix].push(crossRefDict['curie']); }
-        else { prefixDict[valueLiveCuriePrefix] = [crossRefDict['curie']]; } } }
+      else { prefixDict[valueLiveCuriePrefix] = [crossRefDict['curie']]; } } }
   let modalTextError = '';
   for (const [prefix, values] of Object.entries(prefixDict)) {
     if (values.length > 1 && prefix !== 'CGC') {
@@ -140,7 +140,7 @@ const getStoreAuthorIndexFromDomIndex = (indexDomAuthorInfo, newAuthorInfoChange
   let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']	// replace placeholder with index from store order value matches dom
   for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
 // console.log('loop index ' + authorReorderIndexDictIndex + ' for ' + indexDomAuthorInfo);
-    if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) { 
+    if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) {
 // console.log('loop index match ' + authorReorderIndexDictIndex + ' to ' + indexDomAuthorInfo);
       indexAuthorInfo = authorReorderIndexDictIndex
       break } }
@@ -175,8 +175,8 @@ export default function(state = initialState, action) {
       const date_published_start = action.payload.value[0] + "T00:00:00"
       const date_published_end = action.payload.value[1] + "T00:00:00"
       const date_published = (date_published_start === date_published_end) ?
-                             action.payload.value[0] :
-                             action.payload.value[0] + ' - ' + action.payload.value[1]
+        action.payload.value[0] :
+        action.payload.value[0] + ' - ' + action.payload.value[1]
       let referenceJsonHasChangeDatePublished = state.referenceJsonHasChange
       if (state.referenceJsonDb['date_published'] === date_published) {
         if ('date_published' in referenceJsonHasChangeDatePublished) {
@@ -274,7 +274,7 @@ export default function(state = initialState, action) {
     case 'SET_BIBLIO_ENTITY_REMOVE_ENTITY':
       // console.log('SET_BIBLIO_ENTITY_REMOVE_ENTITY reducer ');
       // console.log(action.payload);
-    const biblioEntityRemoveEntityUpdatingTet = _.cloneDeep(state.biblioUpdatingEntityRemoveEntity);
+      const biblioEntityRemoveEntityUpdatingTet = _.cloneDeep(state.biblioUpdatingEntityRemoveEntity);
       biblioEntityRemoveEntityUpdatingTet[action.payload.tetId] = action.payload.value;
       return {
         ...state,
@@ -285,7 +285,7 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       let entityModalTextUpdateButtonEntityEditNote = state.entityModalText;
       if (action.payload.responseMessage === "update success") { entityModalTextUpdateButtonEntityEditNote = ''; }
-        else { entityModalTextUpdateButtonEntityEditNote += "<br>\n" + action.payload.responseMessage; }
+      else { entityModalTextUpdateButtonEntityEditNote += "<br>\n" + action.payload.responseMessage; }
       return {
         ...state,
         entityModalText: entityModalTextUpdateButtonEntityEditNote
@@ -301,7 +301,7 @@ export default function(state = initialState, action) {
       if (action.payload.responseMessage === "update success") {
         entityModalTextUpdateButtonEntityRemoveEntity = '';
         if ('topic_entity_tags' in referenceJsonLiveBiblioEntityRemoveEntity &&
-            referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'].length > 0) {
+          referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'].length > 0) {
           const filteredTet = referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'].filter(
             (tet) => ('topic_entity_tag_id' in tet && tet['topic_entity_tag_id'] !== action.payload.tetId) );
           referenceJsonLiveBiblioEntityRemoveEntity['topic_entity_tags'] = filteredTet; }
@@ -378,11 +378,11 @@ export default function(state = initialState, action) {
       }
       let referenceJsonLive = state.referenceJsonLive;
       if ((action.payload.field !== null) && 		// POST to a field, assign its db id to redux store
-          (action.payload.index !== null) &&
-          (action.payload.index in referenceJsonLive[action.payload.field]) &&
-          ('subField' in action.payload) &&
-          (action.payload.subField !== null) &&		// but only for related tables that create a dbid, not for cross_references
-          (action.payload.subField in referenceJsonLive[action.payload.field][action.payload.index])) {
+        (action.payload.index !== null) &&
+        (action.payload.index in referenceJsonLive[action.payload.field]) &&
+        ('subField' in action.payload) &&
+        (action.payload.subField !== null) &&		// but only for related tables that create a dbid, not for cross_references
+        (action.payload.subField in referenceJsonLive[action.payload.field][action.payload.index])) {
         referenceJsonLive[action.payload.field][action.payload.index][action.payload.subField] = action.payload.value; }
       return {
         ...state,
@@ -613,8 +613,8 @@ export default function(state = initialState, action) {
 
       let hasChangeAuthorField = state.referenceJsonHasChange
       if ( (state.referenceJsonDb[fieldAuthorInfo][indexAuthorInfo][subfieldAuthorInfo] === action.payload.value) ||
-           ( (subindexDomAuthorInfo !== null) && 
-             (state.referenceJsonDb[fieldAuthorInfo][indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] === action.payload.value) ) ) {
+        ( (subindexDomAuthorInfo !== null) &&
+          (state.referenceJsonDb[fieldAuthorInfo][indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] === action.payload.value) ) ) {
         if (action.payload.field in hasChangeAuthorField) {
           delete hasChangeAuthorField[action.payload.field] } }
       else {
@@ -634,7 +634,7 @@ export default function(state = initialState, action) {
         // console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
         // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
         for (let authorReorderDict of newAuthorInfoChange) {
-        // console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
+          // console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
           if (newAuthorOrder < oldAuthorOrder) {
             if (authorReorderDict['order'] === oldAuthorOrder) {
               authorReorderDict['needsChange'] = true;
@@ -987,7 +987,7 @@ export default function(state = initialState, action) {
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
         entityAdd: setRefCurieDefaultEntityAdd,
-	    tetPageSize: defaultTetPageSize,
+        tetPageSize: defaultTetPageSize,
         curieToNameTaxon: {},
         allSpecies: [],
         allEntities: [],
@@ -1064,15 +1064,15 @@ export default function(state = initialState, action) {
           isLoading: false
           // loadingQuery: false
         }
-      } else {  
+      } else {
         const pmidBool = checkHasPmid(action.payload)
         for (let modAssociationIndex in action.payload.mod_corpus_associations) {	// change boolean into displayable value
           if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === null) {
-                   action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'needs_review'; }
+            action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'needs_review'; }
           else if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === true) {
-                   action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'inside_corpus'; }
+            action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'inside_corpus'; }
           else if (action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] === false) {
-                   action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'outside_corpus'; }
+            action.payload.mod_corpus_associations[modAssociationIndex]['corpus'] = 'outside_corpus'; }
         }
 
         deriveCuratability(action.payload);
@@ -1136,7 +1136,7 @@ export default function(state = initialState, action) {
         ...state,
         allEntityTypes: action.payload
       };
-      
+
     case 'SET_TOPIC_ENTITY_SOURCE_ID':
       return {
         ...state,
@@ -1154,7 +1154,7 @@ export default function(state = initialState, action) {
         ...state,
         filteredTags: action.payload
       };
-     
+
     case 'UPDATE_XREF_PATTERNS':
       // console.log('UPDATE_XREF_PATTERNS');
       const cloneXrefPatterns = _.cloneDeep(state.xrefPatterns);
@@ -1198,7 +1198,7 @@ export default function(state = initialState, action) {
       return state;
   }
 }
-  
+
 
 // const crossRefCurieQueryFieldReducer = (state = 'ab', action) => {
 //   switch (action.type) {
