@@ -309,42 +309,42 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
       const [accessToken, subPath, payload, method] = updateArrayData;
       const url = restUrl + '/' + subPath;
 
-      axios({
-        url: url,
-        method: method,
-        headers: {
-          'content-type': 'application/json',
-          'mode': 'cors',
-          'authorization': 'Bearer ' + accessToken
-        },
-        data: payload
-      })
-      .then(res => {
-        let response_message;
-        //console.log('API Response:', res);
-        if (((method === 'PATCH') && (res.status !== 202)) ||
-            ((method === 'DELETE') && (res.status !== 204)) ||
-            ((method === 'POST') && (res.status !== 201))) {
-          response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method;
-          reject(new Error(response_message));
-	} else {
-	    // response_message = `${JSON.stringify(res.data)}`;  
-          resolve(res.data);
-	  dispatch({
-              type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-              payload: { responseMessage: 'update success', accessLevel: accessLevel  }
-          });  
-        }
-      })
-      .catch(err => {
-        const errorMessage = 'error: ' + subPath + ' ' + err;
-        console.error(errorMessage);
-        dispatch({
-          type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-          payload: { responseMessage: errorMessage, accessLevel: accessLevel }
-        });
-        reject(new Error(errorMessage));
-      });
+        axios({
+            url: url,
+            method: method,
+            headers: {
+                'content-type': 'application/json',
+                'mode': 'cors',
+                'authorization': 'Bearer ' + accessToken
+            },
+            data: payload
+        })
+            .then(res => {
+                let response_message;
+                //console.log('API Response:', res);
+                if (((method === 'PATCH') && (res.status !== 202)) ||
+                    ((method === 'DELETE') && (res.status !== 204)) ||
+                    ((method === 'POST') && (res.status !== 201))) {
+                    response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method;
+                    reject(new Error(response_message));
+                } else {
+                    // response_message = `${JSON.stringify(res.data)}`;
+                    resolve(res.data);
+                    dispatch({
+                        type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+                        payload: { responseMessage: 'update success', accessLevel: accessLevel  }
+                    });
+                }
+            })
+            .catch(err => {
+                const errorMessage = 'error: ' + subPath + ' ' + err;
+                console.error(errorMessage);
+                dispatch({
+                    type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+                    payload: { responseMessage: errorMessage, accessLevel: accessLevel }
+                });
+                reject(new Error(errorMessage));
+            });
     });
   };
 };

@@ -274,7 +274,7 @@ export default function(state = initialState, action) {
     case 'SET_BIBLIO_ENTITY_REMOVE_ENTITY':
       // console.log('SET_BIBLIO_ENTITY_REMOVE_ENTITY reducer ');
       // console.log(action.payload);
-      const biblioEntityRemoveEntityUpdatingTet = _.cloneDeep(state.biblioUpdatingEntityRemoveEntity);
+    const biblioEntityRemoveEntityUpdatingTet = _.cloneDeep(state.biblioUpdatingEntityRemoveEntity);
       biblioEntityRemoveEntityUpdatingTet[action.payload.tetId] = action.payload.value;
       return {
         ...state,
