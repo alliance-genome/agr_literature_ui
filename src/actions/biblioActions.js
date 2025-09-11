@@ -191,16 +191,16 @@ export const getCuratorSourceId = async (mod, accessToken) => {
 export const getXrefPatterns = (datatype) => { return dispatch => {
   const url = process.env.REACT_APP_RESTAPI + '/cross_reference/check/patterns/' + datatype;
   axios({ url: url })
-  .then(res => {
-    console.log(res);
-    dispatch({
-      type: 'UPDATE_XREF_PATTERNS',
-      payload: { datatype: datatype, data: res.data }
+    .then(res => {
+      console.log(res);
+      dispatch({
+        type: 'UPDATE_XREF_PATTERNS',
+        payload: { datatype: datatype, data: res.data }
+      })
     })
-  })
-  .catch(err =>
-    console.log(err)
-  );
+    .catch(err =>
+      console.log(err)
+    );
 } }
 
 export const setBiblioUpdatingEntityAdd = (payload) => { return { type: 'SET_BIBLIO_UPDATING_ENTITY_ADD', payload: payload }; };
@@ -276,31 +276,31 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
   let response_message = 'update success';
 
   axios({
-      url: url,
-      method: method,
-      headers: {
-        'content-type': 'application/json',
-        'mode': 'cors',
-        'authorization': 'Bearer ' + accessToken
-      },
-      data: payload
+    url: url,
+    method: method,
+    headers: {
+      'content-type': 'application/json',
+      'mode': 'cors',
+      'authorization': 'Bearer ' + accessToken
+    },
+    data: payload
   })
-  .then(res => {
-    console.log(res);
-    if ( ((method === 'PATCH') && (res.status !== 202)) ||
-         ((method === 'DELETE') && (res.status !== 204)) ||
-         ((method === 'POST') && (res.status !== 201)) ) {
-           response_message = 'error: ' + tetId + ' : API status code ' + res.status + ' for method ' + method; }
-    dispatch({
-      type: dispatchAction,
-      payload: { tetId: tetId, responseMessage: response_message }
+    .then(res => {
+      console.log(res);
+      if ( ((method === 'PATCH') && (res.status !== 202)) ||
+        ((method === 'DELETE') && (res.status !== 204)) ||
+        ((method === 'POST') && (res.status !== 201)) ) {
+        response_message = 'error: ' + tetId + ' : API status code ' + res.status + ' for method ' + method; }
+      dispatch({
+        type: dispatchAction,
+        payload: { tetId: tetId, responseMessage: response_message }
+      })
     })
-  })
-  .catch(err =>
-    dispatch({
-      type: dispatchAction,
-      payload: { tetId: tetId, responseMessage: 'error: updateButtonBiblioEntityEditEntity failure on topic_entity_tag_id ' + tetId + ' ' + err }
-    }));
+    .catch(err =>
+      dispatch({
+        type: dispatchAction,
+        payload: { tetId: tetId, responseMessage: 'error: updateButtonBiblioEntityEditEntity failure on topic_entity_tag_id ' + tetId + ' ' + err }
+      }));
 } };
 
 export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
@@ -319,172 +319,172 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
         },
         data: payload
       })
-      .then(res => {
-        let response_message;
-        //console.log('API Response:', res);
-        if (((method === 'PATCH') && (res.status !== 202)) ||
+        .then(res => {
+          let response_message;
+          //console.log('API Response:', res);
+          if (((method === 'PATCH') && (res.status !== 202)) ||
             ((method === 'DELETE') && (res.status !== 204)) ||
             ((method === 'POST') && (res.status !== 201))) {
-          response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method;
-          reject(new Error(response_message));
-	} else {
-	    // response_message = `${JSON.stringify(res.data)}`;  
-          resolve(res.data);
-	  dispatch({
+            response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method;
+            reject(new Error(response_message));
+          } else {
+            // response_message = `${JSON.stringify(res.data)}`;
+            resolve(res.data);
+            dispatch({
               type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
               payload: { responseMessage: 'update success', accessLevel: accessLevel  }
-          });  
-        }
-      })
-      .catch(err => {
-        const errorMessage = 'error: ' + subPath + ' ' + err;
-        console.error(errorMessage);
-        dispatch({
-          type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-          payload: { responseMessage: errorMessage, accessLevel: accessLevel }
+            });
+          }
+        })
+        .catch(err => {
+          const errorMessage = 'error: ' + subPath + ' ' + err;
+          console.error(errorMessage);
+          dispatch({
+            type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
+            payload: { responseMessage: errorMessage, accessLevel: accessLevel }
+          });
+          reject(new Error(errorMessage));
         });
-        reject(new Error(errorMessage));
-      });
     });
   };
 };
 
 
 async function fetchJsonData(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Failed to fetch data:', error);
-	return null;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+    return null;
+  }
 };
 
 export const sgd_entity_validation = (dispatch, entityType, entityInputList, callback) => {
 
-    const url = sgdApiBaseUrl + "entity/" + entityType + '/' + entityInputList.join('|').replace(/ /g, '+');
-    fetchJsonData(url).then(data => {
-	const searchMap = {};
-	// console.log("data =" + JSON.stringify(data, null, 2));  
-        for (const entityResult of data) {
-	    // console.log("entityResult = " + JSON.stringify(entityResult, null, 2));
-	    searchMap[entityResult['query'].toLowerCase()] = entityResult['modEntityId'];
-	}
-	let entityResultList = [];
-        for (const entity  of entityInputList) {
-	    const lowerEntity = entity.toLowerCase();
-            if (lowerEntity in searchMap) {
-                entityResultList.push({
-                  'entityTypeSymbol': entity,
-                  'curie': searchMap[lowerEntity]
-              });
-            } else {
-                entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no SGD curie'});
-            }
-        }
-        dispatch(setEntityResultList(entityResultList));
-	if (callback) {
-          callback(entityResultList); // Call the callback with the result list
-        }
-    }).catch(error => {
-	console.error('Error fetching data:', error);
-	if (callback) {
-          callback([]); // Call the callback with an empty list in case of error
-        }
-    });
+  const url = sgdApiBaseUrl + "entity/" + entityType + '/' + entityInputList.join('|').replace(/ /g, '+');
+  fetchJsonData(url).then(data => {
+    const searchMap = {};
+    // console.log("data =" + JSON.stringify(data, null, 2));
+    for (const entityResult of data) {
+      // console.log("entityResult = " + JSON.stringify(entityResult, null, 2));
+      searchMap[entityResult['query'].toLowerCase()] = entityResult['modEntityId'];
+    }
+    let entityResultList = [];
+    for (const entity  of entityInputList) {
+      const lowerEntity = entity.toLowerCase();
+      if (lowerEntity in searchMap) {
+        entityResultList.push({
+          'entityTypeSymbol': entity,
+          'curie': searchMap[lowerEntity]
+        });
+      } else {
+        entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no SGD curie'});
+      }
+    }
+    dispatch(setEntityResultList(entityResultList));
+    if (callback) {
+      callback(entityResultList); // Call the callback with the result list
+    }
+  }).catch(error => {
+    console.error('Error fetching data:', error);
+    if (callback) {
+      callback([]); // Call the callback with an empty list in case of error
+    }
+  });
 
 };
 
 
 export const wb_entity_validation = (dispatch, entityType, entityInputList, callback) => {
-    let postData = {
-      "datatype": entityType,
-      "entities": entityInputList.join('|').replace(/ /g, '+')
-    };
-    // let postData = {"datatype":"gene","entities":"let-60|abc-1|WB:WBGeneQUACK|WB:WBGene99901234|WB:WBGene00001234|quack"};
-    axios.post(wbApiBaseUrl, postData,
-        {
-          headers: {
-            'content-type': 'application/json'
+  let postData = {
+    "datatype": entityType,
+    "entities": entityInputList.join('|').replace(/ /g, '+')
+  };
+  // let postData = {"datatype":"gene","entities":"let-60|abc-1|WB:WBGeneQUACK|WB:WBGene99901234|WB:WBGene00001234|quack"};
+  axios.post(wbApiBaseUrl, postData,
+    {
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
+    .then(res => {
+      if (res.data) {
+        const searchMap = {};
+        for (const [curie, name] of Object.entries(res.data)) {
+          searchMap[name.toLowerCase()] = curie;
+          if (name.toLowerCase() === 'not found at wb') {
+            searchMap[curie.toLowerCase()] = name; }
+          else {
+            searchMap[curie.toLowerCase()] = curie; }
+        }
+        let entityResultList = [];
+        for (const entityTypeSymbol of entityInputList) {
+          if (entityTypeSymbol.toLowerCase() in searchMap) {
+            entityResultList.push({
+              'entityTypeSymbol': entityTypeSymbol,
+              'curie': searchMap[entityTypeSymbol.toLowerCase()]
+            });
+          } else {
+            entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no WB curie'});
           }
-        })
-        .then(res => {
-          if (res.data) {
-	    const searchMap = {};
-            for (const [curie, name] of Object.entries(res.data)) {
-	        searchMap[name.toLowerCase()] = curie;
-                if (name.toLowerCase() === 'not found at wb') {
-	            searchMap[curie.toLowerCase()] = name; }
-                else {
-	            searchMap[curie.toLowerCase()] = curie; }
-	    }
-            let entityResultList = [];
-            for (const entityTypeSymbol of entityInputList) {
-              if (entityTypeSymbol.toLowerCase() in searchMap) {
-                  entityResultList.push({
-                    'entityTypeSymbol': entityTypeSymbol,
-                    'curie': searchMap[entityTypeSymbol.toLowerCase()]
-                });
-              } else {
-                  entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no WB curie'});
-              }
-            }
-            dispatch(setEntityResultList(entityResultList));
-	    if (callback) {
-	      callback(entityResultList); // Call the callback with the result list 
-	    }
         }
-    }).catch(error => {
-        console.error('Error fetching data:', error);
+        dispatch(setEntityResultList(entityResultList));
         if (callback) {
-          callback([]); // Call the callback with an empty list in case of error                                                                                                     
+          callback(entityResultList); // Call the callback with the result list
         }
-    });
+      }
+    }).catch(error => {
+    console.error('Error fetching data:', error);
+    if (callback) {
+      callback([]); // Call the callback with an empty list in case of error
+    }
+  });
 };
 
 
 export const abc_entity_validation = (dispatch, entityType, entityInputList, taxon, callback) => {
 
-    const entityListStr = entityInputList.join('|');
-    const encodedEntityList = encodeURIComponent(entityListStr);
-    const url = `${restUrl}/topic_entity_tag/entity_validation/${taxon}/${entityType}/${encodedEntityList}`;
-    fetchJsonData(url).then(data => {
-        const searchMap = {};
-	const obsoleteMap = {};
-        for (const entityResult of data) {
-	    if (entityResult['is_obsolete'] === false) {
-		searchMap[entityResult['entity'].toLowerCase()] = entityResult['entity_curie'];
-	    } else {
-		obsoleteMap[entityResult['entity'].toLowerCase()] = entityResult['entity_curie'];
-            }
-        }
-        let entityResultList = [];
-        for (const entity  of entityInputList) {
-            const lowerEntity = entity.toLowerCase();
-            if (lowerEntity in searchMap) {
-                entityResultList.push({
-                  'entityTypeSymbol': entity,
-                  'curie': searchMap[lowerEntity]
-              });
-            } else if (lowerEntity in obsoleteMap) {
-		entityResultList.push({'entityTypeSymbol': entity, 'curie': 'obsolete entity'});
-	    } else {
-                entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no mod curie'});
-            }
-        }
-        dispatch(setEntityResultList(entityResultList));
-        if (callback) {
-          callback(entityResultList); // Call the callback with the result list                                                                                          
-        }
-    }).catch(error => {
-        console.error('Error fetching data:', error);
-        if (callback) {
-          callback([]); // Call the callback with an empty list in case of error                                                                                         
-        }
-    });
+  const entityListStr = entityInputList.join('|');
+  const encodedEntityList = encodeURIComponent(entityListStr);
+  const url = `${restUrl}/topic_entity_tag/entity_validation/${taxon}/${entityType}/${encodedEntityList}`;
+  fetchJsonData(url).then(data => {
+    const searchMap = {};
+    const obsoleteMap = {};
+    for (const entityResult of data) {
+      if (entityResult['is_obsolete'] === false) {
+        searchMap[entityResult['entity'].toLowerCase()] = entityResult['entity_curie'];
+      } else {
+        obsoleteMap[entityResult['entity'].toLowerCase()] = entityResult['entity_curie'];
+      }
+    }
+    let entityResultList = [];
+    for (const entity  of entityInputList) {
+      const lowerEntity = entity.toLowerCase();
+      if (lowerEntity in searchMap) {
+        entityResultList.push({
+          'entityTypeSymbol': entity,
+          'curie': searchMap[lowerEntity]
+        });
+      } else if (lowerEntity in obsoleteMap) {
+        entityResultList.push({'entityTypeSymbol': entity, 'curie': 'obsolete entity'});
+      } else {
+        entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no mod curie'});
+      }
+    }
+    dispatch(setEntityResultList(entityResultList));
+    if (callback) {
+      callback(entityResultList); // Call the callback with the result list
+    }
+  }).catch(error => {
+    console.error('Error fetching data:', error);
+    if (callback) {
+      callback([]); // Call the callback with an empty list in case of error
+    }
+  });
 
 };
 
@@ -513,7 +513,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, entityIdVal
     }
 
     return abc_entity_validation(dispatch, entityType, entityInputList, taxon, callback)
-      
+
   };
 };
 
@@ -674,7 +674,7 @@ export function generateRelationsSimple(referenceJson) {
       newComcorDict['type'] = type
       newComcorDict['curie'] = curie
       referenceJson['relations'].push(newComcorDict)
-  } }
+    } }
 }
 
 export const fetchModReferenceTypes = async (mods) => {
@@ -786,7 +786,7 @@ export const changeBiblioAuthorExpandToggler = (e) => {
   console.log('action change biblio author expand toggler radio ' + e.target.id + ' to ' + e.target.value);
   let biblioAuthorExpandTogglerSelected = 'first';
   if (e.target.id === 'biblio-author-expand-toggler-list') { biblioAuthorExpandTogglerSelected = 'list'; }
-    else if (e.target.id === 'biblio-author-expand-toggler-detailed') { biblioAuthorExpandTogglerSelected = 'detailed'; }
+  else if (e.target.id === 'biblio-author-expand-toggler-detailed') { biblioAuthorExpandTogglerSelected = 'detailed'; }
   return {
     type: 'CHANGE_BIBLIO_AUTHOR_EXPAND_TOGGLER',
     payload: biblioAuthorExpandTogglerSelected
@@ -797,7 +797,7 @@ export const changeBiblioSupplementExpandToggler = (e) => {
   console.log('action change biblio supplement expand toggler radio ' + e.target.id + ' to ' + e.target.value);
   let biblioSupplementExpandTogglerSelected = 'tarball';
   if (e.target.id === 'biblio-supplement-expand-toggler-list') { biblioSupplementExpandTogglerSelected = 'list'; }
-    else if (e.target.id === 'biblio-supplement-expand-toggler-detailed') { biblioSupplementExpandTogglerSelected = 'detailed'; }
+  else if (e.target.id === 'biblio-supplement-expand-toggler-detailed') { biblioSupplementExpandTogglerSelected = 'detailed'; }
   return {
     type: 'CHANGE_BIBLIO_SUPPLEMENT_EXPAND_TOGGLER',
     payload: biblioSupplementExpandTogglerSelected
@@ -875,16 +875,16 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
       // const response = await res.json();	// successful POST to related table (e.g. mod_reference_types) returns an id that is not in json format
       const response_text = await res.text();
       const response = JSON.parse(response_text);
-      if ( ((method === 'PATCH') && (res.status !== 202)) || 
-           ((method === 'DELETE') && (res.status !== 204)) || 
-           ((method === 'POST') && (res.status !== 201)) ) {
+      if ( ((method === 'PATCH') && (res.status !== 202)) ||
+        ((method === 'DELETE') && (res.status !== 204)) ||
+        ((method === 'POST') && (res.status !== 201)) ) {
         console.log('updateButtonBiblio action response not updated');
         if (typeof(response.detail) !== 'object') {
-            response_message = response.detail; }
-          else if (typeof(response.detail[0].msg) !== 'object') {
-            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
-          else {
-            response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
+          response_message = response.detail; }
+        else if (typeof(response.detail[0].msg) !== 'object') {
+          response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
+        else {
+          response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
       }
       if ((method === 'POST') && (res.status === 201)) {
         newId = parseInt(response_text); }
@@ -983,7 +983,7 @@ export const downloadPDFfile = (referencefileId, filename, accessToken, referenc
   return dispatch => {
     dispatch(addLoadingFileName(filename));
     let url = process.env.REACT_APP_RESTAPI + '/reference/referencefile/download_file/' + referencefileId
-     
+
     axios({
       url: url,
       method: "GET",
@@ -999,16 +999,16 @@ export const downloadPDFfile = (referencefileId, filename, accessToken, referenc
     }).finally(() => {
       dispatch(removeLoadingFileName(filename));
     });
-      
+
   }
 }
-    
+
 export const downloadReferencefile = (referencefileId, filename, accessToken, referenceId) => {
 
   if (filename.endsWith('.pdf')) {
-      return downloadPDFfile(referencefileId, filename, accessToken, referenceId);
+    return downloadPDFfile(referencefileId, filename, accessToken, referenceId);
   }
-    
+
   return dispatch => {
     dispatch(addLoadingFileName(filename));
     let url = process.env.REACT_APP_RESTAPI;
@@ -1019,7 +1019,7 @@ export const downloadReferencefile = (referencefileId, filename, accessToken, re
     }
     axios({
       url: url,
-      method: "GET",	
+      method: "GET",
       headers: {
         'content-type': 'application/octet-stream',
         'authorization': 'Bearer ' + accessToken
@@ -1030,8 +1030,8 @@ export const downloadReferencefile = (referencefileId, filename, accessToken, re
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute(
-          "download",
-          filename
+        "download",
+        filename
       );
       document.body.appendChild(link);
       link.click();
@@ -1043,14 +1043,14 @@ export const downloadReferencefile = (referencefileId, filename, accessToken, re
 
 export const setFileUploadingCount = (payload) => { return { type: 'SET_FILE_UPLOADING_COUNT', payload: payload }; };
 
-export const fileUploadResult = (filename, resultMessage) => { 
-  return { 
+export const fileUploadResult = (filename, resultMessage) => {
+  return {
     type: 'FILE_UPLOAD_RESULT',
-        payload: {
-          filename: filename,
-          resultMessage: resultMessage
-        }
-}; };
+    payload: {
+      filename: filename,
+      resultMessage: resultMessage
+    }
+  }; };
 
 export const setFileUploadingShowSuccess = (payload) => {
   return {

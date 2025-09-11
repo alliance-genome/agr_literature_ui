@@ -2,7 +2,7 @@ import React from 'react';
 import {useDispatch, useSelector} from "react-redux";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheckCircle, faTimesCircle} from '@fortawesome/free-solid-svg-icons'
-import {updateButtonBiblioEntityAdd} from "../../actions/biblioActions";
+import {updateButtonBiblioEntityAdd, setBiblioUpdatingEntityAdd} from "../../actions/biblioActions";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -18,7 +18,7 @@ export default (props) => {
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
 
     const checkBoxElement = () => {
-        const handleValidationClick = (validation) => {
+        const handleValidationClick = async (validation) => {
             let payload = {
                 confidence_level: null,
                 entity_type: props.data.entity_type,
@@ -26,22 +26,38 @@ export default (props) => {
                 entity_id_validation: props.data.entity ? "alliance" : null,
                 negated: validation === 'positive' ? props.data.negated : !props.data.negated,
                 note: null,
-                novel_topic_data: props.data.novel_topic_data,
+                data_novelty: props.data.data_novelty,
                 reference_curie: referenceCurie,
                 species: props.data.species,
                 topic: props.data.topic,
                 topic_entity_tag_source_id: topicEntitySourceId,
                 force_insertion: true
             }
-            dispatch(updateButtonBiblioEntityAdd([accessToken, 'topic_entity_tag/', payload, 'POST'],accessLevel));
-
+            
+            // Follow the same pattern as TopicEntityCreate - set counter to 1 before action
+            dispatch(setBiblioUpdatingEntityAdd(1));
+            await dispatch(updateButtonBiblioEntityAdd([accessToken, 'topic_entity_tag/', payload, 'POST'],accessLevel));
+            // updateButtonBiblioEntityAdd will decrement the counter, making it 0
+            // The change from 1 to 0 should trigger the table reload
         }
 
         return(
             <span>
-                <FontAwesomeIcon icon={faCheckCircle} size='lg' onClick={function(){handleValidationClick('positive')}} style={{color: "#28a745"}}/>
+                <FontAwesomeIcon 
+                    icon={faCheckCircle} 
+                    size='lg' 
+                    onClick={function(){handleValidationClick('positive')}} 
+                    style={{color: "#28a745", cursor: "pointer"}}
+                    title="Validate as correct"
+                />
                 &nbsp;
-                <FontAwesomeIcon icon={faTimesCircle} size='lg' onClick={function(){handleValidationClick('negative')}} style={{color: "#dc3545"}}/>
+                <FontAwesomeIcon 
+                    icon={faTimesCircle} 
+                    size='lg' 
+                    onClick={function(){handleValidationClick('negative')}} 
+                    style={{color: "#dc3545", cursor: "pointer"}}
+                    title="Validate as incorrect"
+                />
             </span>
         )
     }
