@@ -810,7 +810,12 @@ const TopicEntityCreate = () => {
           button
         </Col>
       </Row>
-      {rows.map((row, index) => (
+      {rows.map((row, index) => {
+        const warnTypes = ["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"];
+        const hasBlockingEntity =
+          row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
+          row.entityResultList?.some(entity => !warnTypes.includes(entity.curie) && entity.curie !== "duplicate");
+        return (
         <React.Fragment key={index}>
           <Row className="form-group row" style={{ marginBottom: '15px' }}>
             <Col sm="2">
@@ -867,14 +872,14 @@ const TopicEntityCreate = () => {
                   type="checkbox"
                   id={`newDataCheckbox-${index}`}
                   checked={row.newDataCheckbox}
-                  disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox }
+                  disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox || hasBlockingEntity }
                   onChange={(evt) => {
                     const updatedRows = [...rows];
                     updatedRows[index] = { ...updatedRows[index], newDataCheckbox: evt.target.checked };
                     setRows(updatedRows);
                   }}
                 />
-                <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox ? 'gray' : 'inherit', }} >New Data</span>
+                <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox || hasBlockingEntity ? 'gray' : 'inherit', }} >New Data</span>
                 <br />
                 <span style={{ display: 'inline-block', width: '1rem' }} />
                 <Form.Check
@@ -882,14 +887,14 @@ const TopicEntityCreate = () => {
                   type="checkbox"
                   id={`newToDbCheckbox-${index}`}
                   checked={row.newToDbCheckbox}
-                  disabled={ row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToFieldCheckbox) }
+                  disabled={ row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToFieldCheckbox) }
                   onChange={(evt) => {
                     const updatedRows = [...rows];
                     updatedRows[index] = { ...updatedRows[index], newToDbCheckbox: evt.target.checked };
                     setRows(updatedRows);
                   }}
                 />
-                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToFieldCheckbox) ? 'gray' : 'inherit', }} >New to DB</span>
+                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToFieldCheckbox) ? 'gray' : 'inherit', }} >New to DB</span>
                 <br />
                 <span style={{ display: 'inline-block', width: '1rem' }} />
                 <Form.Check
@@ -897,14 +902,14 @@ const TopicEntityCreate = () => {
                   type="checkbox"
                   id={`newToFieldCheckbox-${index}`}
                   checked={row.newToFieldCheckbox}
-                  disabled={ row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToDbCheckbox) }
+                  disabled={ row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToDbCheckbox) }
                   onChange={(evt) => {
                     const updatedRows = [...rows];
                     updatedRows[index] = { ...updatedRows[index], newToFieldCheckbox: evt.target.checked };
                     setRows(updatedRows);
                   }}
                 />
-                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToDbCheckbox) ? 'gray' : 'inherit', }} >New to Field</span>
+                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToDbCheckbox) ? 'gray' : 'inherit', }} >New to Field</span>
                 <br />
                 <Form.Check
                   inline
@@ -1078,7 +1083,7 @@ const TopicEntityCreate = () => {
             )}
           </Row>
         </React.Fragment>
-      ))}
+      )})}
     </Container>
   );
 };
