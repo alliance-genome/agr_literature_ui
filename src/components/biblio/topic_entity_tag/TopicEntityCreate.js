@@ -595,6 +595,13 @@ const TopicEntityCreate = () => {
     else if ( row.newToDbCheckbox || row.newToFieldCheckbox ) {
       if (row.newToDbCheckbox) { dataNoveltyAtpArray.push('ATP:0000228'); }
       if (row.newToFieldCheckbox) { dataNoveltyAtpArray.push('ATP:0000229'); } }
+    else if (	// has a valid entity and the topic is the same as the entity_type
+      row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
+      row.entityResultList?.some(
+        entity =>
+          !warnTypesEntityValidation.includes(entity.curie) &&
+          entity.curie !== "duplicate"
+      ) ) { dataNoveltyAtpArray.push('ATP:0000334'); }
     else { dataNoveltyAtpArray.push('ATP:0000335'); }
     return dataNoveltyAtpArray;
   }
