@@ -91,6 +91,8 @@ const TopicEntityCreate = () => {
     });
   }
 
+  const warnTypes = ["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"];
+
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon();
@@ -324,6 +326,32 @@ const TopicEntityCreate = () => {
       setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd);
     }
   }, [tagExistingMessage, existingTagResponses]);
+
+  // unselect New checkboxes if the topic and entity type are the same, and there's a validated entity
+  useEffect(() => {
+    let updated = false;
+    const newRows = rows.map((row) => {
+      const hasBlockingEntity =
+        row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
+        row.entityResultList?.some(
+          entity =>
+            !warnTypes.includes(entity.curie) &&
+            entity.curie !== "duplicate"
+        );
+      if (hasBlockingEntity &&
+          (row.newDataCheckbox || row.newToDbCheckbox || row.newToFieldCheckbox)) {
+        updated = true;
+        return {
+          ...row,
+          newDataCheckbox: false,
+          newToDbCheckbox: false,
+          newToFieldCheckbox: false
+        };
+      }
+      return row;
+    });
+    if (updated) { setRows(newRows); }
+  }, [rows]);
 
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
@@ -584,7 +612,7 @@ const TopicEntityCreate = () => {
     for (const dataNoveltyAtp of dataNoveltyAtpArray.values()) {
       if (row.entityResultList && row.entityResultList.length > 0) {
         for (const entityResult of row.entityResultList.values()) {
-            if (!["no Alliance curie", "duplicate", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"].includes(entityResult.curie)) {
+            if (!warnTypes.includes(entityResult.curie)) {
             let entityIdValidation = "alliance";
             if (row.taxonSelect === "use_wb" && row.taxonSelectWB && row.entityTypeSelect) {
               entityIdValidation = "WB";
@@ -811,7 +839,6 @@ const TopicEntityCreate = () => {
         </Col>
       </Row>
       {rows.map((row, index) => {
-        const warnTypes = ["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"];
         const hasBlockingEntity =
           row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
           row.entityResultList?.some(entity => !warnTypes.includes(entity.curie) && entity.curie !== "duplicate");
@@ -1026,7 +1053,7 @@ const TopicEntityCreate = () => {
                   row.entityResultList.length > 0 &&
                   row.entityResultList.map((entityResult, idx) => {
                     let colDisplayClass = "Col-display";
-                      if (["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"].includes(entityResult.curie)) {
+                      if (warnTypes.includes(entityResult.curie)) {
                       colDisplayClass = "Col-display-warn";
                     } else if (entityResult.curie === "duplicate") {
                       colDisplayClass = "Col-display-grey";
