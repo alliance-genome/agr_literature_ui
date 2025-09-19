@@ -91,7 +91,7 @@ const TopicEntityCreate = () => {
     });
   }
 
-  const warnTypes = ["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"];
+  const warnTypesEntityValidation = ["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -335,7 +335,7 @@ const TopicEntityCreate = () => {
         row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
         row.entityResultList?.some(
           entity =>
-            !warnTypes.includes(entity.curie) &&
+            !warnTypesEntityValidation.includes(entity.curie) &&
             entity.curie !== "duplicate"
         );
       if (hasBlockingEntity &&
@@ -612,7 +612,7 @@ const TopicEntityCreate = () => {
     for (const dataNoveltyAtp of dataNoveltyAtpArray.values()) {
       if (row.entityResultList && row.entityResultList.length > 0) {
         for (const entityResult of row.entityResultList.values()) {
-            if (!warnTypes.includes(entityResult.curie)) {
+          if (!warnTypesEntityValidation.includes(entityResult.curie)) {
             let entityIdValidation = "alliance";
             if (row.taxonSelect === "use_wb" && row.taxonSelectWB && row.entityTypeSelect) {
               entityIdValidation = "WB";
@@ -841,7 +841,7 @@ const TopicEntityCreate = () => {
       {rows.map((row, index) => {
         const hasBlockingEntity =
           row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
-          row.entityResultList?.some(entity => !warnTypes.includes(entity.curie) && entity.curie !== "duplicate");
+          row.entityResultList?.some(entity => !warnTypesEntityValidation.includes(entity.curie) && entity.curie !== "duplicate");
         return (
         <React.Fragment key={index}>
           <Row className="form-group row" style={{ marginBottom: '15px' }}>
@@ -1053,7 +1053,7 @@ const TopicEntityCreate = () => {
                   row.entityResultList.length > 0 &&
                   row.entityResultList.map((entityResult, idx) => {
                     let colDisplayClass = "Col-display";
-                      if (warnTypes.includes(entityResult.curie)) {
+                      if (warnTypesEntityValidation.includes(entityResult.curie)) {
                       colDisplayClass = "Col-display-warn";
                     } else if (entityResult.curie === "duplicate") {
                       colDisplayClass = "Col-display-grey";
