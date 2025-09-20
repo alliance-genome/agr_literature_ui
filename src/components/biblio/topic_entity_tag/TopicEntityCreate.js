@@ -91,6 +91,8 @@ const TopicEntityCreate = () => {
     });
   }
 
+  const warnTypesEntityValidation = ["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"];
+
   useEffect(() => {
     const fetchData = async () => {
       const taxonData = await getCurieToNameTaxon();
@@ -324,6 +326,32 @@ const TopicEntityCreate = () => {
       setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd);
     }
   }, [tagExistingMessage, existingTagResponses]);
+
+  // unselect New checkboxes if the topic and entity type are the same, and there's a validated entity
+  useEffect(() => {
+    let updated = false;
+    const newRows = rows.map((row) => {
+      const hasBlockingEntity =
+        row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
+        row.entityResultList?.some(
+          entity =>
+            !warnTypesEntityValidation.includes(entity.curie) &&
+            entity.curie !== "duplicate"
+        );
+      if (hasBlockingEntity &&
+          (row.newDataCheckbox || row.newToDbCheckbox || row.newToFieldCheckbox)) {
+        updated = true;
+        return {
+          ...row,
+          newDataCheckbox: false,
+          newToDbCheckbox: false,
+          newToFieldCheckbox: false
+        };
+      }
+      return row;
+    });
+    if (updated) { setRows(newRows); }
+  }, [rows]);
 
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
@@ -567,6 +595,13 @@ const TopicEntityCreate = () => {
     else if ( row.newToDbCheckbox || row.newToFieldCheckbox ) {
       if (row.newToDbCheckbox) { dataNoveltyAtpArray.push('ATP:0000228'); }
       if (row.newToFieldCheckbox) { dataNoveltyAtpArray.push('ATP:0000229'); } }
+    else if (	// has a valid entity and the topic is the same as the entity_type
+      row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
+      row.entityResultList?.some(
+        entity =>
+          !warnTypesEntityValidation.includes(entity.curie) &&
+          entity.curie !== "duplicate"
+      ) ) { dataNoveltyAtpArray.push('ATP:0000334'); }
     else { dataNoveltyAtpArray.push('ATP:0000335'); }
     return dataNoveltyAtpArray;
   }
@@ -584,7 +619,7 @@ const TopicEntityCreate = () => {
     for (const dataNoveltyAtp of dataNoveltyAtpArray.values()) {
       if (row.entityResultList && row.entityResultList.length > 0) {
         for (const entityResult of row.entityResultList.values()) {
-            if (!["no Alliance curie", "duplicate", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"].includes(entityResult.curie)) {
+          if (!warnTypesEntityValidation.includes(entityResult.curie)) {
             let entityIdValidation = "alliance";
             if (row.taxonSelect === "use_wb" && row.taxonSelectWB && row.entityTypeSelect) {
               entityIdValidation = "WB";
@@ -810,275 +845,279 @@ const TopicEntityCreate = () => {
           button
         </Col>
       </Row>
-      {rows.map((row, index) => (
-        <React.Fragment key={index}>
-          <Row className="form-group row" style={{ marginBottom: '15px' }}>
-            <Col sm="2">
-              <AsyncTypeahead
-                isLoading={topicSelectLoading}
-                useCache={false}
-                placeholder="Start typing to search topics"
-                ref={topicTypeaheadRef}
-                id={`topicTypeahead-${index}`}
-                onSearch={async (query) => {
-	          setTopicSelectLoading(true);
-                  try {
-                    let url =`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
-                    if (accessLevel) {
-                      url += "?mod_abbr=" + accessLevel
-                    }
-                    const results = await FetchTypeaheadOptions(url);
-                    if (!Array.isArray(results)) {
-                       throw new Error("Invalid response format");
-                    }
-		    const nameToCurie = {};
-		    for (const item of results) {
-			nameToCurie[item.name] = item.curie;
-		    }
-
-		    dispatch(setTypeaheadName2CurieMap(nameToCurie));
-		    setTypeaheadOptions(Object.keys(nameToCurie));
-                  } catch (error) {
-                    console.error("Error during topic search:", error);
-                    setTypeaheadOptions([]);
-                  } finally {
-	            setTopicSelectLoading(false);
-		  }
-                }}
-                onChange={(selected) => {
-                  if (selected.length > 0) {
-                    const selectedCurie = typeaheadName2CurieMap[selected[0]];
-		    const selectedValue = selected[0];
-                    handleRowChange(index, 'topicSelect', selectedCurie);
-		    handleRowChange(index, "topicSelectValue", selectedValue);
-                  } else {
-		    handleRowChange(index, 'topicSelect', "");
-		    handleRowChange(index, "topicSelectValue", "");
-		  }
-                }}
-                options={typeaheadOptions}
-	        selected={row.topicSelectValue ? [row.topicSelectValue] : []}	
-              />		
-            </Col>
-	    <Col sm="1">
-              <div style={{ textAlign: "left" }}>
-                <Form.Check
-                  inline
-                  type="checkbox"
-                  id={`newDataCheckbox-${index}`}
-                  checked={row.newDataCheckbox}
-                  disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox }
-                  onChange={(evt) => {
-                    const updatedRows = [...rows];
-                    updatedRows[index] = { ...updatedRows[index], newDataCheckbox: evt.target.checked };
-                    setRows(updatedRows);
-                  }}
-                />
-                <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox ? 'gray' : 'inherit', }} >New Data</span>
-                <br />
-                <span style={{ display: 'inline-block', width: '1rem' }} />
-                <Form.Check
-                  inline
-                  type="checkbox"
-                  id={`newToDbCheckbox-${index}`}
-                  checked={row.newToDbCheckbox}
-                  disabled={ row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToFieldCheckbox) }
-                  onChange={(evt) => {
-                    const updatedRows = [...rows];
-                    updatedRows[index] = { ...updatedRows[index], newToDbCheckbox: evt.target.checked };
-                    setRows(updatedRows);
-                  }}
-                />
-                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToFieldCheckbox) ? 'gray' : 'inherit', }} >New to DB</span>
-                <br />
-                <span style={{ display: 'inline-block', width: '1rem' }} />
-                <Form.Check
-                  inline
-                  type="checkbox"
-                  id={`newToFieldCheckbox-${index}`}
-                  checked={row.newToFieldCheckbox}
-                  disabled={ row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToDbCheckbox) }
-                  onChange={(evt) => {
-                    const updatedRows = [...rows];
-                    updatedRows[index] = { ...updatedRows[index], newToFieldCheckbox: evt.target.checked };
-                    setRows(updatedRows);
-                  }}
-                />
-                <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || (editTag && row.newToDbCheckbox) ? 'gray' : 'inherit', }} >New to Field</span>
-                <br />
-                <Form.Check
-                  inline
-                  type="checkbox"
-                  id={`noDataCheckbox-${index}`}
-                  checked={row.noDataCheckbox}
-                  disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox }
-                  onChange={(evt) => {
-                    const updatedRows = [...rows];
-                    updatedRows[index] = { ...updatedRows[index], noDataCheckbox: evt.target.checked };
-                    setRows(updatedRows);
-                  }}
-                />
-                <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
-              </div>
-            </Col>
-            <Col sm="1">
-              <Form.Control
-                as="select"
-                id={`entityTypeSelect-${index}`}
-                type="entityTypeSelect"
-                value={row.entityTypeSelect}
-                onChange={(e) => handleRowChange(index, 'entityTypeSelect', e.target.value)}
-              >
-                {entityTypeList.map((option, idx) => (
-                  <option key={idx} value={option}>
-                    {curieToNameEntityType[option]}
-                  </option>
-                ))}
-              </Form.Control>
-            </Col>
-            <Col sm="1">
-              <Form.Control
-                as="select"
-                id={`taxonSelect-${index}`}
-                type="taxonSelect"
-                value={row.taxonSelect}
-                onChange={(e) => handleRowChange(index, 'taxonSelect', e.target.value)}
-              >
-                {taxonList.map((option, idx) => (
-                  <option key={idx} value={option}>
-                    {curieToNameTaxon[option]}
-                  </option>
-                ))}
-              </Form.Control>
-
-              {row.taxonSelect === "use_wb" && (
-	        <Form.Control
-                  as="select"
-                  id={`taxonSelectWB-${index}`}
-                  type="taxonSelectWB"
-                  value={row.taxonSelectWB}
-                  onChange={(e) => handleRowChange(index, 'taxonSelectWB', e.target.value)}
-                >
-	          {taxonListWB.map((option, idx) => (
-                    <option key={idx} value={option}>
-                       {curieToNameTaxonWB[option]}
-                    </option>
-		  ))}
-                </Form.Control>	
-              )}
-            </Col>
-            <Col className="form-label col-form-label" sm="2">
-              {renderView(row) === "autocomplete" ? (
-	        <AsyncTypeahead
-		  id={`species-typeahead-${index}`}
-                  multiple
-                  isLoading={speciesSelectLoading}
-                  placeholder="enter species name"
-                  ref={speciesTypeaheadRef}
+      {rows.map((row, index) => {
+        const hasBlockingEntity =
+          row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
+          row.entityResultList?.some(entity => !warnTypesEntityValidation.includes(entity.curie) && entity.curie !== "duplicate");
+        return (
+          <React.Fragment key={index}>
+            <Row className="form-group row" style={{ marginBottom: '15px' }}>
+              <Col sm="2">
+                <AsyncTypeahead
+                  isLoading={topicSelectLoading}
+                  useCache={false}
+                  placeholder="Start typing to search topics"
+                  ref={topicTypeaheadRef}
+                  id={`topicTypeahead-${index}`}
                   onSearch={async (query) => {
-	            setSpeciesSelectLoading(true);
+                    setTopicSelectLoading(true);
                     try {
-                      const url = `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_species/${encodeURIComponent(query)}`;
-                      const results = await FetchTypeaheadOptions(url);
-
-                      setSpeciesSelectLoading(false);
-                      if (results) {
-                        setTypeaheadOptions(results.map((item) => `${item.name} ${item.curie}`));
+                      let url =`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
+                      if (accessLevel) {
+                        url += "?mod_abbr=" + accessLevel
                       }
-                    } catch (error) {
-                       console.error("Error fetching typeahead options:", error);
-                        setSpeciesSelectLoading(false);
-                    }
-		  }}
-                  onChange={(selected) => {
-                    const extractedStrings = selected
-                      .map((specie) => {
-                        const match = specie.match(/(.+) (NCBITaxon:\d+)/);
-			return match ? `${match[2]}` : null;
-                      })
-	              .filter((item) => item);
+                      const results = await FetchTypeaheadOptions(url);
+                      if (!Array.isArray(results)) {
+                         throw new Error("Invalid response format");
+                      }
+          	    const nameToCurie = {};
+          	    for (const item of results) {
+          		nameToCurie[item.name] = item.curie;
+          	    }
 
-		      handleSpeciesSelection(index, extractedStrings);
-		      handleRowChange(index, 'entityResultList', extractedStrings);
-                      handleRowChange(index, 'selectedSpecies', selected.map(s => s));
+          	    dispatch(setTypeaheadName2CurieMap(nameToCurie));
+          	    setTypeaheadOptions(Object.keys(nameToCurie));
+                    } catch (error) {
+                      console.error("Error during topic search:", error);
+                      setTypeaheadOptions([]);
+                    } finally {
+                      setTopicSelectLoading(false);
+          	  }
+                  }}
+                  onChange={(selected) => {
+                    if (selected.length > 0) {
+                      const selectedCurie = typeaheadName2CurieMap[selected[0]];
+          	    const selectedValue = selected[0];
+                      handleRowChange(index, 'topicSelect', selectedCurie);
+          	    handleRowChange(index, "topicSelectValue", selectedValue);
+                    } else {
+          	    handleRowChange(index, 'topicSelect', "");
+          	    handleRowChange(index, "topicSelectValue", "");
+          	  }
                   }}
                   options={typeaheadOptions}
-		  selected={row.selectedSpecies || row.entityResultList.map(entity => `${entity.entityTypeSymbol} ${entity.curie}`)}
-	        />
-	      ) : ( 	
-                <Form.Control
-                  as="textarea"
-                  id={`entitytextarea-${index}`}
-                  value={row.entityText}
-                  onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}
-                />
-              )}
-            </Col>
-            <Col className="form-label col-form-label" sm="2">
-              <Container>
-                {renderView(row) === "list" &&
-                  row.entityResultList &&
-                  row.entityResultList.length > 0 &&
-                  row.entityResultList.map((entityResult, idx) => {
-                    let colDisplayClass = "Col-display";
-                      if (["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"].includes(entityResult.curie)) {
-                      colDisplayClass = "Col-display-warn";
-                    } else if (entityResult.curie === "duplicate") {
-                      colDisplayClass = "Col-display-grey";
-                    }
-                    return (
-                      <Row key={`entityEntityContainerrows-${idx}`}>
-                        <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">
-                          {entityResult.entityTypeSymbol}
-                        </Col>
-                        <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">
-                          {entityResult.curie}
-                        </Col>
-                      </Row>
-                    );
-                  })}
-              </Container>
-            </Col>
-            <Col className="form-label col-form-label" sm="2">
-              <Form.Control as="textarea" id={`notetextarea-${index}`} type="notetextarea" value={row.noteText} onChange={(e) => {
-                const updatedRows = [...rows];
-                updatedRows[index] = { ...updatedRows[index], noteText: e.target.value };
-                setRows(updatedRows);
-              }} />
-            </Col>
-            <Col className="form-label col-form-label" sm="1">
-              {editTag ? (
-                <Button variant="outline-danger" onClick={() => patchEntities(referenceJsonLive.curie, index)}>
-                  {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Edit"}
-                </Button>
-              ) : (
-                <Button variant="outline-primary" disabled={row.disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
-                  {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
-                </Button>
-              )}
-            </Col>
-          </Row>
-          <Row className="mb-3" style={{ marginBottom: '20px' }}>
-            <Col sm="6" className="d-flex align-items-center">
-              <Button variant="outline-secondary"  onClick={() => cloneRow(index)} style={{ marginRight: '10px' }}>
-                Clone row
-              </Button>
-              {rows.length - 1 === index && (
-                <Button variant="outline-secondary"  onClick={() => setRows([...rows, createNewRow()])}>
-                  New row
-                </Button>
-              )}
-            </Col>
-            {rows.length - 1 === index && rows.length > 1 && (
-              <Col sm="6" className="d-flex justify-content-end align-items-center">
-                <Button variant="outline-primary" onClick={handleSubmitAll}>
-                  Submit All
-                </Button>
+                  selected={row.topicSelectValue ? [row.topicSelectValue] : []}	
+                />		
               </Col>
-            )}
-          </Row>
-        </React.Fragment>
-      ))}
+              <Col sm="1">
+                <div style={{ textAlign: "left" }}>
+                  <Form.Check
+                    inline
+                    type="checkbox"
+                    id={`newDataCheckbox-${index}`}
+                    checked={row.newDataCheckbox}
+                    disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox || hasBlockingEntity }
+                    onChange={(evt) => {
+                      const updatedRows = [...rows];
+                      updatedRows[index] = { ...updatedRows[index], newDataCheckbox: evt.target.checked };
+                      setRows(updatedRows);
+                    }}
+                  />
+                  <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox || hasBlockingEntity ? 'gray' : 'inherit', }} >New Data</span>
+                  <br />
+                  <span style={{ display: 'inline-block', width: '1rem' }} />
+                  <Form.Check
+                    inline
+                    type="checkbox"
+                    id={`newToDbCheckbox-${index}`}
+                    checked={row.newToDbCheckbox}
+                    disabled={ row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToFieldCheckbox) }
+                    onChange={(evt) => {
+                      const updatedRows = [...rows];
+                      updatedRows[index] = { ...updatedRows[index], newToDbCheckbox: evt.target.checked };
+                      setRows(updatedRows);
+                    }}
+                  />
+                  <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToFieldCheckbox) ? 'gray' : 'inherit', }} >New to DB</span>
+                  <br />
+                  <span style={{ display: 'inline-block', width: '1rem' }} />
+                  <Form.Check
+                    inline
+                    type="checkbox"
+                    id={`newToFieldCheckbox-${index}`}
+                    checked={row.newToFieldCheckbox}
+                    disabled={ row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToDbCheckbox) }
+                    onChange={(evt) => {
+                      const updatedRows = [...rows];
+                      updatedRows[index] = { ...updatedRows[index], newToFieldCheckbox: evt.target.checked };
+                      setRows(updatedRows);
+                    }}
+                  />
+                  <span style={{ color: row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToDbCheckbox) ? 'gray' : 'inherit', }} >New to Field</span>
+                  <br />
+                  <Form.Check
+                    inline
+                    type="checkbox"
+                    id={`noDataCheckbox-${index}`}
+                    checked={row.noDataCheckbox}
+                    disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox }
+                    onChange={(evt) => {
+                      const updatedRows = [...rows];
+                      updatedRows[index] = { ...updatedRows[index], noDataCheckbox: evt.target.checked };
+                      setRows(updatedRows);
+                    }}
+                  />
+                  <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
+                </div>
+              </Col>
+              <Col sm="1">
+                <Form.Control
+                  as="select"
+                  id={`entityTypeSelect-${index}`}
+                  type="entityTypeSelect"
+                  value={row.entityTypeSelect}
+                  onChange={(e) => handleRowChange(index, 'entityTypeSelect', e.target.value)}
+                >
+                  {entityTypeList.map((option, idx) => (
+                    <option key={idx} value={option}>
+                      {curieToNameEntityType[option]}
+                    </option>
+                  ))}
+                </Form.Control>
+              </Col>
+              <Col sm="1">
+                <Form.Control
+                  as="select"
+                  id={`taxonSelect-${index}`}
+                  type="taxonSelect"
+                  value={row.taxonSelect}
+                  onChange={(e) => handleRowChange(index, 'taxonSelect', e.target.value)}
+                >
+                  {taxonList.map((option, idx) => (
+                    <option key={idx} value={option}>
+                      {curieToNameTaxon[option]}
+                    </option>
+                  ))}
+                </Form.Control>
+
+                {row.taxonSelect === "use_wb" && (
+                  <Form.Control
+                    as="select"
+                    id={`taxonSelectWB-${index}`}
+                    type="taxonSelectWB"
+                    value={row.taxonSelectWB}
+                    onChange={(e) => handleRowChange(index, 'taxonSelectWB', e.target.value)}
+                  >
+                    {taxonListWB.map((option, idx) => (
+                      <option key={idx} value={option}>
+                         {curieToNameTaxonWB[option]}
+                      </option>
+          	  ))}
+                  </Form.Control>	
+                )}
+              </Col>
+              <Col className="form-label col-form-label" sm="2">
+                {renderView(row) === "autocomplete" ? (
+                  <AsyncTypeahead
+          	  id={`species-typeahead-${index}`}
+                    multiple
+                    isLoading={speciesSelectLoading}
+                    placeholder="enter species name"
+                    ref={speciesTypeaheadRef}
+                    onSearch={async (query) => {
+                      setSpeciesSelectLoading(true);
+                      try {
+                        const url = `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_species/${encodeURIComponent(query)}`;
+                        const results = await FetchTypeaheadOptions(url);
+
+                        setSpeciesSelectLoading(false);
+                        if (results) {
+                          setTypeaheadOptions(results.map((item) => `${item.name} ${item.curie}`));
+                        }
+                      } catch (error) {
+                         console.error("Error fetching typeahead options:", error);
+                          setSpeciesSelectLoading(false);
+                      }
+          	  }}
+                    onChange={(selected) => {
+                      const extractedStrings = selected
+                        .map((specie) => {
+                          const match = specie.match(/(.+) (NCBITaxon:\d+)/);
+          		return match ? `${match[2]}` : null;
+                        })
+                        .filter((item) => item);
+
+          	      handleSpeciesSelection(index, extractedStrings);
+          	      handleRowChange(index, 'entityResultList', extractedStrings);
+                        handleRowChange(index, 'selectedSpecies', selected.map(s => s));
+                    }}
+                    options={typeaheadOptions}
+          	  selected={row.selectedSpecies || row.entityResultList.map(entity => `${entity.entityTypeSymbol} ${entity.curie}`)}
+                  />
+                ) : ( 	
+                  <Form.Control
+                    as="textarea"
+                    id={`entitytextarea-${index}`}
+                    value={row.entityText}
+                    onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}
+                  />
+                )}
+              </Col>
+              <Col className="form-label col-form-label" sm="2">
+                <Container>
+                  {renderView(row) === "list" &&
+                    row.entityResultList &&
+                    row.entityResultList.length > 0 &&
+                    row.entityResultList.map((entityResult, idx) => {
+                      let colDisplayClass = "Col-display";
+                        if (warnTypesEntityValidation.includes(entityResult.curie)) {
+                        colDisplayClass = "Col-display-warn";
+                      } else if (entityResult.curie === "duplicate") {
+                        colDisplayClass = "Col-display-grey";
+                      }
+                      return (
+                        <Row key={`entityEntityContainerrows-${idx}`}>
+                          <Col className={`Col-general ${colDisplayClass} Col-display-left`} sm="5">
+                            {entityResult.entityTypeSymbol}
+                          </Col>
+                          <Col className={`Col-general ${colDisplayClass} Col-display-right`} sm="7">
+                            {entityResult.curie}
+                          </Col>
+                        </Row>
+                      );
+                    })}
+                </Container>
+              </Col>
+              <Col className="form-label col-form-label" sm="2">
+                <Form.Control as="textarea" id={`notetextarea-${index}`} type="notetextarea" value={row.noteText} onChange={(e) => {
+                  const updatedRows = [...rows];
+                  updatedRows[index] = { ...updatedRows[index], noteText: e.target.value };
+                  setRows(updatedRows);
+                }} />
+              </Col>
+              <Col className="form-label col-form-label" sm="1">
+                {editTag ? (
+                  <Button variant="outline-danger" onClick={() => patchEntities(referenceJsonLive.curie, index)}>
+                    {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Edit"}
+                  </Button>
+                ) : (
+                  <Button variant="outline-primary" disabled={row.disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
+                    {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
+                  </Button>
+                )}
+              </Col>
+            </Row>
+            <Row className="mb-3" style={{ marginBottom: '20px' }}>
+              <Col sm="6" className="d-flex align-items-center">
+                <Button variant="outline-secondary"  onClick={() => cloneRow(index)} style={{ marginRight: '10px' }}>
+                  Clone row
+                </Button>
+                {rows.length - 1 === index && (
+                  <Button variant="outline-secondary"  onClick={() => setRows([...rows, createNewRow()])}>
+                    New row
+                  </Button>
+                )}
+              </Col>
+              {rows.length - 1 === index && rows.length > 1 && (
+                <Col sm="6" className="d-flex justify-content-end align-items-center">
+                  <Button variant="outline-primary" onClick={handleSubmitAll}>
+                    Submit All
+                  </Button>
+                </Col>
+              )}
+            </Row>
+          </React.Fragment>
+      )})}
     </Container>
   );
 };
