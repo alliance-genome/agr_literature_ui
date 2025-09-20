@@ -277,7 +277,7 @@ const TopicEntityCreateSGD = () => {
     for (let index = rows.length - 1; index >= 0; index--) {
       await createEntities(referenceJsonLive.curie, index, "ATP:0000275");
     }
-    setRows([createNewRow()]);
+    // setRows([createNewRow()]);
   };
 
   const addRow = () => {
@@ -328,8 +328,10 @@ const TopicEntityCreateSGD = () => {
   };
 
   const createEntities = async (refCurie, index, index_wft) => {
+    let noReset = false;
     const row = rows[index];
     if (row.topicSelect === null) {
+      noReset = true;	  
       return;
     }
     const displayTagName = curieToNameDisplayTag[row.tetdisplayTagSelect] || "";
@@ -339,6 +341,7 @@ const TopicEntityCreateSGD = () => {
           "Entity must be entered when display tag is 'primary display' or 'additional display'.",
           "danger"
         );
+	noReset = true;  
         return;
       }
       const hasValidEntity = (row.entityResultList || []).some(
@@ -356,6 +359,7 @@ const TopicEntityCreateSGD = () => {
           "Entity must be validated when display tag is 'primary display' or 'additional display'.",
           "danger"
         );
+	noReset = true;
         return;
       }
     }
@@ -368,6 +372,7 @@ const TopicEntityCreateSGD = () => {
     );
     if (warningMsg) {
       addMessage(warningMsg, "danger");
+      noReset = true;	
       return;
     }
     dispatch(changeFieldEntityAddDisplayTag(displayTag));
@@ -423,7 +428,7 @@ const TopicEntityCreateSGD = () => {
       setIsTagExistingMessageVisible(true);
     }
     dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: "" } }));
-    removeRow(index);
+    if (!noReset) removeRow(index); // success-only cleanup
   };
 
   const removeRow = (index) => {
