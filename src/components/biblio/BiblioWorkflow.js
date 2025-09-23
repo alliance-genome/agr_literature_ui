@@ -265,7 +265,7 @@ const BiblioWorkflow = () => {
               note: info.curst_note || null,
               controlled_note: info.curst_controlled_note || null,
               has_data: info.tet_info_has_data,
-              novel_data: info.tet_info_novel_data,
+              new_data: info.tet_info_new_data,
               no_data: info.tet_info_no_data,
               topic_source: Array.isArray(info.tet_info_topic_source)
                 ? info.tet_info_topic_source.join(', ')
@@ -285,7 +285,7 @@ const BiblioWorkflow = () => {
           note: null,
           controlled_note: null,
           has_data: null,
-          novel_data: null,
+          new_data: null,
           no_data: null,
           topic_source: null,
           topic_added: null,
@@ -377,7 +377,7 @@ const BiblioWorkflow = () => {
   const setDataTopicsInProgress = async () => {
     const entriesToUpdate = curationData.filter(entry =>
       entry.curation_status_id === "new" &&
-      (entry.has_data === true || entry.novel_data === true)
+      (entry.has_data === true || entry.new_data === true)
     );
     const updatePromises = entriesToUpdate.map(entry => {
       const json_data = {
@@ -616,8 +616,8 @@ const BiblioWorkflow = () => {
 		  cellStyle: { textAlign: 'left' }
 	      },
               {
-		  headerName: 'Novel data',
-		  field: 'novel_data',
+		  headerName: 'New data',
+		  field: 'new_data',
 		  width: 120,
 		  cellRenderer:
 		  renderNovelData,
