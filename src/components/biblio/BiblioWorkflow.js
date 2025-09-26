@@ -263,7 +263,7 @@ const BiblioWorkflow = () => {
               curation_status_updated: formatedCurstDateUpdated,
               curator: (info.curst_updated_by_email !== null) ? info.curst_updated_by_email : info.curst_updated_by,
               note: info.curst_note || null,
-              controlled_note: info.curst_controlled_note || null,
+              curation_tag: info.curst_curation_tag || null,
               has_data: info.tet_info_has_data,
               new_data: info.tet_info_new_data,
               no_data: info.tet_info_no_data,
@@ -283,7 +283,7 @@ const BiblioWorkflow = () => {
           curation_status_updated: null,
           curator: null,
           note: null,
-          controlled_note: null,
+          curation_tag: null,
           has_data: null,
           new_data: null,
           no_data: null,
@@ -470,8 +470,8 @@ const BiblioWorkflow = () => {
           {!isValid && value && <option value={value}>{value}</option>}
           {(
             !value ||
-            colDef.field === 'controlled_note' ||
-            (colDef.field === 'curation_status' && !node?.data?.controlled_note && !node?.data?.note)
+            colDef.field === 'curation_tag' ||
+            (colDef.field === 'curation_status' && !node?.data?.curation_tag && !node?.data?.note)
           ) && <option value=""></option>}
           {options.map(opt => ( <option key={opt.value} value={opt.value}>{opt.label}</option>))}
         </select>
@@ -520,7 +520,7 @@ const BiblioWorkflow = () => {
       },
       {
 	headerName: 'Controlled Note',
-	field: 'controlled_note',
+	field: 'curation_tag',
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
@@ -663,7 +663,7 @@ const BiblioWorkflow = () => {
       },
       {
 	headerName: 'Controlled Note',
-	field: 'controlled_note',
+	field: 'curation_tag',
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
@@ -826,7 +826,7 @@ const BiblioWorkflow = () => {
     const rowData = params.data;
 
     if (newValue === oldValue) return;	// no change
-    if (colId !== 'curation_status' && colId !== 'controlled_note' && colId !== 'note') return;	// Only handle specific fields
+    if (colId !== 'curation_status' && colId !== 'curation_tag' && colId !== 'note') return;	// Only handle specific fields
 
     if (colId === 'curation_status' && rowData.topic_name === 'Whole Paper' && newValue === 'ATP:0000237') { setDataTopicsInProgress(); }
 
