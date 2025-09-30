@@ -9,7 +9,7 @@ import Modal from 'react-bootstrap/Modal';
 import Spinner from 'react-bootstrap/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons';
-import { postWorkflowTag, patchWorkflowTag } from './WorkflowTagService'
+import { postWorkflowTag, patchWorkflowTag, deleteWorkflowTag } from './WorkflowTagService'
 
 const file_upload_process_atp_id = "ATP:0000140";
 
@@ -477,7 +477,7 @@ const BiblioWorkflow = () => {
           {(
             !value ||
             colDef.field === 'curation_tag' ||
-            (colDef.field === 'curation_status' && !node?.data?.curation_tag && !node?.data?.note)
+            ( (colDef.field === 'curation_status' || colDef.field === 'workflow_tag') && !node?.data?.curation_tag && !node?.data?.note)
           ) && <option value=""></option>}
           {options.map(opt => ( <option key={opt.value} value={opt.value}>{opt.label}</option>))}
         </select>
@@ -824,12 +824,20 @@ const BiblioWorkflow = () => {
     const newValue = params.newValue;
     const oldValue = params.oldValue;
     const rowData = params.data;
-   
+
     if (newValue === oldValue) return;
    
     // Columns we want to support editing
     const editableFields = ['workflow_tag', 'curation_tag', 'note'];
     if (!editableFields.includes(colId)) return;
+
+    // DELETE if workflow_tag is being cleared
+    const isClearingWorkflowTag = (
+      colId === 'workflow_tag' &&
+      (oldValue ?? "") !== "" && // was something
+      newValue === "" &&
+      rowData.curation_status_id !== 'new' // can't delete something that hasn't been posted
+    );
   
     try {
       if (rowData.section === 'Indexing Priority') {
@@ -847,6 +855,8 @@ const BiblioWorkflow = () => {
             'Content-Type': 'application/json',
           }
         });
+      } else if (isClearingWorkflowTag) {
+        if (rowData.reference_workflow_tag_id) { await deleteWorkflowTag(rowData.reference_workflow_tag_id, accessToken); }
       } else {
         // keep existing behavior for workflow tags
         if (rowData.reference_workflow_tag_id) {
