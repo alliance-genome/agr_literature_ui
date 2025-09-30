@@ -3,11 +3,13 @@ import {useDispatch, useSelector} from "react-redux";
 import axios from "axios";
 import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
+import { Spinner } from 'react-bootstrap';
 import {
     changeFieldEntityAddGeneralField,
     setEditTag,
     setFilteredTags,
-    setTypeaheadName2CurieMap
+    setTypeaheadName2CurieMap,
+    setBiblioUpdatingEntityAdd
 } from "../../actions/biblioActions";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faEdit, faTrashAlt, faSearch} from "@fortawesome/free-solid-svg-icons";
@@ -23,6 +25,7 @@ export default (props) => {
     const editTag = useSelector(state => state.biblio.editTag);
     const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
     const [showModal, setShowModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const handleClose = () => { setShowModal(false);}
     const title = "Please confirm delete here:";
     const [topicBody, setTopicBody] = useState("");
@@ -72,6 +75,7 @@ export default (props) => {
 
     const handleDeleteConfirm = async () => {
         let id = props.data.topic_entity_tag_id;
+        setIsDeleting(true);
         try {
             const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + id;
             const response = await axios.delete(url, {
@@ -85,14 +89,22 @@ export default (props) => {
             if (response.status === 204) {
                 // remove the deleted item from the state so that the UI updates
                 props.api.applyTransaction({ remove: [ props.api.getRowNode(props.node.id).data ] });
+                // Force a complete table refresh by toggling the update counter
+                // We increment then immediately decrement to trigger the useEffect
+                dispatch(setBiblioUpdatingEntityAdd(1));
+                setTimeout(() => {
+                    dispatch(setBiblioUpdatingEntityAdd(0));
+                }, 100);
 
             } else {
                 console.error("Failed to delete the item:", response.data);
             }
         } catch (error) {
             console.error("Error deleting item:", error);
+        } finally {
+            setIsDeleting(false);
+            setShowModal(false);
         }
-        setShowModal(false);
     };
 
     const handleEditClick = (row) => {
@@ -154,11 +166,25 @@ export default (props) => {
                     </Container>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button onClick={handleClose}>
+                    <Button onClick={handleClose} disabled={isDeleting}>
                         Cancel
                     </Button>
-                    <Button variant="danger" onClick={handleDeleteConfirm}>
-                        Confirm
+                    <Button variant="danger" onClick={handleDeleteConfirm} disabled={isDeleting}>
+                        {isDeleting ? (
+                            <>
+                                <Spinner
+                                    as="span"
+                                    animation="border"
+                                    size="sm"
+                                    role="status"
+                                    aria-hidden="true"
+                                    className="me-2"
+                                />
+                                Deleting...
+                            </>
+                        ) : (
+                            'Confirm'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>

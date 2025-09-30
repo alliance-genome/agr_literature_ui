@@ -64,6 +64,9 @@ import {useEffect, useState} from "react";
 // const Biblio = ({ appState, someAction, location }) => {
 // console.log(location.state);  }
 
+// Label mapping (display only)
+const getLabel = (name) => (name === 'category' ? 'alliance_category' : name);
+
 export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'resource_curie', 'resource_title' ];
 export const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
  
@@ -83,7 +86,7 @@ fieldTypeDict['plain_language_abstract'] = 'textarea'
 fieldTypeDict['category'] = 'select'
 
 export const enumDict = {}
-enumDict['category'] = ['research_article', 'review_article', 'thesis', 'book', 'other', 'preprint', 'conference_publication', 'personal_communication', 'direct_data_submission', 'internal_process_reference', 'unknown', 'retraction', 'obsolete', 'correction']
+enumDict['category'] = ['research_article', 'review_article', 'comment', 'thesis', 'book', 'other', 'preprint', 'conference_publication', 'personal_communication', 'direct_data_submission', 'internal_process_reference', 'unknown', 'retraction', 'obsolete', 'correction']
 enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 enumDict['personXrefPrefix'] = ['', 'ORCID']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'Xenbase', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN', 'CGC', 'WBG', 'WM']
@@ -616,14 +619,15 @@ const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   valueLive = valueLive || '';
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
+  const label = getLabel(fieldName);
   let otherColSize = 9;
   let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
   if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
-  let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={fieldName} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
+  let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={label} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
   if (fieldType === 'select') {
-    colEditorElement = (<ColEditorSelect key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} enumType={fieldName} />) }
+    colEditorElement = (<ColEditorSelect key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} disabled={disabled} placeholder={label} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} enumType={fieldName} />) }
   return ( <Form.Group as={Row} key={fieldName} >
-             <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
+             <Form.Label column sm="2" className={`Col-general`} >{label}</Form.Label>
              {colEditorElement}
              {revertElement}
            </Form.Group>);

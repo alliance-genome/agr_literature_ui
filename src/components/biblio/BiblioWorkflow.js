@@ -31,7 +31,7 @@ const BiblioWorkflow = () => {
   const [curationData, setCurationData] = useState([]);
   const [curationWholePaperData, setCurationWholePaperData] = useState([]);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
-  const [controlledNoteOptions, setControlledNoteOptions] = useState([]);
+  const [curationTagOptions, setCurationTagOptions] = useState([]);
   const [reloadCurationDataTable, setReloadCurationDataTable] = useState(0);
   const [showApiErrorModal, setShowApiErrorModal] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState('');
@@ -182,22 +182,22 @@ const BiblioWorkflow = () => {
       const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
       const urls = {
         curationStatus: `${baseUrl}api/atpterm/ATP:0000230/children`,
-        controlledNote1: `${baseUrl}api/atpterm/ATP:0000208/`,
-        controlledNote2: `${baseUrl}api/atpterm/ATP:0000208/descendants`,
-        controlledNote3: `${baseUrl}api/atpterm/ATP:0000227/`,
-        controlledNote4: `${baseUrl}api/atpterm/ATP:0000227/descendants`,
+        curationTag1: `${baseUrl}api/atpterm/ATP:0000208/`,
+        curationTag2: `${baseUrl}api/atpterm/ATP:0000208/descendants`,
+        curationTag3: `${baseUrl}api/atpterm/ATP:0000227/`,
+        curationTag4: `${baseUrl}api/atpterm/ATP:0000227/descendants`,
       };
       try {
         const headers = {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         };
-        const [curationStatusResult, controlledNoteResult1, controlledNoteResult2, controlledNoteResult3, controlledNoteResult4] = await Promise.all([
+        const [curationStatusResult, curationTagResult1, curationTagResult2, curationTagResult3, curationTagResult4] = await Promise.all([
           axios.get(urls.curationStatus, { headers }),
-          axios.get(urls.controlledNote1, { headers }),
-          axios.get(urls.controlledNote2, { headers }),
-          axios.get(urls.controlledNote3, { headers }),
-          axios.get(urls.controlledNote4, { headers }),
+          axios.get(urls.curationTag1, { headers }),
+          axios.get(urls.curationTag2, { headers }),
+          axios.get(urls.curationTag3, { headers }),
+          axios.get(urls.curationTag4, { headers }),
         ]);
         const curationStatusOptionsObjs = Array.isArray(curationStatusResult.data.entities)
           ? curationStatusResult.data.entities.map(entity => ({
@@ -210,19 +210,19 @@ const BiblioWorkflow = () => {
           if (data.entity) return [data.entity];
           return [];
         };
-        const controlledNoteResultEntities1 = normalizeEntities(controlledNoteResult1.data);
-        const controlledNoteResultEntities2 = normalizeEntities(controlledNoteResult2.data);
-        const controlledNoteResultEntities3 = normalizeEntities(controlledNoteResult3.data);
-        const controlledNoteResultEntities4 = normalizeEntities(controlledNoteResult4.data);
-        const controlledNoteOptionsObjs = [
-            ...controlledNoteResultEntities1, ...controlledNoteResultEntities2,
-            ...controlledNoteResultEntities3, ...controlledNoteResultEntities4].map(entity => ({
+        const curationTagResultEntities1 = normalizeEntities(curationTagResult1.data);
+        const curationTagResultEntities2 = normalizeEntities(curationTagResult2.data);
+        const curationTagResultEntities3 = normalizeEntities(curationTagResult3.data);
+        const curationTagResultEntities4 = normalizeEntities(curationTagResult4.data);
+        const curationTagOptionsObjs = [
+            ...curationTagResultEntities1, ...curationTagResultEntities2,
+            ...curationTagResultEntities3, ...curationTagResultEntities4].map(entity => ({
           value: entity.curie,
           label: entity.name,
         }));
         setCurationStatusOptions(curationStatusOptionsObjs);
-        setControlledNoteOptions(controlledNoteOptionsObjs);
-        if (gridApi && (curationStatusOptionsObjs.length > 0 || controlledNoteOptionsObjs.length > 0)) {
+        setCurationTagOptions(curationTagOptionsObjs);
+        if (gridApi && (curationStatusOptionsObjs.length > 0 || curationTagOptionsObjs.length > 0)) {
           gridApi.resetRowHeights();
         }
       } catch (error) {
@@ -263,9 +263,9 @@ const BiblioWorkflow = () => {
               curation_status_updated: formatedCurstDateUpdated,
               curator: (info.curst_updated_by_email !== null) ? info.curst_updated_by_email : info.curst_updated_by,
               note: info.curst_note || null,
-              controlled_note: info.curst_controlled_note || null,
+              curation_tag: info.curst_curation_tag || null,
               has_data: info.tet_info_has_data,
-              novel_data: info.tet_info_novel_data,
+              new_data: info.tet_info_new_data,
               no_data: info.tet_info_no_data,
               topic_source: Array.isArray(info.tet_info_topic_source)
                 ? info.tet_info_topic_source.join(', ')
@@ -283,9 +283,9 @@ const BiblioWorkflow = () => {
           curation_status_updated: null,
           curator: null,
           note: null,
-          controlled_note: null,
+          curation_tag: null,
           has_data: null,
-          novel_data: null,
+          new_data: null,
           no_data: null,
           topic_source: null,
           topic_added: null,
@@ -377,7 +377,7 @@ const BiblioWorkflow = () => {
   const setDataTopicsInProgress = async () => {
     const entriesToUpdate = curationData.filter(entry =>
       entry.curation_status_id === "new" &&
-      (entry.has_data === true || entry.novel_data === true)
+      (entry.has_data === true || entry.new_data === true)
     );
     const updatePromises = entriesToUpdate.map(entry => {
       const json_data = {
@@ -470,8 +470,8 @@ const BiblioWorkflow = () => {
           {!isValid && value && <option value={value}>{value}</option>}
           {(
             !value ||
-            colDef.field === 'controlled_note' ||
-            (colDef.field === 'curation_status' && !node?.data?.controlled_note && !node?.data?.note)
+            colDef.field === 'curation_tag' ||
+            (colDef.field === 'curation_status' && !node?.data?.curation_tag && !node?.data?.note)
           ) && <option value=""></option>}
           {options.map(opt => ( <option key={opt.value} value={opt.value}>{opt.label}</option>))}
         </select>
@@ -519,8 +519,8 @@ const BiblioWorkflow = () => {
 	headerClass: 'wft-bold-header wft-header-bg',
       },
       {
-	headerName: 'Controlled Note',
-	field: 'controlled_note',
+	headerName: 'Curation Tag',
+	field: 'curation_tag',
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
@@ -531,9 +531,9 @@ const BiblioWorkflow = () => {
             value: params.value,
             node: params.node,
             colDef: params.colDef,
-            options: controlledNoteOptions, // Assumes format: [{ value, label }]
-            validateFn: (val) => controlledNoteOptions.some(option => option.value === val),
-            errorMessage: 'INVALID Controlled Note: Choose Another',
+            options: curationTagOptions, // Assumes format: [{ value, label }]
+            validateFn: (val) => curationTagOptions.some(option => option.value === val),
+            errorMessage: 'INVALID Curation Tag: Choose Another',
             isDisabled: !isValidCurationStatus,
           };
         },
@@ -616,8 +616,8 @@ const BiblioWorkflow = () => {
 		  cellStyle: { textAlign: 'left' }
 	      },
               {
-		  headerName: 'Novel data',
-		  field: 'novel_data',
+		  headerName: 'New data',
+		  field: 'new_data',
 		  width: 120,
 		  cellRenderer:
 		  renderNovelData,
@@ -662,8 +662,8 @@ const BiblioWorkflow = () => {
 	filter: true
       },
       {
-	headerName: 'Controlled Note',
-	field: 'controlled_note',
+	headerName: 'Curation Tag',
+	field: 'curation_tag',
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
@@ -674,9 +674,9 @@ const BiblioWorkflow = () => {
             value: params.value,
             node: params.node,
             colDef: params.colDef,
-            options: controlledNoteOptions, // Assumes format: [{ value, label }]
-            validateFn: (val) => controlledNoteOptions.some(option => option.value === val),
-            errorMessage: 'INVALID Controlled Note: Choose Another',
+            options: curationTagOptions, // Assumes format: [{ value, label }]
+            validateFn: (val) => curationTagOptions.some(option => option.value === val),
+            errorMessage: 'INVALID Curation Tag: Choose Another',
             isDisabled: !isValidCurationStatus,
           };
         },
@@ -885,7 +885,7 @@ const BiblioWorkflow = () => {
     const rowData = params.data;
 
     if (newValue === oldValue) return;	// no change
-    if (colId !== 'curation_status' && colId !== 'controlled_note' && colId !== 'note') return;	// Only handle specific fields
+    if (colId !== 'curation_status' && colId !== 'curation_tag' && colId !== 'note') return;	// Only handle specific fields
 
     if (colId === 'curation_status' && rowData.topic_name === 'Whole Paper' && newValue === 'ATP:0000237') { setDataTopicsInProgress(); }
 

@@ -53,10 +53,12 @@ import { fieldsSimple, fieldsArrayString, fieldsBooleanDisplayOnly, fieldsOrdere
 // keywords
 // mesh_terms
 
+const getLabel = (name) => (name === 'category' ? 'alliance_category' : name);
 
 export const RowDisplaySimple = ({fieldName, value, updatedFlag}) => {
-  return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-display Col-display-left">{fieldName}</Col>
+    const label = getLabel(fieldName); 
+    return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
+              <Col className="Col-general Col-display Col-display-left">{label}</Col>
               <Col className={`Col-general Col-display Col-display-right ${updatedFlag}`} lg={{ span: 10 }}>{value}</Col>
             </Row>); }
 

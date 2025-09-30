@@ -602,7 +602,7 @@ export const BiblioCitationDisplay = () => {
 // }
 
 export const reffileCompareFn = (a, b) => {
-  // 1) send “figure” to the very end
+  // 1) send "figure" to the very end
   if (a.file_class === 'figure' && b.file_class !== 'figure') return 1;
   if (b.file_class === 'figure' && a.file_class !== 'figure') return -1;
 
@@ -779,6 +779,7 @@ const FileEditor = ({ onFileStatusChange }) => {
   });
 
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
+    let hasAddedFigure = false;  // Track if the first figure has been added
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
         (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation
@@ -826,8 +827,12 @@ const FileEditor = ({ onFileStatusChange }) => {
         );
       }
 
+      const isFigure = referenceFile.file_class === 'figure';
+      const isFirstFigure = isFigure && !hasAddedFigure;
+      if (isFigure && !hasAddedFigure) { hasAddedFigure = true; }
+
       return (
-        <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+        <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6} style={isFirstFigure ? { marginTop: '2rem' } : {}}>
           <Col className={`Col-general Col-display-left`} lg={{ span: 2 }}>{referenceFile.file_class}</Col>
           <Col className="Col-general Col-display" lg={{ span: 2 }}>{referencefileValue}</Col>
           <Col className="Col-general Col-display" lg={{ span: 2 }}>{teiFileDisplay}</Col>

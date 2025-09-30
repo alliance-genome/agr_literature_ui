@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
+import axios from "axios";
 import {
     addFacetValue,
     addExcludedFacetValue,
@@ -37,6 +38,24 @@ import 'react-calendar/dist/Calendar.css';
 import LoadingOverlay from "../LoadingOverlay";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheckSquare, faMinusSquare} from "@fortawesome/free-solid-svg-icons";
+import sgdIcon from '../../images/sgd_icon.png';
+import mgiIcon from '../../images/mgi_icon.png';
+import rgdIcon from '../../images/rgd_icon.png';
+import wbIcon from '../../images/wb_icon.png';
+import fbIcon from '../../images/fb_icon.png';
+import xbIcon from '../../images/xb_icon.png';
+import zfinIcon from '../../images/zfin_icon.png';
+
+const MOD_ICONS = {
+  SGD: sgdIcon,
+  MGI: mgiIcon,
+  RGD: rgdIcon,
+  WB: wbIcon,
+  FB: fbIcon,
+  XB: xbIcon,
+  ZFIN: zfinIcon,
+};
+
 
 export const RENAME_FACETS = {
     "category.keyword": "alliance category",
@@ -191,7 +210,7 @@ const DateFacet = ({facetsToInclude}) => {
 }
 
 const Facet = ({facetsToInclude, renameFacets}) => {
-
+    const accessToken = useSelector((state) => state.isLogged.accessToken);
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
@@ -200,6 +219,32 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
+    const [sourceEvidenceAssertionDescriptions, setSourceEvidenceAssertionDescriptions] = useState({});
+    const SEA_child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
+
+    const [modRefTypeToMods, setModRefTypeToMods] = useState({});
+
+    useEffect(() => {
+      const needs = facetsToInclude.includes('mod reference types') || facetsToInclude.includes('mod_reference_types');
+      if (!needs) return;
+
+
+      const url = process.env.REACT_APP_RESTAPI + '/reference/mod_reference_type/utils/mod_reftype_to_mods'
+      if (!url) {
+        console.log("REACT_APP_MOD_REF_TYPE_ENDPOINT is not set; icons for mod reference types will not render.");
+        return;
+      }
+      (async () => {
+        try {
+          const r = await fetch(url, { headers: { 'Authorization': accessToken ? `Bearer ${accessToken}` : undefined }});
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const data = await r.json(); // { 'Book': ['MGI','SGD','WB', 'XB', 'ZFIN'], ... }
+          setModRefTypeToMods(data || {});
+        } catch (e) {
+          console.log("Failed to load mod-ref-type map:", e);
+        }
+      })();
+    }, [facetsToInclude, accessToken]);
 
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
@@ -216,7 +261,46 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 .catch(err => console.error("Error fetching source method descriptions:", err));
         }
     }, [facetsToInclude]);
-    
+
+    useEffect(() => {
+        if (
+            facetsToInclude.includes('source_evidence_assertions') &&
+            searchFacets['source_evidence_assertions'] &&
+            searchFacets['source_evidence_assertions'].buckets
+        ) {
+            const fetchData = async () => {
+                const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
+                const headers = {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                };
+                const buckets = searchFacets['source_evidence_assertions'].buckets;
+                const mapping = {};
+                for (const bucket of buckets) {
+                  const upperKey = bucket.key.toUpperCase();
+                  let url = '';
+
+                  if (upperKey.startsWith('ATP')) {
+                      url = `${baseUrl}api/atpterm/${upperKey}`;
+                  } else if (upperKey.startsWith('ECO')) {
+                      url = `${baseUrl}api/ecoterm/${upperKey}`;
+                  } else {
+                      console.warn(`Unknown prefix in bucket.key: ${bucket.key}`);
+                      continue; // Skip this bucket
+                  }
+                  try {
+                    const result = await axios.get(url, { headers })
+                    mapping[bucket.key] = result.data.entity.definition;
+                  } catch (error) {
+                    console.error('Error fetching ateam curation status options:', error);
+                  }
+                }
+                setSourceEvidenceAssertionDescriptions(mapping);
+            }
+            fetchData();
+        }
+    }, [facetsToInclude, searchFacets]);
+
     const toggleSubFacet = (subFacetLabel) => {
         const newOpenSubFacets = new Set([...openSubFacets]);
         newOpenSubFacets.has(subFacetLabel) ?
@@ -287,6 +371,31 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         )
     }
 
+    const renderModIcons = (refTypeLabel /* string from bucket.key */) => {
+      const mods = modRefTypeToMods?.[refTypeLabel] || [];
+      if (!mods.length) return null;
+
+      return (
+        <span style={{ marginRight: 6, display: 'inline-flex', gap: 4, verticalAlign: 'middle' }}>
+          {mods.map((mod) => {
+            const src = MOD_ICONS[mod];
+            if (!src) return null; 
+            return (
+              <img
+                key={`${refTypeLabel}-${mod}`}
+                src={src}
+                alt={mod}
+                width={20}
+                height={20}
+                style={{ imageRendering: 'crisp-edges', verticalAlign: 'text-bottom' }}
+                title={mod}
+              />
+            );
+          })}
+        </span>
+      );
+    };
+
     return (
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
@@ -301,6 +410,9 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
                 const displayName = renameFacets[key] || key.replace(/(\.keyword|_)/g, ' ');
                 const isOpen = openSubFacets.has(facetToInclude);
+
+		// --- detect the specific facet for mod reference types ---
+		const isModRefTypeFacet = (key === 'mod_reference_types.keyword');
 
                 return (
                     <div key={facetToInclude} style={{ marginLeft: '15px', marginBottom: '5px' }}>
@@ -328,20 +440,24 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                 {facetToInclude === 'authors.name' && <AuthorFilter />}
                                 {searchFacets[key].buckets.map(bucket => (
                                     <Container key={bucket.key}>
-                                        <Row className="align-items-center facet-item">
-                                            <Col xs={3} sm={2}>
+                                        <Row className="facet-item">
+
+                                            <Col xs={3} sm={2} className={SEA_child_terms.includes(bucket.key) ? 'facet-indent' : null}>
                                                 {negatedFacetCategories.includes(facetToInclude) ? 
                                                     <NegatedFacetCheckbox facet={key} value={bucket.key} /> : 
                                                     <StandardFacetCheckbox facet={key} value={bucket.key} />
                                                 }
                                             </Col>
-                                            <Col xs={6} sm={7}>
-                                                {key === 'source_methods' ? (
+
+                                            <Col xs={6} sm={7} className={SEA_child_terms.includes(bucket.key) ? 'facet-indent-text' : null}>
+                                                {(key === 'source_methods' || key === 'source_evidence_assertions') ? (
+
                                                     <OverlayTrigger
                                                         placement="right"
                                                         overlay={
-                                                            <Tooltip id={`tooltip-${bucket.key}`}>                                                                    
-                                                                {sourceMethodDescriptions[bucket.key] || 'No description available.'}                                 
+                                                            <Tooltip id={`tooltip-${bucket.key}`}>                                                                                                                    {(key === 'source_methods'
+                                                                    ? sourceMethodDescriptions[bucket.key]
+                                                                    : sourceEvidenceAssertionDescriptions[bucket.key]) || 'No description available.'}
                                                             </Tooltip>
                                                         }
                                                     >                                                                                                                 
@@ -349,7 +465,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                     </OverlayTrigger>                                                                                                 
                                                 ) : (                                                                                                                 
                                                     <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
-                                                )}                                                                                                                    
+                                                )}                                                                                                                                                {isModRefTypeFacet && renderModIcons(bucket.key)}
                                             </Col>                                                                                                                    
                                             <Col xs={3} sm={3}>                                                                                                       
                                                 <Badge variant="secondary">                                                                                           
