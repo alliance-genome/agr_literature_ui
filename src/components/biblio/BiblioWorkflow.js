@@ -111,12 +111,16 @@ const BiblioWorkflow = () => {
 
             let currentValue = '';
             let email = '';
+            let curation_tag = '';
+            let note = '';
             let date_updated = '';
             let reference_workflow_tag_id = null;
             if (currentArr.length > 0) {
               const currentTag = currentArr[0];
               currentValue = currentTag.workflow_tag_id;
               email = currentTag.email;
+              note = currentTag.note;
+              curation_tag = currentTag.curation_tag;
               date_updated = currentTag.date_updated;
               reference_workflow_tag_id = currentArr[0].reference_workflow_tag_id;
             }
@@ -132,6 +136,8 @@ const BiblioWorkflow = () => {
 	      confidence_score: '',	
               email,
               date_updated,
+              note: note,
+              curation_tag: curation_tag,
               options,
               reference_workflow_tag_id, // used by workflow_tag PATCH/POST
             };
@@ -760,8 +766,8 @@ const BiblioWorkflow = () => {
       filter: true,
     },
     {
-      headerName: 'Controlled Note',
-      field: 'controlled_note',
+      headerName: 'Curation Tag',
+      field: 'curation_tag',
       flex: 1,
       cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header wft-header-bg',
@@ -772,8 +778,8 @@ const BiblioWorkflow = () => {
           value: params.value,
           node: params.node,
           colDef: params.colDef,
-          options: controlledNoteOptions, // Assumes format: [{ value, label }]
-          validateFn: (val) => controlledNoteOptions.some(option => option.value === val),
+          options: curationTagOptions, // Assumes format: [{ value, label }]
+          validateFn: (val) => curationTagOptions.some(option => option.value === val),
           errorMessage: 'INVALID Controlled Note: Choose Another',
           isDisabled: !isValidCurationStatus,
         };
@@ -822,7 +828,7 @@ const BiblioWorkflow = () => {
     if (newValue === oldValue) return;
    
     // Columns we want to support editing
-    const editableFields = ['workflow_tag', 'controlled_note', 'note'];
+    const editableFields = ['workflow_tag', 'curation_tag', 'note'];
     if (!editableFields.includes(colId)) return;
   
     try {
@@ -860,7 +866,7 @@ const BiblioWorkflow = () => {
             accessToken
           );
         } else {
-          // Trying to edit controlled_note/note but no existing workflow tag
+          // Trying to edit curation_tag/note but no existing workflow tag
           const msg = 'No existing workflow tag record to patch.';
           setApiErrorMessage(msg);
           setShowApiErrorModal(true);
