@@ -1013,15 +1013,15 @@ const BiblioWorkflow = () => {
               className="ag-theme-quartz"
               style={{
                 width: '80%',
-                height: `${indexingWorkflowData.length * 75}px`,
-                marginBottom: 10,
+                height: `${indexingWorkflowData.length * 45 + 60}px`,
+                marginBottom: 40,
               }}
             >
               <AgGridReact
                 rowData={indexingWorkflowData}
                 columnDefs={indexingWorkflowColumns}
                 singleClickEdit={true}
-                domLayout="autoHeight"
+                domLayout="normal"
                 rowHeight={43}
                 getRowClass={() => 'ag-row-striped-light'}
                 popupParent={document.body}
