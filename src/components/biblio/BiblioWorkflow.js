@@ -720,7 +720,7 @@ const BiblioWorkflow = () => {
       filter: true,
     },
     {
-      headerName: 'Current Status',
+      headerName: 'Workflow Status',
       field: 'workflow_tag',
       flex: 1,
       cellStyle: { textAlign: 'left' },
@@ -748,7 +748,7 @@ const BiblioWorkflow = () => {
       filter: true,
     },
     {
-      headerName: 'Email',
+      headerName: 'Curator',
       field: 'email',
       flex: 1,
       cellStyle: { textAlign: 'left' },
@@ -757,7 +757,7 @@ const BiblioWorkflow = () => {
       filter: true,
     },
     {
-      headerName: 'Date Updated',
+      headerName: 'Workflow Updated',
       field: 'date_updated',
       flex: 1,
       cellStyle: { textAlign: 'left' },
@@ -1013,8 +1013,8 @@ const BiblioWorkflow = () => {
               className="ag-theme-quartz"
               style={{
                 width: '80%',
-                height: `${indexingWorkflowData.length * 45}px`,
-                marginBottom: 10,
+                height: `${indexingWorkflowData.length * 45 + 60}px`,
+                marginBottom: 40,
               }}
             >
               <AgGridReact
@@ -1022,7 +1022,6 @@ const BiblioWorkflow = () => {
                 columnDefs={indexingWorkflowColumns}
                 singleClickEdit={true}
                 domLayout="normal"
-                headerHeight={0}
                 rowHeight={43}
                 getRowClass={() => 'ag-row-striped-light'}
                 popupParent={document.body}
