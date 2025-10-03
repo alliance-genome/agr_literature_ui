@@ -619,7 +619,7 @@ const BiblioWorkflow = () => {
 		  width: 120,
 		  cellRenderer: renderHasData,
 		  headerClass: 'wft-bold-header wft-header-bg',
-		  cellStyle: { textAlign: 'left' }
+		  cellStyle: { textAlign: 'center' }
 	      },
               {
 		  headerName: 'New data',
@@ -628,7 +628,7 @@ const BiblioWorkflow = () => {
 		  cellRenderer:
 		  renderNovelData,
 		  headerClass: 'wft-bold-header wft-header-bg',
-		  cellStyle: { textAlign: 'left' }
+		  cellStyle: { textAlign: 'center' }
 	      },
               {
 		  headerName: 'No data',
@@ -636,7 +636,7 @@ const BiblioWorkflow = () => {
 		  width: 120,
 		  cellRenderer: renderNoData,
 		  headerClass: 'wft-bold-header wft-header-bg',
-		  cellStyle: { textAlign: 'left' }
+		  cellStyle: { textAlign: 'center' }
 	      },
 	  ]
       },
