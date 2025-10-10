@@ -501,29 +501,35 @@ const TopicEntityCreate = () => {
       }
 	
       if (field === 'topicSelect') {
-	currentRow.topicSelect = value || "";
+        currentRow.topicSelect = value || "";
 
-	if (!currentRow.isCloned) {
-          if (entityTypeList.includes(value)) {
-            currentRow.entityTypeSelect = value;
-          } else {
-            currentRow.entityTypeSelect = "";
-          }
-	  if (value === speciesATP) {
-            currentRow.taxonSelect = ""; // clear the species column
-            currentRow.selectedSpecies = []; // optionally clear any selected species in the typeahead
-          }
+        // auto-populate entity type for ALL rows (cloned or not)
+        if (entityTypeList.includes(value)) {
+          currentRow.entityTypeSelect = value;
+        } else if (geneDescendants && geneDescendants.includes(value)) {
+          currentRow.entityTypeSelect = "ATP:0000005"; // gene
+        } else if (alleleDescendants && alleleDescendants.includes(value)) {
+          currentRow.entityTypeSelect = "ATP:0000006"; // allele
+        } else {
+          currentRow.entityTypeSelect = "";
+        }
 
-	  if (value === "" || value === null) {
-            currentRow.newDataCheckbox = false;
-            currentRow.newToDbCheckbox = false;
-            currentRow.newToFieldCheckbox = false;
-            currentRow.noDataCheckbox = false;
-            currentRow.entityText = ""; // clear the entity text
-            currentRow.entityResultList = []; // clear the entity list
-            currentRow.selectedSpecies = []; // clear any selected species in the typeahead
-	  }
-	}
+        // Species topic: switch to autocomplete view and clear species field
+        if (value === speciesATP) {
+          currentRow.taxonSelect = "";
+          currentRow.selectedSpecies = [];
+        }
+
+        // Clearing when topic is unset
+        if (value === "" || value === null) {
+          currentRow.newDataCheckbox = false;
+          currentRow.newToDbCheckbox = false;
+          currentRow.newToFieldCheckbox = false;
+          currentRow.noDataCheckbox = false;
+          currentRow.entityText = "";
+          currentRow.entityResultList = [];
+          currentRow.selectedSpecies = [];
+        }
       }
 
       // Calculate disabledAddButton for the current row
