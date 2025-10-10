@@ -11,6 +11,7 @@ import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
 import EntityTypeFilter from '../../AgGrid/EntityTypeFilter.jsx';
 import TopicFilter from '../../AgGrid/TopicFilter.jsx';
 import EntityFilter from '../../AgGrid/EntityFilter.jsx';
+import { timestampToDateFormatter } from '../BiblioWorkflow';
 
 import { AgGridReact } from 'ag-grid-react'; // React Grid Logic
 import "ag-grid-community/styles/ag-grid.css"; // Core CSS
@@ -38,7 +39,7 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     const entityIndex = fields.indexOf("entity_name");
 
     // add entity CURIE field and header next to the Entity column
-    // entity curie is in "entity" field, entity (name) is in "entity_name" field  
+    // entity curie is in "entity" field, entity (name) is in "entity_name" field
     if (entityIndex !== -1) {
       headers.splice(entityIndex + 1, 0, "Entity CURIE"); // insert "Entity CURIE" after "Entity"
       fields.splice(entityIndex + 1, 0, "entity");        // insert "entity" field after "entity_name"
@@ -95,7 +96,7 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     link.click();
     document.body.removeChild(link);
 };
-    
+
 
 export const DownloadMultiHeaderButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
   return(
@@ -197,7 +198,7 @@ const TopicEntityTable = () => {
       dispatch(setAllSpecies(uniqueSpecies));
       dispatch(setAllEntityTypes(uniqueEntityTypes));
       dispatch(setAllTopics(uniqueTopics));
-      dispatch(setAllEntities(uniqueEntities));     
+      dispatch(setAllEntities(uniqueEntities));
     } catch (error) {
     console.error("Error fetching data:" + error);
     } finally {
@@ -278,7 +279,7 @@ const TopicEntityTable = () => {
     { headerName: "No Data", field: "negated", id: 6, checked: false },
     { headerName: "Novel Data", field: "novel_topic_data", id: 7, checked: false},
     { headerName: "Data Novelty", field: "data_novelty", id: 8, checked: false },
-    { headerName: "Confidence Score", field:"confidence_score", id: 9, checked: false },  
+    { headerName: "Confidence Score", field:"confidence_score", id: 9, checked: false },
     { headerName: "Confidence Level", field:"confidence_level", id: 10, checked: false },
     { headerName: "Created By", field: "created_by", id: 11, checked: true},
     { headerName: "Note", field: "note", id: 12, checked: true},
@@ -375,115 +376,111 @@ const TopicEntityTable = () => {
       </div>
     );
   }
-);
-
-const CheckDropdownItem = React.forwardRef(
-  ({ children, id, checked, onChange }, ref) => {
-    return (
-      <Form.Group ref={ref} className="dropdown-item mb-0" controlId={id}>
-        <Form.Check
-          type="checkbox"
-          label={children}
-          checked={checked}
-          onChange={onChange && onChange.bind(onChange, id)}
-        />
-      </Form.Group>
-    );
-  }
-);
-            
-const CheckboxDropdown =  ({ items }) => {
-  const handleChecked = (key, event) => {
-    //console.log('touch item here:' + key + " status: " + event.target.checked);
-     const newItems = [...items];
-     let item=newItems.find(i => i.id === key);
-     item.checked = event.target.checked;
-     if (item && item.checked === true){
-        gridRef.current.api.applyColumnState({
-                 state: [{ colId: item.field, hide: false },],
-                });
-     }
-     else if (item && item.checked === false) {
-         gridRef.current.api.applyColumnState({
-                  state: [{ colId: item.field, hide: true },],
-                 });
-     }
-     //items.find(i => i.id === key).checked = event.target.checked;
-     let newItemsStr=JSON.stringify(newItems);
-     document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
-     setItems(newItems);
-     setShowDropdown(true);
-   };
-
-   const handleSelectAll = () => {
-       const newItems = [...items];
-           newItems.forEach(i => {
-               i.checked = true;
-               gridRef.current.api.applyColumnState({
-                   state: [{colId: i.field, hide: false},],
-               });
-           });
-           let newItemsStr=JSON.stringify(newItems);
-           document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
-           setItems(newItems);
-   };
-
-   const handleSelectNone = () => {
-   // items.forEach(i => (i.checked = false));
-      const newItems = [...items];
-          newItems.forEach(i => {
-              i.checked = false;
-              gridRef.current.api.applyColumnState({
-                  state: [{colId: i.field, hide: true},],
-              });
-          });
-          let newItemsStr=JSON.stringify(newItems);
-          document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
-          setItems(newItems);
-   };
-
-   const handleSelectDefault = () => {
-       setItems(itemsInitOrg);
-       itemsInitOrg.forEach(i => {
-        gridRef.current.api.applyColumnState({
-           state: [{colId: i.field, hide: !i.checked},],
-        });
-       });
-       let newItemsStr=JSON.stringify(itemsInitOrg);
-       document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
-   };
-
-   return (
-    <Dropdown>
-      <Dropdown.Toggle variant="primary" id="dropdown-basic">
-        Hide/Show Columns
-      </Dropdown.Toggle>
-      <Dropdown.Menu
-        as={CheckboxMenu}
-        onSelectAll={handleSelectAll}
-        onSelectNone={handleSelectNone}
-        onDefault={handleSelectDefault}
-        show={showDropdown}
-        renderOnMount={false}
-      >
-        {items.map(i => (
-          <Dropdown.Item
-            key={i.field}
-            as={CheckDropdownItem}
-            id={i.id}
-            checked={i.checked}
-            onChange={handleChecked}
-          >
-            {i.headerName}
-          </Dropdown.Item>
-        ))}
-      </Dropdown.Menu>
-    </Dropdown>
   );
-};
 
-  const dateFormatter = (params) => {
-    return new Date(params.value).toLocaleString();
+  const CheckDropdownItem = React.forwardRef(
+    ({ children, id, checked, onChange }, ref) => {
+      return (
+        <Form.Group ref={ref} className="dropdown-item mb-0" controlId={id}>
+          <Form.Check
+            type="checkbox"
+            label={children}
+            checked={checked}
+            onChange={onChange && onChange.bind(onChange, id)}
+          />
+        </Form.Group>
+      );
+    }
+  );
+
+  const CheckboxDropdown =  ({ items }) => {
+    const handleChecked = (key, event) => {
+      //console.log('touch item here:' + key + " status: " + event.target.checked);
+       const newItems = [...items];
+       let item=newItems.find(i => i.id === key);
+       item.checked = event.target.checked;
+       if (item && item.checked === true){
+          gridRef.current.api.applyColumnState({
+                   state: [{ colId: item.field, hide: false },],
+                  });
+       }
+       else if (item && item.checked === false) {
+           gridRef.current.api.applyColumnState({
+                    state: [{ colId: item.field, hide: true },],
+                   });
+       }
+       //items.find(i => i.id === key).checked = event.target.checked;
+       let newItemsStr=JSON.stringify(newItems);
+       document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+       setItems(newItems);
+       setShowDropdown(true);
+     };
+
+     const handleSelectAll = () => {
+         const newItems = [...items];
+             newItems.forEach(i => {
+                 i.checked = true;
+                 gridRef.current.api.applyColumnState({
+                     state: [{colId: i.field, hide: false},],
+                 });
+             });
+             let newItemsStr=JSON.stringify(newItems);
+             document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+             setItems(newItems);
+     };
+
+     const handleSelectNone = () => {
+     // items.forEach(i => (i.checked = false));
+        const newItems = [...items];
+            newItems.forEach(i => {
+                i.checked = false;
+                gridRef.current.api.applyColumnState({
+                    state: [{colId: i.field, hide: true},],
+                });
+            });
+            let newItemsStr=JSON.stringify(newItems);
+            document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+            setItems(newItems);
+     };
+
+     const handleSelectDefault = () => {
+         setItems(itemsInitOrg);
+         itemsInitOrg.forEach(i => {
+          gridRef.current.api.applyColumnState({
+             state: [{colId: i.field, hide: !i.checked},],
+          });
+         });
+         let newItemsStr=JSON.stringify(itemsInitOrg);
+         document.cookie = `items=${newItemsStr}; expires=Thu, 18 Dec 2050 12:00:00 UTC; SameSite=None; Secure`;
+     };
+
+     return (
+      <Dropdown>
+        <Dropdown.Toggle variant="primary" id="dropdown-basic">
+          Hide/Show Columns
+        </Dropdown.Toggle>
+        <Dropdown.Menu
+          as={CheckboxMenu}
+          onSelectAll={handleSelectAll}
+          onSelectNone={handleSelectNone}
+          onDefault={handleSelectDefault}
+          show={showDropdown}
+          renderOnMount={false}
+        >
+          {items.map(i => (
+            <Dropdown.Item
+              key={i.field}
+              as={CheckDropdownItem}
+              id={i.id}
+              checked={i.checked}
+              onChange={handleChecked}
+            >
+              {i.headerName}
+            </Dropdown.Item>
+          ))}
+        </Dropdown.Menu>
+      </Dropdown>
+    );
   };
 
   const GenericTetTableModal = ({ title, body, show, onHide }) => {
@@ -528,14 +525,14 @@ const CheckboxDropdown =  ({ items }) => {
     { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (params) =>   params.data.negated === true ? 'no data': '' },
     { headerName: "Novel Data", field: "novel_topic_data", cellDataType: "text", valueGetter: (params) =>   params.data.novel_topic_data === true ? 'new data': ''},
     { headerName: "Data Novelty", field: "data_novelty", valueGetter: (params) => dataNoveltyMap[params.data.data_novelty] || params.data.data_novelty },
-    { headerName: "Confidence Score", field:"confidence_score" },  
+    { headerName: "Confidence Score", field:"confidence_score" },
     { headerName: "Confidence Level", field:"confidence_level" },
     { headerName: "Created By", field: "created_by"},
     { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleNoteClick(params.value)}},
     { headerName: "Entity ID Validation", field: "entity_id_validation" },
-    { headerName: "Date Created", field: "date_created", valueFormatter: dateFormatter },
+    { headerName: "Date Created", field: "date_created", valueFormatter: timestampToDateFormatter },
     { headerName: "Updated By", field: "updated_by" },
-    { headerName: "Date Updated", field: "date_updated" , valueFormatter: dateFormatter },
+    { headerName: "Date Updated", field: "date_updated" , valueFormatter: timestampToDateFormatter },
     { headerName: "Author Response", field: "validation_by_author" },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", cellRenderer: ValidationByCurator},
     { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
@@ -546,8 +543,8 @@ const CheckboxDropdown =  ({ items }) => {
     { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type" },
     { headerName: "Source Description", field: "topic_entity_tag_source.description", onCellClicked: (params) => {handleSourceDescClick(params.value)} },
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
-    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: dateFormatter },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: dateFormatter },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: timestampToDateFormatter },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: timestampToDateFormatter },
     { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" },
     { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" }
   ];
