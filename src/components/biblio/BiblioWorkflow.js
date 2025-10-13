@@ -13,6 +13,24 @@ import { postWorkflowTag, patchWorkflowTag, deleteWorkflowTag } from './Workflow
 
 const file_upload_process_atp_id = "ATP:0000140";
 
+export const timestampToDateFormatter = (params) => {
+  if (params.value === null) { return ''; }	// e.g. aggregated_curation_status_and_tet_info without tet
+  if (params.value === '') { return ''; }	// e.g. indexing priority
+  const date = new Date(params.value + 'Z');	// force treat it as UTC
+  const pad = (n) => n.toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1); // Months are 0-indexed
+  const day = pad(date.getDate());
+  let hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours === 0 ? 12 : hours; // 0 becomes 12 in 12-hour format
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${ampm}`;
+};
+
+
 const BiblioWorkflow = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"];
@@ -248,25 +266,12 @@ const BiblioWorkflow = () => {
 
         const processedCurationData = result.data
           .map(info => {
-            // Convert Date to "Month Day, Year" if present
-            let formatedCurstDateUpdated = null;
-            if (info.curst_date_updated) {
-              const [year, month, day] = info.curst_date_updated.split('-');
-              const date = new Date(year, month - 1, day); // construct date from explicit parts, string will have timezone errors
-              formatedCurstDateUpdated = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', });
-            }
-            let formatedTetInfoDateCreated = null;
-            if (info.tet_info_date_created) {
-              const [year, month, day] = info.tet_info_date_created.split('-');
-              const date = new Date(year, month - 1, day); // construct date from explicit parts, string will have timezone errors
-              formatedTetInfoDateCreated = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', });
-            }
             return {
               topic_name: info.topic_name,
               topic_curie: info.topic_curie,
               curation_status_id: info.curst_curation_status_id || 'new',
               curation_status: info.curst_curation_status || null,
-              curation_status_updated: formatedCurstDateUpdated,
+              curation_status_updated: info.curst_date_updated || '',
               curator: (info.curst_updated_by_email !== null) ? info.curst_updated_by_email : info.curst_updated_by,
               note: info.curst_note || null,
               curation_tag: info.curst_curation_tag || null,
@@ -276,7 +281,7 @@ const BiblioWorkflow = () => {
               topic_source: Array.isArray(info.tet_info_topic_source)
                 ? info.tet_info_topic_source.join(', ')
                 : info.tet_info_topic_source,
-              topic_added: formatedTetInfoDateCreated,
+              topic_added: info.tet_info_date_created || '',
             };
           })
           .sort((a, b) => a.topic_name.localeCompare(b.topic_name));
@@ -352,6 +357,7 @@ const BiblioWorkflow = () => {
       {
 	  headerName: 'Date Updated',
 	  field: 'date_updated',
+          valueFormatter: timestampToDateFormatter,
 	  flex: 1,
 	  cellStyle: { textAlign: 'left' },
 	  headerClass: 'wft-bold-header wft-header-bg',
@@ -652,6 +658,7 @@ const BiblioWorkflow = () => {
       {
 	  headerName: 'Topic Added',
 	  field: 'topic_added',
+          valueFormatter: timestampToDateFormatter,
 	  flex: 1,
 	  cellStyle: { textAlign: 'left' },
 	  headerClass: 'wft-bold-header wft-header-bg',
@@ -661,6 +668,7 @@ const BiblioWorkflow = () => {
       {
 	headerName: 'Curation Status updated',
 	field: 'curation_status_updated',
+        valueFormatter: timestampToDateFormatter,
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
@@ -759,6 +767,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'Workflow Updated',
       field: 'date_updated',
+      valueFormatter: timestampToDateFormatter,
       flex: 1,
       cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header wft-header-bg',
