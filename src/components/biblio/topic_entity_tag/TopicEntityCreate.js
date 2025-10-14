@@ -80,6 +80,8 @@ const TopicEntityCreate = () => {
 
   const [messages, setMessages] = useState([]);
 
+  const [topicEntityAtps, setTopicEntityAtps] = useState([]);
+
   const curieToNameMap = Object.fromEntries(
     Object.entries(typeaheadName2CurieMap).map(([name, curie]) => [curie, name])
   );
@@ -353,6 +355,44 @@ const TopicEntityCreate = () => {
     if (updated) { setRows(newRows); }
   }, [rows]);
 
+  useEffect(() => {
+    const fetchTopicAtps = async () => {
+      const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
+      const url = `${baseUrl}api/atpterm/ATP:0000142/descendants`;
+      try {
+        const headers = {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        };
+        const response = await axios.get(url, { headers });
+        const normalizeEntities = (data) => {
+          if (Array.isArray(data.entities)) return data.entities;
+          if (data.entity) return [data.entity];
+          return [];
+        };
+        const topicAtpEntities = normalizeEntities(response.data);
+        const curiesOnly = topicAtpEntities.map(entity => entity.curie);
+        setTopicEntityAtps(curiesOnly);
+        // [ "ATP:0000055", "ATP:0000093", "ATP:0000056", "ATP:0000095", "ATP:0000013", "ATP:0000058", "ATP:0000008", "ATP:0000016", "ATP:0000026", "ATP:0000123", "ATP:0000110", "ATP:0000094", "ATP:0000007", "ATP:0000006", "ATP:0000054", "ATP:0000005", "ATP:0000124", "ATP:0000057", "ATP:0000111", "ATP:0000096", "ATP:0000128", "ATP:0000025", "ATP:0000027", "ATP:0000101", "ATP:0000014", "ATP:0000285" ]
+//         const formattedTopicAtps = topicAtpEntities.map(entity => ({
+//           value: entity.curie,
+//           label: entity.name,
+//         }));
+//         setTopicEntityAtps(formattedTopicAtps);
+// try transporter function for a topic that is not an entity
+        // [ { "value": "ATP:0000055", "label": "cis-regulatory element" }, { "value": "ATP:0000093", "label": "sequence targeting reagent" }, { "value": "ATP:0000056", "label": "variant" }, { "value": "ATP:0000095", "label": "balancer" }, { "value": "ATP:0000013", "label": "transgenic construct" }, { "value": "ATP:0000058", "label": "new transcript isoform" }, { "value": "ATP:0000008", "label": "cell line" }, { "value": "ATP:0000016", "label": "genome" }, { "value": "ATP:0000026", "label": "fish" }, { "value": "ATP:0000123", "label": "species" }, { "value": "ATP:0000110", "label": "transgenic allele" }, { "value": "ATP:0000094", "label": "chemical reagent" }, { "value": "ATP:0000007", "label": "reagent" }, { "value": "ATP:0000006", "label": "allele" }, { "value": "ATP:0000054", "label": "gene model" }, { "value": "ATP:0000005", "label": "gene" }, { "value": "ATP:0000124", "label": "protein" }, { "value": "ATP:0000057", "label": "genomic region" }, { "value": "ATP:0000111", "label": "recombinase" }, { "value": "ATP:0000096", "label": "antibody" }, { "value": "ATP:0000128", "label": "protein containing complex" }, { "value": "ATP:0000025", "label": "genotype" }, { "value": "ATP:0000027", "label": "strain" }, { "value": "ATP:0000101", "label": "chromosomal rearrangement" }, { "value": "ATP:0000014", "label": "affected genomic model" }, { "value": "ATP:0000285", "label": "classical allele" } ]
+      } catch (error) {
+        console.error('Error fetching topic ATP descendants:', error);
+      }
+    };
+    fetchTopicAtps();
+  }, [accessToken]);
+
+// DELETE THIS
+useEffect(() => {
+  console.log('Updated topicEntityAtps:', topicEntityAtps);
+}, [topicEntityAtps]);
+
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
     const keyByValue = objEntries.filter((e) => e[1] === value);
@@ -396,7 +436,8 @@ const TopicEntityCreate = () => {
       newDataCheckbox: false,
       newToDbCheckbox: false,
       newToFieldCheckbox: false,
-      noDataCheckbox: false
+      noDataCheckbox: false,
+      entityAdditionDoneCheckbox: false
     };
   }
 
@@ -895,11 +936,11 @@ const TopicEntityCreate = () => {
                       const selectedCurie = typeaheadName2CurieMap[selected[0]];
           	    const selectedValue = selected[0];
                       handleRowChange(index, 'topicSelect', selectedCurie);
-          	    handleRowChange(index, "topicSelectValue", selectedValue);
+          	      handleRowChange(index, 'topicSelectValue', selectedValue);
                     } else {
-          	    handleRowChange(index, 'topicSelect', "");
-          	    handleRowChange(index, "topicSelectValue", "");
-          	  }
+          	      handleRowChange(index, 'topicSelect', '');
+          	      handleRowChange(index, 'topicSelectValue', '');
+          	    }
                   }}
                   options={typeaheadOptions}
                   selected={row.topicSelectValue ? [row.topicSelectValue] : []}	
@@ -1101,6 +1142,22 @@ const TopicEntityCreate = () => {
                     {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
                   </Button>
                 )}
+                <br/>
+                <Form.Check
+                  inline
+                  type="checkbox"
+                  id="topic_entity_addition_done"
+                  disabled={topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect)}
+                  checked={row.entityAdditionDoneCheckbox}
+//                   disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox || hasBlockingEntity }
+                  onChange={(evt) => {
+                    const updatedRows = [...rows];
+                    updatedRows[index] = { ...updatedRows[index], entityAdditionDoneCheckbox: evt.target.checked };
+                    setRows(updatedRows);
+                  }}
+// row.topicSelectValue
+                />
+                <span style={{ color: topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect) ? 'gray' : 'inherit', }} >Entity Addition Done</span>
               </Col>
             </Row>
             <Row className="mb-3" style={{ marginBottom: '20px' }}>
