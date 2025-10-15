@@ -31,9 +31,11 @@ import { debounce } from 'lodash';
 import Alert from "react-bootstrap/Alert";
 
 const TopicEntityCreate = () => {
+  const REST = process.env.REACT_APP_RESTAPI;
   const dispatch = useDispatch();
   const editTag = useSelector((state) => state.biblio.editTag);
   const referenceJsonLive = useSelector((state) => state.biblio.referenceJsonLive);
+  const referenceCurie = referenceJsonLive["curie"];
   const accessToken = useSelector((state) => state.isLogged.accessToken);
   const oktaMod = useSelector((state) => state.isLogged.oktaMod);
   const testerMod = useSelector((state) => state.isLogged.testerMod);
@@ -81,6 +83,7 @@ const TopicEntityCreate = () => {
   const [messages, setMessages] = useState([]);
 
   const [topicEntityAtps, setTopicEntityAtps] = useState([]);
+  const [topicAtpToCurationStatus, setTopicAtpToCurationStatus] = useState({});
 
   const curieToNameMap = Object.fromEntries(
     Object.entries(typeaheadName2CurieMap).map(([name, curie]) => [curie, name])
@@ -179,7 +182,7 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     const fetchTopicEntityTags = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/${editTag}`, {
+        const response = await axios.get(`${REST}/topic_entity_tag/${editTag}`, {
           headers: {
             Authorization: `Bearer ${accessToken}`
           }
@@ -358,7 +361,7 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     const fetchTopicAtps = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_descendants/ATP:0000142`, {
+        const response = await axios.get(`${REST}/topic_entity_tag/search_descendants/ATP:0000142`, {
           headers: {
             Authorization: `Bearer ${accessToken}`
           }
@@ -379,6 +382,31 @@ const TopicEntityCreate = () => {
 useEffect(() => {
   console.log('Updated topicEntityAtps:', topicEntityAtps);
 }, [topicEntityAtps]);
+
+  useEffect(() => {
+    const fetchCurationData = async () => {
+      const curationUrl = REST + `/curation_status/aggregated_curation_status_and_tet_info/${referenceCurie}/${accessLevel}`;
+      try {
+        const result = await axios.get(curationUrl);
+        const processedCurationData = result.data.reduce((acc, info) => {
+          acc[info.topic_curie] = {
+            topic_name: info.topic_name,
+            topic_curie: info.topic_curie,
+            curation_status_id: info.curst_curation_status_id || 'new',
+            curation_status: info.curst_curation_status || null,
+          };
+          return acc;
+        }, {});
+        console.log('processedCurationData');
+        console.log(processedCurationData);
+        setTopicAtpToCurationStatus(processedCurationData);
+      } catch (error) {
+        console.error('Error fetching curation data:', error);
+      }
+    };
+
+    fetchCurationData();
+  }, [REST, referenceCurie, accessLevel]);
 
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
@@ -483,7 +511,7 @@ useEffect(() => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_RESTAPI}/workflow_tag/transition_to_workflow_status`,
+        `${REST}/workflow_tag/transition_to_workflow_status`,
         {
           curie_or_reference_id: referenceJsonLive.curie,
           mod_abbreviation: accessLevel,
@@ -896,7 +924,7 @@ useEffect(() => {
                   onSearch={async (query) => {
                     setTopicSelectLoading(true);
                     try {
-                      let url =`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
+                      let url =`${REST}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
                       if (accessLevel) {
                         url += "?mod_abbr=" + accessLevel
                       }
@@ -1051,7 +1079,7 @@ useEffect(() => {
                     onSearch={async (query) => {
                       setSpeciesSelectLoading(true);
                       try {
-                        const url = `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_species/${encodeURIComponent(query)}`;
+                        const url = `${REST}/topic_entity_tag/search_species/${encodeURIComponent(query)}`;
                         const results = await FetchTypeaheadOptions(url);
 
                         setSpeciesSelectLoading(false);
@@ -1136,15 +1164,14 @@ useEffect(() => {
                   id="topic_entity_addition_done"
                   disabled={topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect)}
                   checked={row.entityAdditionDoneCheckbox}
-//                   disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox || hasBlockingEntity }
                   onChange={(evt) => {
                     const updatedRows = [...rows];
                     updatedRows[index] = { ...updatedRows[index], entityAdditionDoneCheckbox: evt.target.checked };
                     setRows(updatedRows);
                   }}
-// row.topicSelectValue
                 />
                 <span style={{ color: topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect) ? 'gray' : 'inherit', }} >Entity Addition Done</span>
+                <span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>
               </Col>
             </Row>
             <Row className="mb-3" style={{ marginBottom: '20px' }}>
