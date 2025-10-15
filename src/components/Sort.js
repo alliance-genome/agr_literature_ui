@@ -48,7 +48,7 @@ const Sort = () => {
   const [curatorOptions, setCuratorOptions] = useState([]);
   const [recentlySortedData, setRecentlySortedData] = useState([]);
   const [showInsidePapers, setShowInsidePapers] = useState(true);
-
+  
   let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
   let activeMod = accessLevel;
 
@@ -261,6 +261,13 @@ const Sort = () => {
         </Form.Check>
       </Form>
       <Container fluid>
+        {viewMode === 'Sort' && isLoading && (
+          <div className="text-center my-3">
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+          </div>
+        )} 
         { (viewMode === 'Sort' || viewMode === 'Prepublication') &&
           <>
             <RowDivider />
