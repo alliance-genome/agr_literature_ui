@@ -404,7 +404,6 @@ useEffect(() => {
         console.error('Error fetching curation data:', error);
       }
     };
-
     fetchCurationData();
   }, [REST, referenceCurie, accessLevel]);
 
