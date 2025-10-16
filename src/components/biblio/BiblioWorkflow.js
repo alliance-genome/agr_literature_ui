@@ -526,6 +526,7 @@ const BiblioWorkflow = () => {
       {
 	headerName: 'Curation Status updated',
 	field: 'curation_status_updated',
+        valueFormatter: timestampToDateFormatter,
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
