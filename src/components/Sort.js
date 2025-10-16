@@ -100,7 +100,7 @@ const Sort = () => {
       .then(response => response.json())
       .then(data => {
         const { curator_data, data: references } = data;
-        let curators = Object.entries(curator_data).map(([email, uid]) => ({ email, uid }));
+        let curators = Object.entries(curator_data).map(([name, uid]) => ({ name, uid }));
         const loggedInUserUid = uid;
         const loggedInUserIncluded = curators.some(curator => curator.uid === loggedInUserUid);
 
@@ -348,7 +348,7 @@ const Sort = () => {
                         >
                           {curatorOptions.map((curator, index) => (
                             <option key={index} value={curator.uid}>
-                              {curator.email}
+                              {curator.name}
                             </option>
                           ))}
                         </Form.Control>
