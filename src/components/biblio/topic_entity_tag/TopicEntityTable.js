@@ -266,8 +266,10 @@ const TopicEntityTable = () => {
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 26, checked: false },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 27, checked: false },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 28, checked: false },
-    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 29, checked: false },
-    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 30, checked: false }
+    { headerName: "Model ID", field: "ml_model_id", id: 29, checked: false },
+    { headerName: "Model Version", field: "ml_model_version", id: 30, checked: false },
+    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 31, checked: false },
+    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 32, checked: false }
     ];
 
   let itemsInitSGD=[
@@ -299,8 +301,10 @@ const TopicEntityTable = () => {
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 26, checked: false },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 27, checked: false },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 28, checked: false },
-    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 29, checked: false },
-    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 30, checked: false }
+    { headerName: "Model ID", field: "ml_model_id", id: 29, checked: false },
+    { headerName: "Model Version", field: "ml_model_version", id: 30, checked: false },
+    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 31, checked: false },
+    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 32, checked: false }
     ];
 
     // Function to get a cookie value by name
@@ -545,6 +549,8 @@ const TopicEntityTable = () => {
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: timestampToDateFormatter },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: timestampToDateFormatter },
+    { headerName: "Model ID", field: "ml_model_id" },
+    { headerName: "Model Version", field: "ml_model_version" },
     { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" },
     { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" }
   ];
