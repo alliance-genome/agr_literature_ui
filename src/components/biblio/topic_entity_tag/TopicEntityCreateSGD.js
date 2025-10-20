@@ -88,8 +88,9 @@ const TopicEntityCreateSGD = () => {
     }),
     []
   );
-  const entityTypeList = useMemo(() => Object.keys(curieToNameEntityType), [curieToNameEntityType]);
 
+  const entityTypeList = useMemo(() => Object.keys(curieToNameEntityType), [curieToNameEntityType]);
+    
   useEffect(() => {
     const fetchTaxonData = async () => {
       const taxonData = await getCurieToNameTaxon();
@@ -129,48 +130,46 @@ const TopicEntityCreateSGD = () => {
     if (editTag !== null) {
       const fetchTopicEntityTags = async () => {
         try {
-          const response = await axios.get(
+          const { data } = await axios.get(
             `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/${editTag}`,
-            {
-              headers: { Authorization: `Bearer ${accessToken}` },
-            }
+            { headers: { Authorization: `Bearer ${accessToken}` } }
           );
-          setTopicEntityTags(response.data);
+          const tet = Array.isArray(data) ? data[0] : data;
+          setTopicEntityTags(tet || null);
         } catch (error) {
           console.error("Error fetching topic entity tags:", error);
+          setTopicEntityTags(null);
         }
       };
       fetchTopicEntityTags();
     }
   }, [editTag, accessToken]);
-
+    
   useEffect(() => {
     if (editTag !== null && topicEntityTags) {
       const editRow = topicEntityTags;
-      if (editRow) {
-        setRows([
-          {
-            topicSelect: editRow.topic || "",
-            entityTypeSelect: editRow.entity_type || geneATP,
-            taxonSelect: editRow.species || "NCBITaxon:559292",
-            tetdisplayTagSelect: editRow.display_tag || "",
-            entityText: editRow.entity_name || editRow.entity || "",
-            noteText: editRow.note || "",
-            entityResultList: editRow.entityResultList || [],
-          },
-        ]);
-        dispatch(
-          changeFieldEntityAddGeneralField({
-            target: { id: "entityResultList", value: editRow.entityResultList || [] },
-          })
-        );
-        dispatch(
-          changeFieldEntityAddGeneralField({
-            target: { id: "entitytextarea", value: editRow.entity || "" },
-          })
-        );
-      }
-    } else {
+      setRows([{
+        topicSelect: editRow.topic || "",
+        entityTypeSelect: editRow.entity_type || geneATP,
+        taxonSelect: editRow.species || "NCBITaxon:559292",
+        tetdisplayTagSelect: editRow.display_tag || "",
+        entityText: editRow.entity_name || editRow.entity || "",
+        noteText: editRow.note || "",
+        entityResultList: editRow.entity ? [{
+          curie: editRow.entity,
+          entityTypeSymbol: editRow.entity_name || editRow.entity,
+        }] : [],
+      }]);
+
+      dispatch(changeFieldEntityAddGeneralField({
+        target: { id: "entityResultList", value: editRow.entity ? [{ curie: editRow.entity }] : [] },
+      }));
+      dispatch(changeFieldEntityAddGeneralField({
+        target: { id: "entitytextarea", value: editRow.entity || "" },
+      }));
+    }
+
+    if (editTag === null) {
       setRows([createNewRow()]);
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityResultList", value: [] } }));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "entitytextarea", value: "" } }));
@@ -192,11 +191,11 @@ const TopicEntityCreateSGD = () => {
         if (tag.updated_by !== uid) {
           if (tag.workflow_tag_id === "ATP:0000276") {
             uniqueMessages.add(
-              `${tag.updated_by_email} has started adding the topic/entity tags for this paper.`
+              `${tag.updated_by_name} has started adding the topic/entity tags for this paper.`
             );
           } else if (tag.workflow_tag_id === "ATP:0000275") {
             uniqueMessages.add(
-              `${tag.updated_by_email} has completed adding the topic/entity tags for this paper.`
+              `${tag.updated_by_name} has completed adding the topic/entity tags for this paper.`
             );
           }
         }
@@ -292,40 +291,77 @@ const TopicEntityCreateSGD = () => {
     });
   };
 
-  const patchEntities = async (refCurie, index) => {
+  // Helper for SGD data_novelty (same rule as the API insertion path)
+  const getSgdDataNovelty = (row) =>
+    row.topicSelect && row.entityTypeSelect && row.topicSelect === row.entityTypeSelect
+      ? "ATP:0000334"
+      : "ATP:0000335";
+
+  async function patchEntities(refCurie, index) {
     const row = rows[index];
-    if (row.topicSelect === null) {
-      return;
-    }
+    if (row.topicSelect === null) return;
+
     const subPath = "topic_entity_tag/" + editTag;
     const method = "PATCH";
-    const entityResultList = row.entityResultList || [];
-    if (entityResultList.length > 1) {
-      console.error("Error processing entry: too many entities");
-      addMessage(
-        "Only one entity is allowed when editing. Please create additional tags using the add function.",
-        "danger"
-      );
-      return;
-    } else {
-      let entityResult = entityResultList[0];
-      let updateJson = initializeUpdateJson(refCurie, row);
-      updateJson["entity_id_validation"] = row.entityTypeSelect === "" ? null : "alliance";
-      updateJson["entity_type"] = row.entityTypeSelect === "" ? null : row.entityTypeSelect;
-      updateJson["species"] = row.taxonSelect === "" ? null : row.taxonSelect;
-      if (entityResult) {
-        updateJson["entity"] = entityResult.curie;
-      }
-      updateJson["updated_by"] = uid;
 
-      const array = [accessToken, subPath, updateJson, method];
-      dispatch(setBiblioUpdatingEntityAdd(1));
+    const entityResultList = row.entityResultList || [];
+
+    // Enforce single entity on edit (SGD rule)
+    if (entityResultList.length > 1) {
+      dispatch({
+        type: "UPDATE_BUTTON_BIBLIO_ENTITY_ADD",
+        payload: {
+          responseMessage:
+            "Only one entity allowed on edit. Please create additional tags with the add function.",
+          accessLevel,
+        },
+      });
+      return;
+    }
+
+    const entityResult = entityResultList[0];
+      
+    let updateJson = initializeUpdateJson(refCurie, row);
+    delete updateJson["topic_entity_tag_source_id"];
+    delete updateJson["reference_curie"];
+
+    updateJson["entity_id_validation"] = row.entityTypeSelect === "" ? null : "alliance";
+    updateJson["entity_type"] = row.entityTypeSelect === "" ? null : row.entityTypeSelect;
+    updateJson["species"] = row.taxonSelect === "" ? null : row.taxonSelect;
+
+    // SGD data_novelty (mirror server rule used on create)
+    updateJson["data_novelty"] = getSgdDataNovelty(row);
+
+    if (entityResult?.curie) {
+      updateJson["entity"] = entityResult.curie;
+    }
+    updateJson["updated_by"] = uid;
+
+    const array = [accessToken, subPath, updateJson, method];
+    dispatch(setBiblioUpdatingEntityAdd(1));
+    try {
       await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
       dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: null } }));
       dispatch(setEditTag(null));
+    } catch (err) {
+      console.error("Update failed:", err?.response?.status, err?.response?.data || err);
+      dispatch({
+        type: "UPDATE_BUTTON_BIBLIO_ENTITY_ADD",
+        payload: {
+          responseMessage: `Failed to update tag (${
+            err?.response?.status ?? "?"
+          }): ${
+            typeof err?.response?.data === "string"
+              ? err.response.data
+              : JSON.stringify(err?.response?.data || {})
+          }`,
+          accessLevel,
+        },
+      });
+    } finally {
+      dispatch(setBiblioUpdatingEntityAdd(0));
     }
-    removeRow(index);
-  };
+  }
 
   const createEntities = async (refCurie, index, index_wft) => {
     let noReset = false;
@@ -708,13 +744,13 @@ const TopicEntityCreateSGD = () => {
               <div className="mt-3">
                 {editTag ? (
                   <Button
-                    variant="outline-danger"
+                    variant="success"
                     onClick={() => patchEntities(referenceJsonLive.curie, index)}
                   >
                     {biblioUpdatingEntityAdd > 0 ? (
                       <Spinner animation="border" size="sm" />
                     ) : (
-                      "Edit"
+                      "Update"
                     )}
                   </Button>
                 ) : (
@@ -733,7 +769,7 @@ const TopicEntityCreateSGD = () => {
                     )}
                   </Button>
                 )}
-                {index === rows.length - 1 && (
+                {!editTag && index === rows.length - 1 && (
                   <div style={{ display: "inline-block", marginLeft: "30px" }}>
                     <Button variant="primary" onClick={handleAddAll} className="ml-2">
                       Submit All
