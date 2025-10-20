@@ -32,7 +32,6 @@ export default (props) => {
     const [entityTypeBody, setEntityTypeBody] = useState("");
     const [entityBody, setEntityBody] = useState("");
     const [noDataBody, setNoDataBody] = useState("");
-    const [novelDataBody, setNovelDataBody] = useState("");
     const [dataNoveltyBody, setDataNoveltyBody] = useState("");
 
     const ValidatedTagsButton = () => {
@@ -62,13 +61,11 @@ export default (props) => {
         let entityType=props.data.entity_type_name;
         let entity=props.data.entity_name;
         let noData=(props.data.negated === null) ? "null" : props.data.negated.toString();
-        let novelData=(props.data.novel_topic_data  === null) ? "null" : props.data.novel_topic_data.toString();
         let dataNovelty=(props.data.data_novelty  === null) ? "null" : props.data.data_novelty;
         setTopicBody(topic);
         setEntityTypeBody(entityType);
         setEntityBody(entity);
         setNoDataBody(noData);
-        setNovelDataBody(novelData);
         setDataNoveltyBody(dataNovelty);
         setShowModal(true);
     }
@@ -130,7 +127,6 @@ export default (props) => {
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'newToDbCheckbox', value: true } })); }
             else if (row.data_novelty === 'ATP:0000229') {
                 dispatch(changeFieldEntityAddGeneralField({ target: { id: 'newToFieldCheckbox', value: true } })); }
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'novelCheckbox', value: row.novel_topic_data } }));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: row.negated } }));
             dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: row.note ? row.note : '' } }));
             if (props.data.entity_type){
@@ -161,7 +157,6 @@ export default (props) => {
                         <Row><Col md="4">Entity Type:</Col><Col>{entityTypeBody}</Col></Row>
                         <Row><Col md="4">Entity:</Col><Col>{entityBody}</Col></Row>
                         <Row><Col md="4">No Data:</Col><Col>{noDataBody}</Col></Row>
-                        <Row><Col md="4">Novel Data:</Col><Col>{novelDataBody}</Col></Row>
                         <Row><Col md="4">Data Novelty:</Col><Col>{dataNoveltyBody}</Col></Row>
                     </Container>
                 </Modal.Body>
