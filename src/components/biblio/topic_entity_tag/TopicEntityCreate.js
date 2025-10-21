@@ -1152,25 +1152,30 @@ useEffect(() => {
                     {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Edit"}
                   </Button>
                 ) : (
-                  <Button variant="outline-primary" disabled={row.disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
-                    {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
-                  </Button>
+                  <>
+                    <Button variant="outline-primary" disabled={row.disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
+                      {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
+                    </Button>
+                    { (row.topicSelect !== '') && (row.topicSelect === row.entityTypeSelect) && (
+                      <>
+                        <br/>
+                        <Form.Check
+                          inline
+                          type="checkbox"
+                          id="topic_entity_addition_done"
+                          disabled={topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect)}
+                          checked={row.entityAdditionDoneCheckbox}
+                          onChange={(evt) => {
+                            const updatedRows = [...rows];
+                            updatedRows[index] = { ...updatedRows[index], entityAdditionDoneCheckbox: evt.target.checked };
+                            setRows(updatedRows);
+                          }}
+                        />
+                        <span style={{ color: topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect) ? 'gray' : 'inherit', }} >Entity Addition Done</span>
+                        <span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>
+                      </>) }
+                  </>
                 )}
-                <br/>
-                <Form.Check
-                  inline
-                  type="checkbox"
-                  id="topic_entity_addition_done"
-                  disabled={topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect)}
-                  checked={row.entityAdditionDoneCheckbox}
-                  onChange={(evt) => {
-                    const updatedRows = [...rows];
-                    updatedRows[index] = { ...updatedRows[index], entityAdditionDoneCheckbox: evt.target.checked };
-                    setRows(updatedRows);
-                  }}
-                />
-                <span style={{ color: topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect) ? 'gray' : 'inherit', }} >Entity Addition Done</span>
-                <span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>
               </Col>
             </Row>
             <Row className="mb-3" style={{ marginBottom: '20px' }}>
