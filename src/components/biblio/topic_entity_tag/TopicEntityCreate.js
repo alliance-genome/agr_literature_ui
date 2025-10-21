@@ -74,6 +74,8 @@ const TopicEntityCreate = () => {
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
+  const [messageFailureSetCurationStatusToCurated, setMessageFailureSetCurationStatusToCurated] = useState("");
+  const [isVisibleMessageFailureSetCurationStatusToCurated, setIsVisibleMessageFailureSetCurationStatusToCurated] = useState("");
   const [rows, setRows] = useState([
     { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", entityResultList: [] }
   ]);
@@ -411,6 +413,9 @@ const TopicEntityCreate = () => {
   const handleCloseTagExistingMessage = () => {
     setIsTagExistingMessageVisible(false);
   };
+  const handleCloseMessageFailureSetCurationStatusToCurated = () => {
+    setIsVisibleMessageFailureSetCurationStatusToCurated(false);
+  }
 
   function createNewRow() {	
     return {
@@ -555,6 +560,7 @@ const TopicEntityCreate = () => {
           currentRow.newToDbCheckbox = false;
           currentRow.newToFieldCheckbox = false;
           currentRow.noDataCheckbox = false;
+          currentRow.entityAdditionDoneCheckbox = false;
           currentRow.entityText = "";
           currentRow.entityResultList = [];
           currentRow.selectedSpecies = [];
@@ -641,11 +647,69 @@ const TopicEntityCreate = () => {
     return dataNoveltyAtpArray;
   }
 
+
+  const updateCurationStatusToCurated = (row, refCurie) => {
+    const curation_status_id = topicAtpToCurationStatus[row.topicSelect]?.curation_status_id;
+    let subPath = "/curation_status/";
+    let method = "PATCH";
+    let json_data = { 'curation_status': 'ATP:0000239' };
+    if (curation_status_id === 'new') {
+      method = "POST";
+      json_data["mod_abbreviation"] = accessLevel;
+      json_data["topic"] = row.topicSelect;
+      json_data["reference_curie"] = refCurie; }
+    else {
+      subPath = "/curation_status/" + curation_status_id; }
+    console.log("subPath: ", subPath);
+    console.log("method: ", method);
+    console.log("json_data: ");
+    console.log(json_data);
+
+    try {
+      const url = process.env.REACT_APP_RESTAPI + subPath;
+      return new Promise((resolve, reject) => {
+        axios({
+          url,
+          method,
+          headers: {
+            'content-type': 'application/json',
+            'authorization': 'Bearer ' + accessToken,
+            'mode': 'cors',
+          },
+          data: json_data,
+        })
+        .then((res) => {
+          let isValid = false;
+          if (method === 'PATCH' && res.status === 202) isValid = true;
+          else if (method === 'POST' && res.status === 201) isValid = true;
+          else if (method === 'DELETE' && res.status === 204) isValid = true;
+          if (!isValid) {
+            const response_message = `error: ${url} : API status code ${res.status} for method ${method}`;
+            reject(new Error(response_message));
+          } else {
+            resolve(res.data);
+          }
+        })
+        .catch((err) => {
+          setIsVisibleMessageFailureSetCurationStatusToCurated(true);
+          const errorMessage = 'Error setting curation_status to curated for topic ' + row.topicSelectValue + ' ' + row.topicSelect + '<br/>' + err.message;
+          setMessageFailureSetCurationStatusToCurated(errorMessage)
+        })
+      });
+    } catch (err) {
+      // Error is already show in Row dependent on isVisibleMessageFailureSetCurationStatusToCurated, but you can log more if needed
+      console.warn("Failed to update curation status", err);
+    }
+  };
+
   async function createEntities(refCurie, index) {
     const row = rows[index]
     if (!row.topicSelect) {
       return;
     }
+
+    if (row.entityAdditionDoneCheckbox) { await updateCurationStatusToCurated(row, refCurie); }
+
     const forApiArray = [];
     const subPath = "topic_entity_tag/";
     const method = "POST";
@@ -680,13 +744,6 @@ const TopicEntityCreate = () => {
         // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
         forApiArray.push([subPath, updateJson, method]);
     } }
-
-    console.log('row.topicSelect');
-    console.log(row.topicSelect);
-    console.log('curation_status_id');
-    console.log(topicAtpToCurationStatus[row.topicSelect]?.curation_status_id);
-//                         <span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>
-
 
     if (forApiArray.length === 0) {
       console.error("No valid data to submit.");
@@ -813,6 +870,18 @@ const TopicEntityCreate = () => {
             <div className="alert alert-warning" role="alert">
               <div className="table-responsive" dangerouslySetInnerHTML={{ __html: tagExistingMessage }}></div>
               <Button variant="outline-secondary" size="sm" onClick={handleCloseTagExistingMessage}>
+                Close
+              </Button>
+            </div>
+          </Col>
+        </Row>
+      )}
+      {isVisibleMessageFailureSetCurationStatusToCurated && messageFailureSetCurationStatusToCurated && (
+        <Row className="form-group row">
+          <Col sm="12">
+            <div className="alert alert-warning" role="alert">
+              <div className="table-responsive" dangerouslySetInnerHTML={{ __html: messageFailureSetCurationStatusToCurated }}></div>
+              <Button variant="outline-secondary" size="sm" onClick={handleCloseMessageFailureSetCurationStatusToCurated}>
                 Close
               </Button>
             </div>
@@ -1143,7 +1212,7 @@ const TopicEntityCreate = () => {
                         <Form.Check
                           inline
                           type="checkbox"
-                          id="topic_entity_addition_done"
+                          id={`topic_entity_addition_done-${index}`}
                           checked={row.entityAdditionDoneCheckbox}
                           onChange={(evt) => {
                             const updatedRows = [...rows];
