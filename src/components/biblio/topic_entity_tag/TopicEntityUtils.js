@@ -154,7 +154,6 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
             headers.push('display_tag');
         } else {
             headers.push('negated');
-            headers.push('novel_topic_data');
         }
         headers.push('note');
         headers.push('created_by');
