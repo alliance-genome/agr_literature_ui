@@ -1177,25 +1177,27 @@ useEffect(() => {
                 )}
               </Col>
             </Row>
-            <Row className="mb-3" style={{ marginBottom: '20px' }}>
-              <Col sm="6" className="d-flex align-items-center">
-                <Button variant="outline-secondary"  onClick={() => cloneRow(index)} style={{ marginRight: '10px' }}>
-                  Clone row
-                </Button>
-                {rows.length - 1 === index && (
-                  <Button variant="outline-secondary"  onClick={() => setRows([...rows, createNewRow()])}>
-                    New row
+            { (editTag === null) && (
+              <Row className="mb-3" style={{ marginBottom: '20px' }}>
+                <Col sm="6" className="d-flex align-items-center">
+                  <Button variant="outline-secondary"  onClick={() => cloneRow(index)} style={{ marginRight: '10px' }}>
+                    Clone row
                   </Button>
-                )}
-              </Col>
-              {rows.length - 1 === index && rows.length > 1 && (
-                <Col sm="6" className="d-flex justify-content-end align-items-center">
-                  <Button variant="outline-primary" onClick={handleSubmitAll}>
-                    Submit All
-                  </Button>
+                  {rows.length - 1 === index && (
+                    <Button variant="outline-secondary"  onClick={() => setRows([...rows, createNewRow()])}>
+                      New row
+                    </Button>
+                  )}
                 </Col>
-              )}
-            </Row>
+                {rows.length - 1 === index && rows.length > 1 && (
+                  <Col sm="6" className="d-flex justify-content-end align-items-center">
+                    <Button variant="outline-primary" onClick={handleSubmitAll}>
+                      Submit All
+                    </Button>
+                  </Col>
+                )}
+              </Row>
+            )}
           </React.Fragment>
       )})}
     </Container>
