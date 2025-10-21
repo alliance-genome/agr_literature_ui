@@ -1163,7 +1163,6 @@ useEffect(() => {
                           inline
                           type="checkbox"
                           id="topic_entity_addition_done"
-                          disabled={topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect)}
                           checked={row.entityAdditionDoneCheckbox}
                           onChange={(evt) => {
                             const updatedRows = [...rows];
@@ -1171,7 +1170,7 @@ useEffect(() => {
                             setRows(updatedRows);
                           }}
                         />
-                        <span style={{ color: topicEntityAtps.length > 0 && !topicEntityAtps.includes(row.topicSelect) ? 'gray' : 'inherit', }} >Entity Addition Done</span>
+                        <span>Entity Addition Done</span>
                         <span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>
                       </>) }
                   </>
