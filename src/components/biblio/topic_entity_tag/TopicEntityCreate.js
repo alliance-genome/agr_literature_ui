@@ -82,7 +82,6 @@ const TopicEntityCreate = () => {
 
   const [messages, setMessages] = useState([]);
 
-  const [topicEntityAtps, setTopicEntityAtps] = useState([]);
   const [topicAtpToCurationStatus, setTopicAtpToCurationStatus] = useState({});
 
   const curieToNameMap = Object.fromEntries(
@@ -357,31 +356,6 @@ const TopicEntityCreate = () => {
     });
     if (updated) { setRows(newRows); }
   }, [rows]);
-
-  useEffect(() => {
-    const fetchTopicAtps = async () => {
-      try {
-        const response = await axios.get(`${REST}/topic_entity_tag/search_descendants/ATP:0000142`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        });
-	console.log("TET search_descendants response.data=", response.data)
-        setTopicEntityAtps(response.data);
-      } catch (error) {
-        console.error("Error fetching topic entity tag ATP:000014 descendants:", error);
-      }
-    };
-	
-// try transporter function for a topic that is not an entity
-        // [ { "value": "ATP:0000055", "label": "cis-regulatory element" }, { "value": "ATP:0000093", "label": "sequence targeting reagent" }, { "value": "ATP:0000056", "label": "variant" }, { "value": "ATP:0000095", "label": "balancer" }, { "value": "ATP:0000013", "label": "transgenic construct" }, { "value": "ATP:0000058", "label": "new transcript isoform" }, { "value": "ATP:0000008", "label": "cell line" }, { "value": "ATP:0000016", "label": "genome" }, { "value": "ATP:0000026", "label": "fish" }, { "value": "ATP:0000123", "label": "species" }, { "value": "ATP:0000110", "label": "transgenic allele" }, { "value": "ATP:0000094", "label": "chemical reagent" }, { "value": "ATP:0000007", "label": "reagent" }, { "value": "ATP:0000006", "label": "allele" }, { "value": "ATP:0000054", "label": "gene model" }, { "value": "ATP:0000005", "label": "gene" }, { "value": "ATP:0000124", "label": "protein" }, { "value": "ATP:0000057", "label": "genomic region" }, { "value": "ATP:0000111", "label": "recombinase" }, { "value": "ATP:0000096", "label": "antibody" }, { "value": "ATP:0000128", "label": "protein containing complex" }, { "value": "ATP:0000025", "label": "genotype" }, { "value": "ATP:0000027", "label": "strain" }, { "value": "ATP:0000101", "label": "chromosomal rearrangement" }, { "value": "ATP:0000014", "label": "affected genomic model" }, { "value": "ATP:0000285", "label": "classical allele" } ]
-    fetchTopicAtps();
-  }, [accessToken]);
-
-// DELETE THIS
-useEffect(() => {
-  console.log('Updated topicEntityAtps:', topicEntityAtps);
-}, [topicEntityAtps]);
 
   useEffect(() => {
     const fetchCurationData = async () => {
@@ -706,6 +680,13 @@ useEffect(() => {
         // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
         forApiArray.push([subPath, updateJson, method]);
     } }
+
+    console.log('row.topicSelect');
+    console.log(row.topicSelect);
+    console.log('curation_status_id');
+    console.log(topicAtpToCurationStatus[row.topicSelect]?.curation_status_id);
+//                         <span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>
+
 
     if (forApiArray.length === 0) {
       console.error("No valid data to submit.");
