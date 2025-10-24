@@ -412,9 +412,11 @@ const TopicEntityCreate = () => {
 
   const handleCloseTagExistingMessage = () => {
     setIsTagExistingMessageVisible(false);
+    setTagExistingMessage("");
   };
   const handleCloseMessageFailureSetCurationStatusToCurated = () => {
     setIsVisibleMessageFailureSetCurationStatusToCurated(false);
+    setMessageFailureSetCurationStatusToCurated("");
   }
 
   function createNewRow() {	
@@ -693,7 +695,7 @@ const TopicEntityCreate = () => {
         .catch((err) => {
           setIsVisibleMessageFailureSetCurationStatusToCurated(true);
           const errorMessage = 'Error setting curation_status to curated for topic ' + row.topicSelectValue + ' ' + row.topicSelect + '<br/>' + err.message;
-          setMessageFailureSetCurationStatusToCurated(errorMessage)
+          setMessageFailureSetCurationStatusToCurated(prev => prev ? prev + '<br/>' + errorMessage : errorMessage);
         })
       });
     } catch (err) {
@@ -756,7 +758,7 @@ const TopicEntityCreate = () => {
 					      accessLevel, dispatch,
 					      updateButtonBiblioEntityAdd);
     if (result) {
-      setTagExistingMessage(result.html);
+      setTagExistingMessage(prev => prev ? prev + '<br/>' + result.html : result.html);
       setIsTagExistingMessageVisible(true);
       setExistingTagResponses(result.existingTagResponses);
     }
