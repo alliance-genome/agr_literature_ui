@@ -617,11 +617,11 @@ const TopicEntityCreate = () => {
         if (tag.updated_by !== uid) {
           if (tag.workflow_tag_id === "ATP:0000276") {
             uniqueMessages.add(
-              `${tag.updated_by_email} has started adding the topic/entity tags for this paper.`
+              `${tag.updated_by_name} has started adding the topic/entity tags for this paper.`
             );
           } else if (tag.workflow_tag_id === "ATP:0000275") {
             uniqueMessages.add(
-              `${tag.updated_by_email} has completed adding the topic/entity tags for this paper.`
+              `${tag.updated_by_name} has completed adding the topic/entity tags for this paper.`
             );
           }
         }

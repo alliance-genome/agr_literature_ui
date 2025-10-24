@@ -48,7 +48,7 @@ const Sort = () => {
   const [curatorOptions, setCuratorOptions] = useState([]);
   const [recentlySortedData, setRecentlySortedData] = useState([]);
   const [showInsidePapers, setShowInsidePapers] = useState(true);
-
+  
   let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
   let activeMod = accessLevel;
 
@@ -100,7 +100,7 @@ const Sort = () => {
       .then(response => response.json())
       .then(data => {
         const { curator_data, data: references } = data;
-        let curators = Object.entries(curator_data).map(([email, uid]) => ({ email, uid }));
+        let curators = Object.entries(curator_data).map(([name, uid]) => ({ name, uid }));
         const loggedInUserUid = uid;
         const loggedInUserIncluded = curators.some(curator => curator.uid === loggedInUserUid);
 
@@ -261,6 +261,13 @@ const Sort = () => {
         </Form.Check>
       </Form>
       <Container fluid>
+        {viewMode === 'Sort' && isLoading && (
+          <div className="text-center my-3">
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+          </div>
+        )} 
         { (viewMode === 'Sort' || viewMode === 'Prepublication') &&
           <>
             <RowDivider />
@@ -341,7 +348,7 @@ const Sort = () => {
                         >
                           {curatorOptions.map((curator, index) => (
                             <option key={index} value={curator.uid}>
-                              {curator.email}
+                              {curator.name}
                             </option>
                           ))}
                         </Form.Control>

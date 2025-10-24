@@ -81,7 +81,7 @@ const BiblioWorkflow = () => {
       section: 'Indexing Priority',
       workflow_tag: ip?.indexing_priority ?? '',
       confidence_score: fmtScore(ip?.confidence_score),
-      email: ip?.updated_by_email ?? '',
+      curator: ip?.updated_by_name ?? '',
       date_updated: ip?.date_updated ?? '',
       options,
       // use a distinct field for the new PATCH target
@@ -128,7 +128,7 @@ const BiblioWorkflow = () => {
             const currentArr = sectionInfo.current_workflow_tag || [];
 
             let currentValue = '';
-            let email = '';
+            let curator = '';
             let curation_tag = '';
             let note = '';
             let date_updated = '';
@@ -136,7 +136,7 @@ const BiblioWorkflow = () => {
             if (currentArr.length > 0) {
               const currentTag = currentArr[0];
               currentValue = currentTag.workflow_tag_id;
-              email = currentTag.email;
+              curator = currentTag.updated_by_name ?? currentTag.updated_by_email ?? '';;
               note = currentTag.note;
               curation_tag = currentTag.curation_tag;
               date_updated = currentTag.date_updated;
@@ -152,7 +152,7 @@ const BiblioWorkflow = () => {
               section: sectionDisplayNames[sectionKey],
               workflow_tag: currentValue,
 	      confidence_score: '',	
-              email,
+              curator,
               date_updated,
               note: note,
               curation_tag: curation_tag,
@@ -272,7 +272,7 @@ const BiblioWorkflow = () => {
               curation_status_id: info.curst_curation_status_id || 'new',
               curation_status: info.curst_curation_status || null,
               curation_status_updated: info.curst_date_updated || '',
-              curator: (info.curst_updated_by_email !== null) ? info.curst_updated_by_email : info.curst_updated_by,
+              curator: (info.curst_updated_by_name !== null) ? info.curst_updated_by_name : info.curst_updated_by,
               note: info.curst_note || null,
               curation_tag: info.curst_curation_tag || null,
               has_data: info.tet_info_has_data,
@@ -347,7 +347,7 @@ const BiblioWorkflow = () => {
       },
       {
 	  headerName: 'Updater',
-	  field: 'updated_by',
+	  field: 'updated_by_name',
 	  flex: 1,
 	  cellStyle: { textAlign: 'left' },
 	  headerClass: 'wft-bold-header wft-header-bg',
@@ -526,6 +526,7 @@ const BiblioWorkflow = () => {
       {
 	headerName: 'Curation Status updated',
 	field: 'curation_status_updated',
+        valueFormatter: timestampToDateFormatter,
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
@@ -757,7 +758,7 @@ const BiblioWorkflow = () => {
     },
     {
       headerName: 'Curator',
-      field: 'email',
+      field: 'curator',
       flex: 1,
       cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header wft-header-bg',
