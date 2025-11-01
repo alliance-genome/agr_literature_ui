@@ -61,12 +61,7 @@ const BiblioWorkflow = () => {
     
   const fetchIndexingPriorityRow = useCallback(async () => {
 
-    const urls = [
-      `${REST}/indexing_priority/get_priority_tag/${referenceCurie}/${accessLevel}`,
-      `${REST}/indexing_priority/get_priority_tag/${referenceCurie}?mod_abbreviation=${encodeURIComponent(accessLevel)}`,
-      `${REST}/indexing_priority/get_priority_tag/${referenceCurie}`,
-    ];
-
+    const url = `${REST}/indexing_priority/get_priority_tag/${referenceCurie}/${accessLevel}`;
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
@@ -93,23 +88,21 @@ const BiblioWorkflow = () => {
       }
       return { ip, options };
     };
-    for (const url of urls) {
-      try {
-        const res = await axios.get(url, { headers });
-        const payload = res.data || {};
-	const { ip, options } = normalize(payload);	
-        return {
-          section: 'Indexing Priority',
-          workflow_tag: ip?.indexing_priority ?? '',
-          confidence_score: fmtScore(ip?.confidence_score),
-          curator: ip?.updated_by_name ?? ip?.updated_by_email ?? '',
-          date_updated: ip?.date_updated ?? '',
-          options,
-          indexing_priority_id: ip?.indexing_priority_id ?? null,
-        };
-      } catch (err) {
-        console.error('[IndexingPriority] GET failed:', err);
-      }
+    try {
+      const res = await axios.get(url, { headers });
+      const payload = res.data || {};
+      const { ip, options } = normalize(payload);
+      return {
+        section: 'Indexing Priority',
+        workflow_tag: ip?.indexing_priority ?? '',
+        confidence_score: fmtScore(ip?.confidence_score),
+        curator: ip?.updated_by_name ?? ip?.updated_by_email ?? '',
+        date_updated: ip?.date_updated ?? '',
+        options,
+        indexing_priority_id: ip?.indexing_priority_id ?? null,
+      };
+    } catch (err) {
+      console.error('[IndexingPriority] GET failed:', err);
     }
     return {
       section: 'Indexing Priority',
@@ -128,21 +121,22 @@ const BiblioWorkflow = () => {
       const url =
         `${REST}` +
         `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
+      const wantIP = accessLevel === 'ZFIN';
       try {
 	const headers = {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         };
 	  
-        // fetch both in parallel
+        // fetch WFT + IP (only for ZFIN)
 	const [wftRes, ipRow] = await Promise.all([
           axios.get(url, { headers }),
-          fetchIndexingPriorityRow()
+	  wantIP ? fetchIndexingPriorityRow() : Promise.resolve(null),
         ]);
 	  
         const respData = wftRes.data || {};
         const sectionOrder = [
-          'indexing priority', // we will override with ipRow
+          'indexing priority', // we will override with ipRow when wantIP = true
           'community curation',
           'manual indexing'
         ];
@@ -154,7 +148,7 @@ const BiblioWorkflow = () => {
 
         const rowsFromWFT = sectionOrder
           .filter(sectionKey => sectionKey in respData)
-	  .filter(sectionKey => sectionKey !== 'indexing priority') // exclude; replaced by ipRow
+	  .filter(sectionKey => sectionKey !== 'indexing priority') // exclude; replaced by ipRow (if ZFIN)
           .map(sectionKey => {
             const sectionInfo = respData[sectionKey] || {};
             const allTagsObj = sectionInfo.all_workflow_tags || {};
@@ -193,14 +187,14 @@ const BiblioWorkflow = () => {
               reference_workflow_tag_id, // used by workflow_tag PATCH/POST
             };
           });
-	// Put the Indexing Priority row first, then the other two
-	const combinedRows = [ipRow, ...rowsFromWFT];  
+	// Only include the Indexing Priority row for ZFIN
+        const combinedRows = wantIP && ipRow ? [ipRow, ...rowsFromWFT] : rowsFromWFT;
         setIndexingWorkflowData(combinedRows);
       } catch (error) {
         console.error('Error fetching workflow overview:', error);
       }
     },
-      [REST, referenceCurie, accessLevel, accessToken, fetchIndexingPriorityRow]
+    [REST, referenceCurie, accessLevel, accessToken, fetchIndexingPriorityRow]
   );
 
   useEffect(() => {
