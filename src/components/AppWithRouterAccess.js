@@ -42,6 +42,7 @@ import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { setMods } from '../actions/appActions';
+import { DebeziumStatusAlert } from './DebeziumStatusAlert';
 
 import axios from "axios";
 
@@ -102,6 +103,7 @@ const AppWithRouterAccess = () => {
             <div className={className}>
                 <NavigationBar />
                 <NotLoggedInBar />
+                <DebeziumStatusAlert />
                 <br />
                 <Route path='/' exact={true} component={Search}/>
                 <Route path='/search' component={Search} />
