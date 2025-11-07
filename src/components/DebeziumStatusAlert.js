@@ -7,6 +7,7 @@ import {useEffect, useState} from "react";
 export const DebeziumStatusAlert = () => {
     const [statusData, setStatusData] = useState(null);
     const [isDismissed, setIsDismissed] = useState(false);
+    const [currentTime, setCurrentTime] = useState(Date.now());
 
     useEffect(() => {
         const checkDebeziumStatus = async () => {
@@ -41,8 +42,16 @@ export const DebeziumStatusAlert = () => {
         // Set up periodic checking every 2 minutes (120000 ms)
         const intervalId = setInterval(checkDebeziumStatus, 120000);
 
-        // Cleanup interval on unmount
-        return () => clearInterval(intervalId);
+        // Update current time every 5 seconds for dynamic progress calculation
+        const timeUpdateInterval = setInterval(() => {
+            setCurrentTime(Date.now());
+        }, 5000);
+
+        // Cleanup intervals on unmount
+        return () => {
+            clearInterval(intervalId);
+            clearInterval(timeUpdateInterval);
+        };
     }, []);
 
     const handleDismiss = () => {
@@ -55,9 +64,41 @@ export const DebeziumStatusAlert = () => {
         return null;
     }
 
-    const progressPercentage = statusData.progress_percentage || 0;
+    // Calculate dynamic progress and ETA based on started_at and historical metrics
+    let dynamicProgress = statusData.progress_percentage || 0;
+    let dynamicETA = null;
+    let elapsedSeconds = 0;
+    let totalEstimatedSeconds = null;
+
+    const startedAt = statusData.started_at;
+    const historicalMetrics = statusData.historical_metrics;
+
+    if (startedAt) {
+        try {
+            const startTime = new Date(startedAt);
+            elapsedSeconds = Math.floor((currentTime - startTime.getTime()) / 1000);
+
+            // Use historical average duration if available
+            if (historicalMetrics?.average_duration_seconds) {
+                totalEstimatedSeconds = historicalMetrics.average_duration_seconds;
+
+                // Calculate dynamic progress based on elapsed time
+                const calculatedProgress = Math.min(95, Math.floor((elapsedSeconds / totalEstimatedSeconds) * 100));
+
+                // Use the maximum of API-reported progress or time-based progress
+                dynamicProgress = Math.max(dynamicProgress, calculatedProgress);
+
+                // Calculate dynamic ETA
+                const remainingSeconds = Math.max(0, totalEstimatedSeconds - elapsedSeconds);
+                dynamicETA = new Date(currentTime + (remainingSeconds * 1000));
+            }
+        } catch (e) {
+            // If calculation fails, fall back to API values
+            console.error('Error calculating dynamic progress:', e);
+        }
+    }
+
     const phase = statusData.phase || 'unknown';
-    const estimatedCompletion = statusData.estimated_completion_at;
 
     // Format phase name for display
     const phaseDisplay = phase
@@ -65,42 +106,66 @@ export const DebeziumStatusAlert = () => {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 
-    // Format estimated completion time
+    // Format estimated completion time (prefer dynamic ETA, fallback to API ETA)
     let estimatedTimeDisplay = null;
-    if (estimatedCompletion) {
+    const etaToUse = dynamicETA || (statusData.estimated_completion_at ? new Date(statusData.estimated_completion_at) : null);
+
+    if (etaToUse) {
         try {
-            const date = new Date(estimatedCompletion);
-            estimatedTimeDisplay = date.toLocaleString();
+            estimatedTimeDisplay = etaToUse.toLocaleString();
         } catch (e) {
             // Invalid date format, skip display
         }
     }
 
+    // Format elapsed time for display
+    const formatElapsedTime = (seconds) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${secs}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${secs}s`;
+        } else {
+            return `${secs}s`;
+        }
+    };
+
     return (
-        <Alert className="debezium-rebuild-alert" variant="warning" onClose={handleDismiss} dismissible>
-            <Alert.Heading>Index Rebuild in Progress</Alert.Heading>
-            <p>
-                The Elasticsearch index is currently being rebuilt. During this time:
-            </p>
-            <ul>
-                <li>Changes you make will not be reflected in the search results until the rebuild is complete</li>
-                <li>The interface may be slower than usual</li>
-            </ul>
-            <div className="mt-3">
-                <strong>Current Phase:</strong> {phaseDisplay}
-                <ProgressBar
-                    now={progressPercentage}
-                    label={`${progressPercentage}%`}
-                    className="mt-2"
-                    striped
-                    animated
-                />
-                {estimatedTimeDisplay && (
-                    <div className="mt-2 text-muted">
-                        <small>Estimated completion: {estimatedTimeDisplay}</small>
+        <div style={{margin: '5px'}}>
+            <Alert variant="warning" onClose={handleDismiss} dismissible>
+                <Alert.Heading>Index Rebuild in Progress</Alert.Heading>
+                <div>
+                    The Elasticsearch index is currently being rebuilt. During this time:
+                    <div style={{marginTop: '0.5rem'}}>
+                        • Changes you make will not be reflected in the search results until the rebuild is complete
                     </div>
-                )}
-            </div>
-        </Alert>
+                    <div>
+                        • The interface may be slower than usual
+                    </div>
+                </div>
+                <div style={{marginTop: '1rem', marginBottom: 0}}>
+                    <div><strong>Current Phase:</strong> {phaseDisplay}</div>
+                    {elapsedSeconds > 0 && (
+                        <div style={{marginTop: '0.5rem'}}><strong>Elapsed Time:</strong> {formatElapsedTime(elapsedSeconds)}</div>
+                    )}
+                    <div style={{marginTop: '0.5rem'}}><strong>Progress:</strong> {dynamicProgress}%</div>
+                    <ProgressBar
+                        now={dynamicProgress}
+                        style={{marginTop: '0.25rem', height: '25px'}}
+                        striped
+                        animated
+                        variant="success"
+                    />
+                    {estimatedTimeDisplay && (
+                        <div style={{marginTop: '0.75rem', marginBottom: 0}}>
+                            <strong>Estimated completion:</strong> {estimatedTimeDisplay}
+                        </div>
+                    )}
+                </div>
+            </Alert>
+        </div>
     );
 };
