@@ -59,35 +59,61 @@ const BiblioWorkflow = () => {
 
   const fmtScore = (s) => (s == null ? '' : Number.isFinite(Number(s)) ? Number(s).toFixed(2) : s);
     
-  // --- NEW: fetch Indexing Priority row from the new endpoint
   const fetchIndexingPriorityRow = useCallback(async () => {
-    const url = `${REST}/indexing_priority/get_priority_tag/${referenceCurie}`;
+
+    const url = `${REST}/indexing_priority/get_priority_tag/${referenceCurie}/${accessLevel}`;
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     };
-    const res = await axios.get(url, { headers });
-    const payload = res.data || {};
-    const allTags = payload.all_priority_tags || {};
-    const current = Array.isArray(payload.current_priority_tag) ? payload.current_priority_tag : [];
 
-    const ip = current[0] || null;
-
-    const options = Object.entries(allTags).map(([value, label]) => ({
-      value, label,
-    }));
-
+    // helper to normalize shapes safely
+    const normalize = (payload) => {
+      let ip = payload?.current_priority_tag ?? null;
+      if (Array.isArray(ip)) ip = ip[0] ?? null;
+      const rawAll = payload?.all_priority_tags ?? {};
+      let options = [];
+      if (Array.isArray(rawAll)) {	
+	// tolerate [{curie,name}] or {entity:{curie,name}}
+	options = rawAll
+          .map((e) => {
+            const ent = e?.entity ?? e;
+            return ent?.curie && ent?.name
+              ? { value: ent.curie, label: ent.name }
+              : null;
+          })
+          .filter(Boolean);
+      } else {
+        options = Object.entries(rawAll).map(([value, label]) => ({ value, label }));
+      }
+      return { ip, options };
+    };
+    try {
+      const res = await axios.get(url, { headers });
+      const payload = res.data || {};
+      const { ip, options } = normalize(payload);
+      return {
+        section: 'Indexing Priority',
+        workflow_tag: ip?.indexing_priority ?? '',
+        confidence_score: fmtScore(ip?.confidence_score),
+        curator: ip?.updated_by_name ?? ip?.updated_by_email ?? '',
+        date_updated: ip?.date_updated ?? '',
+        options,
+        indexing_priority_id: ip?.indexing_priority_id ?? null,
+      };
+    } catch (err) {
+      console.error('[IndexingPriority] GET failed:', err);
+    }
     return {
       section: 'Indexing Priority',
-      workflow_tag: ip?.indexing_priority ?? '',
-      confidence_score: fmtScore(ip?.confidence_score),
-      curator: ip?.updated_by_name ?? '',
-      date_updated: ip?.date_updated ?? '',
-      options,
-      // use a distinct field for the new PATCH target
-      indexing_priority_id: ip?.indexing_priority_id ?? null,
+      workflow_tag: '',
+      confidence_score: '',
+      curator: '',
+      date_updated: '',
+      options: [],
+      indexing_priority_id: null,
     };
-  }, [REST, referenceCurie, accessToken]);
+  }, [REST, referenceCurie, accessLevel, accessToken]);
 
   // Existing: fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
@@ -95,21 +121,22 @@ const BiblioWorkflow = () => {
       const url =
         `${REST}` +
         `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
+      const wantIP = accessLevel === 'ZFIN';
       try {
 	const headers = {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         };
 	  
-        // fetch both in parallel
+        // fetch WFT + IP (only for ZFIN)
 	const [wftRes, ipRow] = await Promise.all([
           axios.get(url, { headers }),
-          fetchIndexingPriorityRow()
+	  wantIP ? fetchIndexingPriorityRow() : Promise.resolve(null),
         ]);
 	  
         const respData = wftRes.data || {};
         const sectionOrder = [
-          'indexing priority', // we will override with ipRow
+          'indexing priority', // we will override with ipRow when wantIP = true
           'community curation',
           'manual indexing'
         ];
@@ -121,7 +148,7 @@ const BiblioWorkflow = () => {
 
         const rowsFromWFT = sectionOrder
           .filter(sectionKey => sectionKey in respData)
-	  .filter(sectionKey => sectionKey !== 'indexing priority') // exclude; replaced by ipRow
+	  .filter(sectionKey => sectionKey !== 'indexing priority') // exclude; replaced by ipRow (if ZFIN)
           .map(sectionKey => {
             const sectionInfo = respData[sectionKey] || {};
             const allTagsObj = sectionInfo.all_workflow_tags || {};
@@ -160,14 +187,14 @@ const BiblioWorkflow = () => {
               reference_workflow_tag_id, // used by workflow_tag PATCH/POST
             };
           });
-	// Put the Indexing Priority row first, then the other two
-	const combinedRows = [ipRow, ...rowsFromWFT];  
+	// Only include the Indexing Priority row for ZFIN
+        const combinedRows = wantIP && ipRow ? [ipRow, ...rowsFromWFT] : rowsFromWFT;
         setIndexingWorkflowData(combinedRows);
       } catch (error) {
         console.error('Error fetching workflow overview:', error);
       }
     },
-      [REST, referenceCurie, accessLevel, accessToken, fetchIndexingPriorityRow]
+    [REST, referenceCurie, accessLevel, accessToken, fetchIndexingPriorityRow]
   );
 
   useEffect(() => {
