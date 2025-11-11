@@ -17,7 +17,7 @@ export default function SettingsDropdown({ settings, selectedId, onPick, label =
             active={s.person_setting_id === selectedId}
             onClick={() => onPick(s.person_setting_id)}
           >
-            {s.name}{s.is_default ? " (default)" : ""}
+            {s.setting_name}{s.default_setting ? " (default)" : ""}
           </Dropdown.Item>
         ))}
       </Dropdown.Menu>

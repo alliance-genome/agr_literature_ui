@@ -143,21 +143,7 @@ export async function updatePersonSetting({
   patch,
 }) {
   console.log(`Updating setting ${person_setting_id}:`, patch);
-  
-  // Convert frontend field names to backend field names
-  const backendPatch = {};
-  
-  if (patch.name !== undefined) {
-    backendPatch.setting_name = patch.name;
-  }
-  if (patch.payload !== undefined) {
-    backendPatch.json_settings = patch.payload;
-  }
-  if (patch.is_default !== undefined) {
-    backendPatch.default_setting = patch.is_default;
-  }
-  
-  const body = JSON.stringify(backendPatch);
+  const body = JSON.stringify(patch);  
   const { json } = await authed(
     baseUrl,
     token,

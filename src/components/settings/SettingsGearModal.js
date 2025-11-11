@@ -134,26 +134,26 @@ export default function SettingsGearModal({
               <Form.Check
                 type="radio"
                 name="default-setting"
-                checked={!!s.is_default}
+                checked={!!s.default_setting}
                 onChange={() => handleMakeDefault(s.person_setting_id)}
                 disabled={busy}
                 title="Make this my default"
               />
               <Form.Control
-                value={nameEdits[s.person_setting_id] ?? s.name}
+                value={nameEdits[s.person_setting_id] ?? s.setting_name}
                 onChange={(e) => setNameEdits({ ...nameEdits, [s.person_setting_id]: e.target.value })}
                 disabled={busy}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
-                    handleRename(s.person_setting_id, nameEdits[s.person_setting_id] ?? s.name);
+                    handleRename(s.person_setting_id, nameEdits[s.person_setting_id] ?? s.setting_name);
                   }
                 }}
               />
               <Button
                 size="sm" 
                 variant="outline-success" 
-                disabled={busy || !nameEdits[s.person_setting_id] || nameEdits[s.person_setting_id] === s.name}
-                onClick={() => handleRename(s.person_setting_id, nameEdits[s.person_setting_id] ?? s.name)}
+                disabled={busy || !nameEdits[s.person_setting_id] || nameEdits[s.person_setting_id] === s.setting_name}
+                onClick={() => handleRename(s.person_setting_id, nameEdits[s.person_setting_id] ?? s.setting_name)}
                 title="Save name"
               >
                 {busy ? <Spinner animation="border" size="sm" /> : "Save"}

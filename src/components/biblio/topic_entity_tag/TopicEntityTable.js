@@ -250,10 +250,11 @@ const TopicEntityTable = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [nameEdits, setNameEdits] = useState({});
+  const [isGridReady, setIsGridReady] = React.useState(false);
   const gridRef = useRef();
   
   // Define component name for settings - specific to this component
-  const componentName = "topic_entity_table";
+  const componentName = "tet_table";
     
   // Settings via shared hook
   const {
@@ -590,6 +591,7 @@ const TopicEntityTable = () => {
 
   const onGridReady = useCallback(async (params) => {
     try {
+      setIsGridReady(true);
       const { existing, picked } = await load();
       
       if (!existing || existing.length === 0) {
@@ -607,13 +609,13 @@ const TopicEntityTable = () => {
         });
         
         if (created) {
-          applyGridState(gridRef, created.payload);
-          setItems(itemsFromColumnState(itemsInitOrg, created.payload.columnState || []));
+          applyGridState(gridRef, created.json_settings || {});
+	  setItems(itemsFromColumnState(itemsInitOrg, (created.json_settings?.columnState) || []));
         }
       } else if (picked) {
         // Apply the picked setting
-        applyGridState(gridRef, picked.payload || {});
-        setItems(itemsFromColumnState(itemsInitOrg, (picked.payload && picked.payload.columnState) || []));
+        applyGridState(gridRef, picked.json_settings || {});
+        setItems(itemsFromColumnState(itemsInitOrg, (picked.json_settings?.columnState) || []));
       }
     } catch (e) {
       console.error("Failed to load person settings:", e);
@@ -649,20 +651,26 @@ const TopicEntityTable = () => {
   const handleLoadDefault = useCallback(async () => {
     if (!settings || settings.length === 0) return;
 
-    const defaultSetting = settings.find(s => s.is_default);
+    const defaultSetting = settings.find(s => !!s.default_setting);
     if (!defaultSetting) {
       alert("No default setting found.");
       return;
     }
 
-    // Apply saved grid preferences
-    const payload = defaultSetting.payload || {};
-    applyGridStateFromPayload(gridRef, payload);
+    // Support both new (json_settings) and any old rows that used `payload`
+    const raw = defaultSetting.json_settings || defaultSetting.payload || {};
 
-    // Update selection to the loaded one
+    // If the stored JSON is empty/meta-only, use a strong fallback so something happens.
+    const hasState =
+      (raw && (raw.columnState?.length || Object.keys(raw.filterModel||{}).length || (raw.sortModel?.length))) || false;
+    const fallback = {
+      columnState: columnStateFromColDefs(colDefs),
+      filterModel: {},
+      sortModel: []
+    };
+    const payload = hasState ? raw : fallback;
+    applyGridStateFromPayload(gridRef, payload);
     setSelectedSettingId(defaultSetting.person_setting_id);
-    
-    // Update items state to reflect the loaded column visibility
     setItems(itemsFromColumnState(itemsInitOrg, payload.columnState || []));
   }, [settings, gridRef, setSelectedSettingId, itemsInitOrg]);
   
@@ -670,8 +678,8 @@ const TopicEntityTable = () => {
     setSelectedSettingId(person_setting_id);
     const s = settings.find(x => x.person_setting_id === person_setting_id);
     if (!s) return;
-    applyGridState(gridRef, s.payload || {});
-    setItems(itemsFromColumnState(itemsInitOrg, (s.payload && s.payload.columnState) || []));
+    applyGridState(gridRef, s?.json_settings || {});
+    setItems(itemsFromColumnState(itemsInitOrg, (s?.json_settings?.columnState) || []));
   };
 
   const saveIntoCurrentPreset = async () => {
@@ -679,10 +687,28 @@ const TopicEntityTable = () => {
       alert("Please select a setting to save to first.");
       return;
     }
-    const state = extractGridState(gridRef);
+
+    // Force AG Grid to flush any pending visibility/order updates
+    gridRef.current?.api?.onFilterChanged();
+    gridRef.current?.api?.refreshClientSideRowModel("filter");
+    gridRef.current?.api?.refreshCells({ force: true });
+
+    // Small delay gives AG Grid time to commit recent UI changes
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Now safely extract the *latest* grid state
+    const live = extractGridState(gridRef);
+    const fallback = {
+      columnState: columnStateFromColDefs(colDefs),
+      filterModel: {},
+      sortModel: []
+    };
+    const state = live ?? fallback;
+
+    console.log("Saving grid state to preset:", state); // optional debug
     await savePayloadTo(selectedSettingId, { ...state, meta: { accessLevel } });
   };
-
+  
   return (
     <div>
       {/* Curie Popup */}
@@ -718,26 +744,19 @@ const TopicEntityTable = () => {
                 <Button
                   variant="outline-primary"
                   size="sm"
+		  title="Manage table preferences"
                   onClick={() => setShowSettingsModal(true)}
                 >
+		  <FaGear size={14} style={{ marginRight: '6px' }} />
                   Preferences
                 </Button>
-                {/* Gear icon opens modal */}
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() => setShowSettingsModal(true)}
-                  title="Manage table preferences"
-                >
-                  <FaGear size={14} />
-                </Button> 	  
                 <SettingsDropdown
                   settings={settings}
                   selectedId={selectedSettingId}
                   onPick={handlePickSetting}
                 />
                 <Button      
-                  variant="outline-success"
+                  variant="outline-primary"
                   size="sm"
                   onClick={saveIntoCurrentPreset}
                   disabled={!selectedSettingId || busy}
@@ -745,10 +764,10 @@ const TopicEntityTable = () => {
                   Save to selected
                 </Button>
                 <Button
-                  variant="outline-secondary"
+                  variant="outline-primary"
                   size="sm"
                   onClick={handleLoadDefault}
-                  disabled={settings.length === 0}
+                  disabled={settings.length === 0 || !isGridReady}
                 >
                   Load default
                 </Button>
@@ -798,7 +817,14 @@ const TopicEntityTable = () => {
         nameEdits={nameEdits}
         setNameEdits={setNameEdits}
         onCreate={async (name) => {
-          const state = extractGridState(gridRef);
+          // Try live grid state; if not available, build from current colDefs
+          const live = extractGridState(gridRef);
+          const fallback = {
+            columnState: columnStateFromColDefs(colDefs),
+            filterModel: {},
+            sortModel: []
+          };
+          const state = live ?? fallback;
           return await create(name, { ...state, meta: { accessLevel } });
         }}
         onRename={rename}
