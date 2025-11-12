@@ -31,6 +31,7 @@ import { debounce } from 'lodash';
 import Alert from "react-bootstrap/Alert";
 
 const TopicEntityCreate = () => {
+  const debugMode = false;
   const REST = process.env.REACT_APP_RESTAPI;
   const dispatch = useDispatch();
   const editTag = useSelector((state) => state.biblio.editTag);
@@ -1223,7 +1224,7 @@ const TopicEntityCreate = () => {
                           }}
                         />
                         <span>Entity Addition Done</span>
-                        <span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>
+                        {debugMode && (<span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>)}
                       </>) }
                   </>
                 )}
