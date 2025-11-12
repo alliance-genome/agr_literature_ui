@@ -144,16 +144,11 @@ export async function updatePersonSetting({
   patch,
 }) {
   console.log(`Updating setting ${person_setting_id}:`, patch);
-  // Map friendly keys to backend column names
-  const backendPatch = {};
-  if (patch.name !== undefined) backendPatch.setting_name = patch.name;
-  if (patch.payload !== undefined) backendPatch.json_settings = patch.payload;
-  if (patch.is_default !== undefined) backendPatch.default_setting = patch.is_default;
-  // Also pass through already-correct backend keys for safety
-  if (patch.setting_name !== undefined) backendPatch.setting_name = patch.setting_name;
-  if (patch.json_settings !== undefined) backendPatch.json_settings = patch.json_settings;
-  if (patch.default_setting !== undefined) backendPatch.default_setting = patch.default_setting;
-  const body = JSON.stringify(backendPatch);
+  
+  // Simplify the mapping - just pass the patch directly
+  // The backend expects the actual column names anyway
+  const body = JSON.stringify(patch);
+  
   const { json } = await authed(
     baseUrl,
     token,
@@ -185,18 +180,55 @@ export async function showPersonSetting({ baseUrl, token, person_setting_id }) {
 /**
  * Mark one setting as default.
  */
-const makeDefaultPersonSetting = async ({ baseUrl, token, componentName, person_setting_id }) => {
-  const response = await axios.patch(
-    `${baseUrl}/person_setting/${person_setting_id}`,
-    { default_setting: true },
-    {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+export const makeDefaultPersonSetting = async ({ baseUrl, token, oktaId, componentName, person_setting_id }) => {
+  try {
+    console.log(`Setting ${person_setting_id} as default for component: ${componentName}`);
+    
+    // First, get current settings to find existing default
+    const { json: allSettings } = await authed(
+      baseUrl,
+      token,
+      `/person_setting/by/okta/${encodeURIComponent(oktaId)}`
+    );
+    
+    if (Array.isArray(allSettings)) {
+      // Find current default for this component
+      const currentDefault = allSettings.find(s => 
+        s.component_name === componentName && s.default_setting === true
+      );
+      
+      // Unset current default if it exists and is different
+      if (currentDefault && currentDefault.person_setting_id !== person_setting_id) {
+        console.log(`Unsetting current default: ${currentDefault.person_setting_id}`);
+        await authed(
+          baseUrl,
+          token,
+          `/person_setting/${currentDefault.person_setting_id}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ default_setting: false })
+          }
+        );
       }
     }
-  );
-  return response.data;
+    
+    // Set new default
+    const response = await authed(
+      baseUrl,
+      token,
+      `/person_setting/${person_setting_id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ default_setting: true })
+      }
+    );
+    
+    console.log(`Successfully set ${person_setting_id} as default`);
+    return response.json;
+  } catch (error) {
+    console.error(`Failed to set default setting ${person_setting_id}:`, error);
+    throw error;
+  }
 };
 
 /** Pick the default setting from a list (fallback to first if none marked). */

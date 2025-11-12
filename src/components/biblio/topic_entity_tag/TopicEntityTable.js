@@ -262,7 +262,7 @@ const Notification = ({ show, message, variant, onClose }) => {
   );
 };
 
-// Custom SettingsGearModal without Save buttons and checkboxes
+// Custom SettingsGearModal with inline rename (revert to original style)
 const CustomSettingsGearModal = ({
   show,
   onHide,
@@ -272,12 +272,12 @@ const CustomSettingsGearModal = ({
   onCreate,
   onRename,
   onDelete,
-  onMakeDefault,  // <- must be the working makeDefault from the hook
+  onMakeDefault,
   canCreateMore,
   busy
 }) => {
   const [newSettingName, setNewSettingName] = useState('');
-  const [rowBusyId, setRowBusyId] = useState(null); // per-setting busy state
+  const [rowBusyId, setRowBusyId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleCreate = async () => {
@@ -300,15 +300,59 @@ const CustomSettingsGearModal = ({
     setErrorMsg('');
     setRowBusyId(setting.person_setting_id);
     try {
-      // Await the hook's makeDefault
       await onMakeDefault(setting.person_setting_id);
-      // Close modal on success (optional: keep it open if you prefer)
       onHide?.();
     } catch (error) {
       console.error('Failed to set default:', error);
       setErrorMsg(error?.message || 'Failed to set default.');
     } finally {
       setRowBusyId(null);
+    }
+  };
+
+  // Handle inline rename
+  const handleRenameStart = (setting) => {
+    setNameEdits(prev => ({
+      ...prev,
+      [setting.person_setting_id]: setting.setting_name || setting.name
+    }));
+  };
+
+  const handleRenameCancel = (settingId) => {
+    setNameEdits(prev => {
+      const newEdits = { ...prev };
+      delete newEdits[settingId];
+      return newEdits;
+    });
+  };
+
+  const handleRenameSave = async (setting) => {
+    const newName = nameEdits[setting.person_setting_id]?.trim();
+    if (!newName) {
+      setErrorMsg("Setting name cannot be empty.");
+      return;
+    }
+    if (newName === (setting.setting_name || setting.name)) {
+      handleRenameCancel(setting.person_setting_id);
+      return;
+    }
+
+    setRowBusyId(setting.person_setting_id);
+    try {
+      await onRename(setting.person_setting_id, newName);
+      handleRenameCancel(setting.person_setting_id);
+    } catch (error) {
+      setErrorMsg(error?.message || 'Failed to rename setting.');
+    } finally {
+      setRowBusyId(null);
+    }
+  };
+
+  const handleRenameKeyPress = (e, setting) => {
+    if (e.key === 'Enter') {
+      handleRenameSave(setting);
+    } else if (e.key === 'Escape') {
+      handleRenameCancel(setting.person_setting_id);
     }
   };
 
@@ -361,56 +405,96 @@ const CustomSettingsGearModal = ({
             <p className="text-muted">No settings saved yet.</p>
           ) : (
             <div className="list-group">
-              {settings.map((setting) => (
-                <div
-                  key={setting.person_setting_id}
-                  className="list-group-item d-flex justify-content-between align-items-center"
-                >
-                  <div className="d-flex align-items-center">
-                    <span className="me-2">{setting.default_setting && '★'}</span>
-                    <span className="me-3">{setting.setting_name || setting.name}</span>
-                  </div>
-                  <div className="d-flex gap-2">
-                    {!setting.default_setting && (
+              {settings.map((setting) => {
+                const isEditing = nameEdits.hasOwnProperty(setting.person_setting_id);
+                const isBusy = rowBusyId === setting.person_setting_id;
+                
+                return (
+                  <div
+                    key={setting.person_setting_id}
+                    className="list-group-item d-flex justify-content-between align-items-center"
+                  >
+                    <div className="d-flex align-items-center flex-grow-1 me-3">
+                      <span className="me-2">{setting.default_setting && '★'}</span>
+                      
+                      {isEditing ? (
+                        <div className="d-flex align-items-center flex-grow-1">
+                          <Form.Control
+                            type="text"
+                            size="sm"
+                            value={nameEdits[setting.person_setting_id] || ''}
+                            onChange={(e) => setNameEdits(prev => ({
+                              ...prev,
+                              [setting.person_setting_id]: e.target.value
+                            }))}
+                            onKeyDown={(e) => handleRenameKeyPress(e, setting)}
+                            disabled={isBusy}
+                            autoFocus
+                            className="me-2"
+                          />
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => handleRenameSave(setting)}
+                            disabled={isBusy}
+                            className="me-1"
+                          >
+                            ✓
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleRenameCancel(setting.person_setting_id)}
+                            disabled={isBusy}
+                          >
+                            ✗
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="me-3 flex-grow-1">
+                          {setting.setting_name || setting.name}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="d-flex gap-2">
+                      {!setting.default_setting && (
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => handleMakeDefaultClick(setting)}
+                          disabled={busy || isBusy}
+                          title="Set as default"
+                        >
+                          {isBusy ? 'Setting…' : 'Set Default'}
+                        </Button>
+                      )}
+                      
+                      {!isEditing && (
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          onClick={() => handleRenameStart(setting)}
+                          disabled={busy || isBusy}
+                          title="Rename setting"
+                        >
+                          Rename
+                        </Button>
+                      )}
+                      
                       <Button
-                        variant="outline-primary"
+                        variant="outline-danger"
                         size="sm"
-                        onClick={() => handleMakeDefaultClick(setting)}
-                        disabled={busy || rowBusyId === setting.person_setting_id}
-                        title="Set as default"
+                        onClick={() => onDelete(setting.person_setting_id)}
+                        disabled={busy || isBusy}
+                        title="Delete setting"
                       >
-                        {rowBusyId === setting.person_setting_id ? 'Setting…' : 'Set Default'}
+                        Delete
                       </Button>
-                    )}
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={async () => {
-                        const newName = prompt('Rename setting to:', setting.setting_name || setting.name);
-                        if (newName == null) return; // cancelled
-                        try {
-                          await onRename(setting.person_setting_id, newName);
-                        } catch (e) {
-                          setErrorMsg(e?.message || 'Failed to rename.');
-                        }
-                      }}
-                      disabled={busy}
-                      title="Rename setting"
-                    >
-                      Rename
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => onDelete(setting.person_setting_id)}
-                      disabled={busy}
-                      title="Delete setting"
-                    >
-                      Delete
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -63,7 +63,7 @@ export function usePersonSettings({
         const created = await createPersonSetting({
           baseUrl,
           token,
-	  oktaId,
+          oktaId,
           componentName,
           name,
           isDefault,
@@ -126,14 +126,14 @@ export function usePersonSettings({
       if (!token) {
         throw new Error("Cannot rename setting: missing authentication");
       }
-      
+    
       setBusy(true);
       try {
         const updated = await updatePersonSetting({
           baseUrl,
           token,
           person_setting_id: id,
-          patch: { name: newName.trim() }, // This gets mapped to setting_name
+          patch: { setting_name: newName.trim() }, // Changed from 'name' to 'setting_name'
         });
         setSettings((prev) =>
           prev.map((s) =>
@@ -181,48 +181,18 @@ export function usePersonSettings({
       if (!token) {
         throw new Error("Cannot set default: missing authentication");
       }
-    
+  
       setBusy(true);
       try {
-        // Get all settings for this component
-        const response = await axios.get(
-          `${baseUrl}/person_settings?component_name=${componentName}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-      
-        const allSettings = response.data;
-      
-        // Find the current default setting
-        const currentDefault = allSettings.find(s => s.default_setting);
-      
-        // If there's a current default and it's not the one we want to set, unset it first
-        if (currentDefault && currentDefault.person_setting_id !== id) {
-          await axios.put(
-            `${baseUrl}/person_settings/${currentDefault.person_setting_id}`,
-            { default_setting: false },
-            {
-              headers: { 
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-        }
-      
-        // Set the new default
-        await axios.put(
-          `${baseUrl}/person_settings/${id}`,
-          { default_setting: true },
-          {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-      
+        // Use the utility function with all required parameters
+        await makeDefaultPersonSetting({
+          baseUrl,
+          token,
+          oktaId, // This was missing before
+          componentName,
+          person_setting_id: id
+        });
+    
         // Update local state
         setSettings((prev) =>
           prev.map((s) => ({ ...s, default_setting: s.person_setting_id === id }))
@@ -235,7 +205,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token, componentName]
+    [baseUrl, token, oktaId, componentName] // Make sure oktaId is in dependencies
   );
 
   const savePayloadTo = useCallback(
