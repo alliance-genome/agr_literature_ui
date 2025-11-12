@@ -148,12 +148,12 @@ const TopicEntityCreate = () => {
     "ATP:0000005": "gene",
     "ATP:0000006": "allele",
     "ATP:0000123": "species",
-    "ATP:0000014": "AGMs",
     "ATP:0000027": "strain",
     "ATP:0000025": "genotype",
     "ATP:0000026": "fish",
     "ATP:0000013": "transgenic construct",
     "ATP:0000110": "transgenic allele",
+    "ATP:0000285": "classical allele",
     "ATP:0000093": "sequence targeting reagent"
   };
   const entityTypeList = [
@@ -162,7 +162,7 @@ const TopicEntityCreate = () => {
     "ATP:0000006",
     "ATP:0000110",
     "ATP:0000123",
-    "ATP:0000014",
+    "ATP:0000285",
     "ATP:0000027",
     "ATP:0000025",
     "ATP:0000026",
