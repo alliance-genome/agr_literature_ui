@@ -25,114 +25,110 @@ import { timestampToDateFormatter } from '../BiblioWorkflow';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-// ===== utils (keys + grid state) =====
+// ===== reusable utils for user preferences
 import {
   applyGridState,
   applyGridStateFromPayload,
   columnStateFromColDefs
 } from '../../../utils/gridState';
-
-// ===== shared settings hook + UI =====
 import { usePersonSettings } from '../../settings/usePersonSettings';
 import SettingsDropdown from '../../settings/SettingsDropdown';
 
-/* -------------------------------------------
-   Download helpers
---------------------------------------------*/
 export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNameFront) => {
-  let dataToDownload = [];
-  let headers = [];
-  let fields = [];
+    let dataToDownload = [];
+    let headers = [];
+    let fields = [];
 
-  colDefs
-    .filter(col => option === 'allColumns' || !col.hide)
-    .forEach(col => {
-      headers.push(col.headerName);
-      fields.push(col.field);
-    });
+    // get headers and fields from visible columns only
+    colDefs
+      .filter(col => option === 'allColumns' || !col.hide) // include hidden columns only for 'allColumns' option
+      .forEach(col => {
+        headers.push(col.headerName);
+        fields.push(col.field);
+      });
 
-  const entityIndex = fields.indexOf("entity_name");
-  if (entityIndex !== -1) {
-    headers.splice(entityIndex + 1, 0, "Entity CURIE");
-    fields.splice(entityIndex + 1, 0, "entity");
-  }
+    // find the index of the Entity column so later we can add entity curie (in the "entity" field)
+    const entityIndex = fields.indexOf("entity_name");
 
-  if ((option === "allColumns") || (option === "multiHeader")) {
-    gridRef.current.api.forEachNode((node) => {
-      dataToDownload.push(node.data);
-    });
-  } else if (option === "withoutFilters") {
-    const allData = topicEntityTags;
-    dataToDownload = [...allData];
-  } else {
-    gridRef.current.api.forEachNodeAfterFilterAndSort((node) => {
-      dataToDownload.push(node.data);
-    });
-  }
+    // add entity CURIE field and header next to the Entity column
+    // entity curie is in "entity" field, entity (name) is in "entity_name" field
+    if (entityIndex !== -1) {
+      headers.splice(entityIndex + 1, 0, "Entity CURIE"); // insert "Entity CURIE" after "Entity"
+      fields.splice(entityIndex + 1, 0, "entity");        // insert "entity" field after "entity_name"
+    }
 
-  if (option === "multiHeader") {
-    headers = headers.flatMap(header =>
-      header === "" ? "status" : [`${header}_num`, `${header}_perc`]
+    if ( (option === "allColumns") || (option === "multiHeader") ) {
+      // download all columns, even hidden ones
+      gridRef.current.api.forEachNode((node) => {
+        dataToDownload.push(node.data);
+      });
+    } else if (option === "withoutFilters") {
+      // download all data without applying filters
+      const allData = topicEntityTags;
+      dataToDownload = [...allData]; // copy all data from API
+    } else {
+      // default download with current filters and shown columns
+      gridRef.current.api.forEachNodeAfterFilterAndSort((node) => {
+        dataToDownload.push(node.data);
+      });
+    }
+
+    if (option === "multiHeader") {
+      headers = headers.flatMap(header =>
+        header === "" ? "status" : [`${header}_num`, `${header}_perc`]
+      );
+      fields = fields.flatMap(field =>
+        field === "status" ? [field] : [`${field}_num`, `${field}_perc`]
+      );
+    }
+
+    // helper function to get nested values
+    // if the field is "topic_name", it will return row.topic_name
+    // if the field is "topic_entity_tag_source.secondary_data_provider_abbreviation",
+    // it will return row.topic_entity_tag_source.secondary_data_provider_abbreviation
+    const getNestedValue = (obj, field) => {
+      return field.split('.').reduce((acc, key) => acc && acc[key] ? acc[key] : '', obj);
+    };
+
+    // convert headers and data to TSV format
+    const tsvHeaders = headers.join('\t'); 
+    const tsvRows = dataToDownload.map((row) =>
+      fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
     );
-    fields = fields.flatMap(field =>
-      field === "status" ? [field] : [`${field}_num`, `${field}_perc`]
-    );
-  }
+    const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
+    const encodedUri = encodeURI(tsvContent);
 
-  const getNestedValue = (obj, field) => {
-    return field.split('.').reduce((acc, key) => acc && acc[key] ? acc[key] : '', obj);
-  };
+    const fileName = `${fileNameFront}_${option}.tsv`;
 
-  const tsvHeaders = headers.join('\t');
-  const tsvRows = dataToDownload.map((row) =>
-    fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
-  );
-  const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
-  const encodedUri = encodeURI(tsvContent);
-  const fileName = `${fileNameFront}_${option}.tsv`;
-
-  const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', fileName);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    // trigger file download
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
 
-// Restored named buttons (so external imports work again)
-export const DownloadMultiHeaderButton = ({
-  option,
-  gridRef,
-  colDefs,
-  rowData,
-  fileNameFront,
-  buttonLabel = 'Download (multi-header)'
-}) => (
-  <Button
-    variant="primary"
-    size="sm"
-    onClick={() => handleDownload('multiHeader', gridRef, colDefs, rowData, fileNameFront)}
-  >
-    {buttonLabel}
-  </Button>
-);
 
-export const DownloadAllColumnsButton = ({
-  option,
-  gridRef,
-  colDefs,
-  rowData,
-  fileNameFront,
-  buttonLabel = 'Download All Columns'
-}) => (
-  <Button
-    variant="primary"
-    size="sm"
-    onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront)}
-  >
-    {buttonLabel}
-  </Button>
-);
+export const DownloadMultiHeaderButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
+  return(
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={() => handleDownload('multiHeader', gridRef, colDefs, rowData, fileNameFront)}
+    >{buttonLabel}</Button>
+  );
+};
+
+export const DownloadAllColumnsButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
+  return(
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront)}
+    >{buttonLabel}</Button>
+  );
+};
 
 export const DownloadDropdownOptionsButton = ({option, gridRef, colDefs, rowData, fileNameFront}) => {
   return(
@@ -262,7 +258,7 @@ const Notification = ({ show, message, variant, onClose }) => {
   );
 };
 
-// Custom SettingsGearModal with inline rename (revert to original style)
+// Custom SettingsGearModal with inline rename
 const CustomSettingsGearModal = ({
   show,
   onHide,
@@ -277,6 +273,8 @@ const CustomSettingsGearModal = ({
   busy
 }) => {
   const [newSettingName, setNewSettingName] = useState('');
+  // to track which row (setting) is currently performing an async action -
+  // like renaming, deleting, or setting as default
   const [rowBusyId, setRowBusyId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -406,7 +404,7 @@ const CustomSettingsGearModal = ({
           ) : (
             <div className="list-group">
               {settings.map((setting) => {
-                const isEditing = nameEdits.hasOwnProperty(setting.person_setting_id);
+                const isEditing = Object.prototype.hasOwnProperty.call(nameEdits, setting.person_setting_id);
                 const isBusy = rowBusyId === setting.person_setting_id;
                 
                 return (
@@ -514,12 +512,10 @@ const TopicEntityTable = () => {
   const testerMod = useSelector((state) => state.isLogged.testerMod);
   const uid = useSelector(state => state.isLogged.uid);  
   const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
-
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const filteredTags = useSelector(state => state.biblio.filteredTags);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
-
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [selectedCurie, setSelectedCurie] = useState(null);
   const [showCurieModal, setShowCurieModal] = useState(false);
@@ -530,7 +526,6 @@ const TopicEntityTable = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [nameEdits, setNameEdits] = useState({});
   const [isGridReady, setIsGridReady] = useState(false);
-  const [settingsVersion, setSettingsVersion] = useState(0);
   const gridRef = useRef();
   
   // Notification state
@@ -697,7 +692,7 @@ const TopicEntityTable = () => {
     { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 24, checked: false},
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 25, checked: false },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 26, checked: false },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 27, checked: false },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , id: 27, checked: false },
     { headerName: "Model ID", field: "ml_model_id", id: 28, checked: false },
     { headerName: "Model Version", field: "ml_model_version", id: 29, checked: false },
     { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 30, checked: false },
@@ -712,17 +707,35 @@ const TopicEntityTable = () => {
   const [items, setItems] = useState(getInitialItems());
 
   // grid state extraction
+  // extractCurrentGridState gathers the current visual configuration of the AG Grid table - that is:
+  // * which columns are visible or hidden,
+  // * what filters are applied, and
+  // * how the table is sorted.
+  // Then it packages that info into a JSON object that can be stored in person_setting.json_settings
   const extractCurrentGridState = useCallback(async () => {
     if (!gridRef.current || !gridRef.current.columnApi) {
       console.error('Grid or column API not available');
       return null;
     }
+    // These lines force AG Grid to update internal states before capturing them
     gridRef.current.api.refreshHeader();
     gridRef.current.api.refreshCells({ force: true });
     gridRef.current.api.onFilterChanged();
+    // The 150 ms delay to make sure the grid’s async rendering (column widths, filters, etc.)
+    // settles before reading.  
     await new Promise(r => setTimeout(r, 150));
 
+    // This retrieves an array of column states - one per column
+    // Each state object includes things like:
+    // {
+    //   colId: "entity_name",
+    //   width: 150,
+    //   hide: false,
+    //   sort: "asc",
+    //   sortIndex: 0
+    // }
     const columnState = gridRef.current.columnApi.getColumnState();
+    // This syncs the AG Grid’s column visibility with our React state items
     const syncedColumnState = columnState.map(colState => {
       const item = items.find(i => i.field === colState.colId);
       return item ? { ...colState, hide: !item.checked } : colState;
@@ -807,11 +820,17 @@ const TopicEntityTable = () => {
     );
   };
 
-  const caseInsensitiveComparator = (a, b) => {
-    if (a === null && b === null) return 0;
-    if (a === null) return -1;
-    if (b === null) return 1;
-    return String(a).toLowerCase().localeCompare(String(b).toLowerCase());
+  const caseInsensitiveComparator = (valueA, valueB) => {
+    if (valueA === null && valueB === null) {
+      return 0;
+    }
+    if (valueA === null) {
+      return -1;
+    }
+    if (valueB === null) {
+      return 1;
+    }
+    return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
   };
 
   const dataNoveltyMap = {
@@ -904,7 +923,7 @@ const TopicEntityTable = () => {
   }
 
   const buildSeedPresetName = useCallback(() => {
-    return accessLevel === "SGD" ? "SGD Default" : "Default";
+    return accessLevel === "SGD" ? "SGD Default" : "MOD Default";
   }, [accessLevel]);
 
   // Apply settings to grid and update UI state
@@ -998,21 +1017,7 @@ const TopicEntityTable = () => {
 
   const fileNameFront = `${referenceCurie}_tet_data`;
 
-  // Preset handlers
-  const handleLoadDefault = useCallback(async () => {
-    if (!settings || settings.length === 0) {
-      showNotification("No default setting found.", "warning");
-      return;
-    }
-    const def = settings.find(s => !!s.default_setting);
-    if (!def) {
-      showNotification("No default setting found.", "warning");
-      return;
-    }
-    const payload = def.json_settings || def.payload || {};
-    await applySettingsToGrid(payload, def.person_setting_id);
-  }, [settings, applySettingsToGrid]);
-
+  // Pick setting from dropdown
   const handlePickSetting = async (person_setting_id) => {
     const s = settings.find(x => x.person_setting_id === person_setting_id);
     if (!s) return;
@@ -1020,17 +1025,7 @@ const TopicEntityTable = () => {
     await applySettingsToGrid(payload, person_setting_id);
   };
 
-  const saveIntoCurrentPreset = async () => {
-    if (!selectedSettingId) {
-      showNotification("Please select a setting to save to first.", "warning");
-      return;
-    }
-    const state = await getSafeCurrentState();
-    await savePayloadTo(selectedSettingId, { ...state, meta: { accessLevel } });
-    showNotification("Settings saved successfully!", "success");
-  };
-
-  // Create new setting
+  // Create new setting (uses current grid state)
   const handleCreateSetting = async (name) => {
     const clean = (name ?? '').trim();
     if (!clean) {
@@ -1058,7 +1053,7 @@ const TopicEntityTable = () => {
     }
   };
 
-  // Rename
+  // Rename (from modal)
   const handleRename = async (person_setting_id, newName) => {
     const clean = (newName ?? '').trim();
     if (!clean) {
@@ -1077,7 +1072,6 @@ const TopicEntityTable = () => {
     try {
       await rename(person_setting_id, clean);
       await load();
-      setSettingsVersion(v => v + 1);
       showNotification(`Renamed to "${clean}".`, "success");
       return true;
     } catch (err) {
@@ -1086,49 +1080,6 @@ const TopicEntityTable = () => {
       return false;
     }
   };
-
-  // Set default (uses API fallback as before)
-  const handleSetDefault = useCallback(async () => {
-    try {
-      await load();
-      const settingToSetAsDefault = settings.find(s => s.person_setting_id === selectedSettingId);
-      if (!settingToSetAsDefault) {
-        showNotification("Selected setting not found. Please select a different setting.", "error");
-        return;
-      }
-      const settingName = settingToSetAsDefault.setting_name || settingToSetAsDefault.name;
-      const currentDefault = settings.find(s => s.default_setting);
-      if (currentDefault && currentDefault.person_setting_id !== selectedSettingId) {
-        try {
-          await axios.patch(
-            `${process.env.REACT_APP_RESTAPI}/person_setting/${currentDefault.person_setting_id}`,
-            { default_setting: false },
-            { headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-          );
-        } catch (_) {}
-      }
-      await axios.patch(
-        `${process.env.REACT_APP_RESTAPI}/person_setting/${selectedSettingId}`,
-        { default_setting: true },
-        { headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-      );
-      await load();
-      setSettingsVersion(prev => prev + 1);
-      showNotification(`"${settingName}" is now your default setting!`, "success");
-    } catch (error) {
-      if (error.response) {
-        if (error.response.status === 422) {
-          showNotification(`Validation error: ${error.response.data.detail}`, "error");
-        } else if (error.response.status === 404) {
-          showNotification("Setting not found. Please refresh and try again.", "error");
-        } else {
-          showNotification(`Error: ${error.response.data.detail || error.message}`, "error");
-        }
-      } else {
-        showNotification(`Error: ${error.message}`, "error");
-      }
-    }
-  }, [settings, selectedSettingId, accessToken, load]);
 
   return (
     <div>
@@ -1157,12 +1108,10 @@ const TopicEntityTable = () => {
         <Row>
           <Col>
             <div className="d-flex justify-content-between align-items-center" style={{ paddingBottom: '10px' }}>
-              <div className="d-flex gap-2">
+              {/* Left controls: Hide/Show + Preferences + Load setting */}
+              <div className="d-flex align-items-center" style={{ gap: '14px' }}>
                 <CheckboxDropdown items={items} />
-              </div>
 
-              {/* Center controls */}
-              <div className="d-flex justify-content-center align-items-center gap-2">
                 <Button
                   variant="outline-primary"
                   size="sm"
@@ -1172,38 +1121,15 @@ const TopicEntityTable = () => {
                   <FaGear size={14} style={{ marginRight: '6px' }} />
                   Preferences
                 </Button>
+
                 <SettingsDropdown
-                  key={settingsVersion}
                   settings={settings}
                   selectedId={selectedSettingId}
                   onPick={handlePickSetting}
                 />
-                <Button      
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={saveIntoCurrentPreset}
-                  disabled={!selectedSettingId || busy}
-                >
-                  Save to selected
-                </Button>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={handleSetDefault}
-                  disabled={!selectedSettingId || busy}
-                >
-                  Set as Default
-                </Button>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={handleLoadDefault}
-                  disabled={(settings?.length ?? 0) === 0 || !isGridReady}
-                >
-                  Load default
-                </Button>
               </div>
 
+              {/* Right controls: Download */}
               <DownloadDropdownOptionsButton
                 gridRef={gridRef}
                 colDefs={colDefs}
@@ -1213,7 +1139,6 @@ const TopicEntityTable = () => {
             </div>
           </Col>
         </Row>
-
         {/* Notification above the table */}
         <Row>
           <Col>
@@ -1262,7 +1187,7 @@ const TopicEntityTable = () => {
          nameEdits={nameEdits}
          setNameEdits={setNameEdits}
          onCreate={handleCreateSetting}
-         onRename={rename}
+         onRename={handleRename}
          onDelete={remove}
          onMakeDefault={makeDefault}
          canCreateMore={settings.length < maxCount}
