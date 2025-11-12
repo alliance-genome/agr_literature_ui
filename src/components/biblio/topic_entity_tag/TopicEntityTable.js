@@ -27,20 +27,17 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 
 // ===== utils (keys + grid state) =====
 import {
-  extractGridState,
   applyGridState,
   applyGridStateFromPayload,
-  itemsFromColumnState,
   columnStateFromColDefs
 } from '../../../utils/gridState';
 
 // ===== shared settings hook + UI =====
 import { usePersonSettings } from '../../settings/usePersonSettings';
 import SettingsDropdown from '../../settings/SettingsDropdown';
-import SettingsGearModal from '../../settings/SettingsGearModal';
 
 /* -------------------------------------------
-   Download helpers (unchanged)
+   Download helpers
 --------------------------------------------*/
 export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNameFront) => {
   let dataToDownload = [];
@@ -92,7 +89,6 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
   );
   const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
   const encodedUri = encodeURI(tsvContent);
-
   const fileName = `${fileNameFront}_${option}.tsv`;
 
   const link = document.createElement('a');
@@ -103,25 +99,40 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
   document.body.removeChild(link);
 };
 
-export const DownloadMultiHeaderButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
-  return(
-    <Button
-      variant="primary"
-      size="sm"
-      onClick={() => handleDownload('multiHeader', gridRef, colDefs, rowData, fileNameFront)}
-    >{buttonLabel}</Button>
-  );
-};
+// Restored named buttons (so external imports work again)
+export const DownloadMultiHeaderButton = ({
+  option,
+  gridRef,
+  colDefs,
+  rowData,
+  fileNameFront,
+  buttonLabel = 'Download (multi-header)'
+}) => (
+  <Button
+    variant="primary"
+    size="sm"
+    onClick={() => handleDownload('multiHeader', gridRef, colDefs, rowData, fileNameFront)}
+  >
+    {buttonLabel}
+  </Button>
+);
 
-export const DownloadAllColumnsButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
-  return(
-    <Button
-      variant="primary"
-      size="sm"
-      onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront)}
-    >{buttonLabel}</Button>
-  );
-};
+export const DownloadAllColumnsButton = ({
+  option,
+  gridRef,
+  colDefs,
+  rowData,
+  fileNameFront,
+  buttonLabel = 'Download All Columns'
+}) => (
+  <Button
+    variant="primary"
+    size="sm"
+    onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront)}
+  >
+    {buttonLabel}
+  </Button>
+);
 
 export const DownloadDropdownOptionsButton = ({option, gridRef, colDefs, rowData, fileNameFront}) => {
   return(
@@ -224,6 +235,191 @@ const GenericTetTableModal = ({ title, body, show, onHide }) => {
   );
 };
 
+// Notification (inline, above the table)
+const Notification = ({ show, message, variant, onClose }) => {
+  if (!show) return null;
+
+  const alertClass = {
+    success: 'alert-success',
+    error: 'alert-danger',
+    warning: 'alert-warning',
+    info: 'alert-info'
+  }[variant] || 'alert-info';
+
+  return (
+    <div className={`alert ${alertClass} alert-dismissible fade show mb-3`} role="alert">
+      <div className="d-flex justify-content-between align-items-start">
+        <div>{message}</div>
+        <button
+          type="button"
+          className="btn btn-link p-0 ms-3 text-decoration-underline"
+          onClick={onClose}
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Custom SettingsGearModal without Save buttons and checkboxes
+const CustomSettingsGearModal = ({
+  show,
+  onHide,
+  settings,
+  nameEdits,
+  setNameEdits,
+  onCreate,
+  onRename,
+  onDelete,
+  onMakeDefault,  // <- must be the working makeDefault from the hook
+  canCreateMore,
+  busy
+}) => {
+  const [newSettingName, setNewSettingName] = useState('');
+  const [rowBusyId, setRowBusyId] = useState(null); // per-setting busy state
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleCreate = async () => {
+    setErrorMsg('');
+    if (!newSettingName.trim()) return;
+    try {
+      await onCreate(newSettingName.trim());
+      setNewSettingName('');
+    } catch (error) {
+      console.error('Failed to create setting:', error);
+      setErrorMsg(error?.message || 'Failed to create setting.');
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') handleCreate();
+  };
+
+  const handleMakeDefaultClick = async (setting) => {
+    setErrorMsg('');
+    setRowBusyId(setting.person_setting_id);
+    try {
+      // Await the hook's makeDefault
+      await onMakeDefault(setting.person_setting_id);
+      // Close modal on success (optional: keep it open if you prefer)
+      onHide?.();
+    } catch (error) {
+      console.error('Failed to set default:', error);
+      setErrorMsg(error?.message || 'Failed to set default.');
+    } finally {
+      setRowBusyId(null);
+    }
+  };
+
+  return (
+    <Modal show={show} onHide={onHide} centered size="lg">
+      <Modal.Header closeButton>
+        <Modal.Title>Manage Table Preferences</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {/* Error banner */}
+        {errorMsg && (
+          <div className="alert alert-danger mb-3" role="alert">
+            {errorMsg}
+          </div>
+        )}
+
+        {/* Create new setting section */}
+        <div className="mb-4">
+          <Form.Group>
+            <Form.Label>Create New Setting</Form.Label>
+            <div className="d-flex gap-2">
+              <Form.Control
+                type="text"
+                placeholder="Enter setting name"
+                value={newSettingName}
+                onChange={(e) => setNewSettingName(e.target.value)}
+                onKeyDown={handleKeyPress}
+                disabled={busy || !canCreateMore}
+              />
+              <Button
+                variant="primary"
+                onClick={handleCreate}
+                disabled={!newSettingName.trim() || busy || !canCreateMore}
+              >
+                Create
+              </Button>
+            </div>
+            {!canCreateMore && (
+              <Form.Text className="text-warning">
+                Maximum of 10 settings reached. Delete some settings to create new ones.
+              </Form.Text>
+            )}
+          </Form.Group>
+        </div>
+
+        {/* Existing settings list */}
+        <div>
+          <h6>Existing Settings</h6>
+          {settings.length === 0 ? (
+            <p className="text-muted">No settings saved yet.</p>
+          ) : (
+            <div className="list-group">
+              {settings.map((setting) => (
+                <div
+                  key={setting.person_setting_id}
+                  className="list-group-item d-flex justify-content-between align-items-center"
+                >
+                  <div className="d-flex align-items-center">
+                    <span className="me-2">{setting.default_setting && '★'}</span>
+                    <span className="me-3">{setting.setting_name || setting.name}</span>
+                  </div>
+                  <div className="d-flex gap-2">
+                    {!setting.default_setting && (
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => handleMakeDefaultClick(setting)}
+                        disabled={busy || rowBusyId === setting.person_setting_id}
+                        title="Set as default"
+                      >
+                        {rowBusyId === setting.person_setting_id ? 'Setting…' : 'Set Default'}
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={async () => {
+                        const newName = prompt('Rename setting to:', setting.setting_name || setting.name);
+                        if (newName == null) return; // cancelled
+                        try {
+                          await onRename(setting.person_setting_id, newName);
+                        } catch (e) {
+                          setErrorMsg(e?.message || 'Failed to rename.');
+                        }
+                      }}
+                      disabled={busy}
+                      title="Rename setting"
+                    >
+                      Rename
+                    </Button>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => onDelete(setting.person_setting_id)}
+                      disabled={busy}
+                      title="Delete setting"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal.Body>
+    </Modal>
+  );
+};
+
+
 /* -------------------------------------------
    Main component
 --------------------------------------------*/
@@ -247,12 +443,15 @@ const TopicEntityTable = () => {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [fullSourceDesc, setFullSourceDesc] = useState('');
   const [showSourceDescModal, setShowSourceDescModal] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [nameEdits, setNameEdits] = useState({});
-  const [isGridReady, setIsGridReady] = React.useState(false);
+  const [isGridReady, setIsGridReady] = useState(false);
+  const [settingsVersion, setSettingsVersion] = useState(0);
   const gridRef = useRef();
   
+  // Notification state
+  const [notification, setNotification] = useState({ show: false, message: '', variant: 'success' });
+
   // Define component name for settings - specific to this component
   const componentName = "tet_table";
     
@@ -265,10 +464,23 @@ const TopicEntityTable = () => {
     token: accessToken,
     oktaId: uid,
     componentName,
-    maxCount: 10
+    maxCount: 10  // Maximum 10 stored preferences
   });
 
-  // Load settings when component mounts
+  // Notification helpers
+  const showNotification = (message, variant = 'success') => {
+    setNotification({ show: true, message, variant });
+  };
+  const hideNotification = () => setNotification({ show: false, message: '', variant: 'success' });
+
+  useEffect(() => {
+    if (notification.show) {
+      const timer = setTimeout(() => hideNotification(), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification.show]);
+
+  // Load settings on mount
   useEffect(() => {
     if (accessToken && uid) {
       load();
@@ -389,7 +601,7 @@ const TopicEntityTable = () => {
     { headerName: "Entity ID Validation", field: "entity_id_validation", id: 12 , checked: false},
     { headerName: "Date Created", field: "date_created", id: 13, checked: true},
     { headerName: "Updated By", field: "updated_by", id: 14, checked: false },
-    { headerName: "Date Updated", field: "date_updated", id: 15, checked: true},
+    { headerName: "Date Updated", field: "date_updated" , id: 15, checked: true},
     { headerName: "Author Response", field: "validation_by_author", id: 16, checked: false },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 17, checked: false },
     { headerName: "Display Tag", field: "display_tag_name", id: 18, checked: true},
@@ -408,64 +620,82 @@ const TopicEntityTable = () => {
     { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 31, checked: false }
   ];
 
-  let itemsInitOrg = [...itemsInit];
-  if (accessLevel === "SGD") {
-    itemsInit = [...itemsInitSGD];
-    itemsInitOrg = [...itemsInitSGD];
-  }
-  const [items, setItems] = useState(itemsInit);
+  // initial items by access level
+  const getInitialItems = useCallback(() => {
+    return accessLevel === "SGD" ? [...itemsInitSGD] : [...itemsInit];
+  }, [accessLevel]);
 
+  const [items, setItems] = useState(getInitialItems());
+
+  // grid state extraction
+  const extractCurrentGridState = useCallback(async () => {
+    if (!gridRef.current || !gridRef.current.columnApi) {
+      console.error('Grid or column API not available');
+      return null;
+    }
+    gridRef.current.api.refreshHeader();
+    gridRef.current.api.refreshCells({ force: true });
+    gridRef.current.api.onFilterChanged();
+    await new Promise(r => setTimeout(r, 150));
+
+    const columnState = gridRef.current.columnApi.getColumnState();
+    const syncedColumnState = columnState.map(colState => {
+      const item = items.find(i => i.field === colState.colId);
+      return item ? { ...colState, hide: !item.checked } : colState;
+    });
+
+    return {
+      columnState: syncedColumnState,
+      filterModel: gridRef.current.api.getFilterModel(),
+      sortModel: gridRef.current.api.getSortModel()
+    };
+  }, [items]);
+    
+  // Checkbox dropdown
   const CheckboxDropdown =  ({ items }) => {
     const handleChecked = (key, event) => {
-       const newItems = [...items];
-       let item=newItems.find(i => i.id === key);
-       item.checked = event.target.checked;
-       if (item && item.checked === true){
-          gridRef.current.api.applyColumnState({
-                   state: [{ colId: item.field, hide: false },],
-                  });
-       }
-       else if (item && item.checked === false) {
-           gridRef.current.api.applyColumnState({
-                    state: [{ colId: item.field, hide: true },],
-                   });
-       }
-       setItems(newItems);
-       setShowDropdown(true);
-     };
+      const newItems = [...items];
+      let item = newItems.find(i => i.id === key);
+      item.checked = event.target.checked;
 
-     const handleSelectAll = () => {
-         const newItems = [...items];
-             newItems.forEach(i => {
-                 i.checked = true;
-                 gridRef.current.api.applyColumnState({
-                     state: [{colId: i.field, hide: false},],
-                 });
-             });
-             setItems(newItems);
-     };
+      gridRef.current.api.applyColumnState({
+        state: [{ colId: item.field, hide: !item.checked }],
+      });
 
-     const handleSelectNone = () => {
-        const newItems = [...items];
-            newItems.forEach(i => {
-                i.checked = false;
-                gridRef.current.api.applyColumnState({
-                    state: [{colId: i.field, hide: true},],
-                });
-            });
-            setItems(newItems);
-     };
+      setItems(newItems);
+      setTimeout(() => gridRef.current.api.refreshHeader(), 10);
+    };
 
-     const handleSelectDefault = () => {
-         setItems(itemsInitOrg);
-         itemsInitOrg.forEach(i => {
-          gridRef.current.api.applyColumnState({
-             state: [{colId: i.field, hide: !i.checked},],
-          });
-         });
-     };
+    const handleSelectAll = () => {
+      const newItems = [...items];
+      newItems.forEach(i => {
+        i.checked = true;
+        gridRef.current.api.applyColumnState({ state: [{ colId: i.field, hide: false }] });
+      });
+      setItems(newItems);
+      setTimeout(() => gridRef.current.api.refreshHeader(), 10);
+    };
 
-     return (
+    const handleSelectNone = () => {
+      const newItems = [...items];
+      newItems.forEach(i => {
+        i.checked = false;
+        gridRef.current.api.applyColumnState({ state: [{ colId: i.field, hide: true }] });
+      });
+      setItems(newItems);
+      setTimeout(() => gridRef.current.api.refreshHeader(), 10);
+    };
+
+    const handleSelectDefault = () => {
+      const defaultItems = getInitialItems();
+      setItems(defaultItems);
+      defaultItems.forEach(i => {
+        gridRef.current.api.applyColumnState({ state: [{ colId: i.field, hide: !i.checked }] });
+      });
+      setTimeout(() => gridRef.current.api.refreshHeader(), 10);
+    };
+
+    return (
       <Dropdown>
         <Dropdown.Toggle variant="primary" id="dropdown-basic">
           Hide/Show Columns
@@ -475,7 +705,6 @@ const TopicEntityTable = () => {
           onSelectAll={handleSelectAll}
           onSelectNone={handleSelectNone}
           onDefault={handleSelectDefault}
-          show={showDropdown}
           renderOnMount={false}
         >
           {items.map(i => (
@@ -494,17 +723,11 @@ const TopicEntityTable = () => {
     );
   };
 
-  const caseInsensitiveComparator = (valueA, valueB) => {
-    if (valueA === null && valueB === null) {
-      return 0;
-    }
-    if (valueA === null) {
-      return -1;
-    }
-    if (valueB === null) {
-      return 1;
-    }
-    return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
+  const caseInsensitiveComparator = (a, b) => {
+    if (a === null && b === null) return 0;
+    if (a === null) return -1;
+    if (b === null) return 1;
+    return String(a).toLowerCase().localeCompare(String(b).toLowerCase());
   };
 
   const dataNoveltyMap = {
@@ -517,17 +740,17 @@ const TopicEntityTable = () => {
 
   let cols=[
     { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions},
-    { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic)}},
-    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, filter: EntityTypeFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity_type)} },
-    { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.species)}},
-    { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.entity)}},
+    { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.topic)}},
+    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, filter: EntityTypeFilter, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.entity_type)} },
+    { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.species)}},
+    { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.entity)}},
     { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
-    { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (params) =>   params.data.negated === true ? 'no data': '' },
-    { headerName: "Data Novelty", field: "data_novelty", valueGetter: (params) => dataNoveltyMap[params.data.data_novelty] || params.data.data_novelty },
+    { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (p) => p.data.negated === true ? 'no data': '' },
+    { headerName: "Data Novelty", field: "data_novelty", valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty },
     { headerName: "Confidence Score", field:"confidence_score" },
     { headerName: "Confidence Level", field:"confidence_level" },
     { headerName: "Created By", field: "created_by"},
-    { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleNoteClick(params.value)}},
+    { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (p) => {handleNoteClick(p.value)}},
     { headerName: "Entity ID Validation", field: "entity_id_validation" },
     { headerName: "Date Created", field: "date_created", valueFormatter: timestampToDateFormatter },
     { headerName: "Updated By", field: "updated_by" },
@@ -537,10 +760,10 @@ const TopicEntityTable = () => {
     { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
-    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", comparator: caseInsensitiveComparator, onCellClicked: (params) => {handleCurieClick(params.value+":"+params.data.topic_entity_tag_source.source_evidence_assertion)}},
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", comparator: caseInsensitiveComparator, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.topic_entity_tag_source.source_evidence_assertion)}},
     { headerName: "Source Method", field: "topic_entity_tag_source.source_method" },
     { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type" },
-    { headerName: "Source Description", field: "topic_entity_tag_source.description", onCellClicked: (params) => {handleSourceDescClick(params.value)} },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description", onCellClicked: (p) => {handleSourceDescClick(p.value)} },
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
     { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: timestampToDateFormatter },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: timestampToDateFormatter },
@@ -557,21 +780,32 @@ const TopicEntityTable = () => {
     }
   };
 
-  if (items && Array.isArray(items)) {
-    items.forEach(i => {
-      let col = cols.find(j => j.field === i.field);
-      if (col) col.hide = !i.checked;
+  // sync visible columns with items
+  const updateColDefsWithItems = useCallback((currentItems) => {
+    const updatedCols = cols.map(col => {
+      const item = currentItems.find(i => i.field === col.field);
+      return item ? { ...col, hide: !item.checked } : col;
     });
-  }
-  const [colDefs, setColDefs] = useState(cols);
+    return updatedCols;
+  }, [cols]);
 
-  const paginationPageSizeSelector = useMemo(() => {
-    return [10, 25, 50, 100, 500];
-  }, []);
+  const [colDefs, setColDefs] = useState(() => updateColDefsWithItems(getInitialItems()));
 
-  const rowUpdateEvent = () => {
-    gridRef.current.api.refreshCells({force : true});
-  };
+  const paginationPageSizeSelector = useMemo(() => [10, 25, 50, 100, 500], []);
+
+  // Build a state even if the grid isn't ready yet
+  const getSafeCurrentState = useCallback(async () => {
+    if (isGridReady && gridRef.current?.api && gridRef.current?.columnApi) {
+      return await extractCurrentGridState();
+    }
+    // Fallback: derive columnState from current colDefs / items
+    const columnState = columnStateFromColDefs(updateColDefsWithItems(items));
+    return {
+      columnState,
+      filterModel: {},
+      sortModel: []
+    };
+  }, [isGridReady, extractCurrentGridState, items, updateColDefsWithItems]);
 
   function isExternalFilterPresent() {
     return filteredTags;
@@ -589,126 +823,229 @@ const TopicEntityTable = () => {
     return accessLevel === "SGD" ? "SGD Default" : "Default";
   }, [accessLevel]);
 
-  const onGridReady = useCallback(async (params) => {
+  // Apply settings to grid and update UI state
+  const applySettingsToGrid = useCallback(async (payload, settingId = null) => {
+    if (!gridRef.current) return;
+
+    try {
+      applyGridStateFromPayload(gridRef, payload);
+      await new Promise(r => setTimeout(r, 100));
+      gridRef.current.api.onFilterChanged();
+      gridRef.current.api.refreshClientSideRowModel("filter");
+      gridRef.current.api.refreshCells({ force: true });
+
+      const columnState = payload.columnState || [];
+      const updatedItems = getInitialItems().map(item => {
+        const colState = columnState.find(col => col.colId === item.field);
+        return { ...item, checked: colState ? !colState.hide : item.checked };
+      });
+
+      setItems(updatedItems);
+      setColDefs(updateColDefsWithItems(updatedItems));
+
+      if (settingId) setSelectedSettingId(settingId);
+    } catch (error) {
+      console.error("Error applying settings:", error);
+      const fallbackItems = getInitialItems();
+      setItems(fallbackItems);
+      setColDefs(updateColDefsWithItems(fallbackItems));
+    }
+  }, [getInitialItems, updateColDefsWithItems, setSelectedSettingId]);
+
+  const onGridReady = useCallback(async () => {
     try {
       setIsGridReady(true);
       const { existing, picked } = await load();
-      
-      if (!existing || existing.length === 0) {
-        // Create initial default settings
-        const seedState = extractGridState(gridRef) || {
-          columnState: columnStateFromColDefs(colDefs),
-          filterModel: {},
-          sortModel: []
-        };
-        
-        const created = await seed({
-          name: buildSeedPresetName(),
-          payload: { ...seedState, meta: { accessLevel } },
-          isDefault: true
-        });
-        
-        if (created) {
-          applyGridState(gridRef, created.json_settings || {});
-	  setItems(itemsFromColumnState(itemsInitOrg, (created.json_settings?.columnState) || []));
+
+      if (existing && existing.length > 0) {
+        const settingToApply = picked || existing.find(s => s.default_setting) || existing[0];
+        if (settingToApply) {
+          const payload = settingToApply.json_settings || settingToApply.payload || {};
+          await applySettingsToGrid(payload, settingToApply.person_setting_id);
+          return;
         }
-      } else if (picked) {
-        // Apply the picked setting
-        applyGridState(gridRef, picked.json_settings || {});
-        setItems(itemsFromColumnState(itemsInitOrg, (picked.json_settings?.columnState) || []));
       }
-    } catch (e) {
-      console.error("Failed to load person settings:", e);
-      // Fallback: apply default column visibility
+
+      const modTemplateItems = getInitialItems();
+      const seedState = {
+        columnState: columnStateFromColDefs(updateColDefsWithItems(modTemplateItems)),
+        filterModel: {},
+        sortModel: []
+      };
+
+      setItems(modTemplateItems);
+      setColDefs(updateColDefsWithItems(modTemplateItems));
+      applyGridState(gridRef, seedState);
+
+      const created = await seed({
+        name: buildSeedPresetName(),
+        payload: { ...seedState, meta: { accessLevel } },
+        isDefault: true
+      });
+      if (created) setSelectedSettingId(created.person_setting_id);
+
+    } catch (error) {
+      console.error("Failed to load person settings:", error);
+      const fallbackItems = getInitialItems();
+      setItems(fallbackItems);
+      setColDefs(updateColDefsWithItems(fallbackItems));
       applyGridState(gridRef, {
-        columnState: columnStateFromColDefs(colDefs),
+        columnState: columnStateFromColDefs(updateColDefsWithItems(fallbackItems)),
         filterModel: {},
         sortModel: []
       });
     }
-  }, [load, seed, accessLevel, colDefs, itemsInitOrg, buildSeedPresetName]);
+  }, [load, seed, applySettingsToGrid, getInitialItems, updateColDefsWithItems, buildSeedPresetName, accessLevel, setSelectedSettingId]);
 
-  const onColumnResize = useCallback((params)=>{
+  const onColumnResized = useCallback((params)=>{
     let colState = gridRef.current.api.getColumnState();
     if(params.source === 'autosizeColumns') {
       colState.forEach((element) => {
         if (element.colId === 'note' && element.width > 300){
           gridRef.current.api.applyColumnState({
-            state: [{ colId: 'note', width: 300 },],
+            state: [{ colId: 'note', width: 300 }],
           });
         }
-      })
+      });
     }
-  },[])
+  },[]);
 
-  const getRowId = useMemo(() => {
-    return (params) => String(params.data.topic_entity_tag_id);
-  }, []);
+  const getRowId = useMemo(() => (params) => String(params.data.topic_entity_tag_id), []);
 
   const fileNameFront = `${referenceCurie}_tet_data`;
 
   // Preset handlers
   const handleLoadDefault = useCallback(async () => {
-    if (!settings || settings.length === 0) return;
-
-    const defaultSetting = settings.find(s => !!s.default_setting);
-    if (!defaultSetting) {
-      alert("No default setting found.");
+    if (!settings || settings.length === 0) {
+      showNotification("No default setting found.", "warning");
       return;
     }
+    const def = settings.find(s => !!s.default_setting);
+    if (!def) {
+      showNotification("No default setting found.", "warning");
+      return;
+    }
+    const payload = def.json_settings || def.payload || {};
+    await applySettingsToGrid(payload, def.person_setting_id);
+  }, [settings, applySettingsToGrid]);
 
-    // Support both new (json_settings) and any old rows that used `payload`
-    const raw = defaultSetting.json_settings || defaultSetting.payload || {};
-
-    // If the stored JSON is empty/meta-only, use a strong fallback so something happens.
-    const hasState =
-      (raw && (raw.columnState?.length || Object.keys(raw.filterModel||{}).length || (raw.sortModel?.length))) || false;
-    const fallback = {
-      columnState: columnStateFromColDefs(colDefs),
-      filterModel: {},
-      sortModel: []
-    };
-    const payload = hasState ? raw : fallback;
-    applyGridStateFromPayload(gridRef, payload);
-    setSelectedSettingId(defaultSetting.person_setting_id);
-    setItems(itemsFromColumnState(itemsInitOrg, payload.columnState || []));
-  }, [settings, gridRef, setSelectedSettingId, itemsInitOrg]);
-  
   const handlePickSetting = async (person_setting_id) => {
-    setSelectedSettingId(person_setting_id);
     const s = settings.find(x => x.person_setting_id === person_setting_id);
     if (!s) return;
-    applyGridState(gridRef, s?.json_settings || {});
-    setItems(itemsFromColumnState(itemsInitOrg, (s?.json_settings?.columnState) || []));
+    const payload = s.json_settings || s.payload || {};
+    await applySettingsToGrid(payload, person_setting_id);
   };
 
   const saveIntoCurrentPreset = async () => {
     if (!selectedSettingId) {
-      alert("Please select a setting to save to first.");
+      showNotification("Please select a setting to save to first.", "warning");
       return;
     }
-
-    // Force AG Grid to flush any pending visibility/order updates
-    gridRef.current?.api?.onFilterChanged();
-    gridRef.current?.api?.refreshClientSideRowModel("filter");
-    gridRef.current?.api?.refreshCells({ force: true });
-
-    // Small delay gives AG Grid time to commit recent UI changes
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Now safely extract the *latest* grid state
-    const live = extractGridState(gridRef);
-    const fallback = {
-      columnState: columnStateFromColDefs(colDefs),
-      filterModel: {},
-      sortModel: []
-    };
-    const state = live ?? fallback;
-
-    console.log("Saving grid state to preset:", state); // optional debug
+    const state = await getSafeCurrentState();
     await savePayloadTo(selectedSettingId, { ...state, meta: { accessLevel } });
+    showNotification("Settings saved successfully!", "success");
   };
-  
+
+  // Create new setting
+  const handleCreateSetting = async (name) => {
+    const clean = (name ?? '').trim();
+    if (!clean) {
+      showNotification("Setting name cannot be empty.", "warning");
+      return null;
+    }
+    const exists = (settings || []).some(
+      s => (s.setting_name || s.name || '').trim().toLowerCase() === clean.toLowerCase()
+    );
+    if (exists) {
+      showNotification(`A setting named "${clean}" already exists.`, "warning");
+      return null;
+    }
+    const state = await getSafeCurrentState();
+    try {
+      const created = await create(clean, { ...state, meta: { accessLevel } });
+      await load();
+      if (created?.person_setting_id) setSelectedSettingId(created.person_setting_id);
+      showNotification(`Setting "${clean}" created successfully!`, "success");
+      return created;
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || String(err);
+      showNotification(`Failed to create setting: ${msg}`, "error");
+      return null;
+    }
+  };
+
+  // Rename
+  const handleRename = async (person_setting_id, newName) => {
+    const clean = (newName ?? '').trim();
+    if (!clean) {
+      showNotification("Setting name cannot be empty.", "warning");
+      return false;
+    }
+    const exists = (settings || []).some(
+      s =>
+        s.person_setting_id !== person_setting_id &&
+        (s.setting_name || s.name || '').trim().toLowerCase() === clean.toLowerCase()
+    );
+    if (exists) {
+      showNotification(`A setting named "${clean}" already exists.`, "warning");
+      return false;
+    }
+    try {
+      await rename(person_setting_id, clean);
+      await load();
+      setSettingsVersion(v => v + 1);
+      showNotification(`Renamed to "${clean}".`, "success");
+      return true;
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || String(err);
+      showNotification(`Failed to rename: ${msg}`, "error");
+      return false;
+    }
+  };
+
+  // Set default (uses API fallback as before)
+  const handleSetDefault = useCallback(async () => {
+    try {
+      await load();
+      const settingToSetAsDefault = settings.find(s => s.person_setting_id === selectedSettingId);
+      if (!settingToSetAsDefault) {
+        showNotification("Selected setting not found. Please select a different setting.", "error");
+        return;
+      }
+      const settingName = settingToSetAsDefault.setting_name || settingToSetAsDefault.name;
+      const currentDefault = settings.find(s => s.default_setting);
+      if (currentDefault && currentDefault.person_setting_id !== selectedSettingId) {
+        try {
+          await axios.patch(
+            `${process.env.REACT_APP_RESTAPI}/person_setting/${currentDefault.person_setting_id}`,
+            { default_setting: false },
+            { headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
+          );
+        } catch (_) {}
+      }
+      await axios.patch(
+        `${process.env.REACT_APP_RESTAPI}/person_setting/${selectedSettingId}`,
+        { default_setting: true },
+        { headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
+      );
+      await load();
+      setSettingsVersion(prev => prev + 1);
+      showNotification(`"${settingName}" is now your default setting!`, "success");
+    } catch (error) {
+      if (error.response) {
+        if (error.response.status === 422) {
+          showNotification(`Validation error: ${error.response.data.detail}`, "error");
+        } else if (error.response.status === 404) {
+          showNotification("Setting not found. Please refresh and try again.", "error");
+        } else {
+          showNotification(`Error: ${error.response.data.detail || error.message}`, "error");
+        }
+      } else {
+        showNotification(`Error: ${error.message}`, "error");
+      }
+    }
+  }, [settings, selectedSettingId, accessToken, load]);
+
   return (
     <div>
       {/* Curie Popup */}
@@ -723,6 +1060,7 @@ const TopicEntityTable = () => {
       {showSourceDescModal && (
         <GenericTetTableModal title="Full Source Description" body={fullSourceDesc} show={showSourceDescModal} onHide={() => setShowSourceDescModal(false)} />
       )}
+
       {isLoadingData && (
         <div className="text-center">
           <Spinner animation="border" role="status">
@@ -730,27 +1068,28 @@ const TopicEntityTable = () => {
           </Spinner>
         </div>
       )}
+
       <Container fluid>
         <Row>
           <Col>
             <div className="d-flex justify-content-between align-items-center" style={{ paddingBottom: '10px' }}>
               <div className="d-flex gap-2">
-                {/* Hide/Show Columns */}
                 <CheckboxDropdown items={items} />
               </div>
 
-              {/* Centered group */}
+              {/* Center controls */}
               <div className="d-flex justify-content-center align-items-center gap-2">
                 <Button
                   variant="outline-primary"
                   size="sm"
-		  title="Manage table preferences"
+                  title="Manage table preferences"
                   onClick={() => setShowSettingsModal(true)}
                 >
-		  <FaGear size={14} style={{ marginRight: '6px' }} />
+                  <FaGear size={14} style={{ marginRight: '6px' }} />
                   Preferences
                 </Button>
                 <SettingsDropdown
+                  key={settingsVersion}
                   settings={settings}
                   selectedId={selectedSettingId}
                   onPick={handlePickSetting}
@@ -766,12 +1105,21 @@ const TopicEntityTable = () => {
                 <Button
                   variant="outline-primary"
                   size="sm"
+                  onClick={handleSetDefault}
+                  disabled={!selectedSettingId || busy}
+                >
+                  Set as Default
+                </Button>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
                   onClick={handleLoadDefault}
-                  disabled={settings.length === 0 || !isGridReady}
+                  disabled={(settings?.length ?? 0) === 0 || !isGridReady}
                 >
                   Load default
                 </Button>
               </div>
+
               <DownloadDropdownOptionsButton
                 gridRef={gridRef}
                 colDefs={colDefs}
@@ -781,6 +1129,19 @@ const TopicEntityTable = () => {
             </div>
           </Col>
         </Row>
+
+        {/* Notification above the table */}
+        <Row>
+          <Col>
+            <Notification 
+              show={notification.show}
+              message={notification.message}
+              variant={notification.variant}
+              onClose={hideNotification}
+            />
+          </Col>
+        </Row>
+
         <Row>
           <Col>
             <div className="ag-theme-quartz" style={{height: 500}}>
@@ -789,7 +1150,7 @@ const TopicEntityTable = () => {
                 reactiveCustomComponents
                 rowData={topicEntityTags}
                 onGridReady={onGridReady}
-                onColumnResized={onColumnResize}
+                onColumnResized={onColumnResized}
                 getRowId={getRowId}
                 columnDefs={colDefs}
                 onColumnMoved={() => {}}
@@ -807,31 +1168,21 @@ const TopicEntityTable = () => {
       </Container>
 
       {/* Settings modal */}
-      <SettingsGearModal
-        show={showSettingsModal}
-        onHide={() => {
-          setShowSettingsModal(false);
-          setNameEdits({});
-        }}
-        settings={settings}
-        nameEdits={nameEdits}
-        setNameEdits={setNameEdits}
-        onCreate={async (name) => {
-          // Try live grid state; if not available, build from current colDefs
-          const live = extractGridState(gridRef);
-          const fallback = {
-            columnState: columnStateFromColDefs(colDefs),
-            filterModel: {},
-            sortModel: []
-          };
-          const state = live ?? fallback;
-          return await create(name, { ...state, meta: { accessLevel } });
-        }}
-        onRename={rename}
-        onDelete={remove}
-        onMakeDefault={makeDefault}
-        canCreateMore={settings.length < maxCount}
-        busy={busy}
+      <CustomSettingsGearModal
+         show={showSettingsModal}
+         onHide={() => {
+           setShowSettingsModal(false);
+           setNameEdits({});
+         }}
+         settings={settings}
+         nameEdits={nameEdits}
+         setNameEdits={setNameEdits}
+         onCreate={handleCreateSetting}
+         onRename={rename}
+         onDelete={remove}
+         onMakeDefault={makeDefault}
+         canCreateMore={settings.length < maxCount}
+         busy={busy}
       />
     </div>
   );

@@ -1,4 +1,5 @@
 // src/utils/userSettings.js
+import axios from 'axios';
 
 async function authed(baseUrl, token, path, options = {}) {
   try {
@@ -143,7 +144,16 @@ export async function updatePersonSetting({
   patch,
 }) {
   console.log(`Updating setting ${person_setting_id}:`, patch);
-  const body = JSON.stringify(patch);  
+  // Map friendly keys to backend column names
+  const backendPatch = {};
+  if (patch.name !== undefined) backendPatch.setting_name = patch.name;
+  if (patch.payload !== undefined) backendPatch.json_settings = patch.payload;
+  if (patch.is_default !== undefined) backendPatch.default_setting = patch.is_default;
+  // Also pass through already-correct backend keys for safety
+  if (patch.setting_name !== undefined) backendPatch.setting_name = patch.setting_name;
+  if (patch.json_settings !== undefined) backendPatch.json_settings = patch.json_settings;
+  if (patch.default_setting !== undefined) backendPatch.default_setting = patch.default_setting;
+  const body = JSON.stringify(backendPatch);
   const { json } = await authed(
     baseUrl,
     token,
@@ -175,15 +185,19 @@ export async function showPersonSetting({ baseUrl, token, person_setting_id }) {
 /**
  * Mark one setting as default.
  */
-export async function makeDefaultPersonSetting({
-  baseUrl,
-  token,
-  componentName,
-  person_setting_id,
-}) {
-  const patch = { default_setting: true };
-  return updatePersonSetting({ baseUrl, token, person_setting_id, patch });
-}
+const makeDefaultPersonSetting = async ({ baseUrl, token, componentName, person_setting_id }) => {
+  const response = await axios.patch(
+    `${baseUrl}/person_setting/${person_setting_id}`,
+    { default_setting: true },
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+  return response.data;
+};
 
 /** Pick the default setting from a list (fallback to first if none marked). */
 export function pickDefaultSetting(settings = []) {

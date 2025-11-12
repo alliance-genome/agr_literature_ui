@@ -1,5 +1,6 @@
 // src/components/settings/usePersonSettings.js
 import { useState, useCallback } from "react";
+import axios from 'axios';
 import {
   listPersonSettings,
   createPersonSetting,
@@ -62,6 +63,7 @@ export function usePersonSettings({
         const created = await createPersonSetting({
           baseUrl,
           token,
+	  oktaId,
           componentName,
           name,
           isDefault,
@@ -179,15 +181,49 @@ export function usePersonSettings({
       if (!token) {
         throw new Error("Cannot set default: missing authentication");
       }
-      
+    
       setBusy(true);
       try {
-        await makeDefaultPersonSetting({
-          baseUrl,
-          token,
-          componentName,
-          person_setting_id: id,
-        });
+        // Get all settings for this component
+        const response = await axios.get(
+          `${baseUrl}/person_settings?component_name=${componentName}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+      
+        const allSettings = response.data;
+      
+        // Find the current default setting
+        const currentDefault = allSettings.find(s => s.default_setting);
+      
+        // If there's a current default and it's not the one we want to set, unset it first
+        if (currentDefault && currentDefault.person_setting_id !== id) {
+          await axios.put(
+            `${baseUrl}/person_settings/${currentDefault.person_setting_id}`,
+            { default_setting: false },
+            {
+              headers: { 
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+        }
+      
+        // Set the new default
+        await axios.put(
+          `${baseUrl}/person_settings/${id}`,
+          { default_setting: true },
+          {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      
+        // Update local state
         setSettings((prev) =>
           prev.map((s) => ({ ...s, default_setting: s.person_setting_id === id }))
         );

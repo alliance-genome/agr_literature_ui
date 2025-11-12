@@ -13,6 +13,77 @@ export function extractGridState(gridRef) {
   return { columnState, filterModel, sortModel };
 }
 
+function normalizeColumnState(columnState = [], colDefs = []) {
+  const seen = new Set();
+  const byId = new Map(columnState.map(c => [c.colId, { ...c }]));
+  const normalized = [];
+
+  // keep known columns in the order AG Grid reports
+  for (const c of columnState) {
+    if (!c?.colId || seen.has(c.colId)) continue;
+    seen.add(c.colId);
+    normalized.push({
+      colId: c.colId,
+      hide: !!c.hide,
+      sort: c.sort ?? null,
+      sortIndex: Number.isFinite(c.sortIndex) ? c.sortIndex : null,
+      width: Number.isFinite(c.width) ? c.width : null,
+      rowGroup: !!c.rowGroup,
+      pivot: !!c.pivot,
+      aggFunc: c.aggFunc ?? null,
+    });
+  }
+
+  // append any columns that exist in colDefs but weren’t in columnState
+  for (const d of colDefs) {
+    if (!d?.field || seen.has(d.field)) continue;
+    seen.add(d.field);
+    normalized.push({
+      colId: d.field,
+      hide: !!d.hide,
+      sort: d.sort ?? null,
+      sortIndex: Number.isFinite(d.sortIndex) ? d.sortIndex : null,
+      width: Number.isFinite(d.width) ? d.width : null,
+      rowGroup: !!d.rowGroup,
+      pivot: !!d.pivot,
+      aggFunc: d.aggFunc ?? null,
+    });
+  }
+
+  return normalized;
+}
+
+// Call before saving to ensure AG Grid has committed column visibility/order updates
+export async function stableExtractGridState(gridRef, colDefs, delayMs = 50) {
+  const api = gridRef.current?.api;
+  const columnApi = gridRef.current?.columnApi;
+
+  // If grid isn't ready, just return a fallback from colDefs
+  if (!api || !columnApi) {
+    return {
+      columnState: columnStateFromColDefs(colDefs),
+      filterModel: {},
+      sortModel: []
+    };
+  }
+
+  // Force a synchronous refresh, then give the grid a short moment to settle
+  api.onFilterChanged();
+  api.refreshClientSideRowModel("filter");
+  api.refreshCells({ force: true });
+
+  // Two RAFs help settle layout; delayMs covers async column state propagation
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
+
+  const live = extractGridState(gridRef);
+  return live ?? {
+    columnState: normalizeColumnState(live.columnState, colDefs),
+    filterModel: {},
+    sortModel: []
+  };
+}
+
 /** Apply saved state back to grid */
 export function applyGridState(gridRef, { columnState, filterModel, sortModel } = {}) {
   const api = gridRef.current?.api;
