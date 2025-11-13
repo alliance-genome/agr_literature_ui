@@ -213,14 +213,14 @@ export function usePersonSettings({
       if (!token) {
         throw new Error("Cannot save payload: missing authentication");
       }
-      
+    
       setBusy(true);
       try {
         const updated = await updatePersonSetting({
           baseUrl,
           token,
           person_setting_id: id,
-          patch: { payload }, // This gets mapped to json_settings
+          patch: { json_settings: payload }, // Make sure this is json_settings, not just payload
         });
         setSettings((prev) =>
           prev.map((s) =>

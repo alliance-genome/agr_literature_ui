@@ -1,14 +1,27 @@
-// AG Grid state helpers (front-end only)
+// AG Grid state helpers (updated for AG Grid v31+)
 
 /** Capture column order/visibility, filters, sort */
 export function extractGridState(gridRef) {
   const api = gridRef.current?.api;
+  if (!api) return null;
+
+  // Modern AG Grid v31+ - check for getState method
+  if (typeof api.getState === 'function') {
+    const state = api.getState();
+    return {
+      columnState: state.columnState || [],
+      filterModel: state.filterModel || {},
+      sortModel: state.sortModel || []
+    };
+  }
+
+  // Fallback for older versions
   const columnApi = gridRef.current?.columnApi;
-  if (!api || !columnApi) return null;
+  if (!columnApi) return null;
 
   const columnState = columnApi.getColumnState();
   const filterModel = api.getFilterModel();
-  const sortModel = api.getSortModel();
+  const sortModel = api.getSortModel ? api.getSortModel() : [];
 
   return { columnState, filterModel, sortModel };
 }
@@ -34,7 +47,7 @@ function normalizeColumnState(columnState = [], colDefs = []) {
     });
   }
 
-  // append any columns that exist in colDefs but weren’t in columnState
+  // append any columns that exist in colDefs but weren't in columnState
   for (const d of colDefs) {
     if (!d?.field || seen.has(d.field)) continue;
     seen.add(d.field);
@@ -56,10 +69,9 @@ function normalizeColumnState(columnState = [], colDefs = []) {
 // Call before saving to ensure AG Grid has committed column visibility/order updates
 export async function stableExtractGridState(gridRef, colDefs, delayMs = 50) {
   const api = gridRef.current?.api;
-  const columnApi = gridRef.current?.columnApi;
 
   // If grid isn't ready, just return a fallback from colDefs
-  if (!api || !columnApi) {
+  if (!api) {
     return {
       columnState: columnStateFromColDefs(colDefs),
       filterModel: {},
@@ -78,7 +90,7 @@ export async function stableExtractGridState(gridRef, colDefs, delayMs = 50) {
 
   const live = extractGridState(gridRef);
   return live ?? {
-    columnState: normalizeColumnState(live.columnState, colDefs),
+    columnState: normalizeColumnState(live?.columnState, colDefs),
     filterModel: {},
     sortModel: []
   };
@@ -87,14 +99,26 @@ export async function stableExtractGridState(gridRef, colDefs, delayMs = 50) {
 /** Apply saved state back to grid */
 export function applyGridState(gridRef, { columnState, filterModel, sortModel } = {}) {
   const api = gridRef.current?.api;
-  const columnApi = gridRef.current?.columnApi;
-  if (!api || !columnApi) return;
+  if (!api) return;
 
+  // Modern AG Grid v31+ - use individual methods (no columnApi needed)
   if (columnState && columnState.length) {
-    columnApi.applyColumnState({ state: columnState, applyOrder: true });
+    api.applyColumnState({ state: columnState, applyOrder: true });
   }
-  if (sortModel) api.setSortModel(sortModel);
-  if (filterModel) api.setFilterModel(filterModel);
+  
+  if (filterModel) {
+    api.setFilterModel(filterModel);
+  }
+
+  // Sort is included in columnState for modern AG Grid
+  // but if sortModel exists separately, merge it into column state
+  if (sortModel && sortModel.length > 0) {
+    const columnStateWithSort = (columnState || []).map(col => {
+      const sortInfo = sortModel.find(s => s.colId === col.colId);
+      return sortInfo ? { ...col, sort: sortInfo.sort, sortIndex: sortInfo.sortIndex } : col;
+    });
+    api.applyColumnState({ state: columnStateWithSort, applyOrder: true });
+  }
 
   api.onFilterChanged();
   api.refreshClientSideRowModel("filter");
@@ -133,8 +157,7 @@ export function columnStateFromColDefs(colDefs) {
  */
 export function applyGridStateFromPayload(gridRef, payload = {}, options = {}) {
   const api = gridRef.current?.api;
-  const columnApi = gridRef.current?.columnApi;
-  if (!api || !columnApi || !payload) return;
+  if (!api || !payload) return;
 
   const { columnState, filterModel, sortModel, items, columnOrder } = payload;
 
@@ -144,7 +167,13 @@ export function applyGridStateFromPayload(gridRef, payload = {}, options = {}) {
     return;
   }
 
-  const currentState = columnApi.getColumnState() || [];
+  // Get current state - modern API
+  let currentState = [];
+  if (typeof api.getState === 'function') {
+    currentState = api.getState().columnState || [];
+  } else if (typeof api.getColumnState === 'function') {
+    currentState = api.getColumnState() || [];
+  }
 
   // Fallback A: apply visibility from `items`
   if (Array.isArray(items) && items.length) {
@@ -153,7 +182,7 @@ export function applyGridStateFromPayload(gridRef, payload = {}, options = {}) {
       hide: i.checked === false, // checked = visible
     }));
 
-    columnApi.applyColumnState({ state: visState, applyOrder: false });
+    api.applyColumnState({ state: visState, applyOrder: false });
   }
 
   // Fallback B: apply order from `columnOrder`
@@ -171,7 +200,7 @@ export function applyGridStateFromPayload(gridRef, payload = {}, options = {}) {
       if (!columnOrder.includes(s.colId)) ordered.push(s);
     }
 
-    columnApi.applyColumnState({ state: ordered, applyOrder: true });
+    api.applyColumnState({ state: ordered, applyOrder: true });
   }
 
   // Final refresh to keep UI consistent
