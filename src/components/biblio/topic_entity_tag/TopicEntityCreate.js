@@ -31,9 +31,12 @@ import { debounce } from 'lodash';
 import Alert from "react-bootstrap/Alert";
 
 const TopicEntityCreate = () => {
+  const debugMode = false;
+  const REST = process.env.REACT_APP_RESTAPI;
   const dispatch = useDispatch();
   const editTag = useSelector((state) => state.biblio.editTag);
   const referenceJsonLive = useSelector((state) => state.biblio.referenceJsonLive);
+  const referenceCurie = referenceJsonLive["curie"];
   const accessToken = useSelector((state) => state.isLogged.accessToken);
   const oktaMod = useSelector((state) => state.isLogged.oktaMod);
   const testerMod = useSelector((state) => state.isLogged.testerMod);
@@ -72,6 +75,8 @@ const TopicEntityCreate = () => {
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
+  const [messageFailureSetCurationStatusToCurated, setMessageFailureSetCurationStatusToCurated] = useState("");
+  const [isVisibleMessageFailureSetCurationStatusToCurated, setIsVisibleMessageFailureSetCurationStatusToCurated] = useState("");
   const [rows, setRows] = useState([
     { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", entityResultList: [] }
   ]);
@@ -79,6 +84,8 @@ const TopicEntityCreate = () => {
   const inputRefs = useRef([]);
 
   const [messages, setMessages] = useState([]);
+
+  const [topicAtpToCurationStatus, setTopicAtpToCurationStatus] = useState({});
 
   const curieToNameMap = Object.fromEntries(
     Object.entries(typeaheadName2CurieMap).map(([name, curie]) => [curie, name])
@@ -142,12 +149,12 @@ const TopicEntityCreate = () => {
     "ATP:0000005": "gene",
     "ATP:0000006": "allele",
     "ATP:0000123": "species",
-    "ATP:0000014": "AGMs",
     "ATP:0000027": "strain",
     "ATP:0000025": "genotype",
     "ATP:0000026": "fish",
     "ATP:0000013": "transgenic construct",
     "ATP:0000110": "transgenic allele",
+    "ATP:0000285": "classical allele",
     "ATP:0000093": "sequence targeting reagent"
   };
   const entityTypeList = [
@@ -156,7 +163,7 @@ const TopicEntityCreate = () => {
     "ATP:0000006",
     "ATP:0000110",
     "ATP:0000123",
-    "ATP:0000014",
+    "ATP:0000285",
     "ATP:0000027",
     "ATP:0000025",
     "ATP:0000026",
@@ -177,7 +184,7 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     const fetchTopicEntityTags = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/${editTag}`, {
+        const response = await axios.get(`${REST}/topic_entity_tag/${editTag}`, {
           headers: {
             Authorization: `Bearer ${accessToken}`
           }
@@ -353,6 +360,30 @@ const TopicEntityCreate = () => {
     if (updated) { setRows(newRows); }
   }, [rows]);
 
+  useEffect(() => {
+    const fetchCurationData = async () => {
+      const curationUrl = REST + `/curation_status/aggregated_curation_status_and_tet_info/${referenceCurie}/${accessLevel}`;
+      try {
+        const result = await axios.get(curationUrl);
+        const processedCurationData = result.data.reduce((acc, info) => {
+          acc[info.topic_curie] = {
+            topic_name: info.topic_name,
+            topic_curie: info.topic_curie,
+            curation_status_id: info.curst_curation_status_id || 'new',
+            curation_status: info.curst_curation_status || null,
+          };
+          return acc;
+        }, {});
+        console.log('processedCurationData');
+        console.log(processedCurationData);
+        setTopicAtpToCurationStatus(processedCurationData);
+      } catch (error) {
+        console.error('Error fetching curation data:', error);
+      }
+    };
+    fetchCurationData();
+  }, [REST, referenceCurie, accessLevel]);
+
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
     const keyByValue = objEntries.filter((e) => e[1] === value);
@@ -382,7 +413,12 @@ const TopicEntityCreate = () => {
 
   const handleCloseTagExistingMessage = () => {
     setIsTagExistingMessageVisible(false);
+    setTagExistingMessage("");
   };
+  const handleCloseMessageFailureSetCurationStatusToCurated = () => {
+    setIsVisibleMessageFailureSetCurationStatusToCurated(false);
+    setMessageFailureSetCurationStatusToCurated("");
+  }
 
   function createNewRow() {	
     return {
@@ -396,7 +432,8 @@ const TopicEntityCreate = () => {
       newDataCheckbox: false,
       newToDbCheckbox: false,
       newToFieldCheckbox: false,
-      noDataCheckbox: false
+      noDataCheckbox: false,
+      entityAdditionDoneCheckbox: false
     };
   }
 
@@ -455,7 +492,7 @@ const TopicEntityCreate = () => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_RESTAPI}/workflow_tag/transition_to_workflow_status`,
+        `${REST}/workflow_tag/transition_to_workflow_status`,
         {
           curie_or_reference_id: referenceJsonLive.curie,
           mod_abbreviation: accessLevel,
@@ -526,6 +563,7 @@ const TopicEntityCreate = () => {
           currentRow.newToDbCheckbox = false;
           currentRow.newToFieldCheckbox = false;
           currentRow.noDataCheckbox = false;
+          currentRow.entityAdditionDoneCheckbox = false;
           currentRow.entityText = "";
           currentRow.entityResultList = [];
           currentRow.selectedSpecies = [];
@@ -612,11 +650,69 @@ const TopicEntityCreate = () => {
     return dataNoveltyAtpArray;
   }
 
+
+  const updateCurationStatusToCurated = (row, refCurie) => {
+    const curation_status_id = topicAtpToCurationStatus[row.topicSelect]?.curation_status_id;
+    let subPath = "/curation_status/";
+    let method = "PATCH";
+    let json_data = { 'curation_status': 'ATP:0000239' };
+    if (curation_status_id === 'new') {
+      method = "POST";
+      json_data["mod_abbreviation"] = accessLevel;
+      json_data["topic"] = row.topicSelect;
+      json_data["reference_curie"] = refCurie; }
+    else {
+      subPath = "/curation_status/" + curation_status_id; }
+    console.log("subPath: ", subPath);
+    console.log("method: ", method);
+    console.log("json_data: ");
+    console.log(json_data);
+
+    try {
+      const url = process.env.REACT_APP_RESTAPI + subPath;
+      return new Promise((resolve, reject) => {
+        axios({
+          url,
+          method,
+          headers: {
+            'content-type': 'application/json',
+            'authorization': 'Bearer ' + accessToken,
+            'mode': 'cors',
+          },
+          data: json_data,
+        })
+        .then((res) => {
+          let isValid = false;
+          if (method === 'PATCH' && res.status === 202) isValid = true;
+          else if (method === 'POST' && res.status === 201) isValid = true;
+          else if (method === 'DELETE' && res.status === 204) isValid = true;
+          if (!isValid) {
+            const response_message = `error: ${url} : API status code ${res.status} for method ${method}`;
+            reject(new Error(response_message));
+          } else {
+            resolve(res.data);
+          }
+        })
+        .catch((err) => {
+          setIsVisibleMessageFailureSetCurationStatusToCurated(true);
+          const errorMessage = 'Error setting curation_status to curated for topic ' + row.topicSelectValue + ' ' + row.topicSelect + '<br/>' + err.message;
+          setMessageFailureSetCurationStatusToCurated(prev => prev ? prev + '<br/>' + errorMessage : errorMessage);
+        })
+      });
+    } catch (err) {
+      // Error is already show in Row dependent on isVisibleMessageFailureSetCurationStatusToCurated, but you can log more if needed
+      console.warn("Failed to update curation status", err);
+    }
+  };
+
   async function createEntities(refCurie, index) {
     const row = rows[index]
     if (!row.topicSelect) {
       return;
     }
+
+    if (row.entityAdditionDoneCheckbox) { await updateCurationStatusToCurated(row, refCurie); }
+
     const forApiArray = [];
     const subPath = "topic_entity_tag/";
     const method = "POST";
@@ -663,7 +759,7 @@ const TopicEntityCreate = () => {
 					      accessLevel, dispatch,
 					      updateButtonBiblioEntityAdd);
     if (result) {
-      setTagExistingMessage(result.html);
+      setTagExistingMessage(prev => prev ? prev + '<br/>' + result.html : result.html);
       setIsTagExistingMessageVisible(true);
       setExistingTagResponses(result.existingTagResponses);
     }
@@ -783,6 +879,18 @@ const TopicEntityCreate = () => {
           </Col>
         </Row>
       )}
+      {isVisibleMessageFailureSetCurationStatusToCurated && messageFailureSetCurationStatusToCurated && (
+        <Row className="form-group row">
+          <Col sm="12">
+            <div className="alert alert-warning" role="alert">
+              <div className="table-responsive" dangerouslySetInnerHTML={{ __html: messageFailureSetCurationStatusToCurated }}></div>
+              <Button variant="outline-secondary" size="sm" onClick={handleCloseMessageFailureSetCurationStatusToCurated}>
+                Close
+              </Button>
+            </div>
+          </Col>
+        </Row>
+      )}
 
 
       {/* Title and "No TET data" Button */}
@@ -868,7 +976,7 @@ const TopicEntityCreate = () => {
                   onSearch={async (query) => {
                     setTopicSelectLoading(true);
                     try {
-                      let url =`${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
+                      let url =`${REST}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
                       if (accessLevel) {
                         url += "?mod_abbr=" + accessLevel
                       }
@@ -895,11 +1003,11 @@ const TopicEntityCreate = () => {
                       const selectedCurie = typeaheadName2CurieMap[selected[0]];
           	    const selectedValue = selected[0];
                       handleRowChange(index, 'topicSelect', selectedCurie);
-          	    handleRowChange(index, "topicSelectValue", selectedValue);
+          	      handleRowChange(index, 'topicSelectValue', selectedValue);
                     } else {
-          	    handleRowChange(index, 'topicSelect', "");
-          	    handleRowChange(index, "topicSelectValue", "");
-          	  }
+          	      handleRowChange(index, 'topicSelect', '');
+          	      handleRowChange(index, 'topicSelectValue', '');
+          	    }
                   }}
                   options={typeaheadOptions}
                   selected={row.topicSelectValue ? [row.topicSelectValue] : []}	
@@ -1023,7 +1131,7 @@ const TopicEntityCreate = () => {
                     onSearch={async (query) => {
                       setSpeciesSelectLoading(true);
                       try {
-                        const url = `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_species/${encodeURIComponent(query)}`;
+                        const url = `${REST}/topic_entity_tag/search_species/${encodeURIComponent(query)}`;
                         const results = await FetchTypeaheadOptions(url);
 
                         setSpeciesSelectLoading(false);
@@ -1097,31 +1205,52 @@ const TopicEntityCreate = () => {
                     {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Edit"}
                   </Button>
                 ) : (
-                  <Button variant="outline-primary" disabled={row.disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
-                    {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
-                  </Button>
+                  <>
+                    <Button variant="outline-primary" disabled={row.disabledAddButton} onClick={() => createEntities(referenceJsonLive.curie, index)}>
+                      {biblioUpdatingEntityAdd > 0 ? <Spinner animation="border" size="sm" /> : "Submit"}
+                    </Button>
+                    { (row.topicSelect !== '') && (row.topicSelect === row.entityTypeSelect) && (
+                      <>
+                        <br/>
+                        <Form.Check
+                          inline
+                          type="checkbox"
+                          id={`topic_entity_addition_done-${index}`}
+                          checked={row.entityAdditionDoneCheckbox}
+                          onChange={(evt) => {
+                            const updatedRows = [...rows];
+                            updatedRows[index] = { ...updatedRows[index], entityAdditionDoneCheckbox: evt.target.checked };
+                            setRows(updatedRows);
+                          }}
+                        />
+                        <span>Entity Addition Done</span>
+                        {debugMode && (<span style={{ color: 'red', }} > {topicAtpToCurationStatus[row.topicSelect]?.curation_status} {topicAtpToCurationStatus[row.topicSelect]?.curation_status_id}</span>)}
+                      </>) }
+                  </>
                 )}
               </Col>
             </Row>
-            <Row className="mb-3" style={{ marginBottom: '20px' }}>
-              <Col sm="6" className="d-flex align-items-center">
-                <Button variant="outline-secondary"  onClick={() => cloneRow(index)} style={{ marginRight: '10px' }}>
-                  Clone row
-                </Button>
-                {rows.length - 1 === index && (
-                  <Button variant="outline-secondary"  onClick={() => setRows([...rows, createNewRow()])}>
-                    New row
+            { (editTag === null) && (
+              <Row className="mb-3" style={{ marginBottom: '20px' }}>
+                <Col sm="6" className="d-flex align-items-center">
+                  <Button variant="outline-secondary"  onClick={() => cloneRow(index)} style={{ marginRight: '10px' }}>
+                    Clone row
                   </Button>
-                )}
-              </Col>
-              {rows.length - 1 === index && rows.length > 1 && (
-                <Col sm="6" className="d-flex justify-content-end align-items-center">
-                  <Button variant="outline-primary" onClick={handleSubmitAll}>
-                    Submit All
-                  </Button>
+                  {rows.length - 1 === index && (
+                    <Button variant="outline-secondary"  onClick={() => setRows([...rows, createNewRow()])}>
+                      New row
+                    </Button>
+                  )}
                 </Col>
-              )}
-            </Row>
+                {rows.length - 1 === index && rows.length > 1 && (
+                  <Col sm="6" className="d-flex justify-content-end align-items-center">
+                    <Button variant="outline-primary" onClick={handleSubmitAll}>
+                      Submit All
+                    </Button>
+                  </Col>
+                )}
+              </Row>
+            )}
           </React.Fragment>
       )})}
     </Container>
