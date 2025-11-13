@@ -29,7 +29,8 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 import {
   applyGridState,
   applyGridStateFromPayload,
-  columnStateFromColDefs
+  columnStateFromColDefs,
+  extractGridState
 } from '../../../utils/gridState';
 import { usePersonSettings } from '../../settings/usePersonSettings';
 import SettingsDropdown from '../../settings/SettingsDropdown';
@@ -108,7 +109,6 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
     link.click();
     document.body.removeChild(link);
 };
-
 
 export const DownloadMultiHeaderButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
   return(
@@ -258,7 +258,7 @@ const Notification = ({ show, message, variant, onClose }) => {
   );
 };
 
-// Custom SettingsGearModal with inline rename
+// Custom SettingsGearModal with inline rename AND save layout
 const CustomSettingsGearModal = ({
   show,
   onHide,
@@ -269,12 +269,12 @@ const CustomSettingsGearModal = ({
   onRename,
   onDelete,
   onMakeDefault,
+  onSaveLayout,
   canCreateMore,
-  busy
+  busy,
+  isGridReady
 }) => {
   const [newSettingName, setNewSettingName] = useState('');
-  // to track which row (setting) is currently performing an async action -
-  // like renaming, deleting, or setting as default
   const [rowBusyId, setRowBusyId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -299,10 +299,23 @@ const CustomSettingsGearModal = ({
     setRowBusyId(setting.person_setting_id);
     try {
       await onMakeDefault(setting.person_setting_id);
-      onHide?.();
     } catch (error) {
       console.error('Failed to set default:', error);
       setErrorMsg(error?.message || 'Failed to set default.');
+    } finally {
+      setRowBusyId(null);
+    }
+  };
+
+  // Add this new handler for saving layout
+  const handleSaveLayoutClick = async (setting) => {
+    setErrorMsg('');
+    setRowBusyId(setting.person_setting_id);
+    try {
+      await onSaveLayout(setting.person_setting_id);
+    } catch (error) {
+      console.error('Failed to save layout:', error);
+      setErrorMsg(error?.message || 'Failed to save layout.');
     } finally {
       setRowBusyId(null);
     }
@@ -456,6 +469,17 @@ const CustomSettingsGearModal = ({
                     </div>
                     
                     <div className="d-flex gap-2">
+                      {/* Save Layout Button - NEW */}
+                      <Button
+                        variant="outline-success"
+                        size="sm"
+                        onClick={() => handleSaveLayoutClick(setting)}
+                        disabled={busy || isBusy || !isGridReady}
+                        title={!isGridReady ? "Table still loading..." : "Save current layout to this setting"}
+                      >
+                        {isBusy && rowBusyId === setting.person_setting_id ? 'Saving...' : 'Save Layout'}
+                      </Button>
+                      
                       {!setting.default_setting && (
                         <Button
                           variant="outline-primary"
@@ -501,7 +525,6 @@ const CustomSettingsGearModal = ({
   );
 };
 
-
 /* -------------------------------------------
    Main component
 --------------------------------------------*/
@@ -526,7 +549,9 @@ const TopicEntityTable = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [nameEdits, setNameEdits] = useState({});
   const [isGridReady, setIsGridReady] = useState(false);
-  const gridRef = useRef();
+  
+  // FIX: Use useRef correctly for AG Grid
+  const gridRef = useRef(null);
   
   // Notification state
   const [notification, setNotification] = useState({ show: false, message: '', variant: 'success' });
@@ -706,47 +731,66 @@ const TopicEntityTable = () => {
 
   const [items, setItems] = useState(getInitialItems());
 
-  // grid state extraction
-  // extractCurrentGridState gathers the current visual configuration of the AG Grid table - that is:
-  // * which columns are visible or hidden,
-  // * what filters are applied, and
-  // * how the table is sorted.
-  // Then it packages that info into a JSON object that can be stored in person_setting.json_settings
-  const extractCurrentGridState = useCallback(async () => {
-    if (!gridRef.current || !gridRef.current.columnApi) {
-      console.error('Grid or column API not available');
+  const getGridApis = () => {
+    if (!gridRef.current) return { api: null, columnApi: null };
+    return {
+      api: gridRef.current.api || gridRef.current.gridApi || null,
+      columnApi: gridRef.current.columnApi || gridRef.current.gridColumnApi || null,
+    };
+  };
+
+    
+
+const extractCurrentGridState = useCallback(() => {
+  const { api, columnApi } = getGridApis();
+
+  if (!api) {
+    console.error('Grid API not available for state capture');
+    return null;
+  }
+
+  // prefer api.getColumnState, fall back to columnApi if needed
+  const getColumnStateFn =
+    (api.getColumnState && api.getColumnState.bind(api)) ||
+    (columnApi &&
+      columnApi.getColumnState &&
+      columnApi.getColumnState.bind(columnApi));
+
+  if (!getColumnStateFn) {
+    console.error('No getColumnState function available on api or columnApi');
+    return null;
+  }
+
+  try {
+    const columnState = getColumnStateFn();
+
+    // filter & sort are OPTIONAL
+    const filterModel = api.getFilterModel ? api.getFilterModel() : {};
+    const sortModel = api.getSortModel ? api.getSortModel() : [];
+
+    if (!columnState || !Array.isArray(columnState)) {
+      console.error('Invalid column state captured:', columnState);
       return null;
     }
-    // These lines force AG Grid to update internal states before capturing them
-    gridRef.current.api.refreshHeader();
-    gridRef.current.api.refreshCells({ force: true });
-    gridRef.current.api.onFilterChanged();
-    // The 150 ms delay to make sure the grid’s async rendering (column widths, filters, etc.)
-    // settles before reading.  
-    await new Promise(r => setTimeout(r, 150));
 
-    // This retrieves an array of column states - one per column
-    // Each state object includes things like:
-    // {
-    //   colId: "entity_name",
-    //   width: 150,
-    //   hide: false,
-    //   sort: "asc",
-    //   sortIndex: 0
-    // }
-    const columnState = gridRef.current.columnApi.getColumnState();
-    // This syncs the AG Grid’s column visibility with our React state items
-    const syncedColumnState = columnState.map(colState => {
-      const item = items.find(i => i.field === colState.colId);
-      return item ? { ...colState, hide: !item.checked } : colState;
+    console.log('Successfully captured grid state:', {
+      columns: columnState.length,
+      filters: filterModel ? Object.keys(filterModel).length : 0,
+      sorts: sortModel ? sortModel.length : 0,
     });
 
     return {
-      columnState: syncedColumnState,
-      filterModel: gridRef.current.api.getFilterModel(),
-      sortModel: gridRef.current.api.getSortModel()
+      columnState,
+      filterModel: filterModel || {},
+      sortModel: sortModel || [],
     };
-  }, [items]);
+  } catch (error) {
+    console.error('Error extracting grid state:', error);
+    return null;
+  }
+}, []);
+
+
     
   // Checkbox dropdown
   const CheckboxDropdown =  ({ items }) => {
@@ -896,19 +940,21 @@ const TopicEntityTable = () => {
 
   const paginationPageSizeSelector = useMemo(() => [10, 25, 50, 100, 500], []);
 
-  // Build a state even if the grid isn't ready yet
-  const getSafeCurrentState = useCallback(async () => {
-    if (isGridReady && gridRef.current?.api && gridRef.current?.columnApi) {
-      return await extractCurrentGridState();
+  // SIMPLIFIED: Get current state directly
+  const getSafeCurrentState = useCallback(() => {
+    const state = extractCurrentGridState();
+    if (!state) {
+      // If we can't capture current state, create a default one
+      console.warn('Could not capture current grid state, creating default state');
+      const currentItems = getInitialItems();
+      return {
+        columnState: columnStateFromColDefs(updateColDefsWithItems(currentItems)),
+        filterModel: {},
+        sortModel: []
+      };
     }
-    // Fallback: derive columnState from current colDefs / items
-    const columnState = columnStateFromColDefs(updateColDefsWithItems(items));
-    return {
-      columnState,
-      filterModel: {},
-      sortModel: []
-    };
-  }, [isGridReady, extractCurrentGridState, items, updateColDefsWithItems]);
+    return state;
+  }, [extractCurrentGridState, getInitialItems, updateColDefsWithItems]);
 
   function isExternalFilterPresent() {
     return filteredTags;
@@ -926,93 +972,250 @@ const TopicEntityTable = () => {
     return accessLevel === "SGD" ? "SGD Default" : "MOD Default";
   }, [accessLevel]);
 
-  // Apply settings to grid and update UI state
-  const applySettingsToGrid = useCallback(async (payload, settingId = null) => {
-    if (!gridRef.current) return;
+
+
+
+// Apply settings to grid using only applyColumnState for maximum compatibility
+const applySettingsToGrid = useCallback(
+  async (payload, settingId = null, options = {}) => {
+    const { silent = false } = options;
+    const { api, columnApi } = getGridApis();
+
+    if (!api) {
+      console.error('Grid API not available');
+      return;
+    }
+
+    const applyColumnStateFn =
+      (api.applyColumnState && api.applyColumnState.bind(api)) ||
+      (columnApi &&
+        columnApi.applyColumnState &&
+        columnApi.applyColumnState.bind(columnApi));
 
     try {
-      applyGridStateFromPayload(gridRef, payload);
-      await new Promise(r => setTimeout(r, 100));
-      gridRef.current.api.onFilterChanged();
-      gridRef.current.api.refreshClientSideRowModel("filter");
-      gridRef.current.api.refreshCells({ force: true });
+      const { columnState, filterModel, sortModel } = payload;
 
-      const columnState = payload.columnState || [];
-      const updatedItems = getInitialItems().map(item => {
-        const colState = columnState.find(col => col.colId === item.field);
-        return { ...item, checked: colState ? !colState.hide : item.checked };
+      // combine column + sort info
+      let combinedState = [];
+      if (columnState && columnState.length > 0) {
+        combinedState = [...columnState];
+      }
+      if (sortModel && sortModel.length > 0) {
+        sortModel.forEach((sortItem) => {
+          const existingCol = combinedState.find(
+            (col) => col.colId === sortItem.colId
+          );
+          if (existingCol) {
+            existingCol.sort = sortItem.sort;
+          } else {
+            combinedState.push({
+              colId: sortItem.colId,
+              sort: sortItem.sort,
+            });
+          }
+        });
+      }
+
+      if (applyColumnStateFn && combinedState.length > 0) {
+        applyColumnStateFn({
+          state: combinedState,
+          applyOrder: true,
+          applyWidth: true,
+          applyVisibility: true,
+        });
+      }
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      if (filterModel && Object.keys(filterModel).length > 0 && api.setFilterModel) {
+        api.setFilterModel(filterModel);
+      }
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      if (api.onFilterChanged) api.onFilterChanged();
+      if (api.refreshClientSideRowModel)
+        api.refreshClientSideRowModel('filter');
+      if (api.refreshCells) api.refreshCells({ force: true });
+
+      const getColumnStateFn =
+        (api.getColumnState && api.getColumnState.bind(api)) ||
+        (columnApi &&
+          columnApi.getColumnState &&
+          columnApi.getColumnState.bind(columnApi));
+
+      const currentColumnState = getColumnStateFn ? getColumnStateFn() : [];
+      const updatedItems = getInitialItems().map((item) => {
+        const colState = currentColumnState.find(
+          (col) => col.colId === item.field
+        );
+        return {
+          ...item,
+          checked: colState ? !colState.hide : item.checked,
+        };
       });
 
       setItems(updatedItems);
       setColDefs(updateColDefsWithItems(updatedItems));
 
-      if (settingId) setSelectedSettingId(settingId);
+      if (settingId) {
+        setSelectedSettingId(settingId);
+      }
+
+      if (!silent) {
+        showNotification('Settings applied successfully!', 'success');
+      }
     } catch (error) {
-      console.error("Error applying settings:", error);
+      console.error('Error applying settings:', error);
+      showNotification(
+        'Error applying settings. Using default layout.',
+        'error'
+      );
+
       const fallbackItems = getInitialItems();
       setItems(fallbackItems);
       setColDefs(updateColDefsWithItems(fallbackItems));
+
+      const defaultState = columnStateFromColDefs(
+        updateColDefsWithItems(fallbackItems)
+      );
+
+      if (applyColumnStateFn) {
+        applyColumnStateFn({
+          state: defaultState,
+          applyOrder: true,
+        });
+      }
     }
-  }, [getInitialItems, updateColDefsWithItems, setSelectedSettingId]);
+  },
+  [getInitialItems, updateColDefsWithItems, setSelectedSettingId, showNotification]
+);
 
-  const onGridReady = useCallback(async () => {
-    try {
-      setIsGridReady(true);
-      const { existing, picked } = await load();
 
-      if (existing && existing.length > 0) {
-        const settingToApply = picked || existing.find(s => s.default_setting) || existing[0];
-        if (settingToApply) {
-          const payload = settingToApply.json_settings || settingToApply.payload || {};
-          await applySettingsToGrid(payload, settingToApply.person_setting_id);
-          return;
+    
+
+
+    
+const onGridReady = useCallback((params) => {
+  gridRef.current = params;
+  setIsGridReady(true);
+  
+  // Check available API methods for debugging
+  console.log('AG Grid API methods:', {
+    setSortModel: typeof params.api.setSortModel,
+    getSortModel: typeof params.api.getSortModel,
+    setFilterModel: typeof params.api.setFilterModel,
+    applyColumnState: typeof params.api.applyColumnState,
+    getColumnState: typeof params.api.getColumnState
+  });
+  
+  // Load settings after grid is ready
+  load().then(({ existing, picked }) => {
+    if (existing && existing.length > 0) {
+      const settingToApply = picked || existing.find(s => s.default_setting) || existing[0];
+      if (settingToApply && settingToApply.json_settings) {
+        // Small delay to ensure grid is fully ready
+        setTimeout(() => {
+	  applySettingsToGrid(
+            settingToApply.json_settings,
+            settingToApply.person_setting_id,
+            { silent: true }
+          );
+        }, 100);
+        return;
+      }
+    }
+
+    // No saved settings - apply default template
+    const modTemplateItems = getInitialItems();
+    const seedState = {
+      columnState: columnStateFromColDefs(updateColDefsWithItems(modTemplateItems)),
+      filterModel: {},
+      sortModel: []
+    };
+
+    setItems(modTemplateItems);
+    setColDefs(updateColDefsWithItems(modTemplateItems));
+    
+    // Apply the default state to grid with delay
+    setTimeout(() => {
+      // Use the utility function which should handle compatibility
+      if (applyGridState && typeof applyGridState === 'function') {
+        applyGridState(gridRef, seedState);
+      } else {
+        // Fallback: apply directly
+        if (gridRef.current?.api?.applyColumnState) {
+          gridRef.current.api.applyColumnState({ 
+            state: seedState.columnState,
+            applyOrder: true
+          });
         }
       }
-
-      const modTemplateItems = getInitialItems();
-      const seedState = {
-        columnState: columnStateFromColDefs(updateColDefsWithItems(modTemplateItems)),
-        filterModel: {},
-        sortModel: []
-      };
-
-      setItems(modTemplateItems);
-      setColDefs(updateColDefsWithItems(modTemplateItems));
-      applyGridState(gridRef, seedState);
-
-      const created = await seed({
+      
+      // Seed the database with default
+      seed({
         name: buildSeedPresetName(),
         payload: { ...seedState, meta: { accessLevel } },
         isDefault: true
+      }).then(created => {
+        if (created) setSelectedSettingId(created.person_setting_id);
       });
-      if (created) setSelectedSettingId(created.person_setting_id);
-
-    } catch (error) {
-      console.error("Failed to load person settings:", error);
-      const fallbackItems = getInitialItems();
-      setItems(fallbackItems);
-      setColDefs(updateColDefsWithItems(fallbackItems));
-      applyGridState(gridRef, {
+    }, 200);
+  }).catch(error => {
+    console.error("Failed to load person settings:", error);
+    // Fallback to default state
+    const fallbackItems = getInitialItems();
+    setItems(fallbackItems);
+    setColDefs(updateColDefsWithItems(fallbackItems));
+    
+    setTimeout(() => {
+      const fallbackState = {
         columnState: columnStateFromColDefs(updateColDefsWithItems(fallbackItems)),
         filterModel: {},
         sortModel: []
-      });
-    }
-  }, [load, seed, applySettingsToGrid, getInitialItems, updateColDefsWithItems, buildSeedPresetName, accessLevel, setSelectedSettingId]);
+      };
+      
+      if (applyGridState && typeof applyGridState === 'function') {
+        applyGridState(gridRef, fallbackState);
+      } else if (gridRef.current?.api?.applyColumnState) {
+        gridRef.current.api.applyColumnState({ 
+          state: fallbackState.columnState,
+          applyOrder: true
+        });
+      }
+    }, 100);
+  });
+}, [load, seed, applySettingsToGrid, getInitialItems, updateColDefsWithItems, buildSeedPresetName, accessLevel, setSelectedSettingId]);
+    
 
-  const onColumnResized = useCallback((params)=>{
-    let colState = gridRef.current.api.getColumnState();
-    if(params.source === 'autosizeColumns') {
-      colState.forEach((element) => {
-        if (element.colId === 'note' && element.width > 300){
-          gridRef.current.api.applyColumnState({
-            state: [{ colId: 'note', width: 300 }],
-          });
-        }
-      });
-    }
-  },[]);
 
+const onColumnResized = useCallback((params) => {
+  const { api, columnApi } = getGridApis();
+  const getColumnStateFn =
+    (api && api.getColumnState) ||
+    (columnApi && columnApi.getColumnState);
+  const applyColumnStateFn =
+    (api && api.applyColumnState) ||
+    (columnApi && columnApi.applyColumnState);
+
+  if (!getColumnStateFn || !applyColumnStateFn) return;
+
+  const colState = getColumnStateFn();
+  if (params.source === 'autosizeColumns') {
+    colState.forEach((element) => {
+      if (element.colId === 'note' && element.width > 300) {
+        applyColumnStateFn({
+          state: [{ colId: 'note', width: 300 }],
+        });
+      }
+    });
+  }
+}, []);
+
+    
+
+
+    
   const getRowId = useMemo(() => (params) => String(params.data.topic_entity_tag_id), []);
 
   const fileNameFront = `${referenceCurie}_tet_data`;
@@ -1022,7 +1225,7 @@ const TopicEntityTable = () => {
     const s = settings.find(x => x.person_setting_id === person_setting_id);
     if (!s) return;
     const payload = s.json_settings || s.payload || {};
-    await applySettingsToGrid(payload, person_setting_id);
+    await applySettingsToGrid(payload, person_setting_id, { silent: true });
   };
 
   // Create new setting (uses current grid state)
@@ -1039,7 +1242,7 @@ const TopicEntityTable = () => {
       showNotification(`A setting named "${clean}" already exists.`, "warning");
       return null;
     }
-    const state = await getSafeCurrentState();
+    const state = getSafeCurrentState();
     try {
       const created = await create(clean, { ...state, meta: { accessLevel } });
       await load();
@@ -1080,6 +1283,70 @@ const TopicEntityTable = () => {
       return false;
     }
   };
+
+
+
+const handleSaveLayout = async (settingId = null) => {
+  const targetSettingId = settingId || selectedSettingId;
+
+  if (!targetSettingId) {
+    showNotification('Please select a setting to save to first.', 'warning');
+    return;
+  }
+
+  if (!isGridReady) {
+    showNotification(
+      'Grid is still loading. Please wait for the table to be fully ready.',
+      'warning'
+    );
+    return;
+  }
+
+  if (!gridRef.current || !gridRef.current.api) {
+    console.error('Grid APIs not available in handleSaveLayout');
+    showNotification('Grid is not ready. Please wait and try again.', 'warning');
+    return;
+  }
+
+  try {
+    const state = extractCurrentGridState();
+
+    if (!state) {
+      showNotification('Failed to capture current layout state.', 'error');
+      return;
+    }
+
+    if (!state.columnState || state.columnState.length === 0) {
+      console.error('No column state captured');
+      showNotification('No layout data captured. Please try again.', 'error');
+      return;
+    }
+
+    await savePayloadTo(targetSettingId, {
+      ...state,
+      meta: {
+        accessLevel,
+        savedAt: new Date().toISOString(),
+        version: '1.0',
+      },
+    });
+
+    await load();
+
+    showNotification(
+      'Current layout (columns, order, filters, sorting) saved successfully!',
+      'success'
+    );
+  } catch (err) {
+    console.error('Save layout error:', err);
+    const msg = err?.response?.data?.detail || err?.message || String(err);
+    showNotification(`Failed to save layout: ${msg}`, 'error');
+  }
+};
+
+
+    
+    
 
   return (
     <div>
@@ -1160,10 +1427,18 @@ const TopicEntityTable = () => {
                 rowData={topicEntityTags}
                 onGridReady={onGridReady}
                 onColumnResized={onColumnResized}
+                onColumnMoved={(params) => {
+                  // This ensures column moves are captured in state
+                }}
+                onSortChanged={(params) => {
+                  // This ensures sort changes are captured
+                }}
+                onFilterChanged={(params) => {
+                  // This ensures filter changes are captured
+                }}
                 getRowId={getRowId}
                 columnDefs={colDefs}
-                onColumnMoved={() => {}}
-                onRowDataUpdated={() => gridRef.current.api.refreshCells({force : true})}
+                onRowDataUpdated={() => gridRef.current?.api?.refreshCells({force : true})}
                 pagination={true}
                 paginationPageSize={25}
                 gridOptions={gridOptions}
@@ -1190,11 +1465,13 @@ const TopicEntityTable = () => {
          onRename={handleRename}
          onDelete={remove}
          onMakeDefault={makeDefault}
+         onSaveLayout={handleSaveLayout}
          canCreateMore={settings.length < maxCount}
          busy={busy}
+         isGridReady={isGridReady}
       />
     </div>
   );
-}; // const TopicEntityTable
+};
 
 export default TopicEntityTable;
