@@ -25,93 +25,89 @@ import { timestampToDateFormatter } from '../BiblioWorkflow';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-// ===== reusable utils for user preferences
 import {
   applyGridState,
-  applyGridStateFromPayload,
   columnStateFromColDefs,
-  extractGridState
 } from '../../../utils/gridState';
 import { usePersonSettings } from '../../settings/usePersonSettings';
 import SettingsDropdown from '../../settings/SettingsDropdown';
 
+/* --------------------------------------------------
+   Download helpers
+-------------------------------------------------- */
 export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNameFront) => {
-    let dataToDownload = [];
-    let headers = [];
-    let fields = [];
+  let dataToDownload = [];
+  let headers = [];
+  let fields = [];
 
-    // get headers and fields from visible columns only
-    colDefs
-      .filter(col => option === 'allColumns' || !col.hide) // include hidden columns only for 'allColumns' option
-      .forEach(col => {
-        headers.push(col.headerName);
-        fields.push(col.field);
-      });
+  // get headers and fields from visible columns only
+  colDefs
+    .filter(col => option === 'allColumns' || !col.hide) // include hidden columns only for 'allColumns' option
+    .forEach(col => {
+      headers.push(col.headerName);
+      fields.push(col.field);
+    });
 
-    // find the index of the Entity column so later we can add entity curie (in the "entity" field)
-    const entityIndex = fields.indexOf("entity_name");
+  // find the index of the Entity column so later we can add entity curie (in the "entity" field)
+  const entityIndex = fields.indexOf("entity_name");
 
-    // add entity CURIE field and header next to the Entity column
-    // entity curie is in "entity" field, entity (name) is in "entity_name" field
-    if (entityIndex !== -1) {
-      headers.splice(entityIndex + 1, 0, "Entity CURIE"); // insert "Entity CURIE" after "Entity"
-      fields.splice(entityIndex + 1, 0, "entity");        // insert "entity" field after "entity_name"
-    }
+  // add entity CURIE field and header next to the Entity column
+  if (entityIndex !== -1) {
+    headers.splice(entityIndex + 1, 0, "Entity CURIE");
+    fields.splice(entityIndex + 1, 0, "entity");
+  }
 
-    if ( (option === "allColumns") || (option === "multiHeader") ) {
-      // download all columns, even hidden ones
-      gridRef.current.api.forEachNode((node) => {
-        dataToDownload.push(node.data);
-      });
-    } else if (option === "withoutFilters") {
-      // download all data without applying filters
-      const allData = topicEntityTags;
-      dataToDownload = [...allData]; // copy all data from API
-    } else {
-      // default download with current filters and shown columns
-      gridRef.current.api.forEachNodeAfterFilterAndSort((node) => {
-        dataToDownload.push(node.data);
-      });
-    }
+  const api = gridRef.current?.api;
+  if (!api) {
+    console.error("Grid API not available for download");
+    return;
+  }
 
-    if (option === "multiHeader") {
-      headers = headers.flatMap(header =>
-        header === "" ? "status" : [`${header}_num`, `${header}_perc`]
-      );
-      fields = fields.flatMap(field =>
-        field === "status" ? [field] : [`${field}_num`, `${field}_perc`]
-      );
-    }
+  if ((option === "allColumns") || (option === "multiHeader")) {
+    api.forEachNode((node) => {
+      dataToDownload.push(node.data);
+    });
+  } else if (option === "withoutFilters") {
+    const allData = topicEntityTags;
+    dataToDownload = [...allData];
+  } else {
+    api.forEachNodeAfterFilterAndSort((node) => {
+      dataToDownload.push(node.data);
+    });
+  }
 
-    // helper function to get nested values
-    // if the field is "topic_name", it will return row.topic_name
-    // if the field is "topic_entity_tag_source.secondary_data_provider_abbreviation",
-    // it will return row.topic_entity_tag_source.secondary_data_provider_abbreviation
-    const getNestedValue = (obj, field) => {
-      return field.split('.').reduce((acc, key) => acc && acc[key] ? acc[key] : '', obj);
-    };
-
-    // convert headers and data to TSV format
-    const tsvHeaders = headers.join('\t'); 
-    const tsvRows = dataToDownload.map((row) =>
-      fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
+  if (option === "multiHeader") {
+    headers = headers.flatMap(header =>
+      header === "" ? "status" : [`${header}_num`, `${header}_perc`]
     );
-    const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
-    const encodedUri = encodeURI(tsvContent);
+    fields = fields.flatMap(field =>
+      field === "status" ? [field] : [`${field}_num`, `${field}_perc`]
+    );
+  }
 
-    const fileName = `${fileNameFront}_${option}.tsv`;
+  const getNestedValue = (obj, field) => {
+    return field.split('.').reduce((acc, key) => acc && acc[key] ? acc[key] : '', obj);
+  };
 
-    // trigger file download
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const tsvHeaders = headers.join('\t');
+  const tsvRows = dataToDownload.map((row) =>
+    fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
+  );
+  const tsvContent = `data:text/tab-separated-values;charset=utf-8,${tsvHeaders}\n${tsvRows.join('\n')}`;
+  const encodedUri = encodeURI(tsvContent);
+
+  const fileName = `${fileNameFront}_${option}.tsv`;
+
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
-export const DownloadMultiHeaderButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
-  return(
+export const DownloadMultiHeaderButton = ({ option, gridRef, colDefs, rowData, fileNameFront, buttonLabel }) => {
+  return (
     <Button
       variant="primary"
       size="sm"
@@ -120,8 +116,8 @@ export const DownloadMultiHeaderButton = ({option, gridRef, colDefs, rowData, fi
   );
 };
 
-export const DownloadAllColumnsButton = ({option, gridRef, colDefs, rowData, fileNameFront, buttonLabel}) => {
-  return(
+export const DownloadAllColumnsButton = ({ option, gridRef, colDefs, rowData, fileNameFront, buttonLabel }) => {
+  return (
     <Button
       variant="primary"
       size="sm"
@@ -130,8 +126,8 @@ export const DownloadAllColumnsButton = ({option, gridRef, colDefs, rowData, fil
   );
 };
 
-export const DownloadDropdownOptionsButton = ({option, gridRef, colDefs, rowData, fileNameFront}) => {
-  return(
+export const DownloadDropdownOptionsButton = ({ option, gridRef, colDefs, rowData, fileNameFront }) => {
+  return (
     <Dropdown className="ms-auto">
       <Dropdown.Toggle variant="primary" id="dropdown-download-options">
         Download Options
@@ -198,7 +194,6 @@ const CheckboxMenu = React.forwardRef(
           >
             {children}
           </ul>
-
         </div>
       </div>
     );
@@ -307,7 +302,6 @@ const CustomSettingsGearModal = ({
     }
   };
 
-  // Add this new handler for saving layout
   const handleSaveLayoutClick = async (setting) => {
     setErrorMsg('');
     setRowBusyId(setting.person_setting_id);
@@ -321,7 +315,6 @@ const CustomSettingsGearModal = ({
     }
   };
 
-  // Handle inline rename
   const handleRenameStart = (setting) => {
     setNameEdits(prev => ({
       ...prev,
@@ -373,14 +366,12 @@ const CustomSettingsGearModal = ({
         <Modal.Title>Manage Table Preferences</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {/* Error banner */}
         {errorMsg && (
           <div className="alert alert-danger mb-3" role="alert">
             {errorMsg}
           </div>
         )}
 
-        {/* Create new setting section */}
         <div className="mb-4">
           <Form.Group>
             <Form.Label>Create New Setting</Form.Label>
@@ -409,7 +400,6 @@ const CustomSettingsGearModal = ({
           </Form.Group>
         </div>
 
-        {/* Existing settings list */}
         <div>
           <h6>Existing Settings</h6>
           {settings.length === 0 ? (
@@ -419,7 +409,7 @@ const CustomSettingsGearModal = ({
               {settings.map((setting) => {
                 const isEditing = Object.prototype.hasOwnProperty.call(nameEdits, setting.person_setting_id);
                 const isBusy = rowBusyId === setting.person_setting_id;
-                
+
                 return (
                   <div
                     key={setting.person_setting_id}
@@ -427,7 +417,7 @@ const CustomSettingsGearModal = ({
                   >
                     <div className="d-flex align-items-center flex-grow-1 me-3">
                       <span className="me-2">{setting.default_setting && '★'}</span>
-                      
+
                       {isEditing ? (
                         <div className="d-flex align-items-center flex-grow-1">
                           <Form.Control
@@ -458,7 +448,7 @@ const CustomSettingsGearModal = ({
                             onClick={() => handleRenameCancel(setting.person_setting_id)}
                             disabled={isBusy}
                           >
-                            ✗
+                            ✕
                           </Button>
                         </div>
                       ) : (
@@ -467,9 +457,8 @@ const CustomSettingsGearModal = ({
                         </span>
                       )}
                     </div>
-                    
+
                     <div className="d-flex gap-2">
-                      {/* Save Layout Button - NEW */}
                       <Button
                         variant="outline-success"
                         size="sm"
@@ -479,7 +468,7 @@ const CustomSettingsGearModal = ({
                       >
                         {isBusy && rowBusyId === setting.person_setting_id ? 'Saving...' : 'Save Layout'}
                       </Button>
-                      
+
                       {!setting.default_setting && (
                         <Button
                           variant="outline-primary"
@@ -491,7 +480,7 @@ const CustomSettingsGearModal = ({
                           {isBusy ? 'Setting…' : 'Set Default'}
                         </Button>
                       )}
-                      
+
                       {!isEditing && (
                         <Button
                           variant="outline-secondary"
@@ -503,7 +492,7 @@ const CustomSettingsGearModal = ({
                           Rename
                         </Button>
                       )}
-                      
+
                       <Button
                         variant="outline-danger"
                         size="sm"
@@ -533,12 +522,14 @@ const TopicEntityTable = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const oktaMod = useSelector(state => state.isLogged.oktaMod);
   const testerMod = useSelector((state) => state.isLogged.testerMod);
-  const uid = useSelector(state => state.isLogged.uid);  
+  const uid = useSelector(state => state.isLogged.uid);
   const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
+
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
   const filteredTags = useSelector(state => state.biblio.filteredTags);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [selectedCurie, setSelectedCurie] = useState(null);
   const [showCurieModal, setShowCurieModal] = useState(false);
@@ -549,17 +540,14 @@ const TopicEntityTable = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [nameEdits, setNameEdits] = useState({});
   const [isGridReady, setIsGridReady] = useState(false);
-  
-  // FIX: Use useRef correctly for AG Grid
+
   const gridRef = useRef(null);
-  
-  // Notification state
+  const apiRef = useRef(null);
+
   const [notification, setNotification] = useState({ show: false, message: '', variant: 'success' });
 
-  // Define component name for settings - specific to this component
   const componentName = "tet_table";
-    
-  // Settings via shared hook
+
   const {
     settings, selectedSettingId, setSelectedSettingId, busy, maxCount,
     load, seed, create, rename, remove, makeDefault, savePayloadTo
@@ -568,10 +556,9 @@ const TopicEntityTable = () => {
     token: accessToken,
     oktaId: uid,
     componentName,
-    maxCount: 10  // Maximum 10 stored preferences
+    maxCount: 10
   });
 
-  // Notification helpers
   const showNotification = (message, variant = 'success') => {
     setNotification({ show: true, message, variant });
   };
@@ -584,7 +571,6 @@ const TopicEntityTable = () => {
     }
   }, [notification.show]);
 
-  // Load settings on mount
   useEffect(() => {
     if (accessToken && uid) {
       load();
@@ -600,7 +586,7 @@ const TopicEntityTable = () => {
   }, [accessToken, dispatch]);
 
   const fetchTableData = useCallback(async () => {
-    let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=" + 1 + "&page_size=" + 8000;
+    let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie + "?page=1&page_size=8000";
     setIsLoadingData(true);
     try {
       const resultTags = await axios.get(url);
@@ -609,7 +595,7 @@ const TopicEntityTable = () => {
           if (arrElement['validation_by_author'] === 'validated_right_self') { arrElement['validation_by_author'] = ''; }
           else if (arrElement['validation_by_author'] === 'validated_right') { arrElement['validation_by_author'] = 'agree'; }
           else if (arrElement['validation_by_author'] === 'validated_wrong') { arrElement['validation_by_author'] = 'disagree'; }
-          else if (arrElement['validation_by_author'] === 'not_validated')   { arrElement['validation_by_author'] = 'no entry'; }
+          else if (arrElement['validation_by_author'] === 'not_validated') { arrElement['validation_by_author'] = 'no entry'; }
         }
         if ('validation_by_professional_biocurator' in arrElement) {
           if (arrElement['validation_by_professional_biocurator'] === 'validated_right_self') {
@@ -655,185 +641,178 @@ const TopicEntityTable = () => {
     }
   };
 
-  // initial items (SGD vs others)
   let itemsInit = [
     { headerName: "Topic", field: "topic_name", id: 1, checked: true },
     { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true },
-    { headerName: "Species", field: "species_name", id: 3, checked: true},
-    { headerName: "Entity", field: "entity_name", id: 4, checked: true},
+    { headerName: "Species", field: "species_name", id: 3, checked: true },
+    { headerName: "Entity", field: "entity_name", id: 4, checked: true },
     { headerName: "Entity Published As", field: "entity_published_as", id: 5, checked: false },
     { headerName: "No Data", field: "negated", id: 6, checked: true },
     { headerName: "Data Novelty", field: "data_novelty", id: 7, checked: false },
-    { headerName: "Confidence Score", field:"confidence_score", id: 8, checked: false },	
-    { headerName: "Confidence Level", field:"confidence_level", id: 9, checked: false },
-    { headerName: "Created By", field: "created_by", id: 10, checked: true},
-    { headerName: "Note", field: "note", id: 11, checked: true},
-    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 12 , checked: false},
-    { headerName: "Date Created", field: "date_created", id: 13, checked: true},
+    { headerName: "Confidence Score", field: "confidence_score", id: 8, checked: false },
+    { headerName: "Confidence Level", field: "confidence_level", id: 9, checked: false },
+    { headerName: "Created By", field: "created_by", id: 10, checked: true },
+    { headerName: "Note", field: "note", id: 11, checked: true },
+    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 12, checked: false },
+    { headerName: "Date Created", field: "date_created", id: 13, checked: true },
     { headerName: "Updated By", field: "updated_by", id: 14, checked: false },
-    { headerName: "Date Updated", field: "date_updated", id: 15, checked: true},
+    { headerName: "Date Updated", field: "date_updated", id: 15, checked: true },
     { headerName: "Author Response", field: "validation_by_author", id: 16, checked: false },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 17, checked: false },
-    { headerName: "Display Tag", field: "display_tag_name", id: 18, checked: false},
+    { headerName: "Display Tag", field: "display_tag_name", id: 18, checked: false },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 19, checked: true },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", id: 20, checked: false },
-    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name" , id: 21, checked: false},
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", id: 21, checked: false },
     { headerName: "Source Method", field: "topic_entity_tag_source.source_method", id: 22, checked: false },
     { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type", id: 23, checked: false },
-    { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 24, checked: false},
+    { headerName: "Source Description", field: "topic_entity_tag_source.description", id: 24, checked: false },
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 25, checked: false },
-    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 26, checked: false },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated", id: 26, checked: false },
     { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 27, checked: false },
     { headerName: "Model ID", field: "ml_model_id", id: 28, checked: false },
     { headerName: "Model Version", field: "ml_model_version", id: 29, checked: false },
-    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 30, checked: false },
-    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 31, checked: false }
+    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id", id: 30, checked: false },
+    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id", id: 31, checked: false }
   ];
 
   let itemsInitSGD = [
     { headerName: "Topic", field: "topic_name", id: 1, checked: true },
     { headerName: "Entity Type", field: "entity_type_name", id: 2, checked: true },
-    { headerName: "Species", field: "species_name", id: 3, checked: true},
-    { headerName: "Entity", field: "entity_name", id: 4, checked: true},
+    { headerName: "Species", field: "species_name", id: 3, checked: true },
+    { headerName: "Entity", field: "entity_name", id: 4, checked: true },
     { headerName: "Entity Published As", field: "entity_published_as", id: 5, checked: false },
     { headerName: "No Data", field: "negated", id: 6, checked: false },
     { headerName: "Data Novelty", field: "data_novelty", id: 7, checked: false },
-    { headerName: "Confidence Score", field:"confidence_score", id: 8, checked: false },
-    { headerName: "Confidence Level", field:"confidence_level", id: 9, checked: false },
-    { headerName: "Created By", field: "created_by", id: 10, checked: true},
-    { headerName: "Note", field: "note", id: 11, checked: true},
-    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 12 , checked: false},
-    { headerName: "Date Created", field: "date_created", id: 13, checked: true},
+    { headerName: "Confidence Score", field: "confidence_score", id: 8, checked: false },
+    { headerName: "Confidence Level", field: "confidence_level", id: 9, checked: false },
+    { headerName: "Created By", field: "created_by", id: 10, checked: true },
+    { headerName: "Note", field: "note", id: 11, checked: true },
+    { headerName: "Entity ID Validation", field: "entity_id_validation", id: 12, checked: false },
+    { headerName: "Date Created", field: "date_created", id: 13, checked: true },
     { headerName: "Updated By", field: "updated_by", id: 14, checked: false },
-    { headerName: "Date Updated", field: "date_updated" , id: 15, checked: true},
+    { headerName: "Date Updated", field: "date_updated", id: 15, checked: true },
     { headerName: "Author Response", field: "validation_by_author", id: 16, checked: false },
     { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", id: 17, checked: false },
-    { headerName: "Display Tag", field: "display_tag_name", id: 18, checked: true},
+    { headerName: "Display Tag", field: "display_tag_name", id: 18, checked: true },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", id: 19, checked: false },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", id: 20, checked: false },
-    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name" , id: 21, checked: false},
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", id: 21, checked: false },
     { headerName: "Source Method", field: "topic_entity_tag_source.source_method", id: 22, checked: false },
     { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type", id: 23, checked: false },
-    { headerName: "Source Description", field: "topic_entity_tag_source.description" , id: 24, checked: false},
+    { headerName: "Source Description", field: "topic_entity_tag_source.description", id: 24, checked: false },
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", id: 25, checked: false },
-    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , id: 26, checked: false },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , id: 27, checked: false },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated", id: 26, checked: false },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", id: 27, checked: false },
     { headerName: "Model ID", field: "ml_model_id", id: 28, checked: false },
     { headerName: "Model Version", field: "ml_model_version", id: 29, checked: false },
-    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" , id: 30, checked: false },
-    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" , id: 31, checked: false }
+    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id", id: 30, checked: false },
+    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id", id: 31, checked: false }
   ];
 
-  // initial items by access level
   const getInitialItems = useCallback(() => {
     return accessLevel === "SGD" ? [...itemsInitSGD] : [...itemsInit];
   }, [accessLevel]);
 
   const [items, setItems] = useState(getInitialItems());
 
-  const getGridApis = () => {
-    if (!gridRef.current) return { api: null, columnApi: null };
-    return {
-      api: gridRef.current.api || gridRef.current.gridApi || null,
-      columnApi: gridRef.current.columnApi || gridRef.current.gridColumnApi || null,
-    };
-  };
+  const getGridApi = useCallback(() => {
+    return apiRef.current || gridRef.current?.api || null;
+  }, []);
 
-    
+  const extractCurrentGridState = useCallback(() => {
+    const api = getGridApi();
 
-const extractCurrentGridState = useCallback(() => {
-  const { api, columnApi } = getGridApis();
-
-  if (!api) {
-    console.error('Grid API not available for state capture');
-    return null;
-  }
-
-  // prefer api.getColumnState, fall back to columnApi if needed
-  const getColumnStateFn =
-    (api.getColumnState && api.getColumnState.bind(api)) ||
-    (columnApi &&
-      columnApi.getColumnState &&
-      columnApi.getColumnState.bind(columnApi));
-
-  if (!getColumnStateFn) {
-    console.error('No getColumnState function available on api or columnApi');
-    return null;
-  }
-
-  try {
-    const columnState = getColumnStateFn();
-
-    // filter & sort are OPTIONAL
-    const filterModel = api.getFilterModel ? api.getFilterModel() : {};
-    const sortModel = api.getSortModel ? api.getSortModel() : [];
-
-    if (!columnState || !Array.isArray(columnState)) {
-      console.error('Invalid column state captured:', columnState);
+    if (!api) {
+      console.error('Grid API not available for state capture');
       return null;
     }
 
-    console.log('Successfully captured grid state:', {
-      columns: columnState.length,
-      filters: filterModel ? Object.keys(filterModel).length : 0,
-      sorts: sortModel ? sortModel.length : 0,
-    });
+    const getColumnStateFn = api.getColumnState && api.getColumnState.bind(api);
+    if (!getColumnStateFn) {
+      console.error('No getColumnState function available on api');
+      return null;
+    }
 
-    return {
-      columnState,
-      filterModel: filterModel || {},
-      sortModel: sortModel || [],
-    };
-  } catch (error) {
-    console.error('Error extracting grid state:', error);
-    return null;
-  }
-}, []);
+    try {
+      const columnState = getColumnStateFn();
+      const filterModel = api.getFilterModel ? api.getFilterModel() : {};
+      const sortModel = api.getSortModel ? api.getSortModel() : [];
 
+      if (!columnState || !Array.isArray(columnState)) {
+        console.error('Invalid column state captured:', columnState);
+        return null;
+      }
 
-    
-  // Checkbox dropdown
-  const CheckboxDropdown =  ({ items }) => {
+      console.log('Successfully captured grid state:', {
+        columns: columnState.length,
+        filters: filterModel ? Object.keys(filterModel).length : 0,
+        sorts: sortModel ? sortModel.length : 0,
+      });
+
+      return {
+        columnState,
+        filterModel: filterModel || {},
+        sortModel: sortModel || [],
+      };
+    } catch (error) {
+      console.error('Error extracting grid state:', error);
+      return null;
+    }
+  }, [getGridApi]);
+
+  const CheckboxDropdown = ({ items }) => {
     const handleChecked = (key, event) => {
       const newItems = [...items];
       let item = newItems.find(i => i.id === key);
       item.checked = event.target.checked;
 
-      gridRef.current.api.applyColumnState({
-        state: [{ colId: item.field, hide: !item.checked }],
-      });
+      const api = getGridApi();
+      if (api?.applyColumnState) {
+        api.applyColumnState({
+          state: [{ colId: item.field, hide: !item.checked }]
+        });
+      }
 
       setItems(newItems);
-      setTimeout(() => gridRef.current.api.refreshHeader(), 10);
+      setTimeout(() => api?.refreshHeader && api.refreshHeader(), 10);
     };
 
     const handleSelectAll = () => {
       const newItems = [...items];
+      const api = getGridApi();
       newItems.forEach(i => {
         i.checked = true;
-        gridRef.current.api.applyColumnState({ state: [{ colId: i.field, hide: false }] });
+        if (api?.applyColumnState) {
+          api.applyColumnState({ state: [{ colId: i.field, hide: false }] });
+        }
       });
       setItems(newItems);
-      setTimeout(() => gridRef.current.api.refreshHeader(), 10);
+      setTimeout(() => api?.refreshHeader && api.refreshHeader(), 10);
     };
 
     const handleSelectNone = () => {
       const newItems = [...items];
+      const api = getGridApi();
       newItems.forEach(i => {
         i.checked = false;
-        gridRef.current.api.applyColumnState({ state: [{ colId: i.field, hide: true }] });
+        if (api?.applyColumnState) {
+          api.applyColumnState({ state: [{ colId: i.field, hide: true }] });
+        }
       });
       setItems(newItems);
-      setTimeout(() => gridRef.current.api.refreshHeader(), 10);
+      setTimeout(() => api?.refreshHeader && api.refreshHeader(), 10);
     };
 
     const handleSelectDefault = () => {
       const defaultItems = getInitialItems();
+      const api = getGridApi();
       setItems(defaultItems);
       defaultItems.forEach(i => {
-        gridRef.current.api.applyColumnState({ state: [{ colId: i.field, hide: !i.checked }] });
+        if (api?.applyColumnState) {
+          api.applyColumnState({ state: [{ colId: i.field, hide: !i.checked }] });
+        }
       });
-      setTimeout(() => gridRef.current.api.refreshHeader(), 10);
+      setTimeout(() => api?.refreshHeader && api.refreshHeader(), 10);
     };
 
     return (
@@ -865,15 +844,9 @@ const extractCurrentGridState = useCallback(() => {
   };
 
   const caseInsensitiveComparator = (valueA, valueB) => {
-    if (valueA === null && valueB === null) {
-      return 0;
-    }
-    if (valueA === null) {
-      return -1;
-    }
-    if (valueB === null) {
-      return 1;
-    }
+    if (valueA === null && valueB === null) return 0;
+    if (valueA === null) return -1;
+    if (valueB === null) return 1;
     return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
   };
 
@@ -885,35 +858,35 @@ const extractCurrentGridState = useCallback(() => {
     "ATP:0000334": "existing data"
   };
 
-  let cols=[
-    { field: "Actions" , lockPosition: 'left' , sortable: false, cellRenderer: TopicEntityTagActions},
-    { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.topic)}},
-    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, filter: EntityTypeFilter, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.entity_type)} },
-    { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.species)}},
-    { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.entity)}},
+  let cols = [
+    { field: "Actions", lockPosition: 'left', sortable: false, cellRenderer: TopicEntityTagActions },
+    { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.topic); } },
+    { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, filter: EntityTypeFilter, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.entity_type); } },
+    { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.species); } },
+    { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.entity); } },
     { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
-    { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (p) => p.data.negated === true ? 'no data': '' },
+    { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (p) => p.data.negated === true ? 'no data' : '' },
     { headerName: "Data Novelty", field: "data_novelty", valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty },
-    { headerName: "Confidence Score", field:"confidence_score" },
-    { headerName: "Confidence Level", field:"confidence_level" },
-    { headerName: "Created By", field: "created_by"},
-    { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (p) => {handleNoteClick(p.value)}},
+    { headerName: "Confidence Score", field: "confidence_score" },
+    { headerName: "Confidence Level", field: "confidence_level" },
+    { headerName: "Created By", field: "created_by" },
+    { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (p) => { handleNoteClick(p.value); } },
     { headerName: "Entity ID Validation", field: "entity_id_validation" },
     { headerName: "Date Created", field: "date_created", valueFormatter: timestampToDateFormatter },
     { headerName: "Updated By", field: "updated_by" },
-    { headerName: "Date Updated", field: "date_updated" , valueFormatter: timestampToDateFormatter },
+    { headerName: "Date Updated", field: "date_updated", valueFormatter: timestampToDateFormatter },
     { headerName: "Author Response", field: "validation_by_author" },
-    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", cellRenderer: ValidationByCurator},
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", cellRenderer: ValidationByCurator },
     { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
     { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
     { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
-    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", comparator: caseInsensitiveComparator, onCellClicked: (p) => {handleCurieClick(p.value+":"+p.data.topic_entity_tag_source.source_evidence_assertion)}},
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", comparator: caseInsensitiveComparator, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.topic_entity_tag_source.source_evidence_assertion); } },
     { headerName: "Source Method", field: "topic_entity_tag_source.source_method" },
     { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type" },
-    { headerName: "Source Description", field: "topic_entity_tag_source.description", onCellClicked: (p) => {handleSourceDescClick(p.value)} },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description", onCellClicked: (p) => { handleSourceDescClick(p.value); } },
     { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
-    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated" , valueFormatter: timestampToDateFormatter },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created" , valueFormatter: timestampToDateFormatter },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated", valueFormatter: timestampToDateFormatter },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", valueFormatter: timestampToDateFormatter },
     { headerName: "Model ID", field: "ml_model_id" },
     { headerName: "Model Version", field: "ml_model_version" },
     { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" },
@@ -927,7 +900,6 @@ const extractCurrentGridState = useCallback(() => {
     }
   };
 
-  // sync visible columns with items
   const updateColDefsWithItems = useCallback((currentItems) => {
     const updatedCols = cols.map(col => {
       const item = currentItems.find(i => i.field === col.field);
@@ -940,11 +912,9 @@ const extractCurrentGridState = useCallback(() => {
 
   const paginationPageSizeSelector = useMemo(() => [10, 25, 50, 100, 500], []);
 
-  // SIMPLIFIED: Get current state directly
   const getSafeCurrentState = useCallback(() => {
     const state = extractCurrentGridState();
     if (!state) {
-      // If we can't capture current state, create a default one
       console.warn('Could not capture current grid state, creating default state');
       const currentItems = getInitialItems();
       return {
@@ -961,7 +931,7 @@ const extractCurrentGridState = useCallback(() => {
   }
 
   function doesExternalFilterPass(node) {
-    if (node.data && filteredTags){
+    if (node.data && filteredTags) {
       return (filteredTags.validating_tags.includes(node.data.topic_entity_tag_id) || filteredTags.validated_tag === node.data.topic_entity_tag_id);
     } else {
       return false;
@@ -972,255 +942,221 @@ const extractCurrentGridState = useCallback(() => {
     return accessLevel === "SGD" ? "SGD Default" : "MOD Default";
   }, [accessLevel]);
 
+  const applySettingsToGrid = useCallback(
+    async (payload, settingId = null, options = {}) => {
+      const { silent = false } = options;
+      const api = getGridApi();
 
-
-
-// Apply settings to grid using only applyColumnState for maximum compatibility
-const applySettingsToGrid = useCallback(
-  async (payload, settingId = null, options = {}) => {
-    const { silent = false } = options;
-    const { api, columnApi } = getGridApis();
-
-    if (!api) {
-      console.error('Grid API not available');
-      return;
-    }
-
-    const applyColumnStateFn =
-      (api.applyColumnState && api.applyColumnState.bind(api)) ||
-      (columnApi &&
-        columnApi.applyColumnState &&
-        columnApi.applyColumnState.bind(columnApi));
-
-    try {
-      const { columnState, filterModel, sortModel } = payload;
-
-      // combine column + sort info
-      let combinedState = [];
-      if (columnState && columnState.length > 0) {
-        combinedState = [...columnState];
+      if (!api) {
+        console.error('Grid API not available');
+        return;
       }
-      if (sortModel && sortModel.length > 0) {
-        sortModel.forEach((sortItem) => {
-          const existingCol = combinedState.find(
-            (col) => col.colId === sortItem.colId
+
+      const applyColumnStateFn =
+        api.applyColumnState && api.applyColumnState.bind(api);
+
+      try {
+        const { columnState, filterModel, sortModel } = payload;
+
+        let combinedState = [];
+        if (columnState && columnState.length > 0) {
+          combinedState = [...columnState];
+        }
+        if (sortModel && sortModel.length > 0) {
+          sortModel.forEach((sortItem) => {
+            const existingCol = combinedState.find(
+              (col) => col.colId === sortItem.colId
+            );
+            if (existingCol) {
+              existingCol.sort = sortItem.sort;
+            } else {
+              combinedState.push({
+                colId: sortItem.colId,
+                sort: sortItem.sort,
+              });
+            }
+          });
+        }
+
+        if (applyColumnStateFn && combinedState.length > 0) {
+          applyColumnStateFn({
+            state: combinedState,
+            applyOrder: true
+          });
+        }
+
+        await new Promise((r) => setTimeout(r, 50));
+
+        if (filterModel && Object.keys(filterModel).length > 0 && api.setFilterModel) {
+          api.setFilterModel(filterModel);
+        }
+
+        await new Promise((r) => setTimeout(r, 100));
+
+        if (api.onFilterChanged) api.onFilterChanged();
+        if (api.refreshClientSideRowModel)
+          api.refreshClientSideRowModel('filter');
+        if (api.refreshCells) api.refreshCells({ force: true });
+
+        const getColumnStateFn =
+          api.getColumnState && api.getColumnState.bind(api);
+
+        const currentColumnState = getColumnStateFn ? getColumnStateFn() : [];
+        const updatedItems = getInitialItems().map((item) => {
+          const colState = currentColumnState.find(
+            (col) => col.colId === item.field
           );
-          if (existingCol) {
-            existingCol.sort = sortItem.sort;
-          } else {
-            combinedState.push({
-              colId: sortItem.colId,
-              sort: sortItem.sort,
-            });
-          }
+          return {
+            ...item,
+            checked: colState ? !colState.hide : item.checked,
+          };
         });
-      }
 
-      if (applyColumnStateFn && combinedState.length > 0) {
-        applyColumnStateFn({
-          state: combinedState,
-          applyOrder: true,
-          applyWidth: true,
-          applyVisibility: true,
-        });
-      }
+        setItems(updatedItems);
+        setColDefs(updateColDefsWithItems(updatedItems));
 
-      await new Promise((r) => setTimeout(r, 50));
+        if (settingId) {
+          setSelectedSettingId(settingId);
+        }
 
-      if (filterModel && Object.keys(filterModel).length > 0 && api.setFilterModel) {
-        api.setFilterModel(filterModel);
-      }
-
-      await new Promise((r) => setTimeout(r, 100));
-
-      if (api.onFilterChanged) api.onFilterChanged();
-      if (api.refreshClientSideRowModel)
-        api.refreshClientSideRowModel('filter');
-      if (api.refreshCells) api.refreshCells({ force: true });
-
-      const getColumnStateFn =
-        (api.getColumnState && api.getColumnState.bind(api)) ||
-        (columnApi &&
-          columnApi.getColumnState &&
-          columnApi.getColumnState.bind(columnApi));
-
-      const currentColumnState = getColumnStateFn ? getColumnStateFn() : [];
-      const updatedItems = getInitialItems().map((item) => {
-        const colState = currentColumnState.find(
-          (col) => col.colId === item.field
+        if (!silent) {
+          showNotification('Settings applied successfully!', 'success');
+        }
+      } catch (error) {
+        console.error('Error applying settings:', error);
+        showNotification(
+          'Error applying settings. Using default layout.',
+          'error'
         );
-        return {
-          ...item,
-          checked: colState ? !colState.hide : item.checked,
-        };
-      });
 
-      setItems(updatedItems);
-      setColDefs(updateColDefsWithItems(updatedItems));
+        const fallbackItems = getInitialItems();
+        setItems(fallbackItems);
+        setColDefs(updateColDefsWithItems(fallbackItems));
 
-      if (settingId) {
-        setSelectedSettingId(settingId);
+        const defaultState = columnStateFromColDefs(
+          updateColDefsWithItems(fallbackItems)
+        );
+
+        const api2 = getGridApi();
+        if (api2?.applyColumnState) {
+          api2.applyColumnState({
+            state: defaultState,
+            applyOrder: true,
+          });
+        }
+      }
+    },
+    [getGridApi, getInitialItems, updateColDefsWithItems, setSelectedSettingId]
+  );
+
+  const onGridReady = useCallback((params) => {
+    apiRef.current = params.api;
+    setIsGridReady(true);
+
+    console.log('AG Grid API methods:', {
+      setSortModel: typeof params.api.setSortModel,
+      getSortModel: typeof params.api.getSortModel,
+      setFilterModel: typeof params.api.setFilterModel,
+      applyColumnState: typeof params.api.applyColumnState,
+      getColumnState: typeof params.api.getColumnState
+    });
+
+    load().then(({ existing, picked }) => {
+      if (existing && existing.length > 0) {
+        const settingToApply = picked || existing.find(s => s.default_setting) || existing[0];
+        if (settingToApply && settingToApply.json_settings) {
+          setTimeout(() => {
+            applySettingsToGrid(
+              settingToApply.json_settings,
+              settingToApply.person_setting_id,
+              { silent: true }
+            );
+          }, 100);
+          return;
+        }
       }
 
-      if (!silent) {
-        showNotification('Settings applied successfully!', 'success');
-      }
-    } catch (error) {
-      console.error('Error applying settings:', error);
-      showNotification(
-        'Error applying settings. Using default layout.',
-        'error'
-      );
+      const modTemplateItems = getInitialItems();
+      const seedState = {
+        columnState: columnStateFromColDefs(updateColDefsWithItems(modTemplateItems)),
+        filterModel: {},
+        sortModel: []
+      };
 
+      setItems(modTemplateItems);
+      setColDefs(updateColDefsWithItems(modTemplateItems));
+
+      setTimeout(() => {
+        const api = getGridApi();
+        if (api?.applyColumnState) {
+          api.applyColumnState({
+            state: seedState.columnState,
+            applyOrder: true
+          });
+        } else if (applyGridState && typeof applyGridState === 'function') {
+          applyGridState(gridRef, seedState);
+        }
+
+        seed({
+          name: buildSeedPresetName(),
+          payload: { ...seedState, meta: { accessLevel } },
+          isDefault: true
+        }).then(created => {
+          if (created) setSelectedSettingId(created.person_setting_id);
+        });
+      }, 200);
+    }).catch(error => {
+      console.error("Failed to load person settings:", error);
       const fallbackItems = getInitialItems();
       setItems(fallbackItems);
       setColDefs(updateColDefsWithItems(fallbackItems));
 
-      const defaultState = columnStateFromColDefs(
-        updateColDefsWithItems(fallbackItems)
-      );
+      setTimeout(() => {
+        const fallbackState = {
+          columnState: columnStateFromColDefs(updateColDefsWithItems(fallbackItems)),
+          filterModel: {},
+          sortModel: []
+        };
 
-      if (applyColumnStateFn) {
-        applyColumnStateFn({
-          state: defaultState,
-          applyOrder: true,
-        });
-      }
-    }
-  },
-  [getInitialItems, updateColDefsWithItems, setSelectedSettingId, showNotification]
-);
-
-
-    
-
-
-    
-const onGridReady = useCallback((params) => {
-  gridRef.current = params;
-  setIsGridReady(true);
-  
-  // Check available API methods for debugging
-  console.log('AG Grid API methods:', {
-    setSortModel: typeof params.api.setSortModel,
-    getSortModel: typeof params.api.getSortModel,
-    setFilterModel: typeof params.api.setFilterModel,
-    applyColumnState: typeof params.api.applyColumnState,
-    getColumnState: typeof params.api.getColumnState
-  });
-  
-  // Load settings after grid is ready
-  load().then(({ existing, picked }) => {
-    if (existing && existing.length > 0) {
-      const settingToApply = picked || existing.find(s => s.default_setting) || existing[0];
-      if (settingToApply && settingToApply.json_settings) {
-        // Small delay to ensure grid is fully ready
-        setTimeout(() => {
-	  applySettingsToGrid(
-            settingToApply.json_settings,
-            settingToApply.person_setting_id,
-            { silent: true }
-          );
-        }, 100);
-        return;
-      }
-    }
-
-    // No saved settings - apply default template
-    const modTemplateItems = getInitialItems();
-    const seedState = {
-      columnState: columnStateFromColDefs(updateColDefsWithItems(modTemplateItems)),
-      filterModel: {},
-      sortModel: []
-    };
-
-    setItems(modTemplateItems);
-    setColDefs(updateColDefsWithItems(modTemplateItems));
-    
-    // Apply the default state to grid with delay
-    setTimeout(() => {
-      // Use the utility function which should handle compatibility
-      if (applyGridState && typeof applyGridState === 'function') {
-        applyGridState(gridRef, seedState);
-      } else {
-        // Fallback: apply directly
-        if (gridRef.current?.api?.applyColumnState) {
-          gridRef.current.api.applyColumnState({ 
-            state: seedState.columnState,
+        const api = getGridApi();
+        if (api?.applyColumnState) {
+          api.applyColumnState({
+            state: fallbackState.columnState,
             applyOrder: true
           });
+        } else if (applyGridState && typeof applyGridState === 'function') {
+          applyGridState(gridRef, fallbackState);
         }
-      }
-      
-      // Seed the database with default
-      seed({
-        name: buildSeedPresetName(),
-        payload: { ...seedState, meta: { accessLevel } },
-        isDefault: true
-      }).then(created => {
-        if (created) setSelectedSettingId(created.person_setting_id);
-      });
-    }, 200);
-  }).catch(error => {
-    console.error("Failed to load person settings:", error);
-    // Fallback to default state
-    const fallbackItems = getInitialItems();
-    setItems(fallbackItems);
-    setColDefs(updateColDefsWithItems(fallbackItems));
-    
-    setTimeout(() => {
-      const fallbackState = {
-        columnState: columnStateFromColDefs(updateColDefsWithItems(fallbackItems)),
-        filterModel: {},
-        sortModel: []
-      };
-      
-      if (applyGridState && typeof applyGridState === 'function') {
-        applyGridState(gridRef, fallbackState);
-      } else if (gridRef.current?.api?.applyColumnState) {
-        gridRef.current.api.applyColumnState({ 
-          state: fallbackState.columnState,
-          applyOrder: true
-        });
-      }
-    }, 100);
-  });
-}, [load, seed, applySettingsToGrid, getInitialItems, updateColDefsWithItems, buildSeedPresetName, accessLevel, setSelectedSettingId]);
-    
-
-
-const onColumnResized = useCallback((params) => {
-  const { api, columnApi } = getGridApis();
-  const getColumnStateFn =
-    (api && api.getColumnState) ||
-    (columnApi && columnApi.getColumnState);
-  const applyColumnStateFn =
-    (api && api.applyColumnState) ||
-    (columnApi && columnApi.applyColumnState);
-
-  if (!getColumnStateFn || !applyColumnStateFn) return;
-
-  const colState = getColumnStateFn();
-  if (params.source === 'autosizeColumns') {
-    colState.forEach((element) => {
-      if (element.colId === 'note' && element.width > 300) {
-        applyColumnStateFn({
-          state: [{ colId: 'note', width: 300 }],
-        });
-      }
+      }, 100);
     });
-  }
-}, []);
+  }, [load, seed, applySettingsToGrid, getInitialItems, updateColDefsWithItems, buildSeedPresetName, accessLevel, setSelectedSettingId, getGridApi]);
 
-    
+  const onColumnResized = useCallback((params) => {
+    const api = getGridApi();
+    if (!api) return;
 
+    const getColumnStateFn =
+      api.getColumnState && api.getColumnState.bind(api);
+    const applyColumnStateFn =
+      api.applyColumnState && api.applyColumnState.bind(api);
 
-    
+    if (!getColumnStateFn || !applyColumnStateFn) return;
+
+    const colState = getColumnStateFn();
+    if (params.source === 'autosizeColumns') {
+      colState.forEach((element) => {
+        if (element.colId === 'note' && element.width > 300) {
+          applyColumnStateFn({
+            state: [{ colId: 'note', width: 300 }],
+          });
+        }
+      });
+    }
+  }, [getGridApi]);
+
   const getRowId = useMemo(() => (params) => String(params.data.topic_entity_tag_id), []);
-
   const fileNameFront = `${referenceCurie}_tet_data`;
 
-  // Pick setting from dropdown
   const handlePickSetting = async (person_setting_id) => {
     const s = settings.find(x => x.person_setting_id === person_setting_id);
     if (!s) return;
@@ -1228,7 +1164,6 @@ const onColumnResized = useCallback((params) => {
     await applySettingsToGrid(payload, person_setting_id, { silent: true });
   };
 
-  // Create new setting (uses current grid state)
   const handleCreateSetting = async (name) => {
     const clean = (name ?? '').trim();
     if (!clean) {
@@ -1256,7 +1191,6 @@ const onColumnResized = useCallback((params) => {
     }
   };
 
-  // Rename (from modal)
   const handleRename = async (person_setting_id, newName) => {
     const clean = (newName ?? '').trim();
     if (!clean) {
@@ -1284,81 +1218,73 @@ const onColumnResized = useCallback((params) => {
     }
   };
 
+  const handleSaveLayout = async (settingId = null) => {
+    const targetSettingId = settingId || selectedSettingId;
 
-
-const handleSaveLayout = async (settingId = null) => {
-  const targetSettingId = settingId || selectedSettingId;
-
-  if (!targetSettingId) {
-    showNotification('Please select a setting to save to first.', 'warning');
-    return;
-  }
-
-  if (!isGridReady) {
-    showNotification(
-      'Grid is still loading. Please wait for the table to be fully ready.',
-      'warning'
-    );
-    return;
-  }
-
-  if (!gridRef.current || !gridRef.current.api) {
-    console.error('Grid APIs not available in handleSaveLayout');
-    showNotification('Grid is not ready. Please wait and try again.', 'warning');
-    return;
-  }
-
-  try {
-    const state = extractCurrentGridState();
-
-    if (!state) {
-      showNotification('Failed to capture current layout state.', 'error');
+    if (!targetSettingId) {
+      showNotification('Please select a setting to save to first.', 'warning');
       return;
     }
 
-    if (!state.columnState || state.columnState.length === 0) {
-      console.error('No column state captured');
-      showNotification('No layout data captured. Please try again.', 'error');
+    if (!isGridReady) {
+      showNotification(
+        'Grid is still loading. Please wait for the table to be fully ready.',
+        'warning'
+      );
       return;
     }
 
-    await savePayloadTo(targetSettingId, {
-      ...state,
-      meta: {
-        accessLevel,
-        savedAt: new Date().toISOString(),
-        version: '1.0',
-      },
-    });
+    const api = getGridApi();
+    if (!api) {
+      console.error('Grid APIs not available in handleSaveLayout');
+      showNotification('Grid is not ready. Please wait and try again.', 'warning');
+      return;
+    }
 
-    await load();
+    try {
+      const state = extractCurrentGridState();
 
-    showNotification(
-      'Current layout (columns, order, filters, sorting) saved successfully!',
-      'success'
-    );
-  } catch (err) {
-    console.error('Save layout error:', err);
-    const msg = err?.response?.data?.detail || err?.message || String(err);
-    showNotification(`Failed to save layout: ${msg}`, 'error');
-  }
-};
+      if (!state) {
+        showNotification('Failed to capture current layout state.', 'error');
+        return;
+      }
 
+      if (!state.columnState || state.columnState.length === 0) {
+        console.error('No column state captured');
+        showNotification('No layout data captured. Please try again.', 'error');
+        return;
+      }
 
-    
-    
+      await savePayloadTo(targetSettingId, {
+        ...state,
+        meta: {
+          accessLevel,
+          savedAt: new Date().toISOString(),
+          version: '1.0',
+        },
+      });
+
+      await load();
+
+      showNotification(
+        'Current layout (columns, order, filters, sorting) saved successfully!',
+        'success'
+      );
+    } catch (err) {
+      console.error('Save layout error:', err);
+      const msg = err?.response?.data?.detail || err?.message || String(err);
+      showNotification(`Failed to save layout: ${msg}`, 'error');
+    }
+  };
 
   return (
     <div>
-      {/* Curie Popup */}
       {selectedCurie && (
         <GenericTetTableModal title="CURIE Information" body={selectedCurie} show={showCurieModal} onHide={() => setShowCurieModal(false)} />
       )}
-      {/* Note Popup */}
       {showNoteModal && (
         <GenericTetTableModal title="Full Note" body={fullNote} show={showNoteModal} onHide={() => setShowNoteModal(false)} />
       )}
-      {/* Source Description Popup */}
       {showSourceDescModal && (
         <GenericTetTableModal title="Full Source Description" body={fullSourceDesc} show={showSourceDescModal} onHide={() => setShowSourceDescModal(false)} />
       )}
@@ -1375,7 +1301,6 @@ const handleSaveLayout = async (settingId = null) => {
         <Row>
           <Col>
             <div className="d-flex justify-content-between align-items-center" style={{ paddingBottom: '10px' }}>
-              {/* Left controls: Hide/Show + Preferences + Load setting */}
               <div className="d-flex align-items-center" style={{ gap: '14px' }}>
                 <CheckboxDropdown items={items} />
 
@@ -1396,7 +1321,6 @@ const handleSaveLayout = async (settingId = null) => {
                 />
               </div>
 
-              {/* Right controls: Download */}
               <DownloadDropdownOptionsButton
                 gridRef={gridRef}
                 colDefs={colDefs}
@@ -1406,10 +1330,10 @@ const handleSaveLayout = async (settingId = null) => {
             </div>
           </Col>
         </Row>
-        {/* Notification above the table */}
+
         <Row>
           <Col>
-            <Notification 
+            <Notification
               show={notification.show}
               message={notification.message}
               variant={notification.variant}
@@ -1420,25 +1344,19 @@ const handleSaveLayout = async (settingId = null) => {
 
         <Row>
           <Col>
-            <div className="ag-theme-quartz" style={{height: 500}}>
+            <div className="ag-theme-quartz" style={{ height: 500 }}>
               <AgGridReact
                 ref={gridRef}
                 reactiveCustomComponents
                 rowData={topicEntityTags}
                 onGridReady={onGridReady}
                 onColumnResized={onColumnResized}
-                onColumnMoved={(params) => {
-                  // This ensures column moves are captured in state
-                }}
-                onSortChanged={(params) => {
-                  // This ensures sort changes are captured
-                }}
-                onFilterChanged={(params) => {
-                  // This ensures filter changes are captured
-                }}
+                onColumnMoved={() => {}}
+                onSortChanged={() => {}}
+                onFilterChanged={() => {}}
                 getRowId={getRowId}
                 columnDefs={colDefs}
-                onRowDataUpdated={() => gridRef.current?.api?.refreshCells({force : true})}
+                onRowDataUpdated={() => gridRef.current?.api?.refreshCells({ force: true })}
                 pagination={true}
                 paginationPageSize={25}
                 gridOptions={gridOptions}
@@ -1451,24 +1369,23 @@ const handleSaveLayout = async (settingId = null) => {
         </Row>
       </Container>
 
-      {/* Settings modal */}
       <CustomSettingsGearModal
-         show={showSettingsModal}
-         onHide={() => {
-           setShowSettingsModal(false);
-           setNameEdits({});
-         }}
-         settings={settings}
-         nameEdits={nameEdits}
-         setNameEdits={setNameEdits}
-         onCreate={handleCreateSetting}
-         onRename={handleRename}
-         onDelete={remove}
-         onMakeDefault={makeDefault}
-         onSaveLayout={handleSaveLayout}
-         canCreateMore={settings.length < maxCount}
-         busy={busy}
-         isGridReady={isGridReady}
+        show={showSettingsModal}
+        onHide={() => {
+          setShowSettingsModal(false);
+          setNameEdits({});
+        }}
+        settings={settings}
+        nameEdits={nameEdits}
+        setNameEdits={setNameEdits}
+        onCreate={handleCreateSetting}
+        onRename={handleRename}
+        onDelete={remove}
+        onMakeDefault={makeDefault}
+        onSaveLayout={handleSaveLayout}
+        canCreateMore={settings.length < maxCount}
+        busy={busy}
+        isGridReady={isGridReady}
       />
     </div>
   );
