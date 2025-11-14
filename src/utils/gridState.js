@@ -1,0 +1,210 @@
+// AG Grid state helpers (updated for AG Grid v31+)
+
+/** Capture column order/visibility, filters, sort */
+export function extractGridState(gridRef) {
+  const api = gridRef.current?.api;
+  if (!api) return null;
+
+  // Modern AG Grid v31+ - check for getState method
+  if (typeof api.getState === 'function') {
+    const state = api.getState();
+    return {
+      columnState: state.columnState || [],
+      filterModel: state.filterModel || {},
+      sortModel: state.sortModel || []
+    };
+  }
+
+  // Fallback for older versions
+  const columnApi = gridRef.current?.columnApi;
+  if (!columnApi) return null;
+
+  const columnState = columnApi.getColumnState();
+  const filterModel = api.getFilterModel();
+  const sortModel = api.getSortModel ? api.getSortModel() : [];
+
+  return { columnState, filterModel, sortModel };
+}
+
+function normalizeColumnState(columnState = [], colDefs = []) {
+  const seen = new Set();
+  const byId = new Map(columnState.map(c => [c.colId, { ...c }]));
+  const normalized = [];
+
+  // keep known columns in the order AG Grid reports
+  for (const c of columnState) {
+    if (!c?.colId || seen.has(c.colId)) continue;
+    seen.add(c.colId);
+    normalized.push({
+      colId: c.colId,
+      hide: !!c.hide,
+      sort: c.sort ?? null,
+      sortIndex: Number.isFinite(c.sortIndex) ? c.sortIndex : null,
+      width: Number.isFinite(c.width) ? c.width : null,
+      rowGroup: !!c.rowGroup,
+      pivot: !!c.pivot,
+      aggFunc: c.aggFunc ?? null,
+    });
+  }
+
+  // append any columns that exist in colDefs but weren't in columnState
+  for (const d of colDefs) {
+    if (!d?.field || seen.has(d.field)) continue;
+    seen.add(d.field);
+    normalized.push({
+      colId: d.field,
+      hide: !!d.hide,
+      sort: d.sort ?? null,
+      sortIndex: Number.isFinite(d.sortIndex) ? d.sortIndex : null,
+      width: Number.isFinite(d.width) ? d.width : null,
+      rowGroup: !!d.rowGroup,
+      pivot: !!d.pivot,
+      aggFunc: d.aggFunc ?? null,
+    });
+  }
+
+  return normalized;
+}
+
+// Call before saving to ensure AG Grid has committed column visibility/order updates
+export async function stableExtractGridState(gridRef, colDefs, delayMs = 50) {
+  const api = gridRef.current?.api;
+
+  // If grid isn't ready, just return a fallback from colDefs
+  if (!api) {
+    return {
+      columnState: columnStateFromColDefs(colDefs),
+      filterModel: {},
+      sortModel: []
+    };
+  }
+
+  // Force a synchronous refresh, then give the grid a short moment to settle
+  api.onFilterChanged();
+  api.refreshClientSideRowModel("filter");
+  api.refreshCells({ force: true });
+
+  // Two RAFs help settle layout; delayMs covers async column state propagation
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
+
+  const live = extractGridState(gridRef);
+  return live ?? {
+    columnState: normalizeColumnState(live?.columnState, colDefs),
+    filterModel: {},
+    sortModel: []
+  };
+}
+
+/** Apply saved state back to grid */
+export function applyGridState(gridRef, { columnState, filterModel, sortModel } = {}) {
+  const api = gridRef.current?.api;
+  if (!api) return;
+
+  // Modern AG Grid v31+ - use individual methods (no columnApi needed)
+  if (columnState && columnState.length) {
+    api.applyColumnState({ state: columnState, applyOrder: true });
+  }
+  
+  if (filterModel) {
+    api.setFilterModel(filterModel);
+  }
+
+  // Sort is included in columnState for modern AG Grid
+  // but if sortModel exists separately, merge it into column state
+  if (sortModel && sortModel.length > 0) {
+    const columnStateWithSort = (columnState || []).map(col => {
+      const sortInfo = sortModel.find(s => s.colId === col.colId);
+      return sortInfo ? { ...col, sort: sortInfo.sort, sortIndex: sortInfo.sortIndex } : col;
+    });
+    api.applyColumnState({ state: columnStateWithSort, applyOrder: true });
+  }
+
+  api.onFilterChanged();
+  api.refreshClientSideRowModel("filter");
+  api.refreshCells({ force: true });
+}
+
+/** Convert columnState -> your checkbox items (checked = visible) */
+export function itemsFromColumnState(itemsTemplate, columnState = []) {
+  const byId = new Map(columnState.map((c) => [c.colId, c]));
+  return itemsTemplate.map((it) => ({
+    ...it,
+    checked: byId.has(it.field) ? !byId.get(it.field).hide : it.checked,
+  }));
+}
+
+/** Build a columnState from current colDefs (.hide flags, order by index) */
+export function columnStateFromColDefs(colDefs) {
+  return colDefs.map((c) => ({
+    colId: c.field,
+    hide: !!c.hide,
+    sort: c.sort || null,
+    sortIndex: Number.isFinite(c.sortIndex) ? c.sortIndex : null,
+    width: Number.isFinite(c.width) ? c.width : null,
+    rowGroup: !!c.rowGroup,
+    pivot: !!c.pivot,
+    aggFunc: c.aggFunc || null,
+  }));
+}
+
+/**
+ * Apply a flexible payload to the grid.
+ * Primary path: { columnState, filterModel, sortModel } -> applyGridState
+ * Fallbacks supported:
+ *  - payload.items: [{ field, checked }]  -> visibility only
+ *  - payload.columnOrder: [colId, ...]    -> order-only (best effort)
+ */
+export function applyGridStateFromPayload(gridRef, payload = {}, options = {}) {
+  const api = gridRef.current?.api;
+  if (!api || !payload) return;
+
+  const { columnState, filterModel, sortModel, items, columnOrder } = payload;
+
+  // If we have a full, modern payload—use the canonical applier.
+  if ((columnState && columnState.length) || filterModel || sortModel) {
+    applyGridState(gridRef, { columnState, filterModel, sortModel });
+    return;
+  }
+
+  // Get current state - modern API
+  let currentState = [];
+  if (typeof api.getState === 'function') {
+    currentState = api.getState().columnState || [];
+  } else if (typeof api.getColumnState === 'function') {
+    currentState = api.getColumnState() || [];
+  }
+
+  // Fallback A: apply visibility from `items`
+  if (Array.isArray(items) && items.length) {
+    const visState = items.map((i) => ({
+      colId: i.field,
+      hide: i.checked === false, // checked = visible
+    }));
+
+    api.applyColumnState({ state: visState, applyOrder: false });
+  }
+
+  // Fallback B: apply order from `columnOrder`
+  if (Array.isArray(columnOrder) && columnOrder.length) {
+    // Build a best-effort ordered state based on current state + desired order
+    const stateById = new Map(currentState.map((s) => [s.colId, s]));
+    const ordered = [];
+
+    // First, push any known columns in the requested order
+    for (const id of columnOrder) {
+      if (stateById.has(id)) ordered.push(stateById.get(id));
+    }
+    // Then append any remaining columns that weren't in columnOrder
+    for (const s of currentState) {
+      if (!columnOrder.includes(s.colId)) ordered.push(s);
+    }
+
+    api.applyColumnState({ state: ordered, applyOrder: true });
+  }
+
+  // Final refresh to keep UI consistent
+  api.onFilterChanged();
+  api.refreshClientSideRowModel("filter");
+  api.refreshCells({ force: true });
+}
