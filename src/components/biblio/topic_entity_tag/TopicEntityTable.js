@@ -40,18 +40,15 @@ export const handleDownload = (option, gridRef, colDefs, topicEntityTags, fileNa
   let headers = [];
   let fields = [];
 
-  // get headers and fields from visible columns only
   colDefs
-    .filter(col => option === 'allColumns' || !col.hide) // include hidden columns only for 'allColumns' option
+    .filter(col => option === 'allColumns' || !col.hide)
     .forEach(col => {
       headers.push(col.headerName);
       fields.push(col.field);
     });
 
-  // find the index of the Entity column so later we can add entity curie (in the "entity" field)
   const entityIndex = fields.indexOf("entity_name");
 
-  // add entity CURIE field and header next to the Entity column
   if (entityIndex !== -1) {
     headers.splice(entityIndex + 1, 0, "Entity CURIE");
     fields.splice(entityIndex + 1, 0, "entity");
@@ -901,6 +898,7 @@ const TopicEntityTable = () => {
   };
 
   const updateColDefsWithItems = useCallback((currentItems) => {
+    // Only use this at initialization / default seeding to set initial hide flags.
     const updatedCols = cols.map(col => {
       const item = currentItems.find(i => i.field === col.field);
       return item ? { ...col, hide: !item.checked } : col;
@@ -1012,8 +1010,8 @@ const TopicEntityTable = () => {
           };
         });
 
+        // IMPORTANT: Do NOT call setColDefs here; it would reset column ordering
         setItems(updatedItems);
-        setColDefs(updateColDefsWithItems(updatedItems));
 
         if (settingId) {
           setSelectedSettingId(settingId);
@@ -1031,12 +1029,10 @@ const TopicEntityTable = () => {
 
         const fallbackItems = getInitialItems();
         setItems(fallbackItems);
-        setColDefs(updateColDefsWithItems(fallbackItems));
-
+        // In a hard failure, we can also reset colDefs + apply default state:
         const defaultState = columnStateFromColDefs(
           updateColDefsWithItems(fallbackItems)
         );
-
         const api2 = getGridApi();
         if (api2?.applyColumnState) {
           api2.applyColumnState({
@@ -1083,6 +1079,7 @@ const TopicEntityTable = () => {
         sortModel: []
       };
 
+      // One-time initial colDefs based on default items
       setItems(modTemplateItems);
       setColDefs(updateColDefsWithItems(modTemplateItems));
 
