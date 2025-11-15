@@ -985,8 +985,13 @@ const TopicEntityTable = () => {
 
         await new Promise((r) => setTimeout(r, 50));
 
-        if (filterModel && Object.keys(filterModel).length > 0 && api.setFilterModel) {
-          api.setFilterModel(filterModel);
+        // IMPORTANT: always set filterModel; if this setting has no filters, clear them
+        if (api.setFilterModel) {
+          if (filterModel && Object.keys(filterModel).length > 0) {
+            api.setFilterModel(filterModel);
+          } else {
+            api.setFilterModel(null);
+          }
         }
 
         await new Promise((r) => setTimeout(r, 100));
@@ -1039,6 +1044,9 @@ const TopicEntityTable = () => {
             state: defaultState,
             applyOrder: true,
           });
+        }
+        if (api2?.setFilterModel) {
+          api2.setFilterModel(null);
         }
       }
     },
@@ -1124,6 +1132,9 @@ const TopicEntityTable = () => {
         } else if (applyGridState && typeof applyGridState === 'function') {
           applyGridState(gridRef, fallbackState);
         }
+        if (api?.setFilterModel) {
+          api.setFilterModel(null);
+        }
       }, 100);
     });
   }, [load, seed, applySettingsToGrid, getInitialItems, updateColDefsWithItems, buildSeedPresetName, accessLevel, setSelectedSettingId, getGridApi]);
@@ -1148,6 +1159,18 @@ const TopicEntityTable = () => {
           });
         }
       });
+    }
+  }, [getGridApi]);
+
+  const onRowDataUpdated = useCallback(() => {
+    const api = getGridApi();
+    if (!api) return;
+
+    if (api.refreshCells) {
+      api.refreshCells({ force: true });
+    }
+    if (api.onFilterChanged) {
+      api.onFilterChanged();
     }
   }, [getGridApi]);
 
@@ -1274,6 +1297,18 @@ const TopicEntityTable = () => {
     }
   };
 
+  const clearAllFilters = useCallback(() => {
+    const api = getGridApi();
+    if (!api) return;
+
+    if (api.setFilterModel) {
+      api.setFilterModel(null);
+    }
+    if (api.onFilterChanged) {
+      api.onFilterChanged();
+    }
+  }, [getGridApi]);
+
   return (
     <div>
       {selectedCurie && (
@@ -1309,6 +1344,15 @@ const TopicEntityTable = () => {
                 >
                   <FaGear size={14} style={{ marginRight: '6px' }} />
                   Preferences
+                </Button>
+
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  title="Clear all filters"
+                  onClick={clearAllFilters}
+                >
+                  Reset Filters
                 </Button>
 
                 <SettingsDropdown
@@ -1351,9 +1395,9 @@ const TopicEntityTable = () => {
                 onColumnMoved={() => {}}
                 onSortChanged={() => {}}
                 onFilterChanged={() => {}}
+                onRowDataUpdated={onRowDataUpdated}
                 getRowId={getRowId}
                 columnDefs={colDefs}
-                onRowDataUpdated={() => gridRef.current?.api?.refreshCells({ force: true })}
                 pagination={true}
                 paginationPageSize={25}
                 gridOptions={gridOptions}
