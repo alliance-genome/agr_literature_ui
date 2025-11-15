@@ -940,6 +940,8 @@ const TopicEntityTable = () => {
     return accessLevel === "SGD" ? "SGD Default" : "MOD Default";
   }, [accessLevel]);
 
+  // “apply saved layout + filters + sort to the grid” function, with a fallback to a safe default
+  // layout if anything goes wrong
   const applySettingsToGrid = useCallback(
     async (payload, settingId = null, options = {}) => {
       const { silent = false } = options;
@@ -985,9 +987,14 @@ const TopicEntityTable = () => {
 
         await new Promise((r) => setTimeout(r, 50));
 
-        // IMPORTANT: always set filterModel; if this setting has no filters, clear them
+        // Fixed to always call api.setFilterModel()
+	// If no filters → explicitly clears all filters with api.setFilterModel(null)
+	// AG Grid does not clear filters automatically if you pass {} or skip calling the method
+	// To reset the filters, we have to call: api.setFilterModel(null);  
         if (api.setFilterModel) {
+	  // check if the function exists (not a function call)      
           if (filterModel && Object.keys(filterModel).length > 0) {
+	    // eg, api.setFilterModel({ topic: { filter: "gene" } });	
             api.setFilterModel(filterModel);
           } else {
             api.setFilterModel(null);
@@ -1045,6 +1052,7 @@ const TopicEntityTable = () => {
             applyOrder: true,
           });
         }
+	// this explicitly clears all filters
         if (api2?.setFilterModel) {
           api2.setFilterModel(null);
         }
@@ -1301,12 +1309,12 @@ const TopicEntityTable = () => {
     const api = getGridApi();
     if (!api) return;
 
-    if (api.setFilterModel) {
-      api.setFilterModel(null);
-    }
-    if (api.onFilterChanged) {
-      api.onFilterChanged();
-    }
+    // Reset all filters
+    api.setFilterModel(null);
+
+    // Notify AG Grid that filters have changed
+    // onFilterChanged() tells AG Grid to re-run filtering + update UI  
+    api.onFilterChanged();
   }, [getGridApi]);
 
   return (
