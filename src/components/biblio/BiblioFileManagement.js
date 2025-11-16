@@ -583,11 +583,11 @@ const AlertDismissibleFileUploadSuccess = () => {
   } else { return null; }
 }
 
-export const BiblioCitationDisplay = () => {
+export const BiblioCitationDisplay = ({ extraLabelContent }) => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const fieldName = 'citation';
-  return (<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+  return (<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} extraLabelContent={extraLabelContent} />);
 }
 
 
