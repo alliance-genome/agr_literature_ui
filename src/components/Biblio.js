@@ -12,10 +12,11 @@ import BiblioFileManagement from './biblio/BiblioFileManagement';
 import BiblioRawTetData from './biblio/BiblioRawTetData';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
-import { RowDisplayString } from './biblio/BiblioDisplay';
-import { reffileCompareFn } from './biblio/BiblioFileManagement';
-import { RowDisplayCrossReferences } from './biblio/BiblioDisplay';
+import { RowDisplayString, RowDisplayCrossReferences } from './biblio/BiblioDisplay';
 import { RowDisplayResourcesForCuration } from './BiblioRowDisplayUtils';
+import { reffileCompareFn, BiblioCitationDisplay } from './biblio/BiblioFileManagement';
+
+import { usePersonSettings } from './settings/usePersonSettings';
 
 import {
   downloadReferencefile,
@@ -241,20 +242,94 @@ const BiblioTagging = () => {
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const biblioAction = useSelector(state => state.biblio.biblioAction);
 
+  const [showMore, setShowMore] = useState(false);	// showMore true means the Show More text is showing in the citation view.  The default is the other view.
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const uid = useSelector(state => state.isLogged.uid);
+  const componentName = "biblio_summary";
+
+  const {
+    settings, selectedSettingId, setSelectedSettingId, busy, maxCount,
+    load, seed, create, rename, remove, makeDefault, savePayloadTo
+  } = usePersonSettings({
+    baseUrl: process.env.REACT_APP_RESTAPI,
+    token: accessToken,
+    oktaId: uid,
+    componentName,
+    maxCount: 10
+  });
+
+  useEffect(() => {
+    if (accessToken && uid) {
+      load().finally(() => setSettingsLoaded(true));
+    }
+  }, [accessToken, uid, load]);
+
+  useEffect(() => {
+    if (!settingsLoaded) return;    // only proceed once settings are actually loaded, or it will create another setting in db
+
+    // If settings exist, select default or first one
+    if (settings.length > 0) {
+      const activeSetting = settings.find(s => s.is_default) || settings[0];
+      setSelectedSettingId(activeSetting.person_setting_id);
+      setShowMore(Boolean(activeSetting.json_settings.showMore));
+      return;
+    }
+
+    // If no settings exist after loading, create one with default value
+    (async () => {
+      try {
+        const created = await create("Bibliography Summary", { showMore: false });
+        setSelectedSettingId(created.person_setting_id);
+      } catch (err) {
+        console.error("Failed to create default setting:", err);
+      }
+    })();
+  }, [settingsLoaded, settings]);
+
+  const toggle = async () => {
+    const newValue = !showMore;
+    setShowMore(newValue);
+    let targetId = selectedSettingId;
+    if (!targetId) {
+      try {
+        const created = await create("Bibliography Summary", { showMore: newValue });	// If no saved setting exists yet, create one
+        setSelectedSettingId(created.person_setting_id);
+        return;
+      } catch (err) {
+        console.error("Failed to create initial setting:", err);
+        return;
+      }
+    }
+    try {
+      await savePayloadTo(targetId, { showMore: newValue });	// Save showMore value to this user's setting
+    } catch (err) {
+      console.error("Failed to save showMore:", err);
+    }
+  };
+
+  const toggleLink = (<span style={{ marginLeft: '10px', cursor: 'pointer', color: '#007bff' }} onClick={toggle} >
+    {showMore ? 'Show More' : 'Show Less'}</span>);
+
   if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
 
   const rowOrderedElements = []
-  // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
-  rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  // rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);	// curators no longer want this link
-  rowOrderedElements.push(<RowDisplayReferencefiles key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />);
-  rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  rowOrderedElements.push(<RowDisplayResourcesForCuration key="RowDisplayResourcesForCuration" referenceJsonLive={referenceJsonLive} />);
-  rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
-  // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
+  if (showMore) {
+    rowOrderedElements.push(<BiblioCitationDisplay key="biblioSummaryCitationDisplay" extraLabelContent={toggleLink} />); }
+  else {
+    // rowOrderedElements.push(<BiblioEntityDisplayTypeToggler key="entityDisplayType" />);
+    rowOrderedElements.push(<RowDisplayString key="title" fieldName="title" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} extraLabelContent={toggleLink} />);
+    // rowOrderedElements.push(<RowDisplayPmcidCrossReference key="RowDisplayPmcidCrossReference" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);	// curators no longer want this link
+    rowOrderedElements.push(<RowDisplayReferencefiles key="referencefile" fieldName="referencefiles" referenceJsonLive={referenceJsonLive} displayOrEditor="display" />);
+    rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldName="cross_references" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+    rowOrderedElements.push(<RowDisplayResourcesForCuration key="RowDisplayResourcesForCuration" referenceJsonLive={referenceJsonLive} />);
+    rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
+    // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
+  }
   return (<><Container>{rowOrderedElements}</Container>
             { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
 } // const BiblioTagging

@@ -55,14 +55,16 @@ import { fieldsSimple, fieldsArrayString, fieldsBooleanDisplayOnly, fieldsOrdere
 
 const getLabel = (name) => (name === 'category' ? 'alliance_category' : name);
 
-export const RowDisplaySimple = ({fieldName, value, updatedFlag}) => {
+export const RowDisplaySimple = ({fieldName, value, updatedFlag, extraLabelContent}) => {
     const label = getLabel(fieldName); 
     return (  <Row key={fieldName} className="Row-general" xs={2} md={4} lg={6}>
-              <Col className="Col-general Col-display Col-display-left">{label}</Col>
+              <Col className="Col-general Col-display Col-display-left">
+                {label}
+                {extraLabelContent && ( <span style={{ marginLeft: '8px' }}>{extraLabelContent}</span>)}</Col>
               <Col className={`Col-general Col-display Col-display-right ${updatedFlag}`} lg={{ span: 10 }}>{value}</Col>
             </Row>); }
 
-export const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+export const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb, extraLabelContent}) => {
   let valueLive = ''; let valueDb = ''; let updatedFlag = '';
   if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName] }
   if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName] }
@@ -74,7 +76,7 @@ export const RowDisplayString = ({fieldName, referenceJsonLive, referenceJsonDb}
   if ( (fieldName === 'title') || (fieldName === 'abstract') || (fieldName === 'citation') ) {
     valueToDisplay = (<span dangerouslySetInnerHTML={{__html: valueLive}} />) }
   return (
-        <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueToDisplay} updatedFlag={updatedFlag} />); }
+        <RowDisplaySimple key={fieldName} fieldName={fieldName} value={valueToDisplay} updatedFlag={updatedFlag} extraLabelContent={extraLabelContent} />); }
 
 const RowDisplayArrayString = ({fieldIndex, fieldName, referenceJson, referenceJsonLive, referenceJsonDb}) => {
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {	// need this because referenceJsonLive starts empty before values get added
