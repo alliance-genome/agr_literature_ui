@@ -940,6 +940,8 @@ const TopicEntityTable = () => {
     return accessLevel === "SGD" ? "SGD Default" : "MOD Default";
   }, [accessLevel]);
 
+  // “apply saved layout + filters + sort to the grid” function, with a fallback to a safe default
+  // layout if anything goes wrong
   const applySettingsToGrid = useCallback(
     async (payload, settingId = null, options = {}) => {
       const { silent = false } = options;
@@ -985,8 +987,18 @@ const TopicEntityTable = () => {
 
         await new Promise((r) => setTimeout(r, 50));
 
-        if (filterModel && Object.keys(filterModel).length > 0 && api.setFilterModel) {
-          api.setFilterModel(filterModel);
+        // Fixed to always call api.setFilterModel()
+	// If no filters → explicitly clears all filters with api.setFilterModel(null)
+	// AG Grid does not clear filters automatically if you pass {} or skip calling the method
+	// To reset the filters, we have to call: api.setFilterModel(null);  
+        if (api.setFilterModel) {
+	  // check if the function exists (not a function call)      
+          if (filterModel && Object.keys(filterModel).length > 0) {
+	    // eg, api.setFilterModel({ topic: { filter: "gene" } });	
+            api.setFilterModel(filterModel);
+          } else {
+            api.setFilterModel(null);
+          }
         }
 
         await new Promise((r) => setTimeout(r, 100));
@@ -1039,6 +1051,10 @@ const TopicEntityTable = () => {
             state: defaultState,
             applyOrder: true,
           });
+        }
+	// this explicitly clears all filters
+        if (api2?.setFilterModel) {
+          api2.setFilterModel(null);
         }
       }
     },
@@ -1124,6 +1140,9 @@ const TopicEntityTable = () => {
         } else if (applyGridState && typeof applyGridState === 'function') {
           applyGridState(gridRef, fallbackState);
         }
+        if (api?.setFilterModel) {
+          api.setFilterModel(null);
+        }
       }, 100);
     });
   }, [load, seed, applySettingsToGrid, getInitialItems, updateColDefsWithItems, buildSeedPresetName, accessLevel, setSelectedSettingId, getGridApi]);
@@ -1148,6 +1167,18 @@ const TopicEntityTable = () => {
           });
         }
       });
+    }
+  }, [getGridApi]);
+
+  const onRowDataUpdated = useCallback(() => {
+    const api = getGridApi();
+    if (!api) return;
+
+    if (api.refreshCells) {
+      api.refreshCells({ force: true });
+    }
+    if (api.onFilterChanged) {
+      api.onFilterChanged();
     }
   }, [getGridApi]);
 
@@ -1274,6 +1305,18 @@ const TopicEntityTable = () => {
     }
   };
 
+  const clearAllFilters = useCallback(() => {
+    const api = getGridApi();
+    if (!api) return;
+
+    // Reset all filters
+    api.setFilterModel(null);
+
+    // Notify AG Grid that filters have changed
+    // onFilterChanged() tells AG Grid to re-run filtering + update UI  
+    api.onFilterChanged();
+  }, [getGridApi]);
+
   return (
     <div>
       {selectedCurie && (
@@ -1309,6 +1352,15 @@ const TopicEntityTable = () => {
                 >
                   <FaGear size={14} style={{ marginRight: '6px' }} />
                   Preferences
+                </Button>
+
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  title="Clear all filters"
+                  onClick={clearAllFilters}
+                >
+                  Reset Filters
                 </Button>
 
                 <SettingsDropdown
@@ -1351,9 +1403,9 @@ const TopicEntityTable = () => {
                 onColumnMoved={() => {}}
                 onSortChanged={() => {}}
                 onFilterChanged={() => {}}
+                onRowDataUpdated={onRowDataUpdated}
                 getRowId={getRowId}
                 columnDefs={colDefs}
-                onRowDataUpdated={() => gridRef.current?.api?.refreshCells({ force: true })}
                 pagination={true}
                 paginationPageSize={25}
                 gridOptions={gridOptions}
