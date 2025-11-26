@@ -20,8 +20,8 @@ if (devOrStageOrProd === 'prod') { }
   else { navClass = "Navbar-dev"; homeLabel = devOrStageOrProd; }
 
 const NavigationBar = () => {
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
-  const oktaTester = useSelector(state => state.isLogged.oktaTester);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
+  const cognitoTester = useSelector(state => state.isLogged.cognitoTester);
   return (
   <Navbar className={navClass} >
     <Nav className="justify-content-center"  style={{ flex: 1}}>
@@ -38,7 +38,7 @@ const NavigationBar = () => {
       <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
     </Nav>
     <Nav>
-      { (oktaMod === 'No' || oktaTester === false) ? <AuthHelp /> : <TesterDropdown /> }
+      { (cognitoMod === 'No' || cognitoTester === false) ? <AuthHelp /> : <TesterDropdown /> }
       <Login />
     </Nav>
   </Navbar>

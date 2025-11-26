@@ -565,9 +565,9 @@ const Facets = () => {
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const datePublished= useSelector(state => state.search.datePublished);
     const dateCreated = useSelector(state => state.search.dateCreated);
-    const oktaMod = useSelector(state => state.isLogged.oktaMod);
+    const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
-    const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
+    const accessLevel = testerMod !== "No" ? testerMod : cognitoMod;
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     const seaValues = useSelector(state => state.search.searchFacetsValues['source_evidence_assertions'] || []);

@@ -790,9 +790,9 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
 
 const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;  
+  const accessLevel = (testerMod !== 'No') ? testerMod : cognitoMod;  
 
   const initializeDict = {'mod_abbreviation': '',
 			  'corpus': 'needs_review',

@@ -21,10 +21,10 @@ const BulkSubmission = () => {
   const mods = useSelector(state => state.app.mods);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const base = process.env.REACT_APP_RESTAPI;
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
 
-  const accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
+  const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   const defaultMod = (accessLevel && mods.includes(accessLevel))
     ? accessLevel
     : (mods[0] || '');

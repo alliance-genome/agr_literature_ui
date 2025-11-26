@@ -49,10 +49,10 @@ const Download = () => {
        (paramAction !== null) && (paramAction === 'filedownload') &&
        autoDownloadOndemand && (isDownloadingOndemand === false) ) {
     if (accessToken === null) { 
-      // this if is needed because when page loads, the okta accessToken isn't there right away
+      // this if is needed because when page loads, the cognito accessToken isn't there right away
       notDownloadingMessage = (<Row><Col><h4>Your automated download is not happening because you are not Signed In.</h4><br/></Col></Row>);
       // const modalHeader = 'Unauthorized';
-      // const modalBody = 'Need to be Signed In to okta.';
+      // const modalBody = 'Need to be Signed In to cognito.';
       // dispatch(downloadUpdateGenericModal(modalHeader, modalBody));
       // console.log('need to be signed on');
     } else {

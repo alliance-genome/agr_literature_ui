@@ -20,7 +20,7 @@ import { Hub } from 'aws-amplify/utils';
 
 const Login = () => {
     const loggedInUser = useSelector(state => state.isLogged.userId);
-    const oktaGroups = useSelector(state => state.isLogged.oktaGroups);
+    const cognitoGroups = useSelector(state => state.isLogged.cognitoGroups);
     const accessToken = useSelector(state => state.isLogged.accessToken);
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
 
@@ -34,11 +34,14 @@ const Login = () => {
         try {
             const session = await fetchAuthSession();
             if (session.tokens?.accessToken) {
-                const accessTokenStr = session.tokens.accessToken.toString();
+                // const accessTokenStr = session.tokens.accessToken.toString();
                 const idToken = session.tokens.idToken;
+                const idTokenStr = session.tokens.idToken.toString();
+                // Extract email from ID token
+                const email = idToken?.payload?.email || null;
                 // Use email or sub from ID token as userId
-                const userId = idToken?.payload?.email || idToken?.payload?.sub || 'unknown';
-                dispatch(signIn(userId, accessTokenStr));
+                const userId = email || idToken?.payload?.sub || 'unknown';
+                dispatch(signIn(userId, idTokenStr, email));
                 setPopupOpen(false);
             } else {
                 dispatch(signOut());
@@ -132,7 +135,7 @@ const Login = () => {
                 <NavDropdown.Item >
                   <Button as="input" type="button" variant="primary" value="Sign Out" size="sm" onClick={onSignOutClick} />
                 </NavDropdown.Item>
-                {oktaGroups !== null && oktaGroups.map((optionValue, index) => (
+                {cognitoGroups !== null && cognitoGroups.map((optionValue, index) => (
                   <NavDropdown.Item key={optionValue}>{optionValue}</NavDropdown.Item>
                 ))}
                 <NavDropdown.Item style={{whiteSpace: 'normal', color: 'blue', textDecoration: 'underline'}}

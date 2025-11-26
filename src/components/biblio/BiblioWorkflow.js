@@ -35,9 +35,9 @@ const BiblioWorkflow = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"];
   const accessToken = useSelector((state) => state.isLogged.accessToken);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
+  let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
 
   const gridRef = useRef();
   const [gridApi, setGridApi] = useState(null);

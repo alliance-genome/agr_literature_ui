@@ -100,7 +100,8 @@ const CognitoSignInWidget = ({ onSuccess }) => {
                     </style>
                     <Authenticator
                         loginMechanisms={['email']}
-                        socialProviders={hasSocialProviders ? ['google'] : []}
+                        // socialProviders={hasSocialProviders ? ['google'] : []}
+                        socialProviders={[]}
                         hideSignUp={true}
                     >
                         <AuthenticatorContent onSuccess={onSuccess} />

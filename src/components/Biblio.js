@@ -246,7 +246,7 @@ const BiblioTagging = () => {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const uid = useSelector(state => state.isLogged.uid);
+  const email = useSelector(state => state.isLogged.email);
   const componentName = "biblio_summary";
 
   const {
@@ -255,16 +255,16 @@ const BiblioTagging = () => {
   } = usePersonSettings({
     baseUrl: process.env.REACT_APP_RESTAPI,
     token: accessToken,
-    oktaId: uid,
+    email,
     componentName,
     maxCount: 10
   });
 
   useEffect(() => {
-    if (accessToken && uid) {
+    if (accessToken && email) {
       load().finally(() => setSettingsLoaded(true));
     }
-  }, [accessToken, uid, load]);
+  }, [accessToken, email, load]);
 
   useEffect(() => {
     if (!settingsLoaded) return;    // only proceed once settings are actually loaded, or it will create another setting in db
@@ -362,12 +362,12 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   if (displayOrEditor === 'editor') {
     cssDisplay = 'Col-editor-disabled';
     cssDisplayLeft = ''; cssDisplayRight = 'Col-editor-disabled'; }
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  let accessLevel = oktaMod;
+  const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
+  let accessLevel = cognitoMod;
   if (testerMod !== 'No') { accessLevel = testerMod; }
-    else if (oktaDeveloper) { accessLevel = 'developer'; }
+    else if (cognitoDeveloper) { accessLevel = 'developer'; }
   // accessLevel = 'WB';	// for development to force accessLevel to a specific mod
   let tarballChecked = ''; let listChecked = '';
   if (supplementExpand === 'tarball') { tarballChecked = 'checked'; }

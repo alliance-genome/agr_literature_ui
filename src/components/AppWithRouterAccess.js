@@ -93,11 +93,11 @@ const AppWithRouterAccess = () => {
       fetchTaxons().finally()
     }, [dispatch]);
 
-    const oktaMod = useSelector(state => state.isLogged.oktaMod);
-    const oktaTester = useSelector(state => state.isLogged.oktaTester);
+    const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
+    const cognitoTester = useSelector(state => state.isLogged.cognitoTester);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const classTesterString = (devOrStageOrProd === 'prod') ? 'App App-testing-prod' : 'App App-testing-dev';
-    const className = (oktaMod !== testerMod && testerMod !== 'No' && oktaTester) ? classTesterString : 'App';
+    const className = (cognitoMod !== testerMod && testerMod !== 'No' && cognitoTester) ? classTesterString : 'App';
 
     return (
         <div className={className}>

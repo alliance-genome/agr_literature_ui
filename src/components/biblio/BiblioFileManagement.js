@@ -39,14 +39,14 @@ const BiblioFileManagement = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
 
   // determine accessLevel
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  let accessLevel = oktaMod;
+  const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
+  let accessLevel = cognitoMod;
 
   if (testerMod !== 'No') {
     accessLevel = testerMod;
-  } else if (oktaDeveloper) {
+  } else if (cognitoDeveloper) {
     accessLevel = 'developer';
   }
 
@@ -162,10 +162,10 @@ const Workflow = ({ workflowRefreshTrigger }) => {
   const atpParents = ['ATP:0000140'];
   const atpOntology = useSelector(state => state.merge.atpOntology);
 
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  let accessLevel = oktaMod;
+  const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
+  let accessLevel = cognitoMod;
 
   if (testerMod !== 'No') {
     accessLevel = testerMod;
@@ -225,7 +225,7 @@ const Workflow = ({ workflowRefreshTrigger }) => {
       <>
         <Row key='workflowFileStatus'>
           <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>workflow</Col>
-          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>Your okta credenditals must belong to a mod</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>Your cognito credentials must belong to a mod</Col>
         </Row>
       </>
     );
@@ -233,7 +233,7 @@ const Workflow = ({ workflowRefreshTrigger }) => {
 
   // currently we can only transition from "file upload in progress" to "file unavailable"
   const isMainPDFuploaded = modFileStatus[accessLevel]['atpName'] === 'files uploaded';
-  const isDeveloperWithoutTester = oktaDeveloper === true && testerMod === 'No';
+  const isDeveloperWithoutTester = cognitoDeveloper === true && testerMod === 'No';
   const hideFileUnavailableButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
   const hideInProgressButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file unavailable');
 
@@ -422,13 +422,13 @@ const FileUpload = ({main_or_supp}) => {
   const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
   const fileUploadingModalText = useSelector(state => state.biblio.fileUploadingModalText);
 
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  let accessLevel = oktaMod;
+  const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
+  let accessLevel = cognitoMod;
 
   if (testerMod !== 'No') { accessLevel = testerMod; }
-    else if (oktaDeveloper) { accessLevel = 'developer'; }
+    else if (cognitoDeveloper) { accessLevel = 'developer'; }
   // FileUpload accessLevel can be developer to see all files and upload as PMC
 
   if (accessLevel === 'developer') {
@@ -544,7 +544,7 @@ const FileUpload = ({main_or_supp}) => {
                     <p>Drag and drop {main_or_supp} file here, or click to select files</p>
                   </div>
                 ) }
-              else { return ( <div>You must be in an Okta curator group to upload files in production</div>) } } )() }
+              else { return ( <div>You must be in a Cognito curator group to upload files in production</div>) } } )() }
           </Col>
         </Row>
 
@@ -631,10 +631,10 @@ const FileEditor = ({ onFileStatusChange }) => {
   const [referencefileIdToPatch, setReferencefileIdToPatch] = useState(null);
   const [patchDataToApply, setPatchDataToApply] = useState(null);
 
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const oktaDeveloper = useSelector(state => state.isLogged.oktaDeveloper);
-  const accessLevel = testerMod !== 'No' ? testerMod : oktaDeveloper ? 'developer' : oktaMod;
+  const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
+  const accessLevel = testerMod !== 'No' ? testerMod : cognitoDeveloper ? 'developer' : cognitoMod;
 
   const fetchReferencefiles = async () => {
     setReferencefilesLoading(true);

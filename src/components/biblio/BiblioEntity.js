@@ -5,9 +5,9 @@ import TopicEntityCreate from "./topic_entity_tag/TopicEntityCreate";
 import TopicEntityTable from "./topic_entity_tag/TopicEntityTable";
 
 const BiblioEntity = () => {
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  const accessLevel = (testerMod !== 'No') ? testerMod : cognitoMod;
   if (accessLevel === 'SGD') {
     return (
       <>

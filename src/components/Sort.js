@@ -29,7 +29,7 @@ const Sort = () => {
   const sortUpdating = useSelector(state => state.sort.sortUpdating);
   const getPapersToSortFlag = useSelector(state => state.sort.getPapersToSortFlag);
   const isLoading = useSelector(state => state.sort.isLoading);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const uid = useSelector(state => state.isLogged.uid);
   const userId = useSelector(state => state.isLogged.userId);
@@ -48,8 +48,8 @@ const Sort = () => {
   const [curatorOptions, setCuratorOptions] = useState([]);
   const [recentlySortedData, setRecentlySortedData] = useState([]);
   const [showInsidePapers, setShowInsidePapers] = useState(true);
-  
-  let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
+
+  let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   let activeMod = accessLevel;
 
   useEffect(() => {
