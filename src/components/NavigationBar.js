@@ -8,10 +8,8 @@ import Nav from 'react-bootstrap/Nav';
 // import NavDropdown from 'react-bootstrap/NavDropdown';
 
 import Login from './Login'
-import OktaHelp from './OktaHelp'
+import AuthHelp from './AuthHelp'
 import TesterDropdown from './TesterDropdown'
-
-import {oktaSignInConfig} from "../config";
 
 
 const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
@@ -40,8 +38,8 @@ const NavigationBar = () => {
       <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
     </Nav>
     <Nav>
-      { (oktaMod === 'No' || oktaTester === false) ? <OktaHelp /> : <TesterDropdown /> }
-      <Login config={oktaSignInConfig}/>
+      { (oktaMod === 'No' || oktaTester === false) ? <AuthHelp /> : <TesterDropdown /> }
+      <Login />
     </Nav>
   </Navbar>
   )

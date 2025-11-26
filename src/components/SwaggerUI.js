@@ -1,29 +1,15 @@
 import styles from '../index.css';
 
-import React, {useEffect} from 'react';
+import React from 'react';
 // tslint:disable
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
-import {useOktaAuth} from "@okta/okta-react";
+import { useSelector } from 'react-redux';
 // tslint:able
 import { swaggerUI } from '../config';
 
 const SwaggerComp = params => {
-    const { authState, oktaAuth } = useOktaAuth();
-    let accessToken = null
-
-    //const accessToken = authState.accessToken.accessToken
-
-    useEffect(() => {
-
-        if (!authState.isAuthenticated) {
-            // When user isn't authenticated, forget any user info
-            accessToken = null;
-        } else {
-            accessToken = authState.accessToken.accessToken
-
-        }
-    }, [authState, oktaAuth]);
+    const accessToken = useSelector(state => state.isLogged.accessToken);
 
     const requestInterceptor = (req) => (
         {

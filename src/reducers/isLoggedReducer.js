@@ -23,18 +23,20 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
       let oktaMod = 'No';
       let oktaDeveloper = false;
       let oktaTester = false;
-      if (jsonToken.Groups) {
-        for (const oktaGroup of jsonToken.Groups) {
-          if (oktaGroup.endsWith('Developer')) { oktaDeveloper = true; }
-          if (oktaGroup === 'Tester' && devOrStageOrProd !== 'prod') { oktaTester = true; }
-            else if (oktaGroup === 'POTester' && devOrStageOrProd === 'prod') { oktaTester = true; }
-          if (oktaGroup.startsWith('SGD')) { oktaMod = 'SGD'; }
-            else if (oktaGroup.startsWith('RGD')) { oktaMod = 'RGD'; }
-            else if (oktaGroup.startsWith('MGI')) { oktaMod = 'MGI'; }
-            else if (oktaGroup.startsWith('ZFIN')) { oktaMod = 'ZFIN'; }
-            else if (oktaGroup.startsWith('Xen')) { oktaMod = 'XB'; }
-            else if (oktaGroup.startsWith('Fly')) { oktaMod = 'FB'; }
-            else if (oktaGroup.startsWith('Worm')) { oktaMod = 'WB'; } }
+      // Cognito uses 'cognito:groups' claim for groups (same group names as Okta)
+      const groups = jsonToken['cognito:groups'] || jsonToken.Groups || [];
+      if (groups && groups.length > 0) {
+        for (const group of groups) {
+          if (group.endsWith('Developer')) { oktaDeveloper = true; }
+          if (group === 'Tester' && devOrStageOrProd !== 'prod') { oktaTester = true; }
+            else if (group === 'POTester' && devOrStageOrProd === 'prod') { oktaTester = true; }
+          if (group.startsWith('SGD')) { oktaMod = 'SGD'; }
+            else if (group.startsWith('RGD')) { oktaMod = 'RGD'; }
+            else if (group.startsWith('MGI')) { oktaMod = 'MGI'; }
+            else if (group.startsWith('ZFIN')) { oktaMod = 'ZFIN'; }
+            else if (group.startsWith('Xen')) { oktaMod = 'XB'; }
+            else if (group.startsWith('Fly')) { oktaMod = 'FB'; }
+            else if (group.startsWith('Worm')) { oktaMod = 'WB'; } }
       }
       return {
         ...state,
@@ -46,8 +48,8 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         oktaMod: oktaMod,
         oktaDeveloper: oktaDeveloper,
         oktaTester: oktaTester,
-        oktaGroups: jsonToken.Groups,
-        uid: jsonToken.uid}
+        oktaGroups: groups,
+        uid: jsonToken.sub || jsonToken.uid}
     case 'SIGN_OUT':
       return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, testerMod: 'No', uid: null, accessToken: null}
     default:
