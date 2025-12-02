@@ -16,7 +16,6 @@ import axios from "axios";
 import Modal from 'react-bootstrap/Modal';
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import ReferencesToSort from './ReferencesToSort';
-import { AlertAteamApiDown } from "./ATeamAlert";
 import PropTypes from 'prop-types';
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
@@ -432,7 +431,6 @@ const Sort = () => {
           </>
         }
       </Container>
-      <AlertAteamApiDown />
       <hr />
     </div>
   )
