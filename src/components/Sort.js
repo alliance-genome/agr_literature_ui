@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import {
-    sortButtonModsQuery,
-    removeReferenceFromSortLive,
-    changeSortCorpusToggler,
-    changeSortWorkflowToggler,
-    updateButtonSort,
-    closeSortUpdateAlert,
-    setSortUpdating
+  sortButtonModsQuery,
+  removeReferenceFromSortLive,
+  changeSortCorpusToggler,
+  changeSortWorkflowToggler,
+  updateButtonSort,
+  closeSortUpdateAlert,
+  setSortUpdating
 } from '../actions/sortActions';
 import { setReferenceCurie, setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioActions';
 import { Spinner, Form, Container, Row, Col, Button, Alert } from 'react-bootstrap';
@@ -15,8 +15,8 @@ import "react-bootstrap-typeahead/css/Typeahead.css";
 import axios from "axios";
 import Modal from 'react-bootstrap/Modal';
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
-import ReferencesToSort from './ReferencesToSort'; 
-import { AlertAteamApiDown } from "./ATeamAlert"; 
+import ReferencesToSort from './ReferencesToSort';
+import { AlertAteamApiDown } from "./ATeamAlert";
 import PropTypes from 'prop-types';
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
@@ -31,7 +31,7 @@ const Sort = () => {
   const isLoading = useSelector(state => state.sort.isLoading);
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const uid = useSelector(state => state.isLogged.uid);
+  const userEmail = useSelector(state => state.isLogged.email);  // use email instead of uid
   const userId = useSelector(state => state.isLogged.userId);
 
   const dispatch = useDispatch();
@@ -43,7 +43,7 @@ const Sort = () => {
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
 
   const [viewMode, setViewMode] = useState('Sort'); // 'Sort', 'Prepublication', or 'Recently sorted'
-  const [selectedCurator, setSelectedCurator] = useState(uid);
+  const [selectedCurator, setSelectedCurator] = useState(userEmail || '');
   const [selectedTimeframe, setSelectedTimeframe] = useState('1');
   const [curatorOptions, setCuratorOptions] = useState([]);
   const [recentlySortedData, setRecentlySortedData] = useState([]);
@@ -52,6 +52,7 @@ const Sort = () => {
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   let activeMod = accessLevel;
 
+  // Fetch topic entity source id
   useEffect(() => {
     const fetchSourceId = async () => {
       if (accessToken !== null) {
@@ -64,6 +65,7 @@ const Sort = () => {
 
   let buttonUpdateDisabled = sortUpdating > 0;
 
+  // Fetch "to sort" / prepublication list when viewMode changes
   useEffect(() => {
     let mappedSortType = null;
     if (viewMode === 'Sort') {
@@ -80,16 +82,16 @@ const Sort = () => {
     }
   }, [viewMode, sortUpdating, accessLevel, dispatch]);
 
-  // Fetch recently sorted papers and curator options when viewMode changes to 'Recently sorted'
+  // Fetch recently sorted papers when viewMode is "Recently sorted"
   useEffect(() => {
-    if (viewMode === 'Recently sorted' && accessToken && accessLevel) {    
+    if (viewMode === 'Recently sorted' && accessToken && accessLevel) {
       fetchRecentlySortedPapers(accessLevel, selectedTimeframe, selectedCurator);
-      setShowInsidePapers(true); 
+      setShowInsidePapers(true);
     }
   }, [viewMode, accessToken, accessLevel, selectedTimeframe, selectedCurator]);
 
-  const fetchRecentlySortedPapers = (modAbbreviation, day, curatorUid) => {
-    const url = `${process.env.REACT_APP_RESTAPI}/sort/recently_sorted?mod_abbreviation=${modAbbreviation}&day=${day}&curator=${curatorUid}`;
+  const fetchRecentlySortedPapers = (modAbbreviation, day, curatorEmail) => {
+    const url = `${process.env.REACT_APP_RESTAPI}/sort/recently_sorted?mod_abbreviation=${modAbbreviation}&day=${day}&curator=${curatorEmail}`;
 
     fetch(url, {
       headers: {
@@ -100,12 +102,16 @@ const Sort = () => {
       .then(response => response.json())
       .then(data => {
         const { curator_data, data: references } = data;
-        let curators = Object.entries(curator_data).map(([name, uid]) => ({ name, uid }));
-        const loggedInUserUid = uid;
-        const loggedInUserIncluded = curators.some(curator => curator.uid === loggedInUserUid);
 
+        // curator_data is now a mapping: name -> email
+        let curators = Object.entries(curator_data).map(([name, email]) => ({ name, email }));
+
+        const loggedInUserEmail = userEmail;
+        const loggedInUserIncluded = curators.some(curator => curator.email === loggedInUserEmail);
+
+        // Move logged-in user to the top if present
         if (loggedInUserIncluded) {
-          const index = curators.findIndex(curator => curator.uid === loggedInUserUid);
+          const index = curators.findIndex(curator => curator.email === loggedInUserEmail);
           if (index > 0) {
             const [loggedInUser] = curators.splice(index, 1);
             curators.unshift(loggedInUser);
@@ -115,9 +121,10 @@ const Sort = () => {
         setCuratorOptions(curators);
         setRecentlySortedData(references);
 
-        if (!curators.some(curator => curator.uid === selectedCurator)) {
+        // Ensure selectedCurator is valid (still in the list)
+        if (!curators.some(curator => curator.email === selectedCurator)) {
           if (curators.length > 0) {
-            setSelectedCurator(curators[0].uid);
+            setSelectedCurator(curators[0].email);
           } else {
             setSelectedCurator('');
           }
@@ -132,10 +139,10 @@ const Sort = () => {
   const handleFindSortedPapers = () => {
     let curator = selectedCurator;
     console.log(`Selected Curator Before Check: ${curator}`);
-    if (curator === null || curator === undefined) {
-      curator = uid;
-      console.log("Reset curator to uid:", curator);
-      setSelectedCurator(uid); // Update state for future use
+    if (curator === null || curator === undefined || curator === '') {
+      curator = userEmail;
+      console.log("Reset curator to logged in user email:", curator);
+      setSelectedCurator(userEmail || '');
     }
     console.log(`Fetching papers with curator: ${curator}`);
     fetchRecentlySortedPapers(accessLevel, selectedTimeframe, curator);
@@ -267,8 +274,8 @@ const Sort = () => {
               <span className="visually-hidden">Loading...</span>
             </Spinner>
           </div>
-        )} 
-        { (viewMode === 'Sort' || viewMode === 'Prepublication') &&
+        )}
+        {(viewMode === 'Sort' || viewMode === 'Prepublication') &&
           <>
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
@@ -347,7 +354,7 @@ const Sort = () => {
                           onChange={(e) => setSelectedCurator(e.target.value)}
                         >
                           {curatorOptions.map((curator, index) => (
-                            <option key={index} value={curator.uid}>
+                            <option key={index} value={curator.email}>
                               {curator.name}
                             </option>
                           ))}
@@ -374,14 +381,14 @@ const Sort = () => {
                       </Form.Group>
                     </Col>
                   </Form.Row>
-                </Form>		  
+                </Form>
               </Col>
             </Row>
             <Row>
               <Col lg={12}>
                 <br />
                 {recentlySortedData && recentlySortedData.length > 0 ? (
-                  <div>      
+                  <div>
                     <SortSubmitUpdateRouter />
                     <Button
                       variant="outline-primary"
@@ -496,7 +503,6 @@ const AlertDismissibleSortUpdate = () => {
     }
   }, [updateAlert, updateMessages, dispatch]);
 
-
   const handleDeleteTetTagsAndPaper = async () => {
     if (!modCorpusAssociationId) {
       return;
@@ -524,8 +530,7 @@ const AlertDismissibleSortUpdate = () => {
   };
 
   const variant = updateFailure === 0 ? 'success' : 'danger';
-  const header = updateFailure === 0 ? 'Update Success' : 'Update Failure';  
-
+  const header = updateFailure === 0 ? 'Update Success' : 'Update Failure';
 
   return (
     <>
@@ -561,7 +566,7 @@ const AlertDismissibleSortUpdate = () => {
       ) : null}
 
     </>
-  );    
+  );
 }
 
 export default Sort;
