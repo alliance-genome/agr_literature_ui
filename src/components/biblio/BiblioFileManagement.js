@@ -25,7 +25,7 @@ import {
   setFileUploadingShowModal,
   setFileUploadingShowSuccess
 } from '../../actions/biblioActions';
-import { mergeAteamQueryAtp } from '../../actions/mergeActions';
+import { mergeQueryAtp } from '../../actions/mergeActions';
 
 import {useDropzone} from 'react-dropzone';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
@@ -191,7 +191,7 @@ const Workflow = ({ workflowRefreshTrigger }) => {
   );
 
   if ( (ateamResults === 0) && (accessToken) ) {
-    dispatch(mergeAteamQueryAtp(accessToken, atpParents));
+    dispatch(mergeQueryAtp(accessToken, atpParents));
   }
 
   const deriveModFileStatus = (wfTags) => {
