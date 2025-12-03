@@ -1,6 +1,4 @@
 
-const swaggerUrl = process.env.REACT_APP_SWAGGERUI;
-
 // AWS Cognito Configuration
 // Matches the API configuration in agr_literature_service
 const cognitoConfig = {
@@ -25,8 +23,4 @@ const cognitoConfig = {
     }
 };
 
-const swaggerUI = {
-    url: swaggerUrl
-};
-
-export { cognitoConfig, swaggerUI };
+export { cognitoConfig };
