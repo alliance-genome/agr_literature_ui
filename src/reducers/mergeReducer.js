@@ -373,9 +373,11 @@ export default function(state = initialState, action) {
         updateAlert: 0
       }
 
-    case 'MERGE_ATEAM_ATP_RESULT':
-      console.log('MERGE_ATEAM_ATP_RESULT reducer');
-      const maar_atpOntology = JSON.parse(JSON.stringify(state.atpOntology))
+    case 'MERGE_ATP_RESULT':
+      console.log('MERGE_ATP_RESULT reducer');
+      // const maar_atpOntology = JSON.parse(JSON.stringify(state.atpOntology)) // this copies stale value, but action makes multiple async calls
+      const maar_atpOntology = { ...state.atpOntology };
+      maar_atpOntology[action.payload.atp] = { ...maar_atpOntology[action.payload.atp] };	// this updates only this atp's children
       if (!(action.payload.atp in maar_atpOntology)) {
         maar_atpOntology[action.payload.atp] = {}; }
       action.payload.response.forEach( (entity) => {
