@@ -25,7 +25,6 @@ import About from './About'
 import Tracker from './Tracker'
 // import Login from './Login'
 import LoginRequired from './LoginRequired'
-//import SwaggerComp from './SwaggerUI'
 //import Logout from "./Logout";
 // import ListGroup from 'react-bootstrap/ListGroup';
 // import Navbar from 'react-bootstrap/Navbar';
@@ -120,7 +119,6 @@ const AppWithRouterAccess = () => {
             <Route path='/bulkSubmission' component={BulkSubmission} />
             <Route path='/about' component={About} />
             <Route path='/tracker' component={Tracker} />
-            {/*<Route path = '/swaggerUI' component={SwaggerComp} />*/}
             <Route path = '/loginRequired' component={LoginRequired} />
         </div>
     );
