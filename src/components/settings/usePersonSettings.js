@@ -13,7 +13,7 @@ import {
 export function usePersonSettings({
   baseUrl,
   token,
-  oktaId,
+  email,
   componentName,
   maxCount = 10,
 }) {
@@ -22,17 +22,17 @@ export function usePersonSettings({
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    if (!token || !oktaId) {
-      console.warn("Cannot load settings: missing token or oktaId");
+    if (!token || !email) {
+      console.warn("Cannot load settings: missing token or email");
       return { existing: [], picked: null };
     }
-    
+
     setBusy(true);
     try {
       const existing = await listPersonSettings({
         baseUrl,
         token,
-        oktaId,
+        email,
         componentName,
       });
       setSettings(existing);
@@ -49,12 +49,12 @@ export function usePersonSettings({
     } finally {
       setBusy(false);
     }
-  }, [baseUrl, token, oktaId, componentName]);
+  }, [baseUrl, token, email, componentName]);
 
   const seed = useCallback(
     async ({ name, payload, isDefault = true }) => {
-      if (!token || !oktaId) {
-        console.warn("Cannot seed settings: missing token or oktaId");
+      if (!token || !email) {
+        console.warn("Cannot seed settings: missing token or email");
         return null;
       }
       
@@ -63,7 +63,7 @@ export function usePersonSettings({
         const created = await createPersonSetting({
           baseUrl,
           token,
-          oktaId,
+          email,
           componentName,
           name,
           isDefault,
@@ -79,7 +79,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token, componentName, oktaId]
+    [baseUrl, token, componentName, email]
   );
   
   const create = useCallback(
@@ -87,7 +87,7 @@ export function usePersonSettings({
       if (settings.length >= maxCount) {
         throw new Error(`Maximum settings count (${maxCount}) reached`);
       }
-      if (!token || !oktaId) {
+      if (!token || !email) {
         throw new Error("Cannot create setting: missing authentication");
       }
       if (!name || !name.trim()) {
@@ -99,7 +99,7 @@ export function usePersonSettings({
         const created = await createPersonSetting({
           baseUrl,
           token,
-          oktaId,
+          email,
           componentName,
           name: name.trim(),
           isDefault: false,
@@ -115,7 +115,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token, oktaId, componentName, settings.length, maxCount]
+    [baseUrl, token, email, componentName, settings.length, maxCount]
   );
 
   const rename = useCallback(
@@ -188,7 +188,7 @@ export function usePersonSettings({
         await makeDefaultPersonSetting({
           baseUrl,
           token,
-          oktaId, // This was missing before
+          email, // This was missing before
           componentName,
           person_setting_id: id
         });
@@ -205,7 +205,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token, oktaId, componentName] // Make sure oktaId is in dependencies
+    [baseUrl, token, email, componentName]
   );
 
   const savePayloadTo = useCallback(

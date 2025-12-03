@@ -263,42 +263,46 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     }, [facetsToInclude]);
 
     useEffect(() => {
-        if (
-            facetsToInclude.includes('source_evidence_assertions') &&
-            searchFacets['source_evidence_assertions'] &&
-            searchFacets['source_evidence_assertions'].buckets
-        ) {
-            const fetchData = async () => {
-                const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
-                const headers = {
-                  'Authorization': `Bearer ${accessToken}`,
-                  'Content-Type': 'application/json',
-                };
-                const buckets = searchFacets['source_evidence_assertions'].buckets;
-                const mapping = {};
-                for (const bucket of buckets) {
-                  const upperKey = bucket.key.toUpperCase();
-                  let url = '';
+      if (
+        facetsToInclude.includes('source_evidence_assertions') &&
+        searchFacets['source_evidence_assertions'] &&
+        searchFacets['source_evidence_assertions'].buckets
+      ) {
+        const fetchData = async () => {
+            const restApiBase = process.env.REACT_APP_RESTAPI;
+            const buckets = searchFacets['source_evidence_assertions'].buckets;
 
-                  if (upperKey.startsWith('ATP')) {
-                      url = `${baseUrl}api/atpterm/${upperKey}`;
-                  } else if (upperKey.startsWith('ECO')) {
-                      url = `${baseUrl}api/ecoterm/${upperKey}`;
-                  } else {
-                      console.warn(`Unknown prefix in bucket.key: ${bucket.key}`);
-                      continue; // Skip this bucket
-                  }
-                  try {
-                    const result = await axios.get(url, { headers })
-                    mapping[bucket.key] = result.data.entity.definition;
-                  } catch (error) {
-                    console.error('Error fetching ateam curation status options:', error);
-                  }
+            const mapping = {};
+
+            for (const bucket of buckets) {
+                const upperKey = bucket.key.toUpperCase();
+                let url = '';
+
+                // --- Use AGR REST API (no token needed) ---
+                if (upperKey.startsWith('ATP')) {
+                    url = `${restApiBase}/topic_entity_tag/map_curie_to_name/atpterm/${upperKey}`;
+                } else if (upperKey.startsWith('ECO')) {
+                    url = `${restApiBase}/topic_entity_tag/map_curie_to_name/ecoterm/${upperKey}`;
+                } else {
+                    console.warn(`Unknown prefix in bucket.key: ${bucket.key}`);
+                    continue;
                 }
-                setSourceEvidenceAssertionDescriptions(mapping);
+
+                try {
+                    const result = await axios.get(url);
+                    // This endpoint returns the name string directly
+                    mapping[bucket.key] = result.data;
+
+                } catch (error) {
+                    console.error("Error fetching CURIE → name mapping:", error);
+                }
             }
-            fetchData();
-        }
+
+            setSourceEvidenceAssertionDescriptions(mapping);
+        };
+
+        fetchData();
+      }
     }, [facetsToInclude, searchFacets]);
 
     const toggleSubFacet = (subFacetLabel) => {
@@ -565,9 +569,9 @@ const Facets = () => {
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const datePublished= useSelector(state => state.search.datePublished);
     const dateCreated = useSelector(state => state.search.dateCreated);
-    const oktaMod = useSelector(state => state.isLogged.oktaMod);
+    const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
-    const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
+    const accessLevel = testerMod !== "No" ? testerMod : cognitoMod;
     const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     const seaValues = useSelector(state => state.search.searchFacetsValues['source_evidence_assertions'] || []);

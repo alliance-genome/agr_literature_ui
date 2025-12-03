@@ -115,11 +115,11 @@ const TrackerPagination = (mod) => {
 const Tracker = () => {
   const missingFileResults = useSelector(state => state.tracker.missingFileResults);
   const dispatch = useDispatch();
-  // const accessLevel = getOktaModAccess(oktaGroups);	// old way before logging on put values in store
-  // const accessLevel = useSelector(state => state.isLogged.oktaMod);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  // const accessLevel = getCognitoModAccess(cognitoGroups);	// old way before logging on put values in store
+  // const accessLevel = useSelector(state => state.isLogged.cognitoMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+  const accessLevel = (testerMod !== 'No') ? testerMod : cognitoMod;
   // const accessLevel = 'ZFIN';				// to force a specific MOD
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const orderBy = useSelector(state => state.tracker.orderBy);

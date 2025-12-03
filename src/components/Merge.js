@@ -19,7 +19,7 @@ import { setDataTransferHappened } from '../actions/mergeActions';
 import { setShowDataTransferModal } from '../actions/mergeActions';
 // import { setCompletionMergeHappened } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
-import { mergeAteamQueryAtp } from '../actions/mergeActions';
+import { mergeQueryAtp } from '../actions/mergeActions';
 
 import { splitCurie } from './biblio/BiblioEditor';
 import { comcorMapping } from './biblio/BiblioEditor';
@@ -285,7 +285,7 @@ const MergeSelectionSection = () => {
     else if (referenceMeta2.queryRefSuccess === false) { curie2Class = 'span-merge-message-failure'; }
   
   if ( (ateamResults === 0) && (accessToken) ) {
-    dispatch(mergeAteamQueryAtp(accessToken, atpParents));
+    dispatch(mergeQueryAtp(accessToken, atpParents));
   }
 
   return (

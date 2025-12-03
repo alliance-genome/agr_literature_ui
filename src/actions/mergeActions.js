@@ -8,8 +8,6 @@ import { generateRelationsSimple } from './biblioActions';
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 
-const ateamApiBaseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
-
 export const changeFieldInput = (e, object, key1) => {
   // console.log('merge action change field array reference json ' + e.target.id + ' to ' + e.target.value);
   return {
@@ -56,20 +54,21 @@ export const mergeToggleIndependent = (fieldName, oneOrTwo, index, subtype) => {
 //   console.log("action mergeSwapPairSimple " + fieldName);
 // }
 
-export const mergeAteamQueryAtp = (accessToken, atpParents) => dispatch => {
+export const mergeQueryAtp = (accessToken, atpParents) => dispatch => {
   console.log("action mergeAteamQueryAtp " + atpParents);
 
   const queryAteamAtpChildren = async (atp) => {
-    const ateamApiUrl = ateamApiBaseUrl + 'api/atpterm/' + atp + '/children';
-    const response = await axios.get(ateamApiUrl, {
+    // REST /topic_entity_tag/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
+    const urlApi = restUrl + '/topic_entity_tag/search_descendants/' + atp + '/true/false/true';
+    const response = await axios.get(urlApi, {
       headers: {
         'Authorization': 'Bearer ' + accessToken,
         'Content-Type': 'application/json'
       }
     });
     dispatch({
-      type: 'MERGE_ATEAM_ATP_RESULT',
-      payload: { atp: atp, response: response.data.entities }
+      type: 'MERGE_ATP_RESULT',
+      payload: { atp: atp, response: response.data }
     });
   }
 

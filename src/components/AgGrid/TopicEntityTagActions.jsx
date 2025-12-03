@@ -20,10 +20,10 @@ import Col from "react-bootstrap/Col";
 export default (props) => {
     const dispatch = useDispatch();
     const accessToken = useSelector(state => state.isLogged.accessToken);
-    const oktaMod = useSelector(state => state.isLogged.oktaMod);
+    const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const editTag = useSelector(state => state.biblio.editTag);
-    const accessLevel = (testerMod !== 'No') ? testerMod : oktaMod;
+    const accessLevel = (testerMod !== 'No') ? testerMod : cognitoMod;
     const [showModal, setShowModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const handleClose = () => { setShowModal(false);}

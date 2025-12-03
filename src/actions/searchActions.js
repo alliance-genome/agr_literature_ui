@@ -126,7 +126,7 @@ const getSearchParams = (state) => {
     query_fields: state.search.query_fields,
     sort_by_published_date_order: state.search.sortByPublishedDate,
     partial_match: state.search.partialMatch,
-    mod_abbreviation: state.isLogged.testerMod !== 'No' ? state.isLogged.testerMod : state.isLogged.oktaMod
+    mod_abbreviation: state.isLogged.testerMod !== 'No' ? state.isLogged.testerMod : state.isLogged.cognitoMod
   }
   // Only add author_filter if it has a value
   if (author_filter) {

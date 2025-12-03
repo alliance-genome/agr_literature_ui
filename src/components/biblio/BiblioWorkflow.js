@@ -35,9 +35,9 @@ const BiblioWorkflow = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"];
   const accessToken = useSelector((state) => state.isLogged.accessToken);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
-  let accessLevel = testerMod !== 'No' ? testerMod : oktaMod;
+  let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
 
   const gridRef = useRef();
   const [gridApi, setGridApi] = useState(null);
@@ -230,44 +230,30 @@ const BiblioWorkflow = () => {
 
   useEffect(() => {
     const fetchCurationStatuses = async () => {
-      const baseUrl = process.env.REACT_APP_ATEAM_API_BASE_URL;
+      // REST /topic_entity_tag/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
       const urls = {
-        curationStatus: `${baseUrl}api/atpterm/ATP:0000230/children`,
-        curationTag1: `${baseUrl}api/atpterm/ATP:0000208/`,
-        curationTag2: `${baseUrl}api/atpterm/ATP:0000208/descendants`,
-        curationTag3: `${baseUrl}api/atpterm/ATP:0000227/`,
-        curationTag4: `${baseUrl}api/atpterm/ATP:0000227/descendants`,
+        curationStatus: `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_descendants/ATP:0000230/true/false/true`,
+        curationTag1: `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_descendants/ATP:0000208/false/true/true`,
+        curationTag2: `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_descendants/ATP:0000227/false/true/true`,
       };
       try {
         const headers = {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         };
-        const [curationStatusResult, curationTagResult1, curationTagResult2, curationTagResult3, curationTagResult4] = await Promise.all([
+        const [curationStatusResult, curationTagResult1, curationTagResult2] = await Promise.all([
           axios.get(urls.curationStatus, { headers }),
           axios.get(urls.curationTag1, { headers }),
           axios.get(urls.curationTag2, { headers }),
-          axios.get(urls.curationTag3, { headers }),
-          axios.get(urls.curationTag4, { headers }),
         ]);
-        const curationStatusOptionsObjs = Array.isArray(curationStatusResult.data.entities)
-          ? curationStatusResult.data.entities.map(entity => ({
+        const curationStatusOptionsObjs = curationStatusResult.data.map(entity => ({
               value: entity.curie,
               label: entity.name,
-            }))
-          : [];
-        const normalizeEntities = (data) => {
-          if (Array.isArray(data.entities)) return data.entities;
-          if (data.entity) return [data.entity];
-          return [];
-        };
-        const curationTagResultEntities1 = normalizeEntities(curationTagResult1.data);
-        const curationTagResultEntities2 = normalizeEntities(curationTagResult2.data);
-        const curationTagResultEntities3 = normalizeEntities(curationTagResult3.data);
-        const curationTagResultEntities4 = normalizeEntities(curationTagResult4.data);
+            }));
+        const curationTagResultEntities1 = curationTagResult1.data;
+        const curationTagResultEntities2 = curationTagResult2.data;
         const curationTagOptionsObjs = [
-            ...curationTagResultEntities1, ...curationTagResultEntities2,
-            ...curationTagResultEntities3, ...curationTagResultEntities4].map(entity => ({
+            ...curationTagResultEntities1, ...curationTagResultEntities2].map(entity => ({
           value: entity.curie,
           label: entity.name,
         }));

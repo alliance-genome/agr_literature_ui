@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 //import { BrowserRouter, Route } from 'react-router-dom'
 //import history from "../history";
 // console.log('Router is needed in AppWithRouterAccess.js or pages like https://dev3001.alliancegenome.org/Biblio?action=editor&referenceCurie=AGR:AGR-Reference-0000829611 will not display')
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Redirect } from 'react-router-dom';
 import NavigationBar from './NavigationBar'
 import NotLoggedInBar from './NotLoggedInBar'
 import Search from './Search'
@@ -25,7 +25,6 @@ import About from './About'
 import Tracker from './Tracker'
 // import Login from './Login'
 import LoginRequired from './LoginRequired'
-//import SwaggerComp from './SwaggerUI'
 //import Logout from "./Logout";
 // import ListGroup from 'react-bootstrap/ListGroup';
 // import Navbar from 'react-bootstrap/Navbar';
@@ -34,11 +33,6 @@ import LoginRequired from './LoginRequired'
 // import NavDropdown from 'react-bootstrap/NavDropdown';
 // import Glyphicon from 'react-bootstrap/Glyphicon';
 import React from 'react';
-// import { useHistory, Switch } from 'react-router-dom';
-import { useHistory } from 'react-router-dom';
-// import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
-import { Security, SecureRoute } from '@okta/okta-react';
-import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { setMods } from '../actions/appActions';
@@ -46,22 +40,38 @@ import { DebeziumStatusAlert } from './DebeziumStatusAlert';
 
 import axios from "axios";
 
-// import { oktaAuthConfig, oktaSignInConfig } from '../config';
-import { oktaAuthConfig } from '../config';
+// AWS Amplify imports
+import { Amplify } from 'aws-amplify';
+import { cognitoConfig } from '../config';
 
-const oktaAuth = new OktaAuth(oktaAuthConfig);
+// Configure Amplify
+Amplify.configure(cognitoConfig);
 
 // No secrets here so print out for sanity checking.
 console.log("UI_URL -> " + process.env.REACT_APP_UI_URL);
 console.log("UI_RESTAPI-> " + process.env.REACT_APP_RESTAPI);
 console.log("UI_SW -> " + process.env.REACT_APP_SWAGGERUI);
 console.log("UI_DSP -> " + process.env.REACT_APP_DEV_OR_STAGE_OR_PROD);
-console.log("UI_ATEAM -> " + process.env.REACT_APP_ATEAM_API_BASE_URL);
 console.log(Router);
-console.log(oktaAuth);
+
+// PrivateRoute component for protected routes
+const PrivateRoute = ({ component: Component, ...rest }) => {
+    const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+    return (
+        <Route
+            {...rest}
+            render={(props) =>
+                isSignedIn ? (
+                    <Component {...props} />
+                ) : (
+                    <Redirect to="/loginRequired" />
+                )
+            }
+        />
+    );
+};
 
 const AppWithRouterAccess = () => {
-    const history = useHistory();
     const dispatch = useDispatch();
 
     const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
@@ -79,52 +89,38 @@ const AppWithRouterAccess = () => {
         dispatch(setMods(sortedMods));
       }
       fetchTaxons().finally()
-    }, []);
+    }, [dispatch]);
 
-    const customAuthHandler = () => {
-        history.replace('/loginRequired');
-    };
-
-    const restoreOriginalUri = async (_oktaAuth, originalUri) => {
-        history.replace(toRelativeUrl(originalUri, window.location.origin));
-    };
-
-    const oktaMod = useSelector(state => state.isLogged.oktaMod);
-    const oktaTester = useSelector(state => state.isLogged.oktaTester);
+    const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
+    const cognitoTester = useSelector(state => state.isLogged.cognitoTester);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const classTesterString = (devOrStageOrProd === 'prod') ? 'App App-testing-prod' : 'App App-testing-dev';
-    const className = (oktaMod !== testerMod && testerMod !== 'No' && oktaTester) ? classTesterString : 'App';
+    const className = (cognitoMod !== testerMod && testerMod !== 'No' && cognitoTester) ? classTesterString : 'App';
+
     return (
-        <Security
-            oktaAuth={oktaAuth}
-            onAuthRequired={customAuthHandler}
-            restoreOriginalUri={restoreOriginalUri}
-        >
-            <div className={className}>
-                <NavigationBar />
-                <NotLoggedInBar />
-                <DebeziumStatusAlert />
-                <br />
-                <Route path='/' exact={true} component={Search}/>
-                <Route path='/search' component={Search} />
-                <Route path='/biblio' component={Biblio} />
-                <Route path='/sort' component={Sort} />
-                <Route path='/flags' component={Flags} />
-                <Route path='/files' component={Files} />
-                <Route path='/mining' component={Mining} />
-                <Route path='/ontomate' component={Ontomate} />
-                <Route path='/textpresso' component={Textpresso} />
-                <SecureRoute path='/create' component={Create} />
-                <Route path='/merge' component={Merge} />
-		<Route path='/reports' component={Reports} />
-                <Route path='/download' component={Download} />
-		<Route path='/bulkSubmission' component={BulkSubmission} />
-                <Route path='/about' component={About} />
-                <Route path='/tracker' component={Tracker} />
-                {/*<Route path = '/swaggerUI' component={SwaggerComp} />*/}
-                <Route path = '/loginRequired' component={LoginRequired} />
-            </div>
-        </Security>
+        <div className={className}>
+            <NavigationBar />
+            <NotLoggedInBar />
+            <DebeziumStatusAlert />
+            <br />
+            <Route path='/' exact={true} component={Search}/>
+            <Route path='/search' component={Search} />
+            <Route path='/biblio' component={Biblio} />
+            <Route path='/sort' component={Sort} />
+            <Route path='/flags' component={Flags} />
+            <Route path='/files' component={Files} />
+            <Route path='/mining' component={Mining} />
+            <Route path='/ontomate' component={Ontomate} />
+            <Route path='/textpresso' component={Textpresso} />
+            <PrivateRoute path='/create' component={Create} />
+            <Route path='/merge' component={Merge} />
+            <Route path='/reports' component={Reports} />
+            <Route path='/download' component={Download} />
+            <Route path='/bulkSubmission' component={BulkSubmission} />
+            <Route path='/about' component={About} />
+            <Route path='/tracker' component={Tracker} />
+            <Route path = '/loginRequired' component={LoginRequired} />
+        </div>
     );
 };
 export default AppWithRouterAccess;

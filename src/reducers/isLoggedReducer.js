@@ -4,13 +4,14 @@ const INTIAL_STATE = {
   isSignedIn: null,
   everSignedIn: null,
   userId: null,
-  oktaGroups: null,
-  oktaMod: 'No',
-  oktaDeveloper: false,
-  oktaTester: false,
+  cognitoGroups: null,
+  cognitoMod: 'No',
+  cognitoDeveloper: false,
+  cognitoTester: false,
   testerMod: 'No',
   accessToken: null,
-  uid: null
+  uid: null,
+  email: null
 };
 
 const loggedReducer = (state = INTIAL_STATE, action) => {
@@ -20,21 +21,23 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
       return { ...state, testerMod: action.payload }
     case 'SIGN_IN':
       const jsonToken = jwt_decode(action.payload.accessToken);
-      let oktaMod = 'No';
-      let oktaDeveloper = false;
-      let oktaTester = false;
-      if (jsonToken.Groups) {
-        for (const oktaGroup of jsonToken.Groups) {
-          if (oktaGroup.endsWith('Developer')) { oktaDeveloper = true; }
-          if (oktaGroup === 'Tester' && devOrStageOrProd !== 'prod') { oktaTester = true; }
-            else if (oktaGroup === 'POTester' && devOrStageOrProd === 'prod') { oktaTester = true; }
-          if (oktaGroup.startsWith('SGD')) { oktaMod = 'SGD'; }
-            else if (oktaGroup.startsWith('RGD')) { oktaMod = 'RGD'; }
-            else if (oktaGroup.startsWith('MGI')) { oktaMod = 'MGI'; }
-            else if (oktaGroup.startsWith('ZFIN')) { oktaMod = 'ZFIN'; }
-            else if (oktaGroup.startsWith('Xen')) { oktaMod = 'XB'; }
-            else if (oktaGroup.startsWith('Fly')) { oktaMod = 'FB'; }
-            else if (oktaGroup.startsWith('Worm')) { oktaMod = 'WB'; } }
+      let cognitoMod = 'No';
+      let cognitoDeveloper = false;
+      let cognitoTester = false;
+      // Cognito uses 'cognito:groups' claim for groups (same group names as Okta)
+      const groups = jsonToken['cognito:groups'] || jsonToken.Groups || [];
+      if (groups && groups.length > 0) {
+        for (const group of groups) {
+          if (group.endsWith('Developer')) { cognitoDeveloper = true; }
+          if (group === 'Tester' && devOrStageOrProd !== 'prod') { cognitoTester = true; }
+            else if (group === 'POTester' && devOrStageOrProd === 'prod') { cognitoTester = true; }
+          if (group.startsWith('SGD')) { cognitoMod = 'SGD'; }
+            else if (group.startsWith('RGD')) { cognitoMod = 'RGD'; }
+            else if (group.startsWith('MGI')) { cognitoMod = 'MGI'; }
+            else if (group.startsWith('ZFIN')) { cognitoMod = 'ZFIN'; }
+            else if (group.startsWith('Xen')) { cognitoMod = 'XB'; }
+            else if (group.startsWith('Fly')) { cognitoMod = 'FB'; }
+            else if (group.startsWith('Worm')) { cognitoMod = 'WB'; } }
       }
       return {
         ...state,
@@ -43,13 +46,14 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         userId: action.payload.userId,
         accessToken: action.payload.accessToken,
         testerMod: 'No',
-        oktaMod: oktaMod,
-        oktaDeveloper: oktaDeveloper,
-        oktaTester: oktaTester,
-        oktaGroups: jsonToken.Groups,
-        uid: jsonToken.uid}
+        cognitoMod: cognitoMod,
+        cognitoDeveloper: cognitoDeveloper,
+        cognitoTester: cognitoTester,
+        cognitoGroups: groups,
+        uid: jsonToken.sub || jsonToken.uid,
+        email: action.payload.email}
     case 'SIGN_OUT':
-      return {...state, isSignedIn: false, userId: null, oktaGroups: null, oktaMod: 'No', oktaDeveloper: false, oktaTester: false, testerMod: 'No', uid: null, accessToken: null}
+      return {...state, isSignedIn: false, userId: null, cognitoGroups: null, cognitoMod: 'No', cognitoDeveloper: false, cognitoTester: false, testerMod: 'No', uid: null, accessToken: null, email: null}
     default:
       return state;
   }

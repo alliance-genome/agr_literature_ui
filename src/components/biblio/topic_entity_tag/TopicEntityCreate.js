@@ -38,9 +38,9 @@ const TopicEntityCreate = () => {
   const referenceJsonLive = useSelector((state) => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"];
   const accessToken = useSelector((state) => state.isLogged.accessToken);
-  const oktaMod = useSelector((state) => state.isLogged.oktaMod);
+  const cognitoMod = useSelector((state) => state.isLogged.cognitoMod);
   const testerMod = useSelector((state) => state.isLogged.testerMod);
-  const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
+  const accessLevel = testerMod !== "No" ? testerMod : cognitoMod;
   const uid = useSelector((state) => state.isLogged.uid);
 
   const biblioUpdatingEntityAdd = useSelector((state) => state.biblio.biblioUpdatingEntityAdd);

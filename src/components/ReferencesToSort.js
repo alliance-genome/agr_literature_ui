@@ -171,9 +171,11 @@ const ReferencesToSort = ({
 
   const orderedAuthorsLive = [];
   for (const value of reference['authors'].values()) {
-    let index = value['order'] - 1;
-    if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'order' field value of 0
-    orderedAuthorsLive[index] = value; }
+    let idx = value['order'] - 1;
+    if (idx < 0) { idx = 0; }      // temporary fix for fake authors have an 'order' field value of 0
+    orderedAuthorsLive[idx] = value;
+  }
+
   const [showAllAuthors, setShowAllAuthors] = useState(false);
   const fullAuthorNames = orderedAuthorsLive.map(dict => dict['name']).join('; ');
   const isTruncated = fullAuthorNames.length > 70;
@@ -323,31 +325,19 @@ const ReferencesToSort = ({
                     loadingState[index] = true;
                     setSpeciesSelectLoading(loadingState);
 
-                    axios.post(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/search?limit=10&page=0`,
-                      {
-                        "searchFilters": {
-                          "nameFilter": {
-                            "name": {
-                              "queryString": query,
-                              "tokenOperator": "AND"
-                            }
-                          }
-                        },
-                        "sortOrders": [],
-                        "aggregations": [],
-                        "nonNullFieldsTable": []
-                      },
-                      {
-                        headers: {
-                          'content-type': 'application/json',
-                          'authorization': `Bearer ${accessToken}`
-                        }
-                      })
+                    const baseUrl = process.env.REACT_APP_RESTAPI;
+
+                    axios
+                      .get(`${baseUrl}/topic_entity_tag/search_species/${encodeURIComponent(query)}`)
                       .then(res => {
                         const updatedLoading = new Array(speciesSelectLoading.length).fill(false);
                         setSpeciesSelectLoading(updatedLoading);
-                        if (res.data.results) {
-                          setTypeaheadOptions(res.data.results.map(item => `${item.name} ${item.curie}`));
+
+                        // Assuming API returns an array of { name, curie }
+                        if (Array.isArray(res.data)) {
+                          setTypeaheadOptions(
+                            res.data.map(item => `${item.name} ${item.curie}`)
+                          );
                         }
                       })
                       .catch(error => {

@@ -517,10 +517,10 @@ const CustomSettingsGearModal = ({
 const TopicEntityTable = () => {
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
-  const oktaMod = useSelector(state => state.isLogged.oktaMod);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector((state) => state.isLogged.testerMod);
-  const uid = useSelector(state => state.isLogged.uid);
-  const accessLevel = testerMod !== "No" ? testerMod : oktaMod;
+  const email = useSelector(state => state.isLogged.email);
+  const accessLevel = testerMod !== "No" ? testerMod : cognitoMod;
 
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const biblioUpdatingEntityAdd = useSelector(state => state.biblio.biblioUpdatingEntityAdd);
@@ -551,7 +551,7 @@ const TopicEntityTable = () => {
   } = usePersonSettings({
     baseUrl: process.env.REACT_APP_RESTAPI,
     token: accessToken,
-    oktaId: uid,
+    email,
     componentName,
     maxCount: 10
   });
@@ -569,10 +569,10 @@ const TopicEntityTable = () => {
   }, [notification.show]);
 
   useEffect(() => {
-    if (accessToken && uid) {
+    if (accessToken && email) {
       load();
     }
-  }, [accessToken, uid, load]);
+  }, [accessToken, email, load]);
 
   useEffect(() => {
     const fetchData = async () => {

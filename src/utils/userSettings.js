@@ -39,23 +39,20 @@ async function authed(baseUrl, token, path, options = {}) {
   }
 }
 
-/**
- * Get person_id from okta_id by calling /person/by/okta/{oktaId}
- */
-async function getPersonIdByOktaId({ baseUrl, token, oktaId }) {
-  console.log(`Getting person_id for okta_id: ${oktaId}`);
+async function getPersonIdByEmail({ baseUrl, token, email }) {
+  console.log(`Getting person_id for cognito_id: ${email}`);
   
   const { status, json } = await authed(
     baseUrl,
     token,
-    `/person/by/okta/${encodeURIComponent(oktaId)}`
+    `/person/by/email/${encodeURIComponent(email)}`
   );
-  
+
   if (status === 204 || !json) {
-    throw new Error(`No person found for okta_id: ${oktaId}`);
+    throw new Error(`No person found for email: ${email}`);
   }
-  
-  console.log(`Found person_id: ${json.person_id} for okta_id: ${oktaId}`);
+
+  console.log(`Found person_id: ${json.person_id} for email: ${email}`);
   return json.person_id;
 }
 
@@ -65,21 +62,21 @@ async function getPersonIdByOktaId({ baseUrl, token, oktaId }) {
 export async function listPersonSettings({
   baseUrl,
   token,
-  oktaId,
+  email,
   componentName,
 }) {
-  if (!oktaId) throw new Error("listPersonSettings: oktaId is required");
-  
-  console.log(`Listing settings for okta_id: ${oktaId}, component: ${componentName}`);
+  if (!email) throw new Error("listPersonSettings: email is required");
+
+  console.log(`Listing settings for email: ${email}, component: ${componentName}`);
   
   const { status, json } = await authed(
     baseUrl,
     token,
-    `/person_setting/by/okta/${encodeURIComponent(oktaId)}`
+    `/person_setting/by/email/${encodeURIComponent(email)}`
   );
-  
+
   if (status === 204 || !Array.isArray(json)) {
-    console.log(`No settings found for okta_id: ${oktaId}`);
+    console.log(`No settings found for email: ${email}`);
     return [];
   }
   
@@ -95,14 +92,14 @@ export async function listPersonSettings({
 export async function createPersonSetting({
   baseUrl,
   token,
-  oktaId,
+  email,
   componentName,
   name,
   isDefault = false,
   payload = {},
 }) {
   console.log(`Creating setting:`, {
-    oktaId,
+    email,
     componentName,
     name,
     isDefault,
@@ -110,8 +107,8 @@ export async function createPersonSetting({
   });
 
   try {
-    // First, get the person_id from the okta_id
-    const person_id = await getPersonIdByOktaId({ baseUrl, token, oktaId });
+    // First, get the person_id from the cognito_id
+    const person_id = await getPersonIdByEmail({ baseUrl, token, email });
     
     const requestBody = {
       person_id: person_id,
@@ -180,7 +177,7 @@ export async function showPersonSetting({ baseUrl, token, person_setting_id }) {
 /**
  * Mark one setting as default.
  */
-export const makeDefaultPersonSetting = async ({ baseUrl, token, oktaId, componentName, person_setting_id }) => {
+export const makeDefaultPersonSetting = async ({ baseUrl, token, email, componentName, person_setting_id }) => {
   try {
     console.log(`Setting ${person_setting_id} as default for component: ${componentName}`);
     
@@ -188,7 +185,7 @@ export const makeDefaultPersonSetting = async ({ baseUrl, token, oktaId, compone
     const { json: allSettings } = await authed(
       baseUrl,
       token,
-      `/person_setting/by/okta/${encodeURIComponent(oktaId)}`
+      `/person_setting/by/email/${encodeURIComponent(email)}`
     );
     
     if (Array.isArray(allSettings)) {

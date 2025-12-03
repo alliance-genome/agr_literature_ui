@@ -3,7 +3,6 @@ import {useSelector} from 'react-redux';
 
 import LoadingOverlay from "../LoadingOverlay";
 import RowDivider from './RowDivider';
-import {AlertAteamApiDown} from "../ATeamAlert";
 import {BiblioCitationDisplay} from './BiblioFileManagement';
 
 import Container from 'react-bootstrap/Container';
@@ -12,7 +11,7 @@ import axios from "axios";
 
 
 const BiblioRawTetData = () => {
-  return (<><AlertAteamApiDown />
+  return (<>
           <Container><BiblioCitationDisplay key="rawtetdataCitationDisplay" /></Container>
           <RowDivider />
           <RawDataEntityTable key="rawDataEntityTable" />
