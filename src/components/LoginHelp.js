@@ -7,13 +7,13 @@ import Col from 'react-bootstrap/Col';
 import React, { useState } from "react";
 
 
-const AuthHelp = () => {
+const LoginHelp = () => {
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   return (
     <>
-      <Button style={{marginInline: '.5rem', alignSelf: 'center'}} variant="light" size="sm" type="button" onClick={handleShow} title="Authentication is handled through AWS Cognito. Please click here for more information about how to get an account.">Auth Help</Button>
+      <Button style={{marginInline: '.5rem', alignSelf: 'center'}} variant="light" size="sm" type="button" onClick={handleShow} title="Authentication is handled through AWS Cognito. Please click here for more information about how to get an account.">Login Help</Button>
       <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title>Account Help</Modal.Title>
@@ -24,12 +24,11 @@ const AuthHelp = () => {
             <Row><Col>Chris Tabone</Col><Col>FB</Col><Col>Specialist</Col></Row>
             <Row><Col>Olin Blodgett</Col><Col>MGI</Col><Col>A-Team</Col></Row>
             <Row><Col>Jeff De Pons</Col><Col>RGD</Col><Col>A-Team</Col></Row>
-            <Row><Col>Stuart Miyasato</Col><Col>SGD</Col><Col></Col></Row>
+            <Row><Col>Shuai Weng</Col><Col>SGD</Col><Col>Blue-Team</Col></Row>
             <Row><Col>Valerio Arnaboldi</Col><Col>WB</Col><Col>Blue-Team</Col></Row>
             <Row><Col>Juancarlos Chan</Col><Col>WB</Col><Col>Blue-Team</Col></Row>
             <Row><Col>Chris Grove</Col><Col>WB</Col><Col>A-Team</Col></Row>
             <Row><Col>Todd Harris</Col><Col>WB</Col><Col></Col></Row>
-            <Row><Col>Adam Wright</Col><Col>WB</Col><Col>Specialist</Col></Row>
             <Row><Col>Ryan Martin</Col><Col>ZFIN</Col><Col></Col></Row>
             <Row><Col>Ryan Taylor</Col><Col>ZFIN</Col><Col></Col></Row>
           </Container>
@@ -39,4 +38,4 @@ const AuthHelp = () => {
   );
 }
 
-export default AuthHelp
+export default LoginHelp
