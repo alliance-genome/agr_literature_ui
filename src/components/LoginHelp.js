@@ -19,7 +19,20 @@ const LoginHelp = () => {
           <Modal.Title>Account Help</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          For help setting up an account please contact the administrator for your MOD or the Team where you are working.<br/><br/>
+          &nbsp;&nbsp;The Sign In button has a place for Email, enter the one you used for okta sign-in.<br/><br/>
+          &nbsp;&nbsp;Some curators already have an AI-curation account, in which case you don't need to create/reset your account, you can use that email and password.<br/><br/>
+          &nbsp;&nbsp;If you haven't signed on there, you'll have to reset your password by clicking on "Forgot your password?" and following the directions.  Then you can sign in by putting in the email and the new cognito password.<br/><br/>
+
+          &nbsp;&nbsp;Password requirements<br/>
+            &bull; Minimum 12 characters<br/>
+            &bull; At least one uppercase letter (A-Z)<br/>
+            &bull; At least one lowercase letter (a-z)<br/>
+            &bull; At least one number (0-9)<br/>
+            &bull; At least one symbol (!@#$%^&*()_-+=)<br/><br/>
+
+          &nbsp;&nbsp;This is not a google sign-in, so you won't be able to sign in by signing on to google with your google password.<br/><br/>
+
+          &nbsp;&nbsp;For help setting up a new account please contact the administrator for your MOD or the Team where you are working.<br/><br/>
           <Container fluid>
             <Row><Col>Chris Tabone</Col><Col>FB</Col><Col>Specialist</Col></Row>
             <Row><Col>Olin Blodgett</Col><Col>MGI</Col><Col>A-Team</Col></Row>
