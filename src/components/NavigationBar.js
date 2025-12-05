@@ -8,7 +8,7 @@ import Nav from 'react-bootstrap/Nav';
 // import NavDropdown from 'react-bootstrap/NavDropdown';
 
 import Login from './Login'
-import LoginHelp from './LoginHelp'
+import SigninHelp from './SigninHelp'
 import TesterDropdown from './TesterDropdown'
 
 
@@ -38,7 +38,7 @@ const NavigationBar = () => {
       <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
     </Nav>
     <Nav>
-      { (cognitoMod === 'No' || cognitoTester === false) ? <LoginHelp /> : <TesterDropdown /> }
+      { (cognitoMod === 'No' || cognitoTester === false) ? <SigninHelp /> : <TesterDropdown /> }
       <Login />
     </Nav>
   </Navbar>
