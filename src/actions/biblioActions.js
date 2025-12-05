@@ -450,7 +450,7 @@ export const abc_entity_validation = (dispatch, entityType, entityInputList, tax
 
   const entityListStr = entityInputList.join('|');
   const encodedEntityList = encodeURIComponent(entityListStr);
-  const url = `${restUrl}/topic_entity_tag/entity_validation/${taxon}/${entityType}/${encodedEntityList}`;
+  const url = `${restUrl}/ontology/entity_validation/${taxon}/${entityType}/${encodedEntityList}`;
   fetchJsonData(url).then(data => {
     const searchMap = {};
     const obsoleteMap = {};
@@ -693,7 +693,7 @@ export const fetchModReferenceTypes = async (mods) => {
 
 export const getDescendantATPIds = async (atpID) => {
 
-  const url = `${restUrl}/topic_entity_tag/search_descendants/${encodeURIComponent(atpID)}`;
+  const url = `${restUrl}/ontology/search_descendants/${encodeURIComponent(atpID)}`;
 
   try {
     const response = await axios.get(url, {
@@ -717,7 +717,7 @@ export const fetchDisplayTagData = async () => {
     { curie: "ATP:0000130", name: "review display" },
   ];
 
-  const url = `${restUrl}/topic_entity_tag/search_descendants/ATP:0000136`;
+  const url = `${restUrl}/ontology/search_descendants/ATP:0000136`;
 
   try {
     const response = await axios.get(url, {

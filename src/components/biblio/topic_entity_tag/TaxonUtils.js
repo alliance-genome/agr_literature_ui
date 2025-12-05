@@ -57,7 +57,7 @@ export const getCurieToNameTaxon = async () => {
   try {
     const restUrl = process.env.REACT_APP_RESTAPI;
     const requests = uniqueTaxonIDs.map(async (taxonID) => {
-      const url = `${restUrl}/topic_entity_tag/search_species/${encodeURIComponent(taxonID)}`;
+      const url = `${restUrl}/ontology/search_species/${encodeURIComponent(taxonID)}`;
       const response = await axios.get(url, {
         headers: {
           "Content-Type": "application/json",

@@ -976,7 +976,7 @@ const TopicEntityCreate = () => {
                   onSearch={async (query) => {
                     setTopicSelectLoading(true);
                     try {
-                      let url =`${REST}/topic_entity_tag/search_topic/${encodeURIComponent(query)}`;
+                      let url =`${REST}/ontology/search_topic/${encodeURIComponent(query)}`;
                       if (accessLevel) {
                         url += "?mod_abbr=" + accessLevel
                       }
@@ -1131,7 +1131,7 @@ const TopicEntityCreate = () => {
                     onSearch={async (query) => {
                       setSpeciesSelectLoading(true);
                       try {
-                        const url = `${REST}/topic_entity_tag/search_species/${encodeURIComponent(query)}`;
+                        const url = `${REST}/ontology/search_species/${encodeURIComponent(query)}`;
                         const results = await FetchTypeaheadOptions(url);
 
                         setSpeciesSelectLoading(false);

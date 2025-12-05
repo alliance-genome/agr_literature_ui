@@ -58,8 +58,8 @@ export const mergeQueryAtp = (accessToken, atpParents) => dispatch => {
   console.log("action mergeAteamQueryAtp " + atpParents);
 
   const queryAteamAtpChildren = async (atp) => {
-    // REST /topic_entity_tag/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
-    const urlApi = restUrl + '/topic_entity_tag/search_descendants/' + atp + '/true/false/true';
+    // REST /ontology/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
+    const urlApi = restUrl + '/ontology/search_descendants/' + atp + '/true/false/true';
     const response = await axios.get(urlApi, {
       headers: {
         'Authorization': 'Bearer ' + accessToken,
