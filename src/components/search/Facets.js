@@ -280,9 +280,9 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
                 // --- Use AGR REST API (no token needed) ---
                 if (upperKey.startsWith('ATP')) {
-                    url = `${restApiBase}/topic_entity_tag/map_curie_to_name/atpterm/${upperKey}`;
+                    url = `${restApiBase}/ontology/map_curie_to_name/atpterm/${upperKey}`;
                 } else if (upperKey.startsWith('ECO')) {
-                    url = `${restApiBase}/topic_entity_tag/map_curie_to_name/ecoterm/${upperKey}`;
+                    url = `${restApiBase}/ontology/map_curie_to_name/ecoterm/${upperKey}`;
                 } else {
                     console.warn(`Unknown prefix in bucket.key: ${bucket.key}`);
                     continue;

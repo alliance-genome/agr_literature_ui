@@ -328,7 +328,7 @@ const ReferencesToSort = ({
                     const baseUrl = process.env.REACT_APP_RESTAPI;
 
                     axios
-                      .get(`${baseUrl}/topic_entity_tag/search_species/${encodeURIComponent(query)}`)
+                      .get(`${baseUrl}/ontology/search_species/${encodeURIComponent(query)}`)
                       .then(res => {
                         const updatedLoading = new Array(speciesSelectLoading.length).fill(false);
                         setSpeciesSelectLoading(updatedLoading);

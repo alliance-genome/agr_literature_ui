@@ -230,11 +230,11 @@ const BiblioWorkflow = () => {
 
   useEffect(() => {
     const fetchCurationStatuses = async () => {
-      // REST /topic_entity_tag/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
+      // REST /ontology/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
       const urls = {
-        curationStatus: `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_descendants/ATP:0000230/true/false/true`,
-        curationTag1: `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_descendants/ATP:0000208/false/true/true`,
-        curationTag2: `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/search_descendants/ATP:0000227/false/true/true`,
+        curationStatus: `${process.env.REACT_APP_RESTAPI}/ontology/search_descendants/ATP:0000230/true/false/true`,
+        curationTag1: `${process.env.REACT_APP_RESTAPI}/ontology/search_descendants/ATP:0000208/false/true/true`,
+        curationTag2: `${process.env.REACT_APP_RESTAPI}/ontology/search_descendants/ATP:0000227/false/true/true`,
       };
       try {
         const headers = {
