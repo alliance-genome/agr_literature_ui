@@ -40,10 +40,8 @@ const LoginHelp = () => {
             <Row><Col>Shuai Weng</Col><Col>SGD</Col><Col>Blue-Team</Col></Row>
             <Row><Col>Valerio Arnaboldi</Col><Col>WB</Col><Col>Blue-Team</Col></Row>
             <Row><Col>Juancarlos Chan</Col><Col>WB</Col><Col>Blue-Team</Col></Row>
-            <Row><Col>Chris Grove</Col><Col>WB</Col><Col>A-Team</Col></Row>
             <Row><Col>Todd Harris</Col><Col>WB</Col><Col></Col></Row>
             <Row><Col>Ryan Martin</Col><Col>ZFIN</Col><Col></Col></Row>
-            <Row><Col>Ryan Taylor</Col><Col>ZFIN</Col><Col></Col></Row>
           </Container>
         </Modal.Body>
       </Modal>
