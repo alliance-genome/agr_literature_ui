@@ -7,19 +7,19 @@ import Col from 'react-bootstrap/Col';
 import React, { useState } from "react";
 
 
-const LoginHelp = () => {
+const SigninHelp = () => {
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   return (
     <>
-      <Button style={{marginInline: '.5rem', alignSelf: 'center'}} variant="light" size="sm" type="button" onClick={handleShow} title="Authentication is handled through AWS Cognito. Please click here for more information about how to get an account.">Login Help</Button>
+      <Button style={{marginInline: '.5rem', alignSelf: 'center'}} variant="light" size="sm" type="button" onClick={handleShow} title="Authentication is handled through AWS Cognito. Please click here for more information about how to get an account.">Sign In Help</Button>
       <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title>Account Help</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          &nbsp;&nbsp;The Sign In button has a place for Email, enter the one you used for okta sign-in.<br/><br/>
+          &nbsp;&nbsp;The Sign In button has a place for Email, enter the one you used for okta Sign In.<br/><br/>
           &nbsp;&nbsp;Some curators already have an AI-curation account, in which case you don't need to create/reset your account, you can use that email and password.<br/><br/>
           &nbsp;&nbsp;If you haven't signed on there, you'll have to reset your password by clicking on "Forgot your password?" and following the directions.  Then you can sign in by putting in the email and the new cognito password.<br/><br/>
 
@@ -30,7 +30,7 @@ const LoginHelp = () => {
             &bull; At least one number (0-9)<br/>
             &bull; At least one symbol (!@#$%^&*()_-+=)<br/><br/>
 
-          &nbsp;&nbsp;This is not a google sign-in, so you won't be able to sign in by signing on to google with your google password.<br/><br/>
+          &nbsp;&nbsp;This is not a google Sign In, so you won't be able to sign in by signing on to google with your google password.<br/><br/>
 
           &nbsp;&nbsp;For help setting up a new account please contact the administrator for your MOD or the Team where you are working.<br/><br/>
           <Container fluid>
@@ -49,4 +49,4 @@ const LoginHelp = () => {
   );
 }
 
-export default LoginHelp
+export default SigninHelp
