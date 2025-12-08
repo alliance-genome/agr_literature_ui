@@ -15,7 +15,8 @@ import {
   SEARCH_SET_READY_TO_FACET_SEARCH, SEARCH_REMOVE_DATE_PUBMED_ADDED,
   SEARCH_REMOVE_DATE_PUBMED_MODIFIED, SEARCH_REMOVE_DATE_PUBLISHED,
   SEARCH_REMOVE_DATE_CREATED, SEARCH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS,
-  SEARCH_SET_CURRENT_ABORT_CONTROLLER
+  SEARCH_SET_CURRENT_ABORT_CONTROLLER,
+  SEARCH_LOAD_SAVED_SEARCH_STATE
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -57,6 +58,7 @@ const initialState = {
   datePublished: "",
   dateCreated: "",
   query_fields:"All",
+  sortByPublishedDate: "relevance",  
   sort_by_published_date_order:"relevance",
   partialMatch:"true",
   modPreferencesLoaded:"false",
@@ -331,35 +333,42 @@ export default function(state = initialState, action) {
                 ...state,
                 currentAbortController: null,
             };
-//     case 'FETCH_POSTS':
-//       console.log('in postReducer case FETCH_POSTS');
-//       return {
-//         ...state,
-//         items: action.payload   // from postActions.js
-//       }
-//     case 'NEW_POSTS':
-//       console.log('in postReducer case NEW_POSTS');
-//       return {
-//         ...state,
-//         items: [action.payload, ...state.items],        // from postActions.js
-//         item: action.payload    // from postActions.js
-//       }
+        // Load a saved search setting from the database into Redux state
+        case SEARCH_LOAD_SAVED_SEARCH_STATE:
+          // action.payload = the json_settings we saved earlier
+          const p = action.payload || {};
+
+          // The reducer merges that saved state into the current search state
+          // Anything not present in the saved setting is left unchanged (eg pagination etc)
+          return {
+	    // preserve the rest of Redux state
+            ...state,
+
+	    // If the saved search has a value -> use it
+	    // If it does not -> keep the current value
+
+	    // basic query + field
+            searchQuery: p.searchQuery ?? state.searchQuery,
+            query_fields: p.query_fields ?? state.query_fields,
+
+            // facets (positive & excluded)
+            searchFacetsValues:
+              p.searchFacetsValues ?? state.searchFacetsValues,
+            searchExcludedFacetsValues:
+              p.searchExcludedFacetsValues ?? state.searchExcludedFacetsValues,
+
+            // date filters
+            datePubmedAdded: p.datePubmedAdded ?? state.datePubmedAdded,
+            datePubmedModified: p.datePubmedModified ?? state.datePubmedModified,
+            datePublished: p.datePublished ?? state.datePublished,
+            dateCreated: p.dateCreated ?? state.dateCreated,
+
+            // options
+            sortByPublishedDate: p.sortByPublishedDate ?? state.sortByPublishedDate,
+            partialMatch: (typeof p.partialMatch !== 'undefined') ? p.partialMatch : state.partialMatch,
+	    applyToSingleTag: (typeof p.applyToSingleTag !== 'undefined') ? p.applyToSingleTag : state.applyToSingleTag,
+          };
     default:
       return state;
   }
 }
-
-
-// const crossRefCurieQueryFieldReducer = (state = 'ab', action) => {
-//   switch (action.type) {
-//     case 'CHANGE_FIELD':
-//       // console.log(action.payload);
-//       return action.payload;
-//     case 'SEARCH_BUTTON':
-//       console.log("query button reducer set " + action.payload);
-//       return action.payload;
-//     default:
-//       return state;
-//   }
-// }
-// export default crossRefCurieQueryFieldReducer;
