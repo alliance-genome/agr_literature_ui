@@ -51,15 +51,14 @@ const SearchPreferencesControls = () => {
     token: accessToken,
     email,
     componentName,
-    maxCount: 20,
+    maxCount: 20,        // allow up to 20 saved search presets
   });
-
-  // const canCreateMore = settings.length < maxCount;
 
   const defaultSettingName = accessLevel
     ? `${accessLevel} Default Search`
     : 'Default Search';
 
+  /** Build payload from current Redux search + login info */
   const buildCurrentStatePayload = useCallback(() => {
     return buildSearchSettingsState({
       search: searchState,
@@ -67,7 +66,7 @@ const SearchPreferencesControls = () => {
     });
   }, [searchState, isLogged]);
 
-  // Pick from dropdown → apply to Redux + run search (inside utils)
+  /** When user picks a setting from the dropdown, apply to Redux + run search */
   const handlePickSetting = useCallback(
     async (person_setting_id) => {
       if (!person_setting_id) return;
@@ -82,7 +81,7 @@ const SearchPreferencesControls = () => {
     [settings, dispatch, setSelectedSettingId]
   );
 
-  // Create new saved search from current Redux state
+  /** Create a new saved search from *current* Redux state */
   const handleCreateSetting = useCallback(
     async (name) => {
       const clean = (name || '').trim();
@@ -95,7 +94,7 @@ const SearchPreferencesControls = () => {
           clean.toLowerCase()
       );
       if (dup) {
-        // Let the modal display a generic message if needed
+        // Let the modal show a generic message if needed
         return null;
       }
 
@@ -126,10 +125,11 @@ const SearchPreferencesControls = () => {
     ]
   );
 
-  // Save CURRENT search state into an existing setting (by ID)
+  /** Save CURRENT search state into an existing setting (by ID) */
   const handleSaveToSetting = useCallback(
     async (person_setting_id) => {
       if (!person_setting_id) return;
+
       const statePayload = buildCurrentStatePayload();
       const payload = {
         meta: {
@@ -145,7 +145,14 @@ const SearchPreferencesControls = () => {
     [buildCurrentStatePayload, accessLevel, savePayloadTo, load]
   );
 
-  // Initial load: seed default if none, then apply default into Redux
+  /**
+   * Initial load:
+   *  - If no settings exist => seed a default one AND
+   *    force default facets:
+   *      - mods_in_corpus_or_needs_review.keyword = [accessLevel]
+   *      - language.keyword = ['English']
+   *  - Otherwise => apply the default (or last-picked) setting.
+   */
   useEffect(() => {
     if (!accessToken || !email) return;
 
@@ -154,8 +161,47 @@ const SearchPreferencesControls = () => {
         const { existing, picked } = await load();
         const all = existing || [];
 
+        // --- NO SETTINGS YET: create a MOD+English default and apply it ---
         if (all.length === 0) {
-          const statePayload = buildCurrentStatePayload();
+          // Base on current Redux search state:
+          const baseState = buildCurrentStatePayload();
+
+          // Clone existing facet selections (if any)
+          const facetsValues = {
+            ...(baseState.facetsValues || {}),
+          };
+
+          // 1) Default MOD facet: "in corpus OR needs review" for the logged-in MOD
+          if (
+            accessLevel &&
+            accessLevel !== 'No' &&
+            (
+              !facetsValues['mods_in_corpus_or_needs_review.keyword'] ||
+              !Array.isArray(
+                facetsValues['mods_in_corpus_or_needs_review.keyword']
+              ) ||
+              facetsValues['mods_in_corpus_or_needs_review.keyword'].length === 0
+            )
+          ) {
+            facetsValues['mods_in_corpus_or_needs_review.keyword'] = [
+              accessLevel,
+            ];
+          }
+
+          // 2) Default language facet: English
+          if (
+            !facetsValues['language.keyword'] ||
+            !Array.isArray(facetsValues['language.keyword']) ||
+            facetsValues['language.keyword'].length === 0
+          ) {
+            facetsValues['language.keyword'] = ['English'];
+          }
+
+          const statePayload = {
+            ...baseState,
+            facetsValues,
+          };
+
           const payload = {
             meta: {
               savedAt: new Date().toISOString(),
@@ -177,10 +223,12 @@ const SearchPreferencesControls = () => {
             setSelectedSettingId(created.person_setting_id);
           }
 
+          // Apply this default (MOD+English) to Redux and run search
           applySearchSettingsFromJson({ state: statePayload }, dispatch);
           return;
         }
 
+        // --- SETTINGS EXIST: use picked, or default, or the first one ---
         const settingToUse =
           picked || all.find((s) => s.default_setting) || all[0];
 
@@ -191,6 +239,7 @@ const SearchPreferencesControls = () => {
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error('Failed to load search settings:', err);
+        // On failure, we just keep whatever is already in Redux.
       }
     };
 
@@ -226,7 +275,7 @@ const SearchPreferencesControls = () => {
       <SettingsGearModal
         show={showModal}
         onHide={() => setShowModal(false)}
-	title="Manage Saved Searches"
+        title="Manage Saved Searches"
         createLabel="Create New Saved Search"
         createPlaceholder="Enter setting name"
         createButtonText="Create"
@@ -239,7 +288,7 @@ const SearchPreferencesControls = () => {
         onMakeDefault={makeDefault}
         canCreateMore={(settings || []).length < maxCount}
         busy={busy}
-	renderRowActions={(setting, { rowBusy }) => (
+        renderRowActions={(setting, { rowBusy }) => (
           <Button
             size="sm"
             variant="outline-success"
