@@ -8,7 +8,7 @@ import { Modal, Button, Form, Spinner, Alert } from "react-bootstrap";
  * Shared behaviors:
  *   - Create new setting
  *   - Mark default setting
- *   - Inline rename (✓ / ✕)
+ *   - Inline rename
  *   - Delete
  *
  * Customizable via props:
