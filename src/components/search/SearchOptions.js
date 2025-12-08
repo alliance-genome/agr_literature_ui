@@ -1,33 +1,44 @@
+// src/components/search/SearchOptions.js
 import React from 'react';
 import Form from 'react-bootstrap/Form';
-import {searchReferences, setSearchSizeResultsCount, setSearchResultsPage, setSortByPublishedDate} from '../../actions/searchActions';
-import {useDispatch, useSelector} from 'react-redux';
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import SearchPagination from "./SearchPagination";
+import { useDispatch, useSelector } from 'react-redux';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+
+import {
+  searchReferences,
+  setSearchSizeResultsCount,
+  setSearchResultsPage,
+  setSortByPublishedDate,
+} from '../../actions/searchActions';
+
+import SearchPagination from './SearchPagination';
 import SearchPreferencesControls from './settings/SearchPreferencesControls';
 
 const SearchOptions = () => {
-  const searchResultsCount = useSelector(state => state.search.searchResultsCount);
+  const searchResultsCount = useSelector(
+    (state) => state.search.searchResultsCount
+  );
   const dispatch = useDispatch();
 
   return (
     <Container fluid>
-      <Row className="align-items-center">
+      <Row className="align-items-center flex-wrap">
         {/* Results count */}
-        <Col sm={2}>
+        <Col xs="auto">
           <div className="div-grey-border">
             {searchResultsCount > 0
               ? `${searchResultsCount.toLocaleString()} results`
-              : null
-	    }
+              : null}
           </div>
         </Col>
+
         {/* Results per page */}
-        <Col sm={2}>
+        <Col xs="auto">
           <Form.Control
             as="select"
+            size="sm"
             defaultValue="50"
             onChange={(e) => {
               dispatch(setSearchSizeResultsCount(e.target.value));
@@ -41,10 +52,12 @@ const SearchOptions = () => {
             <option value="100">Results per page 100</option>
           </Form.Control>
         </Col>
+
         {/* Sort */}
-        <Col sm={2}>
+        <Col xs="auto">
           <Form.Control
             as="select"
+            size="sm"
             defaultValue="relevance"
             onChange={(e) => {
               dispatch(setSortByPublishedDate(e.target.value));
@@ -56,13 +69,19 @@ const SearchOptions = () => {
             <option value="asc">Oldest first</option>
           </Form.Control>
         </Col>
-        {/* Preferences + Load setting */}
-        <Col sm={2}>
-          <SearchPreferencesControls />
-        </Col>
-	{/* Pagination */}
-        <Col sm={4}>
-          <SearchPagination />
+
+        {/* Right side: Preferences + Load setting + Pagination */}
+        <Col xs="auto" className="ms-auto">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+	    {/* Preferences + Load setting */}
+            <div style={{ marginTop: '8px' }}>
+              <SearchPreferencesControls />
+            </div>
+            {/* Pagination */}
+            <div style={{ marginTop: '16px' }}>
+	      <SearchPagination />
+	    </div>
+          </div>
         </Col>
       </Row>
     </Container>
