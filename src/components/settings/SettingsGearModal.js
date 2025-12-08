@@ -1,182 +1,345 @@
+// src/components/settings/SettingsGearModal.js
 import React from "react";
 import { Modal, Button, Form, Spinner, Alert } from "react-bootstrap";
 
+/**
+ * Generic "Manage XXX Preferences" modal.
+ *
+ * Shared behaviors:
+ *   - Create new setting
+ *   - Mark default setting
+ *   - Inline rename (✓ / ✕)
+ *   - Delete
+ *
+ * Customizable via props:
+ *   - title                      (modal title)
+ *   - createLabel                (section label)
+ *   - createPlaceholder          (input placeholder)
+ *   - createButtonText           (button text for create)
+ *   - renderRowActions(setting, helpers)
+ *       -> extra buttons per row (e.g. "Save Layout", "Save Current Search")
+ */
 export default function SettingsGearModal({
-  show, onHide,
-  settings, nameEdits, setNameEdits,
-  onCreate, onRename, onDelete, onMakeDefault,
-  canCreateMore, busy,
-  title = "Table column preferences"
+  show,
+  onHide,
+
+  settings = [],
+  nameEdits,
+  setNameEdits,
+
+  onCreate,
+  onRename,
+  onDelete,
+  onMakeDefault,
+
+  canCreateMore = true,
+  busy = false,
+
+  title = "Manage Preferences",
+  createLabel = "Create New Setting",
+  createPlaceholder = "Enter setting name",
+  createButtonText = "Create",
+
+  // Optional extra row actions, e.g. "Save Layout" or "Save Current Search"
+  // renderRowActions(setting, { rowBusy, isDefault })
+  renderRowActions,
 }) {
   const [newName, setNewName] = React.useState("");
-  const [createError, setCreateError] = React.useState("");
-  const [createSuccess, setCreateSuccess] = React.useState("");
+  const [rowBusyId, setRowBusyId] = React.useState(null);
+  const [errorMsg, setErrorMsg] = React.useState("");
 
-  React.useEffect(() => { 
+  // Reset local state when modal closes
+  React.useEffect(() => {
     if (!show) {
       setNewName("");
-      setCreateError("");
-      setCreateSuccess("");
+      setRowBusyId(null);
+      setErrorMsg("");
+      setNameEdits({});
     }
-  }, [show]);
+  }, [show, setNameEdits]);
+
+  /* ---------- Create ---------- */
 
   const handleCreate = async () => {
-    if (!newName.trim()) return;
-    
-    setCreateError("");
-    setCreateSuccess("");
-    
+    const clean = (newName || "").trim();
+    if (!clean) return;
+    if (!onCreate) return;
+
+    setErrorMsg("");
     try {
-      const result = await onCreate(newName.trim());
-      if (result) {
-        setCreateSuccess(`Setting "${newName.trim()}" created successfully!`);
+      const created = await onCreate(clean);
+      if (created) {
         setNewName("");
-        // Auto-close after success, or let user see the success message
-        setTimeout(() => {
-          setCreateSuccess("");
-        }, 2000);
-      } else {
-        setCreateError("Failed to create setting. Please try again.");
       }
-    } catch (error) {
-      setCreateError(`Error creating setting: ${error.message}`);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || String(err);
+      setErrorMsg(`Failed to create setting: ${msg}`);
     }
   };
 
-  const handleRename = async (person_setting_id, newName) => {
-    if (!newName.trim()) {
-      setCreateError("Setting name cannot be empty");
+  const handleCreateKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCreate();
+    }
+  };
+
+  /* ---------- Rename ---------- */
+
+  const startRename = (setting) => {
+    setNameEdits((prev) => ({
+      ...prev,
+      [setting.person_setting_id]: setting.setting_name || setting.name || "",
+    }));
+  };
+
+  const cancelRename = (id) => {
+    setNameEdits((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+  };
+
+  const saveRename = async (setting) => {
+    if (!onRename) return;
+
+    const id = setting.person_setting_id;
+    const newVal = (nameEdits[id] || "").trim();
+    if (!newVal) {
+      setErrorMsg("Setting name cannot be empty.");
       return;
     }
-    
+    if (newVal === (setting.setting_name || setting.name || "")) {
+      cancelRename(id);
+      return;
+    }
+
+    setRowBusyId(id);
+    setErrorMsg("");
     try {
-      await onRename(person_setting_id, newName.trim());
-      // Clear any name edit for this ID after successful rename
-      setNameEdits(prev => {
-        const updated = { ...prev };
-        delete updated[person_setting_id];
-        return updated;
-      });
-    } catch (error) {
-      setCreateError(`Error renaming setting: ${error.message}`);
+      await onRename(id, newVal);
+      cancelRename(id);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || String(err);
+      setErrorMsg(`Failed to rename setting: ${msg}`);
+    } finally {
+      setRowBusyId(null);
     }
   };
 
-  const handleDelete = async (person_setting_id) => {
-    if (window.confirm("Are you sure you want to delete this setting?")) {
-      try {
-        await onDelete(person_setting_id);
-      } catch (error) {
-        setCreateError(`Error deleting setting: ${error.message}`);
-      }
+  const handleRenameKeyDown = (e, setting) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveRename(setting);
+    } else if (e.key === "Escape") {
+      cancelRename(setting.person_setting_id);
     }
   };
 
-  const handleMakeDefault = async (person_setting_id) => {
+  /* ---------- Delete ---------- */
+
+  const handleDelete = async (id) => {
+    if (!onDelete) return;
+    setErrorMsg("");
+    setRowBusyId(id);
     try {
-      await onMakeDefault(person_setting_id);
-    } catch (error) {
-      setCreateError(`Error setting default: ${error.message}`);
+      await onDelete(id);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || String(err);
+      setErrorMsg(`Failed to delete setting: ${msg}`);
+    } finally {
+      setRowBusyId(null);
     }
   };
+
+  /* ---------- Default ---------- */
+
+  const handleMakeDefaultClick = async (setting) => {
+    if (!onMakeDefault) return;
+    setErrorMsg("");
+    setRowBusyId(setting.person_setting_id);
+    try {
+      await onMakeDefault(setting.person_setting_id);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || String(err);
+      setErrorMsg(`Failed to set default: ${msg}`);
+    } finally {
+      setRowBusyId(null);
+    }
+  };
+
+  const hasSettings = (settings || []).length > 0;
+
+  /* ---------- Render ---------- */
 
   return (
     <Modal show={show} onHide={onHide} centered size="lg">
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
+
       <Modal.Body>
-        {/* Success/Error Messages */}
-        {createSuccess && (
-          <Alert variant="success" className="py-2">
-            {createSuccess}
-          </Alert>
-        )}
-        {createError && (
+        {errorMsg && (
           <Alert variant="danger" className="py-2">
-            {createError}
+            {errorMsg}
           </Alert>
         )}
 
-        {/* Create New Setting */}
-        <div className="d-flex gap-2 mb-3">
-          <Form.Control
-            placeholder="Name this setting…"
-            value={newName}
-            onChange={(e) => {
-              setNewName(e.target.value);
-              setCreateError("");
-            }}
-            disabled={busy}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && newName.trim() && !busy) {
-                handleCreate();
-              }
-            }}
-          />
-          <Button
-            variant="primary"
-            disabled={!newName.trim() || !canCreateMore || busy}
-            onClick={handleCreate}
-          >
-            {busy ? <Spinner animation="border" size="sm" /> : "Save"}
-          </Button>
-        </div>
-
-        {/* Existing Settings */}
-        {settings.length === 0 ? (
-          <div className="text-muted text-center py-3">
-            No saved settings yet. Create one above.
-          </div>
-        ) : (
-          settings.map((s) => (
-            <div key={s.person_setting_id} className="d-flex align-items-center gap-2 mb-2">
-              <Form.Check
-                type="radio"
-                name="default-setting"
-                checked={!!s.default_setting}
-                onChange={() => handleMakeDefault(s.person_setting_id)}
-                disabled={busy}
-                title="Make this my default"
-              />
+        {/* Create new setting */}
+        <div className="mb-4">
+          <Form.Group>
+            <Form.Label>{createLabel}</Form.Label>
+            <div className="d-flex gap-2">
               <Form.Control
-                value={nameEdits[s.person_setting_id] ?? s.setting_name}
-                onChange={(e) => setNameEdits({ ...nameEdits, [s.person_setting_id]: e.target.value })}
-                disabled={busy}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleRename(s.person_setting_id, nameEdits[s.person_setting_id] ?? s.setting_name);
-                  }
-                }}
+                type="text"
+                placeholder={createPlaceholder}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={handleCreateKeyDown}
+                disabled={busy || !canCreateMore}
               />
               <Button
-                size="sm" 
-                variant="outline-success" 
-                disabled={busy || !nameEdits[s.person_setting_id] || nameEdits[s.person_setting_id] === s.setting_name}
-                onClick={() => handleRename(s.person_setting_id, nameEdits[s.person_setting_id] ?? s.setting_name)}
-                title="Save name"
+                variant="primary"
+                disabled={
+                  busy || !canCreateMore || !(newName || "").trim()
+                }
+                onClick={handleCreate}
               >
-                {busy ? <Spinner animation="border" size="sm" /> : "Save"}
-              </Button>
-              <Button
-                size="sm" 
-                variant="outline-danger" 
-                disabled={busy || settings.length <= 1} // Don't allow deleting the last setting
-                onClick={() => handleDelete(s.person_setting_id)}
-                title={settings.length <= 1 ? "Cannot delete the last setting" : "Delete setting"}
-              >
-                Delete
+                {busy ? <Spinner animation="border" size="sm" /> : createButtonText}
               </Button>
             </div>
-          ))
-        )}
+            {!canCreateMore && (
+              <Form.Text className="text-warning">
+                Maximum number of settings reached. Delete one to create another.
+              </Form.Text>
+            )}
+          </Form.Group>
+        </div>
 
-        {!canCreateMore && (
-          <div className="text-muted mt-2">
-            <small>You've reached the maximum of 10 stored preferences.</small>
-          </div>
-        )}
+        {/* Existing settings */}
+        <div>
+          <h6>Existing Settings</h6>
+          {!hasSettings ? (
+            <p className="text-muted mb-0">
+              No settings saved yet. Use &quot;{createLabel}&quot; above
+              to create one.
+            </p>
+          ) : (
+            <div className="list-group">
+              {settings.map((setting) => {
+                const id = setting.person_setting_id;
+                const isDefault = !!setting.default_setting;
+                const isEditing = Object.prototype.hasOwnProperty.call(
+                  nameEdits,
+                  id
+                );
+                const rowBusy = rowBusyId === id || busy;
+
+                return (
+                  <div
+                    key={id}
+                    className="list-group-item d-flex justify-content-between align-items-center"
+                  >
+                    {/* Name + star + inline rename */}
+                    <div className="d-flex align-items-center flex-grow-1 me-3">
+                      <span
+                        className="me-2"
+                        title={isDefault ? "Default setting" : ""}
+                      >
+                        {isDefault ? "★" : ""}
+                      </span>
+
+                      {isEditing ? (
+                        <div className="d-flex flex-grow-1 align-items-center">
+                          <Form.Control
+                            type="text"
+                            size="sm"
+                            value={nameEdits[id] || ""}
+                            onChange={(e) =>
+                              setNameEdits((prev) => ({
+                                ...prev,
+                                [id]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => handleRenameKeyDown(e, setting)}
+                            disabled={rowBusy}
+                            className="me-2"
+                            autoFocus
+                          />
+                          <Button
+                            variant="success"
+                            size="sm"
+                            className="me-1"
+                            disabled={rowBusy}
+                            onClick={() => saveRename(setting)}
+                          >
+                            ✓
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={rowBusy}
+                            onClick={() => cancelRename(id)}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="flex-grow-1">
+                          {setting.setting_name || setting.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Right side buttons */}
+                    <div className="d-flex flex-wrap gap-2">
+                      {/* Extra custom actions (e.g. Save Layout / Save Current Search) */}
+                      {renderRowActions &&
+                        renderRowActions(setting, { rowBusy, isDefault })}
+
+                      {/* Set Default (non-default only) */}
+                      {!isDefault && (
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          disabled={rowBusy}
+                          onClick={() => handleMakeDefaultClick(setting)}
+                        >
+                          Set Default
+                        </Button>
+                      )}
+
+                      {/* Rename (only when not already editing) */}
+                      {!isEditing && (
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          disabled={rowBusy}
+                          onClick={() => startRename(setting)}
+                        >
+                          Rename
+                        </Button>
+                      )}
+
+                      {/* Delete */}
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        disabled={rowBusy}
+                        onClick={() => handleDelete(id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </Modal.Body>
+
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide} disabled={busy}>
           Close
