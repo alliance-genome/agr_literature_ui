@@ -213,12 +213,21 @@ const CheckDropdownItem = React.forwardRef(
 );
 
 const GenericTetTableModal = ({ title, body, show, onHide }) => {
+  const renderBody = () => {
+    if (typeof body !== "string") return body;
+    return body.split("\n").map((line, i) => (
+      <React.Fragment key={i}>
+        {line}
+        {i < body.split("\n").length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
   return (
     <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
-      <Modal.Body>{body}</Modal.Body>
+      <Modal.Body>{renderBody()}</Modal.Body>
     </Modal>
   );
 };
@@ -856,38 +865,38 @@ const TopicEntityTable = () => {
   };
 
   let cols = [
-    { field: "Actions", lockPosition: 'left', sortable: false, cellRenderer: TopicEntityTagActions },
+    { field: "Actions", lockPosition: 'left', sortable: false, filter: false, cellRenderer: TopicEntityTagActions },
     { headerName: "Topic", field: "topic_name", comparator: caseInsensitiveComparator, filter: TopicFilter, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.topic); } },
     { headerName: "Entity Type", field: "entity_type_name", comparator: caseInsensitiveComparator, filter: EntityTypeFilter, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.entity_type); } },
     { headerName: "Species", field: "species_name", comparator: caseInsensitiveComparator, filter: SpeciesFilter, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.species); } },
     { headerName: "Entity", field: "entity_name", comparator: caseInsensitiveComparator, filter: EntityFilter, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.entity); } },
-    { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator },
-    { headerName: "No Data", field: "negated", cellDataType: "text", valueGetter: (p) => p.data.negated === true ? 'no data' : '' },
-    { headerName: "Data Novelty", field: "data_novelty", valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty },
-    { headerName: "Confidence Score", field: "confidence_score" },
-    { headerName: "Confidence Level", field: "confidence_level" },
-    { headerName: "Created By", field: "created_by" },
-    { headerName: "Note", field: "note", comparator: caseInsensitiveComparator, onCellClicked: (p) => { handleNoteClick(p.value); } },
-    { headerName: "Entity ID Validation", field: "entity_id_validation" },
-    { headerName: "Date Created", field: "date_created", valueFormatter: timestampToDateFormatter },
-    { headerName: "Updated By", field: "updated_by" },
-    { headerName: "Date Updated", field: "date_updated", valueFormatter: timestampToDateFormatter },
-    { headerName: "Author Response", field: "validation_by_author" },
-    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", cellRenderer: ValidationByCurator },
-    { headerName: "Display Tag", field: "display_tag_name", comparator: caseInsensitiveComparator },
-    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation" },
-    { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider" },
-    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", comparator: caseInsensitiveComparator, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.topic_entity_tag_source.source_evidence_assertion); } },
-    { headerName: "Source Method", field: "topic_entity_tag_source.source_method" },
-    { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type" },
-    { headerName: "Source Description", field: "topic_entity_tag_source.description", onCellClicked: (p) => { handleSourceDescClick(p.value); } },
-    { headerName: "Source Created By", field: "topic_entity_tag_source.created_by" },
-    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated", valueFormatter: timestampToDateFormatter },
-    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", valueFormatter: timestampToDateFormatter },
-    { headerName: "Model ID", field: "ml_model_id" },
-    { headerName: "Model Version", field: "ml_model_version" },
-    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id" },
-    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id" }
+    { headerName: "Entity Published As", field: "entity_published_as", comparator: caseInsensitiveComparator, filter: true },
+    { headerName: "No Data", field: "negated", filter: true, cellDataType: "text", valueGetter: (p) => p.data.negated === true ? 'no data' : '' },
+    { headerName: "Data Novelty", field: "data_novelty", filter: true, valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty },
+    { headerName: "Confidence Score", field: "confidence_score", filter: true },
+    { headerName: "Confidence Level", field: "confidence_level", filter: true },
+    { headerName: "Created By", field: "created_by", filter: true },
+    { headerName: "Note", field: "note", filter: true, comparator: caseInsensitiveComparator, onCellClicked: (p) => { handleNoteClick(p.value); } },
+    { headerName: "Entity ID Validation", field: "entity_id_validation", filter: true },
+    { headerName: "Date Created", field: "date_created", filter: true, valueFormatter: timestampToDateFormatter },
+    { headerName: "Updated By", field: "updated_by", filter: true },
+    { headerName: "Date Updated", field: "date_updated", filter: true, valueFormatter: timestampToDateFormatter },
+    { headerName: "Author Response", field: "validation_by_author", filter: true },
+    { headerName: "Validation By Professional Biocurator", field: "validation_by_professional_biocurator", filter: true, cellRenderer: ValidationByCurator },
+    { headerName: "Display Tag", field: "display_tag_name", filter: true, comparator: caseInsensitiveComparator },
+    { headerName: "Source Secondary Data Provider", field: "topic_entity_tag_source.secondary_data_provider_abbreviation", filter: true },
+    { headerName: "Source Data Provider", field: "topic_entity_tag_source.data_provider", filter: true },
+    { headerName: "Source Evidence Assertion", field: "topic_entity_tag_source.source_evidence_assertion_name", filter: true, comparator: caseInsensitiveComparator, onCellClicked: (p) => { handleCurieClick(p.value + ":" + p.data.topic_entity_tag_source.source_evidence_assertion); } },
+    { headerName: "Source Method", field: "topic_entity_tag_source.source_method", filter: true },
+    { headerName: "Source Validation Type", field: "topic_entity_tag_source.validation_type", filter: true },
+    { headerName: "Source Description", field: "topic_entity_tag_source.description", filter: true, onCellClicked: (p) => { handleSourceDescClick(p.value); } },
+    { headerName: "Source Created By", field: "topic_entity_tag_source.created_by", filter: true },
+    { headerName: "Source Date Updated", field: "topic_entity_tag_source.date_updated", filter: true, valueFormatter: timestampToDateFormatter },
+    { headerName: "Source Date Created", field: "topic_entity_tag_source.date_created", filter: true, valueFormatter: timestampToDateFormatter },
+    { headerName: "Model ID", field: "ml_model_id", filter: true },
+    { headerName: "Model Version", field: "ml_model_version", filter: true },
+    { headerName: "Topic Entity Tag Id", field: "topic_entity_tag_id", filter: true },
+    { headerName: "Topic Entity Tag Source Id", field: "topic_entity_tag_source.topic_entity_tag_source_id", filter: true }
   ];
 
   const gridOptions = {
