@@ -875,7 +875,7 @@ const TopicEntityTable = () => {
     { headerName: "Data Novelty", field: "data_novelty", filter: true, valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty },
     { headerName: "Confidence Score", field: "confidence_score", filter: true },
     { headerName: "Confidence Level", field: "confidence_level", filter: true },
-    { headerName: "Created By", field: "created_by, filter: true" },
+    { headerName: "Created By", field: "created_by", filter: true },
     { headerName: "Note", field: "note", filter: true, comparator: caseInsensitiveComparator, onCellClicked: (p) => { handleNoteClick(p.value); } },
     { headerName: "Entity ID Validation", field: "entity_id_validation", filter: true },
     { headerName: "Date Created", field: "date_created", filter: true, valueFormatter: timestampToDateFormatter },
