@@ -612,18 +612,35 @@ const Facets = () => {
     }, [searchFacetsValues,searchExcludedFacetsValues, applyToSingleTag]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        let newOpenFacets = new Set([...openFacets]);
-        Object.keys(searchFacetsValues).forEach(facet =>
-            Object.entries(FACETS_CATEGORIES_WITH_FACETS).forEach(([category, facetsInCategory]) => {
-                if (facetsInCategory.includes(facet.replace('.keyword', '').replaceAll('_', ' '))) {
+      // Facets we *don’t* want to use to auto-open sections
+      const ignoreForAutoOpen = new Set([
+        'mods_in_corpus_or_needs_review.keyword',
+        'language.keyword',
+      ]);
+
+      let newOpenFacets = new Set([...openFacets]);
+
+      Object.keys(searchFacetsValues).forEach(facet => {
+        if (ignoreForAutoOpen.has(facet)) {
+            return; // skip default MOD + language facets
+        }
+
+        const normalized = facet.replace('.keyword', '').replaceAll('_', ' ');
+
+        Object.entries(FACETS_CATEGORIES_WITH_FACETS).forEach(
+            ([category, facetsInCategory]) => {
+                if (facetsInCategory.includes(normalized)) {
                     newOpenFacets.add(category);
                 }
-            })
+            }
         );
-        if (datePubmedAdded || datePubmedModified || datePublished) {
-            newOpenFacets.add('Date Range');
-        }
-        setOpenFacets(newOpenFacets);
+      });
+
+      if (datePubmedAdded || datePubmedModified || datePublished || dateCreated) {
+        newOpenFacets.add('Date Range');
+      }
+
+      setOpenFacets(newOpenFacets);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(()=> {

@@ -31,6 +31,7 @@ import {
 } from '../../../utils/gridState';
 import { usePersonSettings } from '../../settings/usePersonSettings';
 import SettingsDropdown from '../../settings/SettingsDropdown';
+import SettingsGearModal from '../../settings/SettingsGearModal';
 
 /* --------------------------------------------------
    Download helpers
@@ -256,267 +257,6 @@ const Notification = ({ show, message, variant, onClose }) => {
         </button>
       </div>
     </div>
-  );
-};
-
-// Custom SettingsGearModal with inline rename AND save layout
-const CustomSettingsGearModal = ({
-  show,
-  onHide,
-  settings,
-  nameEdits,
-  setNameEdits,
-  onCreate,
-  onRename,
-  onDelete,
-  onMakeDefault,
-  onSaveLayout,
-  canCreateMore,
-  busy,
-  isGridReady
-}) => {
-  const [newSettingName, setNewSettingName] = useState('');
-  const [rowBusyId, setRowBusyId] = useState(null);
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const handleCreate = async () => {
-    setErrorMsg('');
-    if (!newSettingName.trim()) return;
-    try {
-      await onCreate(newSettingName.trim());
-      setNewSettingName('');
-    } catch (error) {
-      console.error('Failed to create setting:', error);
-      setErrorMsg(error?.message || 'Failed to create setting.');
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleCreate();
-  };
-
-  const handleMakeDefaultClick = async (setting) => {
-    setErrorMsg('');
-    setRowBusyId(setting.person_setting_id);
-    try {
-      await onMakeDefault(setting.person_setting_id);
-    } catch (error) {
-      console.error('Failed to set default:', error);
-      setErrorMsg(error?.message || 'Failed to set default.');
-    } finally {
-      setRowBusyId(null);
-    }
-  };
-
-  const handleSaveLayoutClick = async (setting) => {
-    setErrorMsg('');
-    setRowBusyId(setting.person_setting_id);
-    try {
-      await onSaveLayout(setting.person_setting_id);
-    } catch (error) {
-      console.error('Failed to save layout:', error);
-      setErrorMsg(error?.message || 'Failed to save layout.');
-    } finally {
-      setRowBusyId(null);
-    }
-  };
-
-  const handleRenameStart = (setting) => {
-    setNameEdits(prev => ({
-      ...prev,
-      [setting.person_setting_id]: setting.setting_name || setting.name
-    }));
-  };
-
-  const handleRenameCancel = (settingId) => {
-    setNameEdits(prev => {
-      const newEdits = { ...prev };
-      delete newEdits[settingId];
-      return newEdits;
-    });
-  };
-
-  const handleRenameSave = async (setting) => {
-    const newName = nameEdits[setting.person_setting_id]?.trim();
-    if (!newName) {
-      setErrorMsg("Setting name cannot be empty.");
-      return;
-    }
-    if (newName === (setting.setting_name || setting.name)) {
-      handleRenameCancel(setting.person_setting_id);
-      return;
-    }
-
-    setRowBusyId(setting.person_setting_id);
-    try {
-      await onRename(setting.person_setting_id, newName);
-      handleRenameCancel(setting.person_setting_id);
-    } catch (error) {
-      setErrorMsg(error?.message || 'Failed to rename setting.');
-    } finally {
-      setRowBusyId(null);
-    }
-  };
-
-  const handleRenameKeyPress = (e, setting) => {
-    if (e.key === 'Enter') {
-      handleRenameSave(setting);
-    } else if (e.key === 'Escape') {
-      handleRenameCancel(setting.person_setting_id);
-    }
-  };
-
-  return (
-    <Modal show={show} onHide={onHide} centered size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>Manage Table Preferences</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        {errorMsg && (
-          <div className="alert alert-danger mb-3" role="alert">
-            {errorMsg}
-          </div>
-        )}
-
-        <div className="mb-4">
-          <Form.Group>
-            <Form.Label>Create New Setting</Form.Label>
-            <div className="d-flex gap-2">
-              <Form.Control
-                type="text"
-                placeholder="Enter setting name"
-                value={newSettingName}
-                onChange={(e) => setNewSettingName(e.target.value)}
-                onKeyDown={handleKeyPress}
-                disabled={busy || !canCreateMore}
-              />
-              <Button
-                variant="primary"
-                onClick={handleCreate}
-                disabled={!newSettingName.trim() || busy || !canCreateMore}
-              >
-                Create
-              </Button>
-            </div>
-            {!canCreateMore && (
-              <Form.Text className="text-warning">
-                Maximum of 10 settings reached. Delete some settings to create new ones.
-              </Form.Text>
-            )}
-          </Form.Group>
-        </div>
-
-        <div>
-          <h6>Existing Settings</h6>
-          {settings.length === 0 ? (
-            <p className="text-muted">No settings saved yet.</p>
-          ) : (
-            <div className="list-group">
-              {settings.map((setting) => {
-                const isEditing = Object.prototype.hasOwnProperty.call(nameEdits, setting.person_setting_id);
-                const isBusy = rowBusyId === setting.person_setting_id;
-
-                return (
-                  <div
-                    key={setting.person_setting_id}
-                    className="list-group-item d-flex justify-content-between align-items-center"
-                  >
-                    <div className="d-flex align-items-center flex-grow-1 me-3">
-                      <span className="me-2">{setting.default_setting && '★'}</span>
-
-                      {isEditing ? (
-                        <div className="d-flex align-items-center flex-grow-1">
-                          <Form.Control
-                            type="text"
-                            size="sm"
-                            value={nameEdits[setting.person_setting_id] || ''}
-                            onChange={(e) => setNameEdits(prev => ({
-                              ...prev,
-                              [setting.person_setting_id]: e.target.value
-                            }))}
-                            onKeyDown={(e) => handleRenameKeyPress(e, setting)}
-                            disabled={isBusy}
-                            autoFocus
-                            className="me-2"
-                          />
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => handleRenameSave(setting)}
-                            disabled={isBusy}
-                            className="me-1"
-                          >
-                            ✓
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleRenameCancel(setting.person_setting_id)}
-                            disabled={isBusy}
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="me-3 flex-grow-1">
-                          {setting.setting_name || setting.name}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="d-flex gap-2">
-                      <Button
-                        variant="outline-success"
-                        size="sm"
-                        onClick={() => handleSaveLayoutClick(setting)}
-                        disabled={busy || isBusy || !isGridReady}
-                        title={!isGridReady ? "Table still loading..." : "Save current layout to this setting"}
-                      >
-                        {isBusy && rowBusyId === setting.person_setting_id ? 'Saving...' : 'Save Layout'}
-                      </Button>
-
-                      {!setting.default_setting && (
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => handleMakeDefaultClick(setting)}
-                          disabled={busy || isBusy}
-                          title="Set as default"
-                        >
-                          {isBusy ? 'Setting…' : 'Set Default'}
-                        </Button>
-                      )}
-
-                      {!isEditing && (
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          onClick={() => handleRenameStart(setting)}
-                          disabled={busy || isBusy}
-                          title="Rename setting"
-                        >
-                          Rename
-                        </Button>
-                      )}
-
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => onDelete(setting.person_setting_id)}
-                        disabled={busy || isBusy}
-                        title="Delete setting"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </Modal.Body>
-    </Modal>
   );
 };
 
@@ -1427,23 +1167,36 @@ const TopicEntityTable = () => {
         </Row>
       </Container>
 
-      <CustomSettingsGearModal
+      <SettingsGearModal
         show={showSettingsModal}
         onHide={() => {
           setShowSettingsModal(false);
           setNameEdits({});
         }}
-        settings={settings}
+	title="Manage Table Preferences"
+        createLabel="Create New Setting"
+        createPlaceholder="Enter setting name"
+        createButtonText="Create"  
+        settings={settings || []}
         nameEdits={nameEdits}
         setNameEdits={setNameEdits}
         onCreate={handleCreateSetting}
         onRename={handleRename}
         onDelete={remove}
         onMakeDefault={makeDefault}
-        onSaveLayout={handleSaveLayout}
-        canCreateMore={settings.length < maxCount}
-        busy={busy}
-        isGridReady={isGridReady}
+	canCreateMore={(settings || []).length < maxCount}
+	busy={busy}
+        renderRowActions={(setting, { rowBusy }) => (
+          <Button
+            variant="outline-success"
+            size="sm"
+            disabled={busy || rowBusy || !isGridReady}
+            title={!isGridReady ? "Table still loading..." : "Save current layout to this setting"}
+            onClick={() => handleSaveLayout(setting.person_setting_id)}
+          >
+            Save Layout
+          </Button>
+        )}
       />
     </div>
   );

@@ -35,11 +35,16 @@ export const SEARCH_REMOVE_DATE_PUBMED_MODIFIED = "SEARCH_REMOVE_DATE_PUBMED_MOD
 export const SEARCH_REMOVE_DATE_PUBLISHED = "SEARCH_REMOVE_DATE_PUBLISHED"
 export const SEARCH_REMOVE_DATE_CREATED = "SEARCH_REMOVE_DATE_CREATED"
 export const SEARCH_SET_CURRENT_ABORT_CONTROLLER = 'SEARCH_SET_CURRENT_ABORT_CONTROLLER';
+export const SEARCH_LOAD_SAVED_SEARCH_STATE = 'SEARCH_LOAD_SAVED_SEARCH_STATE';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"]
 
-
 const restUrl = process.env.REACT_APP_RESTAPI;
+
+export const loadSavedSearchState = (saved) => ({
+  type: SEARCH_LOAD_SAVED_SEARCH_STATE,
+  payload: saved
+});
 
 export const changeQueryField = (e) => {
   //console.log('action change field ' + e.target.id + ' to ' + e.target.value);

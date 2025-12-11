@@ -148,7 +148,15 @@ export const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonL
              else { isObsolete = ''; } }
       let updatedFlag = '';
       if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated'; anyUpdatedFlag = 'updated'; }
-      if ('pages' in crossRefDict && crossRefDict['pages'] !== null) { url = crossRefDict['pages'][0]['url']; }
+
+      if (
+	Array.isArray(crossRefDict.pages) &&
+	crossRefDict.pages.length > 0 &&
+	crossRefDict.pages[0].url
+      ) {
+	url = crossRefDict.pages[0].url;
+      }
+	
       if (xref_list !== '') { xref_list += " | "; }
       xref_list += `<span style="color: red">${isObsolete}</span> <a href=${url}  rel="noreferrer noopener" target="_blank">${valueLiveCurie}</a>`;
     }
