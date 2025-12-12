@@ -35,14 +35,12 @@ const PersonSettingsControls = ({
   // How to build default setting name (given accessLevel)
   defaultSettingNameBuilder,
 
-  // Required: how to build payload.state from Redux
-  //   buildSettingsState(reduxState) -> object
+    // Required:
   buildSettingsState,
-
-  // Required: how to *apply* a json_settings object
-  //   applySettingsFromJson(json_settings, dispatch, options)
-  //     options.runSearch (or equivalent) is up to caller
   applySettingsFromJson,
+
+  // NEW (optional)
+  seedStateTransform,
 }) => {
   const dispatch = useDispatch();
   const reduxState = useSelector((state) => state);
@@ -98,10 +96,8 @@ const PersonSettingsControls = ({
   // Build "state" payload from the entire Redux state
   const buildCurrentStatePayload = useCallback(() => {
     if (typeof buildSettingsState !== 'function') {
-      // eslint-disable-next-line no-console
-      console.error(
-        'PersonSettingsControls: buildSettingsState is not a function'
-      );
+      // eslint-disable-next-line no-console 	  
+      console.error('PersonSettingsControls: buildSettingsState is not a function');
       return {};
     }
     return buildSettingsState(reduxState);
@@ -119,6 +115,7 @@ const PersonSettingsControls = ({
       // Caller decides what "apply" means (run search, apply grid layout, etc.)
       applySettingsFromJson(setting.json_settings, dispatch, {
         runSearch: true,
+        preserveExistingFacetsIfEmpty: true, // safe for older/empty settings
       });
       setSelectedSettingId(person_setting_id);
     },
@@ -189,13 +186,16 @@ const PersonSettingsControls = ({
         const { existing, picked } = await load();
         const all = existing || [];
 
+        // --- no settings: seed default ---
         if (all.length === 0) {
-          // Seed initial default from current state
-          const statePayload = buildCurrentStatePayload();
-          const payload = {
-            meta: buildMeta(),
-            state: statePayload,
-          };
+          let statePayload = buildCurrentStatePayload();
+
+          // NEW: let caller adjust the seed payload (e.g., inject MOD+English defaults)
+          if (typeof seedStateTransform === 'function') {
+            statePayload = seedStateTransform(statePayload, { accessLevel, reduxState });
+          }
+
+          const payload = { meta: buildMeta(), state: statePayload };
 
           const created = await seed({
             name: defaultSettingName,
@@ -209,9 +209,9 @@ const PersonSettingsControls = ({
             setSelectedSettingId(created.person_setting_id);
           }
 
-          // Apply to Redux (and run search / apply layout)
           applySettingsFromJson({ state: statePayload }, dispatch, {
             runSearch: true,
+            preserveExistingFacetsIfEmpty: true,
           });
           return;
         }
@@ -219,7 +219,6 @@ const PersonSettingsControls = ({
         // Use picked, or default, or first
         const settingToUse =
           picked || all.find((s) => s.default_setting) || all[0];
-
         if (settingToUse && settingToUse.json_settings) {
           applySettingsFromJson(
             settingToUse.json_settings,
@@ -278,7 +277,6 @@ const PersonSettingsControls = ({
         onMakeDefault={makeDefault}
         canCreateMore={(settings || []).length < effectiveMaxCount}
         busy={busy}
-        // Optional inline per-row action: "Save current state to this setting"
         renderRowActions={(setting, { rowBusy }) => (
           <Button
             size="sm"
