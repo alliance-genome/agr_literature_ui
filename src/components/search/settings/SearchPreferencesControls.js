@@ -1,4 +1,3 @@
-// src/components/search/settings/SearchPreferencesControls.js
 import React from 'react';
 
 import PersonSettingsControls from '../../settings/PersonSettingsControls';
@@ -23,7 +22,7 @@ const SearchPreferencesControls = () => {
       gearButtonTitle="Manage saved searches and defaults"
       dropdownPlaceholder="Load setting..."
       rowSaveLabel="Save Current Search"
-      // Build name like "SGD Default Search" or "Default Search"
+      // Build name like "SGD Default Search" or "Default Search"	
       defaultSettingNameBuilder={({ accessLevel }) =>
         accessLevel ? `${accessLevel} Default Search` : 'Default Search'
       }
@@ -31,10 +30,32 @@ const SearchPreferencesControls = () => {
       buildSettingsState={(reduxState) =>
         buildSearchSettingsState(reduxState)
       }
-      // json_settings -> apply into Redux + run search
+      
       applySettingsFromJson={(json_settings, dispatch, options) =>
         applySearchSettingsFromJson(json_settings, dispatch, options)
       }
+      // Inject defaults when seeding the very first setting
+      seedStateTransform={(statePayload, { accessLevel }) => {
+        const facetsValues = { ...(statePayload.facetsValues || {}) };
+
+        if (
+          accessLevel &&
+          accessLevel !== 'No' &&
+          (!Array.isArray(facetsValues['mods_in_corpus_or_needs_review.keyword']) ||
+            facetsValues['mods_in_corpus_or_needs_review.keyword'].length === 0)
+        ) {
+          facetsValues['mods_in_corpus_or_needs_review.keyword'] = [accessLevel];
+        }
+
+        if (
+          !Array.isArray(facetsValues['language.keyword']) ||
+          facetsValues['language.keyword'].length === 0
+        ) {
+          facetsValues['language.keyword'] = ['English'];
+        }
+
+        return { ...statePayload, facetsValues };
+      }}
     />
   );
 };
