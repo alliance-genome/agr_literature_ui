@@ -26,7 +26,7 @@ const SearchOptions = () => {
     <Container fluid>
       <Row className="align-items-center flex-wrap">
         {/* Results count */}
-        <Col xs="auto">
+        <Col sm={2}>
           <div className="div-grey-border">
             {searchResultsCount > 0
               ? `${searchResultsCount.toLocaleString()} results`
@@ -35,7 +35,7 @@ const SearchOptions = () => {
         </Col>
 
         {/* Results per page */}
-        <Col xs="auto">
+        <Col sm={2}>
           <Form.Control
             as="select"
             size="sm"
@@ -54,7 +54,7 @@ const SearchOptions = () => {
         </Col>
 
         {/* Sort */}
-        <Col xs="auto">
+        <Col sm={2}>
           <Form.Control
             as="select"
             size="sm"
@@ -71,16 +71,16 @@ const SearchOptions = () => {
         </Col>
 
         {/* Right side: Preferences + Load setting + Pagination */}
-        <Col xs="auto" className="ms-auto">
+        <Col sm={6}>
           <div className="d-flex align-items-center gap-2 flex-wrap">
-	    {/* Preferences + Load setting */}
-            <div style={{ marginTop: '8px' }}>
-              <SearchPreferencesControls />
-            </div>
             {/* Pagination */}
             <div style={{ marginTop: '16px' }}>
 	      <SearchPagination />
 	    </div>
+	    {/* Preferences + Load setting */}
+            <div style={{ marginLeft: '2em', marginTop: '8px' }}>
+              <SearchPreferencesControls />
+            </div>
           </div>
         </Col>
       </Row>
