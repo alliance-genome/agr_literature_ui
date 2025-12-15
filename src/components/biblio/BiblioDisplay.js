@@ -1,4 +1,5 @@
 // import { useState, useEffect } from 'react';
+import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
 import RowDivider from './RowDivider';
@@ -428,6 +429,73 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
 //             <Col className="Col-general Col-display " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
 
 
+const MAX_EMAILS_TO_SHOW = 5;
+
+const RowDisplayExtractedEmails = ({ referenceJsonLive, displayOrEditor }) => {
+  // read-only always, but keep same styling behavior as other display-only rows
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') {
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = '';
+  }
+
+  const [showAll, setShowAll] = React.useState(false);
+
+  const emailsRaw = Array.isArray(referenceJsonLive?.emails)
+    ? referenceJsonLive.emails
+    : [];
+
+  // keep only not-invalidated + has email_address, then dedupe
+  const emails = [];
+  const seen = new Set();
+  for (const e of emailsRaw) {
+    const addr = (e?.email_address || '').trim();
+    const invalidated = e?.date_invalidated !== null && typeof e?.date_invalidated !== 'undefined';
+    if (!addr || invalidated) continue;
+    const key = addr.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    emails.push(addr);
+  }
+
+  if (emails.length === 0) return null;
+
+  const shouldTruncate = emails.length > MAX_EMAILS_TO_SHOW;
+  const visible = shouldTruncate && !showAll ? emails.slice(0, MAX_EMAILS_TO_SHOW) : emails;
+
+  return (
+    <>
+      <Row key="extracted_emails" className="Row-general" xs={2} md={4} lg={6}>
+        <Col className={`Col-general ${cssDisplayLeft}`}>extracted emails</Col>
+
+        <Col className={`Col-general ${cssDisplayRight}`} lg={{ span: 10 }}>
+          <div>
+            {visible.map((addr) => (
+              <div key={addr}>
+                {addr}
+              </div>
+            ))}
+
+            {shouldTruncate && (
+              <div style={{ marginTop: '6px' }}>
+                <button
+                  type="button"
+                  className="btn btn-link p-0"
+                  onClick={() => setShowAll((v) => !v)}
+                >
+                  {showAll ? 'Show less' : `Show more (${emails.length - MAX_EMAILS_TO_SHOW} more)`}
+                </button>
+              </div>
+            )}
+          </div>
+        </Col>
+      </Row>
+    </>
+  );
+};
+
+
 const BiblioDisplay = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
@@ -459,7 +527,23 @@ const BiblioDisplay = () => {
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="display" />); }
     else if (fieldName === 'authors') {
-      rowOrderedElements.push(<RowDisplayAuthors key="RowDisplayAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+      rowOrderedElements.push(
+        <RowDisplayAuthors
+          key="RowDisplayAuthors"
+          fieldIndex={fieldIndex}
+          fieldName={fieldName}
+          referenceJsonLive={referenceJsonLive}
+          referenceJsonDb={referenceJsonDb}
+        />
+      );
+      rowOrderedElements.push(
+        <RowDisplayExtractedEmails
+          key="RowDisplayExtractedEmails"
+          referenceJsonLive={referenceJsonLive}
+          displayOrEditor="display"
+        />
+      );
+    }    
     else if (fieldName === 'date_published') {
       rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'pubmed_publication_status') {

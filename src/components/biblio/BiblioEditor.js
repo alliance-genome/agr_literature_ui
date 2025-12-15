@@ -664,6 +664,74 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
   }
   return (<>{rowArrayStringElements}</>); }
 
+const MAX_EMAILS_TO_SHOW = 5;
+
+const RowDisplayExtractedEmails = ({ referenceJsonLive, displayOrEditor }) => {
+  let cssDisplayLeft = 'Col-display Col-display-left';
+  let cssDisplayRight = 'Col-display Col-display-right';
+  if (displayOrEditor === 'editor') {
+    cssDisplayRight = 'Col-editor-disabled';
+    cssDisplayLeft = '';
+  }
+
+  const [showAll, setShowAll] = useState(false);
+
+  const emailsRaw = Array.isArray(referenceJsonLive?.emails)
+    ? referenceJsonLive.emails
+    : [];
+
+  // Keep only valid email_address, ignore invalidated, and dedupe
+  const emails = [];
+  const seen = new Set();
+  for (const e of emailsRaw) {
+    const addr = (e?.email_address || '').trim();
+    const invalidated =
+      e?.date_invalidated !== null && typeof e?.date_invalidated !== 'undefined';
+    if (!addr || invalidated) continue;
+
+    const key = addr.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    emails.push(addr);
+  }
+
+  if (emails.length === 0) return null;
+
+  const shouldTruncate = emails.length > MAX_EMAILS_TO_SHOW;
+  const visible =
+    shouldTruncate && !showAll ? emails.slice(0, MAX_EMAILS_TO_SHOW) : emails;
+
+  return (
+    <Row key="extracted_emails" className="Row-general" xs={2} md={4} lg={6}>
+      <Col className={`Col-general ${cssDisplayLeft}`}>extracted emails</Col>
+      <Col className={`Col-general ${cssDisplayRight}`} lg={{ span: 10 }}>
+        <div>
+          {visible.map((addr) => (
+            <div key={addr}>
+              {addr}
+            </div>
+          ))}
+
+          {shouldTruncate && (
+            <div style={{ marginTop: '6px' }}>
+              <button
+                type="button"
+                className="btn btn-link p-0"
+                onClick={() => setShowAll((v) => !v)}
+              >
+                {showAll
+                  ? 'Show less'
+                  : `Show more (${emails.length - MAX_EMAILS_TO_SHOW} more)`}
+              </button>
+            </div>
+          )}
+        </div>
+      </Col>
+    </Row>
+  );
+};
+
+
 const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
   const hasPmid = useSelector(state => state.biblio.hasPmid);
@@ -1376,7 +1444,24 @@ const BiblioEditor = () => {
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
     else if (fieldName === 'authors') {
-      rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+      rowOrderedElements.push(
+        <RowEditorAuthors
+          key="RowEditorAuthors"
+          fieldIndex={fieldIndex}
+          fieldName={fieldName}
+          referenceJsonLive={referenceJsonLive}
+          referenceJsonDb={referenceJsonDb}
+        />
+      );
+
+      rowOrderedElements.push(
+        <RowDisplayExtractedEmails
+          key="RowDisplayExtractedEmails"
+          referenceJsonLive={referenceJsonLive}
+          displayOrEditor="editor"
+        />
+      );
+    }
     else if (fieldName === 'date_published') {
       rowOrderedElements.push(<RowEditorDatePublished key="RowEditorDatePublished" fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'pubmed_publication_status') {
