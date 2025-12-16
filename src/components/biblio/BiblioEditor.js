@@ -11,6 +11,7 @@ import { RowDisplayCopyrightLicense } from './BiblioDisplay';
 import { RowDisplayBooleanDisplayOnly } from './BiblioDisplay';
 import { RowDisplayPubmedPublicationStatusDateArrivedInPubmed } from './BiblioDisplay';
 import { RowDisplayDateLastModifiedInPubmedDateCreated } from './BiblioDisplay';
+import { RowDisplayExtractedEmails } from './BiblioDisplay';
 import { RowDisplayReferencefiles } from '../Biblio';
 
 import {fetchModReferenceTypes, setBiblioUpdating} from '../../actions/biblioActions';
@@ -1376,7 +1377,24 @@ const BiblioEditor = () => {
     else if (fieldName === 'mesh_terms') {
       rowOrderedElements.push(<RowDisplayMeshTerms key="RowDisplayMeshTerms" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
     else if (fieldName === 'authors') {
-      rowOrderedElements.push(<RowEditorAuthors key="RowEditorAuthors" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+      rowOrderedElements.push(
+        <RowEditorAuthors
+          key="RowEditorAuthors"
+          fieldIndex={fieldIndex}
+          fieldName={fieldName}
+          referenceJsonLive={referenceJsonLive}
+          referenceJsonDb={referenceJsonDb}
+        />
+      );
+
+      rowOrderedElements.push(
+        <RowDisplayExtractedEmails
+          key="RowDisplayExtractedEmails"
+          referenceJsonLive={referenceJsonLive}
+          displayOrEditor="editor"
+        />
+      );
+    }
     else if (fieldName === 'date_published') {
       rowOrderedElements.push(<RowEditorDatePublished key="RowEditorDatePublished" fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'pubmed_publication_status') {
