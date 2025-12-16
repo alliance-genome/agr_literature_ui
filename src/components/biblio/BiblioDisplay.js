@@ -431,7 +431,7 @@ const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
 
 const MAX_EMAILS_TO_SHOW = 5;
 
-const RowDisplayExtractedEmails = ({ referenceJsonLive, displayOrEditor }) => {
+export const RowDisplayExtractedEmails = ({ referenceJsonLive, displayOrEditor }) => {
   // read-only always, but keep same styling behavior as other display-only rows
   let cssDisplayLeft = 'Col-display Col-display-left';
   let cssDisplayRight = 'Col-display Col-display-right';
