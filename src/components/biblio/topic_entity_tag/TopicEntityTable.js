@@ -216,12 +216,12 @@ const CheckDropdownItem = React.forwardRef(
 const GenericTetTableModal = ({ title, body, show, onHide }) => {
   const renderBody = () => {
     if (typeof body !== "string") return body;
-    return body.split("\n").map((line, i) => (
-      <React.Fragment key={i}>
-        {line}
-        {i < body.split("\n").length - 1 && <br />}
-      </React.Fragment>
-    ));
+    const tokens = body.split(/(\n| \| )/);	// Split on newline OR " | "
+    return tokens.map((token, i) => {
+      if (token === "\n") { return <br key={i} />; }
+      if (token === " | ") { return (<React.Fragment key={i}><hr /></React.Fragment>); }
+      return <React.Fragment key={i}>{token}</React.Fragment>;
+    });
   };
   return (
     <Modal show={show} onHide={onHide} centered>
