@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 
 import CognitoSignInWidget from './CognitoSignInWidget';
 import { signIn, signOut } from "../actions/loginActions";
 import { useSelector, useDispatch } from 'react-redux';
+import jwt_decode from 'jwt-decode';
 
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
@@ -86,6 +87,45 @@ const Login = () => {
             hubListenerCancelToken();
         };
     }, [dispatch, checkAuthState]);
+
+    // Periodically check if token is expired and sign out if so
+    const tokenCheckIntervalRef = useRef(null);
+    useEffect(() => {
+        const checkTokenExpiration = async () => {
+            if (!accessToken || !isSignedIn) {
+                return;
+            }
+            try {
+                const decodedToken = jwt_decode(accessToken);
+                const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
+                const currentTime = Date.now();
+                // Sign out 90 seconds before actual expiration (must be >= check interval)
+                if (currentTime >= expirationTime - 90000) {
+                    console.log('Token expired, signing out user...');
+                    await amplifySignOut();
+                    dispatch(signOut());
+                }
+            } catch (error) {
+                console.log('Error checking token expiration:', error);
+            }
+        };
+
+        if (tokenCheckIntervalRef.current) {
+            clearInterval(tokenCheckIntervalRef.current);
+        }
+
+        if (isSignedIn && accessToken) {
+            checkTokenExpiration();
+            // Check every 60 seconds
+            tokenCheckIntervalRef.current = setInterval(checkTokenExpiration, 60000);
+        }
+
+        return () => {
+            if (tokenCheckIntervalRef.current) {
+                clearInterval(tokenCheckIntervalRef.current);
+            }
+        };
+    }, [isSignedIn, accessToken, dispatch]);
 
     const onSignOutClick = async () => {
         try {
