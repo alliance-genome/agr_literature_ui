@@ -99,8 +99,8 @@ const Login = () => {
                 const decodedToken = jwt_decode(accessToken);
                 const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
                 const currentTime = Date.now();
-                // Sign out 30 seconds before actual expiration
-                if (currentTime >= expirationTime - 30000) {
+                // Sign out 90 seconds before actual expiration (must be >= check interval)
+                if (currentTime >= expirationTime - 90000) {
                     console.log('Token expired, signing out user...');
                     await amplifySignOut();
                     dispatch(signOut());
