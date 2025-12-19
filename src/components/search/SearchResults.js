@@ -114,37 +114,21 @@ const SearchResultItem = ({ reference }) => {
       // if search is out of sync with database, return empty string to prevent UI crashing, but this should not happen on prod or stage
       return '';
   };
-
-  // open Biblio in a new tab (like other external links)
-  const biblioLinkProps = {
-    target: "_blank",
-    rel: "noreferrer noopener",
-    onClick: () => {
-      dispatch(setReferenceCurie(reference.curie));
-      dispatch(setGetReferenceCurieFlag(true));
-    }
-  };
     
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" > 
-        <div className="searchRow-title">
-	  <Link
-            to={{ pathname: "/Biblio", search: `?action=display&referenceCurie=${reference.curie}` }}
-            {...biblioLinkProps}
-          >
-            <span dangerouslySetInnerHTML={{__html: reference.title}} />
-          </Link>
-        </div>
-        <Row><Col><div className="searchRow-xref">
+        <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+          <Row><Col><div className="searchRow-xref">
               <ul>
                   <li>
-                    <Link
-                      to={{ pathname: "/Biblio", search: `?action=display&referenceCurie=${reference.curie}` }}
-                      {...biblioLinkProps}
-                    >
-                      {reference.curie}
-                    </Link>
+                      <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
+                            onClick={() => {
+                                dispatch(setReferenceCurie(reference.curie));
+                                dispatch(setGetReferenceCurieFlag(true));
+                            }}>
+                          {reference.curie}
+                      </Link>
                   </li>
                   {reference.cross_references ? (
                       reference.cross_references.map((xref, i) => (
