@@ -177,20 +177,38 @@ const PersonSettingsControls = ({
     [buildCurrentStatePayload, buildMeta, savePayloadTo, load]
   );
 
-  // On mount: load settings, seed default if none, apply default
+  // On mount: load settings, seed default if none, apply default (ONLY on fresh/empty state)
   useEffect(() => {
     if (!accessToken || !email) return;
+
+    // If user already has an active state (e.g. coming back via browser Back),
+    // do NOT apply preferences and do NOT run a search.
+    const s = reduxState?.search || {};
+    const hasActiveSearch =
+      (s.searchQuery && String(s.searchQuery).trim() !== '') ||
+      (s.authorFilter && String(s.authorFilter).trim() !== '') ||
+      (s.searchResults && s.searchResults.length > 0) ||
+      (s.searchFacetsValues && Object.keys(s.searchFacetsValues).length > 0) ||
+      (s.searchExcludedFacetsValues && Object.keys(s.searchExcludedFacetsValues).length > 0) ||
+      !!s.datePubmedAdded ||
+      !!s.datePubmedModified ||
+      !!s.datePublished ||
+      !!s.dateCreated;
 
     const run = async () => {
       try {
         const { existing, picked } = await load();
         const all = existing || [];
 
+	// If active search exists, do NOT apply anything.
+        // But we already loaded, so dropdown will still show saved settings.
+	if (hasActiveSearch) {
+          return;
+        }
         // --- no settings: seed default ---
         if (all.length === 0) {
           let statePayload = buildCurrentStatePayload();
 
-          // NEW: let caller adjust the seed payload (e.g., inject MOD+English defaults)
           if (typeof seedStateTransform === 'function') {
             statePayload = seedStateTransform(statePayload, { accessLevel, reduxState });
           }
@@ -209,35 +227,29 @@ const PersonSettingsControls = ({
             setSelectedSettingId(created.person_setting_id);
           }
 
+          // Apply seed state, but do NOT auto-run search (preserves Back behavior)
           applySettingsFromJson({ state: statePayload }, dispatch, {
-            runSearch: true,
+            runSearch: false,
             preserveExistingFacetsIfEmpty: true,
           });
           return;
         }
 
-        // Use picked, or default, or first
-        const settingToUse =
-          picked || all.find((s) => s.default_setting) || all[0];
+        const settingToUse = picked || all.find((s) => s.default_setting) || all[0];
         if (settingToUse && settingToUse.json_settings) {
-          applySettingsFromJson(
-            settingToUse.json_settings,
-            dispatch,
-            { runSearch: true }
-          );
+          // Apply default, but do NOT auto-run search
+          applySettingsFromJson(settingToUse.json_settings, dispatch, { runSearch: false });
           setSelectedSettingId(settingToUse.person_setting_id);
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error('PersonSettingsControls: failed to load settings:', err);
-        // Fallback: do nothing special; caller keeps current state.
       }
     };
 
     run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [accessToken, email]);
-
+  
   return (
     <div
       className="d-flex align-items-center"
