@@ -290,6 +290,9 @@ const TopicEntityTable = () => {
   const gridRef = useRef(null);
   const apiRef = useRef(null);
 
+  const pendingAutoApplyRef = useRef(null);
+  const lastAppliedRefCurieRef = useRef(null);
+
   const [notification, setNotification] = useState({ show: false, message: '', variant: 'success' });
 
   const componentName = "tet_table";
@@ -673,16 +676,37 @@ const TopicEntityTable = () => {
     return state;
   }, [extractCurrentGridState, getInitialItems, updateColDefsWithItems]);
 
+  // function isExternalFilterPresent() {
+  //   return filteredTags;   // it is object => always true. Even when filteredTags = {}
+  // }	
+  // filteredTags.validating_tags === undefined when filteredTags = {}
+  // That caused: inconsistent filtering or silent failures or “filters look set but all rows show”
+    
   function isExternalFilterPresent() {
-    return filteredTags;
+    // Only “present” if there’s actually something to filter on
+    // External filtering is only active when validating_tags actually contains IDs (or validated_tag is set)
+    // When it’s empty → external filter is off so Column filters
+    // (like Source Method contains nnc OR svm) work properly
+    return !!(
+      filteredTags &&
+      (
+        (Array.isArray(filteredTags.validating_tags) && filteredTags.validating_tags.length > 0) ||
+        filteredTags.validated_tag != null
+      )
+    );
   }
 
   function doesExternalFilterPass(node) {
-    if (node.data && filteredTags) {
-      return (filteredTags.validating_tags.includes(node.data.topic_entity_tag_id) || filteredTags.validated_tag === node.data.topic_entity_tag_id);
-    } else {
-      return false;
-    }
+    if (!node?.data) return false;
+
+    const vt = Array.isArray(filteredTags?.validating_tags)
+      ? filteredTags.validating_tags
+      : [];
+
+    const validated = filteredTags?.validated_tag;
+
+    return vt.includes(node.data.topic_entity_tag_id) ||
+           validated === node.data.topic_entity_tag_id;
   }
 
   const buildSeedPresetName = useCallback(() => {
@@ -810,6 +834,41 @@ const TopicEntityTable = () => {
     [getGridApi, getInitialItems, updateColDefsWithItems, setSelectedSettingId]
   );
 
+  // Reset “applied” state whenever the reference changes
+  useEffect(() => {
+    lastAppliedRefCurieRef.current = null;
+  }, [referenceCurie]);
+
+  useEffect(() => {
+    const api = getGridApi();
+    if (!api) return;  
+    api.onFilterChanged();
+    api.refreshClientSideRowModel?.('filter');
+  }, [filteredTags, getGridApi]);
+
+  // this callback exists to solve a timing problem
+  // Saved grid settings (filters, sort, etc.) were being applied
+  // before AG Grid actually had row data, which caused:
+  //     filter UI looks set, but rows are not filtered
+  // This callback guarantees that: the grid API exists, row data exists,
+  //     filter components exist before applying saved settings.
+  const onFirstDataRendered = useCallback(() => {
+    const api = getGridApi();
+    if (!api) return;
+
+    // Only apply once per referenceCurie
+    if (lastAppliedRefCurieRef.current === referenceCurie) return;
+
+    const pending = pendingAutoApplyRef.current;
+    if (!pending) return;
+
+    // Now apply for real (grid + data + filters are ready)
+    applySettingsToGrid(pending.payload, pending.settingId, { silent: true });
+
+    lastAppliedRefCurieRef.current = referenceCurie;
+    pendingAutoApplyRef.current = null;
+  }, [applySettingsToGrid, getGridApi, referenceCurie]);
+  
   const onGridReady = useCallback((params) => {
     apiRef.current = params.api;
     setIsGridReady(true);
@@ -826,13 +885,11 @@ const TopicEntityTable = () => {
       if (existing && existing.length > 0) {
         const settingToApply = picked || existing.find(s => s.default_setting) || existing[0];
         if (settingToApply && settingToApply.json_settings) {
-          setTimeout(() => {
-            applySettingsToGrid(
-              settingToApply.json_settings,
-              settingToApply.person_setting_id,
-              { silent: true }
-            );
-          }, 100);
+	  // Queue it; apply after data is rendered
+	  pendingAutoApplyRef.current = {
+            payload: settingToApply.json_settings,
+            settingId: settingToApply.person_setting_id
+          };  
           return;
         }
       }
@@ -918,17 +975,17 @@ const TopicEntityTable = () => {
       });
     }
   }, [getGridApi]);
-
+  
   const onRowDataUpdated = useCallback(() => {
     const api = getGridApi();
     if (!api) return;
 
-    if (api.refreshCells) {
-      api.refreshCells({ force: true });
-    }
-    if (api.onFilterChanged) {
-      api.onFilterChanged();
-    }
+    // Force grid to re-run filters against the new rowData
+    api.onFilterChanged?.();
+    api.refreshClientSideRowModel?.('filter');
+
+    // Optional: makes sure cells repaint after filtering
+    api.refreshCells?.({ force: true });
   }, [getGridApi]);
 
   const getRowId = useMemo(() => (params) => String(params.data.topic_entity_tag_id), []);
@@ -1161,6 +1218,7 @@ const TopicEntityTable = () => {
                 paginationPageSizeSelector={paginationPageSizeSelector}
                 isExternalFilterPresent={isExternalFilterPresent}
                 doesExternalFilterPass={doesExternalFilterPass}
+		onFirstDataRendered={onFirstDataRendered}  
               />
             </div>
           </Col>
