@@ -54,7 +54,8 @@ const BiblioWorkflow = () => {
   const [showApiErrorModal, setShowApiErrorModal] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState('');
   const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
-  
+  const [indexingPriorityData, setIndexingPriorityData] = useState([]);
+   
   const REST = process.env.REACT_APP_RESTAPI;
 
   const fmtScore = (s) => (s == null ? '' : Number.isFinite(Number(s)) ? Number(s).toFixed(2) : s);
@@ -136,19 +137,16 @@ const BiblioWorkflow = () => {
 	  
         const respData = wftRes.data || {};
         const sectionOrder = [
-          'indexing priority', // we will override with ipRow when wantIP = true
           'community curation',
           'manual indexing'
         ];
         const sectionDisplayNames = {
-          'indexing priority': 'Indexing Priority',
           'community curation': 'Community Curation',
           'manual indexing': 'Manual Indexing',
         };
 
         const rowsFromWFT = sectionOrder
           .filter(sectionKey => sectionKey in respData)
-	  .filter(sectionKey => sectionKey !== 'indexing priority') // exclude; replaced by ipRow (if ZFIN)
           .map(sectionKey => {
             const sectionInfo = respData[sectionKey] || {};
             const allTagsObj = sectionInfo.all_workflow_tags || {};
@@ -187,9 +185,9 @@ const BiblioWorkflow = () => {
               reference_workflow_tag_id, // used by workflow_tag PATCH/POST
             };
           });
-	// Only include the Indexing Priority row for ZFIN
-        const combinedRows = wantIP && ipRow ? [ipRow, ...rowsFromWFT] : rowsFromWFT;
-        setIndexingWorkflowData(combinedRows);
+        if (wantIP && ipRow) setIndexingPriorityData([ipRow]);
+        else setIndexingPriorityData([]);
+	setIndexingWorkflowData(rowsFromWFT);  
       } catch (error) {
         console.error('Error fetching workflow overview:', error);
       }
@@ -731,6 +729,56 @@ const BiblioWorkflow = () => {
       },
   ];
 
+  const indexingPriorityColumns = [
+    {
+      headerName: 'Workflow Status',
+      field: 'workflow_tag',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      cellRenderer: GeneralizedDropdownRenderer,
+      cellRendererParams: (params) => ({
+        value: params.value,
+        node: params.node,
+        colDef: params.colDef,
+        options: params.data.options,
+        validateFn: (val) => params.data.options.some(opt => opt.value === val),
+        errorMessage: 'INVALID ATP ID',
+        isDisabled: false,
+      }),
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Confidence Score',
+      field: 'confidence_score',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Curator',
+      field: 'curator',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Workflow Updated',
+      field: 'date_updated',
+      valueFormatter: timestampToDateFormatter,
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+  ];
+	
   const indexingWorkflowColumns = [
     {
       headerName: 'Workflow Process',
@@ -840,9 +888,7 @@ const BiblioWorkflow = () => {
     justifyContent: 'center',
   };
 
-  // --- UPDATED: When indexing priority row changes, call the new PATCH; others unchanged
   const onIndexingWorkflowCellValueChanged = useCallback(async (params) => {
-//     if (params.column.getColId() !== 'workflow_tag') return;
     const colId = params.column.getColId();
     const newValue = params.newValue;
     const oldValue = params.oldValue;
@@ -850,7 +896,6 @@ const BiblioWorkflow = () => {
 
     if (newValue === oldValue) return;
    
-    // Columns we want to support editing
     const editableFields = ['workflow_tag', 'curation_tag', 'note'];
     if (!editableFields.includes(colId)) return;
 
@@ -863,25 +908,43 @@ const BiblioWorkflow = () => {
     );
   
     try {
+      // Indexing Priority: PATCH /indexing_priority/{id} with payload { indexing_priority: "ATP:..." }
       if (rowData.section === 'Indexing Priority') {
-        // require an existing record to patch
+        // Only allow editing workflow_tag in Indexing Priority table
+        if (colId !== 'workflow_tag') return;
+
         if (!rowData.indexing_priority_id) {
           const msg = 'No existing indexing priority record to patch.';
           setApiErrorMessage(msg);
           setShowApiErrorModal(true);
           return;
         }
+
         const url = `${REST}/indexing_priority/${rowData.indexing_priority_id}`;
-        await axios.patch(url, { [colId]: newValue }, {
+
+        // UI uses field "workflow_tag", API expects "indexing_priority"
+        const payload = {
+          indexing_priority: newValue === "" ? null : newValue,
+        };
+
+        await axios.patch(url, payload, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           }
         });
-      } else if (isClearingWorkflowTag) {
-        if (rowData.reference_workflow_tag_id) { await deleteWorkflowTag(rowData.reference_workflow_tag_id, accessToken); }
+
+        // Refresh data after successful update
+        fetchIndexingWorkflowOverview();
+        return;
+      }
+
+      // --- Manual Indexing / Community Curation: existing workflow_tag behavior unchanged
+      if (isClearingWorkflowTag) {
+        if (rowData.reference_workflow_tag_id) {
+          await deleteWorkflowTag(rowData.reference_workflow_tag_id, accessToken);
+        }
       } else {
-        // keep existing behavior for workflow tags
         if (rowData.reference_workflow_tag_id) {
           await patchWorkflowTag(
             rowData.reference_workflow_tag_id,
@@ -890,6 +953,7 @@ const BiblioWorkflow = () => {
           );
         } else if (colId === 'workflow_tag') {
           // Only post if creating new workflow tag AND the change was to 'workflow_tag'
+            
           await postWorkflowTag(
             {
               reference_curie: referenceCurie,
@@ -1025,6 +1089,36 @@ const BiblioWorkflow = () => {
         </div>
       )}
 
+      {/* NEW: Indexing Priority Section (separate table, above Manual Indexing/Community Curation) */}
+      {accessLevel === 'ZFIN' && (
+        <>
+	  <strong style={{ display: 'block', margin: '20px 0 10px' }}>
+            Indexing Priority
+	  </strong>
+	  <div style={containerStyle}> 	
+            <div
+              className="ag-theme-quartz"
+              style={{
+                width: '80%',
+                height: `${indexingPriorityData.length * 45 + 60}px`,
+                marginBottom: 10,
+              }}
+            >    
+	      <AgGridReact
+                rowData={indexingPriorityData}
+                columnDefs={indexingPriorityColumns}
+		singleClickEdit={true}
+                domLayout="normal"
+                rowHeight={43}
+                getRowClass={() => 'ag-row-striped-light'}
+                popupParent={document.body}
+                onCellValueChanged={onIndexingWorkflowCellValueChanged}
+              />
+            </div>
+          </div>
+        </>
+      )}               
+	
       {/* Manual Indexing and Community Curation Section */}
       {['WB', 'SGD', 'FB', 'ZFIN'].includes(accessLevel) && (
         <>
