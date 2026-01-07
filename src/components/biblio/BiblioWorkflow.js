@@ -1228,8 +1228,9 @@ const BiblioWorkflow = () => {
         Curation
       </strong>
       <CurationStatusWholePaper />
+
       <div style={containerStyle}>
-        <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start' }}>
+        <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start', width: '80%' }}>
           <div className="d-flex align-items-start" style={{ gap: '14px' }}>
             <TetPreferenceControls
               baseUrl={process.env.REACT_APP_RESTAPI}
