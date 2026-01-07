@@ -219,12 +219,7 @@ const GenericTetTableModal = ({ title, body, show, onHide }) => {
     const tokens = body.split(/(\n| \| )/);
     return tokens.map((token, i) => {
       if (token === '\n') return <br key={i} />;
-      if (token === ' | ')
-        return (
-          <React.Fragment key={i}>
-            <hr />
-          </React.Fragment>
-        );
+      if (token === ' | ') return (<React.Fragment key={i}><hr /></React.Fragment>);
       return <React.Fragment key={i}>{token}</React.Fragment>;
     });
   };
@@ -241,10 +236,13 @@ const GenericTetTableModal = ({ title, body, show, onHide }) => {
 
 const Notification = ({ show, message, variant, onClose }) => {
   if (!show) return null;
-  const alertClass =
-    { success: 'alert-success', error: 'alert-danger', warning: 'alert-warning', info: 'alert-info' }[
-      variant
-    ] || 'alert-info';
+
+  const alertClass = {
+    success: 'alert-success',
+    error: 'alert-danger',
+    warning: 'alert-warning',
+    info: 'alert-info'
+  }[variant] || 'alert-info';
 
   return (
     <div className={`alert ${alertClass} alert-dismissible fade show mb-3`} role="alert">
