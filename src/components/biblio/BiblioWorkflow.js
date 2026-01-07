@@ -1229,30 +1229,24 @@ const BiblioWorkflow = () => {
       </strong>
       <CurationStatusWholePaper />
       <div style={containerStyle}>
-        <div className="d-flex justify-content-between align-items-center" style={{ paddingBottom: '10px' }}>
-          <div className="d-flex align-items-center" style={{ gap: '14px' }}>
-            STUFF HERE
-      {/* 
-             <Button variant="outline-primary" size="sm" title="Clear all filters" onClick="">Reset Filters</Button>
-                  getInitialItems={getInitialItems}
-                  updateColDefsWithItems={updateColDefsWithItems}
-      */}
-                <TetPreferenceControls
-                  baseUrl={process.env.REACT_APP_RESTAPI}
-                  accessToken={accessToken}
-                  email={email}
-                  accessLevel={accessLevel}
-                  gridRef={gridRef}
-                  getGridApi={getGridApi}
-                  isGridReady={isGridReady}
-                  getInitialItems={getInitialItems}
-                  updateColDefsWithItems={updateColDefsWithItems}
-                  setItems={setItems}
-                  setColDefs={setColDefs}
-                  showNotification={showNotification}
-                  title="Manage Table Preferences"
-                  componentName="wft_curation_table"
-                />
+        <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start' }}>
+          <div className="d-flex align-items-start" style={{ gap: '14px' }}>
+            <TetPreferenceControls
+              baseUrl={process.env.REACT_APP_RESTAPI}
+              accessToken={accessToken}
+              email={email}
+              accessLevel={accessLevel}
+              gridRef={gridRef}
+              getGridApi={getGridApi}
+              isGridReady={isGridReady}
+              getInitialItems={getInitialItems}
+              updateColDefsWithItems={updateColDefsWithItems}
+              setItems={setItems}
+              setColDefs={setColDefs}
+              showNotification={showNotification}
+              title="Manage Table Preferences"
+              componentName="wft_curation_table"
+            />
           </div>
         </div>
       </div>
