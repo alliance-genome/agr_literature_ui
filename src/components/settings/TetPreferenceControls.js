@@ -2,10 +2,10 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { applyGridState, columnStateFromColDefs } from '../../utils/gridState';
-import BiblioPreferencesControls from './BiblioPreferencesControls';
+import AgGridTablePreferenceControls from './AgGridTablePreferenceControls';
 
 /**
- * TET-specific wrapper around BiblioPreferencesControls.
+ * TET-specific wrapper around AgGridTablePreferenceControls.
  *
  * Goal:
  * - Keep TopicEntityTable free of preferences logic.
@@ -215,7 +215,7 @@ const TetPreferenceControls = ({
   );
 
   /**
-   * Called by BiblioPreferencesControls AFTER it loads settings from server.
+   * Called by AgGridTablePreferenceControls AFTER it loads settings from server.
    * We:
    * - pick default (or picked) and schedule apply
    * - or seed a default preset if none exist
@@ -327,7 +327,7 @@ const TetPreferenceControls = ({
     ]
   );
 
-  return <BiblioPreferencesControls {...prefsProps} />;
+  return <AgGridTablePreferenceControls {...prefsProps} />;
 };
 
 export default TetPreferenceControls;

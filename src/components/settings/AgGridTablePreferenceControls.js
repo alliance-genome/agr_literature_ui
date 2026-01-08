@@ -40,7 +40,7 @@ import SettingsGearModal from './SettingsGearModal';
  * - showNotification(msg, variant): toast/alert function
 
 */
-const BiblioPreferencesControls = ({
+const AgGridTablePreferenceControls = ({
   baseUrl,
   accessToken,
   email,
@@ -298,4 +298,4 @@ const BiblioPreferencesControls = ({
   );
 };
 
-export default BiblioPreferencesControls;
+export default AgGridTablePreferenceControls;
