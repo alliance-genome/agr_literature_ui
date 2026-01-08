@@ -1,20 +1,18 @@
-// src/components/settings/TetPreferenceControls.js
+// src/components/settings/BiblioPreferenceControls.js
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { applyGridState, columnStateFromColDefs } from '../../utils/gridState';
 import AgGridTablePreferenceControls from './AgGridTablePreferenceControls';
 
 /**
- * TET-specific wrapper around AgGridTablePreferenceControls.
+ * Biblio-specific wrapper around AgGridTablePreferenceControls.
  *
  * Goal:
  * - Keep TopicEntityTable free of preferences logic.
  * - Encapsulate: load/apply default, seed defaults, pending apply timing, grid-state capture.
- *
- * This is designed so we can later copy this file -> WftPreferenceControls.js
- * and can update this file for WFT (eg, the "default preset name" or componentName, etc.)
+ * - Able to use this for WFT without having to make a separate .js file
  */
-const TetPreferenceControls = ({
+const BiblioPreferenceControls = ({
   // auth / identity
   baseUrl,
   accessToken,
@@ -330,4 +328,4 @@ const TetPreferenceControls = ({
   return <AgGridTablePreferenceControls {...prefsProps} />;
 };
 
-export default TetPreferenceControls;
+export default BiblioPreferenceControls;

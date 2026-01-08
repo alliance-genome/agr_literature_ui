@@ -35,7 +35,7 @@ import { timestampToDateFormatter } from '../BiblioWorkflow';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-import TetPreferenceControls from '../../settings/TetPreferenceControls';
+import BiblioPreferenceControls from '../../settings/BiblioPreferenceControls';
 
 /* --------------------------------------------------
    Download helpers (exported)
@@ -775,7 +775,7 @@ const TopicEntityTable = () => {
                   Reset Filters
                 </Button>
 
-                <TetPreferenceControls
+                <BiblioPreferenceControls
                   baseUrl={process.env.REACT_APP_RESTAPI}
                   accessToken={accessToken}
                   email={email}

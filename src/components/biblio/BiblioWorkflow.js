@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons';
 import { postWorkflowTag, patchWorkflowTag, deleteWorkflowTag } from './WorkflowTagService'
 
-import TetPreferenceControls from '../settings/TetPreferenceControls';
+import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
 
 const file_upload_process_atp_id = "ATP:0000140";
 
@@ -1232,7 +1232,7 @@ const BiblioWorkflow = () => {
       <div style={containerStyle}>
         <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start', width: '80%' }}>
           <div className="d-flex align-items-start" style={{ gap: '14px' }}>
-            <TetPreferenceControls
+            <BiblioPreferenceControls
               baseUrl={process.env.REACT_APP_RESTAPI}
               accessToken={accessToken}
               email={email}
