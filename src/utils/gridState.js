@@ -134,18 +134,24 @@ export function itemsFromColumnState(itemsTemplate, columnState = []) {
   }));
 }
 
-/** Build a columnState from current colDefs (.hide flags, order by index) */
+/** Build a columnState from current colDefs (.hide flags, order by index) Recursively include children */
 export function columnStateFromColDefs(colDefs) {
-  return colDefs.map((c) => ({
-    colId: c.field,
-    hide: !!c.hide,
-    sort: c.sort || null,
-    sortIndex: Number.isFinite(c.sortIndex) ? c.sortIndex : null,
-    width: Number.isFinite(c.width) ? c.width : null,
-    rowGroup: !!c.rowGroup,
-    pivot: !!c.pivot,
-    aggFunc: c.aggFunc || null,
-  }));
+  return colDefs.flatMap((c) => {
+    if (c.children) {
+      // include the parent if needed, then flatten children
+      return columnStateFromColDefs(c.children);
+    }
+    return {
+      colId: c.field || c.colId || c.headerName,
+      hide: !!c.hide,
+      sort: c.sort || null,
+      sortIndex: Number.isFinite(c.sortIndex) ? c.sortIndex : null,
+      width: Number.isFinite(c.width) ? c.width : null,
+      rowGroup: !!c.rowGroup,
+      pivot: !!c.pivot,
+      aggFunc: c.aggFunc || null,
+    };
+  });
 }
 
 /**
