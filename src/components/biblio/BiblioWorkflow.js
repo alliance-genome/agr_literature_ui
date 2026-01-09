@@ -530,18 +530,17 @@ const BiblioWorkflow = () => {
   // ---------------------------
   const itemsInit = useMemo(
     () => [
-      { headerName: 'Topic', field: 'topic_name', id: 1, checked: true },
-      { headerName: 'Topic for curation', field: 'topic_name', id: 2, checked: true },
-      { headerName: 'Curation Status', field: 'curation_status', id: 3, checked: true },
-      { headerName: 'Curator', field: 'curator', id: 4, checked: true },
-      { headerName: 'Has data', field: 'has_data', id: 5, checked: true },
-      { headerName: 'New data', field: 'new_data', id: 6, checked: true },
-      { headerName: 'No data', field: 'no_data', id: 7, checked: true },
-      { headerName: 'Topic Source', field: 'topic_source', id: 8, checked: true },
-      { headerName: 'Topic Added', field: 'topic_added', id: 9, checked: true },
-      { headerName: 'Curation Status updated', field: 'curation_status_updated', id: 10, checked: true },
-      { headerName: 'Curation Tag', field: 'curation_tag', id: 11, checked: true },
-      { headerName: 'Note', field: 'note', id: 12, checked: true }
+      { headerName: 'Topic for curation', field: 'topic_name', id: 1, checked: true },
+      { headerName: 'Curation Status', field: 'curation_status', id: 2, checked: true },
+      { headerName: 'Curator', field: 'curator', id: 3, checked: true },
+      { headerName: 'Has data', field: 'has_data', id: 4, checked: true },
+      { headerName: 'New data', field: 'new_data', id: 5, checked: true },
+      { headerName: 'No data', field: 'no_data', id: 6, checked: true },
+      { headerName: 'Topic Source', field: 'topic_source', id: 7, checked: true },
+      { headerName: 'Topic Added', field: 'topic_added', id: 8, checked: true },
+      { headerName: 'Curation Status updated', field: 'curation_status_updated', id: 9, checked: true },
+      { headerName: 'Curation Tag', field: 'curation_tag', id: 10, checked: true },
+      { headerName: 'Note', field: 'note', id: 11, checked: true }
     ],
     []
   );
