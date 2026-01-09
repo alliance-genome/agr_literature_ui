@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import axios from "axios";
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
-import Form from 'react-bootstrap/Form';
-import Modal from 'react-bootstrap/Modal';
-import Spinner from 'react-bootstrap/Spinner';
+import { Spinner, Form, Modal, Button, Container, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons';
 import { postWorkflowTag, patchWorkflowTag, deleteWorkflowTag } from './WorkflowTagService'
+
+import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
 
 const file_upload_process_atp_id = "ATP:0000140";
 
@@ -37,11 +37,29 @@ const BiblioWorkflow = () => {
   const accessToken = useSelector((state) => state.isLogged.accessToken);
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
+  const email = useSelector((state) => state.isLogged.email);
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
 
+  const [items, setItems] = useState([]);
+  const [colDefs, setColDefs] = useState([]);
+  const [isGridReady, setIsGridReady] = useState(false);
   const gridRef = useRef();
-  const [gridApi, setGridApi] = useState(null);
-  const onGridReady = (params) => { setGridApi(params.api); };
+  const apiRef = useRef(null);
+
+  const [notification, setNotification] = useState({ show: false, message: '', variant: 'success' });
+  const showNotification = (message, variant = 'success') =>
+    setNotification({ show: true, message, variant });
+  const hideNotification = () => setNotification({ show: false, message: '', variant: 'success' });
+
+  const onGridReady = useCallback((params) => {
+    apiRef.current = params.api;
+    setIsGridReady(true);
+  }, []);
+//   const getGridApi = useCallback( () => apiRef.current, [] );
+
+//   const [gridApi, setGridApi] = useState(null);
+//   const onGridReady = (params) => { setGridApi(params.api); };
+  const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
 
   const [data, setData] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -257,15 +275,20 @@ const BiblioWorkflow = () => {
         }));
         setCurationStatusOptions(curationStatusOptionsObjs);
         setCurationTagOptions(curationTagOptionsObjs);
-        if (gridApi && (curationStatusOptionsObjs.length > 0 || curationTagOptionsObjs.length > 0)) {
-          gridApi.resetRowHeights();
+
+        if (!apiRef.current) return;
+        if (
+          curationStatusOptionsObjs.length > 0 ||
+          curationTagOptionsObjs.length > 0
+        ) {
+          apiRef.current.resetRowHeights();
         }
       } catch (error) {
         console.error('Error fetching ateam curation status options:', error);
       }
     };
     fetchCurationStatuses();
-  }, [accessToken, gridApi]);
+  }, [accessToken]);
 
   useEffect(() => {
     const fetchCurationData = async () => {
@@ -502,6 +525,35 @@ const BiblioWorkflow = () => {
     );
   };
 
+  // ---------------------------
+  // Default items (Hide/Show list)
+  // ---------------------------
+  const itemsInit = useMemo(
+    () => [
+      { headerName: 'Topic for curation', field: 'topic_name', id: 1, checked: true },
+      { headerName: 'Curation Status', field: 'curation_status', id: 2, checked: true },
+      { headerName: 'Curator', field: 'curator', id: 3, checked: true },
+      { headerName: 'Has data', field: 'has_data', id: 4, checked: true },
+      { headerName: 'New data', field: 'new_data', id: 5, checked: true },
+      { headerName: 'No data', field: 'no_data', id: 6, checked: true },
+      { headerName: 'Topic Source', field: 'topic_source', id: 7, checked: true },
+      { headerName: 'Topic Added', field: 'topic_added', id: 8, checked: true },
+      { headerName: 'Curation Status updated', field: 'curation_status_updated', id: 9, checked: true },
+      { headerName: 'Curation Tag', field: 'curation_tag', id: 10, checked: true },
+      { headerName: 'Note', field: 'note', id: 11, checked: true }
+    ],
+    []
+  );
+
+  // keep this for structure like TET one, even though it doesn't have itemsInitSGD to switch between
+  const getInitialItems = useCallback(
+    () => itemsInit,
+    [itemsInit]
+  );
+
+  // ---------------------------
+  // Column definitions
+  // ---------------------------
   const curationWholePaperColumns = [
       {
 	headerName: 'Topic for curation',
@@ -589,7 +641,8 @@ const BiblioWorkflow = () => {
       },
   ];
 
-  const curationColumns = [
+  const curationColumns = useMemo(
+    () => [
       {
 	headerName: 'Topic for curation',
 	field: 'topic_name',
@@ -727,7 +780,9 @@ const BiblioWorkflow = () => {
         sortable: true,
         filter: true
       },
-  ];
+    ],
+    []
+  );
 
   const indexingPriorityColumns = [
     {
@@ -882,6 +937,24 @@ const BiblioWorkflow = () => {
       },
     },
   ];
+
+  const updateColDefsWithItems = useCallback(
+    (currentItems) => {
+      const itemsByField = new Map((currentItems || []).map((i) => [i.field, i]));
+      return curationColumns.map((col) => {
+        const item = itemsByField.get(col.field);
+        return item ? { ...col, hide: !item.checked } : col;
+      });
+    },
+    [curationColumns]
+  );
+
+  useEffect(() => {
+    const initItems = getInitialItems();
+    setItems(initItems);
+    setColDefs(updateColDefsWithItems(initItems));
+  }, [getInitialItems, updateColDefsWithItems]);
+
 
   const containerStyle = {
     display: 'flex',
@@ -1154,6 +1227,29 @@ const BiblioWorkflow = () => {
         Curation
       </strong>
       <CurationStatusWholePaper />
+
+      <div style={containerStyle}>
+        <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start', width: '80%' }}>
+          <div className="d-flex align-items-start" style={{ gap: '14px' }}>
+            <BiblioPreferenceControls
+              baseUrl={process.env.REACT_APP_RESTAPI}
+              accessToken={accessToken}
+              email={email}
+              accessLevel={accessLevel}
+              gridRef={gridRef}
+              getGridApi={getGridApi}
+              isGridReady={isGridReady}
+              getInitialItems={getInitialItems}
+              updateColDefsWithItems={updateColDefsWithItems}
+              setItems={setItems}
+              setColDefs={setColDefs}
+              showNotification={showNotification}
+              title="Manage Table Preferences"
+              componentName="wft_curation_table"
+            />
+          </div>
+        </div>
+      </div>
       <div style={containerStyle}>
         {showApiErrorModal && (
           <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
