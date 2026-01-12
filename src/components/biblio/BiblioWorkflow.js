@@ -134,38 +134,45 @@ const BiblioWorkflow = () => {
       indexing_priority_id: null,
     };
   }, [REST, referenceCurie, accessLevel, accessToken]);
-
-  // Existing: fetch overview for manual indexing + community curation
+    
+  // fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
     async () => {
       const url =
         `${REST}` +
         `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
       const wantIP = accessLevel === 'ZFIN';
-      const manualIndexingUrl =
-        `${REST}/manual_indexing_tag/get_manual_indexing_tag/${encodeURIComponent(referenceCurie)}/${accessLevel}`;
-	
+    
+      // Only fetch manual indexing tags for FB
+      const shouldFetchMIT = accessLevel === 'FB';
+      const manualIndexingUrl = shouldFetchMIT
+        ? `${REST}/manual_indexing_tag/get_manual_indexing_tag/${encodeURIComponent(referenceCurie)}/${accessLevel}`
+        : null;
+    
       try {
-	const headers = {
+        const headers = {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         };
-	  
-        // fetch WFT + manual indexing tag + IP (only for ZFIN)                                                
+      
+        // fetch WFT + manual indexing tag (only for FB) + IP (only for ZFIN)                                                
         const [wftRes, mitRes, ipRow] = await Promise.all([
           axios.get(url, { headers }),
-          axios.get(manualIndexingUrl, { headers }).catch((e) => {
-            console.warn('[ManualIndexingTag] GET failed:', e);
-            return { data: null };
-          }),
+          shouldFetchMIT 
+            ? axios.get(manualIndexingUrl, { headers }).catch((e) => {
+                console.warn('[ManualIndexingTag] GET failed:', e);
+                return { data: null };
+              })
+            : Promise.resolve({ data: null }),
           wantIP ? fetchIndexingPriorityRow() : Promise.resolve(null),
         ]);
-	  
+      
         const respData = wftRes.data || {};
-	const mitPayload = mitRes?.data || null;
-        const currentMit = mitPayload?.current_curation_tag || null;  
+        const mitPayload = mitRes?.data || null;
+        const currentMit = mitPayload?.current_curation_tag || null;
+        const allManualTags = mitPayload?.all_curation_tags || {};
 
-	const sectionOrder = [
+        const sectionOrder = [
           'community curation',
           'manual indexing'
         ];
@@ -201,7 +208,7 @@ const BiblioWorkflow = () => {
               value: id,
               label: label,
             }));
-	   
+         
             const baseRow = {
               section: sectionDisplayNames[sectionKey],
               workflow_tag_id: currentValue,
@@ -210,18 +217,44 @@ const BiblioWorkflow = () => {
               note: note,
               curation_tag: curation_tag,
               options,
-              reference_workflow_tag_id, // used by workflow_tag PATCH/POST                                            
+              reference_workflow_tag_id,
             };
 
             // adding manual indexing prediction/validation fields into the Manual Indexing row                   
             if (sectionKey === 'manual indexing') {
+              let predictedTag = '';
+              let predictedTagId = '';
+              let confidenceScore = '';
+              let validationStatus = null;
+              let manualTagId = null;
+            
+              // Only process manual indexing tag data for FB
+              if (accessLevel === 'FB' && currentMit) {
+                predictedTag = currentMit.curation_tag_name || '';
+                predictedTagId = currentMit.curation_tag || '';
+                confidenceScore = fmtScore(currentMit.confidence_score);
+                validationStatus = currentMit.validation_by_biocurator;
+                manualTagId = currentMit.manual_indexing_tag_id;
+              
+                // When not validated, use classifier info for curator and date_updated
+                if (!validationStatus) {
+                  // Use classifier name from manual_indexing_tag
+                  curator = currentMit.updated_by_name || currentMit.updated_by_email || currentMit.updated_by || '';
+                  // Use classifier date from manual_indexing_tag
+                  date_updated = currentMit.date_updated || '';
+                }
+              }
+            
               return {
                 ...baseRow,
-                predicted_curation_tag: currentMit?.curation_tag_name ?? '',
-                predicted_curation_tag_id: currentMit?.curation_tag ?? '',
-                predicted_confidence_score: fmtScore(currentMit?.confidence_score),
-                validation_by_biocurator: currentMit?.validation_by_biocurator ?? null,
-                manual_indexing_tag_id: currentMit?.manual_indexing_tag_id ?? null,
+                predicted_curation_tag: predictedTag,
+                predicted_curation_tag_id: predictedTagId,
+                predicted_confidence_score: confidenceScore,
+                validation_by_biocurator: validationStatus,
+                manual_indexing_tag_id: manualTagId,
+                // Ensure curator and date_updated are updated when not validated
+                curator,
+                date_updated,
               };
             }
             return {
@@ -865,32 +898,27 @@ const BiblioWorkflow = () => {
     },
   ];
 
-  // ---- NEW: Validation renderer (TET-style icons + status text) ----  
+  // ---- NEW: Validation renderer (TET-style icons + status text) ----
   const ManualIndexingValidationRenderer = (params) => {
+    if (accessLevel !== 'FB') return null;	
     const row = params?.data || {};
     const current = row.validation_by_biocurator; // 'right' | 'wrong' | null
-      
-    const statusText =
-      current === 'right'
-        ? 'validated_right'
-        : current === 'wrong'
-          ? 'validated_wrong'
+  
+    const statusText = 
+      current === 'right' 
+        ? 'validated_right' 
+        : current === 'wrong' 
+          ? 'validated_wrong' 
           : 'not validated';
 
     const hasMit = !!row.manual_indexing_tag_id;
-
-    const iconStyleBase = {
-      cursor: hasMit ? 'pointer' : 'not-allowed',
-    };
-
-    const selectedRight = current === 'right';
-    const selectedWrong = current === 'wrong';
+    const isWrong = current === 'wrong';
 
     const makeIconStyle = (which) => {
-      const isSelected = which === 'right' ? selectedRight : selectedWrong;
+      const isSelected = which === 'right' ? current === 'right' : current === 'wrong';
       const color = which === 'right' ? '#28a745' : '#dc3545';
       return {
-        ...iconStyleBase,
+        cursor: hasMit ? 'pointer' : 'not-allowed',
         color,
         opacity: !hasMit ? 0.35 : (isSelected ? 1 : 0.35),
       };
@@ -924,16 +952,16 @@ const BiblioWorkflow = () => {
         await patchManualIndexingTag(validation);
 
         if (validation === 'right') {
-          // For validated right, always use workflow_tag_id = MANUAL_INDEXING_WONT_INDEX                        
-          // and curation_tag = NO_GENETIC_DATA                                                                      
+          // For validated right, always use workflow_tag_id = MANUAL_INDEXING_WONT_INDEX
+          // and curation_tag = predicted_curation_tag_id (NO_GENETIC_DATA for 'no genetic data' prediction)
           if (!row.reference_workflow_tag_id) {
             // Create new workflow tag row
-            await postWorkflowTag(	  
+            await postWorkflowTag(
               {
                 reference_curie: referenceCurie,
                 mod_abbreviation: accessLevel,
                 workflow_tag_id: MANUAL_INDEXING_WONT_INDEX,
-                curation_tag: NO_GENETIC_DATA // Set to 'no genetic data'                                                                                      
+                curation_tag: row.predicted_curation_tag_id // Use the predicted tag value
               },
               accessToken
             );
@@ -943,7 +971,7 @@ const BiblioWorkflow = () => {
               row.reference_workflow_tag_id,
               {
                 workflow_tag_id: MANUAL_INDEXING_WONT_INDEX,
-                curation_tag: NO_GENETIC_DATA                                                                             
+                curation_tag: row.predicted_curation_tag_id // Use the predicted tag value
               },
               accessToken
             );
@@ -998,21 +1026,14 @@ const BiblioWorkflow = () => {
           size="lg"
           onClick={() => handleClick('right')}
           title="Validate as correct"
-          style={{
-            cursor: hasMit ? 'pointer' : 'not-allowed',
-            color: '#28a745',
-            opacity: current === 'right' ? 1 : 0.35,
-          }}
-        />                                                                                                                             <FontAwesomeIcon
+          style={makeIconStyle('right')}
+        />
+        <FontAwesomeIcon
           icon={faTimesCircle}
           size="lg"
           onClick={() => handleClick('wrong')}
           title="Validate as incorrect"
-          style={{
-            cursor: hasMit ? 'pointer' : 'not-allowed',
-            color: '#dc3545',
-            opacity: current === 'wrong' ? 1 : 0.35,
-          }}
+          style={makeIconStyle('wrong')}
         />
         <span
           style={{
@@ -1020,13 +1041,9 @@ const BiblioWorkflow = () => {
             fontSize: '0.9em',
             color: '#333',
           }}
-        > 
-          {current === 'right'
-            ? 'validated_right'
-            : current === 'wrong'
-              ? 'validated_wrong'
-              : 'not_validated'}                          
-	</span>	                
+        >
+          {statusText}
+        </span>
       </div>
     );
   };
@@ -1056,8 +1073,9 @@ const BiblioWorkflow = () => {
         const isManualIndexing = row.section === 'Manual Indexing';
         const hasConfidenceScore = row.predicted_confidence_score !== null && row.predicted_confidence_score !== '';
 	const notValidated = !row.validation_by_biocurator;
-
-        if (isManualIndexing && hasConfidenceScore && notValidated && !row.workflow_tag_id) {
+        const isFB = accessLevel === 'FB';
+	  
+        if (isManualIndexing && isFB && hasConfidenceScore && notValidated && !row.workflow_tag_id) {
           return MANUAL_INDEXING_TBD;
         }
         return row.workflow_tag_id || '';
@@ -1119,6 +1137,23 @@ const BiblioWorkflow = () => {
       filter: true
     },
     {
+      headerName: 'Predicted Curation Tag',
+      field: 'predicted_curation_tag',
+      flex: 1,
+      headerClass: 'wft-bold-header wft-header-bg',
+      cellStyle: (params) => {
+        if (params.data?.section !== 'Manual Indexing') return { textAlign: 'left' };
+        const isWrong = params.data?.validation_by_biocurator === 'wrong';
+        return { 
+          textAlign: 'left', 
+          color: isWrong ? '#999' : undefined,
+          opacity: isWrong ? 0.6 : 1
+        };
+      },
+      sortable: true,
+      filter: true,
+    },
+    {
       headerName: 'Confidence Score',
       field: 'predicted_confidence_score',
       flex: 1,
@@ -1126,7 +1161,7 @@ const BiblioWorkflow = () => {
       cellStyle: (params) => {
         if (params.data?.section !== 'Manual Indexing') return { textAlign: 'left' };
         const isWrong = params.data?.validation_by_biocurator === 'wrong';
-        return { textAlign: 'left', color: isWrong ? '#999' : undefined };
+        return { textAlign: 'left', color: isWrong ? '#999' : undefined, opacity: isWrong ? 0.6 : 1 };
       },
       sortable: true,
       filter: true,
