@@ -708,13 +708,13 @@ const BiblioWorkflow = () => {
   const curationColumns = useMemo(
     () => [
       {
-	headerName: 'Topic for curation',
-	field: 'topic_name',
-	flex: 1,
-	cellStyle: { textAlign: 'left' },
-	headerClass: 'wft-bold-header wft-header-bg',
-	sortable: true,
-	filter: true
+        headerName: 'Topic for curation',
+        field: 'topic_name',
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
+        sortable: true,
+        filter: true
       },
       {
         headerName: 'Curation Status',
@@ -727,7 +727,7 @@ const BiblioWorkflow = () => {
           value: params.value,
           node: params.node,
           colDef: params.colDef,
-          options: curationStatusOptions, // Assumes format: [{ value, label }]
+          options: curationStatusOptions, // This was missing
           validateFn: (val) => curationStatusOptions.some(option => option.value === val),
           errorMessage: 'INVALID ATP ID: Choose Another',
           isDisabled: false,
@@ -736,80 +736,79 @@ const BiblioWorkflow = () => {
         filter: true,
       },
       {
-	headerName: 'Curator',
-	field: 'curator',
-	flex: 1,
-	cellStyle: { textAlign: 'left' },
-	headerClass: 'wft-bold-header wft-header-bg',
-	sortable: true,
-	filter: true
+        headerName: 'Curator',
+        field: 'curator',
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
+        sortable: true,
+        filter: true
       },
       {
-	  headerName: 'Topic Data',
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  children: [
-              {
-		  headerName: 'Has data',
-		  field: 'has_data',
-		  width: 120,
-		  cellRenderer: renderHasData,
-		  headerClass: 'wft-bold-header wft-header-bg',
-		  cellStyle: { textAlign: 'center' }
-	      },
-              {
-		  headerName: 'New data',
-		  field: 'new_data',
-		  width: 120,
-		  cellRenderer:
-		  renderNovelData,
-		  headerClass: 'wft-bold-header wft-header-bg',
-		  cellStyle: { textAlign: 'center' }
-	      },
-              {
-		  headerName: 'No data',
-		  field: 'no_data',
-		  width: 120,
-		  cellRenderer: renderNoData,
-		  headerClass: 'wft-bold-header wft-header-bg',
-		  cellStyle: { textAlign: 'center' }
-	      },
-	  ]
+        headerName: 'Topic Data',
+        headerClass: 'wft-bold-header wft-header-bg',
+        children: [
+          {
+            headerName: 'Has data',
+            field: 'has_data',
+            width: 120,
+            cellRenderer: renderHasData,
+            headerClass: 'wft-bold-header wft-header-bg',
+            cellStyle: { textAlign: 'center' }
+          },
+          {
+            headerName: 'New data',
+            field: 'new_data',
+            width: 120,
+            cellRenderer: renderNovelData,
+            headerClass: 'wft-bold-header wft-header-bg',
+            cellStyle: { textAlign: 'center' }
+          },
+          {
+            headerName: 'No data',
+            field: 'no_data',
+            width: 120,
+            cellRenderer: renderNoData,
+            headerClass: 'wft-bold-header wft-header-bg',
+            cellStyle: { textAlign: 'center' }
+          },
+        ]
       },
       {
-	  headerName: 'Topic Source',
-	  field: 'topic_source',
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
+        headerName: 'Topic Source',
+        field: 'topic_source',
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
+        sortable: true,
+        filter: true
       },
       {
-	  headerName: 'Topic Added',
-	  field: 'topic_added',
-          valueFormatter: timestampToDateFormatter,
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
-      {
-	headerName: 'Curation Status updated',
-	field: 'curation_status_updated',
+        headerName: 'Topic Added',
+        field: 'topic_added',
         valueFormatter: timestampToDateFormatter,
-	flex: 1,
-	cellStyle: { textAlign: 'left' },
-	headerClass: 'wft-bold-header wft-header-bg',
-	sortable: true,
-	filter: true
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
+        sortable: true,
+        filter: true
       },
       {
-	headerName: 'Curation Tag',
-	field: 'curation_tag',
-	flex: 1,
-	cellStyle: { textAlign: 'left' },
-	headerClass: 'wft-bold-header wft-header-bg',
+        headerName: 'Curation Status updated',
+        field: 'curation_status_updated',
+        valueFormatter: timestampToDateFormatter,
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
+        sortable: true,
+        filter: true
+      },
+      {
+        headerName: 'Curation Tag',
+        field: 'curation_tag',
+        flex: 1,
+        cellStyle: { textAlign: 'left' },
+        headerClass: 'wft-bold-header wft-header-bg',
         cellRenderer: GeneralizedDropdownRenderer,
         cellRendererParams: (params) => {
           const isValidCurationStatus = curationStatusOptions.some(option => option.value === params.data?.curation_status);
@@ -817,14 +816,14 @@ const BiblioWorkflow = () => {
             value: params.value,
             node: params.node,
             colDef: params.colDef,
-            options: curationTagOptions, // Assumes format: [{ value, label }]
+            options: curationTagOptions, // This was missing
             validateFn: (val) => curationTagOptions.some(option => option.value === val),
             errorMessage: 'INVALID Curation Tag: Choose Another',
             isDisabled: !isValidCurationStatus,
           };
         },
-	sortable: true,
-	filter: true
+        sortable: true,
+        filter: true
       },
       {
         headerName: 'Note',
@@ -839,13 +838,13 @@ const BiblioWorkflow = () => {
         cellEditor: 'agLargeTextCellEditor',
         cellEditorPopup: true,
         cellEditorParams: {
-            maxLength: 2000
+          maxLength: 2000
         },
         sortable: true,
         filter: true
       },
     ],
-    []
+    [curationStatusOptions, curationTagOptions]
   );
 
   const indexingPriorityColumns = [
@@ -1207,14 +1206,153 @@ const BiblioWorkflow = () => {
   const updateColDefsWithItems = useCallback(
     (currentItems) => {
       const itemsByField = new Map((currentItems || []).map((i) => [i.field, i]));
-      return curationColumns.map((col) => {
+      // Use the properly defined curationColumns with dependencies
+      const columns = [
+        {
+          headerName: 'Topic for curation',
+          field: 'topic_name',
+          flex: 1,
+          cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header wft-header-bg',
+          sortable: true,
+          filter: true
+        },
+        {
+          headerName: 'Curation Status',
+          field: 'curation_status',
+          flex: 1,
+          cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header wft-header-bg',
+          cellRenderer: GeneralizedDropdownRenderer,
+          cellRendererParams: (params) => ({
+            value: params.value,
+            node: params.node,
+            colDef: params.colDef,
+            options: curationStatusOptions,
+            validateFn: (val) => curationStatusOptions.some(option => option.value === val),
+            errorMessage: 'INVALID ATP ID: Choose Another',
+            isDisabled: false,
+          }),
+          sortable: true,
+          filter: true,
+        },
+        {
+          headerName: 'Curator',
+          field: 'curator',
+          flex: 1,
+          cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header wft-header-bg',
+          sortable: true,
+          filter: true
+        },
+        {
+          headerName: 'Topic Data',
+          headerClass: 'wft-bold-header wft-header-bg',
+          children: [
+            {
+              headerName: 'Has data',
+              field: 'has_data',
+              width: 120,
+              cellRenderer: renderHasData,
+              headerClass: 'wft-bold-header wft-header-bg',
+              cellStyle: { textAlign: 'center' }
+            },
+            {
+              headerName: 'New data',
+              field: 'new_data',
+              width: 120,
+              cellRenderer: renderNovelData,
+              headerClass: 'wft-bold-header wft-header-bg',
+              cellStyle: { textAlign: 'center' }
+            },
+            {
+              headerName: 'No data',
+              field: 'no_data',
+              width: 120,
+              cellRenderer: renderNoData,
+              headerClass: 'wft-bold-header wft-header-bg',
+              cellStyle: { textAlign: 'center' }
+            },
+          ]
+        },
+        {
+          headerName: 'Topic Source',
+          field: 'topic_source',
+          flex: 1,
+          cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header wft-header-bg',
+          sortable: true,
+          filter: true
+        },
+        {
+          headerName: 'Topic Added',
+          field: 'topic_added',
+          valueFormatter: timestampToDateFormatter,
+          flex: 1,
+          cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header wft-header-bg',
+          sortable: true,
+          filter: true
+        },
+        {
+          headerName: 'Curation Status updated',
+          field: 'curation_status_updated',
+          valueFormatter: timestampToDateFormatter,
+          flex: 1,
+          cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header wft-header-bg',
+          sortable: true,
+          filter: true
+        },
+        {
+          headerName: 'Curation Tag',
+          field: 'curation_tag',
+          flex: 1,
+          cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header wft-header-bg',
+          cellRenderer: GeneralizedDropdownRenderer,
+          cellRendererParams: (params) => {
+            const isValidCurationStatus = curationStatusOptions.some(option => option.value === params.data?.curation_status);
+            return {
+              value: params.value,
+              node: params.node,
+              colDef: params.colDef,
+              options: curationTagOptions,
+              validateFn: (val) => curationTagOptions.some(option => option.value === val),
+              errorMessage: 'INVALID Curation Tag: Choose Another',
+              isDisabled: !isValidCurationStatus,
+            };
+          },
+          sortable: true,
+          filter: true
+        },
+        {
+          headerName: 'Note',
+          field: 'note',
+          flex: 1,
+          cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header wft-header-bg',
+          editable: (params) => {
+            return curationStatusOptions.some(option => option.value === params.data?.curation_status);
+          },
+          cellEditor: 'agLargeTextCellEditor',
+          cellEditorPopup: true,
+          cellEditorParams: {
+            maxLength: 2000
+          },
+          sortable: true,
+          filter: true
+        },
+      ];
+    
+      return columns.map((col) => {
         const item = itemsByField.get(col.field);
         return item ? { ...col, hide: !item.checked } : col;
       });
     },
-    [curationColumns]
+    [curationStatusOptions, curationTagOptions]
   );
-
+    
   useEffect(() => {
     const initItems = getInitialItems();
     setItems(initItems);
