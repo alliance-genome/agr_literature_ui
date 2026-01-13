@@ -781,7 +781,7 @@ const BiblioWorkflow = () => {
         filter: true
       },
     ],
-    []
+    [curationStatusOptions, curationTagOptions]
   );
 
   const indexingPriorityColumns = [
