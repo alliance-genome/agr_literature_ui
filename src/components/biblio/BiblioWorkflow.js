@@ -75,17 +75,11 @@ const BiblioWorkflow = () => {
   const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
   const [indexingPriorityData, setIndexingPriorityData] = useState([]);
    
-  const REST = process.env.REACT_APP_RESTAPI;
 
   const fmtScore = (s) => (s == null ? '' : Number.isFinite(Number(s)) ? Number(s).toFixed(2) : s);
     
   const fetchIndexingPriorityRow = useCallback(async () => {
-
-    const url = `${REST}/indexing_priority/get_priority_tag/${referenceCurie}/${accessLevel}`;
-    const headers = {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    };
+    const url = `/indexing_priority/get_priority_tag/${referenceCurie}/${accessLevel}`;
 
     // helper to normalize shapes safely
     const normalize = (payload) => {
@@ -109,7 +103,7 @@ const BiblioWorkflow = () => {
       return { ip, options };
     };
     try {
-      const res = await api.get(url.replace(REST, ''));
+      const res = await api.get(url);
       const payload = res.data || {};
       const { ip, options } = normalize(payload);
       return {
@@ -133,33 +127,26 @@ const BiblioWorkflow = () => {
       options: [],
       indexing_priority_id: null,
     };
-  }, [REST, referenceCurie, accessLevel, accessToken]);
+  }, [referenceCurie, accessLevel]);
     
   // fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
     async () => {
-      const url =
-        `${REST}` +
-        `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
+      const url = `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
       const wantIP = accessLevel === 'ZFIN';
-    
+
       // Only fetch manual indexing tags for FB
       const shouldFetchMIT = accessLevel === 'FB';
       const manualIndexingUrl = shouldFetchMIT
-        ? `${REST}/manual_indexing_tag/get_manual_indexing_tag/${encodeURIComponent(referenceCurie)}/${accessLevel}`
+        ? `/manual_indexing_tag/get_manual_indexing_tag/${encodeURIComponent(referenceCurie)}/${accessLevel}`
         : null;
-    
+
       try {
-        const headers = {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        };
-      
         // fetch WFT + manual indexing tag (only for FB) + IP (only for ZFIN)
         const [wftRes, mitRes, ipRow] = await Promise.all([
-          api.get(url.replace(REST, '')),
+          api.get(url),
           shouldFetchMIT
-            ? api.get(manualIndexingUrl.replace(REST, '')).catch((e) => {
+            ? api.get(manualIndexingUrl).catch((e) => {
                 console.warn('[ManualIndexingTag] GET failed:', e);
                 return { data: null };
               })
@@ -274,7 +261,7 @@ const BiblioWorkflow = () => {
         console.error('Error fetching workflow overview:', error);
       }
     },
-    [REST, referenceCurie, accessLevel, accessToken, fetchIndexingPriorityRow]
+    [referenceCurie, accessLevel, fetchIndexingPriorityRow]
   );
 
   useEffect(() => {
@@ -300,7 +287,7 @@ const BiblioWorkflow = () => {
       }
     };
     fetchWFTdata();
-  }, [REST, referenceCurie, accessToken]);
+  }, [referenceCurie]);
 
   useEffect(() => {
     const fetchCurationStatuses = async () => {
@@ -342,7 +329,7 @@ const BiblioWorkflow = () => {
       }
     };
     fetchCurationStatuses();
-  }, [accessToken]);
+  }, []);
 
   useEffect(() => {
     const fetchCurationData = async () => {
@@ -400,7 +387,7 @@ const BiblioWorkflow = () => {
     };
 
     fetchCurationData();
-  }, [REST, referenceCurie, accessLevel, reloadCurationDataTable]);
+  }, [referenceCurie, accessLevel, reloadCurationDataTable]);
 
   const GenericWorkflowTableModal = ({ title, body, show, onHide }) => {
     return (
@@ -1288,7 +1275,7 @@ const BiblioWorkflow = () => {
       setShowApiErrorModal(true);
       console.error('Error updating workflow/indexing priority:', error);
     }
-  }, [REST, referenceCurie, accessLevel, accessToken, fetchIndexingWorkflowOverview]);
+  }, [referenceCurie, accessLevel, fetchIndexingWorkflowOverview]);
     
   const onCellValueChanged = async (params) => {
     const colId = params.column.getColId();

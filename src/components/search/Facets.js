@@ -208,7 +208,6 @@ const DateFacet = ({facetsToInclude}) => {
 }
 
 const Facet = ({facetsToInclude, renameFacets}) => {
-    const accessToken = useSelector((state) => state.isLogged.accessToken);
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
@@ -227,22 +226,15 @@ const Facet = ({facetsToInclude, renameFacets}) => {
       if (!needs) return;
 
 
-      const url = process.env.REACT_APP_RESTAPI + '/reference/mod_reference_type/utils/mod_reftype_to_mods'
-      if (!url) {
-        console.log("REACT_APP_MOD_REF_TYPE_ENDPOINT is not set; icons for mod reference types will not render.");
-        return;
-      }
       (async () => {
         try {
-          const r = await fetch(url, { headers: { 'Authorization': accessToken ? `Bearer ${accessToken}` : undefined }});
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          const data = await r.json(); // { 'Book': ['MGI','SGD','WB', 'XB', 'ZFIN'], ... }
-          setModRefTypeToMods(data || {});
+          const response = await api.get('/reference/mod_reference_type/utils/mod_reftype_to_mods');
+          setModRefTypeToMods(response.data || {});
         } catch (e) {
           console.log("Failed to load mod-ref-type map:", e);
         }
       })();
-    }, [facetsToInclude, accessToken]);
+    }, [facetsToInclude]);
 
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
