@@ -1,7 +1,8 @@
 import React, { useEffect, useCallback, useRef } from 'react';
 
 import { signIn, signOut } from "../actions/loginActions";
-import { showReauthModal } from "../actions/authActions";
+import { showReauthModal, hideReauthModal, setDevTestingReauth } from "../actions/authActions";
+import { useStore } from 'react-redux';
 import { useSelector, useDispatch } from 'react-redux';
 import jwt_decode from 'jwt-decode';
 
@@ -25,6 +26,7 @@ const Login = () => {
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
 
     const dispatch = useDispatch();
+    const store = useStore();
 
     // Check current auth state and update Redux
     const checkAuthState = useCallback(async () => {
@@ -57,10 +59,18 @@ const Login = () => {
                 case 'signedIn':
                     console.log('User signed in');
                     checkAuthState();
+                    // If we were dev testing re-auth, close the modal now
+                    if (store.getState().isLogged.devTestingReauth) {
+                        dispatch(hideReauthModal());
+                        dispatch(setDevTestingReauth(false));
+                    }
                     break;
                 case 'signedOut':
                     console.log('User signed out');
-                    dispatch(signOut());
+                    // Don't sign out from Redux if we're dev testing re-auth
+                    if (!store.getState().isLogged.devTestingReauth) {
+                        dispatch(signOut());
+                    }
                     break;
                 case 'tokenRefresh':
                     console.log('Token refreshed');
@@ -68,8 +78,11 @@ const Login = () => {
                     break;
                 case 'tokenRefresh_failure':
                     // Token refresh failed - show re-auth modal instead of signing out
-                    console.log('Token refresh failed - showing re-auth modal');
-                    dispatch(showReauthModal());
+                    // Don't trigger during dev testing
+                    if (!store.getState().isLogged.devTestingReauth) {
+                        console.log('Token refresh failed - showing re-auth modal');
+                        dispatch(showReauthModal());
+                    }
                     break;
                 default:
                     break;
@@ -86,6 +99,10 @@ const Login = () => {
     useEffect(() => {
         const checkTokenExpiration = () => {
             if (!accessToken || !isSignedIn) {
+                return;
+            }
+            // Don't trigger during dev testing
+            if (store.getState().isLogged.devTestingReauth) {
                 return;
             }
             try {

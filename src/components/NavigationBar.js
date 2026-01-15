@@ -10,7 +10,6 @@ import Nav from 'react-bootstrap/Nav';
 
 import Login from './Login'
 import SigninHelp from './SigninHelp'
-import TesterDropdown from './TesterDropdown'
 import DevToolsDropdown from './DevToolsDropdown'
 
 
@@ -22,8 +21,7 @@ if (devOrStageOrProd === 'prod') { }
   else { navClass = "Navbar-dev"; homeLabel = devOrStageOrProd; }
 
 const NavigationBar = () => {
-  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
-  const cognitoTester = useSelector(state => state.isLogged.cognitoTester);
+  const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
   const [expanded, setExpanded] = useState(false);
 
   const closeMenu = useCallback(() => setExpanded(false), []);
@@ -59,7 +57,7 @@ const NavigationBar = () => {
       </Nav>
       <Nav className="navbar-right-links">
         <DevToolsDropdown />
-        { (cognitoMod === 'No' || cognitoTester === false) ? <SigninHelp /> : <TesterDropdown /> }
+        {!isSignedIn && <SigninHelp />}
         <Login />
       </Nav>
     </Navbar.Collapse>

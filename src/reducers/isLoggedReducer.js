@@ -65,9 +65,9 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         cognitoGroups: groups,
         uid: jsonToken.sub || jsonToken.uid,
         email: action.payload.email,
-        // Clear re-auth state on successful sign in
-        reauthRequired: false,
-        pendingRequests: [],
+        // Clear re-auth state on successful sign in (unless dev testing)
+        reauthRequired: state.devTestingReauth ? state.reauthRequired : false,
+        pendingRequests: state.devTestingReauth ? state.pendingRequests : [],
         isLoading: false
       }
     case 'SIGN_OUT':

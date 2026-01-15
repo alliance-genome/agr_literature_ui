@@ -12,6 +12,7 @@ const TOKEN_SYNC_KEY = 'auth_token_updated';
 
 const ReAuthModal = () => {
     const reauthRequired = useSelector(state => state.isLogged.reauthRequired);
+    const devTestingReauth = useSelector(state => state.isLogged.devTestingReauth);
     const dispatch = useDispatch();
 
     const onSuccess = useCallback(async () => {
@@ -65,33 +66,35 @@ const ReAuthModal = () => {
                 zIndex: 10000,
             }}
         >
-            <div style={{
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                overflow: 'hidden',
-            }}>
+            {reauthRequired && (
                 <div style={{
-                    padding: '20px',
-                    borderBottom: '1px solid #eee',
-                    backgroundColor: '#fff3cd',
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
                 }}>
-                    <h4 style={{
-                        margin: '0 0 8px 0',
-                        color: '#856404',
+                    <div style={{
+                        padding: '20px',
+                        borderBottom: '1px solid #eee',
+                        backgroundColor: '#fff3cd',
                     }}>
-                        Session Expired
-                    </h4>
-                    <p style={{
-                        margin: 0,
-                        color: '#856404',
-                        fontSize: '0.9rem',
-                    }}>
-                        Your session has expired. Please sign in again to continue.
-                        Your current page and any unsaved changes will be preserved.
-                    </p>
+                        <h4 style={{
+                            margin: '0 0 8px 0',
+                            color: '#856404',
+                        }}>
+                            Session Expired
+                        </h4>
+                        <p style={{
+                            margin: 0,
+                            color: '#856404',
+                            fontSize: '0.9rem',
+                        }}>
+                            Your session has expired. Please sign in again to continue.
+                            Your current page and any unsaved changes will be preserved.
+                        </p>
+                    </div>
+                    <CognitoSignInWidget onSuccess={onSuccess} skipInitialAuth={devTestingReauth} />
                 </div>
-                <CognitoSignInWidget onSuccess={onSuccess} />
-            </div>
+            )}
         </Popup>
     );
 };

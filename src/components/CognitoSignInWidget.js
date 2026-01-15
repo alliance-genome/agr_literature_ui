@@ -1,20 +1,35 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { Authenticator, useAuthenticator, ThemeProvider } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
 
 // Inner component that has access to useAuthenticator
-const AuthenticatorContent = ({ onSuccess }) => {
+const AuthenticatorContent = ({ onSuccess, skipInitialAuth }) => {
     const { authStatus } = useAuthenticator((context) => [context.authStatus]);
+    const prevAuthStatusRef = useRef(null);
+    const hasCalledOnSuccess = useRef(false);
 
     useEffect(() => {
-        if (authStatus === 'authenticated') {
+        const prevStatus = prevAuthStatusRef.current;
+        prevAuthStatusRef.current = authStatus;
+
+        console.log('[AuthenticatorContent] authStatus:', authStatus, 'prev:', prevStatus, 'skipInitialAuth:', skipInitialAuth);
+
+        if (authStatus === 'authenticated' && !hasCalledOnSuccess.current) {
+            // If skipInitialAuth and this is the initial mount (no previous status), skip
+            if (skipInitialAuth && prevStatus === null) {
+                console.log('[AuthenticatorContent] Skipping initial auth');
+                return;
+            }
+
+            console.log('[AuthenticatorContent] Calling onSuccess');
+            hasCalledOnSuccess.current = true;
             if (onSuccess) {
                 onSuccess();
             }
         }
-    }, [authStatus, onSuccess]);
+    }, [authStatus, onSuccess, skipInitialAuth]);
 
     return null;
 };
@@ -44,7 +59,7 @@ const theme = {
     },
 };
 
-const CognitoSignInWidget = ({ onSuccess }) => {
+const CognitoSignInWidget = ({ onSuccess, skipInitialAuth = false }) => {
     // Only show social providers if OAuth domain is configured
     const hasSocialProviders = !!process.env.REACT_APP_COGNITO_DOMAIN;
 
@@ -97,7 +112,7 @@ const CognitoSignInWidget = ({ onSuccess }) => {
                         socialProviders={[]}
                         hideSignUp={true}
                     >
-                        <AuthenticatorContent onSuccess={onSuccess} />
+                        <AuthenticatorContent onSuccess={onSuccess} skipInitialAuth={skipInitialAuth} />
                     </Authenticator>
                 </ThemeProvider>
             </div>
