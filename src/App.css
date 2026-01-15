@@ -62,6 +62,173 @@
   color: white;
 }
 
+/* Custom navbar expand behavior at 1400px */
+.navbar-custom-expand .navbar-toggler {
+  display: flex;
+}
+
+/* Close button row for mobile sidebar */
+.navbar-close-row {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  margin-bottom: 0.5rem;
+}
+
+.navbar-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.navbar-close-btn:hover {
+  opacity: 0.7;
+}
+
+/* Mobile only elements (< 1400px) */
+.navbar-mobile-only {
+  display: flex;
+}
+
+/* Desktop only elements (>= 1400px) */
+.navbar-desktop-only {
+  display: none;
+}
+
+@media (min-width: 1400px) {
+  .navbar-custom-expand .navbar-toggler {
+    display: none;
+  }
+
+  .navbar-custom-expand .navbar-collapse {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+
+  .navbar-custom-expand .navbar-main-links,
+  .navbar-custom-expand .navbar-right-links {
+    flex-direction: row !important;
+  }
+
+  .navbar-mobile-only {
+    display: none !important;
+  }
+
+  .navbar-desktop-only {
+    display: block !important;
+  }
+}
+
+/* Prevent navbar from wrapping - keep items in one row (desktop only) */
+@media (min-width: 1400px) {
+  .Navbar .navbar-collapse,
+  .Navbar-stage .navbar-collapse,
+  .Navbar-dev .navbar-collapse {
+    flex-wrap: nowrap;
+  }
+
+  .Navbar .navbar-collapse .nav,
+  .Navbar-stage .navbar-collapse .nav,
+  .Navbar-dev .navbar-collapse .nav {
+    flex-wrap: nowrap;
+  }
+}
+
+/* Sidebar style for collapsed navbar on smaller screens */
+@media (max-width: 1399.98px) {
+  /* Base styles for the collapse - hidden by default */
+  .navbar-custom-expand .navbar-collapse {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 80vw;
+    background-color: inherit;
+    flex-direction: column !important;
+    align-items: flex-start;
+    padding: 1rem;
+    overflow-y: auto;
+    z-index: 1050;
+  }
+
+  /* When collapsed (not showing), hide it */
+  .navbar-custom-expand .navbar-collapse:not(.show) {
+    display: none !important;
+  }
+
+  /* When expanded (showing), display as flex sidebar */
+  .navbar-custom-expand .navbar-collapse.show {
+    display: flex !important;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .navbar-custom-expand .navbar-collapse .nav,
+  .navbar-custom-expand .navbar-main-links,
+  .navbar-custom-expand .navbar-right-links {
+    flex-direction: column !important;
+    width: 100% !important;
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+  }
+
+  .navbar-custom-expand .navbar-collapse .nav.mx-auto {
+    margin: 0 !important;
+  }
+
+  .navbar-custom-expand .navbar-right-links {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .navbar-custom-expand .navbar-collapse .nav-link,
+  .navbar-custom-expand .navbar-collapse .navbar_link {
+    padding: 0.75rem 1rem !important;
+    margin-left: 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: left !important;
+    width: 100%;
+    display: block;
+  }
+
+  /* Ensure dropdown menus are visible in sidebar */
+  .navbar-custom-expand .navbar-collapse .dropdown-menu {
+    position: static !important;
+    float: none;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .navbar-custom-expand .navbar-collapse .dropdown-item {
+    color: white;
+    padding: 0.5rem 1rem;
+  }
+
+  .navbar-custom-expand .navbar-collapse .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .navbar-custom-expand .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .navbar-custom-expand .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  }
+}
+
 #login-nav-dropdown {
   font-family: 'Roboto', sans-serif;
   color: white !important;
@@ -78,6 +245,15 @@
   font-family: 'Roboto', sans-serif;
   color: white !important;
   margin-left: 20px;
+}
+
+/* Override navbar_link margin on mobile sidebar */
+@media (max-width: 1399.98px) {
+  .navbar_link {
+    margin-left: 0 !important;
+    padding-left: 1rem !important;
+    text-align: left !important;
+  }
 }
 
 .NotLoggedInAlert-everLogged {

@@ -128,15 +128,41 @@ const Login = () => {
         }
     };
 
+    const dropdownRef = useRef(null);
+
+    // Auto-scroll to dropdown when opened on mobile
+    const handleDropdownToggle = useCallback((isOpen) => {
+        if (isOpen && dropdownRef.current) {
+            setTimeout(() => {
+                dropdownRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+    }, []);
+
     // Only render user menu when signed in (users can't see this without auth anyway)
     if (!isSignedIn) {
         return null;
     }
 
     return (
-        <div>
-            <NavDropdown title={<FontAwesomeIcon icon={faUserCircle} />} alignRight id="login-nav-dropdown">
-                <NavDropdown.Item>{loggedInUser}</NavDropdown.Item>
+        <div ref={dropdownRef}>
+            <NavDropdown
+                title={<FontAwesomeIcon icon={faUserCircle} />}
+                alignRight
+                id="login-nav-dropdown"
+                onToggle={handleDropdownToggle}
+            >
+                <NavDropdown.Item
+                    style={{
+                        maxWidth: '200px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                    }}
+                    title={loggedInUser}
+                >
+                    {loggedInUser}
+                </NavDropdown.Item>
                 <NavDropdown.Item>
                     <Button as="input" type="button" variant="primary" value="Sign Out" size="sm" onClick={onSignOutClick} />
                 </NavDropdown.Item>
