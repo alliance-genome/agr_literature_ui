@@ -41,7 +41,7 @@ import Tooltip from 'react-bootstrap/Tooltip';
 
 import loading_gif from '../images/loading_cat.gif';
 import Spinner from "react-bootstrap/Spinner";
-import axios from "axios";
+import { api } from "../api";
 
 
 const restUrl = process.env.REACT_APP_RESTAPI;
@@ -349,7 +349,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   useEffect(() => {
     const fetchReferencefiles = async () => {
       setIsLoading(true);
-      const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
+      const referencefiles = await api.get("/reference/referencefile/show_all/" + referenceCurie);
       setReferenceFiles(referencefiles.data);
       setIsLoading(false);
     }
@@ -541,13 +541,13 @@ const BiblioIdQuery = () => {
   }
 
   const queryIdAndLoadReference = (refId) => {
-    let url = '';	
+    let url = '';
     if (refId.startsWith('AGR:') || refId.startsWith('AGRKB:')) {
-      url = restUrl + '/reference/' + refId;
+      url = '/reference/' + refId;
     } else {
-      url = restUrl + '/cross_reference/' + refId;
+      url = '/cross_reference/' + refId;
     }
-    axios.get(url)
+    api.get(url)
       .then(res => {
         loadReference(res.data.reference_curie !== undefined ? res.data.reference_curie : res.data.curie);
       })
@@ -558,7 +558,7 @@ const BiblioIdQuery = () => {
 	    setShowAlert(true);
         } else {
             setError("An unexpected error occurred.");
-	    setShowAlert(true); 
+	    setShowAlert(true);
         }
       });
   }

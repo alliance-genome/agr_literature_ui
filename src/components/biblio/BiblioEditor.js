@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
-import axios from "axios";
+import { api } from "../../api";
 import Modal from 'react-bootstrap/Modal';
 
 import { RowDisplayMeshTerms } from './BiblioDisplay';
@@ -225,12 +225,9 @@ const AlertDismissibleBiblioUpdate = () => {
     if (!modCorpusAssociationId) {
       return;
     }
-    const url = `${process.env.REACT_APP_RESTAPI}/reference/mod_corpus_association/${modCorpusAssociationId}`;
+    const url = `/reference/mod_corpus_association/${modCorpusAssociationId}`;
     try {
-      await axios.patch(url,
-        { 'corpus': false, 'force_out': true },
-        { headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" } }
-      );
+      await api.patch(url, { 'corpus': false, 'force_out': true });
       setShowTetModal(false);
       setModCorpusAssociationId(null);
       window.location.reload();

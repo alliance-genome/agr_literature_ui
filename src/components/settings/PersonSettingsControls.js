@@ -227,9 +227,9 @@ const PersonSettingsControls = ({
             setSelectedSettingId(created.person_setting_id);
           }
 
-          // Apply seed state, but do NOT auto-run search (preserves Back behavior)
+          // Apply seed state and run initial search
           applySettingsFromJson({ state: statePayload }, dispatch, {
-            runSearch: false,
+            runSearch: true,
             preserveExistingFacetsIfEmpty: true,
           });
           return;
@@ -237,8 +237,8 @@ const PersonSettingsControls = ({
 
         const settingToUse = picked || all.find((s) => s.default_setting) || all[0];
         if (settingToUse && settingToUse.json_settings) {
-          // Apply default, but do NOT auto-run search
-          applySettingsFromJson(settingToUse.json_settings, dispatch, { runSearch: false });
+          // Apply saved settings and run initial search
+          applySettingsFromJson(settingToUse.json_settings, dispatch, { runSearch: true });
           setSelectedSettingId(settingToUse.person_setting_id);
         }
       } catch (err) {

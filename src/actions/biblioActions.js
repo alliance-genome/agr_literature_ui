@@ -3,6 +3,7 @@
 // import notGithubVariables from './notGithubVariables';
 
 import axios from "axios";
+import { api } from "../api";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 // const restUrl = 'stage-literature-rest.alliancegenome.org';
@@ -157,15 +158,15 @@ export const changeFieldDatePublishedRange = (datePublishedRange) => {
   };
 }
 
-export const getCuratorSourceId = async (mod, accessToken) => {
-  try{
-    // /source/{source_type}/{source_method}/{mod_abbreviation}	
-    const res = await axios.get(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source/ATP:0000036/abc_literature_system/' + mod + '/' + mod);
+export const getCuratorSourceId = async (mod) => {
+  try {
+    // /source/{source_type}/{source_method}/{mod_abbreviation}
+    const res = await api.get('/topic_entity_tag/source/ATP:0000036/abc_literature_system/' + mod + '/' + mod);
     return res.data.topic_entity_tag_source_id;
   } catch (error) {
-    if (error.response.status === 404) {
+    if (error.response?.status === 404) {
       try {
-        const newSourceId = await axios.post(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source', {
+        const newSourceId = await api.post('/topic_entity_tag/source', {
           "source_evidence_assertion": "ATP:0000036",
           "source_method": "abc_literature_system",
           "validation_type": "professional_curator",
@@ -174,14 +175,9 @@ export const getCuratorSourceId = async (mod, accessToken) => {
           "data_provider": mod,
           "created_by": "00u1mhf3mf28xjpPt5d7",
           "updated_by": "00u1mhf3mf28xjpPt5d7",
-        },{ headers: {
-            'content-type': 'application/json',
-            'mode': 'cors',
-            'authorization': 'Bearer ' + accessToken
-          }
         });
         return newSourceId;
-      } catch(error){
+      } catch (error) {
         return undefined;
       }
     }
@@ -270,19 +266,13 @@ export const setBiblioEntityRemoveEntity = (tetId, value) => ({
 });
 
 export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, method, dispatchAction) => { return dispatch => {
-  // console.log(subPath);
-  // console.log(method);
-  const url = restUrl + '/topic_entity_tag/' + tetId;
+  // accessToken parameter kept for backwards compatibility - auth handled by API client interceptor
+  const url = '/topic_entity_tag/' + tetId;
   let response_message = 'update success';
 
-  axios({
+  api.request({
     url: url,
     method: method,
-    headers: {
-      'content-type': 'application/json',
-      'mode': 'cors',
-      'authorization': 'Bearer ' + accessToken
-    },
     data: payload
   })
     .then(res => {
@@ -306,17 +296,13 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
 export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
   return dispatch => {
     return new Promise((resolve, reject) => {
-      const [accessToken, subPath, payload, method] = updateArrayData;
-      const url = restUrl + '/' + subPath;
+      // accessToken in updateArrayData kept for backwards compatibility - auth handled by API client interceptor
+      const [, subPath, payload, method] = updateArrayData;
+      const url = '/' + subPath;
 
-      axios({
+      api.request({
         url: url,
         method: method,
-        headers: {
-          'content-type': 'application/json',
-          'mode': 'cors',
-          'authorization': 'Bearer ' + accessToken
-        },
         data: payload
       })
         .then(res => {
@@ -450,8 +436,9 @@ export const abc_entity_validation = (dispatch, entityType, entityInputList, tax
 
   const entityListStr = entityInputList.join('|');
   const encodedEntityList = encodeURIComponent(entityListStr);
-  const url = `${restUrl}/ontology/entity_validation/${taxon}/${entityType}/${encodedEntityList}`;
-  fetchJsonData(url).then(data => {
+  const url = `/ontology/entity_validation/${taxon}/${entityType}/${encodedEntityList}`;
+  api.get(url).then(res => {
+    const data = res.data;
     const searchMap = {};
     const obsoleteMap = {};
     for (const entityResult of data) {
@@ -678,11 +665,11 @@ export function generateRelationsSimple(referenceJson) {
 }
 
 export const fetchModReferenceTypes = async (mods) => {
-  const baseUrl = restUrl + '/reference/mod_reference_type/by_mod/';
+  const baseUrl = '/reference/mod_reference_type/by_mod/';
   let modReferenceTypes = {}
   for (const mod of mods) {
     if (mod !== '') {
-      const result = await axios.get(baseUrl + mod)
+      const result = await api.get(baseUrl + mod)
       modReferenceTypes[mod] = await result.data;
       modReferenceTypes[mod].unshift('');
     }
@@ -693,14 +680,10 @@ export const fetchModReferenceTypes = async (mods) => {
 
 export const getDescendantATPIds = async (atpID) => {
 
-  const url = `${restUrl}/ontology/search_descendants/${encodeURIComponent(atpID)}`;
+  const url = `/ontology/search_descendants/${encodeURIComponent(atpID)}`;
 
   try {
-    const response = await axios.get(url, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await api.get(url);
     return response.data;
   } catch (error) {
     console.error("Error occurred in getDescendantATPIds:", error);
@@ -717,12 +700,10 @@ export const fetchDisplayTagData = async () => {
     { curie: "ATP:0000130", name: "review display" },
   ];
 
-  const url = `${restUrl}/ontology/search_descendants/ATP:0000136`;
+  const url = `/ontology/search_descendants/ATP:0000136`;
 
   try {
-    const response = await axios.get(url, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await api.get(url);
 
     // If response.data is a non-empty array, return it; otherwise fallback
     if (Array.isArray(response.data) && response.data.length > 0) {
@@ -739,28 +720,29 @@ export const fetchDisplayTagData = async () => {
 export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   const createBiblioQueryReferenceCurie = async () => {
-    const url = restUrl + '/reference/' + referenceCurie;
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json'
+    const url = '/reference/' + referenceCurie;
+    try {
+      const res = await api.get(url);
+      const response = res.data;
+      let response_payload = 'not found';
+      if (response !== undefined) {
+        const referenceJson = response;
+        if ('reference_relations' in referenceJson && referenceJson['reference_relations'] !== null) {
+          generateRelationsSimple(referenceJson);
+        }
+        response_payload = referenceJson;
       }
-    })
-    const response = await res.json();
-    let response_payload = 'not found';
-    if (response !== undefined) {
-      const referenceJson = response;
-      if ('reference_relations' in referenceJson && referenceJson['reference_relations'] !== null) {
-        generateRelationsSimple(referenceJson);
-      }
-      response_payload = referenceJson;
+      // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
+      dispatch({
+        type: 'BIBLIO_GET_REFERENCE_CURIE',
+        payload: response_payload
+      })
+    } catch (error) {
+      dispatch({
+        type: 'BIBLIO_GET_REFERENCE_CURIE',
+        payload: 'not found'
+      })
     }
-    // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-    dispatch({
-      type: 'BIBLIO_GET_REFERENCE_CURIE',
-      payload: response_payload
-    })
   }
   createBiblioQueryReferenceCurie()
 };
@@ -846,65 +828,74 @@ export const validateFormUpdateBiblio = () => {
 
 
 export const updateButtonBiblio = (updateArrayData) => dispatch => {
-  // console.log('in updateButtonBiblio action');
-  const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
-  // console.log("payload " + payload);
-  // console.log("payload "); console.log(updateArrayData);
+  // accessToken in updateArrayData kept for backwards compatibility - auth handled by API client interceptor
+  const [, subPath, payload, method, index, field, subField] = updateArrayData;
   let newId = null;
-  const createUpdateButtonBiblio = async () => {
-//     const url = 'http://dev.alliancegenome.org:' + port + '/reference/' + curie;
-//     const url = 'http://dev.alliancegenome.org:' + port + '/' + subPath;
-//     const url = 'https://' + restUrl + '/' + subPath;
-    const url = restUrl + '/' + subPath;
-    console.log(url);
-    // console.log(notGithubVariables.authToken);
-    const res = await fetch(url, {
-      method: method,
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json',
-        'authorization': 'Bearer ' + accessToken
-      },
-      body: JSON.stringify( payload )
-    })
-//         'authorization': 'Bearer ' + notGithubVariables.authToken
 
-    let response_message = 'update success';
-    if ((method === 'DELETE') && (res.status === 204)) { }	// success of delete has no res.text so can't process like others
-    else {
-      // const response = await res.json();	// successful POST to related table (e.g. mod_reference_types) returns an id that is not in json format
-      const response_text = await res.text();
-      const response = JSON.parse(response_text);
-      if ( ((method === 'PATCH') && (res.status !== 202)) ||
-        ((method === 'DELETE') && (res.status !== 204)) ||
-        ((method === 'POST') && (res.status !== 201)) ) {
-        console.log('updateButtonBiblio action response not updated');
-        if (typeof(response.detail) !== 'object') {
-          response_message = response.detail; }
-        else if (typeof(response.detail[0].msg) !== 'object') {
-          response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
-        else {
-          response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
-      }
-      if ((method === 'POST') && (res.status === 201)) {
-        newId = parseInt(response_text); }
-      // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-      console.log('dispatch UPDATE_BUTTON_BIBLIO');
-    }
-    setTimeout(() => {
-      dispatch({
-        type: 'UPDATE_BUTTON_BIBLIO',
-        payload: {
-          responseMessage: response_message,
-          index: index,
-          value: newId,
-          field: field,
-          subField: subField
+  const createUpdateButtonBiblio = async () => {
+    const url = '/' + subPath;
+    console.log(restUrl + url);
+
+    try {
+      const res = await api.request({
+        url: url,
+        method: method,
+        data: payload
+      });
+
+      let response_message = 'update success';
+      if ((method === 'DELETE') && (res.status === 204)) {
+        // success of delete has no response body
+      } else {
+        const response = res.data;
+        if (((method === 'PATCH') && (res.status !== 202)) ||
+            ((method === 'DELETE') && (res.status !== 204)) ||
+            ((method === 'POST') && (res.status !== 201))) {
+          console.log('updateButtonBiblio action response not updated');
+          if (typeof(response.detail) !== 'object') {
+            response_message = response.detail;
+          } else if (typeof(response.detail[0].msg) !== 'object') {
+            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1];
+          } else {
+            response_message = 'error: ' + subPath + ' : API status code ' + res.status;
+          }
         }
-      })
-    }, 500);
-  }
-  createUpdateButtonBiblio()
+        if ((method === 'POST') && (res.status === 201)) {
+          newId = typeof response === 'number' ? response : parseInt(response);
+        }
+        console.log('dispatch UPDATE_BUTTON_BIBLIO');
+      }
+
+      setTimeout(() => {
+        dispatch({
+          type: 'UPDATE_BUTTON_BIBLIO',
+          payload: {
+            responseMessage: response_message,
+            index: index,
+            value: newId,
+            field: field,
+            subField: subField
+          }
+        });
+      }, 500);
+    } catch (error) {
+      console.error('updateButtonBiblio error:', error);
+      const response_message = error.response?.data?.detail || 'error: ' + subPath + ' : ' + error.message;
+      setTimeout(() => {
+        dispatch({
+          type: 'UPDATE_BUTTON_BIBLIO',
+          payload: {
+            responseMessage: response_message,
+            index: index,
+            value: null,
+            field: field,
+            subField: subField
+          }
+        });
+      }, 500);
+    }
+  };
+  createUpdateButtonBiblio();
 };
 
 export const resetBiblioIsLoading = () => {
@@ -980,17 +971,12 @@ export const removeLoadingFileName = (fileName) => {
 }
 
 export const downloadPDFfile = (referencefileId, filename, accessToken, referenceId) => {
+  // accessToken parameter kept for backwards compatibility - auth handled by API client interceptor
   return dispatch => {
     dispatch(addLoadingFileName(filename));
-    let url = process.env.REACT_APP_RESTAPI + '/reference/referencefile/download_file/' + referencefileId
+    const url = '/reference/referencefile/download_file/' + referencefileId;
 
-    axios({
-      url: url,
-      method: "GET",
-      headers: {
-        'Authorization': 'Bearer ' + accessToken,
-        'Content-Type': 'application/pdf' // or leave this out if the server sets it
-      },
+    api.get(url, {
       responseType: 'blob' // important for handling binary data
     }).then(response => {
       const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -999,46 +985,36 @@ export const downloadPDFfile = (referencefileId, filename, accessToken, referenc
     }).finally(() => {
       dispatch(removeLoadingFileName(filename));
     });
-
-  }
+  };
 }
 
 export const downloadReferencefile = (referencefileId, filename, accessToken, referenceId) => {
-
+  // accessToken parameter kept for backwards compatibility - auth handled by API client interceptor
   if (filename.endsWith('.pdf')) {
     return downloadPDFfile(referencefileId, filename, accessToken, referenceId);
   }
 
   return dispatch => {
     dispatch(addLoadingFileName(filename));
-    let url = process.env.REACT_APP_RESTAPI;
+    let url;
     if (referenceId !== undefined) {
-      url += '/reference/referencefile/additional_files_tarball/' + referenceId
+      url = '/reference/referencefile/additional_files_tarball/' + referenceId;
     } else {
-      url += '/reference/referencefile/download_file/' + referencefileId
+      url = '/reference/referencefile/download_file/' + referencefileId;
     }
-    axios({
-      url: url,
-      method: "GET",
-      headers: {
-        'content-type': 'application/octet-stream',
-        'authorization': 'Bearer ' + accessToken
-      },
+    api.get(url, {
       responseType: "blob" // important
     }).then(response => {
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        filename
-      );
+      link.href = downloadUrl;
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
     }).finally(() => {
       dispatch(removeLoadingFileName(filename));
-    })
-  }
+    });
+  };
 }
 
 export const setFileUploadingCount = (payload) => { return { type: 'SET_FILE_UPLOADING_COUNT', payload: payload }; };

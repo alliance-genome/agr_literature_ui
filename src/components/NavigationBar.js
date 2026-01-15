@@ -1,3 +1,4 @@
+import React, { useState, useCallback } from 'react';
 import { Link  } from 'react-router-dom';
 // import logo from '../images/alliance_logo.png';
 import { useSelector } from 'react-redux';
@@ -9,7 +10,7 @@ import Nav from 'react-bootstrap/Nav';
 
 import Login from './Login'
 import SigninHelp from './SigninHelp'
-import TesterDropdown from './TesterDropdown'
+import DevToolsDropdown from './DevToolsDropdown'
 
 
 const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
@@ -20,27 +21,62 @@ if (devOrStageOrProd === 'prod') { }
   else { navClass = "Navbar-dev"; homeLabel = devOrStageOrProd; }
 
 const NavigationBar = () => {
-  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
-  const cognitoTester = useSelector(state => state.isLogged.cognitoTester);
+  const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+  const [expanded, setExpanded] = useState(false);
+
+  const closeMenu = useCallback(() => setExpanded(false), []);
+
   return (
-  <Navbar className={navClass} >
-    <Nav className="justify-content-center"  style={{ flex: 1}}>
-      <Nav.Link className="navbar_link" >{homeLabel}</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/search">Search</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/biblio">Biblio Edit</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/sort">Sort</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/tracker">Tracker</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/create">Create</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/merge">Merge</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/reports">Reports</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/download">Download</Nav.Link>
-      <Nav.Link className="navbar_link" as={Link} to="/bulkSubmission">Bulk Submission</Nav.Link>
-      <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
-    </Nav>
-    <Nav>
-      { (cognitoMod === 'No' || cognitoTester === false) ? <SigninHelp /> : <TesterDropdown /> }
-      <Login />
-    </Nav>
+  <Navbar className={`${navClass} navbar-custom-expand`} expanded={expanded} onToggle={setExpanded}>
+    <Navbar.Toggle aria-controls="main-navbar-nav" onClick={() => setExpanded(!expanded)} />
+    <Navbar.Collapse id="main-navbar-nav">
+      {/* Close button for mobile sidebar */}
+      <div className="navbar-mobile-only navbar-close-row">
+        <button
+          className="navbar-close-btn"
+          onClick={closeMenu}
+          aria-label="Close menu"
+        >
+          ✕
+        </button>
+      </div>
+      {/* Empty spacer for balance on desktop */}
+      <div className="navbar-desktop-only" style={{ width: '150px' }}></div>
+      <Nav className="mx-auto navbar-main-links">
+        <Nav.Link className="navbar_link">{homeLabel}</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/search" onClick={closeMenu}>Search</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/biblio" onClick={closeMenu}>Biblio Edit</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/sort" onClick={closeMenu}>Sort</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/tracker" onClick={closeMenu}>Tracker</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/create" onClick={closeMenu}>Create</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/merge" onClick={closeMenu}>Merge</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/reports" onClick={closeMenu}>Reports</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/download" onClick={closeMenu}>Download</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/bulkSubmission" onClick={closeMenu}>Bulk Submission</Nav.Link>
+        <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
+      </Nav>
+      <Nav className="navbar-right-links">
+        <DevToolsDropdown />
+        {!isSignedIn && <SigninHelp />}
+        <Login />
+      </Nav>
+    </Navbar.Collapse>
+    {/* Backdrop overlay to close menu when clicking outside */}
+    {expanded && (
+      <div
+        className="navbar-mobile-only"
+        onClick={closeMenu}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1040
+        }}
+      />
+    )}
   </Navbar>
   )
 }

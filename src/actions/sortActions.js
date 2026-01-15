@@ -2,6 +2,8 @@
 
 // import notGithubVariables from './notGithubVariables';
 
+import { api } from "../api";
+
 const restUrl = process.env.REACT_APP_RESTAPI;
 // const restUrl = 'stage-literature-rest.alliancegenome.org';
 // const port = 11223;
@@ -34,33 +36,35 @@ export const sortButtonModsQuery = (mod, sortType) => dispatch => {
       return
   }
   const sortGetModsQuery = async () => {
-    const url = (sortType === 'needs_review') ? 
-                restUrl + '/sort/need_review?count=100&mod_abbreviation=' + mod :
-                restUrl + '/sort/prepublication_pipeline?count=100&mod_abbreviation=' + mod;
+    const url = (sortType === 'needs_review') ?
+                '/sort/need_review?count=100&mod_abbreviation=' + mod :
+                '/sort/prepublication_pipeline?count=100&mod_abbreviation=' + mod;
     // console.log(url);
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json'
+    try {
+      const res = await api.get(url);
+      const response = res.data;
+      // console.log(response);
+      let response_payload = mod + ' not found';
+      let response_found = 'not found';
+      if (response !== undefined) {
+        // console.log('response not undefined');
+        response_found = 'found';
+        response_payload = response;
       }
-    })
-    const response = await res.json();
-    // console.log(response);
-    let response_payload = mod + ' not found';
-    let response_found = 'not found';
-    if (response !== undefined) {
-      // console.log('response not undefined');
-      response_found = 'found';
-      response_payload = response;
+      // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
+      console.log('dispatch QUERY_BUTTON');
+      dispatch({
+        type: 'SORT_BUTTON_MODS_QUERY',
+        payload: response_payload,
+        responseFound: response_found
+      });
+    } catch (error) {
+      dispatch({
+        type: 'SORT_BUTTON_MODS_QUERY',
+        payload: mod + ' not found',
+        responseFound: 'not found'
+      });
     }
-    // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-    console.log('dispatch QUERY_BUTTON');
-    dispatch({
-      type: 'SORT_BUTTON_MODS_QUERY',
-      payload: response_payload,
-      responseFound: response_found
-    });
     dispatch({
       type: 'SORT_SET_IS_LOADING',
       payload: false
@@ -87,61 +91,74 @@ export const changeSortWorkflowToggler = (e) => {
 };
 
 export const updateButtonSort = (updateArrayData) => dispatch => {
-  // console.log('in updateButtonSort action');
-  const [accessToken, subPath, payload, method, index, field, subField] = updateArrayData;
-  // console.log("payload "); console.log(updateArrayData);
+  // accessToken in updateArrayData kept for backwards compatibility - auth handled by API client interceptor
+  const [, subPath, payload, method, index, field, subField] = updateArrayData;
   let newId = null;
+
   const createUpdateButtonSort = async () => {
-    const url = restUrl + '/' + subPath;
-    console.log(url);
-    // console.log(notGithubVariables.authToken);
-    const res = await fetch(url, {
-      method: method,
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json',
-        'authorization': 'Bearer ' + accessToken
-      },
-      body: JSON.stringify( payload )
-    })
-  // to test without updating through api, remove body line and change method to GET
-//       method: 'GET',
-    let response_message = 'update success';
-    if ((method === 'DELETE') && (res.status === 204)) { }      // success of delete has no res.text so can't process like others
-    else {
-      // const response = await res.json();     // successful POST to related table (e.g. mod_reference_types) returns an id that is not in json format
-      const response_text = await res.text();
-      const response = JSON.parse(response_text);
-      if ( ((method === 'PATCH') && (res.status !== 202)) ||
-           ((method === 'DELETE') && (res.status !== 204)) ||
-           ((method === 'POST') && (res.status !== 201)) ) {
-        console.log('updateButtonSort action response not updated');
-        if (typeof(response.detail) !== 'object') {
-            response_message = response.detail; }
-          else if (typeof(response.detail[0].msg) !== 'object') {
-            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
-          else {
-            response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
-      }
-      if ((method === 'POST') && (res.status === 201)) {
-        newId = parseInt(response_text); }
-      // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-      console.log('dispatch UPDATE_BUTTON_SORT');
-    }
-    setTimeout(() => {
-      dispatch({
-        type: 'UPDATE_BUTTON_SORT',
-        payload: {
-          responseMessage: response_message,
-          index: index,
-          value: newId,
-          field: field,
-          subField: subField
+    const url = '/' + subPath;
+    console.log(restUrl + url);
+
+    try {
+      const res = await api.request({
+        url: url,
+        method: method,
+        data: payload
+      });
+
+      let response_message = 'update success';
+      if ((method === 'DELETE') && (res.status === 204)) {
+        // success of delete has no response body
+      } else {
+        const response = res.data;
+        if (((method === 'PATCH') && (res.status !== 202)) ||
+            ((method === 'DELETE') && (res.status !== 204)) ||
+            ((method === 'POST') && (res.status !== 201))) {
+          console.log('updateButtonSort action response not updated');
+          if (typeof(response.detail) !== 'object') {
+            response_message = response.detail;
+          } else if (typeof(response.detail[0].msg) !== 'object') {
+            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1];
+          } else {
+            response_message = 'error: ' + subPath + ' : API status code ' + res.status;
+          }
         }
-      })
-    }, 500);
-  }
-  createUpdateButtonSort()
+        if ((method === 'POST') && (res.status === 201)) {
+          newId = typeof response === 'number' ? response : parseInt(response);
+        }
+        console.log('dispatch UPDATE_BUTTON_SORT');
+      }
+
+      setTimeout(() => {
+        dispatch({
+          type: 'UPDATE_BUTTON_SORT',
+          payload: {
+            responseMessage: response_message,
+            index: index,
+            value: newId,
+            field: field,
+            subField: subField
+          }
+        });
+      }, 500);
+    } catch (error) {
+      console.error('updateButtonSort error:', error);
+      const response_message = error.response?.data?.detail || 'error: ' + subPath + ' : ' + error.message;
+      setTimeout(() => {
+        dispatch({
+          type: 'UPDATE_BUTTON_SORT',
+          payload: {
+            responseMessage: response_message,
+            index: index,
+            value: null,
+            field: field,
+            subField: subField
+          }
+        });
+      }, 500);
+    }
+  };
+  createUpdateButtonSort();
 };
 
 export const closeSortUpdateAlert = () => {

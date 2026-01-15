@@ -1,39 +1,33 @@
-import axios from "axios";
-
-const restUrl = process.env.REACT_APP_RESTAPI;
+import { api } from "../api";
 
 export const searchMissingFiles = (mod_abbreviation) => {
-  return (dispatch,getState) => {
+  return (dispatch, getState) => {
     const state = getState();
     dispatch(setMissingFileResults(''));
     dispatch(setLoadingState(true));
-    axios.get(restUrl + '/reference/missing_files/'+mod_abbreviation+"?order_by="+state.tracker.orderBy+"&page="+state.tracker.trackerPage+"&filter="+state.tracker.trackerFilter)
-        .then(res => {
-          dispatch(setMissingFileResults(res.data));
-          dispatch(setLoadingState(false));
-        })
-        .catch();
-    }
-}
+    api.get('/reference/missing_files/' + mod_abbreviation + "?order_by=" + state.tracker.orderBy + "&page=" + state.tracker.trackerPage + "&filter=" + state.tracker.trackerFilter)
+      .then(res => {
+        dispatch(setMissingFileResults(res.data));
+        dispatch(setLoadingState(false));
+      })
+      .catch();
+  };
+};
 
-export const addWorkflowTag = (tag_id,mod_abbreviation,curie,accessToken) => {
+export const addWorkflowTag = (tag_id, mod_abbreviation, curie, accessToken) => {
+  // accessToken parameter kept for backwards compatibility - auth handled by API client interceptor
   return dispatch => {
-    let headers = {
-      'content-type': 'application/json',
-      'mode': 'cors',
-      'authorization': 'Bearer ' + accessToken
-    }
-    let params = {
+    const params = {
       workflow_tag_id: tag_id,
       mod_abbreviation: mod_abbreviation,
       reference_curie: curie
-    }
-    axios.post(restUrl + '/workflow_tag/',params, {headers:headers})
+    };
+    api.post('/workflow_tag/', params)
       .then(res => {
         dispatch(searchMissingFiles(mod_abbreviation));
-      })
-  }
-}
+      });
+  };
+};
 
 export const setMissingFileResults = (payload) => {
   return {

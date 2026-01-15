@@ -7,7 +7,7 @@ import {BiblioCitationDisplay} from './BiblioFileManagement';
 
 import Container from 'react-bootstrap/Container';
 import Table from 'react-bootstrap/Table';
-import axios from "axios";
+import { api } from "../../api";
 
 
 const BiblioRawTetData = () => {
@@ -28,9 +28,8 @@ const RawDataEntityTable = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (biblioUpdatingEntityAdd === 0) {
-        let url = process.env.REACT_APP_RESTAPI + '/topic_entity_tag/by_reference/' + referenceCurie
         setIsLoadingData(true);
-        const resultTags = await axios.get(url);
+        const resultTags = await api.get('/topic_entity_tag/by_reference/' + referenceCurie);
         if (JSON.stringify(resultTags.data) !== JSON.stringify(topicEntityTags)) {
           setTopicEntityTags(resultTags.data);
         }

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { api } from "../api";
 //import {useDispatch, useSelector} from 'react-redux';
 
 export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
@@ -60,7 +61,7 @@ export const changeQueryField = (e) => {
 export const fetchInitialFacets = (facetsLimits) => {
   return dispatch => {
     dispatch(setSearchFacetsLimits(facetsLimits));
-    axios.post(restUrl + '/search/references/', {
+    api.post('/search/references/', {
       query: null,
       facets_values: null,
       facets_limits: facetsLimits,
@@ -196,7 +197,7 @@ export const downloadSearchReferences = () => {
     const state = getState();
     let params = getSearchParams(state);
     params.size_result_count = 1000;	// always download up to 1000 results
-    return axios.post(restUrl + '/search/references/', params)
+    return api.post('/search/references/', params)
       .then(res => {
         if (
           res.data &&
@@ -239,7 +240,7 @@ export const searchReferences = () => {
     let params = getSearchParams(state);
 
     // main search request with cancel token.
-    axios.post(restUrl + '/search/references/', params, { cancelToken: cancelSource.token })
+    api.post('/search/references/', params, { cancelToken: cancelSource.token })
       .then(res => {
         if (
           res.data &&
@@ -254,14 +255,14 @@ export const searchReferences = () => {
             .flatMap(hit => hit.cross_references.map(cr => cr.curie));
           const curies = res.data.hits.map(hit => hit.curie);
 
-          axios.post(restUrl + '/cross_reference/show_all', xrefCurieValues, { cancelToken: cancelSource.token })
+          api.post('/cross_reference/show_all', xrefCurieValues, { cancelToken: cancelSource.token })
             .then(resXref => {
               let curieToCrossRefMap = resXref.data.reduce((acc, cur) => {
                 acc[cur.curie] = cur;
                 return acc;
               }, {});
 
-              axios.post(restUrl + '/reference/referencefile/show_main_pdf_ids_for_curies', {
+              api.post('/reference/referencefile/show_main_pdf_ids_for_curies', {
                 curies: curies,
                 mod_abbreviation: params.mod_abbreviation
               }, { cancelToken: cancelSource.token })
@@ -305,7 +306,7 @@ export const filterFacets = () => {
     let state= getState();
     let params= getSearchParams(state);
 
-    axios.post(restUrl + '/search/references/', params)
+    api.post('/search/references/', params)
         .then(res => {
           if (
             res.data &&
@@ -323,7 +324,7 @@ export const filterFacets = () => {
 }
 
 export const searchXref = (xref, setUrl) => {
-  axios.get(restUrl + '/cross_reference/'+xref)
+  api.get('/cross_reference/'+xref)
   .then(res => {
     if(res.data.pages){
       setUrl(res.data.pages[0].url)

@@ -2,7 +2,7 @@
 
 // import notGithubVariables from './notGithubVariables';
 
-import axios from "axios";
+import { api } from "../api";
 
 import { generateRelationsSimple } from './biblioActions';
 
@@ -55,17 +55,13 @@ export const mergeToggleIndependent = (fieldName, oneOrTwo, index, subtype) => {
 // }
 
 export const mergeQueryAtp = (accessToken, atpParents) => dispatch => {
+  // accessToken parameter kept for backwards compatibility - auth handled by API client interceptor
   console.log("action mergeAteamQueryAtp " + atpParents);
 
   const queryAteamAtpChildren = async (atp) => {
     // REST /ontology/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
-    const urlApi = restUrl + '/ontology/search_descendants/' + atp + '/true/false/true';
-    const response = await axios.get(urlApi, {
-      headers: {
-        'Authorization': 'Bearer ' + accessToken,
-        'Content-Type': 'application/json'
-      }
-    });
+    const urlApi = '/ontology/search_descendants/' + atp + '/true/false/true';
+    const response = await api.get(urlApi);
     dispatch({
       type: 'MERGE_ATP_RESULT',
       payload: { atp: atp, response: response.data }
@@ -87,81 +83,73 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
   });
 
   const queryXref = async (referenceInput) => {
-    const urlApi = restUrl + '/cross_reference/' + referenceInput;
+    const urlApi = '/cross_reference/' + referenceInput;
     console.log(urlApi);
-    const res = await fetch(urlApi, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json'
-      }
-    })
-    const response = await res.json();
-    let response_curie = referenceInput + ' not found';
-    let response_success = false;
-    if (response.reference_curie !== undefined) {
-      response_curie = response.reference_curie;
-      response_success = true; }
-    return [response_curie, response_success]
+    try {
+      const res = await api.get(urlApi);
+      const response = res.data;
+      let response_curie = referenceInput + ' not found';
+      let response_success = false;
+      if (response.reference_curie !== undefined) {
+        response_curie = response.reference_curie;
+        response_success = true; }
+      return [response_curie, response_success]
+    } catch (error) {
+      return [referenceInput + ' not found', false];
+    }
   }
 
   const queryRefTet = async (referenceCurie) => {
-    const url = restUrl + '/topic_entity_tag/by_reference/' + referenceCurie
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json'
-      }
-    })
-    const response = await res.json();
-    let response_payload = referenceCurie + ' not found';
-    let response_success = false;
-    if (Array.isArray(response)) {
-      response_success = true;
-      response_payload = response; }
-    return [response_payload, response_success]
+    const url = '/topic_entity_tag/by_reference/' + referenceCurie
+    try {
+      const res = await api.get(url);
+      const response = res.data;
+      let response_payload = referenceCurie + ' not found';
+      let response_success = false;
+      if (Array.isArray(response)) {
+        response_success = true;
+        response_payload = response; }
+      return [response_payload, response_success]
+    } catch (error) {
+      return [referenceCurie + ' not found', false];
+    }
   }
 
   const queryRefFiles = async (referenceCurie) => {
-    const url = restUrl + '/reference/referencefile/show_all/' + referenceCurie;
+    const url = '/reference/referencefile/show_all/' + referenceCurie;
     console.log(url);
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json'
-      }
-    })
-    const response = await res.json();
-    console.log(response);
-    let response_payload = referenceCurie + ' not found';
-    let response_success = false;
-    if (Array.isArray(response)) {
-      response_success = true;
-      response_payload = response; }
-    return [response_payload, response_success]
+    try {
+      const res = await api.get(url);
+      const response = res.data;
+      console.log(response);
+      let response_payload = referenceCurie + ' not found';
+      let response_success = false;
+      if (Array.isArray(response)) {
+        response_success = true;
+        response_payload = response; }
+      return [response_payload, response_success]
+    } catch (error) {
+      return [referenceCurie + ' not found', false];
+    }
   }
 
   const queryRef = async (referenceCurie) => {
-    const url = restUrl + '/reference/' + referenceCurie;
+    const url = '/reference/' + referenceCurie;
     console.log(url);
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json'
-      }
-    })
-    const response = await res.json();
-    console.log(response);
-    let response_payload = referenceCurie + ' not found';
-    let response_success = false;
-    if (response.curie !== undefined) {
-      // console.log('response not undefined');
-      response_success = true;
-      response_payload = response; }
-    return [response_payload, response_success]
+    try {
+      const res = await api.get(url);
+      const response = res.data;
+      console.log(response);
+      let response_payload = referenceCurie + ' not found';
+      let response_success = false;
+      if (response.curie !== undefined) {
+        // console.log('response not undefined');
+        response_success = true;
+        response_payload = response; }
+      return [response_payload, response_success]
+    } catch (error) {
+      return [referenceCurie + ' not found', false];
+    }
   }
 
   const resolveReferenceCurie = async (referenceInput) => {
@@ -265,61 +253,76 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
 }
 
 export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
-  // console.log('in mergeButtonApiDispatch action');
-  const [accessToken, mergeType, subPath, payload, method, index, field, subField] = updateArrayData;
-  // console.log("payload " + payload);
-  // console.log("payload "); console.log(updateArrayData);
+  // accessToken in updateArrayData kept for backwards compatibility - auth handled by API client interceptor
+  const [, mergeType, subPath, payload, method, index, field, subField] = updateArrayData;
   let newId = null;
-  const createUpdateButtonMerge = async () => {
-    const url = restUrl + '/' + subPath;
-    console.log(url);
-    const res = await fetch(url, {
-      method: method,
-      mode: 'cors',
-      headers: {
-        'content-type': 'application/json',
-        'authorization': 'Bearer ' + accessToken
-      },
-      body: JSON.stringify( payload )
-    })
 
-    let response_message = 'update success';
-    if ((method === 'DELETE') && (res.status === 204)) { }      // success of delete has no res.text so can't process like others
-    else {
-      // const response = await res.json();     // successful POST to related table (e.g. mod_reference_types) returns an id that is not in json format
-      const response_text = await res.text();
-      const response = JSON.parse(response_text);
-      if ( ((method === 'PATCH') && (res.status !== 202)) ||
-           ((method === 'DELETE') && (res.status !== 204)) ||
-           ((method === 'POST') && (res.status !== 201)) ) {
-        console.log('mergeButtonApiDispatch action response not updated');
-        if (typeof(response.detail) !== 'object') {
-            response_message = response.detail; }
-          else if (typeof(response.detail[0].msg) !== 'object') {
-            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1]; }
-          else {
-            response_message = 'error: ' + subPath + ' : API status code ' + res.status; }
-      }
-      if ((method === 'POST') && (res.status === 201)) {
-        newId = parseInt(response_text); }
-      // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-      console.log('dispatch MERGE_BUTTON_API_DISPATCH');
-    }
-    setTimeout(() => {
-      dispatch({
-        type: 'MERGE_BUTTON_API_DISPATCH',
-        payload: {
-          responseMessage: response_message,
-          index: index,
-          value: newId,
-          field: field,
-          subField: subField,
-          mergeType: mergeType
+  const createUpdateButtonMerge = async () => {
+    const url = '/' + subPath;
+    console.log(restUrl + url);
+
+    try {
+      const res = await api.request({
+        url: url,
+        method: method,
+        data: payload
+      });
+
+      let response_message = 'update success';
+      if ((method === 'DELETE') && (res.status === 204)) {
+        // success of delete has no response body
+      } else {
+        const response = res.data;
+        if (((method === 'PATCH') && (res.status !== 202)) ||
+            ((method === 'DELETE') && (res.status !== 204)) ||
+            ((method === 'POST') && (res.status !== 201))) {
+          console.log('mergeButtonApiDispatch action response not updated');
+          if (typeof(response.detail) !== 'object') {
+            response_message = response.detail;
+          } else if (typeof(response.detail[0].msg) !== 'object') {
+            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1];
+          } else {
+            response_message = 'error: ' + subPath + ' : API status code ' + res.status;
+          }
         }
-      })
-    }, 500);
-  }
-  createUpdateButtonMerge()
+        if ((method === 'POST') && (res.status === 201)) {
+          newId = typeof response === 'number' ? response : parseInt(response);
+        }
+        console.log('dispatch MERGE_BUTTON_API_DISPATCH');
+      }
+
+      setTimeout(() => {
+        dispatch({
+          type: 'MERGE_BUTTON_API_DISPATCH',
+          payload: {
+            responseMessage: response_message,
+            index: index,
+            value: newId,
+            field: field,
+            subField: subField,
+            mergeType: mergeType
+          }
+        });
+      }, 500);
+    } catch (error) {
+      console.error('mergeButtonApiDispatch error:', error);
+      const response_message = error.response?.data?.detail || 'error: ' + subPath + ' : ' + error.message;
+      setTimeout(() => {
+        dispatch({
+          type: 'MERGE_BUTTON_API_DISPATCH',
+          payload: {
+            responseMessage: response_message,
+            index: index,
+            value: null,
+            field: field,
+            subField: subField,
+            mergeType: mergeType
+          }
+        });
+      }, 500);
+    }
+  };
+  createUpdateButtonMerge();
 };
 
 export const setMergeCompleting = (payload) => {

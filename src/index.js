@@ -6,29 +6,12 @@ import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
-// import { createStore } from 'redux';
-import { createStore, applyMiddleware, compose } from 'redux';
-import thunk from 'redux-thunk';
 import { Provider } from 'react-redux';
-import rootReducer from './reducers';
+import { store } from './store';
+import { setStore } from './api';
 
-const initialState = {};
-const middleware = [thunk];
-
-const store = createStore(
-  rootReducer,
-  initialState,
-  compose(
-    applyMiddleware(...middleware)
-  )
-);
-
-// without redux dev-tools
-//     applyMiddleware(...middleware)
-
-// with redux dev-tools
-//     applyMiddleware(...middleware),
-//     window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+// Inject store into API client to avoid circular dependency
+setStore(store);
 
 const container = document.getElementById('root');
 const root = createRoot(container);

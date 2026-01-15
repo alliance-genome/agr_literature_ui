@@ -8,7 +8,7 @@ import Spinner from "react-bootstrap/Spinner";
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Form from 'react-bootstrap/Form';
-import axios from "axios";
+import { api } from "../../api";
 import Modal from 'react-bootstrap/Modal';
 
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
@@ -110,13 +110,8 @@ const AddToCorpus = ({ accessLevel, referenceCurie }) => {
   const dispatch = useDispatch();
 
   const addToCorpus = () => {
-    const url = `${process.env.REACT_APP_RESTAPI}/reference/add_to_corpus/${accessLevel}/${referenceCurie}`;
-    axios.post(url, {}, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      }
-    }).then(res => {
+    const url = `/reference/add_to_corpus/${accessLevel}/${referenceCurie}`;
+    api.post(url).then(res => {
       setAlert("Paper added to corpus successfully!");
       setShowAlert(true);
       setTimeout(() => {
@@ -238,23 +233,14 @@ const Workflow = ({ workflowRefreshTrigger }) => {
   const hideInProgressButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file unavailable');
 
   const handleWorkflowTransition = (newStatusId, alertMessage) => {
-    let url =
-      process.env.REACT_APP_RESTAPI +
-      '/workflow_tag/transition_to_workflow_status';
     let postData = {
       curie_or_reference_id: referenceCurie,
       mod_abbreviation: accessLevel,
       new_workflow_tag_atp_id: newStatusId,
       transition_type: 'manual',
     };
-    return axios
-      .post(url, postData, {
-        headers: {
-          Authorization: 'Bearer ' + accessToken,
-          mode: 'cors',
-          'Content-Type': 'application/json',
-        },
-      })
+    return api
+      .post('/workflow_tag/transition_to_workflow_status', postData)
       .then(res => {
         setAlert(alertMessage);
         setShowAlert(true);
@@ -335,7 +321,7 @@ const OpenAccess = () => {
 
   const fetchLicenseData = async () => {
     try {
-      const result = await axios.get(process.env.REACT_APP_RESTAPI + "/copyright_license/all");
+      const result = await api.get("/copyright_license/all");
       setLicenseData(result.data);
     } catch (error) {
       console.log(error);
@@ -362,14 +348,8 @@ const OpenAccess = () => {
   const addLicense = (e) => {
     if (!newLicense || newLicense === 'Pick a license' || newLicense === licenseName) return false;
     let license = newLicense.replace(' ', '+')
-    const url = process.env.REACT_APP_RESTAPI + "/reference/add_license/" + referenceCurie + "/" + license;
-    axios.post(url, {}, {
-      headers: {
-        'Authorization': 'Bearer ' + accessToken,
-        'mode': 'cors',
-        'Content-Type': 'application/json',
-      }
-    }).then((res) => {
+    const url = "/reference/add_license/" + referenceCurie + "/" + license;
+    api.post(url).then((res) => {
       setAlert("License Updated!");
       setShowAlert(true);
       setTimeout(() => {
@@ -474,7 +454,7 @@ const FileUpload = ({main_or_supp}) => {
       fileExtension = file.name.split(".").pop();
     }
 
-    let url = `${process.env.REACT_APP_RESTAPI}/reference/referencefile/file_upload/?reference_curie=${referenceCurie}&display_name=${fileName}&file_class=${main_or_supp}&file_publication_status=final&file_extension=${fileExtension}&is_annotation=false`;
+    let url = `/reference/referencefile/file_upload/?reference_curie=${referenceCurie}&display_name=${fileName}&file_class=${main_or_supp}&file_publication_status=final&file_extension=${fileExtension}&is_annotation=false`;
     if (accessLevel !== null) {
       url += `&mod_abbreviation=${accessLevel}`;
     }
@@ -483,11 +463,8 @@ const FileUpload = ({main_or_supp}) => {
     }
 
     if (accessLevel !== 'No') {
-      axios.post(url, formData, {
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "multipart/form-data",
-        }
+      api.post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       }).then((res) => {
         dispatch(fileUploadResult(`<strong>${file.name}</strong>`, 'success<br/>'));
         dispatch(setFileUploadingCount(0)); // Reset file uploading count on success
@@ -638,7 +615,7 @@ const FileEditor = ({ onFileStatusChange }) => {
 
   const fetchReferencefiles = async () => {
     setReferencefilesLoading(true);
-    const referencefiles = await axios.get(process.env.REACT_APP_RESTAPI + "/reference/referencefile/show_all/" + referenceCurie);
+    const referencefiles = await api.get("/reference/referencefile/show_all/" + referenceCurie);
     dispatch(setReferenceFiles(referencefiles.data));
     setReferencefilesLoading(false);
   }
@@ -655,63 +632,53 @@ const FileEditor = ({ onFileStatusChange }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileUploadingShowSuccess]);
 
-  const patchReferencefile = (referencefileId, data, accessToken) => {
-    const url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/" + referencefileId;
+  const patchReferencefile = (referencefileId, data) => {
     const dataToSend = {
         ...data,
         change_if_already_converted: false
     };
-    axios.patch(url, dataToSend, {
-      headers: {
-        "Authorization": "Bearer " + accessToken,
-        "Content-Type": "application/json",
-      }
-    }).then((res) => {
-      fetchReferencefiles().finally();
-      onFileStatusChange();
-    }).catch((error) => {
-      console.error('Patch Error:', error);
-      const errorDetail = error.response && error.response.data && error.response.data.detail
-        ? error.response.data.detail
-        : 'An error occurred during the file update';
-      if (errorDetail.includes("File already converted to text")) {
-        setReferencefileIdToPatch(referencefileId);
-        setPatchDataToApply(data);
-        setShowConfirmModal(true);
-      } else {
-        setErrorMessage(errorDetail);
-        setShowErrorModal(true);
-      }
-    });
-  }
-
-  const handleConfirmPatch = () => {
-    if (referencefileIdToPatch && patchDataToApply) {
-      const url = process.env.REACT_APP_RESTAPI + "/reference/referencefile/" + referencefileIdToPatch;
-      const dataToSend = {
-        ...patchDataToApply,
-        change_if_already_converted: true
-      };
-      axios.patch(url, dataToSend, {
-        headers: {
-          "Authorization": "Bearer " + accessToken,
-          "Content-Type": "application/json",
-        }
-      }).then((res) => {
+    api.patch("/reference/referencefile/" + referencefileId, dataToSend)
+      .then((res) => {
         fetchReferencefiles().finally();
         onFileStatusChange();
-        setReferencefileIdToPatch(null);
-        setPatchDataToApply(null);
-        setShowConfirmModal(false);
       }).catch((error) => {
         console.error('Patch Error:', error);
         const errorDetail = error.response && error.response.data && error.response.data.detail
           ? error.response.data.detail
           : 'An error occurred during the file update';
-        setErrorMessage(errorDetail);
-        setShowErrorModal(true);
-        setShowConfirmModal(false);
+        if (errorDetail.includes("File already converted to text")) {
+          setReferencefileIdToPatch(referencefileId);
+          setPatchDataToApply(data);
+          setShowConfirmModal(true);
+        } else {
+          setErrorMessage(errorDetail);
+          setShowErrorModal(true);
+        }
       });
+  }
+
+  const handleConfirmPatch = () => {
+    if (referencefileIdToPatch && patchDataToApply) {
+      const dataToSend = {
+        ...patchDataToApply,
+        change_if_already_converted: true
+      };
+      api.patch("/reference/referencefile/" + referencefileIdToPatch, dataToSend)
+        .then((res) => {
+          fetchReferencefiles().finally();
+          onFileStatusChange();
+          setReferencefileIdToPatch(null);
+          setPatchDataToApply(null);
+          setShowConfirmModal(false);
+        }).catch((error) => {
+          console.error('Patch Error:', error);
+          const errorDetail = error.response && error.response.data && error.response.data.detail
+            ? error.response.data.detail
+            : 'An error occurred during the file update';
+          setErrorMessage(errorDetail);
+          setShowErrorModal(true);
+          setShowConfirmModal(false);
+        });
     }
   };
 
@@ -727,13 +694,7 @@ const FileEditor = ({ onFileStatusChange }) => {
 
   const handleDeleteManualTETtags = async () => {
     try {
-      const deleteUrl = `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/delete_manual_tets/${referenceCurie}/${accessLevel}`;
-      await axios.delete(deleteUrl, {
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        }
-      });
+      await api.delete(`/topic_entity_tag/delete_manual_tets/${referenceCurie}/${accessLevel}`);
       setShowErrorModal(false);
       fetchReferencefiles();
     } catch (err) {
@@ -746,13 +707,7 @@ const FileEditor = ({ onFileStatusChange }) => {
 
   const deleteReferencefile = async (referencefileId) => {
     try {
-      const url = `${process.env.REACT_APP_RESTAPI}/reference/referencefile/${referencefileId}`;
-      await axios.delete(url, {
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+      await api.delete(`/reference/referencefile/${referencefileId}`);
       fetchReferencefiles();
     } catch (error) {
       let errorDetail = "An unexpected error occurred while deleting the file";

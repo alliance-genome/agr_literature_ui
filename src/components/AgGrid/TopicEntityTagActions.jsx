@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {useDispatch, useSelector} from "react-redux";
-import axios from "axios";
+import { api } from "../../api";
 import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
 import { Spinner } from 'react-bootstrap';
@@ -19,7 +19,6 @@ import Col from "react-bootstrap/Col";
 
 export default (props) => {
     const dispatch = useDispatch();
-    const accessToken = useSelector(state => state.isLogged.accessToken);
     const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const editTag = useSelector(state => state.biblio.editTag);
@@ -74,13 +73,7 @@ export default (props) => {
         let id = props.data.topic_entity_tag_id;
         setIsDeleting(true);
         try {
-            const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + id;
-            const response = await axios.delete(url, {
-                headers: {
-                    "Authorization": "Bearer " + accessToken,
-                    "Content-Type": "application/json"
-                }
-            });
+            const response = await api.delete("/topic_entity_tag/" + id);
 
             // status_code=status.HTTP_204_NO_CONTENT
             if (response.status === 204) {
