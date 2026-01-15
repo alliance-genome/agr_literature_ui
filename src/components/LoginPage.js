@@ -20,7 +20,11 @@ const LoginPage = () => {
     const [showHelp, setShowHelp] = useState(false);
 
     // Get the page user was trying to access (default to home)
-    const from = location.state?.from?.pathname || '/';
+    // Include search params (query string) to preserve URLs like /Biblio?action=display&referenceCurie=...
+    const fromLocation = location.state?.from;
+    const from = fromLocation
+        ? fromLocation.pathname + (fromLocation.search || '')
+        : '/';
 
     // Check if already authenticated on mount
     useEffect(() => {

@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import NavDropdown from 'react-bootstrap/NavDropdown';
+import Badge from 'react-bootstrap/Badge';
 import { showReauthModal, hideReauthModal, setDevTestingReauth } from '../actions/authActions';
 import { setTesterMod } from '../actions/loginActions';
 import { signOut as amplifySignOut } from 'aws-amplify/auth';
@@ -51,7 +52,7 @@ const DevToolsDropdown = () => {
     const showTesterOptions = cognitoMod !== 'No' && cognitoTester === true;
 
     return (
-        <div ref={dropdownRef}>
+        <div ref={dropdownRef} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <style>{`
                 #devtools-nav-dropdown + .dropdown-menu {
                     right: 0 !important;
@@ -60,7 +61,7 @@ const DevToolsDropdown = () => {
                 }
             `}</style>
             <NavDropdown
-                title={showTesterOptions && testerMod !== 'No' ? `Dev (${testerMod})` : 'Dev Tools'}
+                title="Dev Tools"
                 id="devtools-nav-dropdown"
                 onToggle={handleDropdownToggle}
                 align="end"
@@ -90,6 +91,19 @@ const DevToolsDropdown = () => {
                     </>
                 )}
             </NavDropdown>
+            {showTesterOptions && (
+                <Badge
+                    style={{
+                        fontSize: '0.85rem',
+                        padding: '5px 8px',
+                        backgroundColor: testerMod !== 'No' ? '#f5b041' : '#5a6268',
+                        color: testerMod !== 'No' ? '#333' : '#fff',
+                    }}
+                    title={testerMod !== 'No' ? 'Testing as this MOD' : 'No tester MOD selected'}
+                >
+                    Tester: {testerMod}
+                </Badge>
+            )}
         </div>
     );
 };
