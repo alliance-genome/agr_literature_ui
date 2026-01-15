@@ -14,16 +14,13 @@ const AuthenticatorContent = ({ onSuccess, skipInitialAuth }) => {
         const prevStatus = prevAuthStatusRef.current;
         prevAuthStatusRef.current = authStatus;
 
-        console.log('[AuthenticatorContent] authStatus:', authStatus, 'prev:', prevStatus, 'skipInitialAuth:', skipInitialAuth);
-
         if (authStatus === 'authenticated' && !hasCalledOnSuccess.current) {
             // If skipInitialAuth and this is the initial mount (no previous status), skip
+            // This is used for dev testing where we want to show the form even when already authenticated
             if (skipInitialAuth && prevStatus === null) {
-                console.log('[AuthenticatorContent] Skipping initial auth');
                 return;
             }
 
-            console.log('[AuthenticatorContent] Calling onSuccess');
             hasCalledOnSuccess.current = true;
             if (onSuccess) {
                 onSuccess();
