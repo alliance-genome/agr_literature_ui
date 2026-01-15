@@ -1,5 +1,4 @@
 // src/utils/userSettings.js
-import axios from 'axios';
 
 async function authed(baseUrl, token, path, options = {}) {
   try {

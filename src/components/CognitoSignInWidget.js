@@ -69,13 +69,6 @@ const CognitoSignInWidget = ({ onSuccess }) => {
                 }}>
                     Sign In
                 </h2>
-                <p style={{
-                    margin: 0,
-                    fontSize: '0.9rem',
-                    color: '#666',
-                }}>
-                    Access the Alliance Literature curation tools
-                </p>
             </div>
             <div style={{
                 padding: '16px',

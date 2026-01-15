@@ -11,7 +11,7 @@ import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/to
 
 import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportObsoleteEntities, setQcreportRecactedPapers, setQcreportDuplicateOrcids } from '../actions/reportsActions';
 
-import axios from 'axios';
+import { api } from "../api";
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
@@ -65,7 +65,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
 
   useEffect(() => {
     const fetchData = async () => {
-      let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
+      let url = `/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
       if (mod_abbreviation !== '') { url += `&mod_abbreviation=${mod_abbreviation}`; }
       if ( (date_range_start !== '') && (date_range_end !== '') ) {
           url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
@@ -73,7 +73,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
       if (dateFrequencyValue !== '') { url += `&date_frequency=${dateFrequencyValue}`; }
       setIsLoadingData(true);
       try {
-        const result = await axios.get(url);
+        const result = await api.get(url);
         setData(result.data);
 
         const totalsObj = {};
@@ -463,14 +463,14 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
     const fetchData = async () => {
         console.log("mods is " + mods);
         console.log("mod abbr " + mod_abbreviation);
-      let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/reports/${workflowProcessAtpId}/${mod_abbreviation}`;
+      let url = `/workflow_tag/reports/${workflowProcessAtpId}/${mod_abbreviation}`;
       // if (mod_abbreviation !== '') { url += `&mod_abbreviation=${mod_abbreviation}`; }
       //if ( (date_range_start !== '') && (date_range_end !== '') ) {
       //    url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
       //if ( (date_option !== 'default') && ( (date_range_start === '') ||  (date_range_end === '') ) ) { return; }
       setIsLoadingData(true);
       try {
-        const result = await axios.get(url);
+        const result = await api.get(url);
         setData(result.data[0]);
         setHeader(result.data[1])
 
@@ -610,10 +610,10 @@ const QCReportObsoleteEntities = ({modSection}) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const url = `${process.env.REACT_APP_RESTAPI}/check/check_obsolete_entities`;
+      const url = `/check/check_obsolete_entities`;
       setIsLoadingData(true);
       try {
-        const result = await axios.get(url);
+        const result = await api.get(url);
         dispatch(setQcreportObsoleteEntities(result.data));
         setKey(prevKey => prevKey + 1);
         // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
@@ -734,10 +734,10 @@ const QCReportRetractedPapers = ({modSection}) => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const url = `${process.env.REACT_APP_RESTAPI}/check/check_redacted_references_with_tags`;
+            const url = `/check/check_redacted_references_with_tags`;
             setIsLoadingData(true);
             try {
-                const result = await axios.get(url);
+                const result = await api.get(url);
                 dispatch(setQcreportRecactedPapers(result.data));
                 //setKey(prevKey => prevKey + 1);
                 // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
@@ -829,9 +829,7 @@ const QCObsoletePmids = ({ modSection }) => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const result = await axios.get(
-          `${process.env.REACT_APP_RESTAPI}/check/check_obsolete_pmids`
-        );
+        const result = await api.get(`/check/check_obsolete_pmids`);
         setData(result.data);
       } catch (error) {
         console.error('Error fetching obsolete PMIDs:', error);
@@ -914,10 +912,10 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const url = `${process.env.REACT_APP_RESTAPI}/check/check_duplicate_orcids`;
+      const url = `/check/check_duplicate_orcids`;
       setIsLoadingData(true);
       try {
-        const result = await axios.get(url);
+        const result = await api.get(url);
         dispatch(setQcreportDuplicateOrcids(result.data));
         setKey(prevKey => prevKey + 1);
         // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
@@ -1014,9 +1012,9 @@ const WorkflowDiagram = () => {
 
     useEffect(() => {
         const fetchDiagramData = async () => {
-            let url = `${process.env.REACT_APP_RESTAPI}/workflow_tag/workflow_diagram/All`;
+            let url = `/workflow_tag/workflow_diagram/All`;
             try {
-                const result = await axios.get(url);
+                const result = await api.get(url);
                 setTagData(result.data);
                 let nestedData = {tag: "ATP:0000141", children :[]};
             } catch (error) {

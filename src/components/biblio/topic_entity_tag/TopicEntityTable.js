@@ -12,7 +12,7 @@ import {
   Row,
   Col
 } from 'react-bootstrap';
-import axios from 'axios';
+import { api } from '../../../api';
 import { AgGridReact } from 'ag-grid-react';
 
 import {
@@ -318,15 +318,11 @@ const TopicEntityTable = () => {
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
 
   const fetchTableData = useCallback(async () => {
-    const url =
-      process.env.REACT_APP_RESTAPI +
-      '/topic_entity_tag/by_reference/' +
-      referenceCurie +
-      '?page=1&page_size=8000';
+    const url = '/topic_entity_tag/by_reference/' + referenceCurie + '?page=1&page_size=8000';
 
     setIsLoadingData(true);
     try {
-      const result = await axios.get(url);
+      const result = await api.get(url);
 
       (result.data || []).forEach((row) => {
         if ('validation_by_author' in row) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import axios from 'axios';
+import { api } from "../api";
 import {
   Container,
   Row,
@@ -151,28 +151,26 @@ const BulkSubmission = () => {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         formData.append('file', file);
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${accessToken}` },
-          body: formData
+        const apiUrl = url.replace(base, '');
+        await api.post(apiUrl, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
-        if (!resp.ok) {
-          const text = await resp.text();
-          throw new Error(text || `HTTP ${resp.status}`);
-        }
         return { status: 'success', message: 'Uploaded' };
       } catch (err) {
         // only retry on network-level failures
-        const isNetworkError = err.message === 'Failed to fetch' ||
-                             err.message.includes('NetworkError') ||
-                             err.message.includes('Connection reset');
+        const errorMessage = err.message || err.response?.data || 'Upload failed';
+        const isNetworkError = errorMessage === 'Failed to fetch' ||
+                             errorMessage.includes('NetworkError') ||
+                             errorMessage.includes('Network Error') ||
+                             errorMessage.includes('Connection reset');
         if (isNetworkError && attempt < maxAttempts) {
           // wait 500ms × current attempt count before trying again
           await new Promise(r => setTimeout(r, 500 * attempt));
           continue;
         }
         // final failure
-        return { status: 'error', message: err.message };
+        const errMsg = err.response?.data?.detail || err.response?.data || errorMessage;
+        return { status: 'error', message: typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg) };
       }
     }
   };
@@ -272,11 +270,9 @@ const BulkSubmission = () => {
     try {
       // pick the right endpoint
       const url = rawCurie.startsWith('AGRKB:')
-        ? `${base}/reference/${encodeURIComponent(rawCurie)}`
-        : `${base}/cross_reference/${encodeURIComponent(rawCurie)}`;
-      const res = await axios.get(url, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
+        ? `/reference/${encodeURIComponent(rawCurie)}`
+        : `/cross_reference/${encodeURIComponent(rawCurie)}`;
+      const res = await api.get(url);
       // response brings back AGRKB curie
       const agrCurie = res.data.reference_curie ?? res.data.curie;
       // navigate the opened tab

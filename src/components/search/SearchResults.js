@@ -13,7 +13,7 @@ import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilePdf, faPenSquare} from "@fortawesome/free-solid-svg-icons";
-import axios from "axios";
+import { api } from "../../api";
 import { useHistory } from "react-router-dom";
 
 const MatchingTextBox = (highlight) => {
@@ -34,18 +34,10 @@ const SearchResultItem = ({ reference }) => {
   const dispatch = useDispatch();
 
   const FileDownloadIcon = ({curie}) => {
-      const accessToken = useSelector(state => state.isLogged.accessToken);
       const curiePDFIDsMap = useSelector(state => state.search.curiePDFIDsMap);
 
-      const downloadPDFfile = (referencefileId, accessToken) => {
-          let url = process.env.REACT_APP_RESTAPI + '/reference/referencefile/download_file/' + referencefileId
-          axios({
-              url: url,
-              method: "GET",
-              headers: {
-                  'Authorization': 'Bearer ' + accessToken,
-                  'Content-Type': 'application/pdf'
-              },
+      const downloadPDFfile = (referencefileId) => {
+          api.get('/reference/referencefile/download_file/' + referencefileId, {
               responseType: 'blob'
           }).then(response => {
               const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -55,7 +47,7 @@ const SearchResultItem = ({ reference }) => {
       }
 
       return(
-          curiePDFIDsMap[curie] ? <Button className = "file-download-button" onClick={() => downloadPDFfile(curiePDFIDsMap[curie], accessToken)}><FontAwesomeIcon icon={faFilePdf} size= '3x'/></Button> : null
+          curiePDFIDsMap[curie] ? <Button className = "file-download-button" onClick={() => downloadPDFfile(curiePDFIDsMap[curie])}><FontAwesomeIcon icon={faFilePdf} size= '3x'/></Button> : null
       )
   }
 

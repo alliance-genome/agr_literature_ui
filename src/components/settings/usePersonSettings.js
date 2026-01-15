@@ -1,6 +1,5 @@
 // src/components/settings/usePersonSettings.js
 import { useState, useCallback } from "react";
-import axios from 'axios';
 import {
   listPersonSettings,
   createPersonSetting,

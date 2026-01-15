@@ -1,6 +1,6 @@
 // import { Link } from 'react-router-dom'
 // import { useHistory } from "react-router-dom";
-import axios from "axios";
+import { api } from "../api";
 import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 
@@ -143,10 +143,10 @@ const MergeSelectionSection = () => {
     const ref1 = referenceMeta1.input;
     const ref2 = referenceMeta2.input;
     try {
-      console.log("Checking lock status for ", ref1, ref2);  
+      console.log("Checking lock status for ", ref1, ref2);
       const responses = await Promise.all([
-        axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${ref1}`),
-        axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${ref2}`)
+        api.get(`/reference/lock_status/${ref1}`),
+        api.get(`/reference/lock_status/${ref2}`)
       ]);
       const lockedRefs = [];
       const messages = {};
@@ -238,9 +238,9 @@ const MergeSelectionSection = () => {
     try {
       const responses = await Promise.all(
         curies.map(curie =>
-          axios.get(`${process.env.REACT_APP_RESTAPI}/reference/lock_status/${curie}`)
+          api.get(`/reference/lock_status/${curie}`)
             .catch(() => ({ data: { locked: true } }))
-        ) 
+        )
       );
       const stillLocked = [];
       responses.forEach((response, index) => {

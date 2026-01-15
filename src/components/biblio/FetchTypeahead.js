@@ -1,5 +1,3 @@
-import axios from "axios";
-
 export async function FetchTypeaheadOptions(url) {
   const response = await fetch(url, {
     method: 'GET',

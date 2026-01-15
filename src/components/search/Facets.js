@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import axios from "axios";
+import { api } from "../../api";
 import {
     addFacetValue,
     addExcludedFacetValue,
@@ -249,13 +249,15 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
         if (facetsToInclude.includes('source_methods')) {
-            fetch(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source/all')
-                .then(response => response.json())
-                .then(data => {
+            api.get('/topic_entity_tag/source/all')
+                .then(response => {
+                    const data = response.data;
                     const mapping = {};
-                    data.forEach(item => {
-                        mapping[item.source_method.toLowerCase()] = item.description;
-                    });
+                    if (Array.isArray(data)) {
+                        data.forEach(item => {
+                            mapping[item.source_method.toLowerCase()] = item.description;
+                        });
+                    }
                     setSourceMethodDescriptions(mapping);
                 })
                 .catch(err => console.error("Error fetching source method descriptions:", err));
@@ -269,7 +271,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         searchFacets['source_evidence_assertions'].buckets
       ) {
         const fetchData = async () => {
-            const restApiBase = process.env.REACT_APP_RESTAPI;
             const buckets = searchFacets['source_evidence_assertions'].buckets;
 
             const mapping = {};
@@ -278,18 +279,18 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 const upperKey = bucket.key.toUpperCase();
                 let url = '';
 
-                // --- Use AGR REST API (no token needed) ---
+                // --- Use AGR REST API ---
                 if (upperKey.startsWith('ATP')) {
-                    url = `${restApiBase}/ontology/map_curie_to_name/atpterm/${upperKey}`;
+                    url = `/ontology/map_curie_to_name/atpterm/${upperKey}`;
                 } else if (upperKey.startsWith('ECO')) {
-                    url = `${restApiBase}/ontology/map_curie_to_name/ecoterm/${upperKey}`;
+                    url = `/ontology/map_curie_to_name/ecoterm/${upperKey}`;
                 } else {
                     console.warn(`Unknown prefix in bucket.key: ${bucket.key}`);
                     continue;
                 }
 
                 try {
-                    const result = await axios.get(url);
+                    const result = await api.get(url);
                     // This endpoint returns the name string directly
                     mapping[bucket.key] = result.data;
 

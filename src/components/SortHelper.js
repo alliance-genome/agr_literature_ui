@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Button, Modal, InputGroup, Form, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
+import { api } from '../api';
 import PropTypes from 'prop-types';
 
 /**
@@ -84,7 +85,6 @@ export const NewTaxonModal = () => {
  * Provides functionality to download a file associated with a reference.
  */
 export const FileElement = ({ referenceCurie }) => {
-  const accessToken = useSelector(state => state.isLogged.accessToken);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState('');
 
@@ -93,11 +93,7 @@ export const FileElement = ({ referenceCurie }) => {
     setError('');
 
     try {
-      const response = await axios.get(`${process.env.REACT_APP_RESTAPI}/references/${referenceCurie}/download`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+      const response = await api.get(`/references/${referenceCurie}/download`, {
         responseType: 'blob', // Important for file downloads
       });
 

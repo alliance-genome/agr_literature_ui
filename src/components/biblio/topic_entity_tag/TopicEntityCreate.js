@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
+import { api } from "../../../api";
 import {
   getDescendantATPIds,
   changeFieldEntityAddGeneralField,
@@ -184,12 +184,8 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     const fetchTopicEntityTags = async () => {
       try {
-        const response = await axios.get(`${REST}/topic_entity_tag/${editTag}`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        });
-	console.log("TET response.data=", response.data)
+        const response = await api.get(`/topic_entity_tag/${editTag}`);
+        console.log("TET response.data=", response.data)
         setTopicEntityTags(response.data);
       } catch (error) {
         console.error("Error fetching topic entity tags:", error);
@@ -199,7 +195,7 @@ const TopicEntityCreate = () => {
     if (editTag !== null) {
       fetchTopicEntityTags();
     }
-  }, [editTag, accessToken]);
+  }, [editTag]);
 
   useEffect(() => {
     console.log("useEffect triggered: editTag =", editTag);
@@ -330,7 +326,7 @@ const TopicEntityCreate = () => {
 
   useEffect(() => {
     if (tagExistingMessage) {
-      setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd);
+      setupEventListeners(existingTagResponses, accessLevel, dispatch, updateButtonBiblioEntityAdd);
     }
   }, [tagExistingMessage, existingTagResponses]);
 
@@ -362,9 +358,8 @@ const TopicEntityCreate = () => {
 
   useEffect(() => {
     const fetchCurationData = async () => {
-      const curationUrl = REST + `/curation_status/aggregated_curation_status_and_tet_info/${referenceCurie}/${accessLevel}`;
       try {
-        const result = await axios.get(curationUrl);
+        const result = await api.get(`/curation_status/aggregated_curation_status_and_tet_info/${referenceCurie}/${accessLevel}`);
         const processedCurationData = result.data.reduce((acc, info) => {
           acc[info.topic_curie] = {
             topic_name: info.topic_name,
@@ -382,7 +377,7 @@ const TopicEntityCreate = () => {
       }
     };
     fetchCurationData();
-  }, [REST, referenceCurie, accessLevel]);
+  }, [referenceCurie, accessLevel]);
 
   const getMapKeyByValue = (mapObj, value) => {
     const objEntries = Object.entries(mapObj);
@@ -491,18 +486,12 @@ const TopicEntityCreate = () => {
     };
 
     try {
-      const response = await axios.post(
-        `${REST}/workflow_tag/transition_to_workflow_status`,
-        {
-          curie_or_reference_id: referenceJsonLive.curie,
-          mod_abbreviation: accessLevel,
-          new_workflow_tag_atp_id: atpMap[action],
-          transition_type: "manual",
-        },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
+      const response = await api.post('/workflow_tag/transition_to_workflow_status', {
+        curie_or_reference_id: referenceJsonLive.curie,
+        mod_abbreviation: accessLevel,
+        new_workflow_tag_atp_id: atpMap[action],
+        transition_type: "manual",
+      });
 
       console.log(`The manual indexing WFT has been successfully set to ${action}:`, response.data);
       addMessage(`The manual indexing WFT has been successfully set to ${action}.`, "success");
@@ -669,16 +658,10 @@ const TopicEntityCreate = () => {
     console.log(json_data);
 
     try {
-      const url = process.env.REACT_APP_RESTAPI + subPath;
       return new Promise((resolve, reject) => {
-        axios({
-          url,
+        api.request({
+          url: subPath,
           method,
-          headers: {
-            'content-type': 'application/json',
-            'authorization': 'Bearer ' + accessToken,
-            'mode': 'cors',
-          },
           data: json_data,
         })
         .then((res) => {
@@ -687,7 +670,7 @@ const TopicEntityCreate = () => {
           else if (method === 'POST' && res.status === 201) isValid = true;
           else if (method === 'DELETE' && res.status === 204) isValid = true;
           if (!isValid) {
-            const response_message = `error: ${url} : API status code ${res.status} for method ${method}`;
+            const response_message = `error: ${subPath} : API status code ${res.status} for method ${method}`;
             reject(new Error(response_message));
           } else {
             resolve(res.data);
@@ -755,8 +738,7 @@ const TopicEntityCreate = () => {
 
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
 
-    const result = await checkForExistingTags(forApiArray, accessToken,
-					      accessLevel, dispatch,
+    const result = await checkForExistingTags(forApiArray, accessLevel, dispatch,
 					      updateButtonBiblioEntityAdd);
     if (result) {
       setTagExistingMessage(prev => prev ? prev + '<br/>' + result.html : result.html);

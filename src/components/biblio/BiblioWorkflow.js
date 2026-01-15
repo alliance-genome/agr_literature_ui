@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import axios from "axios";
+import { api } from "../../api";
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
@@ -109,7 +109,7 @@ const BiblioWorkflow = () => {
       return { ip, options };
     };
     try {
-      const res = await axios.get(url, { headers });
+      const res = await api.get(url.replace(REST, ''));
       const payload = res.data || {};
       const { ip, options } = normalize(payload);
       return {
@@ -155,11 +155,11 @@ const BiblioWorkflow = () => {
           'Content-Type': 'application/json',
         };
       
-        // fetch WFT + manual indexing tag (only for FB) + IP (only for ZFIN)                                                
+        // fetch WFT + manual indexing tag (only for FB) + IP (only for ZFIN)
         const [wftRes, mitRes, ipRow] = await Promise.all([
-          axios.get(url, { headers }),
-          shouldFetchMIT 
-            ? axios.get(manualIndexingUrl, { headers }).catch((e) => {
+          api.get(url.replace(REST, '')),
+          shouldFetchMIT
+            ? api.get(manualIndexingUrl.replace(REST, '')).catch((e) => {
                 console.warn('[ManualIndexingTag] GET failed:', e);
                 return { data: null };
               })
@@ -283,16 +283,10 @@ const BiblioWorkflow = () => {
 
   useEffect(() => {
     const fetchWFTdata = async () => {
-      const url = REST + "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
+      const url = "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
       setIsLoadingData(true);
       try {
-        const result = await axios.get(url, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'mode': 'cors',
-            'Content-Type': 'application/json',
-          }
-        });
+        const result = await api.get(url);
         const processedData = result.data.map((item) => ({
           ...item,
           updated_by: item.email ? item.email : item.updated_by,
@@ -312,19 +306,15 @@ const BiblioWorkflow = () => {
     const fetchCurationStatuses = async () => {
       // REST /ontology/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
       const urls = {
-        curationStatus: `${process.env.REACT_APP_RESTAPI}/ontology/search_descendants/ATP:0000230/true/false/true`,
-        curationTag1: `${process.env.REACT_APP_RESTAPI}/ontology/search_descendants/ATP:0000208/false/true/true`,
-        curationTag2: `${process.env.REACT_APP_RESTAPI}/ontology/search_descendants/ATP:0000227/false/true/true`,
+        curationStatus: `/ontology/search_descendants/ATP:0000230/true/false/true`,
+        curationTag1: `/ontology/search_descendants/ATP:0000208/false/true/true`,
+        curationTag2: `/ontology/search_descendants/ATP:0000227/false/true/true`,
       };
       try {
-        const headers = {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        };
         const [curationStatusResult, curationTagResult1, curationTagResult2] = await Promise.all([
-          axios.get(urls.curationStatus, { headers }),
-          axios.get(urls.curationTag1, { headers }),
-          axios.get(urls.curationTag2, { headers }),
+          api.get(urls.curationStatus),
+          api.get(urls.curationTag1),
+          api.get(urls.curationTag2),
         ]);
         const curationStatusOptionsObjs = curationStatusResult.data.map(entity => ({
               value: entity.curie,
@@ -357,10 +347,9 @@ const BiblioWorkflow = () => {
   useEffect(() => {
     const fetchCurationData = async () => {
       const curationUrl =
-        REST +
         `/curation_status/aggregated_curation_status_and_tet_info/${referenceCurie}/${accessLevel}`;
       try {
-        const result = await axios.get(curationUrl);
+        const result = await api.get(curationUrl);
 
         const processedCurationData = result.data
           .map(info => {
@@ -931,17 +920,8 @@ const BiblioWorkflow = () => {
 
     const patchManualIndexingTag = async (validation) => {
       if (!row.manual_indexing_tag_id) return;
-      const url = `${REST}/manual_indexing_tag/${row.manual_indexing_tag_id}`;
-      await axios.patch(
-        url,
-        { validation_by_biocurator: validation },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const url = `/manual_indexing_tag/${row.manual_indexing_tag_id}`;
+      await api.patch(url, { validation_by_biocurator: validation });
     };
 
     const handleClick = async (validation) => {
@@ -956,15 +936,12 @@ const BiblioWorkflow = () => {
           // and curation_tag = predicted_curation_tag_id (NO_GENETIC_DATA for 'no genetic data' prediction)
           if (!row.reference_workflow_tag_id) {
             // Create new workflow tag row
-            await postWorkflowTag(
-              {
-                reference_curie: referenceCurie,
-                mod_abbreviation: accessLevel,
-                workflow_tag_id: MANUAL_INDEXING_WONT_INDEX,
-                curation_tag: row.predicted_curation_tag_id // Use the predicted tag value
-              },
-              accessToken
-            );
+            await postWorkflowTag({
+              reference_curie: referenceCurie,
+              mod_abbreviation: accessLevel,
+              workflow_tag_id: MANUAL_INDEXING_WONT_INDEX,
+              curation_tag: row.predicted_curation_tag_id // Use the predicted tag value
+            });
           } else {
             // Update existing workflow tag row
             await patchWorkflowTag(
@@ -972,8 +949,7 @@ const BiblioWorkflow = () => {
               {
                 workflow_tag_id: MANUAL_INDEXING_WONT_INDEX,
                 curation_tag: row.predicted_curation_tag_id // Use the predicted tag value
-              },
-              accessToken
+              }
             );
           }
 
@@ -982,24 +958,20 @@ const BiblioWorkflow = () => {
           // and curation_tag = null
           if (!row.reference_workflow_tag_id) {
             // Create new workflow tag row
-            await postWorkflowTag(
-              {
-                reference_curie: referenceCurie,
-                mod_abbreviation: accessLevel,
-                workflow_tag_id: MANUAL_INDEXING_TBD,
-                curation_tag: null
-              },
-              accessToken
-            );
+            await postWorkflowTag({
+              reference_curie: referenceCurie,
+              mod_abbreviation: accessLevel,
+              workflow_tag_id: MANUAL_INDEXING_TBD,
+              curation_tag: null
+            });
           } else {
             // Update existing workflow tag row
             await patchWorkflowTag(
               row.reference_workflow_tag_id,
               {
                 workflow_tag_id: MANUAL_INDEXING_TBD,
-                curation_tag: null                
-              },
-              accessToken
+                curation_tag: null
+              }
             );
           }
         }
@@ -1267,19 +1239,14 @@ const BiblioWorkflow = () => {
           return;
         }
 
-        const url = `${REST}/indexing_priority/${rowData.indexing_priority_id}`;
+        const url = `/indexing_priority/${rowData.indexing_priority_id}`;
 
         // UI uses field "workflow_tag_id", API expects "indexing_priority"
         const payload = {
           indexing_priority: newValue === "" ? null : newValue,
         };
 
-        await axios.patch(url, payload, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          }
-        });
+        await api.patch(url, payload);
 
         // Refresh data after successful update
         fetchIndexingWorkflowOverview();
@@ -1289,25 +1256,21 @@ const BiblioWorkflow = () => {
       // --- Manual Indexing / Community Curation: existing workflow_tag behavior unchanged
       if (isClearingWorkflowTag) {
         if (rowData.reference_workflow_tag_id) {
-          await deleteWorkflowTag(rowData.reference_workflow_tag_id, accessToken);
+          await deleteWorkflowTag(rowData.reference_workflow_tag_id);
         }
       } else {
         if (rowData.reference_workflow_tag_id) {
           await patchWorkflowTag(
             rowData.reference_workflow_tag_id,
-            { [colId]: newValue },
-            accessToken
+            { [colId]: newValue }
           );
         } else if (colId === 'workflow_tag_id') {
           // Only post if creating new workflow tag AND the change was to 'workflow_tag_id
-          await postWorkflowTag(
-            {
-              reference_curie: referenceCurie,
-              mod_abbreviation: accessLevel,
-              workflow_tag_id: newValue
-            },
-            accessToken
-          );
+          await postWorkflowTag({
+            reference_curie: referenceCurie,
+            mod_abbreviation: accessLevel,
+            workflow_tag_id: newValue
+          });
         } else {
           // Trying to edit curation_tag/note but no existing workflow tag
           const msg = 'No existing workflow tag record to patch.';
@@ -1375,16 +1338,10 @@ const BiblioWorkflow = () => {
   };
 
   const updateCurationStatus = (subPath, method, json_data) => {
-    const url = process.env.REACT_APP_RESTAPI + subPath;
     return new Promise((resolve, reject) => {
-      axios({
-        url,
+      api.request({
+        url: subPath,
         method,
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer ' + accessToken,
-          'mode': 'cors',
-        },
         data: json_data,
       })
       .then((res) => {
@@ -1393,14 +1350,14 @@ const BiblioWorkflow = () => {
         else if (method === 'POST' && res.status === 201) isValid = true;
         else if (method === 'DELETE' && res.status === 204) isValid = true;
         if (!isValid) {
-          const response_message = `error: ${url} : API status code ${res.status} for method ${method}`;
+          const response_message = `error: ${subPath} : API status code ${res.status} for method ${method}`;
           reject(new Error(response_message));
         } else {
           resolve(res.data);
         }
       })
       .catch((err) => {
-        const errorMessage = (<>API error: reload page to see what's in the database.<br/><br/>Debug:<br/>url: {url}<br/>payload: {JSON.stringify(json_data)}<br/>error: {err.toString()}</>)
+        const errorMessage = (<>API error: reload page to see what's in the database.<br/><br/>Debug:<br/>url: {subPath}<br/>payload: {JSON.stringify(json_data)}<br/>error: {err.toString()}</>)
         setApiErrorMessage(errorMessage);
         setShowApiErrorModal(true);
         console.error(errorMessage);
