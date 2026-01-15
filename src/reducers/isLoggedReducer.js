@@ -4,7 +4,8 @@ import {
   HIDE_REAUTH_MODAL,
   ADD_PENDING_REQUEST,
   CLEAR_PENDING_REQUESTS,
-  SET_AUTH_LOADING
+  SET_AUTH_LOADING,
+  SET_DEV_TESTING_REAUTH
 } from '../actions/authActions';
 
 const INTIAL_STATE = {
@@ -22,7 +23,8 @@ const INTIAL_STATE = {
   // Re-authentication state
   reauthRequired: false,
   pendingRequests: [],
-  isLoading: true
+  isLoading: true,
+  devTestingReauth: false
 };
 
 const loggedReducer = (state = INTIAL_STATE, action) => {
@@ -98,6 +100,8 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
       return { ...state, pendingRequests: [] }
     case SET_AUTH_LOADING:
       return { ...state, isLoading: action.payload }
+    case SET_DEV_TESTING_REAUTH:
+      return { ...state, devTestingReauth: action.payload }
     default:
       return state;
   }

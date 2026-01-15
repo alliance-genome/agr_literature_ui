@@ -11,6 +11,7 @@ import Nav from 'react-bootstrap/Nav';
 import Login from './Login'
 import SigninHelp from './SigninHelp'
 import TesterDropdown from './TesterDropdown'
+import DevToolsDropdown from './DevToolsDropdown'
 
 
 const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
@@ -57,6 +58,7 @@ const NavigationBar = () => {
         <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
       </Nav>
       <Nav className="navbar-right-links">
+        <DevToolsDropdown />
         { (cognitoMod === 'No' || cognitoTester === false) ? <SigninHelp /> : <TesterDropdown /> }
         <Login />
       </Nav>
