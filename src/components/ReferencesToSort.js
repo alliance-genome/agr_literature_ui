@@ -14,7 +14,7 @@ import { Button, Form, Col, Row } from 'react-bootstrap';
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import { NewTaxonModal, FileElement } from './SortHelper'; // Updated import
 import PropTypes from 'prop-types';
-import axios from 'axios'; // Added import
+import { api } from '../api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faCheck, faCheckCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
 
@@ -325,10 +325,8 @@ const ReferencesToSort = ({
                     loadingState[index] = true;
                     setSpeciesSelectLoading(loadingState);
 
-                    const baseUrl = process.env.REACT_APP_RESTAPI;
-
-                    axios
-                      .get(`${baseUrl}/ontology/search_species/${encodeURIComponent(query)}`)
+                    api
+                      .get(`/ontology/search_species/${encodeURIComponent(query)}`)
                       .then(res => {
                         const updatedLoading = new Array(speciesSelectLoading.length).fill(false);
                         setSpeciesSelectLoading(updatedLoading);

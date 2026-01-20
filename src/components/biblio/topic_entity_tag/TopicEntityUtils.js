@@ -1,14 +1,9 @@
-import axios from 'axios';
+import { api } from '../../../api';
 
-export async function fetchNote(url, accessToken) {
+export async function fetchNote(url) {
     let note = '';
     try {
-        let response = await axios.get(url, {
-            headers: {
-                "Authorization": "Bearer " + accessToken,
-                "Content-Type": "application/json"
-            }
-        });
+        let response = await api.get(url);
         note = response.data.note;
     } catch (error) {
         console.error("Error processing entry: ", error);
@@ -17,11 +12,11 @@ export async function fetchNote(url, accessToken) {
 };
 
 // assuming fetchNote is an async function that returns a note from the database
-export async function fetchNoteAndAppend(url, accessToken, additionalNote) {
+export async function fetchNoteAndAppend(url, additionalNote) {
     let noteFromDb = '';
     try {
         // await the asynchronous operation to complete and get the note
-        noteFromDb = await fetchNote(url, accessToken);
+        noteFromDb = await fetchNote(url);
     } catch (error) {
         console.error("Error fetching note: ", error);
     }
@@ -36,9 +31,9 @@ export async function fetchNoteAndAppend(url, accessToken, additionalNote) {
 
 
 // function to handle the force insertion click event
-export function handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, updateType) {
+export function handleForceInsertionUpdateClick(tagResponse, accessLevel, dispatch, updateButtonBiblioEntityAdd, event, updateType) {
     const tagData = tagResponse.data;
-    
+
     // change the background color when it the button is clicked
     if (event && event.target) {
         event.target.style.backgroundColor = 'lightblue';
@@ -48,7 +43,7 @@ export function handleForceInsertionUpdateClick(tagResponse, accessToken, access
             delete tagData[key];
 	}
     });
-	
+
     if (updateType === 'updateNote') {
 	/*
 	if (tagResponse.status.startsWith("exists:")) {
@@ -57,21 +52,16 @@ export function handleForceInsertionUpdateClick(tagResponse, accessToken, access
             note_in_db = parts[1] === undefined ? '' : parts[1];
 	}
 	*/
-	const url = process.env.REACT_APP_RESTAPI + "/topic_entity_tag/" + tagData['topic_entity_tag_id'];
+	const url = "/topic_entity_tag/" + tagData['topic_entity_tag_id'];
         (async () => {
             try {
-                const updated_note = await fetchNoteAndAppend(url, accessToken, tagData['note']);
+                const updated_note = await fetchNoteAndAppend(url, tagData['note']);
                 console.log("updated_note=", updated_note);
 
                 let tagDataWithUpdatedNote = { 'note': updated_note };
-                
-                // Ensure this axios call is awaited as well
-                await axios.patch(url, tagDataWithUpdatedNote, {
-                    headers: {
-                        "Authorization": "Bearer " + accessToken,
-                        "Content-Type": "application/json"
-                    }
-                });
+
+                // Ensure this api call is awaited as well
+                await api.patch(url, tagDataWithUpdatedNote);
 
                 // Dispatch a custom event after successful update
                 window.dispatchEvent(new CustomEvent('noteUpdated', { detail: { updated: true } }));
@@ -90,7 +80,7 @@ export function handleForceInsertionUpdateClick(tagResponse, accessToken, access
 	console.log("tagData=", JSON.stringify(tagData));
 	const subPath = 'topic_entity_tag/';
 	const method = 'POST';
-	let data = [accessToken, subPath, tagData, method];
+	let data = [subPath, tagData, method];
 	try {
 	    dispatch(updateButtonBiblioEntityAdd(data, accessLevel));
 	} catch(error) {
@@ -100,7 +90,7 @@ export function handleForceInsertionUpdateClick(tagResponse, accessToken, access
 }
 
 // function to set up event listeners for the dynamically generated buttons
-export function setupEventListeners(existingTagResponses, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
+export function setupEventListeners(existingTagResponses, accessLevel, dispatch, updateButtonBiblioEntityAdd) {
     existingTagResponses.forEach((tagResponse, index) => {
         const insertionButton = document.getElementById(`forceInsertionBtn-${index}`);
         const updateNoteButton = document.getElementById(`updateNoteBtn-${index}`);
@@ -112,7 +102,7 @@ export function setupEventListeners(existingTagResponses, accessToken, accessLev
 
         if (insertionButton) {
             insertionButton.addEventListener('click', function(event) {
-                handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch,
+                handleForceInsertionUpdateClick(tagResponse, accessLevel, dispatch,
 						updateButtonBiblioEntityAdd, event, "forceInsertion");
                 removeButtons();
             });
@@ -120,7 +110,7 @@ export function setupEventListeners(existingTagResponses, accessToken, accessLev
 
         if (updateNoteButton) {
             updateNoteButton.addEventListener('click', function(event) {
-                handleForceInsertionUpdateClick(tagResponse, accessToken, accessLevel, dispatch, 
+                handleForceInsertionUpdateClick(tagResponse, accessLevel, dispatch,
 						updateButtonBiblioEntityAdd, event, "updateNote");
                 removeButtons();
             });
@@ -129,10 +119,9 @@ export function setupEventListeners(existingTagResponses, accessToken, accessLev
 }
 
 // function to check for existing tags and generate an HTML table
-export const checkForExistingTags = async (forApiArray, accessToken, accessLevel, dispatch, updateButtonBiblioEntityAdd) => {
+export const checkForExistingTags = async (forApiArray, accessLevel, dispatch, updateButtonBiblioEntityAdd) => {
     let existingTagResponses = [];
     for (const arrayData of forApiArray.values()) {
-        arrayData.unshift(accessToken);
         try {
             const response = await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
             if (response.status.startsWith('exists')) {
@@ -170,7 +159,7 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
         tableHTML += "</tr>";
 
         existingTagResponses.forEach((tagResponse, index) => {
-            const tag = tagResponse.data; 
+            const tag = tagResponse.data;
             tableHTML += "<tr>";
 	    let creator_in_db = '';
             headers.forEach(header => {
@@ -192,7 +181,7 @@ export const checkForExistingTags = async (forApiArray, accessToken, accessLevel
 		creator_in_db = parts[0];
                 action_button_html = `<button id="forceInsertionBtn-${index}" class="force-insertion-btn" style="margin-bottom: 5px;" variant="outline-primary" size="sm">Force Insertion</button>`;
 		if (tagResponse.message.startsWith("The tag with")) {
-		    action_button_html += `<button id="updateNoteBtn-${index}" class="update-note-btn" variant="outline-secondary" size="sm">Update Note</button>`; 
+		    action_button_html += `<button id="updateNoteBtn-${index}" class="update-note-btn" variant="outline-secondary" size="sm">Update Note</button>`;
 		}
             }
 	    tableHTML += `<td>${creator_in_db}</td>`;

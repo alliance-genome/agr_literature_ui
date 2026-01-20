@@ -1,6 +1,6 @@
 import Alert from "react-bootstrap/Alert";
 import ProgressBar from "react-bootstrap/ProgressBar";
-import axios from "axios";
+import { api } from "../api";
 import {useEffect, useState} from "react";
 
 
@@ -12,14 +12,7 @@ export const DebeziumStatusAlert = () => {
     useEffect(() => {
         const checkDebeziumStatus = async () => {
             try {
-                const response = await axios.get(
-                    process.env.REACT_APP_RESTAPI + '/check/debezium_status',
-                    {
-                        headers: {
-                            'content-type': 'application/json'
-                        }
-                    }
-                );
+                const response = await api.get('/check/debezium_status');
 
                 // Check if Debezium is actively reindexing
                 // Response structure: { is_reindexing: boolean, status: string, progress_percentage: number, ... }

@@ -2,92 +2,69 @@
 
 // import notGithubVariables from './notGithubVariables';
 
-import axios from "axios";
+import { api } from "../api";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 const uiUrl = process.env.REACT_APP_UI_URL;
 
 export const downloadActionButtonDownload = (accessToken, apiFilename, nightlyOrOndemand) => dispatch => {
-  // console.log('in downloadActionButtonDownload action');
-  // console.log(accessToken);
-
+  // accessToken parameter kept for backwards compatibility - auth handled by API client interceptor
   let modalHeader = 'Downloading';
   let modalBody = 'Your file is getting downloaded and will eventually show up in your downloads, no need to click the download button again.';
   let filename = apiFilename;
   if (nightlyOrOndemand === 'nightly') {
     filename = 'reference_' + apiFilename + '_nightly.json.gz';
-    dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true }); }
-  else if (nightlyOrOndemand === 'ondemand') {
-    dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true }); }
-//   dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: true });
+    dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: true });
+  } else if (nightlyOrOndemand === 'ondemand') {
+    dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: true });
+  }
   dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: modalBody } });
 
   const downloadFile = async () => {
+    let urlPath = '/reference/dumps/';
+    if (nightlyOrOndemand === 'nightly') {
+      urlPath = urlPath + 'latest/';
+    }
+    urlPath = urlPath + apiFilename;
 
-    // use real url when api on prod
-      let urlBase = restUrl + '/reference/dumps/';
-      if (nightlyOrOndemand === 'nightly') {
-          urlBase = urlBase + 'latest/'
-      }
-      const url = urlBase + apiFilename;
-    // const url = 'https://dev4006-literature-rest.alliancegenome.org/reference/dumps/latest/' + mod;
-
-    axios({
-        url: url,
-        method: "GET",
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer ' + accessToken
-        },
-        responseType: "blob" // important
+    api.get(urlPath, {
+      responseType: "blob" // important
     }).then(response => {
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute(
-            "download",
-            filename
-        );
-        document.body.appendChild(link);
-        link.click();
+      const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
 
-        if (nightlyOrOndemand === 'nightly') {
-          dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: false }); }
-        else if (nightlyOrOndemand === 'ondemand') {
-          dispatch({ type: 'DOWNLOAD_SET_AUTO_DOWNLOAD_ONDEMAND', payload: false });
-          dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: false }); }
-        // dispatch({ type: 'DOWNLOAD_SET_SHOW_DOWNLOADING', payload: false });	// do not make this go away, awkward if fast download
-        // Clean up and remove the link
-        link.parentNode.removeChild(link);
+      if (nightlyOrOndemand === 'nightly') {
+        dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_NIGHTLY', payload: false });
+      } else if (nightlyOrOndemand === 'ondemand') {
+        dispatch({ type: 'DOWNLOAD_SET_AUTO_DOWNLOAD_ONDEMAND', payload: false });
+        dispatch({ type: 'DOWNLOAD_SET_IS_DOWNLOADING_ONDEMAND', payload: false });
+      }
+      // Clean up and remove the link
+      link.parentNode.removeChild(link);
     });
-
-  }
-  downloadFile()
+  };
+  downloadFile();
 };
 
 export const downloadActionButtonGenerate = (accessToken, mod, userId) => dispatch => {
+  // accessToken parameter kept for backwards compatibility - auth handled by API client interceptor
+  let modalHeader = 'Generating File';
+  const urlPath = '/reference/dumps/ondemand?mod=' + mod + '&email=' +
+      userId + '&ui_root_url=' + encodeURIComponent(uiUrl + '/download?action=filedownload&filename=');
 
-    let modalHeader = 'Generating File';
-    const url = restUrl + '/reference/dumps/ondemand?mod=' + mod + '&email=' +
-        userId + '&ui_root_url=' + encodeURIComponent(uiUrl + '/download?action=filedownload&filename=');
+  let message = "An error occurred in the API request (downloadActionButtonGenerate function)";
+  dispatch({ type: 'DOWNLOAD_SET_IS_REQUESTING_GENERATION', payload: true });
 
-    let message = "An error occurred in the API request (downloadActionButtonGenerate function)";
-    dispatch({ type: 'DOWNLOAD_SET_IS_REQUESTING_GENERATION', payload: true });
-
-    axios({
-        url: url,
-        method: "POST",
-        headers: {
-            'content-type': 'application/json',
-            'authorization': 'Bearer ' + accessToken
-        },
-        responseType: "json"
-    }).then(response => {
-        message = response.data.message;
-    }).finally(() => {
-        dispatch({ type: 'DOWNLOAD_SET_IS_REQUESTING_GENERATION', payload: false });
-        dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: message }});
-    });
+  api.post(urlPath).then(response => {
+    message = response.data.message;
+  }).finally(() => {
+    dispatch({ type: 'DOWNLOAD_SET_IS_REQUESTING_GENERATION', payload: false });
+    dispatch({ type: 'DOWNLOAD_UPDATE_GENERIC_MODAL', payload: { modalHeader: modalHeader, modalBody: message }});
+  });
 };
 
 

@@ -1,4 +1,12 @@
 import jwt_decode from 'jwt-decode';
+import {
+  SHOW_REAUTH_MODAL,
+  HIDE_REAUTH_MODAL,
+  ADD_PENDING_REQUEST,
+  CLEAR_PENDING_REQUESTS,
+  SET_AUTH_LOADING,
+  SET_DEV_TESTING_REAUTH
+} from '../actions/authActions';
 
 const INTIAL_STATE = {
   isSignedIn: null,
@@ -11,7 +19,12 @@ const INTIAL_STATE = {
   testerMod: 'No',
   accessToken: null,
   uid: null,
-  email: null
+  email: null,
+  // Re-authentication state
+  reauthRequired: false,
+  pendingRequests: [],
+  isLoading: true,
+  devTestingReauth: false
 };
 
 const loggedReducer = (state = INTIAL_STATE, action) => {
@@ -51,9 +64,44 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         cognitoTester: cognitoTester,
         cognitoGroups: groups,
         uid: jsonToken.sub || jsonToken.uid,
-        email: action.payload.email}
+        email: action.payload.email,
+        // Clear re-auth state on successful sign in (unless dev testing)
+        reauthRequired: state.devTestingReauth ? state.reauthRequired : false,
+        pendingRequests: state.devTestingReauth ? state.pendingRequests : [],
+        isLoading: false
+      }
     case 'SIGN_OUT':
-      return {...state, isSignedIn: false, userId: null, cognitoGroups: null, cognitoMod: 'No', cognitoDeveloper: false, cognitoTester: false, testerMod: 'No', uid: null, accessToken: null, email: null}
+      return {
+        ...state,
+        isSignedIn: false,
+        userId: null,
+        cognitoGroups: null,
+        cognitoMod: 'No',
+        cognitoDeveloper: false,
+        cognitoTester: false,
+        testerMod: 'No',
+        uid: null,
+        accessToken: null,
+        email: null,
+        reauthRequired: false,
+        pendingRequests: [],
+        isLoading: false
+      }
+    case SHOW_REAUTH_MODAL:
+      return { ...state, reauthRequired: true }
+    case HIDE_REAUTH_MODAL:
+      return { ...state, reauthRequired: false }
+    case ADD_PENDING_REQUEST:
+      return {
+        ...state,
+        pendingRequests: [...state.pendingRequests, action.payload]
+      }
+    case CLEAR_PENDING_REQUESTS:
+      return { ...state, pendingRequests: [] }
+    case SET_AUTH_LOADING:
+      return { ...state, isLoading: action.payload }
+    case SET_DEV_TESTING_REAUTH:
+      return { ...state, devTestingReauth: action.payload }
     default:
       return state;
   }

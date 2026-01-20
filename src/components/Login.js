@@ -1,22 +1,22 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 
-import CognitoSignInWidget from './CognitoSignInWidget';
 import { signIn, signOut } from "../actions/loginActions";
+import { showReauthModal, hideReauthModal, setDevTestingReauth } from "../actions/authActions";
+import { useStore } from 'react-redux';
 import { useSelector, useDispatch } from 'react-redux';
 import jwt_decode from 'jwt-decode';
-
-import Popup from 'reactjs-popup';
-import 'reactjs-popup/dist/index.css';
 
 import Button from 'react-bootstrap/Button';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faUserCircle } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserCircle } from '@fortawesome/free-solid-svg-icons';
 
 // AWS Amplify imports
 import { fetchAuthSession, signOut as amplifySignOut } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
+
+const TOKEN_SYNC_KEY = 'auth_token_updated';
 
 
 const Login = () => {
@@ -25,58 +25,64 @@ const Login = () => {
     const accessToken = useSelector(state => state.isLogged.accessToken);
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
 
-    const [isLoading, setIsLoading] = useState(true);
-    const [popupOpen, setPopupOpen] = useState(false);
-
     const dispatch = useDispatch();
+    const store = useStore();
 
     // Check current auth state and update Redux
     const checkAuthState = useCallback(async () => {
         try {
             const session = await fetchAuthSession();
-            if (session.tokens?.accessToken) {
-                // const accessTokenStr = session.tokens.accessToken.toString();
+            if (session.tokens?.idToken) {
                 const idToken = session.tokens.idToken;
                 const idTokenStr = session.tokens.idToken.toString();
-                // Extract email from ID token
                 const email = idToken?.payload?.email || null;
-                // Use email or sub from ID token as userId
                 const userId = email || idToken?.payload?.sub || 'unknown';
                 dispatch(signIn(userId, idTokenStr, email));
-                setPopupOpen(false);
+
+                // Broadcast token update to other tabs
+                localStorage.setItem(TOKEN_SYNC_KEY, JSON.stringify({
+                    timestamp: Date.now()
+                }));
             } else {
                 dispatch(signOut());
             }
         } catch (error) {
             console.log('Not authenticated:', error);
             dispatch(signOut());
-        } finally {
-            setIsLoading(false);
         }
     }, [dispatch]);
 
     useEffect(() => {
-        // Check auth state on mount
-        checkAuthState();
-
         // Listen for auth events
         const hubListenerCancelToken = Hub.listen('auth', ({ payload }) => {
             switch (payload.event) {
                 case 'signedIn':
                     console.log('User signed in');
                     checkAuthState();
+                    // If we were dev testing re-auth, close the modal now
+                    if (store.getState().isLogged.devTestingReauth) {
+                        dispatch(hideReauthModal());
+                        dispatch(setDevTestingReauth(false));
+                    }
                     break;
                 case 'signedOut':
                     console.log('User signed out');
-                    dispatch(signOut());
+                    // Don't sign out from Redux if we're dev testing re-auth
+                    if (!store.getState().isLogged.devTestingReauth) {
+                        dispatch(signOut());
+                    }
                     break;
                 case 'tokenRefresh':
                     console.log('Token refreshed');
                     checkAuthState();
                     break;
                 case 'tokenRefresh_failure':
-                    console.log('Token refresh failed');
-                    dispatch(signOut());
+                    // Token refresh failed - show re-auth modal instead of signing out
+                    // Don't trigger during dev testing
+                    if (!store.getState().isLogged.devTestingReauth) {
+                        console.log('Token refresh failed - showing re-auth modal');
+                        dispatch(showReauthModal());
+                    }
                     break;
                 default:
                     break;
@@ -88,22 +94,25 @@ const Login = () => {
         };
     }, [dispatch, checkAuthState]);
 
-    // Periodically check if token is expired and sign out if so
+    // Periodically check if token is about to expire and show re-auth modal
     const tokenCheckIntervalRef = useRef(null);
     useEffect(() => {
-        const checkTokenExpiration = async () => {
+        const checkTokenExpiration = () => {
             if (!accessToken || !isSignedIn) {
+                return;
+            }
+            // Don't trigger during dev testing
+            if (store.getState().isLogged.devTestingReauth) {
                 return;
             }
             try {
                 const decodedToken = jwt_decode(accessToken);
                 const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
                 const currentTime = Date.now();
-                // Sign out 90 seconds before actual expiration (must be >= check interval)
+                // Show re-auth modal 90 seconds before actual expiration
                 if (currentTime >= expirationTime - 90000) {
-                    console.log('Token expired, signing out user...');
-                    await amplifySignOut();
-                    dispatch(signOut());
+                    console.log('Token expiring soon - showing re-auth modal');
+                    dispatch(showReauthModal());
                 }
             } catch (error) {
                 console.log('Error checking token expiration:', error);
@@ -134,59 +143,58 @@ const Login = () => {
         } catch (error) {
             console.log('Error signing out:', error);
         }
-    }
-
-    const onSignInSuccess = () => {
-        setPopupOpen(false);
-        checkAuthState();
     };
 
-    const renderAuthButton = () => {
-        if (isLoading) {
-            return null;
-        }
+    const dropdownRef = useRef(null);
 
-        if (!isSignedIn) {
-            return(
-            <Popup
-                trigger={<Button as="input" type="button" variant="light" value="Sign In" size="sm" />}
-                modal
-                open={popupOpen}
-                onOpen={() => setPopupOpen(true)}
-                onClose={() => setPopupOpen(false)}
-                overlayStyle={{
-                    zIndex: 9999,
-                }}
-                contentStyle={{
-                    width: '500px',
-                    padding: '0',
-                    border: 'none',
-                    borderRadius: '8px',
-                    background: 'transparent',
-                    zIndex: 10000,
-                }}
-            >
-                <CognitoSignInWidget onSuccess={onSignInSuccess} />
-            </Popup>)
-        } else {
-            return(
-              <NavDropdown title={<FontAwesomeIcon icon={faUserCircle} />} alignRight id="login-nav-dropdown">
-                <NavDropdown.Item >{loggedInUser}</NavDropdown.Item>
-                <NavDropdown.Item >
-                  <Button as="input" type="button" variant="primary" value="Sign Out" size="sm" onClick={onSignOutClick} />
-                </NavDropdown.Item>
-                {cognitoGroups !== null && cognitoGroups.map((optionValue, index) => (
-                  <NavDropdown.Item key={optionValue}>{optionValue}</NavDropdown.Item>
-                ))}
-                <NavDropdown.Item style={{whiteSpace: 'normal', color: 'blue', textDecoration: 'underline'}}
-                  onClick={() => { navigator.clipboard.writeText(accessToken); } } >copy access token</NavDropdown.Item>
-              </NavDropdown>)
+    // Auto-scroll to dropdown when opened on mobile
+    const handleDropdownToggle = useCallback((isOpen) => {
+        if (isOpen && dropdownRef.current) {
+            setTimeout(() => {
+                dropdownRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
         }
+    }, []);
+
+    // Only render user menu when signed in (users can't see this without auth anyway)
+    if (!isSignedIn) {
+        return null;
     }
 
-    return(<div>
-        {renderAuthButton()}
-    </div>)
+    return (
+        <div ref={dropdownRef}>
+            <NavDropdown
+                title={<FontAwesomeIcon icon={faUserCircle} />}
+                alignRight
+                id="login-nav-dropdown"
+                onToggle={handleDropdownToggle}
+            >
+                <NavDropdown.Item
+                    style={{
+                        maxWidth: '200px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                    }}
+                    title={loggedInUser}
+                >
+                    {loggedInUser}
+                </NavDropdown.Item>
+                <NavDropdown.Item>
+                    <Button as="input" type="button" variant="primary" value="Sign Out" size="sm" onClick={onSignOutClick} />
+                </NavDropdown.Item>
+                {cognitoGroups !== null && cognitoGroups.map((optionValue) => (
+                    <NavDropdown.Item key={optionValue}>{optionValue}</NavDropdown.Item>
+                ))}
+                <NavDropdown.Item
+                    style={{ whiteSpace: 'normal', color: 'blue', textDecoration: 'underline' }}
+                    onClick={() => { navigator.clipboard.writeText(accessToken); }}
+                >
+                    copy access token
+                </NavDropdown.Item>
+            </NavDropdown>
+        </div>
+    );
 };
 
-export default Login
+export default Login;

@@ -12,7 +12,7 @@ import {
 import { setReferenceCurie, setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioActions';
 import { Spinner, Form, Container, Row, Col, Button, Alert } from 'react-bootstrap';
 import "react-bootstrap-typeahead/css/Typeahead.css";
-import axios from "axios";
+import { api } from "../api";
 import Modal from 'react-bootstrap/Modal';
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import ReferencesToSort from './ReferencesToSort';
@@ -90,15 +90,10 @@ const Sort = () => {
   }, [viewMode, accessToken, accessLevel, selectedTimeframe, selectedCurator]);
 
   const fetchRecentlySortedPapers = (modAbbreviation, day, curatorEmail) => {
-    const url = `${process.env.REACT_APP_RESTAPI}/sort/recently_sorted?mod_abbreviation=${modAbbreviation}&day=${day}&curator=${curatorEmail}`;
+    const url = `/sort/recently_sorted?mod_abbreviation=${modAbbreviation}&day=${day}&curator=${curatorEmail}`;
 
-    fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-    })
-      .then(response => response.json())
+    api.get(url)
+      .then(response => response.data)
       .then(data => {
         const { curator_data, data: references } = data;
 
@@ -505,12 +500,9 @@ const AlertDismissibleSortUpdate = () => {
     if (!modCorpusAssociationId) {
       return;
     }
-    const url = `${process.env.REACT_APP_RESTAPI}/reference/mod_corpus_association/${modCorpusAssociationId}`;
+    const url = `/reference/mod_corpus_association/${modCorpusAssociationId}`;
     try {
-      await axios.patch(url,
-        { 'corpus': false, 'force_out': true },
-        { headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" } }
-      );
+      await api.patch(url, { 'corpus': false, 'force_out': true });
       setShowTetModal(false);
       setModCorpusAssociationId(null);
       window.location.reload();

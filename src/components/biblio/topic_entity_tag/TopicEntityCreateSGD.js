@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
+import { api } from "../../../api";
 import {
   changeFieldEntityAddDisplayTag,
   changeFieldEntityAddGeneralField,
@@ -130,10 +130,7 @@ const TopicEntityCreateSGD = () => {
     if (editTag !== null) {
       const fetchTopicEntityTags = async () => {
         try {
-          const { data } = await axios.get(
-            `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/${editTag}`,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-          );
+          const { data } = await api.get(`/topic_entity_tag/${editTag}`);
           const tet = Array.isArray(data) ? data[0] : data;
           setTopicEntityTags(tet || null);
         } catch (error) {
@@ -143,7 +140,7 @@ const TopicEntityCreateSGD = () => {
       };
       fetchTopicEntityTags();
     }
-  }, [editTag, accessToken]);
+  }, [editTag]);
     
   useEffect(() => {
     if (editTag !== null && topicEntityTags) {
@@ -453,7 +450,6 @@ const TopicEntityCreateSGD = () => {
     dispatch(setBiblioUpdatingEntityAdd(forApiArray.length));
     const result = await checkForExistingTags(
       forApiArray,
-      accessToken,
       accessLevel,
       dispatch,
       updateButtonBiblioEntityAdd
@@ -528,12 +524,9 @@ const TopicEntityCreateSGD = () => {
   const handleNoTetDataClick = async () => {
     setNoTetDataLoading(true);
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_RESTAPI}/topic_entity_tag/set_no_tet_status/${accessLevel}/${referenceJsonLive.curie}/${uid}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
+      const response = await api.post(
+        `/topic_entity_tag/set_no_tet_status/${accessLevel}/${referenceJsonLive.curie}/${uid}`,
+        {}
       );
       console.log("The manual indexing WFT has been successfully set to complete:", response.data);
       addMessage("The manual indexing WFT has been successfully set to complete.", "success");

@@ -1,11 +1,10 @@
 import React, {useEffect, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import axios from "axios";
+import { api } from "../../api";
 import {
     addFacetValue,
     addExcludedFacetValue,
     removeExcludedFacetValue,
-    fetchInitialFacets,
     removeFacetValue,
     searchReferences,
     setSearchFacetsLimits,
@@ -16,7 +15,6 @@ import {
     setDatePubmedModified,
     setDatePublished,
     setDateCreated,
-    setModPreferencesLoaded,
     setApplyToSingleTag,
     removeDatePubmedAdded,
     removeDatePubmedModified,
@@ -210,7 +208,6 @@ const DateFacet = ({facetsToInclude}) => {
 }
 
 const Facet = ({facetsToInclude, renameFacets}) => {
-    const accessToken = useSelector((state) => state.isLogged.accessToken);
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
@@ -229,33 +226,28 @@ const Facet = ({facetsToInclude, renameFacets}) => {
       if (!needs) return;
 
 
-      const url = process.env.REACT_APP_RESTAPI + '/reference/mod_reference_type/utils/mod_reftype_to_mods'
-      if (!url) {
-        console.log("REACT_APP_MOD_REF_TYPE_ENDPOINT is not set; icons for mod reference types will not render.");
-        return;
-      }
       (async () => {
         try {
-          const r = await fetch(url, { headers: { 'Authorization': accessToken ? `Bearer ${accessToken}` : undefined }});
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          const data = await r.json(); // { 'Book': ['MGI','SGD','WB', 'XB', 'ZFIN'], ... }
-          setModRefTypeToMods(data || {});
+          const response = await api.get('/reference/mod_reference_type/utils/mod_reftype_to_mods');
+          setModRefTypeToMods(response.data || {});
         } catch (e) {
           console.log("Failed to load mod-ref-type map:", e);
         }
       })();
-    }, [facetsToInclude, accessToken]);
+    }, [facetsToInclude]);
 
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
         if (facetsToInclude.includes('source_methods')) {
-            fetch(process.env.REACT_APP_RESTAPI + '/topic_entity_tag/source/all')
-                .then(response => response.json())
-                .then(data => {
+            api.get('/topic_entity_tag/source/all')
+                .then(response => {
+                    const data = response.data;
                     const mapping = {};
-                    data.forEach(item => {
-                        mapping[item.source_method.toLowerCase()] = item.description;
-                    });
+                    if (Array.isArray(data)) {
+                        data.forEach(item => {
+                            mapping[item.source_method.toLowerCase()] = item.description;
+                        });
+                    }
                     setSourceMethodDescriptions(mapping);
                 })
                 .catch(err => console.error("Error fetching source method descriptions:", err));
@@ -269,7 +261,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         searchFacets['source_evidence_assertions'].buckets
       ) {
         const fetchData = async () => {
-            const restApiBase = process.env.REACT_APP_RESTAPI;
             const buckets = searchFacets['source_evidence_assertions'].buckets;
 
             const mapping = {};
@@ -278,18 +269,18 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 const upperKey = bucket.key.toUpperCase();
                 let url = '';
 
-                // --- Use AGR REST API (no token needed) ---
+                // --- Use AGR REST API ---
                 if (upperKey.startsWith('ATP')) {
-                    url = `${restApiBase}/ontology/map_curie_to_name/atpterm/${upperKey}`;
+                    url = `/ontology/map_curie_to_name/atpterm/${upperKey}`;
                 } else if (upperKey.startsWith('ECO')) {
-                    url = `${restApiBase}/ontology/map_curie_to_name/ecoterm/${upperKey}`;
+                    url = `/ontology/map_curie_to_name/ecoterm/${upperKey}`;
                 } else {
                     console.warn(`Unknown prefix in bucket.key: ${bucket.key}`);
                     continue;
                 }
 
                 try {
-                    const result = await axios.get(url);
+                    const result = await api.get(url);
                     // This endpoint returns the name string directly
                     mapping[bucket.key] = result.data;
 
@@ -557,12 +548,9 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 const Facets = () => {
 
     const [openFacets, setOpenFacets] = useState(new Set());
-    const searchResults = useSelector(state => state.search.searchResults);
     const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
-    const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
-    const searchQuery = useSelector(state => state.search.searchQuery);
     const readyToFacetSearch = useSelector(state => state.search.readyToFacetSearch);
     const facetsLoading = useSelector(state => state.search.facetsLoading);
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
@@ -572,7 +560,6 @@ const Facets = () => {
     const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const accessLevel = testerMod !== "No" ? testerMod : cognitoMod;
-    const modPreferencesLoaded = useSelector(state => state.search.modPreferencesLoaded);
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     const seaValues = useSelector(state => state.search.searchFacetsValues['source_evidence_assertions'] || []);
     const hasGroupSEA = seaValues.some(v => v === 'ECO:0006155' || v === 'ECO:0007669');
@@ -599,20 +586,19 @@ const Facets = () => {
         setOpenFacets(newOpenFacets);
     }
 
+    // Handle facet/filter changes - only triggers search AFTER initial search is done
+    // (Initial search is triggered by PersonSettingsControls after applying saved settings)
     useEffect(() => {
-        if (Object.keys(searchFacets).length === 0 && searchResults.length === 0) {
-            dispatch(fetchInitialFacets(searchFacetsLimits));
-        } else {
-            if (readyToFacetSearch === true && (searchQuery !== "" || searchResults.length > 0 || Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0)) {
-                dispatch(setSearchResultsPage(1));
-                dispatch(setAuthorFilter(""));
-                dispatch(searchReferences());
-            }
-        }
-    }, [searchFacetsValues,searchExcludedFacetsValues, applyToSingleTag]); // eslint-disable-line react-hooks/exhaustive-deps
+        // Skip if not ready for facet search (set to true after first successful search)
+        if (!readyToFacetSearch) return;
 
+        dispatch(setSearchResultsPage(1));
+        dispatch(setAuthorFilter(""));
+        dispatch(searchReferences());
+    }, [searchFacetsValues, searchExcludedFacetsValues, applyToSingleTag]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Auto-open facet categories based on selected filters
     useEffect(() => {
-      // Facets we *don’t* want to use to auto-open sections
       const ignoreForAutoOpen = new Set([
         'mods_in_corpus_or_needs_review.keyword',
         'language.keyword',
@@ -622,7 +608,7 @@ const Facets = () => {
 
       Object.keys(searchFacetsValues).forEach(facet => {
         if (ignoreForAutoOpen.has(facet)) {
-            return; // skip default MOD + language facets
+            return;
         }
 
         const normalized = facet.replace('.keyword', '').replaceAll('_', ' ');
@@ -642,30 +628,6 @@ const Facets = () => {
 
       setOpenFacets(newOpenFacets);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    useEffect(()=> {
-        if(modPreferencesLoaded === 'false' && accessLevel !== 'No'){
-            dispatch(setModPreferencesLoaded(true));
-            if(searchFacetsValues["mods_in_corpus_or_needs_review.keyword"]){
-                if(!searchFacetsValues["mods_in_corpus_or_needs_review.keyword"].includes(accessLevel)) {
-                    dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", accessLevel));
-                }
-            }
-            else {
-                dispatch(addFacetValue("mods_in_corpus_or_needs_review.keyword", accessLevel));
-            }
-            if(searchFacetsValues["language.keyword"]){
-                if(!searchFacetsValues["language.keyword"].includes('English')) {
-                    dispatch(addFacetValue("language.keyword", 'English'));
-                }
-            }
-            else {
-                dispatch(addFacetValue("language.keyword", 'English'));
-            }
-            dispatch(searchReferences());
-
-        }
-    }, [accessLevel]) // eslint-disable-line react-hooks/exhaustive-deps
 
 
     /*

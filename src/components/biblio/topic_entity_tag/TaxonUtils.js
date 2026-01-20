@@ -1,16 +1,8 @@
-import axios from 'axios';
+import { api } from '../../../api';
 
 export const getModToTaxon = async () => {
-
-  const url = `${process.env.REACT_APP_RESTAPI}/mod/taxons/all`;
-
   try {
-	
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-
-    const response = await axios.get(url, { headers });
+    const response = await api.get('/mod/taxons/all');
 
     if (!Array.isArray(response.data)) {
       console.error('Unexpected response format:', response.data);
@@ -30,13 +22,13 @@ export const getModToTaxon = async () => {
     console.error('Failed to fetch mod to tax data', error);
     return {};
   }
-  /* it will return something like following                                                                                             
+  /* it will return something like following
    return {
      'ZFIN': ['NCBITaxon:7955'],
      'FB': ['NCBITaxon:7227'],
      'WB': ['NCBITaxon:6239'],
      'RGD': ['NCBITaxon:10116'],
-     'MGI': ['NCBITaxon:10090'], 
+     'MGI': ['NCBITaxon:10090'],
      'SGD': ['NCBITaxon:559292'],
      'XB': ['NCBITaxon:8355', 'NCBITaxon:8364']
    };
@@ -55,14 +47,9 @@ export const getCurieToNameTaxon = async () => {
   const uniqueTaxonIDs = [...new Set(allTaxons)];
   const taxonToNameMapping = { "": "" };
   try {
-    const restUrl = process.env.REACT_APP_RESTAPI;
     const requests = uniqueTaxonIDs.map(async (taxonID) => {
-      const url = `${restUrl}/ontology/search_species/${encodeURIComponent(taxonID)}`;
-      const response = await axios.get(url, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const url = `/ontology/search_species/${encodeURIComponent(taxonID)}`;
+      const response = await api.get(url);
       // this endpoint returns something like: [{ curie: "...", name: "..." }]
       const data = response.data;
 
@@ -102,4 +89,3 @@ export const fallbackTaxonCurieToNameMapping = () => {
         '': ''
     }
 };
-

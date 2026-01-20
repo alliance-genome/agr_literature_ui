@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faTimes, faSortNumericDown, faSortNumericUp } from '@fortawesome/free-solid-svg-icons'
 import {searchXref} from '../actions/searchActions';
 import {searchMissingFiles, addWorkflowTag, setOrder, setTrackerPage, setTrackerFilter} from '../actions/trackerActions';
+import { api } from "../api";
 import LoadingOverlay from "./LoadingOverlay";
 
 const DownloadButton = (mod) => {
@@ -22,9 +23,9 @@ const DownloadButton = (mod) => {
 
   const handleDownload = () => {
     setDownloading(true);
-    let apiUrl = `${process.env.REACT_APP_RESTAPI}/reference/download_tracker_table/${mod.mod}?order_by=${orderBy}&filter=${trackerFilter}`;
-    fetch(apiUrl)
-      .then(response => response.blob())
+    let apiUrl = `/reference/download_tracker_table/${mod.mod}?order_by=${orderBy}&filter=${trackerFilter}`;
+    api.get(apiUrl, { responseType: 'blob' })
+      .then(response => response.data)
       .then(blob => {
         const url = window.URL.createObjectURL(new Blob([blob]));
         const link = document.createElement('a');
