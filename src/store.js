@@ -14,7 +14,7 @@ export const store = createStore(
 );
 
 // Expose store for debugging in dev environment
-if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD === 'dev') {
+if (process.env.REACT_APP_DEV_OR_STAGE_OR_PROD !== 'prod') {
     window.store = store;
 }
 
