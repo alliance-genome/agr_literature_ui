@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { setAllTopics } from '../../actions/biblioActions';
 import { api } from "../../api";
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
@@ -9,9 +8,12 @@ import { Spinner, Form, Modal, Button, Container, Row, Col } from 'react-bootstr
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 import { postWorkflowTag, patchWorkflowTag, deleteWorkflowTag } from './WorkflowTagService';
-import TopicFilter from '../AgGrid/TopicFilter';
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
+import TopicFilter from '../AgGrid/TopicFilter';
+
+import { setAllTopics } from '../../actions/biblioActions';
+
 
 const file_upload_process_atp_id = "ATP:0000140";
 
