@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { api } from "../../api";
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
@@ -10,6 +10,10 @@ import { faCheck, faExclamation, faCheckCircle, faTimesCircle } from '@fortaweso
 import { postWorkflowTag, patchWorkflowTag, deleteWorkflowTag } from './WorkflowTagService';
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
+import TopicFilter from '../AgGrid/TopicFilter';
+
+import { setAllTopics } from '../../actions/biblioActions';
+
 
 const file_upload_process_atp_id = "ATP:0000140";
 
@@ -36,6 +40,7 @@ export const timestampToDateFormatter = (params) => {
 
 
 const BiblioWorkflow = () => {
+  const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"];
   const accessToken = useSelector((state) => state.isLogged.accessToken);
@@ -381,6 +386,10 @@ const BiblioWorkflow = () => {
         wholePaperEntry.topic_name = 'Whole Paper';
         setCurationWholePaperData([wholePaperEntry]);
         setCurationData(restOfCurationData);
+
+        // Extract and dispatch unique topics for the filter
+        const uniqueTopics = [...new Set(restOfCurationData.map(item => item.topic_name))];
+        dispatch(setAllTopics(uniqueTopics));
       } catch (error) {
         console.error('Error fetching curation data:', error);
       }
@@ -690,7 +699,7 @@ const BiblioWorkflow = () => {
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
 	sortable: true,
-	filter: true
+	filter: TopicFilter
       },
       {
         headerName: 'Curation Status',

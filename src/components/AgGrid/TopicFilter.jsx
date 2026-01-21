@@ -8,7 +8,7 @@ const TopicFilter = ({ model, onModelChange }) => {
         <MultiFilter
             model={model}
             onModelChange={onModelChange}
-            items={allTopics}
+            items={allTopics || []}
             label="topic_name"
         />
     );
