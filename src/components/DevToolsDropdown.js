@@ -1,6 +1,6 @@
 import React, { useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import NavDropdown from 'react-bootstrap/NavDropdown';
+import Dropdown from 'react-bootstrap/Dropdown';
 import Badge from 'react-bootstrap/Badge';
 import { showReauthModal, hideReauthModal, setDevTestingReauth } from '../actions/authActions';
 import { setTesterMod } from '../actions/loginActions';
@@ -54,55 +54,74 @@ const DevToolsDropdown = () => {
     return (
         <div ref={dropdownRef} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <style>{`
-                #devtools-nav-dropdown + .dropdown-menu {
+                .tester-dropdown .dropdown-menu {
                     right: 0 !important;
                     left: auto !important;
                     transform: none !important;
                 }
+                .tester-dropdown .dropdown-toggle::after {
+                    display: none;
+                }
             `}</style>
-            <NavDropdown
-                title="Dev Tools"
-                id="devtools-nav-dropdown"
-                onToggle={handleDropdownToggle}
-                align="end"
+
+            {/* Re-Auth Badge/Button */}
+            <Badge
+                as="button"
+                onClick={handleTriggerReauthModal}
+                style={{
+                    fontSize: '0.85rem',
+                    padding: '5px 10px',
+                    backgroundColor: '#6c757d',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer',
+                }}
+                title="Click to trigger re-auth modal"
             >
-                {devTestingReauth ? (
-                    <NavDropdown.Item onClick={handleStopTestingReauth}>
-                        Stop Testing Re-Auth
-                    </NavDropdown.Item>
-                ) : (
-                    <NavDropdown.Item onClick={handleTriggerReauthModal}>
-                        Trigger Re-Auth Modal
-                    </NavDropdown.Item>
-                )}
-                {showTesterOptions && (
-                    <>
-                        <NavDropdown.Divider />
-                        <NavDropdown.Header>Tester MOD</NavDropdown.Header>
+                Test Re-Auth
+            </Badge>
+
+            {/* Tester MOD Dropdown */}
+            {showTesterOptions && (
+                <Dropdown
+                    className="tester-dropdown"
+                    onToggle={handleDropdownToggle}
+                    align="end"
+                >
+                    <Dropdown.Toggle
+                        as="div"
+                        id="tester-mod-dropdown"
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <Badge
+                            style={{
+                                fontSize: '0.85rem',
+                                padding: '5px 10px',
+                                backgroundColor: testerMod !== 'No' ? '#f5b041' : '#5a6268',
+                                color: testerMod !== 'No' ? '#333' : '#fff',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                            }}
+                            title="Click to select tester MOD"
+                        >
+                            Tester: {testerMod}
+                            <span style={{ fontSize: '0.7rem' }}>&#9660;</span>
+                        </Badge>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu>
+                        <Dropdown.Header>Select Tester MOD</Dropdown.Header>
                         {mods.map((mod) => (
-                            <NavDropdown.Item
+                            <Dropdown.Item
                                 key={`testerDropdown ${mod}`}
                                 onClick={() => dispatch(setTesterMod(mod))}
                                 active={testerMod === mod}
                             >
                                 {mod}
-                            </NavDropdown.Item>
+                            </Dropdown.Item>
                         ))}
-                    </>
-                )}
-            </NavDropdown>
-            {showTesterOptions && (
-                <Badge
-                    style={{
-                        fontSize: '0.85rem',
-                        padding: '5px 8px',
-                        backgroundColor: testerMod !== 'No' ? '#f5b041' : '#5a6268',
-                        color: testerMod !== 'No' ? '#333' : '#fff',
-                    }}
-                    title={testerMod !== 'No' ? 'Testing as this MOD' : 'No tester MOD selected'}
-                >
-                    Tester: {testerMod}
-                </Badge>
+                    </Dropdown.Menu>
+                </Dropdown>
             )}
         </div>
     );
