@@ -241,6 +241,12 @@
   margin-left: 20px;
 }
 
+#devtools-nav-dropdown {
+  font-family: 'Roboto', sans-serif;
+  color: white !important;
+  margin-left: 20px;
+}
+
 .navbar_link {
   font-family: 'Roboto', sans-serif;
   color: white !important;
