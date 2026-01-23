@@ -1486,7 +1486,6 @@ const BiblioWorkflow = () => {
             columnDefs={curationColumns}
             singleClickEdit={true}
             domLayout="autoHeight"
-            getRowClass={(params) => (params.node.rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light')}
             rowClassRules={{
               'ag-row-striped-dark': (params) => params.rowIndex % 2 === 0,
               'ag-row-striped-light': (params) => params.rowIndex % 2 !== 0
