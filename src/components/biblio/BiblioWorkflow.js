@@ -1487,6 +1487,10 @@ const BiblioWorkflow = () => {
             singleClickEdit={true}
             domLayout="autoHeight"
             getRowClass={(params) => (params.node.rowIndex % 2 === 0 ? 'ag-row-striped-dark' : 'ag-row-striped-light')}
+            rowClassRules={{
+              'ag-row-striped-dark': (params) => params.rowIndex % 2 === 0,
+              'ag-row-striped-light': (params) => params.rowIndex % 2 !== 0
+            }}
             getRowHeight={(params) => {
               const value = params.data?.curation_status;
               const isValidCurationStatus = curationStatusOptions.some(opt => opt.value === value);
