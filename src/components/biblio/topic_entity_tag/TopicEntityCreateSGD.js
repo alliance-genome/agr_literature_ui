@@ -435,7 +435,7 @@ const TopicEntityCreateSGD = () => {
           updateJson["entity"] = entityResult.curie;
           updateJson["index_wft"] = index_wft;
 
-          const arrayElem = [subPath, updateJson, method];
+          const arrayElem = [null, subPath, updateJson, method];
           forApiArray.push(arrayElem);
         }
       }
@@ -443,7 +443,7 @@ const TopicEntityCreateSGD = () => {
       let updateJson = initializeUpdateJson(refCurie, row);
       updateJson["entity_type"] = row.entityTypeSelect === "" ? null : row.entityTypeSelect;
       updateJson["index_wft"] = index_wft;
-      const arrayElem = [subPath, updateJson, method];
+      const arrayElem = [null, subPath, updateJson, method];
       forApiArray.push(arrayElem);
     }
 

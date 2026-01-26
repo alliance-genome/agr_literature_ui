@@ -80,7 +80,7 @@ export function handleForceInsertionUpdateClick(tagResponse, accessLevel, dispat
 	console.log("tagData=", JSON.stringify(tagData));
 	const subPath = 'topic_entity_tag/';
 	const method = 'POST';
-	let data = [subPath, tagData, method];
+	let data = [null, subPath, tagData, method];
 	try {
 	    dispatch(updateButtonBiblioEntityAdd(data, accessLevel));
 	} catch(error) {

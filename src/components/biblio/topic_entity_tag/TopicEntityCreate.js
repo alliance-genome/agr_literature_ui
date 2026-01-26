@@ -721,14 +721,14 @@ const TopicEntityCreate = () => {
             }
 
             // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
-            forApiArray.push([subPath, updateJson, method]);
+            forApiArray.push([null, subPath, updateJson, method]);
           }
-        }	
+        }
       } else if (row.taxonSelect !== "" && row.taxonSelect !== undefined) {
         //const updateJson = initializeUpdateJson(refCurie, row, null, "alliance");
         const updateJson = initializeUpdateJson(refCurie, row, null, null, dataNoveltyAtp);
         // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
-        forApiArray.push([subPath, updateJson, method]);
+        forApiArray.push([null, subPath, updateJson, method]);
     } }
 
     if (forApiArray.length === 0) {
