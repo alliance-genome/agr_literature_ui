@@ -1083,17 +1083,11 @@ let pendingTaxonRequest = null;
 export const fetchTaxonData = () => {
   return (dispatch, getState) => {
     // Check if data already exists in Redux store
-    const { modToTaxon, curieToNameTaxon, isFetchingTaxonData } = getState().biblio;
+    const { modToTaxon, curieToNameTaxon } = getState().biblio;
 
     // If data exists, don't fetch again
     if (modToTaxon && curieToNameTaxon) {
       return Promise.resolve({ modToTaxon, curieToNameTaxon });
-    }
-
-    // Double-check: if Redux state shows we're already fetching, return pending promise
-    // This provides additional protection against race conditions
-    if (isFetchingTaxonData && pendingTaxonRequest) {
-      return pendingTaxonRequest;
     }
 
     // If already fetching, return the pending promise
