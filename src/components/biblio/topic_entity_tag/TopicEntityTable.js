@@ -20,10 +20,9 @@ import {
   setAllSpecies,
   setAllEntities,
   setAllTopics,
-  setAllEntityTypes
+  setAllEntityTypes,
+  fetchTaxonData
 } from '../../../actions/biblioActions';
-
-import { getCurieToNameTaxon } from './TaxonUtils';
 import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
 import ValidationByCurator from '../../AgGrid/ValidationByCurator.jsx';
 import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
@@ -308,11 +307,7 @@ const TopicEntityTable = () => {
   }, [notification.show]);
 
   useEffect(() => {
-    const fetchTaxon = async () => {
-      const taxonData = await getCurieToNameTaxon();
-      dispatch(setCurieToNameTaxon(taxonData));
-    };
-    fetchTaxon();
+    dispatch(fetchTaxonData());
   }, [dispatch]);
 
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
