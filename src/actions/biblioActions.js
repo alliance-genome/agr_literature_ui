@@ -4,6 +4,7 @@
 
 import axios from "axios";
 import { api } from "../api";
+import { getTaxonData } from "../components/biblio/topic_entity_tag/TaxonUtils";
 
 const restUrl = process.env.REACT_APP_RESTAPI;
 // const restUrl = 'stage-literature-rest.alliancegenome.org';
@@ -1075,3 +1076,66 @@ export const setTopicEntitySourceId = (topicEntitySourceId) => ({
   type: 'SET_TOPIC_ENTITY_SOURCE_ID',
   payload: topicEntitySourceId
 });
+
+// Module-level cache to prevent concurrent duplicate fetches
+let pendingTaxonRequest = null;
+
+export const fetchTaxonData = () => {
+  return (dispatch, getState) => {
+    // Check if data already exists in Redux store
+    const { modToTaxon, curieToNameTaxon } = getState().biblio;
+
+    // If data exists, don't fetch again
+    if (modToTaxon && curieToNameTaxon) {
+      return Promise.resolve({ modToTaxon, curieToNameTaxon });
+    }
+
+    // If already fetching, return the pending promise
+    if (pendingTaxonRequest) {
+      return pendingTaxonRequest;
+    }
+    // CRITICAL: Create and assign promise IMMEDIATELY after check, before ANY other code
+    // This minimizes the race condition window
+    pendingTaxonRequest = new Promise((resolve, reject) => {
+      // Dispatch START action inside executor
+      dispatch({ type: 'FETCH_TAXON_DATA_START' });
+
+      getTaxonData()
+        .then(({ modToTaxon, curieToName }) => {
+          // Enhance curieToName with WB extension
+          const enhancedCurieToName = { ...curieToName, "use_wb": "other nematode" };
+
+          dispatch({
+            type: 'FETCH_TAXON_DATA_SUCCESS',
+            payload: {
+              modToTaxon,
+              curieToNameTaxon: enhancedCurieToName
+            }
+          });
+
+          resolve({ modToTaxon, curieToNameTaxon: enhancedCurieToName });
+        })
+        .catch(error => {
+          dispatch({
+            type: 'FETCH_TAXON_DATA_ERROR',
+            payload: { error: error.message }
+          });
+          reject(error);
+        })
+        .finally(() => {
+          // Clear pending request after completion
+          pendingTaxonRequest = null;
+        });
+    });
+
+    return pendingTaxonRequest;
+  };
+};
+
+export const clearTaxonData = () => {
+  // Also clear pending request when clearing data
+  pendingTaxonRequest = null;
+  return {
+    type: 'CLEAR_TAXON_DATA'
+  };
+};

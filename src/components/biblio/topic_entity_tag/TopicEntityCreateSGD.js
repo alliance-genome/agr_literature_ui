@@ -10,6 +10,7 @@ import {
   setBiblioUpdatingEntityAdd,
   setEditTag,
   updateButtonBiblioEntityAdd,
+  fetchTaxonData,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags } from "./TopicEntityUtils";
 import {
@@ -21,7 +22,6 @@ import {
   complexATP,
   pathwayATP
 } from "./BiblioEntityUtilsSGD";
-import { getCurieToNameTaxon, getModToTaxon } from "./TaxonUtils";
 import Container from "react-bootstrap/Container";
 import RowDivider from "../RowDivider";
 import Row from "react-bootstrap/Row";
@@ -73,10 +73,9 @@ const TopicEntityCreateSGD = () => {
 
   const [topicEntitySourceId, setTopicEntitySourceId] = useState(undefined);
   const topicDescendants = useSelector((state) => state.biblio.topicDescendants);
-  const [curieToNameTaxonObj, setCurieToNameTaxon] = useState({});
-  const [modToTaxonObj, setModToTaxon] = useState({});
-  const curieToNameTaxon = curieToNameTaxonObj;
-  const modToTaxon = modToTaxonObj;
+  const modToTaxon = useSelector((state) => state.biblio.modToTaxon || {});
+  const curieToNameTaxon = useSelector((state) => state.biblio.curieToNameTaxon || {});
+  const isFetchingTaxonData = useSelector((state) => state.biblio.isFetchingTaxonData);
 
   const curieToNameEntityType = useMemo(
     () => ({
@@ -92,14 +91,10 @@ const TopicEntityCreateSGD = () => {
   const entityTypeList = useMemo(() => Object.keys(curieToNameEntityType), [curieToNameEntityType]);
     
   useEffect(() => {
-    const fetchTaxonData = async () => {
-      const taxonData = await getCurieToNameTaxon();
-      const modData = await getModToTaxon();
-      setCurieToNameTaxon(taxonData);
-      setModToTaxon(modData);
-    };
-    fetchTaxonData();
-  }, [accessToken]);
+    if (accessToken) {
+      dispatch(fetchTaxonData());
+    }
+  }, [accessToken, dispatch]);
 
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push("");

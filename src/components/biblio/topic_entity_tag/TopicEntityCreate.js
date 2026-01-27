@@ -14,9 +14,9 @@ import {
   setTopicEntitySourceId,
   setEditTag,
   biblioQueryReferenceCurie,
+  fetchTaxonData,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
-import { getCurieToNameTaxon, getModToTaxon } from "./TaxonUtils";
 import { FetchTypeaheadOptions } from "../FetchTypeahead";
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
@@ -70,8 +70,9 @@ const TopicEntityCreate = () => {
   const [geneDescendants, setGeneDescendants] = useState([]);
   const [alleleDescendants, setAlleleDescendants] = useState([]);
 
-  const [curieToNameTaxon, setCurieToNameTaxon] = useState({});
-  const [modToTaxon, setModToTaxon] = useState({});
+  const modToTaxon = useSelector((state) => state.biblio.modToTaxon || {});
+  const curieToNameTaxon = useSelector((state) => state.biblio.curieToNameTaxon || {});
+  const isFetchingTaxonData = useSelector((state) => state.biblio.isFetchingTaxonData);
   const [tagExistingMessage, setTagExistingMessage] = useState("");
   const [existingTagResponses, setExistingTagResponses] = useState([]);
   const [isTagExistingMessageVisible, setIsTagExistingMessageVisible] = useState(false);
@@ -101,15 +102,10 @@ const TopicEntityCreate = () => {
   const warnTypesEntityValidation = ["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"];
 
   useEffect(() => {
-    const fetchData = async () => {
-      const taxonData = await getCurieToNameTaxon();
-      const modData = await getModToTaxon();
-      taxonData["use_wb"] = "other nematode";
-      setCurieToNameTaxon(taxonData);
-      setModToTaxon(modData);
-    };
-    fetchData();
-  }, [accessToken]);
+    if (accessToken) {
+      dispatch(fetchTaxonData());
+    }
+  }, [accessToken, dispatch]);
 
   let unsortedTaxonList = Object.values(modToTaxon).flat();
   unsortedTaxonList.push("");

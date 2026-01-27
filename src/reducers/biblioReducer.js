@@ -77,7 +77,11 @@ const initialState = {
   updateMessages: [],
   xrefPatterns: {},
   loadingFileNames: new Set(),
-  topicEntitySourceId: null
+  topicEntitySourceId: null,
+  modToTaxon: null,
+  curieToNameTaxon: null,
+  isFetchingTaxonData: false,
+  taxonDataError: null
 };
 
 const deriveCuratability = (referenceJson) => {
@@ -1193,6 +1197,38 @@ export default function(state = initialState, action) {
 //         items: [action.payload, ...state.items],        // from postActions.js
 //         item: action.payload    // from postActions.js
 //       }
+
+    case 'FETCH_TAXON_DATA_START':
+      return {
+        ...state,
+        isFetchingTaxonData: true,
+        taxonDataError: null
+      };
+
+    case 'FETCH_TAXON_DATA_SUCCESS':
+      return {
+        ...state,
+        modToTaxon: action.payload.modToTaxon,
+        curieToNameTaxon: action.payload.curieToNameTaxon,
+        isFetchingTaxonData: false,
+        taxonDataError: null
+      };
+
+    case 'FETCH_TAXON_DATA_ERROR':
+      return {
+        ...state,
+        isFetchingTaxonData: false,
+        taxonDataError: action.payload.error
+      };
+
+    case 'CLEAR_TAXON_DATA':
+      return {
+        ...state,
+        modToTaxon: null,
+        curieToNameTaxon: null,
+        isFetchingTaxonData: false,
+        taxonDataError: null
+      };
 
     default:
       return state;

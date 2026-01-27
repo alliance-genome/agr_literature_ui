@@ -36,23 +36,19 @@ export const getModToTaxon = async () => {
 
 };
 
-export const getCurieToNameTaxon = async () => {
-  const taxonData = await getModToTaxon();
+export const getTaxonData = async () => {
+  const modToTaxonData = await getModToTaxon();
 
-  // flatten into an array of taxon IDs
-  // add "NCBITaxon:9606" for human
-  const allTaxons = Object.values(taxonData).flat().concat("NCBITaxon:9606");
-
-  // make them unique
+  // Build curieToName mapping from the modToTaxon data
+  const allTaxons = Object.values(modToTaxonData).flat().concat("NCBITaxon:9606");
   const uniqueTaxonIDs = [...new Set(allTaxons)];
   const taxonToNameMapping = { "": "" };
+
   try {
     const requests = uniqueTaxonIDs.map(async (taxonID) => {
       const url = `/ontology/search_species/${encodeURIComponent(taxonID)}`;
       const response = await api.get(url);
-      // this endpoint returns something like: [{ curie: "...", name: "..." }]
       const data = response.data;
-
       if (Array.isArray(data)) {
         for (const obj of data) {
           if (obj.curie && obj.name) {
@@ -62,17 +58,23 @@ export const getCurieToNameTaxon = async () => {
       }
     });
 
-    // Wait for all requests to finish
     await Promise.all(requests);
-    if (
-      Object.keys(taxonToNameMapping).filter((key) => key !== "").length < 8
-    ) {
-      return fallbackTaxonCurieToNameMapping();
+    if (Object.keys(taxonToNameMapping).filter((key) => key !== "").length < 8) {
+      return {
+        curieToName: fallbackTaxonCurieToNameMapping(),
+        modToTaxon: modToTaxonData
+      };
     }
-    return taxonToNameMapping;
+    return {
+      curieToName: taxonToNameMapping,
+      modToTaxon: modToTaxonData
+    };
   } catch (error) {
     console.error("Failed to fetch Curie to Name Taxon data", error);
-    return fallbackTaxonCurieToNameMapping();
+    return {
+      curieToName: fallbackTaxonCurieToNameMapping(),
+      modToTaxon: modToTaxonData
+    };
   }
 };
 
