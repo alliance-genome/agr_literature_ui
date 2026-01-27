@@ -36,20 +36,6 @@ export const getModToTaxon = async () => {
 
 };
 
-export const fallbackTaxonCurieToNameMapping = () => {
-    return {
-        'NCBITaxon:559292': 'Saccharomyces cerevisiae',
-        'NCBITaxon:6239': 'Caenorhabditis elegans',
-        'NCBITaxon:7955': 'Danio rerio',
-        'NCBITaxon:10116': 'Rattus norvegicus',
-        'NCBITaxon:10090': 'Mus musculus',
-        'NCBITaxon:8355': 'Xenopus laevis',
-        'NCBITaxon:8364': 'Xenopus tropicalis',
-        'NCBITaxon:9606': 'Homo sapiens',
-        '': ''
-    }
-};
-
 export const getTaxonData = async () => {
   const modToTaxonData = await getModToTaxon();
 
@@ -90,4 +76,18 @@ export const getTaxonData = async () => {
       modToTaxon: modToTaxonData
     };
   }
+};
+
+export const fallbackTaxonCurieToNameMapping = () => {
+    return {
+        'NCBITaxon:559292': 'Saccharomyces cerevisiae',
+        'NCBITaxon:6239': 'Caenorhabditis elegans',
+        'NCBITaxon:7955': 'Danio rerio',
+        'NCBITaxon:10116': 'Rattus norvegicus',
+        'NCBITaxon:10090': 'Mus musculus',
+        'NCBITaxon:8355': 'Xenopus laevis',
+        'NCBITaxon:8364': 'Xenopus tropicalis',
+        'NCBITaxon:9606': 'Homo sapiens',
+        '': ''
+    }
 };
