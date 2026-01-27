@@ -348,85 +348,146 @@ const MeshExpandToggler = ({displayOrEditor}) => {
     </Row>);
 } // const MeshExpandToggler
 
-const RowDisplayAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+const RowDisplayAuthors = ({ fieldIndex, fieldName, referenceJsonLive, referenceJsonDb }) => {
   // e.g. orcid/affiliations PMID:24895670   affiliations PMID:24913562   out of order PMID:33766856
-  const authorExpand = useSelector(state => state.biblio.authorExpand);
-  if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-    const rowAuthorElements = [];
-    rowAuthorElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="display" />);
-    const orderedAuthorsLive = []; const orderedAuthorsDb = [];
-    for (const value  of referenceJsonLive['authors'].values()) {
-      let index = value['order'] - 1;
-      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
-      orderedAuthorsLive[index] = value; }
-    for (const value  of referenceJsonDb['authors'].values()) {
-      let index = value['order'] - 1;
-      if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
-      orderedAuthorsDb[index] = value; }
+  const authorExpand = useSelector((state) => state.biblio.authorExpand);
 
-    if (authorExpand === 'first') {
-      if ((orderedAuthorsLive.length > 0) && (typeof orderedAuthorsLive[0] !== 'undefined') && ('name' in orderedAuthorsLive[0])) {
-        rowAuthorElements.push(
-          <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-display Col-display-left">first author</Col>
-            <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
-              <div><span dangerouslySetInnerHTML={{__html: orderedAuthorsLive[0]['name']}} /></div></Col>
-          </Row>); } }
-    else if (authorExpand === 'list') {
-      let authorNames = orderedAuthorsLive.map((dict, index) => ( dict['name'] )).join('; ');
+  if (!('authors' in referenceJsonLive) || referenceJsonLive['authors'] === null) return null;
+
+  const rowAuthorElements = [];
+  rowAuthorElements.push(
+    <AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="display" />
+  );
+
+  // Preserve display order by the 'order' field (1-based)
+  const orderedAuthorsLive = [];
+  const orderedAuthorsDb = [];
+
+  for (const value of referenceJsonLive['authors'].values()) {
+    let idx = (value?.order ?? 1) - 1;
+    if (idx < 0) idx = 0; // temporary fix for fake authors have an 'order' field value of 0
+    orderedAuthorsLive[idx] = value;
+  }
+
+  if (referenceJsonDb?.authors) {
+    for (const value of referenceJsonDb['authors'].values()) {
+      let idx = (value?.order ?? 1) - 1;
+      if (idx < 0) idx = 0; // temporary fix for fake authors have an 'order' field value of 0
+      orderedAuthorsDb[idx] = value;
+    }
+  }
+
+  // Helper: normalize ORCID to bare id "0000-0000-0000-0000"
+  const normalizeOrcidId = (raw) => {
+    if (!raw) return '';
+    let s = String(raw).trim().toUpperCase();
+    if (s.startsWith('ORCID:')) s = s.slice('ORCID:'.length);
+    return s;
+  };
+
+  if (authorExpand === 'first') {
+    if (
+      orderedAuthorsLive.length > 0 &&
+      typeof orderedAuthorsLive[0] !== 'undefined' &&
+      'name' in orderedAuthorsLive[0]
+    ) {
       rowAuthorElements.push(
-        <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-display Col-display-left">all authors</Col>
+        <Row key="author first" className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-display Col-display-left">first author</Col>
           <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
-            <div><span dangerouslySetInnerHTML={{__html: authorNames}} /></div></Col>
-        </Row>); }
-    else if (authorExpand === 'detailed') {
-      for (const [index, value]  of orderedAuthorsLive.entries()) {
-        let updatedFlagAuthor = '';
-        if (typeof value === 'undefined') { continue; }
-        let orcid_curie = '';
-        let orcid_url = '';
-        if ('orcid' in value && value['orcid'] !== null) {
-          orcid_curie = value['orcid'].toUpperCase();
-          if ( (orcid_curie !== '') && (!( orcid_curie.match(/^ORCID:(.*)$/) ) ) ) {
-            orcid_curie = 'ORCID:' + orcid_curie; }
-          orcid_url = 'https://orcid.org/' + orcid_curie; }
-          // if author orcid has object instead of string
-          // if (value['orcid']['curie'] && value['orcid']['curie'] !== null) {
-          //   orcid_curie = value['orcid']['curie'].toUpperCase();
-          //   if (!( orcid_curie.match(/^ORCID:(.*)$/) ) ) {
-          //     orcid_curie = 'ORCID:' + orcid_curie; } }
-          // orcid_url = value['orcid']['url'] || ''; }
-        let affiliations = []; let affiliationsJoined = '';
-        if ('affiliations' in value && value['affiliations'] !== null) {
-          affiliationsJoined = (value['affiliations'].length > 0) ? value['affiliations'].join('') : '';
-          for (const index_aff in value['affiliations']) {
-            affiliations.push(<div key={`index_aff ${index_aff}`} className="affiliation">- <span dangerouslySetInnerHTML={{__html: value['affiliations'][index_aff]}} /></div>); } }
-        let orcid_link = (orcid_url === '') ? (<span>{orcid_curie}</span>) : (<a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>)
+            <div>
+              <span dangerouslySetInnerHTML={{ __html: orderedAuthorsLive[0]['name'] }} />
+            </div>
+          </Col>
+        </Row>
+      );
+    }
+  } else if (authorExpand === 'list') {
+    const authorNames = orderedAuthorsLive
+      .filter((d) => typeof d !== 'undefined' && d?.name)
+      .map((d) => d.name)
+      .join('; ');
 
-        if (orderedAuthorsDb[index] !== undefined) {
-          // if author orcid has object instead of string
-          // if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== null && 'curie' in orderedAuthorsDb[index]['orcid'] &&
-          //     'ORCID:' + splitCurie(orderedAuthorsDb[index]['orcid']['curie'], 'id') !== orcid_curie) { updatedFlagAuthor = 'updated'; }
-          if ('orcid' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['orcid'] !== null && orderedAuthorsDb[index]['orcid'] !== '' &&
-              'ORCID:' + splitCurie(orderedAuthorsDb[index]['orcid'], 'id') !== orcid_curie) { updatedFlagAuthor = 'updated'; }
-          if ('name' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['name'] !== value['name']) { updatedFlagAuthor = 'updated'; }
-          if ('affiliations' in orderedAuthorsDb[index] && orderedAuthorsDb[index]['affiliations'] &&
-              orderedAuthorsDb[index]['affiliations'].join('') !== affiliationsJoined) { updatedFlagAuthor = 'updated'; }
+    rowAuthorElements.push(
+      <Row key="author list" className="Row-general" xs={2} md={4} lg={6}>
+        <Col className="Col-general Col-display Col-display-left">all authors</Col>
+        <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
+          <div>
+            <span dangerouslySetInnerHTML={{ __html: authorNames }} />
+          </div>
+        </Col>
+      </Row>
+    );
+  } else if (authorExpand === 'detailed') {
+    for (const [index, value] of orderedAuthorsLive.entries()) {
+      if (typeof value === 'undefined') continue;
+
+      let updatedFlagAuthor = '';
+
+      // ---- ORCID (normalize to bare id for URL + comparisons) ----
+      const liveOrcidId = normalizeOrcidId(value?.orcid);
+      const orcidUrl = liveOrcidId ? `https://orcid.org/${liveOrcidId}` : '';
+
+      const orcidDisplay = liveOrcidId ? `ORCID:${liveOrcidId}` : '';
+      const orcidLink =
+        orcidUrl === '' ? (
+          <span>{orcidDisplay}</span>
+        ) : (
+          <a href={orcidUrl} rel="noreferrer noopener" target="_blank">
+            {orcidDisplay}
+          </a>
+        );
+
+      // ---- Affiliations ----
+      const affiliations = [];
+      const affiliationsJoined =
+        Array.isArray(value?.affiliations) && value.affiliations.length > 0
+          ? value.affiliations.join('')
+          : '';
+
+      if (Array.isArray(value?.affiliations) && value.affiliations !== null) {
+        for (const index_aff in value.affiliations) {
+          affiliations.push(
+            <div key={`index_aff ${index_aff}`} className="affiliation">
+              - <span dangerouslySetInnerHTML={{ __html: value.affiliations[index_aff] }} />
+            </div>
+          );
         }
-        rowAuthorElements.push(
-          <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-            <Col className="Col-general Col-display Col-display-left">author {value['order']}</Col>
-            <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}>
-              <div key={`author ${index}`}>
-                <span dangerouslySetInnerHTML={{__html: value['name']}} />
-                  &nbsp;{orcid_link}{affiliations}</div></Col>
-          </Row>); } }
-    return (<>{rowAuthorElements}</>); }
-  else { return null; }
-} // const RowDisplayAuthors
+      }
 
-//             <Col className="Col-general Col-display " lg={{ span: 10 }}><div key={`author ${index}`}>{value['name']} <a href={orcid_url}  rel="noreferrer noopener" target="_blank">{orcid_curie}</a>{affiliations}</div></Col>
+      // ---- Compare with DB to set updatedFlagAuthor ----
+      const dbAuthor = orderedAuthorsDb[index];
+
+      if (dbAuthor !== undefined) {
+        const dbOrcidId = normalizeOrcidId(dbAuthor?.orcid);
+
+        if (dbOrcidId !== liveOrcidId) updatedFlagAuthor = 'updated';
+        if (dbAuthor?.name !== undefined && dbAuthor.name !== value.name) updatedFlagAuthor = 'updated';
+
+        const dbAffJoined =
+          Array.isArray(dbAuthor?.affiliations) && dbAuthor.affiliations
+            ? dbAuthor.affiliations.join('')
+            : '';
+        if (dbAffJoined !== affiliationsJoined) updatedFlagAuthor = 'updated';
+      }
+
+      rowAuthorElements.push(
+        <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
+          <Col className="Col-general Col-display Col-display-left">author {value['order']}</Col>
+          <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}>
+            <div key={`author ${index}`}>
+              <span dangerouslySetInnerHTML={{ __html: value['name'] }} />
+              &nbsp;{orcidLink}
+              {affiliations}
+            </div>
+          </Col>
+        </Row>
+      );
+    }
+  }
+
+  return <>{rowAuthorElements}</>;
+}; // const RowDisplayAuthors
 
 
 const MAX_EMAILS_TO_SHOW = 5;
