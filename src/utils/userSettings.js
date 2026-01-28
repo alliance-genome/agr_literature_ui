@@ -1,5 +1,10 @@
 // src/utils/userSettings.js
 
+// Global deduplication for person settings API calls
+const pendingSettingsRequests = new Map();
+const settingsCache = new Map();
+const CACHE_DURATION = 5000; // 5 seconds
+
 async function authed(baseUrl, token, path, options = {}) {
   try {
     const url = `${baseUrl}${path}`;
@@ -67,20 +72,63 @@ export async function listPersonSettings({
   if (!email) throw new Error("listPersonSettings: email is required");
 
   console.log(`Listing settings for email: ${email}, component: ${componentName}`);
-  
-  const { status, json } = await authed(
-    baseUrl,
-    token,
-    `/person_setting/by/email/${encodeURIComponent(email)}`
-  );
 
-  if (status === 204 || !Array.isArray(json)) {
-    console.log(`No settings found for email: ${email}`);
-    return [];
+  // Create cache key based on email only (since the API endpoint fetches all settings for an email)
+  const cacheKey = `${email}`;
+
+  // Check if there's a pending request for this email
+  if (pendingSettingsRequests.has(cacheKey)) {
+    console.log(`Reusing pending request for email: ${email}`);
+    const allSettings = await pendingSettingsRequests.get(cacheKey);
+    const filtered = allSettings.filter((row) => row.component_name === componentName);
+    console.log(`Found ${filtered.length} settings for component: ${componentName} (from pending)`);
+    return filtered;
   }
-  
+
+  // Check if we have a recent cached result
+  const cached = settingsCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log(`Using cached settings for email: ${email}`);
+    const filtered = cached.data.filter((row) => row.component_name === componentName);
+    console.log(`Found ${filtered.length} settings for component: ${componentName} (from cache)`);
+    return filtered;
+  }
+
+  // Create the request promise
+  const requestPromise = (async () => {
+    try {
+      const { status, json } = await authed(
+        baseUrl,
+        token,
+        `/person_setting/by/email/${encodeURIComponent(email)}`
+      );
+
+      if (status === 204 || !Array.isArray(json)) {
+        console.log(`No settings found for email: ${email}`);
+        return [];
+      }
+
+      // Cache the full result
+      settingsCache.set(cacheKey, {
+        data: json,
+        timestamp: Date.now()
+      });
+
+      return json;
+    } finally {
+      // Remove from pending requests
+      pendingSettingsRequests.delete(cacheKey);
+    }
+  })();
+
+  // Store the pending promise
+  pendingSettingsRequests.set(cacheKey, requestPromise);
+
+  // Wait for the result
+  const allSettings = await requestPromise;
+
   // Filter by component_name on the client side
-  const filtered = json.filter((row) => row.component_name === componentName);
+  const filtered = allSettings.filter((row) => row.component_name === componentName);
   console.log(`Found ${filtered.length} settings for component: ${componentName}`);
   return filtered;
 }

@@ -56,7 +56,7 @@ export function usePersonSettings({
         console.warn("Cannot seed settings: missing token or email");
         return null;
       }
-      
+
       setBusy(true);
       try {
         const created = await createPersonSetting({
@@ -92,7 +92,7 @@ export function usePersonSettings({
       if (!name || !name.trim()) {
         throw new Error("Setting name is required");
       }
-      
+
       setBusy(true);
       try {
         const created = await createPersonSetting({
@@ -180,7 +180,7 @@ export function usePersonSettings({
       if (!token) {
         throw new Error("Cannot set default: missing authentication");
       }
-  
+
       setBusy(true);
       try {
         // Use the utility function with all required parameters
@@ -191,7 +191,7 @@ export function usePersonSettings({
           componentName,
           person_setting_id: id
         });
-    
+
         // Update local state
         setSettings((prev) =>
           prev.map((s) => ({ ...s, default_setting: s.person_setting_id === id }))
