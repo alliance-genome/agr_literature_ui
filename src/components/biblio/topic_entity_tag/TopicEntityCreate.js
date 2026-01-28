@@ -326,32 +326,6 @@ const TopicEntityCreate = () => {
     }
   }, [tagExistingMessage, existingTagResponses]);
 
-  // unselect New checkboxes if the topic and entity type are the same, and there's a validated entity
-  useEffect(() => {
-    let updated = false;
-    const newRows = rows.map((row) => {
-      const hasBlockingEntity =
-        row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
-        row.entityResultList?.some(
-          entity =>
-            !warnTypesEntityValidation.includes(entity.curie) &&
-            entity.curie !== "duplicate"
-        );
-      if (hasBlockingEntity &&
-          (row.newDataCheckbox || row.newToDbCheckbox || row.newToFieldCheckbox)) {
-        updated = true;
-        return {
-          ...row,
-          newDataCheckbox: false,
-          newToDbCheckbox: false,
-          newToFieldCheckbox: false
-        };
-      }
-      return row;
-    });
-    if (updated) { setRows(newRows); }
-  }, [rows]);
-
   useEffect(() => {
     const fetchCurationData = async () => {
       try {
@@ -941,6 +915,12 @@ const TopicEntityCreate = () => {
         const hasBlockingEntity =
           row.topicSelectValue === curieToNameEntityType[row.entityTypeSelect] &&
           row.entityResultList?.some(entity => !warnTypesEntityValidation.includes(entity.curie) && entity.curie !== "duplicate");
+
+        // Derive effective checkbox states - if blocked, always show as unchecked
+        const effectiveNewDataCheckbox = hasBlockingEntity ? false : row.newDataCheckbox;
+        const effectiveNewToDbCheckbox = hasBlockingEntity ? false : row.newToDbCheckbox;
+        const effectiveNewToFieldCheckbox = hasBlockingEntity ? false : row.newToFieldCheckbox;
+
         return (
           <React.Fragment key={index}>
             <Row className="form-group row" style={{ marginBottom: '15px' }}>
@@ -997,7 +977,7 @@ const TopicEntityCreate = () => {
                     inline
                     type="checkbox"
                     id={`newDataCheckbox-${index}`}
-                    checked={row.newDataCheckbox}
+                    checked={effectiveNewDataCheckbox}
                     disabled={ row.newToDbCheckbox || row.newToFieldCheckbox || row.noDataCheckbox || hasBlockingEntity }
                     onChange={(evt) => {
                       const updatedRows = [...rows];
@@ -1012,7 +992,7 @@ const TopicEntityCreate = () => {
                     inline
                     type="checkbox"
                     id={`newToDbCheckbox-${index}`}
-                    checked={row.newToDbCheckbox}
+                    checked={effectiveNewToDbCheckbox}
                     disabled={ row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToFieldCheckbox) }
                     onChange={(evt) => {
                       const updatedRows = [...rows];
@@ -1027,7 +1007,7 @@ const TopicEntityCreate = () => {
                     inline
                     type="checkbox"
                     id={`newToFieldCheckbox-${index}`}
-                    checked={row.newToFieldCheckbox}
+                    checked={effectiveNewToFieldCheckbox}
                     disabled={ row.newDataCheckbox || row.noDataCheckbox || hasBlockingEntity || (editTag && row.newToDbCheckbox) }
                     onChange={(evt) => {
                       const updatedRows = [...rows];
