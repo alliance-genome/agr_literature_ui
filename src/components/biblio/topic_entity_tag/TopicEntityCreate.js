@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "../../../api";
 import {
@@ -88,16 +88,22 @@ const TopicEntityCreate = () => {
 
   const [topicAtpToCurationStatus, setTopicAtpToCurationStatus] = useState({});
 
-  const curieToNameMap = Object.fromEntries(
-    Object.entries(typeaheadName2CurieMap).map(([name, curie]) => [curie, name])
+  const curieToNameMap = useMemo(
+    () => Object.fromEntries(
+      Object.entries(typeaheadName2CurieMap).map(([name, curie]) => [curie, name])
+    ),
+    [typeaheadName2CurieMap]
   );
 
-  const taxonToMod = {};
-  for (const [mod, taxons] of Object.entries(modToTaxon)) {
-    taxons.forEach((taxon) => {
-      taxonToMod[taxon] = mod;
-    });
-  }
+  const taxonToMod = useMemo(() => {
+    const result = {};
+    for (const [mod, taxons] of Object.entries(modToTaxon || {})) {
+      taxons.forEach((taxon) => {
+        result[taxon] = mod;
+      });
+    }
+    return result;
+  }, [modToTaxon]);
 
   const warnTypesEntityValidation = ["no Alliance curie", "obsolete entity", "not found at WB", "no WB curie", "no SGD curie", "no mod curie"];
 
@@ -107,12 +113,21 @@ const TopicEntityCreate = () => {
     }
   }, [accessToken, dispatch]);
 
-  let unsortedTaxonList = Object.values(modToTaxon).flat();
-  unsortedTaxonList.push("");
-  unsortedTaxonList.push("use_wb");
-  unsortedTaxonList.push("NCBITaxon:9606");
+  const taxonList = useMemo(() => {
+    const unsortedTaxonList = Object.values(modToTaxon || {}).flat();
+    unsortedTaxonList.push("");
+    unsortedTaxonList.push("use_wb");
+    unsortedTaxonList.push("NCBITaxon:9606");
+    let sortedList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
 
-  let taxonList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
+    // Reorder to put user's MOD species first
+    if (accessLevel in (modToTaxon || {})) {
+      const filteredTaxonList = sortedList.filter((x) => !modToTaxon[accessLevel].includes(x));
+      sortedList = modToTaxon[accessLevel].concat(filteredTaxonList);
+    }
+
+    return sortedList;
+  }, [modToTaxon, curieToNameTaxon, accessLevel]);
 
   const unsortedTaxonListWB = [
     "",
@@ -780,11 +795,6 @@ const TopicEntityCreate = () => {
       }
       dispatch(setEditTag(null));
     }
-  }
-
-  if (accessLevel in modToTaxon) {
-    let filteredTaxonList = taxonList.filter((x) => !modToTaxon[accessLevel].includes(x));
-    taxonList = modToTaxon[accessLevel].concat(filteredTaxonList);
   }
 
   // const disabledEntityList = taxonSelect === "" || taxonSelect === undefined;
