@@ -242,27 +242,16 @@ const TopicEntityCreate = () => {
   }, [accessLevel, accessToken]);
 
   useEffect(() => {
+    // Set default taxon for rows that don't have one, preserving manual selections
     if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
-      // update each row's taxonSelect field with the default species based on accessLevel
-      setRows((prevRows) => prevRows.map((row, index) => ({
-        ...row,
-        taxonSelect: modToTaxon[accessLevel][0]
-      })));
-    }
-  }, [modToTaxon, accessLevel]);
-
- 
-  useEffect(() => {
-     // ensure that species can be adjusted manually and prevent errors
-    setRows((prevRows) =>
-      prevRows.map((row) => {
-        const defaultTaxon = modToTaxon && modToTaxon[accessLevel] && modToTaxon[accessLevel][0] ? modToTaxon[accessLevel][0] : "";
-        return {
+      const defaultTaxon = modToTaxon[accessLevel][0];
+      setRows((prevRows) =>
+        prevRows.map((row) => ({
           ...row,
           taxonSelect: row.taxonSelect !== "" && row.taxonSelect !== undefined ? row.taxonSelect : defaultTaxon,
-        };
-      })
-    );
+        }))
+      );
+    }
   }, [modToTaxon, accessLevel]);
 
 
