@@ -350,7 +350,7 @@ async function fetchJsonData(url) {
   }
 };
 
-export const sgd_entity_validation = (dispatch, entityType, entityInputList, callback) => {
+export const sgd_entity_validation = (entityType, entityInputList, callback) => {
 
   const url = sgdApiBaseUrl + "entity/" + entityType + '/' + entityInputList.join('|').replace(/ /g, '+');
   fetchJsonData(url).then(data => {
@@ -372,7 +372,6 @@ export const sgd_entity_validation = (dispatch, entityType, entityInputList, cal
         entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no SGD curie'});
       }
     }
-    dispatch(setEntityResultList(entityResultList));
     if (callback) {
       callback(entityResultList); // Call the callback with the result list
     }
@@ -386,7 +385,7 @@ export const sgd_entity_validation = (dispatch, entityType, entityInputList, cal
 };
 
 
-export const wb_entity_validation = (dispatch, entityType, entityInputList, callback) => {
+export const wb_entity_validation = (entityType, entityInputList, callback) => {
   let postData = {
     "datatype": entityType,
     "entities": entityInputList.join('|').replace(/ /g, '+')
@@ -419,7 +418,6 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList, call
             entityResultList.push({'entityTypeSymbol': entityTypeSymbol, 'curie': 'no WB curie'});
           }
         }
-        dispatch(setEntityResultList(entityResultList));
         if (callback) {
           callback(entityResultList); // Call the callback with the result list
         }
@@ -433,7 +431,7 @@ export const wb_entity_validation = (dispatch, entityType, entityInputList, call
 };
 
 
-export const abc_entity_validation = (dispatch, entityType, entityInputList, taxon, callback) => {
+export const abc_entity_validation = (entityType, entityInputList, taxon, callback) => {
 
   const entityListStr = entityInputList.join('|');
   const encodedEntityList = encodeURIComponent(entityListStr);
@@ -463,7 +461,6 @@ export const abc_entity_validation = (dispatch, entityType, entityInputList, tax
         entityResultList.push({'entityTypeSymbol': entity, 'curie': 'no mod curie'});
       }
     }
-    dispatch(setEntityResultList(entityResultList));
     if (callback) {
       callback(entityResultList); // Call the callback with the result list
     }
@@ -488,11 +485,11 @@ export const changeFieldEntityEntityList = (entityText, accessToken, entityIdVal
     }
 
     if (entityIdValidation === 'sgd' && (entityType === 'complex' || entityType === 'pathway')) {
-      return sgd_entity_validation(dispatch, entityType, entityInputList, callback);
+      return sgd_entity_validation(entityType, entityInputList, callback);
     }
 
     if (entityIdValidation === 'wb') {
-      return wb_entity_validation(dispatch, entityType, entityInputList, callback);
+      return wb_entity_validation(entityType, entityInputList, callback);
     }
 
     // Default case
@@ -500,7 +497,7 @@ export const changeFieldEntityEntityList = (entityText, accessToken, entityIdVal
       entityType = 'construct';
     }
 
-    return abc_entity_validation(dispatch, entityType, entityInputList, taxon, callback)
+    return abc_entity_validation(entityType, entityInputList, taxon, callback)
 
   };
 };
@@ -520,30 +517,10 @@ export const changeFieldEntityEditorPriority = (e) => ({
   payload: { field: e.target.id, value: e.target.value }
 });
 
-export const changeFieldEntityAddGeneralField = (e) => ({
-  type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',
-  payload: { field: e.target.id, value: e.target.value }
-});
-
 export const setTypeaheadName2CurieMap = (typeaheadName2CurieMap) => ({
   type: 'SET_TYPEAHEAD_NAME_2_CURIE_MAP',
   payload: typeaheadName2CurieMap
 })
-
-export const changeFieldEntityAddTaxonSelect = (taxon) => ({
-  type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',
-  payload: { field: 'taxonSelect', value: taxon }
-});
-
-export const changeFieldEntityAddDisplayTag = (displayTag) => ({
-  type: 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD',
-  payload: { field: 'tetdisplayTagSelect', value: displayTag }
-});
-
-const setEntityResultList = (entityResultList) => ({
-  type: 'SET_ENTITY_RESULT_LIST',
-  payload: { entityResultList: entityResultList }
-});
 
 export const setEditTag = (editTag) => ({
   type: 'SET_EDIT_TAG',

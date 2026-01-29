@@ -3,8 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { api } from "../../../api";
 import {
   getDescendantATPIds,
-  changeFieldEntityAddGeneralField,
-  changeFieldEntityAddTaxonSelect,
   changeFieldEntityEntityList,
   getCuratorSourceId,
   setBiblioUpdatingEntityAdd,
@@ -45,22 +43,11 @@ const TopicEntityCreate = () => {
 
   const biblioUpdatingEntityAdd = useSelector((state) => state.biblio.biblioUpdatingEntityAdd);
   const entityModalText = useSelector((state) => state.biblio.entityModalText);
-  const entityText = useSelector((state) => state.biblio.entityAdd.entitytextarea);
-  const noteText = useSelector((state) => state.biblio.entityAdd.notetextarea);
-  const topicSelect = useSelector((state) => state.biblio.entityAdd.topicSelect);
   const [topicSelectLoading, setTopicSelectLoading] = useState(false);
   const topicTypeaheadRef = useRef(null);
   const [typeaheadOptions, setTypeaheadOptions] = useState([]);
   const typeaheadName2CurieMap = useSelector((state) => state.biblio.typeaheadName2CurieMap);
 
-  const taxonSelect = useSelector((state) => state.biblio.entityAdd.taxonSelect);
-  const taxonSelectWB = useSelector((state) => state.biblio.entityAdd.taxonSelectWB);
-  const noDataCheckbox = useSelector((state) => state.biblio.entityAdd.noDataCheckbox);
-  const newDataCheckbox = useSelector((state) => state.biblio.entityAdd.newDataCheckbox);
-  const newToDbCheckbox = useSelector((state) => state.biblio.entityAdd.newToDbCheckbox);
-  const newToFieldCheckbox = useSelector((state) => state.biblio.entityAdd.newToFieldCheckbox);
-  const entityTypeSelect = useSelector((state) => state.biblio.entityAdd.entityTypeSelect);
-  const entityResultList = useSelector((state) => state.biblio.entityAdd.entityResultList);
   const topicEntitySourceId = useSelector((state) => state.biblio.topicEntitySourceId);
 
   const [speciesSelectLoading, setSpeciesSelectLoading] = useState(false);
@@ -230,13 +217,9 @@ const TopicEntityCreate = () => {
           noteText: editRow.note || "",
           entityResultList: editRow.entityResultList || []
         }]);
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: editRow.entityResultList || [] } }));
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: editRow.entity || '' } }));
       }
     } else {
       setRows([createNewRow()]);
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityResultList', value: [] } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
     }
   }, [editTag, topicEntityTags, dispatch]);
 
@@ -248,45 +231,6 @@ const TopicEntityCreate = () => {
     setMessages((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  useEffect(() => {	// this whole section might not do anything, can't tell if topicSelect is used at all
-    if (editTag === null) {
-      if (entityTypeList.includes(topicSelect)) {
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityTypeSelect", value: topicSelect } }));
-        if (topicSelect === speciesATP) {
-          dispatch(changeFieldEntityAddGeneralField({ target: { id: "taxonSelect", value: "" } }));
-          setIsSpeciesSelected(true);
-        }
-      } else if (geneDescendants !== null && geneDescendants.includes(topicSelect)) {
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityTypeSelect", value: "ATP:0000005" } }));
-      } else if (alleleDescendants !== null && alleleDescendants.includes(topicSelect)) {
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityTypeSelect", value: "ATP:0000006" } }));
-      } else {
-        setSelectedSpecies([]);
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityTypeSelect", value: "" } }));
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityResultList", value: [] } }));
-      }
-    }
-    if (topicSelect !== speciesATP) {
-      if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0 && editTag === null) {
-        dispatch(changeFieldEntityAddGeneralField({ target: { id: "taxonSelect", value: modToTaxon[accessLevel][0] } }));
-      }
-    }
-    if (editTag === null) {
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "entitytextarea", value: "" } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "notetextarea", value: "" } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "noDataCheckbox", value: false } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "newDataCheckbox", value: false } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToDbCheckbox", value: false } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "newToFieldCheckbox", value: false } }));
-    }
-  }, [topicSelect, dispatch]);
-
-  useEffect(() => {
-    if (editTag === null) {
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityResultList", value: [] } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "entitytextarea", value: "" } }));
-    }
-  }, [entityTypeSelect, dispatch]);
 
   useEffect(() => {
     const fetchSourceId = async () => {
@@ -296,19 +240,6 @@ const TopicEntityCreate = () => {
     };
     fetchSourceId().catch(console.error);
   }, [accessLevel, accessToken]);
-
-  useEffect(() => {
-    if (taxonSelect === "use_wb" && taxonSelectWB !== "" && taxonSelectWB !== undefined && entityTypeSelect !== "") {
-      dispatch(
-        changeFieldEntityEntityList(entityText, accessToken, "wb", taxonSelectWB, curieToNameEntityType[entityTypeSelect], taxonToMod)
-      );
-    } else if (taxonSelect !== "" && taxonSelect !== undefined && entityTypeSelect !== "") {
-      dispatch(
-        changeFieldEntityEntityList(entityText, accessToken, "alliance", taxonSelect, curieToNameEntityType[entityTypeSelect], taxonToMod)
-      );
-    }
-  }, [entityText, taxonSelect]);
-
 
   useEffect(() => {
     if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
@@ -789,15 +720,12 @@ const TopicEntityCreate = () => {
       await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
 
       setTypeaheadOptions([]);
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: null } }));
       if (topicTypeaheadRef.current !== null) {
         topicTypeaheadRef.current.clear();
       }
       dispatch(setEditTag(null));
     }
   }
-
-  // const disabledEntityList = taxonSelect === "" || taxonSelect === undefined;
 
   return (
     <Container fluid>

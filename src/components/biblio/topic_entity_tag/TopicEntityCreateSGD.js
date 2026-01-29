@@ -2,8 +2,6 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "../../../api";
 import {
-  changeFieldEntityAddDisplayTag,
-  changeFieldEntityAddGeneralField,
   changeFieldEntityEntityList,
   fetchDisplayTagData,
   getCuratorSourceId,
@@ -105,11 +103,6 @@ const TopicEntityCreateSGD = () => {
 
   useEffect(() => {
     fetchDisplayTagData().then((data) => setDisplayTagData(data));
-    dispatch(
-      changeFieldEntityAddGeneralField({
-        target: { id: "entityTypeSelect", value: geneATP },
-      })
-    );
   }, [accessToken, dispatch]);
 
   useEffect(() => {
@@ -152,19 +145,10 @@ const TopicEntityCreateSGD = () => {
           entityTypeSymbol: editRow.entity_name || editRow.entity,
         }] : [],
       }]);
-
-      dispatch(changeFieldEntityAddGeneralField({
-        target: { id: "entityResultList", value: editRow.entity ? [{ curie: editRow.entity }] : [] },
-      }));
-      dispatch(changeFieldEntityAddGeneralField({
-        target: { id: "entitytextarea", value: editRow.entity || "" },
-      }));
     }
 
     if (editTag === null) {
       setRows([createNewRow()]);
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "entityResultList", value: [] } }));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "entitytextarea", value: "" } }));
     }
   }, [editTag, topicEntityTags, dispatch]);
 
@@ -333,7 +317,6 @@ const TopicEntityCreateSGD = () => {
     dispatch(setBiblioUpdatingEntityAdd(1));
     try {
       await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
-      dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: null } }));
       dispatch(setEditTag(null));
     } catch (err) {
       console.error("Update failed:", err?.response?.status, err?.response?.data || err);
@@ -403,7 +386,6 @@ const TopicEntityCreateSGD = () => {
       noReset = true;	
       return;
     }
-    dispatch(changeFieldEntityAddDisplayTag(displayTag));
 
     const forApiArray = [];
     const subPath = "topic_entity_tag/";
@@ -454,7 +436,6 @@ const TopicEntityCreateSGD = () => {
       setExistingTagResponses([result.html]);
       setIsTagExistingMessageVisible(true);
     }
-    dispatch(changeFieldEntityAddGeneralField({ target: { id: "topicSelect", value: "" } }));
     if (!noReset) removeRow(index); // success-only cleanup
   };
 

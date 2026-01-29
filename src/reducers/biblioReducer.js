@@ -10,36 +10,10 @@ import { splitCurie } from '../components/biblio/BiblioEditor';
 
 const defaultTetPageSize = 25;
 
-const defaultEntityAdd = {
-  'topicSelect': '',
-  'taxonSelect': '',
-  'taxonSelectWB': '',
-  'noDataCheckbox': false,
-  'newDataCheckbox': false,
-  'newToDbCheckbox': false,
-  'newToFieldCheckbox': false,
-  'entityTypeSelect': '',
-  'entitytextarea': '',
-  'notetextarea': '',
-  'tetdisplayTagSelect': '',
-  'entityResultList': []
-}
-
-const defaultEntityAddSGD = {
-  'topicSelect': '',
-  'taxonSelect': '',
-  'entityTypeSelect': 'ATP:0000005',
-  'entitytextarea': '',
-  'notetextarea': '',
-  'tetdisplayTagSelect': '',
-  'entityResultList': []
-}
-
 const initialState = {
   biblioAction: '',
   biblioUpdatingEntityAdd: 0,
   biblioUpdatingEntityRemoveEntity: {},
-  entityAdd: defaultEntityAdd,
   typeaheadName2CurieMap: {},
   isAddingEntity: false,
   entityModalText: '',
@@ -241,27 +215,10 @@ export default function(state = initialState, action) {
           topic_entity_tags: newTopicEntityTags
         }
       }
-    case 'CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD':
-      // console.log('CHANGE_FIELD_ENTITY_ADD_GENERAL_FIELD');
-      // console.log(action.payload);
-      const changeFieldEntityAddGeneralFieldEntityAdd = _.cloneDeep(state.entityAdd);
-      changeFieldEntityAddGeneralFieldEntityAdd[action.payload.field] = action.payload.value;
-      return {
-        ...state,
-        entityAdd: changeFieldEntityAddGeneralFieldEntityAdd
-      }
     case 'SET_TYPEAHEAD_NAME_2_CURIE_MAP':
       return {
         ...state,
         typeaheadName2CurieMap: action.payload
-      }
-    case 'SET_ENTITY_RESULT_LIST':
-      // console.log(action.payload);
-      const setEntityResultListEntityAdd = _.cloneDeep(state.entityAdd);
-      setEntityResultListEntityAdd['entityResultList'] = action.payload.entityResultList;
-      return {
-        ...state,
-        entityAdd: setEntityResultListEntityAdd
       }
     case 'SET_ENTITY_MODAL_TEXT':
       console.log('SET_ENTITY_MODAL_TEXT reducer ' + action.payload);
@@ -323,20 +280,11 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       let getReferenceCurieFlagUpdateButtonEntityAdd = false;			// redirect to a reference if all updates successful
       let entityModalTextUpdateButtonEntityAdd = state.entityModalText;
-      let entityAddUpdateButtonEntityAdd = _.cloneDeep(state.entityAdd);
-      const origTaxonSelect = entityAddUpdateButtonEntityAdd.taxonSelect;
-      // const origEntityTypeSelect = entityAddUpdateButtonEntityAdd.entityTypeSelect;	// no longer keep selected entity type when adding
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_BIBLIO_ENTITY_ADD ' + action.payload.responseMessage);
         console.log('state.biblioUpdatingEntityAdd ' + state.biblioUpdatingEntityAdd);
         if (state.biblioUpdatingEntityAdd === 1) {
           entityModalTextUpdateButtonEntityAdd = '';
-          if (action.payload.accessLevel === 'SGD') {
-            entityAddUpdateButtonEntityAdd = _.cloneDeep(defaultEntityAddSGD); }
-          else {
-            entityAddUpdateButtonEntityAdd = _.cloneDeep(defaultEntityAdd); }
-          entityAddUpdateButtonEntityAdd.taxonSelect = origTaxonSelect;
-          // entityAddUpdateButtonEntityAdd.entityTypeSelect = origEntityTypeSelect;
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
       } else {
         entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
@@ -346,7 +294,6 @@ export default function(state = initialState, action) {
       return {
         ...state,
         entityModalText: entityModalTextUpdateButtonEntityAdd,
-        entityAdd: entityAddUpdateButtonEntityAdd,
         getReferenceCurieFlag: getReferenceCurieFlagUpdateButtonEntityAdd,
         biblioUpdatingEntityAdd: state.biblioUpdatingEntityAdd - 1
       }
@@ -982,7 +929,6 @@ export default function(state = initialState, action) {
     case 'SET_REFERENCE_CURIE':
       console.log("reducer set reference curie, also clear store");
       // also clear store from the previous reference data
-      const setRefCurieDefaultEntityAdd = _.cloneDeep(defaultEntityAdd);
       return {
         ...state,
         isLoading: true,
@@ -990,7 +936,6 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
-        entityAdd: setRefCurieDefaultEntityAdd,
         tetPageSize: defaultTetPageSize,
         curieToNameTaxon: {},
         allSpecies: [],

@@ -5,7 +5,6 @@ import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
 import { Spinner } from 'react-bootstrap';
 import {
-    changeFieldEntityAddGeneralField,
     setEditTag,
     setFilteredTags,
     setTypeaheadName2CurieMap,
@@ -101,35 +100,11 @@ export default (props) => {
 	console.log("Editing row:", row);
         if(editTag === row.topic_entity_tag_id){
             dispatch(setEditTag(null));
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: ''} }));
         }
         else{
             dispatch(setEditTag(row.topic_entity_tag_id));
             dispatch(setTypeaheadName2CurieMap({[row.topic_name]: row.topic}));
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'topicSelect', value: row.topic} }));
-            if (row.entity_id_validation === 'WB') {
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: 'use_wb' } }));
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelectWB', value: row.species } }));
-            }
-            else{
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'taxonSelect', value: row.species } }));
-            }
-            if (row.data_novelty === 'ATP:0000321') {
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'newDataCheckbox', value: true } })); }
-            else if (row.data_novelty === 'ATP:0000228') {
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'newToDbCheckbox', value: true } })); }
-            else if (row.data_novelty === 'ATP:0000229') {
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'newToFieldCheckbox', value: true } })); }
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'noDataCheckbox', value: row.negated } }));
-            dispatch(changeFieldEntityAddGeneralField({ target: { id: 'notetextarea', value: row.note ? row.note : '' } }));
-            if (props.data.entity_type){
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: row.entity_name } }));
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: row.entity_type } }));
-            }
-            else{
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entitytextarea', value: '' } }));
-                dispatch(changeFieldEntityAddGeneralField({ target: { id: 'entityTypeSelect', value: '' } }));
-            }
+            // Previously dispatched to entityAdd, but components now load data directly from editTag
         }
     }
 
