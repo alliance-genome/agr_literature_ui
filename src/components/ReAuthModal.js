@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 import CognitoSignInWidget from './CognitoSignInWidget';
-import { hideReauthModal, clearPendingRequests, setDevTestingReauth } from '../actions/authActions';
+import { hideReauthModal, clearPendingRequests } from '../actions/authActions';
 import { signIn } from '../actions/loginActions';
 import { retryPendingRequests } from '../api';
 import { fetchAuthSession } from 'aws-amplify/auth';
@@ -12,7 +12,6 @@ const TOKEN_SYNC_KEY = 'auth_token_updated';
 
 const ReAuthModal = () => {
     const reauthRequired = useSelector(state => state.isLogged.reauthRequired);
-    const devTestingReauth = useSelector(state => state.isLogged.devTestingReauth);
     const dispatch = useDispatch();
 
     const onSuccess = useCallback(async () => {
@@ -32,9 +31,8 @@ const ReAuthModal = () => {
                     timestamp: Date.now()
                 }));
 
-                // Hide the modal and clear dev testing flag
+                // Hide the modal
                 dispatch(hideReauthModal());
-                dispatch(setDevTestingReauth(false));
 
                 // Retry all pending requests with new token
                 retryPendingRequests();
@@ -92,7 +90,7 @@ const ReAuthModal = () => {
                             Your current page and any unsaved changes will be preserved.
                         </p>
                     </div>
-                    <CognitoSignInWidget onSuccess={onSuccess} skipInitialAuth={devTestingReauth} />
+                    <CognitoSignInWidget onSuccess={onSuccess} />
                 </div>
             )}
         </Popup>

@@ -4,17 +4,9 @@ export const HIDE_REAUTH_MODAL = 'HIDE_REAUTH_MODAL';
 export const ADD_PENDING_REQUEST = 'ADD_PENDING_REQUEST';
 export const CLEAR_PENDING_REQUESTS = 'CLEAR_PENDING_REQUESTS';
 export const SET_AUTH_LOADING = 'SET_AUTH_LOADING';
-export const SET_DEV_TESTING_REAUTH = 'SET_DEV_TESTING_REAUTH';
-
 // Show the re-authentication modal
 export const showReauthModal = () => ({
     type: SHOW_REAUTH_MODAL
-});
-
-// Set dev testing mode for re-auth (prevents auto-hide)
-export const setDevTestingReauth = (enabled) => ({
-    type: SET_DEV_TESTING_REAUTH,
-    payload: enabled
 });
 
 // Hide the re-authentication modal
