@@ -1,3 +1,8 @@
+// TEST: Verify Claude posts PR comments after .github workflow fix
+// This PR tests that the shared workflow from alliance-genome/.github
+// now correctly instructs Claude to use 'gh pr comment' to post reviews
+// Delete this entire comment block after verification is complete
+// Line 5 for good measure
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
