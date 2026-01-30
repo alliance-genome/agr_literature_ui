@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import SearchBar from "./SearchBar";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -19,6 +19,7 @@ const SearchLayout = () => {
     const maxWidth = 512;  // 32em = 512px
     const [facetWidth, setFacetWidth] = useState(minWidth);
     const [isDragging, setIsDragging] = useState(false);
+    const dragRef = useRef({ startX: 0, startWidth: 0 });
     const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
     const [facetsCollapsed, setFacetsCollapsed] = useState(window.innerWidth < MOBILE_BREAKPOINT);
 
@@ -39,8 +40,8 @@ const SearchLayout = () => {
 
     useEffect(() => {
         const handleMouseMove = (e) => {
-            if (!isDragging) return;
-            const newWidth = facetWidth + e.movementX;
+            const { startX, startWidth } = dragRef.current;
+            const newWidth = startWidth + (e.clientX - startX);
             setFacetWidth(Math.min(Math.max(newWidth, minWidth), maxWidth));
         };
 
@@ -58,7 +59,7 @@ const SearchLayout = () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDragging, facetWidth]);
+    }, [isDragging]);
 
     const toggleFacets = useCallback(() => {
         setFacetsCollapsed(prev => !prev);
@@ -161,7 +162,7 @@ const SearchLayout = () => {
                                 <div
                                     style={{
                                         position: 'absolute',
-                                        left: facetWidth - 3,
+                                        left: facetWidth,
                                         top: 0,
                                         bottom: 0,
                                         width: '6px',
@@ -170,9 +171,13 @@ const SearchLayout = () => {
                                         zIndex: 1001,
                                         transition: 'background-color 0.2s',
                                     }}
-                                    onMouseDown={() => setIsDragging(true)}
-                                    onMouseEnter={() => document.body.style.userSelect = 'none'}
-                                    onMouseLeave={() => document.body.style.userSelect = ''}
+                                    onMouseDown={(e) => {
+                                        dragRef.current = { startX: e.clientX, startWidth: facetWidth };
+                                        setIsDragging(true);
+                                        document.body.style.userSelect = 'none';
+                                    }}
+                                    onMouseEnter={() => { if (!isDragging) document.body.style.userSelect = 'none'; }}
+                                    onMouseLeave={() => { if (!isDragging) document.body.style.userSelect = ''; }}
                                 />
                             )}
 

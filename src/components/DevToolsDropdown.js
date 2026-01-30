@@ -2,16 +2,13 @@ import React, { useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Badge from 'react-bootstrap/Badge';
-import { showReauthModal, hideReauthModal, setDevTestingReauth } from '../actions/authActions';
 import { setTesterMod } from '../actions/loginActions';
-import { signOut as amplifySignOut } from 'aws-amplify/auth';
 
 const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
 
 const DevToolsDropdown = () => {
     const dispatch = useDispatch();
     const dropdownRef = useRef(null);
-    const devTestingReauth = useSelector(state => state.isLogged.devTestingReauth);
     const redux_mods = useSelector(state => state.app.mods);
     const testerMod = useSelector(state => state.isLogged.testerMod);
     const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
@@ -26,22 +23,6 @@ const DevToolsDropdown = () => {
             }, 100);
         }
     }, []);
-
-    const handleTriggerReauthModal = useCallback(async () => {
-        dispatch(setDevTestingReauth(true));
-        // Sign out from Amplify (but not Redux) so the sign-in form appears
-        try {
-            await amplifySignOut();
-        } catch (error) {
-            console.log('Amplify sign out error (may be expected):', error);
-        }
-        dispatch(showReauthModal());
-    }, [dispatch]);
-
-    const handleStopTestingReauth = useCallback(() => {
-        dispatch(setDevTestingReauth(false));
-        dispatch(hideReauthModal());
-    }, [dispatch]);
 
     // Only show in dev or stage environments
     if (devOrStageOrProd === 'prod') {
@@ -63,23 +44,6 @@ const DevToolsDropdown = () => {
                     display: none;
                 }
             `}</style>
-
-            {/* Re-Auth Badge/Button */}
-            <Badge
-                as="button"
-                onClick={handleTriggerReauthModal}
-                style={{
-                    fontSize: '0.85rem',
-                    padding: '5px 10px',
-                    backgroundColor: '#6c757d',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                }}
-                title="Click to trigger re-auth modal"
-            >
-                Test Re-Auth
-            </Badge>
 
             {/* Tester MOD Dropdown */}
             {showTesterOptions && (

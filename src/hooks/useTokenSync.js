@@ -16,15 +16,9 @@ export const useTokenSync = () => {
     const dispatch = useDispatch();
     const currentToken = useSelector(state => state.isLogged.accessToken);
     const reauthRequired = useSelector(state => state.isLogged.reauthRequired);
-    const devTestingReauth = useSelector(state => state.isLogged.devTestingReauth);
 
     // Function to refresh auth state from Amplify session
     const refreshAuthState = useCallback(async () => {
-        // Skip auto-refresh when dev testing re-auth modal
-        if (devTestingReauth) {
-            return;
-        }
-
         try {
             const session = await fetchAuthSession();
             if (session.tokens?.idToken) {
@@ -46,7 +40,7 @@ export const useTokenSync = () => {
             // Session invalid - but don't sign out here, let the normal flow handle it
             console.log('Token sync: No valid session found');
         }
-    }, [dispatch, currentToken, reauthRequired, devTestingReauth]);
+    }, [dispatch, currentToken, reauthRequired]);
 
     // Listen for token updates from other tabs via localStorage
     useEffect(() => {

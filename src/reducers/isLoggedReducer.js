@@ -4,8 +4,7 @@ import {
   HIDE_REAUTH_MODAL,
   ADD_PENDING_REQUEST,
   CLEAR_PENDING_REQUESTS,
-  SET_AUTH_LOADING,
-  SET_DEV_TESTING_REAUTH
+  SET_AUTH_LOADING
 } from '../actions/authActions';
 
 const INTIAL_STATE = {
@@ -23,8 +22,7 @@ const INTIAL_STATE = {
   // Re-authentication state
   reauthRequired: false,
   pendingRequests: [],
-  isLoading: true,
-  devTestingReauth: false
+  isLoading: true
 };
 
 const loggedReducer = (state = INTIAL_STATE, action) => {
@@ -65,9 +63,9 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         cognitoGroups: groups,
         uid: jsonToken.sub || jsonToken.uid,
         email: action.payload.email,
-        // Clear re-auth state on successful sign in (unless dev testing)
-        reauthRequired: state.devTestingReauth ? state.reauthRequired : false,
-        pendingRequests: state.devTestingReauth ? state.pendingRequests : [],
+        // Clear re-auth state on successful sign in
+        reauthRequired: false,
+        pendingRequests: [],
         isLoading: false
       }
     case 'SIGN_OUT':
@@ -100,8 +98,6 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
       return { ...state, pendingRequests: [] }
     case SET_AUTH_LOADING:
       return { ...state, isLoading: action.payload }
-    case SET_DEV_TESTING_REAUTH:
-      return { ...state, devTestingReauth: action.payload }
     default:
       return state;
   }
