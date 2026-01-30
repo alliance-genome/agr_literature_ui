@@ -882,13 +882,6 @@ export const resetBiblioIsLoading = () => {
   };
 };
 
-// replaced by setReferenceCurie + setGetReferenceCurieFlag
-// export const resetBiblioReferenceCurie = () => {
-//   return {
-//     type: 'RESET_BIBLIO_REFERENCE_CURIE'
-//   };
-// };
-
 
 export const setEntityModalText = (payload) => {
   return {
