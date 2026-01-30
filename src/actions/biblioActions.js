@@ -702,7 +702,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
     try {
       const res = await api.get(url);
       const response = res.data;
-      let response_payload = 'not found';
+      let response_payload = { detail: 'Reference not found' };
       if (response !== undefined) {
         const referenceJson = response;
         if ('reference_relations' in referenceJson && referenceJson['reference_relations'] !== null) {
@@ -718,7 +718,7 @@ export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
     } catch (error) {
       dispatch({
         type: 'BIBLIO_GET_REFERENCE_CURIE',
-        payload: 'not found'
+        payload: { detail: 'Reference not found' }
       })
     }
   }
