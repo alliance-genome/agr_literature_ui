@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+
+// TEST: Claude Code Review Verification - Jan 30, 2026
+// This PR tests the Claude Code v1 migration with actions:read permission fix
+// Please delete this comment block after verifying the review works
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
