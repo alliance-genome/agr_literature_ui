@@ -1,3 +1,5 @@
+// TEST: Verify Claude posts PR comments after .github workflow fix
+// Delete this comment after verification
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
