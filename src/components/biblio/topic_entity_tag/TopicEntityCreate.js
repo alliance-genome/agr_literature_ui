@@ -177,7 +177,7 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     getDescendantATPIds("ATP:0000005").then((data) => setGeneDescendants(data));
     getDescendantATPIds("ATP:0000006").then((data) => setAlleleDescendants(data));
-  }, [accessLevel, accessToken, dispatch]);
+  }, []);
 
   useEffect(() => {
     const fetchTopicEntityTags = async () => {
@@ -221,7 +221,7 @@ const TopicEntityCreate = () => {
     } else {
       setRows([createNewRow()]);
     }
-  }, [editTag, topicEntityTags, dispatch]);
+  }, [editTag, topicEntityTags]);
 
   const addMessage = (text, variant) => {
     setMessages((prev) => [...prev, { text, variant }]);
@@ -259,7 +259,7 @@ const TopicEntityCreate = () => {
     if (tagExistingMessage) {
       setupEventListeners(existingTagResponses, accessLevel, dispatch, updateButtonBiblioEntityAdd);
     }
-  }, [tagExistingMessage, existingTagResponses]);
+  }, [tagExistingMessage, existingTagResponses, accessLevel]);
 
   useEffect(() => {
     const fetchCurationData = async () => {
