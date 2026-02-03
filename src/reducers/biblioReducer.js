@@ -960,7 +960,7 @@ export default function(state = initialState, action) {
     // TODO to make live, rename this case to appropriate name, remove action that assigns prepopulated corpus and source
     case 'BIBLIO_GET_REFERENCE_CURIE':
       console.log("reducer biblio get reference curie");
-      if (action.payload.detail === "Reference with the id AGRKB:101000000000000 is not available") {
+      if (action.payload.detail === "Reference not found") {
         return {
           ...state,
           referenceCurie: action.payload.detail,
