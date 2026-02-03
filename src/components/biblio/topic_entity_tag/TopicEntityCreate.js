@@ -66,7 +66,8 @@ const TopicEntityCreate = () => {
   const [messageFailureSetCurationStatusToCurated, setMessageFailureSetCurationStatusToCurated] = useState("");
   const [isVisibleMessageFailureSetCurationStatusToCurated, setIsVisibleMessageFailureSetCurationStatusToCurated] = useState("");
   const [rows, setRows] = useState([
-    { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", entityResultList: [] }
+    { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", noteText: "", entityResultList: [],
+      newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false }
   ]);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const inputRefs = useRef([]);
@@ -177,7 +178,7 @@ const TopicEntityCreate = () => {
   useEffect(() => {
     getDescendantATPIds("ATP:0000005").then((data) => setGeneDescendants(data));
     getDescendantATPIds("ATP:0000006").then((data) => setAlleleDescendants(data));
-  }, [accessLevel, accessToken, dispatch]);
+  }, []);
 
   useEffect(() => {
     const fetchTopicEntityTags = async () => {
@@ -221,7 +222,7 @@ const TopicEntityCreate = () => {
     } else {
       setRows([createNewRow()]);
     }
-  }, [editTag, topicEntityTags, dispatch]);
+  }, [editTag, topicEntityTags]);
 
   const addMessage = (text, variant) => {
     setMessages((prev) => [...prev, { text, variant }]);
@@ -242,27 +243,16 @@ const TopicEntityCreate = () => {
   }, [accessLevel, accessToken]);
 
   useEffect(() => {
+    // Set default taxon for rows that don't have one, preserving manual selections
     if (modToTaxon && accessLevel in modToTaxon && modToTaxon[accessLevel].length > 0) {
-      // update each row's taxonSelect field with the default species based on accessLevel
-      setRows((prevRows) => prevRows.map((row, index) => ({
-        ...row,
-        taxonSelect: modToTaxon[accessLevel][0]
-      })));
-    }
-  }, [modToTaxon, accessLevel]);
-
- 
-  useEffect(() => {
-     // ensure that species can be adjusted manually and prevent errors
-    setRows((prevRows) =>
-      prevRows.map((row) => {
-        const defaultTaxon = modToTaxon && modToTaxon[accessLevel] && modToTaxon[accessLevel][0] ? modToTaxon[accessLevel][0] : "";
-        return {
+      const defaultTaxon = modToTaxon[accessLevel][0];
+      setRows((prevRows) =>
+        prevRows.map((row) => ({
           ...row,
           taxonSelect: row.taxonSelect !== "" && row.taxonSelect !== undefined ? row.taxonSelect : defaultTaxon,
-        };
-      })
-    );
+        }))
+      );
+    }
   }, [modToTaxon, accessLevel]);
 
 
@@ -270,7 +260,7 @@ const TopicEntityCreate = () => {
     if (tagExistingMessage) {
       setupEventListeners(existingTagResponses, accessLevel, dispatch, updateButtonBiblioEntityAdd);
     }
-  }, [tagExistingMessage, existingTagResponses]);
+  }, [tagExistingMessage, existingTagResponses, accessLevel]);
 
   useEffect(() => {
     const fetchCurationData = async () => {

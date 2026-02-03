@@ -950,61 +950,17 @@ export default function(state = initialState, action) {
         ...state,
         getReferenceCurieFlag: action.payload
       }
-//     case 'SET_LOADING_QUERY':	// replaced by RESET_BIBLIO_IS_LOADING
-//       console.log("reducer set loading query");
-//       return {
-//         ...state,
-//         loadingQuery: action.payload
-//       }
     case 'RESET_BIBLIO_IS_LOADING':
       console.log("biblio reducer reset isLoading");
       return {
         ...state,
         isLoading: true
       }
-// replaced by setReferenceCurie + setGetReferenceCurieFlag
-//     // case 'RESET_QUERY_STATE':
-//     case 'RESET_BIBLIO_REFERENCE_CURIE':
-//       console.log("reducer biblio reset reference curie");
-//       return {
-//         ...state,
-//         referenceCurie: '',
-//         getReferenceCurieFlag: true,
-//         // isLoading: true
-//         // loadingQuery: true
-//       }
-
-//     case 'BIBLIO_GET_REFERENCE_CURIE':
-//       console.log("reducer biblio get reference curie");
-//       if (action.payload.detail === "Reference with the id AGR:AGR-Reference is not available") {
-//         return {
-//           ...state,
-//           referenceCurie: action.payload.detail,
-//           queryFailure: true,
-//           getReferenceCurieFlag: false,
-//           isLoading: false
-//           // loadingQuery: false
-//         }
-//       } else {  
-//         const pmidBool = checkHasPmid(action.payload)
-//         // have to make copy of dictionary, otherwise deep elements in dictionary are the same and changing Live or Db change both copies
-//         const dbCopyGetReferenceCurie = JSON.parse(JSON.stringify(action.payload))
-//         return {
-//           ...state,
-//           referenceCurie: action.payload.curie,
-//           referenceJsonLive: action.payload,
-//           referenceJsonDb: dbCopyGetReferenceCurie,
-//           hasPmid: pmidBool,
-//           getReferenceCurieFlag: false,
-//           isLoading: false
-//           // loadingQuery: false
-//         }
-//       }
 
     // TODO to make live, rename this case to appropriate name, remove action that assigns prepopulated corpus and source
     case 'BIBLIO_GET_REFERENCE_CURIE':
       console.log("reducer biblio get reference curie");
-      if (action.payload.detail === "Reference with the id AGRKB:101000000000000 is not available") {
+      if (action.payload?.detail === "Reference not found") {
         return {
           ...state,
           referenceCurie: action.payload.detail,
