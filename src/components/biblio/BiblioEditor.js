@@ -712,13 +712,14 @@ const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
 
 
 const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
-  const [modReferenceTypes, setModReferenceTypes] = useState({});
+  const dispatch = useDispatch();
+  const modReferenceTypes = useSelector(state => state.biblio.modReferenceTypes);
 
   useEffect(() => {
-    fetchModReferenceTypes(enumDict['mods']).then((modRefTypes) => setModReferenceTypes(modRefTypes));
-  }, [])
-
-  const dispatch = useDispatch();
+    if (Object.keys(modReferenceTypes).length === 0) {
+      dispatch(fetchModReferenceTypes(enumDict['mods']));
+    }
+  }, [dispatch, modReferenceTypes]);
   const hasPmid = useSelector(state => state.biblio.hasPmid);
 //   const revertDictFields = 'mod_abbreviation, reference_type'
   const initializeDict = {'mod_abbreviation': '', 'reference_type': '', 'mod_reference_type_id': 'new'}

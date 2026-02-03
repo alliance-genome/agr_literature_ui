@@ -55,7 +55,8 @@ const initialState = {
   modToTaxon: null,
   curieToNameTaxon: null,
   isFetchingTaxonData: false,
-  taxonDataError: null
+  taxonDataError: null,
+  modReferenceTypes: {}
 };
 
 const deriveCuratability = (referenceJson) => {
@@ -1058,6 +1059,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         filteredTags: action.payload
+      };
+
+    case 'SET_MOD_REFERENCE_TYPES':
+      return {
+        ...state,
+        modReferenceTypes: action.payload
       };
 
     case 'UPDATE_XREF_PATTERNS':

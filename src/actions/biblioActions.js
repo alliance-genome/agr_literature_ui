@@ -642,18 +642,44 @@ export function generateRelationsSimple(referenceJson) {
     } }
 }
 
-export const fetchModReferenceTypes = async (mods) => {
-  const baseUrl = '/reference/mod_reference_type/by_mod/';
-  let modReferenceTypes = {}
-  for (const mod of mods) {
-    if (mod !== '') {
-      const result = await api.get(baseUrl + mod)
-      modReferenceTypes[mod] = await result.data;
-      modReferenceTypes[mod].unshift('');
+// Module-level request deduplication for mod reference types
+let pendingModRefTypesRequest = null;
+
+export const fetchModReferenceTypes = (mods) => {
+  return (dispatch, getState) => {
+    // Check if already in Redux
+    const { modReferenceTypes } = getState().biblio;
+    if (modReferenceTypes && Object.keys(modReferenceTypes).length > 0) {
+      return Promise.resolve(modReferenceTypes);
     }
-  }
-  return modReferenceTypes
-}
+
+    // Return pending request if one exists (deduplication)
+    if (pendingModRefTypesRequest) {
+      return pendingModRefTypesRequest;
+    }
+
+    // Create new request
+    pendingModRefTypesRequest = (async () => {
+      try {
+        const baseUrl = '/reference/mod_reference_type/by_mod/';
+        let result = {};
+        for (const mod of mods) {
+          if (mod !== '') {
+            const response = await api.get(baseUrl + mod);
+            result[mod] = response.data;
+            result[mod].unshift('');
+          }
+        }
+        dispatch({ type: 'SET_MOD_REFERENCE_TYPES', payload: result });
+        return result;
+      } finally {
+        pendingModRefTypesRequest = null;
+      }
+    })();
+
+    return pendingModRefTypesRequest;
+  };
+};
 
 
 export const getDescendantATPIds = async (atpID) => {
