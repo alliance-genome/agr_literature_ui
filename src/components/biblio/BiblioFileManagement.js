@@ -20,7 +20,7 @@ import ModalGeneric from './ModalGeneric';
 import {
   downloadReferencefile,
   fileUploadResult,
-  setReferenceFiles,
+  fetchReferenceFiles,
   setFileUploadingCount,
   setFileUploadingShowModal,
   setFileUploadingShowSuccess
@@ -601,7 +601,7 @@ const FileEditor = ({ onFileStatusChange }) => {
   const fileUploadingShowSuccess = useSelector(state => state.biblio.fileUploadingShowSuccess);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceFiles = useSelector(state => state.biblio.referenceFiles);
-  const [referencefilesLoading, setReferencefilesLoading] = useState(false);
+  const referenceFilesLoading = useSelector(state => state.biblio.referenceFilesLoading);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -613,24 +613,17 @@ const FileEditor = ({ onFileStatusChange }) => {
   const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoDeveloper ? 'developer' : cognitoMod;
 
-  const fetchReferencefiles = async () => {
-    setReferencefilesLoading(true);
-    const referencefiles = await api.get("/reference/referencefile/show_all/" + referenceCurie);
-    dispatch(setReferenceFiles(referencefiles.data));
-    setReferencefilesLoading(false);
-  }
-
   useEffect(() => {
-    fetchReferencefiles().finally();
+    dispatch(fetchReferenceFiles(referenceCurie));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [referenceCurie]);
 
   useEffect(() => {
     if (fileUploadingShowSuccess) {
-      fetchReferencefiles().finally();
+      dispatch(fetchReferenceFiles(referenceCurie, true));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileUploadingShowSuccess]);
+  }, [fileUploadingShowSuccess, referenceCurie]);
 
   const patchReferencefile = (referencefileId, data) => {
     const dataToSend = {
@@ -639,7 +632,7 @@ const FileEditor = ({ onFileStatusChange }) => {
     };
     api.patch("/reference/referencefile/" + referencefileId, dataToSend)
       .then((res) => {
-        fetchReferencefiles().finally();
+        dispatch(fetchReferenceFiles(referenceCurie, true));
         onFileStatusChange();
       }).catch((error) => {
         console.error('Patch Error:', error);
@@ -665,7 +658,7 @@ const FileEditor = ({ onFileStatusChange }) => {
       };
       api.patch("/reference/referencefile/" + referencefileIdToPatch, dataToSend)
         .then((res) => {
-          fetchReferencefiles().finally();
+          dispatch(fetchReferenceFiles(referenceCurie, true));
           onFileStatusChange();
           setReferencefileIdToPatch(null);
           setPatchDataToApply(null);
@@ -696,7 +689,7 @@ const FileEditor = ({ onFileStatusChange }) => {
     try {
       await api.delete(`/topic_entity_tag/delete_manual_tets/${referenceCurie}/${accessLevel}`);
       setShowErrorModal(false);
-      fetchReferencefiles();
+      dispatch(fetchReferenceFiles(referenceCurie, true));
     } catch (err) {
       const errorDetail = err.response?.data?.detail || "An unexpected error occurred.";
       console.error("Failed to delete TET tags:", err);
@@ -708,7 +701,7 @@ const FileEditor = ({ onFileStatusChange }) => {
   const deleteReferencefile = async (referencefileId) => {
     try {
       await api.delete(`/reference/referencefile/${referencefileId}`);
-      fetchReferencefiles();
+      dispatch(fetchReferenceFiles(referenceCurie, true));
     } catch (error) {
       let errorDetail = "An unexpected error occurred while deleting the file";
       if (error.response && error.response.data && error.response.data.detail) {
@@ -796,7 +789,7 @@ const FileEditor = ({ onFileStatusChange }) => {
             <Form.Control
               as="select"
               disabled={!hasAccess}
-              value={referenceFile.pdf_type}
+              value={referenceFile.pdf_type ?? ''}
               onChange={(event) => {
                 const newValue = event.target.value === "" ? null : event.target.value;
                 if (referenceFile.pdf_type !== newValue) {
@@ -875,7 +868,7 @@ const FileEditor = ({ onFileStatusChange }) => {
 
   return (
     <>
-      {referencefilesLoading ? <Spinner animation="border" /> : rowReferencefileElements}
+      {referenceFilesLoading ? <Spinner animation="border" /> : rowReferencefileElements}
       <Modal show={showConfirmModal} onHide={handleCancelPatch}>
         <Modal.Header closeButton>
           <Modal.Title>Confirm Update</Modal.Title>

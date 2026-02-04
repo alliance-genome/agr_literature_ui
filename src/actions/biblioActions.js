@@ -642,18 +642,47 @@ export function generateRelationsSimple(referenceJson) {
     } }
 }
 
-export const fetchModReferenceTypes = async (mods) => {
-  const baseUrl = '/reference/mod_reference_type/by_mod/';
-  let modReferenceTypes = {}
-  for (const mod of mods) {
-    if (mod !== '') {
-      const result = await api.get(baseUrl + mod)
-      modReferenceTypes[mod] = await result.data;
-      modReferenceTypes[mod].unshift('');
+// Module-level request deduplication for mod reference types
+let pendingModRefTypesRequest = null;
+
+export const fetchModReferenceTypes = (mods) => {
+  return (dispatch, getState) => {
+    // Check if already in Redux
+    const { modReferenceTypes } = getState().biblio;
+    if (modReferenceTypes && Object.keys(modReferenceTypes).length > 0) {
+      return Promise.resolve(modReferenceTypes);
     }
-  }
-  return modReferenceTypes
-}
+
+    // Return pending request if one exists (deduplication)
+    if (pendingModRefTypesRequest) {
+      return pendingModRefTypesRequest;
+    }
+
+    // Create new request
+    pendingModRefTypesRequest = (async () => {
+      try {
+        const baseUrl = '/reference/mod_reference_type/by_mod/';
+        let result = {};
+        for (const mod of mods) {
+          if (mod !== '') {
+            const response = await api.get(baseUrl + mod);
+            result[mod] = response.data;
+            result[mod].unshift('');
+          }
+        }
+        dispatch({ type: 'SET_MOD_REFERENCE_TYPES', payload: result });
+        return result;
+      } catch (error) {
+        console.error('Error fetching mod reference types:', error);
+        return {};
+      } finally {
+        pendingModRefTypesRequest = null;
+      }
+    })();
+
+    return pendingModRefTypesRequest;
+  };
+};
 
 
 export const getDescendantATPIds = async (atpID) => {
@@ -894,6 +923,57 @@ export const setReferenceFiles = (payload) => {
   return {
     type: 'SET_REFERENCE_FILES',
     payload: payload
+  };
+};
+
+// Module-level cache to prevent concurrent duplicate fetches
+let pendingReferenceFilesRequest = null;
+let pendingReferenceFilesCurie = null;
+
+export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
+  return (dispatch, getState) => {
+    const { referenceFiles, referenceCurie: storedCurie } = getState().biblio;
+
+    // If data exists for this reference and not forcing refresh, don't fetch again
+    if (!forceRefresh && referenceFiles.length > 0 && storedCurie === referenceCurie) {
+      return Promise.resolve(referenceFiles);
+    }
+
+    // If already fetching the SAME curie, return the pending promise
+    if (pendingReferenceFilesRequest && pendingReferenceFilesCurie === referenceCurie) {
+      return pendingReferenceFilesRequest;
+    }
+
+    dispatch({ type: 'SET_REFERENCE_FILES_LOADING', payload: true });
+
+    // Track which curie we're fetching
+    pendingReferenceFilesCurie = referenceCurie;
+
+    pendingReferenceFilesRequest = (async () => {
+      try {
+        const response = await api.get("/reference/referencefile/show_all/" + referenceCurie);
+        // Only dispatch if this is still the curie we want
+        const currentCurie = getState().biblio.referenceCurie;
+        if (currentCurie === referenceCurie) {
+          dispatch(setReferenceFiles(response.data));
+          return response.data;
+        }
+        // Curie changed while fetching - don't dispatch stale data
+        return [];
+      } catch (error) {
+        console.error('Error fetching reference files:', error);
+        dispatch({ type: 'SET_REFERENCE_FILES_LOADING', payload: false });
+        return [];
+      } finally {
+        // Only clear if this request is still the active one
+        if (pendingReferenceFilesCurie === referenceCurie) {
+          pendingReferenceFilesRequest = null;
+          pendingReferenceFilesCurie = null;
+        }
+      }
+    })();
+
+    return pendingReferenceFilesRequest;
   };
 };
 

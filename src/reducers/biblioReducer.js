@@ -38,6 +38,7 @@ const initialState = {
   referenceJsonDb: {},
   referenceJsonHasChange: {},
   referenceFiles: [],
+  referenceFilesLoading: false,
   // loadingQuery: true,
   isLoading: true,
   queryFailure: false,
@@ -55,7 +56,8 @@ const initialState = {
   modToTaxon: null,
   curieToNameTaxon: null,
   isFetchingTaxonData: false,
-  taxonDataError: null
+  taxonDataError: null,
+  modReferenceTypes: {}
 };
 
 const deriveCuratability = (referenceJson) => {
@@ -302,7 +304,14 @@ export default function(state = initialState, action) {
       console.log('SET_REFERENCE_FILES reducer ' + action.payload);
       return {
         ...state,
-        referenceFiles: action.payload
+        referenceFiles: action.payload,
+        referenceFilesLoading: false
+      }
+
+    case 'SET_REFERENCE_FILES_LOADING':
+      return {
+        ...state,
+        referenceFilesLoading: action.payload
       }
 
     case 'SET_BIBLIO_EDITOR_MODAL_TEXT':
@@ -936,6 +945,8 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
+        referenceFiles: [],
+        referenceFilesLoading: false,
         tetPageSize: defaultTetPageSize,
         curieToNameTaxon: {},
         allSpecies: [],
@@ -1058,6 +1069,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         filteredTags: action.payload
+      };
+
+    case 'SET_MOD_REFERENCE_TYPES':
+      return {
+        ...state,
+        modReferenceTypes: action.payload
       };
 
     case 'UPDATE_XREF_PATTERNS':
