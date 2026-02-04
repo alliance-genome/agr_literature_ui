@@ -6,8 +6,6 @@ export const REPORTS_SET_QCREPORT_OBSOLETE_ENTITIES = 'REPORTS_SET_QCREPORT_OBSO
 export const REPORTS_SET_QCREPORT_REDACTED_PAPERS = 'REPORTS_SET_QCREPORT_REDACTED_PAPERS';
 export const REPORTS_SET_QCREPORT_DUPLICATE_ORCIDS = 'REPORTS_SET_QCREPORT_DUPLICATE_ORCIDS';
 
-const restUrl = process.env.REACT_APP_RESTAPI;
-
 export const setDateRangeDict = (newDateRange, workflowProcessAtpId, modSection) => ({
   type: REPORTS_SET_DATE_RANGE_DICT,
   payload: {

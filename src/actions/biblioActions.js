@@ -6,8 +6,6 @@ import axios from "axios";
 import { api } from "../api";
 import { getTaxonData } from "../components/biblio/topic_entity_tag/TaxonUtils";
 
-const restUrl = process.env.REACT_APP_RESTAPI;
-// const restUrl = 'stage-literature-rest.alliancegenome.org';
 // const port = 11223;
 // const port = 49161;
 
@@ -186,8 +184,8 @@ export const getCuratorSourceId = async (mod) => {
 }
 
 export const getXrefPatterns = (datatype) => { return dispatch => {
-  const url = process.env.REACT_APP_RESTAPI + '/cross_reference/check/patterns/' + datatype;
-  axios({ url: url })
+  const url = '/cross_reference/check/patterns/' + datatype;
+  api.get(url)
     .then(res => {
       console.log(res);
       dispatch({
@@ -841,7 +839,7 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
 
   const createUpdateButtonBiblio = async () => {
     const url = '/' + subPath;
-    console.log(restUrl + url);
+    console.log(url);
 
     try {
       const res = await api.request({

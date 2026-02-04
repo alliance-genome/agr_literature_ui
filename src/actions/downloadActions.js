@@ -4,7 +4,6 @@
 
 import { api } from "../api";
 
-const restUrl = process.env.REACT_APP_RESTAPI;
 const uiUrl = process.env.REACT_APP_UI_URL;
 
 export const downloadActionButtonDownload = (accessToken, apiFilename, nightlyOrOndemand) => dispatch => {
