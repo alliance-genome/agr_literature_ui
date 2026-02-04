@@ -672,6 +672,9 @@ export const fetchModReferenceTypes = (mods) => {
         }
         dispatch({ type: 'SET_MOD_REFERENCE_TYPES', payload: result });
         return result;
+      } catch (error) {
+        console.error('Error fetching mod reference types:', error);
+        return {};
       } finally {
         pendingModRefTypesRequest = null;
       }
@@ -947,6 +950,10 @@ export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
         const response = await api.get("/reference/referencefile/show_all/" + referenceCurie);
         dispatch(setReferenceFiles(response.data));
         return response.data;
+      } catch (error) {
+        console.error('Error fetching reference files:', error);
+        dispatch({ type: 'SET_REFERENCE_FILES_LOADING', payload: false });
+        return [];
       } finally {
         pendingReferenceFilesRequest = null;
       }
