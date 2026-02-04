@@ -789,7 +789,7 @@ const FileEditor = ({ onFileStatusChange }) => {
             <Form.Control
               as="select"
               disabled={!hasAccess}
-              value={referenceFile.pdf_type}
+              value={referenceFile.pdf_type ?? ''}
               onChange={(event) => {
                 const newValue = event.target.value === "" ? null : event.target.value;
                 if (referenceFile.pdf_type !== newValue) {
