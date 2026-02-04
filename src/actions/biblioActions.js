@@ -928,6 +928,7 @@ export const setReferenceFiles = (payload) => {
 
 // Module-level cache to prevent concurrent duplicate fetches
 let pendingReferenceFilesRequest = null;
+let pendingReferenceFilesCurie = null;
 
 export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
   return (dispatch, getState) => {
@@ -938,24 +939,37 @@ export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
       return Promise.resolve(referenceFiles);
     }
 
-    // If already fetching, return the pending promise
-    if (pendingReferenceFilesRequest) {
+    // If already fetching the SAME curie, return the pending promise
+    if (pendingReferenceFilesRequest && pendingReferenceFilesCurie === referenceCurie) {
       return pendingReferenceFilesRequest;
     }
 
     dispatch({ type: 'SET_REFERENCE_FILES_LOADING', payload: true });
 
+    // Track which curie we're fetching
+    pendingReferenceFilesCurie = referenceCurie;
+
     pendingReferenceFilesRequest = (async () => {
       try {
         const response = await api.get("/reference/referencefile/show_all/" + referenceCurie);
-        dispatch(setReferenceFiles(response.data));
-        return response.data;
+        // Only dispatch if this is still the curie we want
+        const currentCurie = getState().biblio.referenceCurie;
+        if (currentCurie === referenceCurie) {
+          dispatch(setReferenceFiles(response.data));
+          return response.data;
+        }
+        // Curie changed while fetching - don't dispatch stale data
+        return [];
       } catch (error) {
         console.error('Error fetching reference files:', error);
         dispatch({ type: 'SET_REFERENCE_FILES_LOADING', payload: false });
         return [];
       } finally {
-        pendingReferenceFilesRequest = null;
+        // Only clear if this request is still the active one
+        if (pendingReferenceFilesCurie === referenceCurie) {
+          pendingReferenceFilesRequest = null;
+          pendingReferenceFilesCurie = null;
+        }
       }
     })();
 
