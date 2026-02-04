@@ -945,6 +945,8 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
+        referenceFiles: [],
+        referenceFilesLoading: false,
         tetPageSize: defaultTetPageSize,
         curieToNameTaxon: {},
         allSpecies: [],
