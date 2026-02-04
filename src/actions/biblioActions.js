@@ -923,6 +923,39 @@ export const setReferenceFiles = (payload) => {
   };
 };
 
+// Module-level cache to prevent concurrent duplicate fetches
+let pendingReferenceFilesRequest = null;
+
+export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
+  return (dispatch, getState) => {
+    const { referenceFiles, referenceCurie: storedCurie } = getState().biblio;
+
+    // If data exists for this reference and not forcing refresh, don't fetch again
+    if (!forceRefresh && referenceFiles.length > 0 && storedCurie === referenceCurie) {
+      return Promise.resolve(referenceFiles);
+    }
+
+    // If already fetching, return the pending promise
+    if (pendingReferenceFilesRequest) {
+      return pendingReferenceFilesRequest;
+    }
+
+    dispatch({ type: 'SET_REFERENCE_FILES_LOADING', payload: true });
+
+    pendingReferenceFilesRequest = (async () => {
+      try {
+        const response = await api.get("/reference/referencefile/show_all/" + referenceCurie);
+        dispatch(setReferenceFiles(response.data));
+        return response.data;
+      } finally {
+        pendingReferenceFilesRequest = null;
+      }
+    })();
+
+    return pendingReferenceFilesRequest;
+  };
+};
+
 export const setBiblioEditorModalText = (payload) => {
   return {
     type: 'SET_BIBLIO_EDITOR_MODAL_TEXT',

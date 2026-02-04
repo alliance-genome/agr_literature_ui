@@ -38,6 +38,7 @@ const initialState = {
   referenceJsonDb: {},
   referenceJsonHasChange: {},
   referenceFiles: [],
+  referenceFilesLoading: false,
   // loadingQuery: true,
   isLoading: true,
   queryFailure: false,
@@ -303,7 +304,14 @@ export default function(state = initialState, action) {
       console.log('SET_REFERENCE_FILES reducer ' + action.payload);
       return {
         ...state,
-        referenceFiles: action.payload
+        referenceFiles: action.payload,
+        referenceFilesLoading: false
+      }
+
+    case 'SET_REFERENCE_FILES_LOADING':
+      return {
+        ...state,
+        referenceFilesLoading: action.payload
       }
 
     case 'SET_BIBLIO_EDITOR_MODAL_TEXT':
