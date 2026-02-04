@@ -615,13 +615,15 @@ const FileEditor = ({ onFileStatusChange }) => {
 
   useEffect(() => {
     dispatch(fetchReferenceFiles(referenceCurie));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [referenceCurie]);
 
   useEffect(() => {
     if (fileUploadingShowSuccess) {
       dispatch(fetchReferenceFiles(referenceCurie, true));
     }
-  }, [fileUploadingShowSuccess]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileUploadingShowSuccess, referenceCurie]);
 
   const patchReferencefile = (referencefileId, data) => {
     const dataToSend = {
