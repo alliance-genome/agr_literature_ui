@@ -20,7 +20,8 @@ import { usePersonSettings } from './settings/usePersonSettings';
 
 import {
   downloadReferencefile,
-  setReferenceCurie
+  setReferenceCurie,
+  fetchReferenceFiles
 } from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
@@ -342,18 +343,12 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const referenceId = useSelector(state => state.biblio.referenceJsonLive.reference_id);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
-  const [referenceFiles, setReferenceFiles] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const referenceFiles = useSelector(state => state.biblio.referenceFiles);
+  const referenceFilesLoading = useSelector(state => state.biblio.referenceFilesLoading);
   const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
 
   useEffect(() => {
-    const fetchReferencefiles = async () => {
-      setIsLoading(true);
-      const referencefiles = await api.get("/reference/referencefile/show_all/" + referenceCurie);
-      setReferenceFiles(referencefiles.data);
-      setIsLoading(false);
-    }
-    fetchReferencefiles().finally()
+    dispatch(fetchReferenceFiles(referenceCurie));
   }, [referenceCurie]);
 
   let cssDisplayLeft = 'Col-display Col-display-left';
@@ -474,7 +469,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
       rowReferencefileElements.push(...rowReferencefileSupplementElements); } }
   return (
       <>
-        {isLoading ?
+        {referenceFilesLoading ?
             <Row key="supplementExpandTogglerRow" className="Row-general">
               <Col className={`Col-general ${cssDisplayLeft} `} lg={2}>referencefiles</Col>
               <Col className={`Col-general ${cssDisplayRight} `} lg={10}><Spinner animation={"border"}/></Col>
