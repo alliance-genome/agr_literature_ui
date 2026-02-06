@@ -119,6 +119,7 @@ export async function createPersonSetting({
     console.log("Sending request body:", requestBody);
 
     const response = await api.post('/person_setting/', requestBody);
+    settingsCache.clear();
 
     console.log("Successfully created setting:", response.data);
     return response.data;
@@ -139,6 +140,7 @@ export async function updatePersonSetting({
     `/person_setting/${person_setting_id}`,
     patch
   );
+  settingsCache.clear();
   return response.data;
 }
 
@@ -146,6 +148,7 @@ export async function updatePersonSetting({
 export async function deletePersonSetting({ person_setting_id }) {
   console.log(`Deleting setting ${person_setting_id}`);
   await api.delete(`/person_setting/${person_setting_id}`);
+  settingsCache.clear();
   return true;
 }
 
