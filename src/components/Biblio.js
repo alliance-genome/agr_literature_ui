@@ -45,8 +45,6 @@ import Spinner from "react-bootstrap/Spinner";
 import { api } from "../api";
 
 
-const restUrl = process.env.REACT_APP_RESTAPI;
-
 // https://stage-literature.alliancegenome.org/Biblio/?action=topic&referenceCurie=AGRKB:101000000163587
 
 
