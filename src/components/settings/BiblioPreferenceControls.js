@@ -14,7 +14,6 @@ import AgGridTablePreferenceControls from './AgGridTablePreferenceControls';
  */
 const BiblioPreferenceControls = ({
   // auth / identity
-  baseUrl,
   accessToken,
   email,
   accessLevel,
@@ -298,7 +297,6 @@ const BiblioPreferenceControls = ({
   // Memo so we don't churn props
   const prefsProps = useMemo(
     () => ({
-      baseUrl,
       accessToken,
       email,
       componentName,
@@ -314,7 +312,6 @@ const BiblioPreferenceControls = ({
       accessLevel,
       accessToken,
       applySettingsToGrid,
-      baseUrl,
       componentName,
       email,
       getSafeCurrentState,

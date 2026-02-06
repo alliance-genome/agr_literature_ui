@@ -252,7 +252,6 @@ const BiblioTagging = () => {
     settings, selectedSettingId, setSelectedSettingId, busy, maxCount,
     load, seed, create, rename, remove, makeDefault, savePayloadTo
   } = usePersonSettings({
-    baseUrl: process.env.REACT_APP_RESTAPI,
     token: accessToken,
     email,
     componentName,

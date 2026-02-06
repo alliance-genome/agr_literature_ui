@@ -41,7 +41,6 @@ import SettingsGearModal from './SettingsGearModal';
 
 */
 const AgGridTablePreferenceControls = ({
-  baseUrl,
   accessToken,
   email,
   componentName,
@@ -72,7 +71,6 @@ const AgGridTablePreferenceControls = ({
     makeDefault,
     savePayloadTo,
   } = usePersonSettings({
-    baseUrl,
     token: accessToken,
     email,
     componentName,
