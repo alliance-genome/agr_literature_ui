@@ -8,7 +8,7 @@ const MultiFilter = ({ model, onModelChange, items, label }) => {
     const [unappliedModel, setUnappliedModel] = useState(model);
     const doesFilterPass = useCallback((params) => {
         // doesFilterPass only gets called if the filter is active
-        return model.includes(params.data[label]);
+        return model ? model.includes(params.data[label]) : true;
     }, [model, label]);
 
     const afterGuiAttached = useCallback(({ hidePopup }) => {
