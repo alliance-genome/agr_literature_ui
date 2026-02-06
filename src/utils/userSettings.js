@@ -1,71 +1,28 @@
 // src/utils/userSettings.js
+import { api } from '../api';
 
 // Global deduplication for person settings API calls
 const pendingSettingsRequests = new Map();
 const settingsCache = new Map();
 const CACHE_DURATION = 5000; // 5 seconds
 
-async function authed(baseUrl, token, path, options = {}) {
-  try {
-    const url = `${baseUrl}${path}`;
-    console.log(`Making API call to: ${url}`, {
-      method: options.method || "GET",
-      hasBody: !!options.body
-    });
-
-    const res = await fetch(url, {
-      method: options.method || "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(options.body ? { "Content-Type": "application/json" } : {}),
-        ...(options.headers || {}),
-      },
-      ...options,
-    });
-
-    console.log(`API response status: ${res.status} for ${path}`);
-
-    if (res.status === 204) return { status: 204, json: null };
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.error(`API error ${res.status} at ${path}:`, text);
-      throw new Error(`HTTP ${res.status} at ${path} — ${text}`);
-    }
-    
-    const json = await res.json().catch(() => null);
-    return { status: res.status, json };
-  } catch (error) {
-    console.error(`Network error for ${path}:`, error);
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error(`Network error: Cannot connect to server. Check if the server is running and accessible.`);
-    }
-    throw error;
-  }
-}
-
-async function getPersonIdByEmail({ baseUrl, token, email }) {
+async function getPersonIdByEmail({ email }) {
   console.log(`Getting person_id for cognito_id: ${email}`);
-  
-  const { status, json } = await authed(
-    baseUrl,
-    token,
-    `/person/by/email/${encodeURIComponent(email)}`
-  );
 
-  if (status === 204 || !json) {
+  const response = await api.get(`/person/by/email/${encodeURIComponent(email)}`);
+
+  if (response.status === 204 || !response.data) {
     throw new Error(`No person found for email: ${email}`);
   }
 
-  console.log(`Found person_id: ${json.person_id} for email: ${email}`);
-  return json.person_id;
+  console.log(`Found person_id: ${response.data.person_id} for email: ${email}`);
+  return response.data.person_id;
 }
 
 /**
  * List settings for a user + component.
  */
 export async function listPersonSettings({
-  baseUrl,
-  token,
   email,
   componentName,
 }) {
@@ -97,24 +54,20 @@ export async function listPersonSettings({
   // Create the request promise
   const requestPromise = (async () => {
     try {
-      const { status, json } = await authed(
-        baseUrl,
-        token,
-        `/person_setting/by/email/${encodeURIComponent(email)}`
-      );
+      const response = await api.get(`/person_setting/by/email/${encodeURIComponent(email)}`);
 
-      if (status === 204 || !Array.isArray(json)) {
+      if (response.status === 204 || !Array.isArray(response.data)) {
         console.log(`No settings found for email: ${email}`);
         return [];
       }
 
       // Cache the full result
       settingsCache.set(cacheKey, {
-        data: json,
+        data: response.data,
         timestamp: Date.now()
       });
 
-      return json;
+      return response.data;
     } finally {
       // Remove from pending requests
       pendingSettingsRequests.delete(cacheKey);
@@ -137,8 +90,6 @@ export async function listPersonSettings({
  * Create a new person_setting row.
  */
 export async function createPersonSetting({
-  baseUrl,
-  token,
   email,
   componentName,
   name,
@@ -155,8 +106,8 @@ export async function createPersonSetting({
 
   try {
     // First, get the person_id from the cognito_id
-    const person_id = await getPersonIdByEmail({ baseUrl, token, email });
-    
+    const person_id = await getPersonIdByEmail({ email });
+
     const requestBody = {
       person_id: person_id,
       component_name: componentName,
@@ -164,16 +115,14 @@ export async function createPersonSetting({
       default_setting: isDefault,
       json_settings: payload,
     };
-    
+
     console.log("Sending request body:", requestBody);
-    
-    const { json: result } = await authed(baseUrl, token, `/person_setting/`, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-    });
-    
-    console.log("Successfully created setting:", result);
-    return result;
+
+    const response = await api.post('/person_setting/', requestBody);
+    settingsCache.clear();
+
+    console.log("Successfully created setting:", response.data);
+    return response.data;
   } catch (error) {
     console.error("Error in createPersonSetting:", error);
     throw error;
@@ -182,93 +131,68 @@ export async function createPersonSetting({
 
 /** PATCH a person_setting row (partial update) */
 export async function updatePersonSetting({
-  baseUrl,
-  token,
   person_setting_id,
   patch,
 }) {
   console.log(`Updating setting ${person_setting_id}:`, patch);
-  
-  // Simplify the mapping - just pass the patch directly
-  // The backend expects the actual column names anyway
-  const body = JSON.stringify(patch);
-  
-  const { json } = await authed(
-    baseUrl,
-    token,
+
+  const response = await api.patch(
     `/person_setting/${person_setting_id}`,
-    { method: "PATCH", body }
+    patch
   );
-  return json;
+  settingsCache.clear();
+  return response.data;
 }
 
 /** Delete a person_setting row. */
-export async function deletePersonSetting({ baseUrl, token, person_setting_id }) {
+export async function deletePersonSetting({ person_setting_id }) {
   console.log(`Deleting setting ${person_setting_id}`);
-  await authed(baseUrl, token, `/person_setting/${person_setting_id}`, {
-    method: "DELETE",
-  });
+  await api.delete(`/person_setting/${person_setting_id}`);
+  settingsCache.clear();
   return true;
 }
 
 /** Fetch a single person_setting row. */
-export async function showPersonSetting({ baseUrl, token, person_setting_id }) {
-  const { json } = await authed(
-    baseUrl,
-    token,
-    `/person_setting/${person_setting_id}`
-  );
-  return json;
+export async function showPersonSetting({ person_setting_id }) {
+  const response = await api.get(`/person_setting/${person_setting_id}`);
+  return response.data;
 }
 
 /**
  * Mark one setting as default.
  */
-export const makeDefaultPersonSetting = async ({ baseUrl, token, email, componentName, person_setting_id }) => {
+export const makeDefaultPersonSetting = async ({ email, componentName, person_setting_id }) => {
   try {
     console.log(`Setting ${person_setting_id} as default for component: ${componentName}`);
-    
+
     // First, get current settings to find existing default
-    const { json: allSettings } = await authed(
-      baseUrl,
-      token,
-      `/person_setting/by/email/${encodeURIComponent(email)}`
-    );
-    
+    const response = await api.get(`/person_setting/by/email/${encodeURIComponent(email)}`);
+    const allSettings = response.data;
+
     if (Array.isArray(allSettings)) {
       // Find current default for this component
-      const currentDefault = allSettings.find(s => 
+      const currentDefault = allSettings.find(s =>
         s.component_name === componentName && s.default_setting === true
       );
-      
+
       // Unset current default if it exists and is different
       if (currentDefault && currentDefault.person_setting_id !== person_setting_id) {
         console.log(`Unsetting current default: ${currentDefault.person_setting_id}`);
-        await authed(
-          baseUrl,
-          token,
+        await api.patch(
           `/person_setting/${currentDefault.person_setting_id}`,
-          {
-            method: "PATCH",
-            body: JSON.stringify({ default_setting: false })
-          }
+          { default_setting: false }
         );
       }
     }
-    
+
     // Set new default
-    const response = await authed(
-      baseUrl,
-      token,
+    const result = await api.patch(
       `/person_setting/${person_setting_id}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({ default_setting: true })
-      }
+      { default_setting: true }
     );
-    
+
     console.log(`Successfully set ${person_setting_id} as default`);
-    return response.json;
+    return result.data;
   } catch (error) {
     console.error(`Failed to set default setting ${person_setting_id}:`, error);
     throw error;

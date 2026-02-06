@@ -4,8 +4,6 @@
 
 import { api } from "../api";
 
-const restUrl = process.env.REACT_APP_RESTAPI;
-
 export const changeCreateActionToggler = (e) => {
   console.log('action change create action toggler radio ' + e.target.id + ' to ' + e.target.value);
   let createActionTogglerSelected = 'pubmed';
@@ -167,7 +165,7 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) =>
 
   const createUpdateButtonCreate = async () => {
     const url = '/' + subPath;
-    console.log(restUrl + url);
+    console.log(url);
 
     try {
       const res = await api.request({

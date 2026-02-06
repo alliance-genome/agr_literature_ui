@@ -1458,7 +1458,6 @@ const BiblioWorkflow = () => {
         <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start', width: '80%' }}>
           <div className="d-flex align-items-start" style={{ gap: '14px' }}>
             <BiblioPreferenceControls
-              baseUrl={process.env.REACT_APP_RESTAPI}
               accessToken={accessToken}
               email={email}
               accessLevel={accessLevel}

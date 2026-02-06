@@ -45,8 +45,6 @@ import Spinner from "react-bootstrap/Spinner";
 import { api } from "../api";
 
 
-const restUrl = process.env.REACT_APP_RESTAPI;
-
 // https://stage-literature.alliancegenome.org/Biblio/?action=topic&referenceCurie=AGRKB:101000000163587
 
 
@@ -254,7 +252,6 @@ const BiblioTagging = () => {
     settings, selectedSettingId, setSelectedSettingId, busy, maxCount,
     load, seed, create, rename, remove, makeDefault, savePayloadTo
   } = usePersonSettings({
-    baseUrl: process.env.REACT_APP_RESTAPI,
     token: accessToken,
     email,
     componentName,

@@ -767,7 +767,6 @@ const TopicEntityTable = () => {
                 </Button>
 
                 <BiblioPreferenceControls
-                  baseUrl={process.env.REACT_APP_RESTAPI}
                   accessToken={accessToken}
                   email={email}
                   accessLevel={accessLevel}

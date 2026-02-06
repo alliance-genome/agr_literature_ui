@@ -6,8 +6,6 @@ import { api } from "../api";
 
 import { generateRelationsSimple } from './biblioActions';
 
-const restUrl = process.env.REACT_APP_RESTAPI;
-
 export const changeFieldInput = (e, object, key1) => {
   // console.log('merge action change field array reference json ' + e.target.id + ' to ' + e.target.value);
   return {
@@ -259,7 +257,7 @@ export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
 
   const createUpdateButtonMerge = async () => {
     const url = '/' + subPath;
-    console.log(restUrl + url);
+    console.log(url);
 
     try {
       const res = await api.request({

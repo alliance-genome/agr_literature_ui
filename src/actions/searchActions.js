@@ -40,8 +40,6 @@ export const SEARCH_LOAD_SAVED_SEARCH_STATE = 'SEARCH_LOAD_SAVED_SEARCH_STATE';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"]
 
-const restUrl = process.env.REACT_APP_RESTAPI;
-
 export const loadSavedSearchState = (saved) => ({
   type: SEARCH_LOAD_SAVED_SEARCH_STATE,
   payload: saved

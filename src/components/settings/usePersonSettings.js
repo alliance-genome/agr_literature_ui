@@ -10,7 +10,6 @@ import {
 } from "../../utils/userSettings";
 
 export function usePersonSettings({
-  baseUrl,
   token,
   email,
   componentName,
@@ -29,8 +28,6 @@ export function usePersonSettings({
     setBusy(true);
     try {
       const existing = await listPersonSettings({
-        baseUrl,
-        token,
         email,
         componentName,
       });
@@ -48,7 +45,7 @@ export function usePersonSettings({
     } finally {
       setBusy(false);
     }
-  }, [baseUrl, token, email, componentName]);
+  }, [token, email, componentName]);
 
   const seed = useCallback(
     async ({ name, payload, isDefault = true }) => {
@@ -60,8 +57,6 @@ export function usePersonSettings({
       setBusy(true);
       try {
         const created = await createPersonSetting({
-          baseUrl,
-          token,
           email,
           componentName,
           name,
@@ -78,9 +73,9 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token, componentName, email]
+    [token, componentName, email]
   );
-  
+
   const create = useCallback(
     async (name, payload) => {
       if (settings.length >= maxCount) {
@@ -96,8 +91,6 @@ export function usePersonSettings({
       setBusy(true);
       try {
         const created = await createPersonSetting({
-          baseUrl,
-          token,
           email,
           componentName,
           name: name.trim(),
@@ -114,7 +107,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token, email, componentName, settings.length, maxCount]
+    [token, email, componentName, settings.length, maxCount]
   );
 
   const rename = useCallback(
@@ -125,12 +118,10 @@ export function usePersonSettings({
       if (!token) {
         throw new Error("Cannot rename setting: missing authentication");
       }
-    
+
       setBusy(true);
       try {
         const updated = await updatePersonSetting({
-          baseUrl,
-          token,
           person_setting_id: id,
           patch: { setting_name: newName.trim() }, // Changed from 'name' to 'setting_name'
         });
@@ -147,7 +138,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token]
+    [token]
   );
 
   const remove = useCallback(
@@ -158,10 +149,10 @@ export function usePersonSettings({
       if (settings.length <= 1) {
         throw new Error("Cannot delete the last setting");
       }
-      
+
       setBusy(true);
       try {
-        await deletePersonSetting({ baseUrl, token, person_setting_id: id });
+        await deletePersonSetting({ person_setting_id: id });
         setSettings((prev) => prev.filter((s) => s.person_setting_id !== id));
         setSelectedSettingId((prev) => (prev === id ? null : prev));
         return true;
@@ -172,7 +163,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token, settings.length]
+    [token, settings.length]
   );
 
   const makeDefault = useCallback(
@@ -185,8 +176,6 @@ export function usePersonSettings({
       try {
         // Use the utility function with all required parameters
         await makeDefaultPersonSetting({
-          baseUrl,
-          token,
           email, // This was missing before
           componentName,
           person_setting_id: id
@@ -204,7 +193,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token, email, componentName]
+    [token, email, componentName]
   );
 
   const savePayloadTo = useCallback(
@@ -212,12 +201,10 @@ export function usePersonSettings({
       if (!token) {
         throw new Error("Cannot save payload: missing authentication");
       }
-    
+
       setBusy(true);
       try {
         const updated = await updatePersonSetting({
-          baseUrl,
-          token,
           person_setting_id: id,
           patch: { json_settings: payload }, // Make sure this is json_settings, not just payload
         });
@@ -234,7 +221,7 @@ export function usePersonSettings({
         setBusy(false);
       }
     },
-    [baseUrl, token]
+    [token]
   );
 
   return {

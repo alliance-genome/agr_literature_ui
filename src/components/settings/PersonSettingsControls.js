@@ -69,7 +69,6 @@ const PersonSettingsControls = ({
     makeDefault,
     savePayloadTo,
   } = usePersonSettings({
-    baseUrl: process.env.REACT_APP_RESTAPI,
     token: accessToken,
     email,
     componentName,

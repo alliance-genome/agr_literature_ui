@@ -4,8 +4,6 @@
 
 import { api } from "../api";
 
-const restUrl = process.env.REACT_APP_RESTAPI;
-// const restUrl = 'stage-literature-rest.alliancegenome.org';
 // const port = 11223;
 // const port = 49161;
 
@@ -97,7 +95,7 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
 
   const createUpdateButtonSort = async () => {
     const url = '/' + subPath;
-    console.log(restUrl + url);
+    console.log(url);
 
     try {
       const res = await api.request({
