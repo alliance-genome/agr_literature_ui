@@ -1095,6 +1095,7 @@ export const setFileUploadingModalText = (modalText) => ({
   type: 'SET_FILE_UPLOADING_MODAL_TEXT',
   payload: modalText
 })
+
 export const setAllSpecies = (allSpecies) => ({
   type: 'SET_ALL_SPECIES',
   payload: allSpecies
