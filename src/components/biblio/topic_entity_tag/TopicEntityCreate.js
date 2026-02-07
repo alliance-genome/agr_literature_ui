@@ -15,7 +15,7 @@ import {
   fetchTaxonData,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
-import { FetchTypeaheadOptions } from "../FetchTypeahead";
+
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
 import RowDivider from "../RowDivider";
@@ -30,7 +30,7 @@ import Alert from "react-bootstrap/Alert";
 
 const TopicEntityCreate = () => {
   const debugMode = false;
-  const REST = process.env.REACT_APP_RESTAPI;
+
   const dispatch = useDispatch();
   const editTag = useSelector((state) => state.biblio.editTag);
   const referenceJsonLive = useSelector((state) => state.biblio.referenceJsonLive);
@@ -862,11 +862,12 @@ const TopicEntityCreate = () => {
                   onSearch={async (query) => {
                     setTopicSelectLoading(true);
                     try {
-                      let url =`${REST}/ontology/search_topic/${encodeURIComponent(query)}`;
+                      let url = `/ontology/search_topic/${encodeURIComponent(query)}`;
                       if (accessLevel) {
                         url += "?mod_abbr=" + accessLevel
                       }
-                      const results = await FetchTypeaheadOptions(url);
+                      const response = await api.get(url);
+                      const results = response.data;
                       if (!Array.isArray(results)) {
                          throw new Error("Invalid response format");
                       }
@@ -1017,8 +1018,9 @@ const TopicEntityCreate = () => {
                     onSearch={async (query) => {
                       setSpeciesSelectLoading(true);
                       try {
-                        const url = `${REST}/ontology/search_species/${encodeURIComponent(query)}`;
-                        const results = await FetchTypeaheadOptions(url);
+                        const url = `/ontology/search_species/${encodeURIComponent(query)}`;
+                        const response = await api.get(url);
+                        const results = response.data;
 
                         setSpeciesSelectLoading(false);
                         if (results) {
