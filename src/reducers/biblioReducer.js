@@ -948,7 +948,6 @@ export default function(state = initialState, action) {
         referenceFiles: [],
         referenceFilesLoading: false,
         tetPageSize: defaultTetPageSize,
-        curieToNameTaxon: {},
         allSpecies: [],
         allEntities: [],
         filteredTags: null,
