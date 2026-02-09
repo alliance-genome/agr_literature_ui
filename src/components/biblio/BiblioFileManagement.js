@@ -702,6 +702,7 @@ const FileEditor = ({ onFileStatusChange }) => {
     try {
       await api.delete(`/reference/referencefile/${referencefileId}`);
       dispatch(fetchReferenceFiles(referenceCurie, true));
+      onFileStatusChange();
     } catch (error) {
       let errorDetail = "An unexpected error occurred while deleting the file";
       if (error.response && error.response.data && error.response.data.detail) {
