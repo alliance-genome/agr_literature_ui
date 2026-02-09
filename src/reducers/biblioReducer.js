@@ -948,7 +948,6 @@ export default function(state = initialState, action) {
         referenceFiles: [],
         referenceFilesLoading: false,
         tetPageSize: defaultTetPageSize,
-        curieToNameTaxon: {},
         allSpecies: [],
         allEntities: [],
         filteredTags: null,
@@ -1022,12 +1021,6 @@ export default function(state = initialState, action) {
         ...state,
         loadingFileNames: newLoadingFileNames2
       }
-
-    case 'SET_CURIE_TO_NAME_TAXON':
-      return {
-        ...state,
-        curieToNameTaxon: action.payload
-      };
 
     case 'SET_ALL_SPECIES':
       return {

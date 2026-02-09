@@ -16,7 +16,6 @@ import { api } from '../../../api';
 import { AgGridReact } from 'ag-grid-react';
 
 import {
-  setCurieToNameTaxon,
   setAllSpecies,
   setAllEntities,
   setAllTopics,
