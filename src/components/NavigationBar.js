@@ -9,7 +9,6 @@ import Nav from 'react-bootstrap/Nav';
 // import NavDropdown from 'react-bootstrap/NavDropdown';
 
 import Login from './Login'
-import SigninHelp from './SigninHelp'
 import DevToolsDropdown from './DevToolsDropdown'
 
 
@@ -57,7 +56,6 @@ const NavigationBar = () => {
       </Nav>
       <Nav className="navbar-right-links">
         <DevToolsDropdown />
-        {!isSignedIn && <SigninHelp />}
         <Login />
       </Nav>
     </Navbar.Collapse>
