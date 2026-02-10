@@ -7,7 +7,7 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Container, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
-import { postWorkflowTag, patchWorkflowTag, deleteWorkflowTag } from './WorkflowTagService';
+import { patchWorkflowTag, deleteWorkflowTag, transitionWorkflowTag } from './WorkflowTagService';
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
 import TopicFilter from '../AgGrid/TopicFilter';
@@ -924,53 +924,20 @@ const BiblioWorkflow = () => {
       try {
         if (!hasMit) return;
 
-        // First patch the validation status
+        // First patch the validation status on manual_indexing_tag
         await patchManualIndexingTag(validation);
 
-        if (validation === 'right') {
-          // For validated right, always use workflow_tag_id = MANUAL_INDEXING_WONT_INDEX
-          // and curation_tag = predicted_curation_tag_id (NO_GENETIC_DATA for 'no genetic data' prediction)
-          if (!row.reference_workflow_tag_id) {
-            // Create new workflow tag row
-            await postWorkflowTag({
-              reference_curie: referenceCurie,
-              mod_abbreviation: accessLevel,
-              workflow_tag_id: MANUAL_INDEXING_WONT_INDEX,
-              curation_tag: row.predicted_curation_tag_id // Use the predicted tag value
-            });
-          } else {
-            // Update existing workflow tag row
-            await patchWorkflowTag(
-              row.reference_workflow_tag_id,
-              {
-                workflow_tag_id: MANUAL_INDEXING_WONT_INDEX,
-                curation_tag: row.predicted_curation_tag_id // Use the predicted tag value
-              }
-            );
-          }
+        // Use transition API to change workflow status
+        // The backend action will set curation_tag appropriately
+        const targetWorkflowTagId = validation === 'right'
+          ? MANUAL_INDEXING_WONT_INDEX
+          : MANUAL_INDEXING_TBD;
 
-        } else if (validation === 'wrong') {
-          // For validated wrong, always use workflow_tag_id = MANUAL_INDEXING_TBD
-          // and curation_tag = null
-          if (!row.reference_workflow_tag_id) {
-            // Create new workflow tag row
-            await postWorkflowTag({
-              reference_curie: referenceCurie,
-              mod_abbreviation: accessLevel,
-              workflow_tag_id: MANUAL_INDEXING_TBD,
-              curation_tag: null
-            });
-          } else {
-            // Update existing workflow tag row
-            await patchWorkflowTag(
-              row.reference_workflow_tag_id,
-              {
-                workflow_tag_id: MANUAL_INDEXING_TBD,
-                curation_tag: null
-              }
-            );
-          }
-        }
+        await transitionWorkflowTag({
+          curie_or_reference_id: referenceCurie,
+          mod_abbreviation: accessLevel,
+          new_workflow_tag_atp_id: targetWorkflowTagId
+        });
 
         await fetchIndexingWorkflowOverview();
       } catch (e) {
@@ -1203,9 +1170,9 @@ const BiblioWorkflow = () => {
 
     // Normalize display-only TBD so we don't ever PATCH it just because it was displayed                            
     if (colId === 'workflow_tag_id' && rowData?.section === 'Manual Indexing') {
-      const realOld = rowData.workflow_tag_id || '';
-      const normalizedNew = (newValue === MANUAL_INDEXING_TBD && !realOld) ? '' : newValue;
-      const normalizedOld = realOld;
+      //const realOld = rowData.workflow_tag_id || '';
+      const normalizedNew = (newValue === MANUAL_INDEXING_TBD && !oldValue) ? '' : newValue;
+      const normalizedOld = oldValue;
       if (normalizedNew === normalizedOld) return;
     } else {
       if (newValue === oldValue) return;
@@ -1249,24 +1216,26 @@ const BiblioWorkflow = () => {
         return;
       }
 
-      // --- Manual Indexing / Community Curation: existing workflow_tag behavior unchanged
+      // --- Manual Indexing / Community Curation workflow tags
       if (isClearingWorkflowTag) {
+        // DELETE: clearing workflow_tag
         if (rowData.reference_workflow_tag_id) {
           await deleteWorkflowTag(rowData.reference_workflow_tag_id);
         }
+      } else if (colId === 'workflow_tag_id') {
+        // workflow_tag_id changes use transition API (validates transition and executes actions)
+        await transitionWorkflowTag({
+          curie_or_reference_id: referenceCurie,
+          mod_abbreviation: accessLevel,
+          new_workflow_tag_atp_id: newValue
+        });
       } else {
+        // curation_tag and note changes use patch API
         if (rowData.reference_workflow_tag_id) {
           await patchWorkflowTag(
             rowData.reference_workflow_tag_id,
             { [colId]: newValue }
           );
-        } else if (colId === 'workflow_tag_id') {
-          // Only post if creating new workflow tag AND the change was to 'workflow_tag_id
-          await postWorkflowTag({
-            reference_curie: referenceCurie,
-            mod_abbreviation: accessLevel,
-            workflow_tag_id: newValue
-          });
         } else {
           // Trying to edit curation_tag/note but no existing workflow tag
           const msg = 'No existing workflow tag record to patch.';
