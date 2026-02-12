@@ -1124,9 +1124,12 @@ const WorkflowDiagram = () => {
 
 const ReportsContainer = () => {
   const mods = useSelector(state => state.app.mods);
+  const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
+  const testerMod = useSelector(state => state.isLogged.testerMod);
+  const activeMod = (testerMod !== 'No') ? testerMod : cognitoMod;
   return (
     <div>
-      <Tabs mountOnEnter="true" defaultActiveKey="all" id="mods-tabs">
+      <Tabs mountOnEnter="true" defaultActiveKey={activeMod !== 'No' ? activeMod : 'all'} id="mods-tabs">
         <Tab eventKey="all" title="All">
           <Tabs mountOnEnter="true" defaultActiveKey="all_stats" id="all-reports-tabs">
             <Tab eventKey="all_stats" title="Workflow Statistics">
@@ -1136,10 +1139,7 @@ const ReportsContainer = () => {
         </Tab>
         {mods.map(mod => (
           <Tab key={mod} eventKey={mod} title={mod}>
-            <Tabs mountOnEnter="true" defaultActiveKey={`${mod}_stats`} id={`${mod}_reports-tabs`}>
-              <Tab eventKey={`${mod}_stats`} title="Workflow Statistics">
-                <WorkflowStatModTablesContainer modSection={mod} />
-              </Tab>
+            <Tabs mountOnEnter="true" defaultActiveKey={`${mod}_qcreport`} id={`${mod}_reports-tabs`}>
               <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
                 <QCReportObsoleteEntities modSection={mod} />
                   <hr/>
@@ -1148,6 +1148,9 @@ const ReportsContainer = () => {
 		<QCObsoletePmids modSection={mod} />
 		  <hr/>
 		<QCReportDuplicateOrcids modSection={mod} />
+              </Tab>
+              <Tab eventKey={`${mod}_stats`} title="Workflow Statistics">
+                <WorkflowStatModTablesContainer modSection={mod} />
               </Tab>
             </Tabs>
           </Tab>
