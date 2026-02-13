@@ -50,7 +50,7 @@ export default ({ model: rawModel, onModelChange }) => {
         <div className="custom-filter">
             <div>Select Species</div><hr/>
             {Object.entries(curieToNameTaxon).filter(([key, value]) => allSpecies.includes(key)).map( ([key,value]) => {
-                return  <div>
+                return  <div key={key}>
                             <input type="checkbox" id={key} value ={key} onChange={onSpeciesChange}/>
                             <label htmlFor={key}> {value}</label>
                         </div>

@@ -51,7 +51,7 @@ export default ({ model: rawModel, onModelChange }) => {
             <div>Select Entity Type</div><hr/>
             {allEntityTypes.map((entityType) => {
                 let DisplayEntityType = entityType ? entityType : 'None';
-                return  <div>
+                return  <div key={entityType}>
                     <input type="checkbox" id={entityType} value ={DisplayEntityType} onChange={onEntityTypesChange}/>
                     <label htmlFor={entityType}> {DisplayEntityType}</label>
                 </div>
