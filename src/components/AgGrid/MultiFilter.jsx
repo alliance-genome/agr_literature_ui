@@ -1,9 +1,9 @@
 import { useGridFilter } from 'ag-grid-react';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import Select from 'react-select';
 
-const MultiFilter = ({ model, onModelChange, items, label }) => {
+const MultiFilter = ({ model: rawModel, onModelChange, items, label }) => {
+    const model = Array.isArray(rawModel) ? rawModel : null;
     const [closeFilter, setCloseFilter] = useState();
     const [unappliedModel, setUnappliedModel] = useState(model);
     const doesFilterPass = useCallback((params) => {
