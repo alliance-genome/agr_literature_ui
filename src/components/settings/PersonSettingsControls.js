@@ -271,7 +271,7 @@ const PersonSettingsControls = ({
         selectedId={selectedSettingId}
         onPick={handlePickSetting}
         size="sm"
-        placeholder={dropdownPlaceholder}
+        label={dropdownPlaceholder}
       />
 
       {/* Modal: manage settings (create / rename / delete / default / save current) */}
