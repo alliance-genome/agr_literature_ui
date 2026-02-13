@@ -270,7 +270,6 @@ const PersonSettingsControls = ({
         settings={settings}
         selectedId={selectedSettingId}
         onPick={handlePickSetting}
-        size="sm"
         label={dropdownPlaceholder}
       />
 
