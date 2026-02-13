@@ -3,14 +3,15 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {useSelector} from "react-redux";
 
 
-export default ({ model, onModelChange }) => {
+export default ({ model: rawModel, onModelChange }) => {
+    const model = Array.isArray(rawModel) ? rawModel : null;
     const [closeFilter, setCloseFilter] = useState();
     const [unappliedModel, setUnappliedModel] = useState(model);
     const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
     const allSpecies = useSelector(state => state.biblio.allSpecies);
     const doesFilterPass = useCallback((params) => {
         // doesFilterPass only gets called if the filter is active
-        return model.includes(params.data.species);
+        return model ? model.includes(params.data.species) : true;
     }, [model]);
 
     const afterGuiAttached = useCallback(({ hidePopup }) => {

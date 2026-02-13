@@ -3,13 +3,14 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {useSelector} from "react-redux";
 
 
-export default ({ model, onModelChange }) => {
+export default ({ model: rawModel, onModelChange }) => {
+    const model = Array.isArray(rawModel) ? rawModel : null;
     const [closeFilter, setCloseFilter] = useState();
     const [unappliedModel, setUnappliedModel] = useState(model);
     const allEntityTypes = useSelector(state => state.biblio.allEntityTypes);
     const doesFilterPass = useCallback((params) => {
         // doesFilterPass only gets called if the filter is active
-        return model.includes(params.data.entity_type_name);
+        return model ? model.includes(params.data.entity_type_name) : true;
     }, [model]);
 
     const afterGuiAttached = useCallback(({ hidePopup }) => {
