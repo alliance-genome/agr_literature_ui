@@ -1,8 +1,8 @@
 import React from "react";
 import { Dropdown } from "react-bootstrap";
 
-export default function SettingsDropdown({ settings, selectedId, onPick, label = "Load setting" }) {
-  const active = settings?.find((s) => s.person_setting_id === selectedId);
+export default function SettingsDropdown({ settings = [], selectedId, onPick, label = "Load setting" }) {
+  const active = settings.find((s) => s.person_setting_id === selectedId);
   const toggleLabel = active ? `Setting: ${active.setting_name}` : label;
 
   return (
@@ -11,10 +11,10 @@ export default function SettingsDropdown({ settings, selectedId, onPick, label =
         {toggleLabel}
       </Dropdown.Toggle>
       <Dropdown.Menu>
-        {(!settings || settings.length === 0) && (
+        {settings.length === 0 && (
           <Dropdown.Item disabled>No saved settings</Dropdown.Item>
         )}
-        {(settings || []).map((s) => (
+        {settings.map((s) => (
           <Dropdown.Item
             key={s.person_setting_id}
             active={s.person_setting_id === selectedId}
