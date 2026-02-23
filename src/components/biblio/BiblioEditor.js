@@ -929,7 +929,7 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 	          </Col>
                 )}
                 <Col sm={otherColSize}>
-                  <Form.Control as="select" id={`${fieldName} ${index} corpus`} type="{fieldName}" value={valueLiveCorpus} className={`form-control ${updatedFlagCorpus}`} disabled={(valueLiveMod !== accessLevel) ? 'disable' : ''} placeholder="corpus" onChange={ (e) => {
+                  <Form.Control as="select" id={`${fieldName} ${index} corpus`} type="{fieldName}" value={valueLiveCorpus} className={`form-control ${updatedFlagCorpus}`} disabled={(valueLiveMod !== accessLevel && valueLiveMod !== 'alliance') ? 'disable' : ''} placeholder="corpus" onChange={ (e) => {
                     dispatch(changeFieldModAssociationReferenceJson(e));
                     if ( (e.target.value === 'inside_corpus') || (e.target.value === 'outside_corpus') ) {
                       dispatch(changeFieldModAssociationReferenceJson({target: {id: 'mod_corpus_associations ' + index + ' mod_corpus_sort_source', value: 'manual_creation' }})); }
@@ -947,7 +947,7 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 	          value={valueLiveSource}
 	          updatedFlag={updatedFlagSource}
 	          placeholder="mod_corpus_sort_source"
-	          disabled={(valueLiveMod !== accessLevel) ? 'disable' : ''}
+	          disabled={(valueLiveMod !== accessLevel && valueLiveMod !== 'alliance') ? 'disable' : ''}
 	          fieldKey={`${fieldName} ${index} mod_corpus_sort_source`}
 	          enumType="modAssociationSource"
 	          dispatchAction={changeFieldModAssociationReferenceJson}
