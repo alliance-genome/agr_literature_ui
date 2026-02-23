@@ -88,7 +88,7 @@ fieldTypeDict['category'] = 'select'
 
 export const enumDict = {}
 enumDict['category'] = ['research_article', 'review_article', 'comment', 'thesis', 'book', 'other', 'preprint', 'conference_publication', 'personal_communication', 'direct_data_submission', 'internal_process_reference', 'unknown', 'retraction', 'obsolete', 'correction']
-enumDict['mods'] = ['', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
+enumDict['mods'] = ['', 'Alliance', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 enumDict['personXrefPrefix'] = ['', 'ORCID']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'Xenbase', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN', 'CGC', 'WBG', 'WM']
 enumDict['referenceComcorType'] = ['', 'CommentOn', 'HasComment', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor', 'hasChapter', 'ChapterIn']

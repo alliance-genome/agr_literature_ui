@@ -100,23 +100,51 @@ const CreateAlliance = () => {
   const createAllianceLoading = useSelector(state => state.create.createAllianceLoading);
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
+  const allianceOnly = useSelector(state => state.create.allianceOnly);
   const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
 
-  function createAllianceReference(modPrefix, modIdent) {
+  function createAllianceReference(modPrefix, modIdent, allianceOnly) {
     const subPath = 'reference/';
-    const modCurie = modPrefix + ':' + modIdent;
-    let updateJson = { 'title': 'placeholder title',
-                       'category': 'other',
-                       'mod_corpus_associations': [ { 'mod_abbreviation': mcaMod, 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ],
-                       'cross_references': [ { 'curie': modCurie, 'pages': [ 'reference' ], 'is_obsolete': false } ] }
-    if (modPrefix === 'WB' || modPrefix === 'SGD') { delete updateJson['cross_references']; }	// do not create an xref for WB and SGD, mca will trigger modID creation in xref
+    let updateJson = { 'title': 'placeholder title', 'category': 'other' };
+
+    if (allianceOnly) {
+      // Alliance-only mode: only create Alliance MOD corpus association, no cross_references required
+      updateJson['mod_corpus_associations'] = [ { 'mod_abbreviation': 'Alliance', 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ];
+    } else {
+      // Normal mode: create with curator's MOD association and cross_references
+      const modCurie = modPrefix + ':' + modIdent;
+      updateJson['mod_corpus_associations'] = [ { 'mod_abbreviation': mcaMod, 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ];
+      updateJson['cross_references'] = [ { 'curie': modCurie, 'pages': [ 'reference' ], 'is_obsolete': false } ];
+      if (modPrefix === 'WB' || modPrefix === 'SGD') { delete updateJson['cross_references']; }	// do not create an xref for WB and SGD, mca will trigger modID creation in xref
+    }
+
+    // For alliance-only, we don't have a modCurie to check, so pass a placeholder
+    const modCurieForCheck = allianceOnly ? 'Alliance:new' : (modPrefix + ':' + modIdent);
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
-    dispatch(updateButtonCreate(arrayData, 'alliance', modCurie))
+    dispatch(updateButtonCreate(arrayData, 'alliance', modCurieForCheck))
   }
+
+  // Determine if create button should be disabled
+  // Alliance-only mode doesn't require MOD ID
+  const isCreateDisabled = allianceOnly
+    ? false
+    : ( (modPrefix !== 'WB') && (modPrefix !== 'SGD') && (modIdent === '') );
+
   return (
     <Container>
-      <ModCurieInput />
-      <Button id={`button create alliance`} variant="outline-secondary" disabled={ ( (modPrefix !== 'WB') && (modPrefix !== 'SGD') && (modIdent === '') ) ? "disabled" : "" } onClick={() => createAllianceReference(modPrefix, modIdent)} >
+      <Form.Group as={Row} key="allianceOnly" >
+        <Col sm="12">
+          <Form.Check
+            type="checkbox"
+            id="allianceOnly"
+            label="Only create Alliance ID and MOD corpus association Alliance"
+            checked={allianceOnly}
+            onChange={(e) => dispatch(changeCreateField({target: {id: 'allianceOnly', value: e.target.checked }}))}
+          />
+        </Col>
+      </Form.Group>
+      {!allianceOnly && <ModCurieInput />}
+      <Button id={`button create alliance`} variant="outline-secondary" disabled={isCreateDisabled ? "disabled" : ""} onClick={() => createAllianceReference(modPrefix, modIdent, allianceOnly)} >
         {createAllianceLoading ? <Spinner animation="border" size="sm"/> : <span>Create an Alliance reference</span> }
       </Button>
     </Container>);
