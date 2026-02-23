@@ -109,7 +109,7 @@ const CreateAlliance = () => {
 
     if (allianceOnly) {
       // Alliance-only mode: only create Alliance MOD corpus association, no cross_references required
-      updateJson['mod_corpus_associations'] = [ { 'mod_abbreviation': 'Alliance', 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ];
+      updateJson['mod_corpus_associations'] = [ { 'mod_abbreviation': 'alliance', 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ];
     } else {
       // Normal mode: create with curator's MOD association and cross_references
       const modCurie = modPrefix + ':' + modIdent;
