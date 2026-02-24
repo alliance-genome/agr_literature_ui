@@ -141,6 +141,11 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) =>
   }
 
   const checkModCurieThenCreate = async () => {
+    // For Alliance-only references, skip the modCurie check and create directly
+    if (modCurie === 'Alliance:new') {
+      createUpdateButtonCreate();
+      return;
+    }
     try {
       const res = await api.get('/cross_reference/' + modCurie);
       const response = res.data;

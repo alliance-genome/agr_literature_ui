@@ -20,6 +20,7 @@ const initialState = {
 //   hasPmid: false,
   modIdent: '',
   modPrefix: '',
+  allianceOnly: false,
   pmid: '',
   doi: '',
   pmidTitle: '',
