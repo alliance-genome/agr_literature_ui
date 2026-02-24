@@ -106,7 +106,7 @@ const CreatePubmed = () => {
             <Form.Check
               type="checkbox"
               id="allianceOnly"
-              label="Only create Alliance ID and MOD corpus association Alliance"
+              label="Only create Alliance ID and MOD corpus association for Alliance"
               checked={allianceOnly}
               onChange={(e) => dispatch(changeCreateField({target: {id: 'allianceOnly', value: e.target.checked }}))}
             />
