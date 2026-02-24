@@ -47,23 +47,39 @@ const CreatePubmed = () => {
   const createPmidLoading = useSelector(state => state.create.createPmidLoading);
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
+  const allianceOnly = useSelector(state => state.create.allianceOnly);
   // const accessLevel = useGetAccessLevel();
   const generalClassName = 'Col-general';
 
 
-  function createPubmedReference(pmid) {
-    const modCurie = modPrefix + ':' + modIdent;
-    const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
+  function createPubmedReference(pmid, allianceOnly) {
     pmid = pmid.replace( /[^\d.]/g, '' );
-    let updateJson = { 'pubmed_id': pmid,
-                       'mod_curie': modCurie,
-                       'mod_mca': mcaMod }
-    if (modPrefix === 'WB' || modPrefix === 'SGD') { delete updateJson['mod_curie']; }	// do not create an xref for WB and SGD, mca will trigger modID creation in xref
-    // const subPath = 'reference/add/' + pmid + '/' + modCurie + '/' + mcaMod + '/';
+    let updateJson = { 'pubmed_id': pmid };
+
+    if (allianceOnly) {
+      // Alliance-only mode: only create Alliance MOD corpus association
+      updateJson['mod_mca'] = 'alliance';
+    } else {
+      // Normal mode: create with curator's MOD association
+      const modCurie = modPrefix + ':' + modIdent;
+      const mcaMod = (modPrefix === 'Xenbase') ? 'XB' : modPrefix;
+      updateJson['mod_curie'] = modCurie;
+      updateJson['mod_mca'] = mcaMod;
+      if (modPrefix === 'WB' || modPrefix === 'SGD') { delete updateJson['mod_curie']; }	// do not create an xref for WB and SGD, mca will trigger modID creation in xref
+    }
+
     const subPath = 'reference/add/';
+    // For alliance-only, we don't have a modCurie to check, so pass a placeholder
+    const modCurieForCheck = allianceOnly ? 'Alliance:new' : (modPrefix + ':' + modIdent);
     let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
-    dispatch(updateButtonCreate(arrayData, 'pmid', modCurie));
+    dispatch(updateButtonCreate(arrayData, 'pmid', modCurieForCheck));
   }
+
+  // Determine if create button should be disabled
+  // Alliance-only mode doesn't require MOD ID
+  const isCreateDisabled = allianceOnly
+    ? false
+    : ( (modPrefix !== 'WB') && (modPrefix !== 'SGD') && (modIdent === '') );
   return (
     <Container>
     <Form.Group as={Row} key="Pmid" >
@@ -85,8 +101,19 @@ const CreatePubmed = () => {
     </Form.Group>
     { pmidTitle && (
       <>
-        <ModCurieInput />
-            <Button id={`button create pubmed`} variant="outline-secondary" disabled={ ( (modPrefix !== 'WB') && (modPrefix !== 'SGD') && (modIdent === '') ) ? "disabled" : "" } onClick={() => createPubmedReference(pmid)} >
+        <Form.Group as={Row} key="allianceOnlyPubmed" >
+          <Col sm="12">
+            <Form.Check
+              type="checkbox"
+              id="allianceOnly"
+              label="Only create Alliance ID and MOD corpus association Alliance"
+              checked={allianceOnly}
+              onChange={(e) => dispatch(changeCreateField({target: {id: 'allianceOnly', value: e.target.checked }}))}
+            />
+          </Col>
+        </Form.Group>
+        {!allianceOnly && <ModCurieInput />}
+        <Button id={`button create pubmed`} variant="outline-secondary" disabled={isCreateDisabled ? "disabled" : ""} onClick={() => createPubmedReference(pmid, allianceOnly)} >
           {createPmidLoading ? <Spinner animation="border" size="sm"/> : <span>Create a PubMed reference</span> }
         </Button>
       </>
