@@ -58,7 +58,7 @@ const CreatePubmed = () => {
 
     if (allianceOnly) {
       // Alliance-only mode: only create Alliance MOD corpus association
-      updateJson['mod_mca'] = 'alliance';
+      updateJson['mod_mca'] = 'AGR';
     } else {
       // Normal mode: create with curator's MOD association
       const modCurie = modPrefix + ':' + modIdent;
@@ -136,7 +136,7 @@ const CreateAlliance = () => {
 
     if (allianceOnly) {
       // Alliance-only mode: only create Alliance MOD corpus association, no cross_references required
-      updateJson['mod_corpus_associations'] = [ { 'mod_abbreviation': 'alliance', 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ];
+      updateJson['mod_corpus_associations'] = [ { 'mod_abbreviation': 'AGR', 'mod_corpus_sort_source': 'manual_creation', 'corpus': true } ];
     } else {
       // Normal mode: create with curator's MOD association and cross_references
       const modCurie = modPrefix + ':' + modIdent;
