@@ -68,11 +68,11 @@ import {useEffect, useState} from "react";
 // Label mapping (display only)
 const getLabel = (name) => (name === 'category' ? 'alliance_category' : name);
 
-export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'resource_curie', 'resource_title' ];
+export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'citation', 'volume', 'page_range', 'language', 'abstract', 'plain_language_abstract', 'publisher', 'issue_name', 'resource_curie', 'resource_title', 'retraction_status' ];
 export const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
  
 export const fieldsBooleanDisplayOnly = ['prepublication_pipeline' ];
-export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'resources_for_curation', 'relations', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
+export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'resources_for_curation', 'relations', 'retraction_status', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
  
 
 export const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'pubmed_publication_status', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
@@ -1338,6 +1338,117 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   return (<>{rowAuthorsElements}</>);
 } // const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb})
 
+const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+  const dispatch = useDispatch();
+  const [retractionStatusOptions, setRetractionStatusOptions] = useState([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingValue, setPendingValue] = useState(null);
+
+  useEffect(() => {
+    const fetchRetractionStatuses = async () => {
+      try {
+        const result = await api.get('/ontology/search_descendants/ATP:0000346/true/true/true');
+        const options = result.data.map(entity => ({
+          value: entity.curie,
+          label: entity.name,
+        }));
+        setRetractionStatusOptions(options);
+      } catch (error) {
+        console.error('Error fetching retraction status options:', error);
+      }
+    };
+    fetchRetractionStatuses();
+  }, []);
+
+  let valueLive = '';
+  let valueDb = '';
+  let updatedFlag = '';
+  if (fieldName in referenceJsonDb) { valueDb = referenceJsonDb[fieldName]; }
+  if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName]; }
+  if (valueLive !== valueDb) { updatedFlag = 'updated'; }
+
+  const displayLabel = retractionStatusOptions.find(opt => opt.value === valueLive)?.label || valueLive || '';
+  const isEditable = !valueDb;
+
+  const handleSelectChange = (e) => {
+    const newValue = e.target.value;
+    if (newValue) {
+      setPendingValue(newValue);
+      setShowConfirmModal(true);
+    } else {
+      dispatch(changeFieldReferenceJson(e));
+    }
+  };
+
+  const handleConfirm = () => {
+    dispatch(changeFieldReferenceJson({ target: { id: fieldName, value: pendingValue } }));
+    setShowConfirmModal(false);
+    setPendingValue(null);
+  };
+
+  const handleCancel = () => {
+    setShowConfirmModal(false);
+    setPendingValue(null);
+  };
+
+  if (isEditable) {
+    return (
+      <>
+        <Modal show={showConfirmModal} onHide={handleCancel}>
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm Retraction Status</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p>If you set this Reference to any retracted value, you will NOT be able to un-retract it, and all automatic topic-entity and workflow tags will be lost.</p>
+            <p>If making this fully retracted, make sure you've looked at all manual tags from all mods and talked to a curator from those mods to confirm you want to do this.</p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+            <Button variant="danger" onClick={handleConfirm}>Confirm</Button>
+          </Modal.Footer>
+        </Modal>
+        <Form.Group as={Row} key={fieldName}>
+          <Form.Label column sm="2" className="Col-general">retraction_status</Form.Label>
+          <Col sm="9">
+            <Form.Control
+              as="select"
+              id={fieldName}
+              value={valueLive || ''}
+              className={`form-control ${updatedFlag}`}
+              onChange={handleSelectChange}
+            >
+              <option value=""></option>
+              {retractionStatusOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </Form.Control>
+          </Col>
+          <Col sm="1">
+            <Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >
+              <FontAwesomeIcon icon={faUndo} />
+            </Button>
+          </Col>
+        </Form.Group>
+      </>
+    );
+  } else {
+    return (
+      <Form.Group as={Row} key={fieldName}>
+        <Form.Label column sm="2" className="Col-general">retraction_status</Form.Label>
+        <Col sm="10">
+          <Form.Control
+            as="input"
+            type="text"
+            value={displayLabel}
+            className="form-control"
+            disabled="disabled"
+          />
+        </Col>
+      </Form.Group>
+    );
+  }
+};
+
 const BiblioEditor = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
@@ -1358,6 +1469,8 @@ const BiblioEditor = () => {
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
         rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
+    else if (fieldName === 'retraction_status') {
+      rowOrderedElements.push(<RowEditorRetractionStatus key="RowEditorRetractionStatus" fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsSimple.includes(fieldName)) {
         rowOrderedElements.push(<RowEditorString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
