@@ -3,6 +3,7 @@ import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
 import RowDivider from './RowDivider';
+import { api } from "../../api";
 
 import { BiblioSubmitUpdateRouter } from './BiblioEditor';
 import { AuthorExpandToggler } from './BiblioEditor';
@@ -556,6 +557,40 @@ export const RowDisplayExtractedEmails = ({ referenceJsonLive, displayOrEditor }
   );
 };
 
+const RowDisplayRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
+  const [displayName, setDisplayName] = React.useState('');
+
+  const valueLive = referenceJsonLive[fieldName] || '';
+  const valueDb = referenceJsonDb[fieldName] || '';
+
+  React.useEffect(() => {
+    if (!valueLive) {
+      setDisplayName('');
+      return;
+    }
+    const fetchName = async () => {
+      try {
+        const result = await api.get(`/ontology/map_curie_to_name/atpterm/${valueLive}`);
+        setDisplayName(result.data);
+      } catch (error) {
+        console.error('Error fetching retraction status name:', error);
+        setDisplayName(valueLive);
+      }
+    };
+    fetchName();
+  }, [valueLive]);
+
+  const updatedFlag = (valueLive !== valueDb) ? 'updated' : '';
+
+  return (
+    <RowDisplaySimple
+      key={fieldName}
+      fieldName={fieldName}
+      value={displayName}
+      updatedFlag={updatedFlag}
+    />
+  );
+};
 
 const BiblioDisplay = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -569,6 +604,8 @@ const BiblioDisplay = () => {
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
     if (fieldName === 'DIVIDER') {
       rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
+    else if (fieldName === 'retraction_status') {
+      rowOrderedElements.push(<RowDisplayRetractionStatus key="RowDisplayRetractionStatus" fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsSimple.includes(fieldName)) {
       rowOrderedElements.push(<RowDisplayString key={fieldName} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldsArrayString.includes(fieldName)) {
