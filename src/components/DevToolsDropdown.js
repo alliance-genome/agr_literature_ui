@@ -24,13 +24,13 @@ const DevToolsDropdown = () => {
         }
     }, []);
 
-    // Only show in dev or stage environments
-    if (devOrStageOrProd === 'prod') {
-        return null;
-    }
-
     // Show tester options if user has tester permission and a MOD
     const showTesterOptions = cognitoMod !== 'No' && cognitoTester === true;
+
+    // On prod, only show for POTesters; on dev/stage, always show
+    if (devOrStageOrProd === 'prod' && !showTesterOptions) {
+        return null;
+    }
 
     return (
         <div ref={dropdownRef} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
