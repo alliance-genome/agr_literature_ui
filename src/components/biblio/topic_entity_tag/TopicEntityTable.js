@@ -330,6 +330,8 @@ const TopicEntityTable = () => {
             row.validation_by_professional_biocurator = '';
           }
         }
+        row.no_data = row.negated === true ? 'no data' : '';
+        row.has_data = row.negated === true ? 'N' : 'Y';
       });
 
       setTopicEntityTags(result.data || []);
@@ -381,7 +383,8 @@ const TopicEntityTable = () => {
       { headerName: 'Species', field: 'species_name', id: 3, checked: true },
       { headerName: 'Entity', field: 'entity_name', id: 4, checked: true },
       { headerName: 'Entity Published As', field: 'entity_published_as', id: 5, checked: false },
-      { headerName: 'No Data', field: 'negated', id: 6, checked: true },
+      { headerName: 'No Data', field: 'no_data', id: 6, checked: true },
+      { headerName: 'Data', field: 'has_data', id: 32, checked: true },
       { headerName: 'Data Novelty', field: 'data_novelty', id: 7, checked: false },
       { headerName: 'Confidence Score', field: 'confidence_score', id: 8, checked: false },
       { headerName: 'Confidence Level', field: 'confidence_level', id: 9, checked: false },
@@ -418,7 +421,8 @@ const TopicEntityTable = () => {
       { headerName: 'Species', field: 'species_name', id: 3, checked: true },
       { headerName: 'Entity', field: 'entity_name', id: 4, checked: true },
       { headerName: 'Entity Published As', field: 'entity_published_as', id: 5, checked: false },
-      { headerName: 'No Data', field: 'negated', id: 6, checked: false },
+      { headerName: 'No Data', field: 'no_data', id: 6, checked: false },
+      { headerName: 'Data', field: 'has_data', id: 32, checked: false },
       { headerName: 'Data Novelty', field: 'data_novelty', id: 7, checked: false },
       { headerName: 'Confidence Score', field: 'confidence_score', id: 8, checked: false },
       { headerName: 'Confidence Level', field: 'confidence_level', id: 9, checked: false },
@@ -508,10 +512,15 @@ const TopicEntityTable = () => {
       { headerName: 'Entity Published As', field: 'entity_published_as', comparator: caseInsensitiveComparator, filter: true },
       {
         headerName: 'No Data',
-        field: 'negated',
+        field: 'no_data',
         filter: true,
-        cellDataType: 'text',
-        valueGetter: (p) => (p.data.negated === true ? 'no data' : '')
+        cellDataType: 'text'
+      },
+      {
+        headerName: 'Data',
+        field: 'has_data',
+        filter: true,
+        cellDataType: 'text'
       },
       { headerName: 'Data Novelty', field: 'data_novelty', filter: true, valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty },
       { headerName: 'Confidence Score', field: 'confidence_score', filter: true },
