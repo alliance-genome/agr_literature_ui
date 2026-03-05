@@ -354,7 +354,13 @@ const TopicEntityTable = () => {
     fetchTableData();
   }, [fetchTableData, biblioUpdatingEntityAdd]);
 
+  const hasTextSelection = () => {
+    const selection = window.getSelection();
+    return selection && selection.toString().length > 0;
+  };
+
   const handleCurieClick = (curie) => {
+    if (hasTextSelection()) return;
     if (curie && curie !== 'null:null') {
       setSelectedCurie(curie);
       setShowCurieModal(true);
@@ -362,11 +368,13 @@ const TopicEntityTable = () => {
   };
 
   const handleNoteClick = (note) => {
+    if (hasTextSelection()) return;
     setFullNote(note || '');
     setShowNoteModal(true);
   };
 
   const handleSourceDescClick = (desc) => {
+    if (hasTextSelection()) return;
     setFullSourceDesc(desc || '');
     setShowSourceDescModal(true);
   };
@@ -811,6 +819,8 @@ const TopicEntityTable = () => {
                 reactiveCustomComponents
                 rowData={topicEntityTags}
                 columnDefs={colDefs}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
                 gridOptions={gridOptions}
                 pagination
                 paginationPageSize={25}

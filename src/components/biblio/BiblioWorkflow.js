@@ -532,6 +532,8 @@ const BiblioWorkflow = () => {
             rowData={curationWholePaperData}
             columnDefs={curationWholePaperColumns}
             singleClickEdit={true}
+            enableCellTextSelection={true}
+            ensureDomOrder={true}
             domLayout="normal"
             getRowClass={() => 'ag-row-striped-light'}
             popupParent={document.body}
@@ -1351,6 +1353,8 @@ const BiblioWorkflow = () => {
             <AgGridReact
               rowData={data}
               columnDefs={columns}
+              enableCellTextSelection={true}
+              ensureDomOrder={true}
               domLayout="autoHeight"
             />
           </div>
@@ -1376,6 +1380,8 @@ const BiblioWorkflow = () => {
                 rowData={indexingPriorityData}
                 columnDefs={indexingPriorityColumns}
 		singleClickEdit={true}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
                 domLayout="normal"
                 rowHeight={43}
                 getRowClass={() => 'ag-row-striped-light'}
@@ -1406,6 +1412,8 @@ const BiblioWorkflow = () => {
                 rowData={indexingWorkflowData}
                 columnDefs={indexingWorkflowColumns}
                 singleClickEdit={true}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
                 domLayout="normal"
                 rowHeight={43}
                 getRowClass={() => 'ag-row-striped-light'}
@@ -1453,6 +1461,8 @@ const BiblioWorkflow = () => {
             rowData={curationData}
             columnDefs={curationColumns}
             singleClickEdit={true}
+            enableCellTextSelection={true}
+            ensureDomOrder={true}
             domLayout="autoHeight"
             rowClassRules={{
               'ag-row-striped-dark': (params) => params.rowIndex % 2 === 0,

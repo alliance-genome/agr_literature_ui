@@ -281,6 +281,8 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                       columnDefs={columns}
                       pagination={false}
                       paginationPageSize={20}
+                      enableCellTextSelection={true}
+                      ensureDomOrder={true}
                       domLayout="autoHeight"
                       gridOptions = {gridOptions}
                     /><br/><br/><br/>
@@ -553,6 +555,8 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                       pagination={false}
                       columnDefs={columns}
                       paginationPageSize={20}
+                      enableCellTextSelection={true}
+                      ensureDomOrder={true}
                       domLayout="autoHeight"
                       gridOptions = {gridOptions}
                     /><br/><br/><br/>
@@ -703,6 +707,8 @@ const QCReportObsoleteEntities = ({modSection}) => {
                     pagination={true}
                     paginationPageSize={10}
                     paginationPageSizeSelector={paginationPageSizeSelector}
+                    enableCellTextSelection={true}
+                    ensureDomOrder={true}
                     domLayout="autoHeight"
                     gridOptions = {gridOptions}
                   />
@@ -801,6 +807,8 @@ const QCReportRetractedPapers = ({modSection}) => {
                                         pagination={true}
                                         paginationPageSize={10}
                                         paginationPageSizeSelector={paginationPageSizeSelector}
+                                        enableCellTextSelection={true}
+                                        ensureDomOrder={true}
                                         domLayout="autoHeight"
                                         gridOptions = {gridOptions}
                                     />
@@ -982,6 +990,8 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
                     pagination={true}
                     paginationPageSize={10}
                     paginationPageSizeSelector={paginationPageSizeSelector}
+                    enableCellTextSelection={true}
+                    ensureDomOrder={true}
                     domLayout="autoHeight"
                     gridOptions = {gridOptions}
                   />
