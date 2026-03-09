@@ -47,6 +47,7 @@ const NavigationBar = () => {
         <Nav.Link className="navbar_link" as={Link} to="/biblio" onClick={closeMenu}>Biblio Edit</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/sort" onClick={closeMenu}>Sort</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/tracker" onClick={closeMenu}>Tracker</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/resources" onClick={closeMenu}>Resources</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/create" onClick={closeMenu}>Create</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/merge" onClick={closeMenu}>Merge</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/reports" onClick={closeMenu}>Reports</Nav.Link>
