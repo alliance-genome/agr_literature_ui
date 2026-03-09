@@ -17,6 +17,7 @@ import Download from './Download';
 import BulkSubmission from './BulkSubmission';
 import About from './About';
 import Tracker from './Tracker';
+import Resources from './Resources';
 import LoginPage from './LoginPage';
 import ReAuthModal from './ReAuthModal';
 import React from 'react';
@@ -127,6 +128,7 @@ const AppWithRouterAccess = () => {
                     <PrivateRoute path='/bulkSubmission' component={BulkSubmission} />
                     <PrivateRoute path='/about' component={About} />
                     <PrivateRoute path='/tracker' component={Tracker} />
+                    <PrivateRoute path='/resources' component={Resources} />
                 </Route>
             </Switch>
         </div>
