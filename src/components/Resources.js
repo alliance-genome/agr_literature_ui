@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Spinner } from 'react-bootstrap';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Alert, Spinner } from 'react-bootstrap';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -41,9 +41,9 @@ const editorsFormatter = (params) => {
 };
 
 const Resources = () => {
-  const gridRef = useRef();
   const [rowData, setRowData] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
   const columnDefs = useMemo(() => [
     { headerName: 'Resource Id', field: 'resource_id' },
@@ -79,15 +79,18 @@ const Resources = () => {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoadingData(true);
+      setFetchError(null);
       try {
         const result = await api.get('/resource/show_all');
-        const processed = result.data.map(row => ({
+        const data = Array.isArray(result.data) ? result.data : [];
+        const processed = data.map(row => ({
           ...row,
           open_access: row.open_access === true ? 'true' : row.open_access === false ? 'false' : '',
         }));
         setRowData(processed);
       } catch (error) {
         console.error('Error fetching resources:', error);
+        setFetchError('Failed to load resources. Please try again later.');
       } finally {
         setIsLoadingData(false);
       }
@@ -102,10 +105,11 @@ const Resources = () => {
           <h3>Resources</h3>
           {isLoadingData ? (
             <div className="text-center"><Spinner animation="border" /></div>
+          ) : fetchError ? (
+            <Alert variant="danger">{fetchError}</Alert>
           ) : (
             <div className="ag-theme-quartz" style={{ width: '100%' }}>
               <AgGridReact
-                ref={gridRef}
                 rowData={rowData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
