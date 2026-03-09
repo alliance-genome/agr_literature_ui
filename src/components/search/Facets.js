@@ -66,6 +66,7 @@ export const RENAME_FACETS = {
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
+    "data_novelty": "Data Novelty",
     "file_workflow": "File workflow",
     "reference_classification": "Reference classification",
     "entity_extraction": "Entity extraction",
@@ -99,7 +100,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation"], 
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name","language"],
-    "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
+    "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions", "data_novelty"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
@@ -395,9 +396,9 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
                 let key = facetToInclude.replaceAll(' ', '_');
-                if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 
-                      'file_workflow', 'manual_indexing', 'reference_classification',
-		      'entity_extraction', 'curation_classification', 'community_curation'].includes(key)) {
+                if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty',
+                        'file_workflow', 'manual_indexing', 'reference_classification',
+		                'entity_extraction', 'curation_classification', 'community_curation'].includes(key)) {
                     key = key + '.keyword';
                 }
                 
@@ -464,7 +465,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                             </Col>                                                                                                                    
                                             <Col xs={3} sm={3}>                                                                                                       
                                                 <Badge variant="secondary">                                                                                           
-                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) &&
+                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty'].includes(key) &&
                                                         bucket.docs_count !== undefined ?
                                                         bucket.docs_count.doc_count.toLocaleString() :
                                                         bucket.doc_count.toLocaleString()}                                                                            

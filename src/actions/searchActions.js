@@ -38,7 +38,7 @@ export const SEARCH_REMOVE_DATE_CREATED = "SEARCH_REMOVE_DATE_CREATED"
 export const SEARCH_SET_CURRENT_ABORT_CONTROLLER = 'SEARCH_SET_CURRENT_ABORT_CONTROLLER';
 export const SEARCH_LOAD_SAVED_SEARCH_STATE = 'SEARCH_LOAD_SAVED_SEARCH_STATE';
 
-const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"]
+const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions","data_novelty"];
 
 export const loadSavedSearchState = (saved) => ({
   type: SEARCH_LOAD_SAVED_SEARCH_STATE,
@@ -88,8 +88,10 @@ function processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedF
   if (non_empty_facets.length > 0) {
     tetNestedFacetsValues.push(
         Object.fromEntries(
-            non_empty_facets.map(tet_facet_label => [`topic_entity_tags.${tet_facet_label.slice(0, -1)}.keyword`,
-              data[tet_facet_label][0]])
+            non_empty_facets.map(
+
+                tet_facet_label => [tet_facet_label === 'data_novelty' ? `topic_entity_tags.${tet_facet_label}.keyword`: `topic_entity_tags.${tet_facet_label.slice(0, -1)}.keyword`, data[tet_facet_label][0]]
+            )
         )
     );
   }
