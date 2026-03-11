@@ -218,7 +218,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
     const [sourceEvidenceAssertionDescriptions, setSourceEvidenceAssertionDescriptions] = useState({});
-    const SEA_child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
+    const Child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
 
     const [modRefTypeToMods, setModRefTypeToMods] = useState({});
 
@@ -438,14 +438,14 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                     <Container key={bucket.key}>
                                         <Row className="facet-item">
 
-                                            <Col xs={3} sm={2} className={SEA_child_terms.includes(bucket.key) ? 'facet-indent' : null}>
+                                            <Col xs={3} sm={2} className={Child_terms.includes(bucket.key) ? 'facet-indent' : null}>
                                                 {negatedFacetCategories.includes(facetToInclude) ? 
                                                     <NegatedFacetCheckbox facet={key} value={bucket.key} /> : 
                                                     <StandardFacetCheckbox facet={key} value={bucket.key} />
                                                 }
                                             </Col>
 
-                                            <Col xs={6} sm={7} className={SEA_child_terms.includes(bucket.key) ? 'facet-indent-text' : null}>
+                                            <Col xs={6} sm={7} className={Child_terms.includes(bucket.key) ? 'facet-indent-text' : null}>
                                                 {(key === 'source_methods' || key === 'source_evidence_assertions') ? (
 
                                                     <OverlayTrigger
@@ -549,7 +549,6 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 const Facets = () => {
 
     const [openFacets, setOpenFacets] = useState(new Set());
-    const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const readyToFacetSearch = useSelector(state => state.search.readyToFacetSearch);
@@ -558,9 +557,6 @@ const Facets = () => {
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const datePublished= useSelector(state => state.search.datePublished);
     const dateCreated = useSelector(state => state.search.dateCreated);
-    const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
-    const testerMod = useSelector(state => state.isLogged.testerMod);
-    const accessLevel = testerMod !== "No" ? testerMod : cognitoMod;
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     const seaValues = useSelector(state => state.search.searchFacetsValues['source_evidence_assertions'] || []);
     const hasGroupSEA = seaValues.some(v => v === 'ECO:0006155' || v === 'ECO:0007669');
