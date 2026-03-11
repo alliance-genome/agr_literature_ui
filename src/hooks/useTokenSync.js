@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { signIn, signOut } from '../actions/loginActions';
-import { hideReauthModal, clearPendingRequests } from '../actions/authActions';
+import { hideReauthModal, clearPendingRequests, showReauthModal } from '../actions/authActions';
 
 const TOKEN_SYNC_KEY = 'auth_token_updated';
 
@@ -35,10 +35,17 @@ export const useTokenSync = () => {
                         dispatch(clearPendingRequests());
                     }
                 }
+            } else {
+                // Session exists but has no tokens (e.g., refresh token expired,
+                // Safari ITP cleared localStorage). Prompt re-authentication
+                // rather than letting the user work with a stale expired token.
+                console.log('Token sync: Session has no valid tokens - prompting re-auth');
+                dispatch(showReauthModal());
             }
         } catch (error) {
-            // Session invalid - but don't sign out here, let the normal flow handle it
-            console.log('Token sync: No valid session found');
+            // Session invalid - prompt re-authentication
+            console.log('Token sync: No valid session found - prompting re-auth');
+            dispatch(showReauthModal());
         }
     }, [dispatch, currentToken, reauthRequired]);
 
