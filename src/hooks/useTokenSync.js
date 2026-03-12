@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { signIn, signOut } from '../actions/loginActions';
+import { signIn } from '../actions/loginActions';
 import { hideReauthModal, clearPendingRequests, showReauthModal } from '../actions/authActions';
 
 const TOKEN_SYNC_KEY = 'auth_token_updated';
@@ -43,9 +43,22 @@ export const useTokenSync = () => {
                 dispatch(showReauthModal());
             }
         } catch (error) {
-            // Session invalid - prompt re-authentication
-            console.log('Token sync: No valid session found - prompting re-auth');
-            dispatch(showReauthModal());
+            const errorName = error?.name || '';
+            const errorMessage = error?.message || '';
+            const isAuthError = (
+                errorName === 'NotAuthorizedException' ||
+                errorMessage.toLowerCase().includes('token') ||
+                errorMessage.toLowerCase().includes('not authenticated') ||
+                errorMessage.toLowerCase().includes('no current user')
+            );
+
+            if (isAuthError) {
+                console.log('Token sync: Auth error - prompting re-auth:', errorMessage);
+                dispatch(showReauthModal());
+            } else {
+                // Transient error (network dropout, etc.) — don't prompt re-auth
+                console.log('Token sync: Non-auth error, skipping re-auth:', errorMessage);
+            }
         }
     }, [dispatch, currentToken, reauthRequired]);
 

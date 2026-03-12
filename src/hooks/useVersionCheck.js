@@ -5,12 +5,19 @@ import { useEffect, useRef, useState, useCallback } from 'react';
  * Checks on initial mount and whenever the tab becomes visible.
  * Returns { updateAvailable: boolean } when a newer build is detected.
  */
+const MIN_CHECK_INTERVAL_MS = 60_000; // Don't check more than once per minute
+
 export const useVersionCheck = () => {
     const initialBuildId = useRef(null);
+    const updateAvailableRef = useRef(false);
+    const lastCheckRef = useRef(0);
     const [updateAvailable, setUpdateAvailable] = useState(false);
 
     const checkVersion = useCallback(async () => {
-        if (updateAvailable) return;
+        if (updateAvailableRef.current) return;
+        const now = Date.now();
+        if (now - lastCheckRef.current < MIN_CHECK_INTERVAL_MS) return;
+        lastCheckRef.current = now;
 
         try {
             // Cache-bust to ensure we always get the latest version.json
@@ -25,12 +32,13 @@ export const useVersionCheck = () => {
                 // First check — store the version we loaded with
                 initialBuildId.current = fetchedBuildId;
             } else if (fetchedBuildId !== initialBuildId.current) {
+                updateAvailableRef.current = true;
                 setUpdateAvailable(true);
             }
         } catch (error) {
             // Network error or missing file — silently ignore
         }
-    }, [updateAvailable]);
+    }, []);
 
     // Check version on mount
     useEffect(() => {
