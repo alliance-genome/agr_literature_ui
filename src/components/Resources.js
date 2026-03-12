@@ -61,9 +61,10 @@ const Resources = () => {
 
   useEffect(() => {
     updateGridHeight();
-    window.addEventListener('resize', updateGridHeight);
-    return () => window.removeEventListener('resize', updateGridHeight);
-  }, [updateGridHeight, isLoadingData]);
+    const ro = new ResizeObserver(updateGridHeight);
+    ro.observe(document.body);
+    return () => ro.disconnect();
+  }, [updateGridHeight]);
 
   const columnDefs = useMemo(() => [
     { headerName: 'Resource Id', field: 'resource_id' },

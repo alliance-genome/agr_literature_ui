@@ -4,6 +4,13 @@
  *
  * Usage: <div className="ag-theme-quartz" onCopy={handleGridCopy}>
  */
+const getCellText = (cell) => {
+  const valueEl = cell.querySelector('.ag-cell-value');
+  const target = valueEl || cell;
+  if (target.querySelector('button, input, select')) return '';
+  return target.textContent.trim();
+};
+
 export const handleGridCopy = (e) => {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return;
@@ -21,7 +28,7 @@ export const handleGridCopy = (e) => {
     if (!rowMap.has(rowIndex)) rowMap.set(rowIndex, []);
     rowMap.get(rowIndex).push({
       colIndex: parseInt(cell.getAttribute('aria-colindex') || '0', 10),
-      text: cell.textContent.trim()
+      text: getCellText(cell)
     });
   }
 

@@ -259,6 +259,11 @@ const Notification = ({ show, message, variant, onClose }) => {
   );
 };
 
+const hasTextSelection = () => {
+  const selection = window.getSelection();
+  return selection && selection.toString().length > 0;
+};
+
 /* -------------------------------------------
    Main component
 --------------------------------------------*/
@@ -356,11 +361,6 @@ const TopicEntityTable = () => {
   useEffect(() => {
     fetchTableData();
   }, [fetchTableData, biblioUpdatingEntityAdd]);
-
-  const hasTextSelection = () => {
-    const selection = window.getSelection();
-    return selection && selection.toString().length > 0;
-  };
 
   const handleCurieClick = (curie) => {
     if (hasTextSelection()) return;
