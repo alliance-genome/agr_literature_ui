@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Alert, Spinner } from 'react-bootstrap';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -45,6 +45,25 @@ const Resources = () => {
   const [rowData, setRowData] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [gridHeight, setGridHeight] = useState(500);
+  const gridContainerRef = useRef(null);
+
+  const MIN_GRID_HEIGHT = 300;
+  const BOTTOM_PADDING = 16;
+
+  const updateGridHeight = useCallback(() => {
+    const el = gridContainerRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top;
+    const available = window.innerHeight - top - BOTTOM_PADDING;
+    setGridHeight(Math.max(available, MIN_GRID_HEIGHT));
+  }, []);
+
+  useEffect(() => {
+    updateGridHeight();
+    window.addEventListener('resize', updateGridHeight);
+    return () => window.removeEventListener('resize', updateGridHeight);
+  }, [updateGridHeight, isLoadingData]);
 
   const columnDefs = useMemo(() => [
     { headerName: 'Resource Id', field: 'resource_id' },
@@ -113,7 +132,7 @@ const Resources = () => {
           ) : fetchError ? (
             <Alert variant="danger">{fetchError}</Alert>
           ) : (
-            <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
+            <div ref={gridContainerRef} className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%', height: gridHeight }}>
               <AgGridReact
                 rowData={rowData}
                 columnDefs={columnDefs}
@@ -123,7 +142,6 @@ const Resources = () => {
                 suppressColumnVirtualisation={true}
                 pagination={true}
                 paginationPageSize={20}
-                domLayout="autoHeight"
               />
             </div>
           )}
