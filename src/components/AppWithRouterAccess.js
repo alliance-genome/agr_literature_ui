@@ -17,6 +17,7 @@ import Download from './Download';
 import BulkSubmission from './BulkSubmission';
 import About from './About';
 import Tracker from './Tracker';
+import Resources from './Resources';
 import LoginPage from './LoginPage';
 import ReAuthModal from './ReAuthModal';
 import React from 'react';
@@ -25,6 +26,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setMods } from '../actions/appActions';
 import { DebeziumStatusAlert } from './DebeziumStatusAlert';
 import { useTokenSync } from '../hooks/useTokenSync';
+import { useVersionCheck } from '../hooks/useVersionCheck';
+import VersionUpdateBanner from './VersionUpdateBanner';
 
 import { api } from '../api';
 
@@ -68,6 +71,9 @@ const AppWithRouterAccess = () => {
     // Initialize cross-tab token synchronization
     useTokenSync();
 
+    // Check for new application versions on tab visibility change
+    const { updateAvailable } = useVersionCheck();
+
     const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
 
@@ -104,6 +110,7 @@ const AppWithRouterAccess = () => {
 
     return (
         <div className={className}>
+            {updateAvailable && <VersionUpdateBanner />}
             <ReAuthModal />
             <Switch>
                 <Route path='/login' component={LoginPage} />
@@ -127,6 +134,7 @@ const AppWithRouterAccess = () => {
                     <PrivateRoute path='/bulkSubmission' component={BulkSubmission} />
                     <PrivateRoute path='/about' component={About} />
                     <PrivateRoute path='/tracker' component={Tracker} />
+                    <PrivateRoute path='/resources' component={Resources} />
                 </Route>
             </Switch>
         </div>
