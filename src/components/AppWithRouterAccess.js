@@ -26,6 +26,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setMods } from '../actions/appActions';
 import { DebeziumStatusAlert } from './DebeziumStatusAlert';
 import { useTokenSync } from '../hooks/useTokenSync';
+import { useVersionCheck } from '../hooks/useVersionCheck';
+import VersionUpdateBanner from './VersionUpdateBanner';
 
 import { api } from '../api';
 
@@ -69,6 +71,9 @@ const AppWithRouterAccess = () => {
     // Initialize cross-tab token synchronization
     useTokenSync();
 
+    // Check for new application versions on tab visibility change
+    const { updateAvailable } = useVersionCheck();
+
     const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
 
@@ -105,6 +110,7 @@ const AppWithRouterAccess = () => {
 
     return (
         <div className={className}>
+            {updateAvailable && <VersionUpdateBanner />}
             <ReAuthModal />
             <Switch>
                 <Route path='/login' component={LoginPage} />
