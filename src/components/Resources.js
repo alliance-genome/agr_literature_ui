@@ -6,6 +6,7 @@ import Col from "react-bootstrap/Col";
 
 import { api } from "../api";
 import { AgGridReact } from 'ag-grid-react';
+import { handleGridCopy } from '../utils/gridCopyHandler';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
@@ -112,11 +113,14 @@ const Resources = () => {
           ) : fetchError ? (
             <Alert variant="danger">{fetchError}</Alert>
           ) : (
-            <div className="ag-theme-quartz" style={{ width: '100%' }}>
+            <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
               <AgGridReact
                 rowData={rowData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+                suppressColumnVirtualisation={true}
                 pagination={true}
                 paginationPageSize={20}
                 domLayout="autoHeight"

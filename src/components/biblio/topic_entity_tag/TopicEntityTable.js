@@ -14,6 +14,7 @@ import {
 } from 'react-bootstrap';
 import { api } from '../../../api';
 import { AgGridReact } from 'ag-grid-react';
+import { handleGridCopy } from '../../../utils/gridCopyHandler';
 
 import {
   setAllSpecies,
@@ -822,7 +823,7 @@ const TopicEntityTable = () => {
 
         <Row>
           <Col>
-            <div className="ag-theme-quartz" style={{ height: 500 }}>
+            <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ height: 500 }}>
               <AgGridReact
                 ref={gridRef}
                 reactiveCustomComponents
@@ -830,6 +831,7 @@ const TopicEntityTable = () => {
                 columnDefs={colDefs}
                 enableCellTextSelection={true}
                 ensureDomOrder={true}
+                suppressColumnVirtualisation={true}
                 gridOptions={gridOptions}
                 pagination
                 paginationPageSize={25}
