@@ -14,6 +14,7 @@ import {
 } from 'react-bootstrap';
 import { api } from '../../../api';
 import { AgGridReact } from 'ag-grid-react';
+import { handleGridCopy } from '../../../utils/gridCopyHandler';
 
 import {
   setAllSpecies,
@@ -258,6 +259,11 @@ const Notification = ({ show, message, variant, onClose }) => {
   );
 };
 
+const hasTextSelection = () => {
+  const selection = window.getSelection();
+  return selection && selection.toString().length > 0;
+};
+
 /* -------------------------------------------
    Main component
 --------------------------------------------*/
@@ -357,6 +363,7 @@ const TopicEntityTable = () => {
   }, [fetchTableData, biblioUpdatingEntityAdd]);
 
   const handleCurieClick = (curie) => {
+    if (hasTextSelection()) return;
     if (curie && curie !== 'null:null') {
       setSelectedCurie(curie);
       setShowCurieModal(true);
@@ -364,11 +371,13 @@ const TopicEntityTable = () => {
   };
 
   const handleNoteClick = (note) => {
+    if (hasTextSelection()) return;
     setFullNote(note || '');
     setShowNoteModal(true);
   };
 
   const handleSourceDescClick = (desc) => {
+    if (hasTextSelection()) return;
     setFullSourceDesc(desc || '');
     setShowSourceDescModal(true);
   };
@@ -814,12 +823,15 @@ const TopicEntityTable = () => {
 
         <Row>
           <Col>
-            <div className="ag-theme-quartz" style={{ height: 500 }}>
+            <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ height: 500 }}>
               <AgGridReact
                 ref={gridRef}
                 reactiveCustomComponents
                 rowData={topicEntityTags}
                 columnDefs={colDefs}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+                suppressColumnVirtualisation={true}
                 gridOptions={gridOptions}
                 pagination
                 paginationPageSize={25}

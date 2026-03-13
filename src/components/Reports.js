@@ -13,6 +13,7 @@ import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportO
 
 import { api } from "../api";
 import { AgGridReact } from 'ag-grid-react';
+import { handleGridCopy } from '../utils/gridCopyHandler';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
@@ -273,7 +274,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                     </Spinner>
                   </div>
                 ) : (
-                  <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                  <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
                     <AgGridReact
                       key={key}
                       ref={gridRef}
@@ -281,6 +282,9 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
                       columnDefs={columns}
                       pagination={false}
                       paginationPageSize={20}
+                      enableCellTextSelection={true}
+                      ensureDomOrder={true}
+                      suppressColumnVirtualisation={true}
                       domLayout="autoHeight"
                       gridOptions = {gridOptions}
                     /><br/><br/><br/>
@@ -545,7 +549,7 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                     </Spinner>
                   </div>
                 ) : (
-                  <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                  <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
                     <AgGridReact
                       key={key}
                       ref={gridRef}
@@ -553,6 +557,9 @@ const WorkflowStatModTable = ({ workflowProcessAtpId, title, modSection }) => {
                       pagination={false}
                       columnDefs={columns}
                       paginationPageSize={20}
+                      enableCellTextSelection={true}
+                      ensureDomOrder={true}
+                      suppressColumnVirtualisation={true}
                       domLayout="autoHeight"
                       gridOptions = {gridOptions}
                     /><br/><br/><br/>
@@ -691,7 +698,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
                   </Spinner>
                 </div>
               ) : (
-                <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
                  {( qcReportObsoleteEntities["'date-produced'"] !== null) &&
                   (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportObsoleteEntities['date-produced'])}<br /><br /></div>) }
                  {( ( qcReportObsoleteEntities["obsolete_entities"] !== null) && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) ? (
@@ -703,6 +710,9 @@ const QCReportObsoleteEntities = ({modSection}) => {
                     pagination={true}
                     paginationPageSize={10}
                     paginationPageSizeSelector={paginationPageSizeSelector}
+                    enableCellTextSelection={true}
+                    ensureDomOrder={true}
+                    suppressColumnVirtualisation={true}
                     domLayout="autoHeight"
                     gridOptions = {gridOptions}
                   />
@@ -791,7 +801,7 @@ const QCReportRetractedPapers = ({modSection}) => {
                                 </Spinner>
                             </div>
                         ) : (
-                            <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                            <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
                                 {( qcReportRedactedPapers["'date-produced'"] !== null) &&
                                     (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportRedactedPapers['date-produced'])}<br /><br /></div>) }
                                 {( ( qcReportRedactedPapers["redacted-references"] !== null) && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) ? (
@@ -801,6 +811,9 @@ const QCReportRetractedPapers = ({modSection}) => {
                                         pagination={true}
                                         paginationPageSize={10}
                                         paginationPageSizeSelector={paginationPageSizeSelector}
+                                        enableCellTextSelection={true}
+                                        ensureDomOrder={true}
+                                        suppressColumnVirtualisation={true}
                                         domLayout="autoHeight"
                                         gridOptions = {gridOptions}
                                     />
@@ -970,7 +983,7 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
                   </Spinner>
                 </div>
               ) : (
-                <div className="ag-theme-quartz" style={{ width: '100%' }}>
+                <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
                  {( qcReportDuplicateOrcids["'date-produced'"] !== null) &&
                   (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportDuplicateOrcids['date-produced'])}<br /><br /></div>) }
                  {( ( qcReportDuplicateOrcids["duplicate_orcids"] !== null) && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) ? (
@@ -982,6 +995,9 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
                     pagination={true}
                     paginationPageSize={10}
                     paginationPageSizeSelector={paginationPageSizeSelector}
+                    enableCellTextSelection={true}
+                    ensureDomOrder={true}
+                    suppressColumnVirtualisation={true}
                     domLayout="autoHeight"
                     gridOptions = {gridOptions}
                   />

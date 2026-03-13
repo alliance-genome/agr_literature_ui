@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { api } from "../../api";
 import { AgGridReact } from 'ag-grid-react';
+import { handleGridCopy } from '../../utils/gridCopyHandler';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Container, Row, Col } from 'react-bootstrap';
@@ -527,11 +528,14 @@ const BiblioWorkflow = () => {
         {showApiErrorModal && (
           <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
         )}
-        <div className="ag-theme-quartz" style={{ width: '80%', height: 45, marginBottom: 40 }}>
+        <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', height: 45, marginBottom: 40 }}>
           <AgGridReact
             rowData={curationWholePaperData}
             columnDefs={curationWholePaperColumns}
             singleClickEdit={true}
+            enableCellTextSelection={true}
+            ensureDomOrder={true}
+            suppressColumnVirtualisation={true}
             domLayout="normal"
             getRowClass={() => 'ag-row-striped-light'}
             popupParent={document.body}
@@ -1347,10 +1351,13 @@ const BiblioWorkflow = () => {
         </div>
       ) : (
         <div style={containerStyle}>
-            <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 10 }}>
+            <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
             <AgGridReact
               rowData={data}
               columnDefs={columns}
+              enableCellTextSelection={true}
+              ensureDomOrder={true}
+              suppressColumnVirtualisation={true}
               domLayout="autoHeight"
             />
           </div>
@@ -1363,9 +1370,10 @@ const BiblioWorkflow = () => {
 	  <strong style={{ display: 'block', margin: '20px 0 10px' }}>
             Indexing Priority
 	  </strong>
-	  <div style={containerStyle}> 	
+	  <div style={containerStyle}>
             <div
               className="ag-theme-quartz"
+              onCopy={handleGridCopy}
               style={{
                 width: '80%',
                 height: `${indexingPriorityData.length * 45 + 60}px`,
@@ -1376,6 +1384,9 @@ const BiblioWorkflow = () => {
                 rowData={indexingPriorityData}
                 columnDefs={indexingPriorityColumns}
 		singleClickEdit={true}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+                suppressColumnVirtualisation={true}
                 domLayout="normal"
                 rowHeight={43}
                 getRowClass={() => 'ag-row-striped-light'}
@@ -1396,6 +1407,7 @@ const BiblioWorkflow = () => {
           <div style={containerStyle}>
             <div
               className="ag-theme-quartz"
+              onCopy={handleGridCopy}
               style={{
                 width: '80%',
                 height: `${indexingWorkflowData.length * 45 + 60}px`,
@@ -1406,6 +1418,9 @@ const BiblioWorkflow = () => {
                 rowData={indexingWorkflowData}
                 columnDefs={indexingWorkflowColumns}
                 singleClickEdit={true}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+                suppressColumnVirtualisation={true}
                 domLayout="normal"
                 rowHeight={43}
                 getRowClass={() => 'ag-row-striped-light'}
@@ -1448,11 +1463,14 @@ const BiblioWorkflow = () => {
         {showApiErrorModal && (
           <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
         )}
-        <div className="ag-theme-quartz" style={{ width: '80%', marginBottom: 40 }}>
+        <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 40 }}>
           <AgGridReact
             rowData={curationData}
             columnDefs={curationColumns}
             singleClickEdit={true}
+            enableCellTextSelection={true}
+            ensureDomOrder={true}
+            suppressColumnVirtualisation={true}
             domLayout="autoHeight"
             rowClassRules={{
               'ag-row-striped-dark': (params) => params.rowIndex % 2 === 0,

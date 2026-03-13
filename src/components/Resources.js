@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Alert, Spinner } from 'react-bootstrap';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -6,6 +6,7 @@ import Col from "react-bootstrap/Col";
 
 import { api } from "../api";
 import { AgGridReact } from 'ag-grid-react';
+import { handleGridCopy } from '../utils/gridCopyHandler';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
@@ -44,6 +45,26 @@ const Resources = () => {
   const [rowData, setRowData] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [gridHeight, setGridHeight] = useState(500);
+  const gridContainerRef = useRef(null);
+
+  const MIN_GRID_HEIGHT = 300;
+  const BOTTOM_PADDING = 16;
+
+  const updateGridHeight = useCallback(() => {
+    const el = gridContainerRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top;
+    const available = window.innerHeight - top - BOTTOM_PADDING;
+    setGridHeight(Math.max(available, MIN_GRID_HEIGHT));
+  }, []);
+
+  useEffect(() => {
+    updateGridHeight();
+    const ro = new ResizeObserver(updateGridHeight);
+    ro.observe(document.body);
+    return () => ro.disconnect();
+  }, [updateGridHeight]);
 
   const columnDefs = useMemo(() => [
     { headerName: 'Resource Id', field: 'resource_id' },
@@ -112,14 +133,16 @@ const Resources = () => {
           ) : fetchError ? (
             <Alert variant="danger">{fetchError}</Alert>
           ) : (
-            <div className="ag-theme-quartz" style={{ width: '100%' }}>
+            <div ref={gridContainerRef} className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%', height: gridHeight }}>
               <AgGridReact
                 rowData={rowData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+                suppressColumnVirtualisation={true}
                 pagination={true}
                 paginationPageSize={20}
-                domLayout="autoHeight"
               />
             </div>
           )}
