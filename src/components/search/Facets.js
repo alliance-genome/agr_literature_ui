@@ -66,6 +66,7 @@ export const RENAME_FACETS = {
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
+    "data_novelty": "Data Novelty",
     "file_workflow": "File workflow",
     "reference_classification": "Reference classification",
     "entity_extraction": "Entity extraction",
@@ -99,7 +100,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation"], 
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name","language"],
-    "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions"],
+    "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions", "data_novelty"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
@@ -217,7 +218,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
     const [sourceEvidenceAssertionDescriptions, setSourceEvidenceAssertionDescriptions] = useState({});
-    const SEA_child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
+    const Child_terms = ["eco:0008004","eco:0008021","atp:0000035","atp:0000036"];
 
     const [modRefTypeToMods, setModRefTypeToMods] = useState({});
 
@@ -395,9 +396,9 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
                 let key = facetToInclude.replaceAll(' ', '_');
-                if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 
-                      'file_workflow', 'manual_indexing', 'reference_classification',
-		      'entity_extraction', 'curation_classification', 'community_curation'].includes(key)) {
+                if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty',
+                        'file_workflow', 'manual_indexing', 'reference_classification',
+		                'entity_extraction', 'curation_classification', 'community_curation'].includes(key)) {
                     key = key + '.keyword';
                 }
                 
@@ -437,14 +438,14 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                     <Container key={bucket.key}>
                                         <Row className="facet-item">
 
-                                            <Col xs={3} sm={2} className={SEA_child_terms.includes(bucket.key) ? 'facet-indent' : null}>
+                                            <Col xs={3} sm={2} className={Child_terms.includes(bucket.key) ? 'facet-indent' : null}>
                                                 {negatedFacetCategories.includes(facetToInclude) ? 
                                                     <NegatedFacetCheckbox facet={key} value={bucket.key} /> : 
                                                     <StandardFacetCheckbox facet={key} value={bucket.key} />
                                                 }
                                             </Col>
 
-                                            <Col xs={6} sm={7} className={SEA_child_terms.includes(bucket.key) ? 'facet-indent-text' : null}>
+                                            <Col xs={6} sm={7} className={Child_terms.includes(bucket.key) ? 'facet-indent-text' : null}>
                                                 {(key === 'source_methods' || key === 'source_evidence_assertions') ? (
 
                                                     <OverlayTrigger
@@ -464,7 +465,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                             </Col>                                                                                                                    
                                             <Col xs={3} sm={3}>                                                                                                       
                                                 <Badge variant="secondary">                                                                                           
-                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions'].includes(key) &&
+                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty'].includes(key) &&
                                                         bucket.docs_count !== undefined ?
                                                         bucket.docs_count.doc_count.toLocaleString() :
                                                         bucket.doc_count.toLocaleString()}                                                                            
@@ -548,7 +549,6 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
 const Facets = () => {
 
     const [openFacets, setOpenFacets] = useState(new Set());
-    const searchFacets = useSelector(state => state.search.searchFacets);
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const readyToFacetSearch = useSelector(state => state.search.readyToFacetSearch);
@@ -557,9 +557,6 @@ const Facets = () => {
     const datePubmedAdded = useSelector(state => state.search.datePubmedAdded);
     const datePublished= useSelector(state => state.search.datePublished);
     const dateCreated = useSelector(state => state.search.dateCreated);
-    const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
-    const testerMod = useSelector(state => state.isLogged.testerMod);
-    const accessLevel = testerMod !== "No" ? testerMod : cognitoMod;
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     const seaValues = useSelector(state => state.search.searchFacetsValues['source_evidence_assertions'] || []);
     const hasGroupSEA = seaValues.some(v => v === 'ECO:0006155' || v === 'ECO:0007669');
