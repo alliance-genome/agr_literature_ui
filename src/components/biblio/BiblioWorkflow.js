@@ -113,7 +113,8 @@ const BiblioWorkflow = () => {
       const { ip, options } = normalize(payload);
       return {
         section: 'Indexing Priority',
-        workflow_tag: ip?.indexing_priority ?? '',
+        predicted_indexing_priority: ip?.predicted_indexing_priority ?? '',
+        curator_indexing_priority: ip?.curator_indexing_priority ?? '',
         confidence_score: fmtScore(ip?.confidence_score),
         curator: ip?.updated_by_name ?? ip?.updated_by_email ?? '',
         date_updated: ip?.date_updated ?? '',
@@ -125,7 +126,8 @@ const BiblioWorkflow = () => {
     }
     return {
       section: 'Indexing Priority',
-      workflow_tag: '',
+      predicted_indexing_priority: '',
+      curator_indexing_priority: '',
       confidence_score: '',
       curator: '',
       date_updated: '',
@@ -835,21 +837,15 @@ const BiblioWorkflow = () => {
 
   const indexingPriorityColumns = [
     {
-      headerName: 'Workflow Status',
-      field: 'workflow_tag',
+      headerName: 'Predicted Indexing Priority',
+      field: 'predicted_indexing_priority',
       flex: 1,
       cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header wft-header-bg',
-      cellRenderer: GeneralizedDropdownRenderer,
-      cellRendererParams: (params) => ({
-        value: params.value,
-        node: params.node,
-        colDef: params.colDef,
-        options: params.data.options,
-        validateFn: (val) => params.data.options.some(opt => opt.value === val),
-        errorMessage: 'INVALID ATP ID',
-        isDisabled: false,
-      }),
+      valueFormatter: (params) => {
+        const opt = params.data?.options?.find(o => o.value === params.value);
+        return opt ? opt.label : params.value || '';
+      },
       sortable: true,
       filter: true,
     },
@@ -878,6 +874,40 @@ const BiblioWorkflow = () => {
       flex: 1,
       cellStyle: { textAlign: 'left' },
       headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Curator Indexing Priority',
+      field: 'curator_indexing_priority',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      cellRenderer: GeneralizedDropdownRenderer,
+      cellRendererParams: (params) => ({
+        value: params.value,
+        node: params.node,
+        colDef: params.colDef,
+        options: params.data.options,
+        validateFn: (val) => params.data.options.some(opt => opt.value === val),
+        errorMessage: 'INVALID ATP ID',
+        isDisabled: false,
+      }),
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Validation by Curator',
+      field: 'validation_by_curator',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      valueGetter: (params) => {
+        const predicted = params.data?.predicted_indexing_priority;
+        const curator = params.data?.curator_indexing_priority;
+        if (!predicted || !curator) return 'not_validated';
+        return predicted === curator ? 'validated_right' : 'validated_wrong';
+      },
       sortable: true,
       filter: true,
     },
@@ -1102,7 +1132,7 @@ const BiblioWorkflow = () => {
       filter: true,
     },
     {
-      headerName: 'Validation by curator',
+      headerName: 'Validation by Curator',
       field: 'validation_by_biocurator',
       flex: 1,
       headerClass: 'wft-bold-header wft-header-bg',
@@ -1178,7 +1208,7 @@ const BiblioWorkflow = () => {
       if (newValue === oldValue) return;
     }
       
-    const editableFields = ['workflow_tag_id', 'curation_tag', 'note'];
+    const editableFields = ['workflow_tag_id', 'curation_tag', 'note', 'curator_indexing_priority'];
     if (!editableFields.includes(colId)) return;
 
     // DELETE if workflow_tag is being cleared
@@ -1190,10 +1220,10 @@ const BiblioWorkflow = () => {
     );
   
     try {
-      // Indexing Priority: PATCH /indexing_priority/{id} with payload { indexing_priority: "ATP:..." }
+      // Indexing Priority: PATCH /indexing_priority/{id} with payload { curator_indexing_priority: "ATP:..." }
       if (rowData.section === 'Indexing Priority') {
-        // Only allow editing workflow_tag in Indexing Priority table
-        if (colId !== 'workflow_tag_id') return;
+        // Only allow editing curator_indexing_priority in Indexing Priority table
+        if (colId !== 'curator_indexing_priority') return;
 
         if (!rowData.indexing_priority_id) {
           const msg = 'No existing indexing priority record to patch.';
@@ -1204,9 +1234,8 @@ const BiblioWorkflow = () => {
 
         const url = `/indexing_priority/${rowData.indexing_priority_id}`;
 
-        // UI uses field "workflow_tag_id", API expects "indexing_priority"
         const payload = {
-          indexing_priority: newValue === "" ? null : newValue,
+          curator_indexing_priority: newValue === "" ? null : newValue,
         };
 
         await api.patch(url, payload);
