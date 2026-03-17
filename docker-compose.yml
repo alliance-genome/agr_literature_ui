@@ -2,14 +2,10 @@ version: "3.7"
 
 services:
   ui:
-    container_name: agr.literature.${ENV_STATE}.ui.server
+    container_name: agr.literature.${REACT_APP_DEV_OR_STAGE_OR_PROD}.ui.server
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
-    logging:
-      driver: gelf
-      options:
-        gelf-address: 'udp://logs.alliancegenome.org:12201'
     ports:
       - "${LIT_UI_PORT}:80"
