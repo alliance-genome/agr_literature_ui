@@ -1,0 +1,8 @@
+version: "3.7"
+
+services:
+  ui:
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://logs.alliancegenome.org:12201'
