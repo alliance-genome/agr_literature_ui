@@ -866,17 +866,25 @@ const FileEditor = ({ onFileStatusChange }) => {
         }
 
         if (fileLinks.length > 0) {
-          convertedFilesDisplay = <div style={{ display: 'flex', flexWrap: 'wrap' }}>{fileLinks}</div>;
+          // Split into two rows: merged/grobid on line 1, docling/marker on line 2
+          const line1 = fileLinks.slice(0, 2);
+          const line2 = fileLinks.slice(2);
+          convertedFilesDisplay = (
+            <div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' }}>{line1}</div>
+              {line2.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap' }}>{line2}</div>}
+            </div>
+          );
         }
       }
 
       return (
         <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={12}>
-          <Col className={`Col-general Col-display-left`} lg={{ span: 1 }}>{referenceFile.file_class}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 2 }}>{referencefileValue}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 3 }}>{convertedFilesDisplay}</Col>
+          <Col className={`Col-general Col-display-left`} lg={{ span: 2 }}>{referenceFile.file_class}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 3 }}>{referencefileValue}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 2 }}>{convertedFilesDisplay}</Col>
           <Col className="Col-general Col-display" lg={{ span: 1 }}>{source}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 2 }}>
+          <Col className="Col-general Col-display" lg={{ span: 1 }}>
             <Form.Control
               as="select"
               disabled={!hasAccess}
@@ -945,11 +953,11 @@ const FileEditor = ({ onFileStatusChange }) => {
   referenceFilesNoAccess.sort(reffileCompareFn);
   rowReferencefileElements = [
     <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={12}>
-      <Col className="Col-general Col-display-left" lg={{ span: 1 }}><strong>File Class</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Name</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>Converted Files</strong></Col>
+      <Col className="Col-general Col-display-left" lg={{ span: 2 }}><strong>File Class</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>File Name</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Converted Files</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>Source</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>PDF Type</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>PDF Type</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
       <Col className="Col-general Col-display-right" lg={{ span: 1 }}><strong>Delete</strong></Col>
     </Row>,
