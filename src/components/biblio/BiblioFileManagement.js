@@ -876,9 +876,9 @@ const FileEditor = ({ onFileStatusChange }) => {
 
       return (
         <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={12}>
-          <Col className={`Col-general Col-display-left`} lg={{ span: 2 }}>{referenceFile.file_class}</Col>
+          <Col className={`Col-general Col-display-left`} lg={{ span: 1 }}>{referenceFile.file_class}</Col>
           <Col className="Col-general Col-display" lg={{ span: 3 }}>{referencefileValue}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 2 }}>{convertedFilesDisplay}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 3 }}>{convertedFilesDisplay}</Col>
           <Col className="Col-general Col-display" lg={{ span: 1 }}>{source}</Col>
           <Col className="Col-general Col-display" lg={{ span: 1 }}>
             <Form.Control
@@ -949,9 +949,9 @@ const FileEditor = ({ onFileStatusChange }) => {
   referenceFilesNoAccess.sort(reffileCompareFn);
   rowReferencefileElements = [
     <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={12}>
-      <Col className="Col-general Col-display-left" lg={{ span: 2 }}><strong>File Class</strong></Col>
+      <Col className="Col-general Col-display-left" lg={{ span: 1 }}><strong>File Class</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>File Name</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Converted Files</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>Converted Files</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>Source</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>PDF Type</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
