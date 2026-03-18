@@ -824,12 +824,14 @@ const FileEditor = ({ onFileStatusChange }) => {
         (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation
       ).join(", ");
       let filename = referenceFile.display_name + '.' + referenceFile.file_extension;
-      let referencefileValue = (<div>{filename}</div>);
+      const wrapStyle = { wordBreak: 'break-word', overflowWrap: 'break-word' };
+      let referencefileValue = (<div style={wrapStyle}>{filename}</div>);
       if (hasAccess) {
         referencefileValue = (
-          <div>
+          <div style={wrapStyle}>
             <button
               className='button-to-link'
+              style={wrapStyle}
               onClick={() => dispatch(downloadReferencefile(referenceFile.referencefile_id, filename, accessToken))}
             >
               {filename}
