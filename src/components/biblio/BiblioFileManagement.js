@@ -868,14 +868,8 @@ const FileEditor = ({ onFileStatusChange }) => {
         }
 
         if (fileLinks.length > 0) {
-          // Split into two rows: merged/grobid on line 1, docling/marker on line 2
-          const line1 = fileLinks.slice(0, 2);
-          const line2 = fileLinks.slice(2);
           convertedFilesDisplay = (
-            <div>
-              <div style={{ display: 'flex', flexWrap: 'wrap' }}>{line1}</div>
-              {line2.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap' }}>{line2}</div>}
-            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap' }}>{fileLinks}</div>
           );
         }
       }
