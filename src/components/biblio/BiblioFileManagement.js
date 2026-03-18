@@ -579,16 +579,56 @@ export const BiblioCitationDisplay = ({ extraLabelContent }) => {
 // }
 
 export const reffileCompareFn = (a, b) => {
-  // 1) send "figure" to the very end
-  if (a.file_class === 'figure' && b.file_class !== 'figure') return 1;
-  if (b.file_class === 'figure' && a.file_class !== 'figure') return -1;
+  // Sort order: main first, then supplement, then others (figure, etc.) at the end
+  const fileClassOrder = { 'main': 0, 'supplement': 1 };
+  const orderA = fileClassOrder[a.file_class] ?? 2;
+  const orderB = fileClassOrder[b.file_class] ?? 2;
 
-  // 2) otherwise fall back to the normal sorting
-  const keyA = a.file_class + a.display_name + a.file_extension;
-  const keyB = b.file_class + b.display_name + b.file_extension;
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+
+  // Within same class, sort by display_name + file_extension
+  const keyA = a.display_name + a.file_extension;
+  const keyB = b.display_name + b.file_extension;
   return keyA.localeCompare(keyB);
 };
 
+
+// Markdown conversion file classes (for main and supplement files)
+const CONVERTED_FILE_CLASSES = {
+  main: [
+    'converted_merged_main',
+    'converted_grobid_main',
+    'converted_docling_main',
+    'converted_marker_main'
+  ],
+  supplement: [
+    'converted_merged_supplement',
+    'converted_grobid_supplement',
+    'converted_docling_supplement',
+    'converted_marker_supplement'
+  ]
+};
+
+// All converted file classes (for filtering)
+const ALL_CONVERTED_FILE_CLASSES = [
+  ...CONVERTED_FILE_CLASSES.main,
+  ...CONVERTED_FILE_CLASSES.supplement,
+  'tei'
+];
+
+// Display labels for converted file types
+const CONVERTED_FILE_LABELS = {
+  'converted_merged_main': 'merged',
+  'converted_grobid_main': 'grobid',
+  'converted_docling_main': 'docling',
+  'converted_marker_main': 'marker',
+  'converted_merged_supplement': 'merged',
+  'converted_grobid_supplement': 'grobid',
+  'converted_docling_supplement': 'docling',
+  'converted_marker_supplement': 'marker'
+};
 
 const FileEditor = ({ onFileStatusChange }) => {
   const displayOrEditor = 'display';
@@ -719,16 +759,54 @@ const FileEditor = ({ onFileStatusChange }) => {
     }
   };
 
-  // Create a mapping of display_name to TEI files
-  const teiFilesMap = {};
-  referenceFiles.forEach(file => {
-    if (file.file_class === 'tei') {
-      teiFilesMap[file.display_name] = file;
+  // Create a mapping of display_name to converted files (markdown and TEI)
+  const getConvertedFilesMap = () => {
+    const map = {};
+    referenceFiles.forEach(file => {
+      if (ALL_CONVERTED_FILE_CLASSES.includes(file.file_class)) {
+        if (!map[file.display_name]) {
+          map[file.display_name] = {};
+        }
+        map[file.display_name][file.file_class] = file;
+      }
+    });
+    return map;
+  };
+
+  const convertedFilesMap = getConvertedFilesMap();
+
+  // Helper to render a single converted file link
+  const renderConvertedFileLink = (file, label, hasAccess) => {
+    if (!file) return null;
+    const filename = `${file.display_name}.${file.file_extension}`;
+    if (hasAccess) {
+      return (
+        <span key={file.referencefile_id} style={{ marginRight: '8px' }}>
+          <button
+            className='button-to-link'
+            onClick={() => dispatch(downloadReferencefile(file.referencefile_id, filename, accessToken))}
+            title={filename}
+          >
+            {label}
+          </button>
+          {loadingFileNames.has(filename) ? <Spinner animation="border" size="sm" /> : null}
+        </span>
+      );
     }
-  });
+    return <span key={file.referencefile_id} style={{ marginRight: '8px' }} title={filename}>{label}</span>;
+  };
+
+  // Get the appropriate file class list based on the reference file class
+  const getConvertedFileClasses = (fileClass) => {
+    if (fileClass === 'main') {
+      return CONVERTED_FILE_CLASSES.main;
+    } else if (fileClass === 'supplement') {
+      return CONVERTED_FILE_CLASSES.supplement;
+    }
+    return [];
+  };
 
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
-    let hasAddedFigure = false;  // Track if the first figure has been added
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
         (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation
@@ -748,43 +826,43 @@ const FileEditor = ({ onFileStatusChange }) => {
           </div>
         );
       }
-    
-      // Look for TEI file
-      let teiFile = null;
-      if (referenceFile.file_extension !== 'nxml') {
-         teiFile = referenceFiles.find(file =>
-             file.file_class === 'tei' &&
-	     file.display_name === referenceFile.display_name
-	 );
-      }
 
-      let teiFileDisplay = null;
-      if (teiFile) {
-        const teiFilename = `${teiFile.display_name}.${teiFile.file_extension}`;
-        teiFileDisplay = hasAccess ? (
-          <div>
-            <button
-              className='button-to-link'
-              onClick={() => dispatch(downloadReferencefile(teiFile.referencefile_id, teiFilename, accessToken))}
-            >
-              {teiFilename}
-            </button>
-            &nbsp;{loadingFileNames.has(teiFilename) ? <Spinner animation="border" size="sm" /> : null}
-          </div>
-        ) : (
-          <div>{teiFilename}</div>
-        );
-      }
+      // Get converted files for this reference file (merged, grobid, docling, marker order)
+      const convertedFiles = convertedFilesMap[referenceFile.display_name] || {};
+      const convertedFileClasses = getConvertedFileClasses(referenceFile.file_class);
 
-      const isFigure = referenceFile.file_class === 'figure';
-      const isFirstFigure = isFigure && !hasAddedFigure;
-      if (isFigure && !hasAddedFigure) { hasAddedFigure = true; }
+      // Also check for TEI file (legacy support)
+      const teiFile = convertedFiles['tei'];
+
+      // Build converted files display in order: merged, grobid, docling, marker
+      let convertedFilesDisplay = null;
+      if (convertedFileClasses.length > 0 || teiFile) {
+        const fileLinks = [];
+
+        // Add markdown files in order: merged, grobid, docling, marker
+        convertedFileClasses.forEach(fileClass => {
+          const file = convertedFiles[fileClass];
+          if (file) {
+            const label = CONVERTED_FILE_LABELS[fileClass];
+            fileLinks.push(renderConvertedFileLink(file, label, hasAccess));
+          }
+        });
+
+        // Add TEI file if present (legacy)
+        if (teiFile) {
+          fileLinks.push(renderConvertedFileLink(teiFile, 'tei', hasAccess));
+        }
+
+        if (fileLinks.length > 0) {
+          convertedFilesDisplay = <div style={{ display: 'flex', flexWrap: 'wrap' }}>{fileLinks}</div>;
+        }
+      }
 
       return (
-        <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={6} style={isFirstFigure ? { marginTop: '2rem' } : {}}>
-          <Col className={`Col-general Col-display-left`} lg={{ span: 2 }}>{referenceFile.file_class}</Col>
+        <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={8}>
+          <Col className={`Col-general Col-display-left`} lg={{ span: 1 }}>{referenceFile.file_class}</Col>
           <Col className="Col-general Col-display" lg={{ span: 2 }}>{referencefileValue}</Col>
-          <Col className="Col-general Col-display" lg={{ span: 2 }}>{teiFileDisplay}</Col>
+          <Col className="Col-general Col-display" lg={{ span: 3 }}>{convertedFilesDisplay}</Col>
           <Col className="Col-general Col-display" lg={{ span: 1 }}>{source}</Col>
           <Col className="Col-general Col-display" lg={{ span: 2 }}>
             <Form.Control
@@ -836,28 +914,28 @@ const FileEditor = ({ onFileStatusChange }) => {
   };
           
   let rowReferencefileElements = [];
-  // Filter out TEI files from the main display
+  // Filter out all converted files (TEI and markdown) from the main display
   const referenceFilesWithAccess = referenceFiles.filter((referenceFile) =>
     (referenceJsonLive["copyright_license_open_access"] === true ||
     accessLevel === 'developer' ||
     referenceFile.referencefile_mods.some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null)) &&
-    referenceFile.file_class !== 'tei'  // Exclude TEI files
+    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)  // Exclude converted files
   );
 
   const referenceFilesNoAccess = referenceFiles.filter((referenceFile) =>
     (referenceJsonLive["copyright_license_open_access"] !== true &&
     accessLevel !== 'developer' &&
     referenceFile.referencefile_mods.every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null)) &&
-    referenceFile.file_class !== 'tei'  // Exclude TEI files
+    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)  // Exclude converted files
   );
 
   referenceFilesWithAccess.sort(reffileCompareFn);
   referenceFilesNoAccess.sort(reffileCompareFn);
   rowReferencefileElements = [
-    <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={6}>
-      <Col className="Col-general Col-display-left" lg={{ span: 2 }}><strong>File Class</strong></Col>
+    <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={8}>
+      <Col className="Col-general Col-display-left" lg={{ span: 1 }}><strong>File Class</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Name</strong></Col>
-      <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>Converted File</strong></Col>
+      <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>Converted Files</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 1 }}><strong>Source</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>PDF Type</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Publication Status</strong></Col>
