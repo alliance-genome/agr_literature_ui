@@ -759,15 +759,27 @@ const FileEditor = ({ onFileStatusChange }) => {
     }
   };
 
-  // Create a mapping of display_name to converted files (markdown and TEI)
+  // Method suffixes used in converted file display names
+  const METHOD_SUFFIXES = ['_grobid', '_docling', '_marker', '_merged'];
+
+  // Create a mapping of base display_name to converted files (markdown and TEI)
+  // Converted files have names like "PMC123_grobid" but we need to map to "PMC123"
   const getConvertedFilesMap = () => {
     const map = {};
     referenceFiles.forEach(file => {
       if (ALL_CONVERTED_FILE_CLASSES.includes(file.file_class)) {
-        if (!map[file.display_name]) {
-          map[file.display_name] = {};
+        // Strip method suffix to get base display_name
+        let baseDisplayName = file.display_name;
+        for (const suffix of METHOD_SUFFIXES) {
+          if (baseDisplayName.endsWith(suffix)) {
+            baseDisplayName = baseDisplayName.slice(0, -suffix.length);
+            break;
+          }
         }
-        map[file.display_name][file.file_class] = file;
+        if (!map[baseDisplayName]) {
+          map[baseDisplayName] = {};
+        }
+        map[baseDisplayName][file.file_class] = file;
       }
     });
     return map;
