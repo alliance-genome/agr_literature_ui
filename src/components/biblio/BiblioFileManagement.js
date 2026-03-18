@@ -871,7 +871,7 @@ const FileEditor = ({ onFileStatusChange }) => {
       }
 
       return (
-        <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={8}>
+        <Row key={`${fieldName} ${index}`} className="Row-general" xs={2} md={4} lg={12}>
           <Col className={`Col-general Col-display-left`} lg={{ span: 1 }}>{referenceFile.file_class}</Col>
           <Col className="Col-general Col-display" lg={{ span: 2 }}>{referencefileValue}</Col>
           <Col className="Col-general Col-display" lg={{ span: 3 }}>{convertedFilesDisplay}</Col>
@@ -944,7 +944,7 @@ const FileEditor = ({ onFileStatusChange }) => {
   referenceFilesWithAccess.sort(reffileCompareFn);
   referenceFilesNoAccess.sort(reffileCompareFn);
   rowReferencefileElements = [
-    <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={8}>
+    <Row key={`${fieldName} header`} className="Row-general" xs={2} md={4} lg={12}>
       <Col className="Col-general Col-display-left" lg={{ span: 1 }}><strong>File Class</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 2 }}><strong>File Name</strong></Col>
       <Col className="Col-general Col-display" lg={{ span: 3 }}><strong>Converted Files</strong></Col>
