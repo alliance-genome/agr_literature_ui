@@ -1367,8 +1367,7 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
   if (fieldName in referenceJsonLive) { valueLive = referenceJsonLive[fieldName]; }
   if (valueLive !== valueDb) { updatedFlag = 'updated'; }
 
-  const displayLabel = retractionStatusOptions.find(opt => opt.value === valueLive)?.label || valueLive || '';
-  const isEditable = !valueDb;
+  const isChangingStatus = valueDb && pendingValue && valueDb !== pendingValue;
 
   const handleSelectChange = (e) => {
     const newValue = e.target.value;
@@ -1391,62 +1390,54 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
     setPendingValue(null);
   };
 
-  if (isEditable) {
-    return (
-      <>
-        <Modal show={showConfirmModal} onHide={handleCancel}>
-          <Modal.Header closeButton>
-            <Modal.Title>Confirm Retraction Status</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <p>If you set this Reference to any retracted value, you will NOT be able to un-retract it, and all automatic topic-entity and workflow tags will be lost.</p>
-            <p>If making this fully retracted, make sure you've looked at all manual tags from all mods and talked to a curator from those mods to confirm you want to do this.</p>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
-            <Button variant="danger" onClick={handleConfirm}>Confirm</Button>
-          </Modal.Footer>
-        </Modal>
-        <Form.Group as={Row} key={fieldName}>
-          <Form.Label column sm="2" className="Col-general">retraction_status</Form.Label>
-          <Col sm="9">
-            <Form.Control
-              as="select"
-              id={fieldName}
-              value={valueLive || ''}
-              className={`form-control ${updatedFlag}`}
-              onChange={handleSelectChange}
-            >
-              <option value=""></option>
-              {retractionStatusOptions.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </Form.Control>
-          </Col>
-          <Col sm="1">
-            <Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >
-              <FontAwesomeIcon icon={faUndo} />
-            </Button>
-          </Col>
-        </Form.Group>
-      </>
-    );
-  } else {
-    return (
+  return (
+    <>
+      <Modal show={showConfirmModal} onHide={handleCancel}>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Retraction Status</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {isChangingStatus ? (
+            <>
+              <p>You are changing the retraction status from one value to another.</p>
+              <p>This will trigger cleanup of automatic topic-entity and workflow tags based on the new status.</p>
+            </>
+          ) : (
+            <>
+              <p>If you set this Reference to any retracted value, you will NOT be able to un-retract it, and all automatic topic-entity and workflow tags will be lost.</p>
+              <p>If making this fully retracted, make sure you've looked at all manual tags from all mods and talked to a curator from those mods to confirm you want to do this.</p>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+          <Button variant="danger" onClick={handleConfirm}>Confirm</Button>
+        </Modal.Footer>
+      </Modal>
       <Form.Group as={Row} key={fieldName}>
         <Form.Label column sm="2" className="Col-general">retraction_status</Form.Label>
-        <Col sm="10">
+        <Col sm="9">
           <Form.Control
-            as="input"
-            type="text"
-            value={displayLabel}
-            className="form-control"
-            disabled="disabled"
-          />
+            as="select"
+            id={fieldName}
+            value={valueLive || ''}
+            className={`form-control ${updatedFlag}`}
+            onChange={handleSelectChange}
+          >
+            <option value=""></option>
+            {retractionStatusOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </Form.Control>
+        </Col>
+        <Col sm="1">
+          <Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >
+            <FontAwesomeIcon icon={faUndo} />
+          </Button>
         </Col>
       </Form.Group>
-    );
-  }
+    </>
+  );
 };
 
 const BiblioEditor = () => {
