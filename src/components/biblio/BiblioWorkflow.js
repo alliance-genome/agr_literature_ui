@@ -169,11 +169,13 @@ const BiblioWorkflow = () => {
 
         const sectionOrder = [
           'community curation',
-          'manual indexing'
+          'manual indexing',
+          'curation'
         ];
         const sectionDisplayNames = {
           'community curation': 'Community Curation',
           'manual indexing': 'Manual Indexing',
+          'curation': 'Curation',
         };
 
         const rowsFromWFT = sectionOrder
@@ -322,11 +324,6 @@ const BiblioWorkflow = () => {
           value: entity.curie,
           label: entity.name,
         }));
-        // Add retracted curation tag (ATP:0000344) for retracted papers
-        const retractedTagExists = curationTagOptionsObjs.some(opt => opt.value === 'ATP:0000344');
-        if (!retractedTagExists) {
-          curationTagOptionsObjs.push({ value: 'ATP:0000344', label: 'retracted' });
-        }
         setCurationStatusOptions(curationStatusOptionsObjs);
         setCurationTagOptions(curationTagOptionsObjs);
 
