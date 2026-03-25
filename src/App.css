@@ -369,6 +369,10 @@
   background-color: var(--light-grey) !important;
 }
 
+.sort-status-alert {
+  margin-bottom: 0;
+}
+
 .biblio-button:hover {
   background-color: var(--light-blue-hover) !important;
   filter: drop-shadow(2px 2px 1px #aaaaaa);
