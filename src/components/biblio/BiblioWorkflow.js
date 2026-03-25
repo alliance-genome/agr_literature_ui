@@ -169,13 +169,11 @@ const BiblioWorkflow = () => {
 
         const sectionOrder = [
           'community curation',
-          'manual indexing',
-          'curation'
+          'manual indexing'
         ];
         const sectionDisplayNames = {
           'community curation': 'Community Curation',
           'manual indexing': 'Manual Indexing',
-          'curation': 'Curation',
         };
 
         const rowsFromWFT = sectionOrder
