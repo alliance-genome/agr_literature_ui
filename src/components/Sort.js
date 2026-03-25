@@ -263,10 +263,16 @@ const Sort = () => {
       </Form>
       <Container fluid>
         {viewMode === 'Sort' && isLoading && (
-          <div className="text-center my-3">
-            <Spinner animation="border" role="status">
+          <div
+            className="sort-loading-indicator"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <Spinner animation="border" size="sm">
               <span className="visually-hidden">Loading...</span>
             </Spinner>
+            <span>Refreshing papers...</span>
           </div>
         )}
         {(viewMode === 'Sort' || viewMode === 'Prepublication') &&
