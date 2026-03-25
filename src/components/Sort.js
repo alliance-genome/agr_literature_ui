@@ -452,7 +452,15 @@ const SortSubmitUpdateRouter = () => {
 // SortSubmitUpdating Component
 const SortSubmitUpdating = () => {
   return (
-    <div className="form-control biblio-updating" >Updating Sort data...</div>
+    <Alert
+      variant="secondary"
+      className="sort-status-alert"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <Alert.Heading>Updating Sort data...</Alert.Heading>
+    </Alert>
   );
 }
 
@@ -553,7 +561,12 @@ const AlertDismissibleSortUpdate = () => {
 
       {/* Regular Alert (for non-curated-tag messages) */}
       {updateAlert && !showTetModal ? (
-        <Alert variant={variant} onClose={() => dispatch(closeSortUpdateAlert())} dismissible>
+        <Alert
+          variant={variant}
+          className="sort-status-alert"
+          onClose={() => dispatch(closeSortUpdateAlert())}
+          dismissible
+        >
           <Alert.Heading>{header}</Alert.Heading>
           {updateMessages.map((message, index) => (
             <div key={`${message} ${index}`}>{message}</div>
