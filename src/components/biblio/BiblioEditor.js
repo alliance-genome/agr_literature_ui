@@ -1424,7 +1424,7 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
             className={`form-control ${updatedFlag}`}
             onChange={handleSelectChange}
           >
-            <option value=""></option>
+            {!valueDb && <option value=""></option>}
             {retractionStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
