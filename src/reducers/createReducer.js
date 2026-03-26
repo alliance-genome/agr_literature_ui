@@ -23,7 +23,8 @@ const initialState = {
   allianceOnly: false,
   pmid: '',
   doi: '',
-  pmidTitle: '',
+  pmidTitle: 'Enter a PMID',
+  pmidQuerySuccess: false,
   pmidXml: '',
   updateAlert: 0,
   updateFailure: 0,
@@ -51,7 +52,6 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       return {
         ...state,
-        pmidTitle: '',
         pmid: action.payload.value
       }
     case 'CREATE_SET_PMID_SEARCH_LOADING':
@@ -84,7 +84,8 @@ export default function(state = initialState, action) {
       return {
         ...state,
         searchPmidLoading: false,
-        pmidTitle: action.payload
+        pmidTitle: action.payload || 'no reference found for PMID:' + state.pmid.replace(/[^\d.]/g, ''),
+        pmidQuerySuccess: !!action.payload
       }
     case 'CREATE_QUERY_PMID_XREF':
       console.log("reducer create query pmid xref");
