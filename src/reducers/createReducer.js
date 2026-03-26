@@ -52,7 +52,8 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       return {
         ...state,
-        pmid: action.payload.value
+        pmid: action.payload.value,
+        pmidQuerySuccess: false
       }
     case 'CREATE_SET_PMID_SEARCH_LOADING':
       // console.log(action.payload);
