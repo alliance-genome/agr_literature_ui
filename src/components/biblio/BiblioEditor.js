@@ -1415,8 +1415,9 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
             </>
           ) : (
             <>
-              <p>If you set this Reference to any retracted value, you will NOT be able to un-retract it, and all automatic topic-entity and workflow tags will be lost.</p>
+              <p>Setting this Reference to a retracted value will remove all automatic topic-entity and workflow tags.</p>
               <p>If making this fully retracted, make sure you've looked at all manual tags from all mods and talked to a curator from those mods to confirm you want to do this.</p>
+              <p><strong>Note:</strong> If this is a PubMed Retracted Publication, you will not be able to remove the retracted status later.</p>
             </>
           )}
         </Modal.Body>
@@ -1447,7 +1448,7 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
             className={`form-control ${updatedFlag}`}
             onChange={handleSelectChange}
           >
-            {!valueDb && <option value=""></option>}
+            <option value=""></option>
             {retractionStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
