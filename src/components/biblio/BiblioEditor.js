@@ -1342,6 +1342,7 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
   const dispatch = useDispatch();
   const [retractionStatusOptions, setRetractionStatusOptions] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPubmedWarningModal, setShowPubmedWarningModal] = useState(false);
   const [pendingValue, setPendingValue] = useState(null);
 
   useEffect(() => {
@@ -1369,13 +1370,23 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
 
   const isChangingStatus = valueDb && pendingValue && valueDb !== pendingValue;
 
+  // Check if this reference is a PubMed Retracted Publication
+  const isPubmedRetractedPublication = referenceJsonLive?.pubmed_types?.includes('Retracted Publication') ||
+                                        referenceJsonDb?.pubmed_types?.includes('Retracted Publication');
+
   const handleSelectChange = (e) => {
     const newValue = e.target.value;
     if (newValue) {
       setPendingValue(newValue);
       setShowConfirmModal(true);
     } else {
-      dispatch(changeFieldReferenceJson(e));
+      // Trying to clear the retraction_status
+      if (valueDb && isPubmedRetractedPublication) {
+        // Show warning modal - can't clear retraction_status for PubMed Retracted Publication
+        setShowPubmedWarningModal(true);
+      } else {
+        dispatch(changeFieldReferenceJson(e));
+      }
     }
   };
 
@@ -1394,7 +1405,7 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
     <>
       <Modal show={showConfirmModal} onHide={handleCancel}>
         <Modal.Header closeButton>
-          <Modal.Title>Confirm Retraction Status</Modal.Title>
+          <Modal.Title>Confirm Change of Retracted Status</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {isChangingStatus ? (
@@ -1412,6 +1423,18 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
           <Button variant="danger" onClick={handleConfirm}>Confirm</Button>
+        </Modal.Footer>
+      </Modal>
+      <Modal show={showPubmedWarningModal} onHide={() => setShowPubmedWarningModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Cannot Remove Retracted Status</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>This reference is marked as a "Retracted Publication" in PubMed.</p>
+          <p>The retracted status cannot be removed for references that PubMed has identified as retracted publications. This designation is set by PubMed and reflects the official retraction status of the publication.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => setShowPubmedWarningModal(false)}>OK</Button>
         </Modal.Footer>
       </Modal>
       <Form.Group as={Row} key={fieldName}>
