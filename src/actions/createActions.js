@@ -45,60 +45,41 @@ export const createQueryPubmed = (pmid) => dispatch => {
   dispatch(setCreatePmidSearchLoading());
   pmid = pmid.replace(/[^\d.]/g, '');
   console.log("action createQueryPubmed " + pmid);
-  const createQueryPmid = async () => {
-    const urlApi = '/cross_reference/PMID:' + pmid;
+  const queryExternalLookup = async () => {
+    const urlApi = '/reference/external_lookup/PMID:' + pmid;
     console.log(urlApi);
     try {
       const res = await api.get(urlApi);
       const response = res.data;
-      let response_payload = 'not found';
-      if (response.reference_curie !== undefined) {
-        console.log('response not undefined');
-        response_payload = response.reference_curie;
+      if (response.exists_in_db && response.reference_curie) {
+        // Already in our DB — redirect to editor
         dispatch({
           type: 'CREATE_QUERY_PMID_XREF',
-          payload: response_payload
-        })
+          payload: response.reference_curie
+        });
+      } else if (response.external_curie_found) {
+        // Found in PubMed but not in our DB — show title, allow creation
+        dispatch({
+          type: 'CREATE_QUERY_PMID_PUBMED',
+          payload: response.title
+        });
       } else {
-        await fetchFromPubmed(pmid, dispatch);
+        // Not found anywhere
+        dispatch({
+          type: 'CREATE_QUERY_PMID_PUBMED',
+          payload: ''
+        });
       }
     } catch (error) {
-      // If cross_reference lookup fails, try PubMed directly
-      await fetchFromPubmed(pmid, dispatch);
+      console.error('external_lookup error:', error);
+      dispatch({
+        type: 'CREATE_QUERY_PMID_PUBMED',
+        payload: ''
+      });
     }
-  }
-  createQueryPmid();
+  };
+  queryExternalLookup();
 };
-
-const fetchFromPubmed = async (pmid, dispatch) => {
-  const url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=' + pmid;
-  console.log(url);
-  const res = await fetch(url, {
-    method: 'GET',
-    mode: 'cors',
-    headers: {
-      'content-type': 'text/plain'
-    }
-  })
-  const response_text = await res.text();
-  // console.log(response_text);
-  let title = '';
-  if ( response_text.match(/<ArticleTitle[^>]*?>(.+?)<\/ArticleTitle>/) ) {
-    const matches = response_text.match(/<ArticleTitle[^>]*?>(.+?)<\/ArticleTitle>/);
-    title = matches[1]; }
-  else if ( response_text.match(/<BookTitle[^>]*?>(.+?)<\/BookTitle>/) ) {
-    const matches = response_text.match(/<BookTitle[^>]*?>(.+?)<\/BookTitle>/);
-    title = matches[1]; }
-  else if ( response_text.match(/<VernacularTitle[^>]*?>(.+?)<\/VernacularTitle>/) ) {
-    const matches = response_text.match(/<VernacularTitle[^>]*?>(.+?)<\/VernacularTitle>/);
-    title = matches[1]; }
-  console.log(title);
-  // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-  dispatch({
-    type: 'CREATE_QUERY_PMID_PUBMED',
-    payload: title
-  })
-}
 
 export const setCreatePmidSearchLoading = () => ({
   type: 'CREATE_SET_PMID_SEARCH_LOADING'

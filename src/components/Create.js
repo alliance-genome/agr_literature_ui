@@ -48,6 +48,7 @@ const CreatePubmed = () => {
   const modIdent = useSelector(state => state.create.modIdent);
   const modPrefix = useSelector(state => state.create.modPrefix);
   const allianceOnly = useSelector(state => state.create.allianceOnly);
+  const pmidQuerySuccess = useSelector(state => state.create.pmidQuerySuccess);
   // const accessLevel = useGetAccessLevel();
   const generalClassName = 'Col-general';
 
@@ -96,10 +97,10 @@ const CreatePubmed = () => {
     <Form.Group as={Row} key="PmidTitle" >
       <Form.Label column sm="2" className={`${generalClassName}`} >PubMed Title</Form.Label>
       <Col sm="10" className={`${generalClassName}`}>
-        <Form.Control as="input" name="pmidTitle" id="pmidTitle" type="input" value={pmidTitle} disabled="disabled" className={`form-control`} placeholder="no PubMed reference found for that id" />
+        <Form.Control as="input" name="pmidTitle" id="pmidTitle" type="input" value={pmidTitle} disabled="disabled" className={`form-control`} />
       </Col>
     </Form.Group>
-    { pmidTitle && (
+    { pmidQuerySuccess && (
       <>
         <Form.Group as={Row} key="allianceOnlyPubmed" >
           <Col sm="12">
