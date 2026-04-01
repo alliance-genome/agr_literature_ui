@@ -59,16 +59,18 @@ const RetractionBanner = () => {
       setDisplayName('');
       return;
     }
+    let ignore = false;
     const fetchName = async () => {
       try {
         const result = await api.get(`/ontology/map_curie_to_name/atpterm/${retractionStatus}`);
-        setDisplayName(result.data);
+        if (!ignore) setDisplayName(result.data);
       } catch (error) {
         console.error('Error fetching retraction status name:', error);
-        setDisplayName(retractionStatus);
+        if (!ignore) setDisplayName(retractionStatus);
       }
     };
     fetchName();
+    return () => { ignore = true; };
   }, [retractionStatus]);
 
   if (!retractionStatus || !displayName) {
@@ -76,10 +78,7 @@ const RetractionBanner = () => {
   }
 
   const lowerDisplayName = displayName.toLowerCase();
-  const isPartialRetraction = lowerDisplayName.includes('partial');
-  const isFullRetraction = lowerDisplayName.includes('fully') || lowerDisplayName === 'retracted';
-
-  let message = `This reference has been ${lowerDisplayName}.`;
+  const message = `This reference has been ${lowerDisplayName}.`;
 
   return (
     <Alert variant="danger" style={{ textAlign: 'center', fontSize: '1.2em', fontWeight: 'bold', margin: '10px 0' }}>
