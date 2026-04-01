@@ -79,14 +79,7 @@ const RetractionBanner = () => {
   const isPartialRetraction = lowerDisplayName.includes('partial');
   const isFullRetraction = lowerDisplayName.includes('fully') || lowerDisplayName === 'retracted';
 
-  let message;
-  if (isPartialRetraction) {
-    message = `This reference has been ${lowerDisplayName}: data will be removed after curatorial review.`;
-  } else if (isFullRetraction) {
-    message = `This reference has been ${lowerDisplayName}: data added manually will be removed after curatorial review.`;
-  } else {
-    message = `This reference has been ${lowerDisplayName}.`;
-  }
+  let message = `This reference has been ${lowerDisplayName}.`;
 
   return (
     <Alert variant="danger" style={{ textAlign: 'center', fontSize: '1.2em', fontWeight: 'bold', margin: '10px 0' }}>
