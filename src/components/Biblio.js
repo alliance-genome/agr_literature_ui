@@ -48,6 +48,54 @@ import { api } from "../api";
 // https://stage-literature.alliancegenome.org/Biblio/?action=topic&referenceCurie=AGRKB:101000000163587
 
 
+const RetractionBanner = () => {
+  const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  const [displayName, setDisplayName] = useState('');
+
+  const retractionStatus = referenceJsonLive?.retraction_status || '';
+
+  useEffect(() => {
+    if (!retractionStatus) {
+      setDisplayName('');
+      return;
+    }
+    const fetchName = async () => {
+      try {
+        const result = await api.get(`/ontology/map_curie_to_name/atpterm/${retractionStatus}`);
+        setDisplayName(result.data);
+      } catch (error) {
+        console.error('Error fetching retraction status name:', error);
+        setDisplayName(retractionStatus);
+      }
+    };
+    fetchName();
+  }, [retractionStatus]);
+
+  if (!retractionStatus || !displayName) {
+    return null;
+  }
+
+  const lowerDisplayName = displayName.toLowerCase();
+  const isPartialRetraction = lowerDisplayName.includes('partial');
+  const isFullRetraction = lowerDisplayName.includes('fully') || lowerDisplayName === 'retracted';
+
+  let message;
+  if (isPartialRetraction) {
+    message = `This reference has been ${lowerDisplayName}: data will be removed after curatorial review.`;
+  } else if (isFullRetraction) {
+    message = `This reference has been ${lowerDisplayName}: data added manually will be removed after curatorial review.`;
+  } else {
+    message = `This reference has been ${lowerDisplayName}.`;
+  }
+
+  return (
+    <Alert variant="danger" style={{ textAlign: 'center', fontSize: '1.2em', fontWeight: 'bold', margin: '10px 0' }}>
+      {message}
+    </Alert>
+  );
+};
+
+
 // constants available in BiblioEditor
 // import {
 //   fieldsSimple, fieldsArrayString, fieldsOrdered, fieldsPubmed, fieldsDisplayOnly, fieldsDatePublished,
@@ -219,19 +267,19 @@ const BiblioActionRouter = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
   switch (biblioAction) {
     case 'display':
-      return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
+      return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);
     case 'editor':
-      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }</>);
+      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }</>);
     case 'entity':
-      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
+      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     case 'workflow':
-      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
+      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     case 'filemanagement':
-      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioFileManagement /> }</>);
+      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioFileManagement /> }</>);
     case 'rawtopicentity':
-      return (<><Container><BiblioActionToggler /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioRawTetData /> }</>);
+      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioRawTetData /> }</>);
     default:
-      return (<Container><BiblioActionToggler /><RowDivider /><BiblioDisplay /></Container>);
+      return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);
   }
 }
 
