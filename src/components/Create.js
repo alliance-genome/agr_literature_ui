@@ -242,7 +242,8 @@ const CreateResource = () => {
           onChange={(e) => dispatch(changeResourceCurieValue(e))} />
       </Col>
       <Col sm="4" className={`${generalClassName}`}>
-        <Button id={`button query resource`} variant="outline-secondary"
+        <Button id="button-query-resource" variant="outline-secondary"
+          disabled={resourceLoading === 'query'}
           onClick={() => dispatch(createQueryResource(resourceCuriePrefix, resourceCurieValue))} >
           {resourceLoading === 'query' ? <Spinner animation="border" size="sm"/> : <span>Query Curie</span> }
         </Button>
@@ -269,7 +270,8 @@ const CreateResource = () => {
       </Form.Group>
     ) }
     { resourceQuerySuccess && (
-      <Button id={`button create resource`} variant="outline-secondary"
+      <Button id="button-create-resource" variant="outline-secondary"
+        disabled={resourceLoading === 'create'}
         onClick={() => dispatch(createResource(resourceCuriePrefix, resourceCurieValue))} >
         {resourceLoading === 'create' ? <Spinner animation="border" size="sm"/> : <span>Create Resource</span> }
       </Button>

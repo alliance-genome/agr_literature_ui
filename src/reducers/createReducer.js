@@ -208,12 +208,14 @@ export default function(state = initialState, action) {
         ...state,
         resourceLoading: '',
         resourceQuerySuccess: false,
-        resourceCreatedMessage: action.payload
+        resourceCreatedMessage: action.payload,
+        resourceError: ''
       }
     case 'CREATE_RESOURCE_CREATE_ERROR':
       return {
         ...state,
         resourceLoading: '',
+        resourceCreatedMessage: '',
         resourceError: action.payload
       }
     default:
