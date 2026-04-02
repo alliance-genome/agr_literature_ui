@@ -16,6 +16,9 @@ import { resetCreateRedirect } from '../actions/createActions';
 import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
 import { createQueryPubmed } from '../actions/createActions';
+import { changeResourceCurieValue } from '../actions/createActions';
+import { createQueryResource } from '../actions/createActions';
+import { createResource } from '../actions/createActions';
 import { setCreateModalText } from '../actions/createActions';
 
 import ModalGeneric from './biblio/ModalGeneric';
@@ -28,6 +31,7 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
+import Alert from 'react-bootstrap/Alert'
 
 
 function useGetAccessLevel() {
@@ -209,6 +213,79 @@ const ModCurieInput = () => {
 } // const ModCurieInput
 
 
+const CreateResource = () => {
+  const dispatch = useDispatch();
+  const resourceCuriePrefix = useSelector(state => state.create.resourceCuriePrefix);
+  const resourceCurieValue = useSelector(state => state.create.resourceCurieValue);
+  const resourceTitle = useSelector(state => state.create.resourceTitle);
+  const resourceLoading = useSelector(state => state.create.resourceLoading);
+  const resourceQuerySuccess = useSelector(state => state.create.resourceQuerySuccess);
+  const resourceExistsCuries = useSelector(state => state.create.resourceExistsCuries);
+  const resourceCreatedMessage = useSelector(state => state.create.resourceCreatedMessage);
+  const resourceError = useSelector(state => state.create.resourceError);
+  const generalClassName = 'Col-general';
+
+  return (
+    <Container>
+    <Form.Group as={Row} key="ResourceCurie" >
+      <Form.Label column sm="2" className={`${generalClassName}`} >
+        <Form.Control as="select" value={resourceCuriePrefix}
+          onChange={(e) => dispatch(changeCreateField({target: {id: 'resourceCuriePrefix', value: e.target.value }}))} >
+          <option value="NLM">NLM</option>
+          <option value="ISSN">ISSN</option>
+        </Form.Control>
+      </Form.Label>
+      <Col sm="6" className={`${generalClassName}`}>
+        <Form.Control as="input" name="resourceCurieValue" id="resourceCurieValue" type="input"
+          value={resourceCurieValue} className={`form-control`}
+          placeholder="Pick a curie prefix and enter rest of curie"
+          onChange={(e) => dispatch(changeResourceCurieValue(e))} />
+      </Col>
+      <Col sm="4" className={`${generalClassName}`}>
+        <Button id="button-query-resource" variant="outline-secondary"
+          disabled={resourceLoading === 'query'}
+          onClick={() => dispatch(createQueryResource(resourceCuriePrefix, resourceCurieValue))} >
+          {resourceLoading === 'query' ? <Spinner animation="border" size="sm"/> : <span>Query Curie</span> }
+        </Button>
+      </Col>
+    </Form.Group>
+    <Form.Group as={Row} key="ResourceTitle" >
+      <Form.Label column sm="2" className={`${generalClassName}`} >Resource Title</Form.Label>
+      <Col sm="10" className={`${generalClassName}`}>
+        <Form.Control as="input" name="resourceTitle" id="resourceTitle" type="input"
+          value={resourceTitle} disabled="disabled" className={`form-control`} />
+      </Col>
+    </Form.Group>
+    { resourceExistsCuries && resourceExistsCuries.length > 0 && (
+      <Form.Group as={Row} key="ResourceExists" >
+        <Form.Label column sm="2" className={`${generalClassName}`} >Existing Resources</Form.Label>
+        <Col sm="10" className={`${generalClassName}`}>
+          {resourceExistsCuries.map((curie, index) => (
+            <span key={`resource-curie-${index}`}>
+              {index > 0 && ', '}
+              {curie}
+            </span>
+          ))}
+        </Col>
+      </Form.Group>
+    ) }
+    { resourceQuerySuccess && (
+      <Button id="button-create-resource" variant="outline-secondary"
+        disabled={resourceLoading === 'create'}
+        onClick={() => dispatch(createResource(resourceCuriePrefix, resourceCurieValue))} >
+        {resourceLoading === 'create' ? <Spinner animation="border" size="sm"/> : <span>Create Resource</span> }
+      </Button>
+    ) }
+    { resourceCreatedMessage && (
+      <Alert variant="success" className="mt-2">{resourceCreatedMessage}</Alert>
+    ) }
+    { resourceError && (
+      <Alert variant="danger" className="mt-2">{resourceError}</Alert>
+    ) }
+    </Container>);
+} // const CreateResource
+
+
 const CreateActionToggler = () => {
   const dispatch = useDispatch();
   const createAction = useSelector(state => state.create.createAction);
@@ -327,6 +404,10 @@ const Create = () => {
           <div key={`message ${index}`}><span style={{color:'red'}}>{message}</span></div> ))
       }
       <CreateActionRouter />
+      <hr style={{marginTop: '2em', marginBottom: '2em'}} />
+      <h4>Create a new Resource</h4>
+      <p>Create a new resource from NLM or ISSN curie</p>
+      <CreateResource />
     </div>
   )
 }

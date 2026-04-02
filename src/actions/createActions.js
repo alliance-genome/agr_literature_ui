@@ -221,6 +221,84 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) =>
   checkModCurieThenCreate();
 };
 
+export const changeResourceCurieValue = (e) => {
+  return {
+    type: 'CREATE_CHANGE_RESOURCE_CURIE_VALUE',
+    payload: {
+      value: e.target.value
+    }
+  };
+};
+
+function stripCuriePrefix(prefix, value) {
+  let stripped = value.trim();
+  if (prefix === 'NLM') {
+    stripped = stripped.replace(/^NLMID:?/i, '');
+    stripped = stripped.replace(/^NLM:?/i, '');
+  } else if (prefix === 'ISSN') {
+    stripped = stripped.replace(/^ISSN:?/i, '');
+  }
+  return stripped;
+}
+
+export const createQueryResource = (prefix, value) => dispatch => {
+  dispatch({ type: 'CREATE_SET_RESOURCE_LOADING', payload: 'query' });
+  const strippedValue = stripCuriePrefix(prefix, value);
+  const curie = prefix + ':' + strippedValue;
+  console.log("action createQueryResource " + curie);
+  const queryResourceLookup = async () => {
+    const urlApi = '/resource/external_lookup/' + curie;
+    console.log(urlApi);
+    try {
+      const res = await api.get(urlApi);
+      const response = res.data;
+      dispatch({
+        type: 'CREATE_QUERY_RESOURCE_RESULT',
+        payload: { ...response, curie: curie }
+      });
+    } catch (error) {
+      console.error('resource external_lookup error:', error);
+      dispatch({
+        type: 'CREATE_QUERY_RESOURCE_RESULT',
+        payload: { exists_in_db: false, external_curie_found: false, curie: curie }
+      });
+    }
+  };
+  queryResourceLookup();
+};
+
+export const createResource = (prefix, value) => dispatch => {
+  dispatch({ type: 'CREATE_SET_RESOURCE_LOADING', payload: 'create' });
+  const strippedValue = stripCuriePrefix(prefix, value);
+  const curie = prefix + ':' + strippedValue;
+  console.log("action createResource " + curie);
+  const postResource = async () => {
+    try {
+      const res = await api.post('/resource/add/', { curie: curie });
+      if (res.status === 201) {
+        const newResourceId = typeof res.data === 'string' ? res.data.replace(/^"|"$/g, '') : String(res.data);
+        dispatch({
+          type: 'CREATE_RESOURCE_CREATED',
+          payload: 'Resource created successfully: ' + newResourceId
+        });
+      } else {
+        dispatch({
+          type: 'CREATE_RESOURCE_CREATE_ERROR',
+          payload: 'error: resource/add/ : API status code ' + res.status
+        });
+      }
+    } catch (error) {
+      console.error('resource add error:', error);
+      const errorMsg = error.response?.data?.detail || 'error: resource/add/ : ' + error.message;
+      dispatch({
+        type: 'CREATE_RESOURCE_CREATE_ERROR',
+        payload: errorMsg
+      });
+    }
+  };
+  postResource();
+};
+
 export const setCreateModalText = (payload) => {
   return {
     type: 'SET_CREATE_MODAL_TEXT',

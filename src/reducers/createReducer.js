@@ -26,6 +26,14 @@ const initialState = {
   pmidTitle: 'Enter a PMID',
   pmidQuerySuccess: false,
   pmidXml: '',
+  resourceCuriePrefix: 'NLM',
+  resourceCurieValue: '',
+  resourceTitle: 'Pick a curie prefix and enter rest of curie',
+  resourceQuerySuccess: false,
+  resourceExistsCuries: null,
+  resourceLoading: '',
+  resourceCreatedMessage: '',
+  resourceError: '',
   updateAlert: 0,
   updateFailure: 0,
   updateMessages: []
@@ -167,6 +175,48 @@ export default function(state = initialState, action) {
 //         getReferenceCurieFlag: getReferenceCurieFlagUpdateButton,
 //         referenceJsonHasChange: hasChangeUpdateButton,
 //         biblioUpdating: state.biblioUpdating - 1
+      }
+    case 'CREATE_CHANGE_RESOURCE_CURIE_VALUE':
+      return {
+        ...state,
+        resourceCurieValue: action.payload.value,
+        resourceQuerySuccess: false,
+        resourceExistsCuries: null,
+        resourceCreatedMessage: '',
+        resourceError: ''
+      }
+    case 'CREATE_SET_RESOURCE_LOADING':
+      return {
+        ...state,
+        resourceLoading: action.payload
+      }
+    case 'CREATE_QUERY_RESOURCE_RESULT':
+      const { exists_in_db, resource_curies, external_curie_found, title, curie } = action.payload;
+      if (exists_in_db) {
+        return { ...state, resourceLoading: '', resourceExistsCuries: resource_curies,
+                 resourceQuerySuccess: false, resourceTitle: 'Already exists in database' };
+      } else if (external_curie_found) {
+        return { ...state, resourceLoading: '', resourceTitle: title,
+                 resourceQuerySuccess: true, resourceExistsCuries: null };
+      } else {
+        return { ...state, resourceLoading: '',
+                 resourceTitle: curie + ' not found in database or external APIs',
+                 resourceQuerySuccess: false, resourceExistsCuries: null };
+      }
+    case 'CREATE_RESOURCE_CREATED':
+      return {
+        ...state,
+        resourceLoading: '',
+        resourceQuerySuccess: false,
+        resourceCreatedMessage: action.payload,
+        resourceError: ''
+      }
+    case 'CREATE_RESOURCE_CREATE_ERROR':
+      return {
+        ...state,
+        resourceLoading: '',
+        resourceCreatedMessage: '',
+        resourceError: action.payload
       }
     default:
       return state;
