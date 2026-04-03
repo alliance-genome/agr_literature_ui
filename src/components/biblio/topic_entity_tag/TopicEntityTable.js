@@ -359,7 +359,9 @@ const TopicEntityTable = () => {
   }, [dispatch, referenceCurie]);
 
   useEffect(() => {
-    fetchTableData();
+    if (biblioUpdatingEntityAdd === 0) {
+      fetchTableData();
+    }
   }, [fetchTableData, biblioUpdatingEntityAdd]);
 
   const handleCurieClick = (curie) => {
