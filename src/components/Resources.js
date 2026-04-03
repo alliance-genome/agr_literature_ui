@@ -71,20 +71,14 @@ const Resources = () => {
     { headerName: 'Curie', field: 'curie' },
     { headerName: 'Title', field: 'title' },
     { headerName: 'Title Synonyms', field: 'title_synonyms', valueFormatter: arrayFormatter },
-    { headerName: 'Abbreviation Synonyms', field: 'abbreviation_synonyms', valueFormatter: arrayFormatter },
-    { headerName: 'Iso Abbreviation', field: 'iso_abbreviation' },
-    { headerName: 'Medline Abbreviation', field: 'medline_abbreviation' },
+    { headerName: 'Title Abbreviation', field: 'title_abbreviation' },
+    { headerName: 'Title Abbreviation Synonyms', field: 'title_abbreviation_synonyms', valueFormatter: arrayFormatter },
     { headerName: 'Copyright Date', field: 'copyright_date' },
     { headerName: 'Publisher', field: 'publisher' },
-    { headerName: 'Print Issn', field: 'print_issn' },
-    { headerName: 'Online Issn', field: 'online_issn' },
     { headerName: 'Pages', field: 'pages' },
     { headerName: 'Volumes', field: 'volumes', valueFormatter: arrayFormatter },
-    { headerName: 'Abstract', field: 'abstract' },
-    { headerName: 'Summary', field: 'summary' },
     { headerName: 'Cross References', field: 'cross_references', cellRenderer: CrossReferencesCellRenderer },
     { headerName: 'Editors', field: 'editors', valueFormatter: editorsFormatter },
-    { headerName: 'Open Access', field: 'open_access' },
     { headerName: 'Copyright License Id', field: 'copyright_license_id' },
     { headerName: 'Copyright License', field: 'copyright_license' },
     { headerName: 'License List', field: 'license_list', valueFormatter: arrayFormatter },
@@ -108,11 +102,7 @@ const Resources = () => {
       try {
         const result = await api.get('/resource/show_all');
         const data = Array.isArray(result.data) ? result.data : [];
-        const processed = data.map(row => ({
-          ...row,
-          open_access: row.open_access === true ? 'true' : row.open_access === false ? 'false' : '',
-        }));
-        setRowData(processed);
+        setRowData(data);
       } catch (error) {
         console.error('Error fetching resources:', error);
         setFetchError('Failed to load resources. Please try again later.');
