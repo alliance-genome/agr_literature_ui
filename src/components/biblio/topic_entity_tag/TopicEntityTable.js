@@ -40,12 +40,21 @@ import BiblioPreferenceControls from '../../settings/BiblioPreferenceControls';
    Download helpers (exported)
 -------------------------------------------------- */
 export const handleDownload = (option, gridRef, colDefs, rowData, fileNameFront) => {
+  const api = gridRef.current?.api;
+  if (!api) {
+    console.error('Grid API not available for download');
+    return;
+  }
+
   let dataToDownload = [];
   let headers = [];
   let fields = [];
 
+  const columnState = api.getColumnState();
+  const hiddenColumns = new Set(columnState.filter((cs) => cs.hide).map((cs) => cs.colId));
+
   (colDefs || [])
-    .filter((col) => option === 'allColumns' || !col.hide)
+    .filter((col) => option === 'allColumns' || !hiddenColumns.has(col.field))
     .forEach((col) => {
       headers.push(col.headerName);
       fields.push(col.field);
@@ -55,12 +64,6 @@ export const handleDownload = (option, gridRef, colDefs, rowData, fileNameFront)
   if (entityIndex !== -1) {
     headers.splice(entityIndex + 1, 0, 'Entity CURIE');
     fields.splice(entityIndex + 1, 0, 'entity');
-  }
-
-  const api = gridRef.current?.api;
-  if (!api) {
-    console.error('Grid API not available for download');
-    return;
   }
 
   if (option === 'allColumns' || option === 'multiHeader') {
@@ -79,9 +82,21 @@ export const handleDownload = (option, gridRef, colDefs, rowData, fileNameFront)
   const getNestedValue = (obj, field) =>
     field.split('.').reduce((acc, key) => (acc && acc[key] != null ? acc[key] : ''), obj);
 
+  const colDefByField = new Map((colDefs || []).map((col) => [col.field, col]));
+
   const tsvHeaders = headers.join('\t');
   const tsvRows = dataToDownload.map((row) =>
-    fields.map((field) => `"${getNestedValue(row, field) || ''}"`).join('\t')
+    fields.map((field) => {
+      const colDef = colDefByField.get(field);
+      const rawValue = getNestedValue(row, field);
+      let value = rawValue;
+      if (colDef?.valueGetter) {
+        value = colDef.valueGetter({ data: row });
+      } else if (colDef?.valueFormatter) {
+        value = colDef.valueFormatter({ value: rawValue });
+      }
+      return `"${value ?? ''}"`;
+    }).join('\t')
   );
 
   const tsvContent =
