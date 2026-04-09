@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 
 import { signIn, signOut } from "../actions/loginActions";
 import { showReauthModal } from "../actions/authActions";
@@ -128,6 +128,24 @@ const Login = () => {
         }
     };
 
+    const [buildDate, setBuildDate] = useState(null);
+    useEffect(() => {
+        fetch('/version.json')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data?.buildId) {
+                    const date = new Date(Number(data.buildId));
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const hh = String(date.getHours()).padStart(2, '0');
+                    const min = String(date.getMinutes()).padStart(2, '0');
+                    setBuildDate(`${yyyy}-${mm}-${dd} ${hh}:${min}`);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const dropdownRef = useRef(null);
 
     // Auto-scroll to dropdown when opened on mobile
@@ -169,6 +187,11 @@ const Login = () => {
                 {cognitoGroups !== null && cognitoGroups.map((optionValue) => (
                     <NavDropdown.Item key={optionValue}>{optionValue}</NavDropdown.Item>
                 ))}
+                {buildDate && (
+                    <NavDropdown.Item style={{ fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+                        Built: {buildDate}
+                    </NavDropdown.Item>
+                )}
                 <NavDropdown.Item
                     style={{ whiteSpace: 'normal', color: 'blue', textDecoration: 'underline' }}
                     onClick={() => { navigator.clipboard.writeText(accessToken); }}
