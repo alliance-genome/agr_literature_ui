@@ -184,14 +184,17 @@ const Login = () => {
                 <NavDropdown.Item>
                     <Button as="input" type="button" variant="primary" value="Sign Out" size="sm" onClick={onSignOutClick} />
                 </NavDropdown.Item>
+                <NavDropdown.Divider />
                 {cognitoGroups !== null && cognitoGroups.map((optionValue) => (
                     <NavDropdown.Item key={optionValue}>{optionValue}</NavDropdown.Item>
                 ))}
+                <NavDropdown.Divider />
                 {buildDate && (
                     <NavDropdown.Item style={{ fontSize: '0.85em', whiteSpace: 'nowrap' }}>
                         Built: {buildDate}
                     </NavDropdown.Item>
                 )}
+                <NavDropdown.Divider />
                 <NavDropdown.Item
                     style={{ whiteSpace: 'normal', color: 'blue', textDecoration: 'underline' }}
                     onClick={() => { navigator.clipboard.writeText(accessToken); }}
