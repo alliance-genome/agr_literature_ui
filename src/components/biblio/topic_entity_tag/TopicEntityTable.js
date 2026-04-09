@@ -54,6 +54,7 @@ export const handleDownload = (option, gridRef, colDefs, rowData, fileNameFront)
   const hiddenColumns = new Set(columnState.filter((cs) => cs.hide).map((cs) => cs.colId));
 
   (colDefs || [])
+    .filter((col) => col.field !== 'Actions')
     .filter((col) => option === 'allColumns' || !hiddenColumns.has(col.field))
     .forEach((col) => {
       headers.push(col.headerName);
