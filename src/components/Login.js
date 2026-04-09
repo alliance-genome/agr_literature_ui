@@ -189,12 +189,18 @@ const Login = () => {
                     <NavDropdown.Item key={optionValue}>{optionValue}</NavDropdown.Item>
                 ))}
                 <NavDropdown.Divider />
-                {buildDate && (
-                    <NavDropdown.Item style={{ fontSize: '0.85em', whiteSpace: 'nowrap' }}>
-                        Built: {buildDate}
+                {buildDate && (<>
+                    <NavDropdown.Item style={{ whiteSpace: 'nowrap' }}>
+                        Build date: <span
+                            style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(buildDate); }}
+                        >copy date</span>
                     </NavDropdown.Item>
-                )}
-                <NavDropdown.Divider />
+                    <NavDropdown.Item style={{ whiteSpace: 'nowrap' }}>
+                        {buildDate}
+                    </NavDropdown.Item>
+                    <NavDropdown.Divider />
+                </>)}
                 <NavDropdown.Item
                     style={{ whiteSpace: 'normal', color: 'blue', textDecoration: 'underline' }}
                     onClick={() => { navigator.clipboard.writeText(accessToken); }}
