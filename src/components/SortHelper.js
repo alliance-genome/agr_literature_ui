@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
 import { Button, Modal, InputGroup, Form, Alert, Spinner } from 'react-bootstrap';
-import axios from 'axios';
 import { api } from '../api';
 import PropTypes from 'prop-types';
 
@@ -9,7 +7,6 @@ import PropTypes from 'prop-types';
  * NewTaxonModal Component
  */
 export const NewTaxonModal = () => {
-  const accessToken = useSelector(state => state.isLogged.accessToken);
   const [show, setShow] = useState(false);
   const [taxonId, setTaxonId] = useState('');
   const [ateamResponse, setAteamResponse] = useState('');
@@ -19,17 +16,10 @@ export const NewTaxonModal = () => {
   const defaultBodyText = "Import NCBI Taxon into A-team system for autocomplete here.\nOnly put in the digits part of the NCBI Taxon ID.\n\n";
 
   const importTaxon = (taxonId) => {
-    axios.get(`${process.env.REACT_APP_ATEAM_API_BASE_URL}api/ncbitaxonterm/NCBITaxon:${taxonId}`, {
-      headers: {
-        'content-type': 'application/json',
-        'authorization': `Bearer ${accessToken}`
-      }
-    })
+    api.get(`/ontology/get_or_create_species/${encodeURIComponent(taxonId)}`)
     .then(res => {
-      let success = false;
-      if (res.data.entity && res.data.entity.curie) { success = true; }
-      if (success) {
-        setAteamResponse(`${res.data.entity.curie} created in A-team system`);
+      if (res.data && res.data.curie) {
+        setAteamResponse(`${res.data.curie} created in A-team system`);
         setAteamSuccess(true);
       } else {
         setAteamResponse('Unknown failure to create in A-team system');
