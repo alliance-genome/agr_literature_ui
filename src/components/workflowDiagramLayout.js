@@ -21,16 +21,18 @@ function hashString(str) {
   return Math.abs(hash);
 }
 
-function getGroupColor(processId) {
-  return GROUP_COLORS[hashString(processId) % GROUP_COLORS.length];
+function getGroupColor(id) {
+  return GROUP_COLORS[hashString(id) % GROUP_COLORS.length];
 }
 
-// ─── Data transformation: API response → graph structures ────────────────────
+// ─── Data transformation ─────────────────────────────────────────────────────
 
 function buildGraph(tagData) {
   const nodeMap = new Map();
   const edges = [];
-  const processGroups = new Map();
+  // 3-level hierarchy: process -> subprocess -> nodes
+  const processGroups = new Map();   // processId -> { processName, subprocesses: Map }
+  const nodeToProcess = new Map();
 
   for (const node of tagData) {
     nodeMap.set(node.tag, {
@@ -38,19 +40,40 @@ function buildGraph(tagData) {
       name: node.tag_name,
       processId: node.workflow_process,
       processName: node.workflow_process_name,
+      subprocessId: node.workflow_subprocess || null,
+      subprocessName: node.workflow_subprocess_name || null,
       transitions: node.transitions || [],
     });
 
     const pid = node.workflow_process || '__unassigned__';
     const pname = node.workflow_process_name || 'Unassigned';
+    nodeToProcess.set(node.tag, pid);
+
     if (!processGroups.has(pid)) {
       processGroups.set(pid, {
         processId: pid,
         processName: pname,
-        nodeIds: [],
+        subprocesses: new Map(),
+        directNodeIds: [],  // nodes without a subprocess
       });
     }
-    processGroups.get(pid).nodeIds.push(node.tag);
+    const pg = processGroups.get(pid);
+
+    const spid = node.workflow_subprocess || null;
+    if (spid && spid !== pid) {
+      const spname = node.workflow_subprocess_name || spid;
+      if (!pg.subprocesses.has(spid)) {
+        pg.subprocesses.set(spid, {
+          subprocessId: spid,
+          subprocessName: spname,
+          nodeIds: [],
+        });
+      }
+      const spNodeIds = pg.subprocesses.get(spid).nodeIds;
+      if (!spNodeIds.includes(node.tag)) spNodeIds.push(node.tag);
+    } else {
+      if (!pg.directNodeIds.includes(node.tag)) pg.directNodeIds.push(node.tag);
+    }
 
     for (const t of node.transitions || []) {
       edges.push({
@@ -68,14 +91,17 @@ function buildGraph(tagData) {
     }
   }
 
-  return { nodeMap, edges, processGroups };
+  // Remove direct nodes that are also subprocess IDs (they're represented by the subprocess group)
+  for (const pg of processGroups.values()) {
+    const spIds = new Set(pg.subprocesses.keys());
+    pg.directNodeIds = pg.directNodeIds.filter(nid => !spIds.has(nid));
+  }
+
+  return { nodeMap, edges, processGroups, nodeToProcess };
 }
 
-// ─── Graph helpers for progressive expansion ─────────────────────────────────
+// ─── Topological layering ────────────────────────────────────────────────────
 
-/**
- * Build parent/children maps for a set of nodes and edges.
- */
 function buildAdjacency(nodeIds, edges) {
   const children = new Map();
   const parents = new Map();
@@ -93,77 +119,6 @@ function buildAdjacency(nodeIds, edges) {
   return { children, parents };
 }
 
-/**
- * Given a group's nodes, edges, and the set of expanded node IDs,
- * determine which nodes are visible and which are expandable.
- *
- * Visible nodes: roots (no parents) are always visible.
- * For any node in expandedNodes, its direct children become visible.
- *
- * Returns { visibleIds: string[], hiddenChildCount: Map<nodeId, number> }
- */
-function computeVisibleNodes(groupNodeIds, internalEdges, expandedNodes) {
-  const { children, parents } = buildAdjacency(groupNodeIds, internalEdges);
-
-  // Roots: nodes with no parents within the group
-  const roots = groupNodeIds.filter(id => parents.get(id).length === 0);
-  if (roots.length === 0 && groupNodeIds.length > 0) {
-    roots.push(groupNodeIds[0]);
-  }
-
-  const visible = new Set(roots);
-
-  // BFS: for each expanded node, make its children visible
-  const queue = [...roots];
-  const visited = new Set(queue);
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (expandedNodes.has(current)) {
-      for (const child of children.get(current) || []) {
-        visible.add(child);
-        if (!visited.has(child)) {
-          visited.add(child);
-          queue.push(child);
-        }
-      }
-    }
-  }
-
-  // Count hidden descendants for each visible node
-  const hiddenChildCount = new Map();
-  for (const id of visible) {
-    const directChildren = (children.get(id) || []);
-    const hiddenCount = directChildren.filter(c => !visible.has(c)).length;
-    if (hiddenCount > 0) {
-      // Count all descendants reachable from hidden children
-      let totalHidden = 0;
-      const countQueue = directChildren.filter(c => !visible.has(c));
-      const counted = new Set(countQueue);
-      while (countQueue.length > 0) {
-        totalHidden++;
-        const n = countQueue.shift();
-        for (const c of children.get(n) || []) {
-          if (!counted.has(c) && !visible.has(c)) {
-            counted.add(c);
-            countQueue.push(c);
-          }
-        }
-      }
-      hiddenChildCount.set(id, totalHidden);
-    }
-  }
-
-  return { visibleIds: [...visible], hiddenChildCount };
-}
-
-// ─── Topological layering ────────────────────────────────────────────────────
-
-/**
- * Longest-path layering via BFS.
- * Each node is assigned layer = max depth from any root.
- * Uses a stack guard (not visited guard) to handle cycles without
- * preventing a node from being assigned to a deeper layer.
- */
 function assignLayers(nodeIds, edges) {
   const { children, parents } = buildAdjacency(nodeIds, edges);
 
@@ -174,12 +129,9 @@ function assignLayers(nodeIds, edges) {
 
   const layers = new Map();
 
-  // BFS approach: process queue, allow depth upgrades, guard cycles per-path
   function dfs(node, depth, stack) {
     const current = layers.get(node);
-    // Only continue if we can assign a deeper layer
     if (current !== undefined && depth <= current) return;
-    // Cycle detection: don't recurse into a node already on this call stack
     if (stack.has(node)) return;
 
     layers.set(node, depth);
@@ -195,9 +147,7 @@ function assignLayers(nodeIds, edges) {
   }
 
   for (const id of nodeIds) {
-    if (!layers.has(id)) {
-      layers.set(id, 0);
-    }
+    if (!layers.has(id)) layers.set(id, 0);
   }
 
   return layers;
@@ -205,30 +155,23 @@ function assignLayers(nodeIds, edges) {
 
 // ─── Group ordering ──────────────────────────────────────────────────────────
 
-function orderGroups(processGroups, edges) {
+function orderGroups(processGroups, edges, nodeToProcess) {
   const groupIds = [...processGroups.keys()];
   if (groupIds.length <= 1) return groupIds;
-
-  const nodeToGroup = new Map();
-  for (const [gid, group] of processGroups) {
-    for (const nid of group.nodeIds) {
-      nodeToGroup.set(nid, gid);
-    }
-  }
 
   const flowScore = new Map();
   for (const gid of groupIds) flowScore.set(gid, 0);
 
   for (const e of edges) {
-    const sg = nodeToGroup.get(e.source);
-    const tg = nodeToGroup.get(e.target);
+    const sg = nodeToProcess.get(e.source);
+    const tg = nodeToProcess.get(e.target);
     if (sg && tg && sg !== tg) {
-      flowScore.set(sg, flowScore.get(sg) - 1);
-      flowScore.set(tg, flowScore.get(tg) + 1);
+      flowScore.set(sg, (flowScore.get(sg) || 0) - 1);
+      flowScore.set(tg, (flowScore.get(tg) || 0) + 1);
     }
   }
 
-  groupIds.sort((a, b) => flowScore.get(a) - flowScore.get(b));
+  groupIds.sort((a, b) => (flowScore.get(a) || 0) - (flowScore.get(b) || 0));
   return groupIds;
 }
 
@@ -238,177 +181,161 @@ const NODE_WIDTH = 180;
 const NODE_HEIGHT = 40;
 const SUMMARY_WIDTH = 220;
 const SUMMARY_HEIGHT = 50;
-const GROUP_PADDING = 30;
+const SUB_SUMMARY_WIDTH = 200;
+const SUB_SUMMARY_HEIGHT = 44;
+const GROUP_PADDING = 20;
 const GROUP_HEADER_HEIGHT = 32;
-const GROUP_GAP = 40;
-const NODE_X_GAP = 30;
-const NODE_Y_GAP = 20;
+const SUB_HEADER_HEIGHT = 28;
+const GROUP_GAP = 30;
+const SUB_GAP = 16;
+const NODE_X_GAP = 24;
+const NODE_Y_GAP = 16;
 
 // ─── computeLayout ──────────────────────────────────────────────────────────
 
 /**
- * @param {Array} tagData - raw API response
+ * @param {Array} tagData
  * @param {Set} collapsedProcesses - process IDs that are fully collapsed
- * @param {Set} expandedNodes - node IDs whose children should be visible
- * @param {number} width - container width
- * @param {number} height - container height
+ * @param {Set} expandedSubprocesses - subprocess IDs whose nodes are visible
+ * @param {number} width
+ * @param {number} height
  */
-export function computeLayout(tagData, collapsedProcesses, expandedNodes, width, height) {
+export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses, width, height) {
   if (!tagData || tagData.length === 0) {
     return { nodes: [], edges: [], groups: [], viewBox: '0 0 800 600' };
   }
 
-  const { nodeMap, edges: allEdges, processGroups } = buildGraph(tagData);
-  const orderedGroupIds = orderGroups(processGroups, allEdges);
-
-  // Build a node-to-process lookup for edge classification
-  const nodeToProcess = new Map();
-  for (const [gid, group] of processGroups) {
-    for (const nid of group.nodeIds) {
-      nodeToProcess.set(nid, gid);
-    }
-  }
+  const { nodeMap, edges: allEdges, processGroups, nodeToProcess } = buildGraph(tagData);
+  const orderedGroupIds = orderGroups(processGroups, allEdges, nodeToProcess);
 
   const layoutNodes = [];
-  const layoutEdges = [];
   const layoutGroups = [];
   const nodeToLayoutId = new Map();
 
   let currentY = GROUP_GAP;
 
   for (const gid of orderedGroupIds) {
-    const group = processGroups.get(gid);
+    const pg = processGroups.get(gid);
     const color = getGroupColor(gid);
 
     if (collapsedProcesses.has(gid)) {
-      // --- Collapsed: single summary node ---
+      // ─── Collapsed process: single summary node ───
       const summaryId = `summary:${gid}`;
       const sx = width / 2 - SUMMARY_WIDTH / 2;
+      const totalNodes = pg.directNodeIds.length +
+        [...pg.subprocesses.values()].reduce((s, sp) => s + sp.nodeIds.length, 0);
 
       layoutNodes.push({
         id: summaryId,
-        name: group.processName || gid,
-        x: sx,
-        y: currentY,
-        width: SUMMARY_WIDTH,
-        height: SUMMARY_HEIGHT,
+        name: pg.processName || gid,
+        x: sx, y: currentY,
+        width: SUMMARY_WIDTH, height: SUMMARY_HEIGHT,
         type: 'summary',
-        processId: gid,
-        processName: group.processName,
-        nodeCount: group.nodeIds.length,
+        processId: gid, processName: pg.processName,
+        nodeCount: totalNodes,
+        subprocessCount: pg.subprocesses.size,
         color,
       });
 
-      for (const nid of group.nodeIds) {
-        nodeToLayoutId.set(nid, summaryId);
+      // Map all nodes in this process to the summary
+      for (const nid of pg.directNodeIds) nodeToLayoutId.set(nid, summaryId);
+      for (const sp of pg.subprocesses.values()) {
+        for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, summaryId);
       }
 
       layoutGroups.push({
-        processId: gid,
-        processName: group.processName,
+        processId: gid, processName: pg.processName,
         collapsed: true,
-        x: sx - 10,
-        y: currentY - 10,
-        width: SUMMARY_WIDTH + 20,
-        height: SUMMARY_HEIGHT + 20,
+        x: sx - 10, y: currentY - 10,
+        width: SUMMARY_WIDTH + 20, height: SUMMARY_HEIGHT + 20,
         color,
       });
 
       currentY += SUMMARY_HEIGHT + GROUP_GAP;
     } else {
-      // --- Expanded: progressive node visibility ---
-      const groupNodeIds = group.nodeIds.filter(id => nodeMap.has(id));
-
-      const internalEdges = allEdges.filter(
-        e => groupNodeIds.includes(e.source) && groupNodeIds.includes(e.target)
-      );
-
-      const { visibleIds, hiddenChildCount } = computeVisibleNodes(
-        groupNodeIds, internalEdges, expandedNodes
-      );
-
-      // Layout only visible nodes
-      const visibleEdges = internalEdges.filter(
-        e => visibleIds.includes(e.source) && visibleIds.includes(e.target)
-      );
-      const layers = assignLayers(visibleIds, visibleEdges);
-
-      const layerBuckets = new Map();
-      for (const [nid, layer] of layers) {
-        if (!layerBuckets.has(layer)) layerBuckets.set(layer, []);
-        layerBuckets.get(layer).push(nid);
-      }
-      const sortedLayers = [...layerBuckets.keys()].sort((a, b) => a - b);
-
+      // ─── Expanded process: show subprocesses ───
       const groupStartY = currentY + GROUP_HEADER_HEIGHT + GROUP_PADDING;
-      let maxRowWidth = 0;
+      let innerY = groupStartY;
+      let maxWidth = 280;
 
-      for (let li = 0; li < sortedLayers.length; li++) {
-        const layerKey = sortedLayers[li];
-        const nodesInLayer = layerBuckets.get(layerKey);
-        const rowWidth = nodesInLayer.length * (NODE_WIDTH + NODE_X_GAP) - NODE_X_GAP;
-        maxRowWidth = Math.max(maxRowWidth, rowWidth);
+      // Direct nodes (no subprocess) — lay them out if any
+      if (pg.directNodeIds.length > 0) {
+        const ids = pg.directNodeIds.filter(id => nodeMap.has(id));
+        const internalEdges = allEdges.filter(
+          e => ids.includes(e.source) && ids.includes(e.target)
+        );
+        const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId);
+        layoutNodes.push(...result.nodes);
+        maxWidth = Math.max(maxWidth, result.width);
+        innerY = result.bottomY + SUB_GAP;
+      }
 
-        const startX = width / 2 - rowWidth / 2;
+      // Subprocesses
+      for (const sp of pg.subprocesses.values()) {
+        const spColor = getGroupColor(sp.subprocessId);
 
-        for (let ni = 0; ni < nodesInLayer.length; ni++) {
-          const nid = nodesInLayer[ni];
-          const nd = nodeMap.get(nid);
-          const nx = startX + ni * (NODE_WIDTH + NODE_X_GAP);
-          const ny = groupStartY + li * (NODE_HEIGHT + NODE_Y_GAP);
-          const hc = hiddenChildCount.get(nid) || 0;
+        if (!expandedSubprocesses.has(sp.subprocessId)) {
+          // Collapsed subprocess: summary node
+          const spSummaryId = `subsummary:${sp.subprocessId}`;
+          const sx = width / 2 - SUB_SUMMARY_WIDTH / 2;
 
           layoutNodes.push({
-            id: nid,
-            name: nd.name,
-            x: nx,
-            y: ny,
-            width: NODE_WIDTH,
-            height: NODE_HEIGHT,
-            type: 'normal',
-            processId: gid,
-            processName: group.processName,
-            color,
-            transitions: nd.transitions,
-            hiddenChildren: hc,
-            isExpanded: expandedNodes.has(nid),
+            id: spSummaryId,
+            name: sp.subprocessName || sp.subprocessId,
+            x: sx, y: innerY,
+            width: SUB_SUMMARY_WIDTH, height: SUB_SUMMARY_HEIGHT,
+            type: 'subsummary',
+            processId: gid, processName: pg.processName,
+            subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
+            nodeCount: sp.nodeIds.length,
+            color: spColor,
           });
 
-          nodeToLayoutId.set(nid, nid);
+          for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, spSummaryId);
+
+          maxWidth = Math.max(maxWidth, SUB_SUMMARY_WIDTH + GROUP_PADDING * 2);
+          innerY += SUB_SUMMARY_HEIGHT + SUB_GAP;
+        } else {
+          // Expanded subprocess: show nodes with sub-header
+          const subHeaderY = innerY;
+          innerY += SUB_HEADER_HEIGHT + 8;
+
+          const ids = sp.nodeIds.filter(id => nodeMap.has(id));
+          const internalEdges = allEdges.filter(
+            e => ids.includes(e.source) && ids.includes(e.target)
+          );
+          const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId);
+          layoutNodes.push(...result.nodes);
+
+          // Add subprocess group box
+          const spWidth = Math.max(result.width + GROUP_PADDING, SUB_SUMMARY_WIDTH + GROUP_PADDING);
+          const spHeight = SUB_HEADER_HEIGHT + 8 + result.height + GROUP_PADDING;
+          const spX = width / 2 - spWidth / 2;
+
+          layoutGroups.push({
+            processId: sp.subprocessId, processName: sp.subprocessName,
+            collapsed: false,
+            isSubprocess: true,
+            parentProcessId: gid,
+            x: spX, y: subHeaderY,
+            width: spWidth, height: spHeight,
+            color: spColor,
+          });
+
+          maxWidth = Math.max(maxWidth, spWidth + GROUP_PADDING);
+          innerY = result.bottomY + SUB_GAP;
         }
       }
 
-      // Map non-visible nodes to their nearest visible ancestor
-      const nonVisibleSet = new Set(groupNodeIds.filter(id => !visibleIds.includes(id)));
-      for (const nid of nonVisibleSet) {
-        // Walk up parents to find a visible node
-        const { parents } = buildAdjacency(groupNodeIds, internalEdges);
-        let current = nid;
-        const seen = new Set();
-        while (current && !visibleIds.includes(current)) {
-          seen.add(current);
-          const ps = parents.get(current) || [];
-          current = ps.find(p => !seen.has(p)) || null;
-        }
-        nodeToLayoutId.set(nid, current || (visibleIds[0] || `summary:${gid}`));
-      }
-
-      const groupContentHeight = Math.max(
-        sortedLayers.length * (NODE_HEIGHT + NODE_Y_GAP) - NODE_Y_GAP,
-        NODE_HEIGHT
-      );
-      const groupWidth = Math.max(maxRowWidth + GROUP_PADDING * 2, 280);
-      const groupHeight = GROUP_HEADER_HEIGHT + GROUP_PADDING + groupContentHeight + GROUP_PADDING;
+      const groupHeight = innerY - currentY + GROUP_PADDING - SUB_GAP;
+      const groupWidth = Math.max(maxWidth + GROUP_PADDING * 2, 300);
       const groupX = width / 2 - groupWidth / 2;
 
       layoutGroups.push({
-        processId: gid,
-        processName: group.processName,
+        processId: gid, processName: pg.processName,
         collapsed: false,
-        x: groupX,
-        y: currentY,
-        width: groupWidth,
-        height: groupHeight,
+        x: groupX, y: currentY,
+        width: groupWidth, height: groupHeight,
         color,
       });
 
@@ -416,92 +343,94 @@ export function computeLayout(tagData, collapsedProcesses, expandedNodes, width,
     }
   }
 
-  // Build layout edges (re-routed through summary nodes, deduped)
-  const edgeDedup = new Set();
+  // ─── Build layout edges (merge bidirectional into one) ───
+  const edgeMap = new Map(); // "A→B" (sorted key) -> edge object
   for (const e of allEdges) {
     const src = nodeToLayoutId.get(e.source);
     const tgt = nodeToLayoutId.get(e.target);
     if (!src || !tgt || src === tgt) continue;
 
-    const key = `${src}\u2192${tgt}`;
-    if (edgeDedup.has(key)) continue;
-    edgeDedup.add(key);
+    // Canonical key: always smaller id first, so A→B and B→A share a key
+    const [lo, hi] = src < tgt ? [src, tgt] : [tgt, src];
+    const canonKey = `${lo}\u2194${hi}`;
+    const forwardKey = `${src}\u2192${tgt}`;
+
+    if (edgeMap.has(canonKey)) {
+      const existing = edgeMap.get(canonKey);
+      // If this direction wasn't recorded yet, mark as bidirectional
+      if (!existing._directionKeys.has(forwardKey)) {
+        existing._directionKeys.add(forwardKey);
+        existing.bidirectional = true;
+        existing.reverseData = e.data;
+      }
+      continue;
+    }
 
     const srcNode = layoutNodes.find(n => n.id === src);
     const tgtNode = layoutNodes.find(n => n.id === tgt);
     if (!srcNode || !tgtNode) continue;
 
-    // Classify edge: internal (same process) vs external (cross-process)
-    const srcProcess = nodeToProcess.get(e.source) || srcNode.processId;
-    const tgtProcess = nodeToProcess.get(e.target) || tgtNode.processId;
-    const edgeType = (srcProcess === tgtProcess) ? 'internal' : 'external';
+    const srcProc = nodeToProcess.get(e.source) || srcNode.processId;
+    const tgtProc = nodeToProcess.get(e.target) || tgtNode.processId;
+    const edgeType = (srcProc === tgtProc) ? 'internal' : 'external';
 
-    layoutEdges.push({
-      source: src,
-      target: tgt,
-      sourceNode: srcNode,
-      targetNode: tgtNode,
-      edgeType,
-      data: e.data,
+    edgeMap.set(canonKey, {
+      source: src, target: tgt,
+      sourceNode: srcNode, targetNode: tgtNode,
+      edgeType, data: e.data,
+      bidirectional: false,
+      reverseData: null,
+      _directionKeys: new Set([forwardKey]),
     });
   }
+  const layoutEdges = [...edgeMap.values()];
 
-  // Force simulation fine-tuning
+  // ─── Force simulation ───
   if (layoutNodes.length > 1 && layoutEdges.length > 0) {
     const simNodes = layoutNodes.map(n => ({ ...n }));
     const simLinks = layoutEdges
       .map(e => {
         const si = simNodes.findIndex(n => n.id === e.source);
         const ti = simNodes.findIndex(n => n.id === e.target);
-        if (si < 0 || ti < 0) return null;
-        return { source: si, target: ti };
+        return (si >= 0 && ti >= 0) ? { source: si, target: ti } : null;
       })
       .filter(Boolean);
 
     if (simLinks.length > 0) {
       const anchors = simNodes.map(n => ({ x: n.x, y: n.y }));
 
+      // Fix Y positions so topological (from->to) ordering is preserved.
+      // Only let the simulation adjust X to reduce edge crossings.
+      for (const n of simNodes) n.fy = n.y;
+
       const simulation = d3.forceSimulation(simNodes)
-        .force('link', d3.forceLink(simLinks).distance(80).strength(0.3))
+        .force('link', d3.forceLink(simLinks).distance(80).strength(0.2))
         .force('collide', d3.forceCollide()
-          .radius(d => Math.max(d.width, d.height) / 2 + 10)
-          .strength(0.7))
-        .force('anchorX', d3.forceX().x((d, i) => anchors[i].x).strength(0.8))
-        .force('anchorY', d3.forceY().y((d, i) => anchors[i].y).strength(0.9))
-        .alphaDecay(0.05)
-        .stop();
+          .radius(d => d.width / 2 + 8).strength(0.7))
+        .force('anchorX', d3.forceX().x((d, i) => anchors[i].x).strength(0.6))
+        .alphaDecay(0.05).stop();
 
       for (let i = 0; i < 80; i++) simulation.tick();
-
       for (let i = 0; i < simNodes.length; i++) {
         layoutNodes[i].x = simNodes[i].x;
-        layoutNodes[i].y = simNodes[i].y;
+        // Y stays at the hierarchical position (fy locked it)
       }
     }
   }
 
-  // Compute viewBox
+  // ─── Compute viewBox ───
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const n of layoutNodes) {
-    minX = Math.min(minX, n.x - 20);
-    minY = Math.min(minY, n.y - 20);
-    maxX = Math.max(maxX, n.x + n.width + 20);
-    maxY = Math.max(maxY, n.y + n.height + 20);
+    minX = Math.min(minX, n.x - 20); minY = Math.min(minY, n.y - 20);
+    maxX = Math.max(maxX, n.x + n.width + 20); maxY = Math.max(maxY, n.y + n.height + 20);
   }
   for (const g of layoutGroups) {
-    minX = Math.min(minX, g.x - 20);
-    minY = Math.min(minY, g.y - 20);
-    maxX = Math.max(maxX, g.x + g.width + 20);
-    maxY = Math.max(maxY, g.y + g.height + 20);
+    minX = Math.min(minX, g.x - 20); minY = Math.min(minY, g.y - 20);
+    maxX = Math.max(maxX, g.x + g.width + 20); maxY = Math.max(maxY, g.y + g.height + 20);
   }
-
-  if (!isFinite(minX)) {
-    minX = 0; minY = 0; maxX = 800; maxY = 600;
-  }
+  if (!isFinite(minX)) { minX = 0; minY = 0; maxX = 800; maxY = 600; }
 
   const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
-
-  // Refresh sourceNode/targetNode references after force adjustment
   for (const e of layoutEdges) {
     e.sourceNode = layoutNodes.find(n => n.id === e.source);
     e.targetNode = layoutNodes.find(n => n.id === e.target);
@@ -510,13 +439,142 @@ export function computeLayout(tagData, collapsedProcesses, expandedNodes, width,
   return { nodes: layoutNodes, edges: layoutEdges, groups: layoutGroups, viewBox };
 }
 
+/**
+ * Layout a set of nodes in rows (layered). Returns { nodes, width, height, bottomY }.
+ */
+function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processId, processName, color, nodeToLayoutId) {
+  // Filter out nodes already placed by another group/subprocess
+  const ids = nodeIds.filter(id => !nodeToLayoutId.has(id));
+  if (ids.length === 0) {
+    return { nodes: [], width: 0, height: 0, bottomY: startY };
+  }
+
+  const filteredEdges = edges.filter(e => ids.includes(e.source) && ids.includes(e.target));
+  const layers = assignLayers(ids, filteredEdges);
+
+  // Determine initial/final states within this node set
+  const { parents, children } = buildAdjacency(ids, filteredEdges);
+  const initialIds = new Set(ids.filter(id => parents.get(id).length === 0));
+  const finalIds = new Set(ids.filter(id => children.get(id).length === 0));
+
+  const layerBuckets = new Map();
+  for (const [nid, layer] of layers) {
+    if (!layerBuckets.has(layer)) layerBuckets.set(layer, []);
+    layerBuckets.get(layer).push(nid);
+  }
+  const sortedLayers = [...layerBuckets.keys()].sort((a, b) => a - b);
+
+  // Adaptive sizing: use compact nodes when total node count is large
+  const totalNodes = ids.length;
+  const compact = totalNodes > 6;
+  const nw = compact ? 130 : NODE_WIDTH;
+  const nh = compact ? 32 : NODE_HEIGHT;
+  const xGap = compact ? 16 : NODE_X_GAP;
+  const yGap = compact ? 12 : NODE_Y_GAP;
+  const maxPerRow = compact ? 5 : 6; // wrap layers wider than this
+
+  const nodes = [];
+  let maxRowWidth = 0;
+  let currentRow = 0;
+
+  for (let li = 0; li < sortedLayers.length; li++) {
+    const nodesInLayer = layerBuckets.get(sortedLayers[li]);
+
+    // Split layer into chunks if too wide
+    const chunks = [];
+    for (let c = 0; c < nodesInLayer.length; c += maxPerRow) {
+      chunks.push(nodesInLayer.slice(c, c + maxPerRow));
+    }
+
+    for (const chunk of chunks) {
+      const rowWidth = chunk.length * (nw + xGap) - xGap;
+      maxRowWidth = Math.max(maxRowWidth, rowWidth);
+      const startX = containerWidth / 2 - rowWidth / 2;
+
+      for (let ni = 0; ni < chunk.length; ni++) {
+        const nid = chunk[ni];
+        const nd = nodeMap.get(nid);
+        const nodeRole = initialIds.has(nid) ? 'initial'
+          : finalIds.has(nid) ? 'final' : 'normal';
+        nodes.push({
+          id: nid,
+          name: nd.name,
+          nodeRole,
+          x: startX + ni * (nw + xGap),
+          y: startY + currentRow * (nh + yGap),
+          width: nw, height: nh,
+          type: 'normal',
+          compact,
+          processId, processName, color,
+          transitions: nd.transitions,
+        });
+        nodeToLayoutId.set(nid, nid);
+      }
+      currentRow++;
+    }
+  }
+
+  const contentHeight = Math.max(currentRow * (nh + yGap) - yGap, nh);
+  return { nodes, width: maxRowWidth, height: contentHeight, bottomY: startY + contentHeight };
+}
+
 // ─── Edge path helper ────────────────────────────────────────────────────────
 
+/**
+ * Pre-compute port offsets so multiple edges sharing a node side are spread out.
+ * Edges always go bottom-of-source → top-of-target (matching hierarchy).
+ */
+function assignEdgePorts(edges) {
+  // Count how many edges leave each node's bottom and enter each node's top
+  const outCount = new Map(); // nodeId -> [edgeIdx, ...]
+  const inCount = new Map();
+
+  for (let i = 0; i < edges.length; i++) {
+    const d = edges[i];
+    if (!outCount.has(d.source)) outCount.set(d.source, []);
+    outCount.get(d.source).push(i);
+    if (!inCount.has(d.target)) inCount.set(d.target, []);
+    inCount.get(d.target).push(i);
+  }
+
+  // Assign spread offsets (-0.5 to 0.5) for each port
+  for (const [, indices] of outCount) {
+    const n = indices.length;
+    for (let j = 0; j < n; j++) {
+      edges[indices[j]]._sPort = n > 1 ? (j + 1) / (n + 1) - 0.5 : 0;
+    }
+  }
+  for (const [, indices] of inCount) {
+    const n = indices.length;
+    for (let j = 0; j < n; j++) {
+      edges[indices[j]]._tPort = n > 1 ? (j + 1) / (n + 1) - 0.5 : 0;
+    }
+  }
+}
+
 function edgePath(d) {
-  const sx = d.sourceNode.x + d.sourceNode.width / 2;
-  const sy = d.sourceNode.y + d.sourceNode.height;
-  const tx = d.targetNode.x + d.targetNode.width / 2;
-  const ty = d.targetNode.y;
+  const sn = d.sourceNode;
+  const tn = d.targetNode;
+  const gap = 10;
+
+  // Spread ports across 60% of node width
+  const sOff = sn.width * 0.6 * (d._sPort || 0);
+  const tOff = tn.width * 0.6 * (d._tPort || 0);
+
+  // Always exit bottom of source, enter top of target
+  const sx = sn.x + sn.width / 2 + sOff;
+  const sy = sn.y + sn.height;
+  const tx = tn.x + tn.width / 2 + tOff;
+  const ty = tn.y - gap;
+
+  // If target is above source (back-edge), route around with a wider curve
+  if (tn.y < sn.y + sn.height) {
+    const loopOut = Math.max(Math.abs(sx - tx), 80) + 40;
+    const side = sx <= tx ? -1 : 1; // curve left or right to avoid overlap
+    const mx = Math.min(sn.x, tn.x) + side * loopOut;
+    return `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`;
+  }
+
   const midY = (sy + ty) / 2;
   return `M ${sx} ${sy} C ${sx} ${midY}, ${tx} ${midY}, ${tx} ${ty}`;
 }
@@ -529,59 +587,52 @@ export function renderDiagram(svgElement, layout, callbacks) {
 
   svg.attr('viewBox', layout.viewBox);
 
-  // Defs: arrowhead markers (internal and external)
+  // Defs
   let defs = svg.select('defs');
   if (defs.empty()) defs = svg.append('defs');
 
+  // End arrows (point forward)
   if (defs.select('#wf-arrow-internal').empty()) {
-    defs.append('marker')
-      .attr('id', 'wf-arrow-internal')
-      .attr('viewBox', '0 0 10 10')
-      .attr('refX', 9).attr('refY', 5)
-      .attr('markerWidth', 8).attr('markerHeight', 8)
-      .attr('orient', 'auto-start-reverse')
+    defs.append('marker').attr('id', 'wf-arrow-internal')
+      .attr('viewBox', '0 0 10 10').attr('refX', 9).attr('refY', 5)
+      .attr('markerWidth', 8).attr('markerHeight', 8).attr('orient', 'auto')
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#5a9bd5');
   }
   if (defs.select('#wf-arrow-external').empty()) {
-    defs.append('marker')
-      .attr('id', 'wf-arrow-external')
-      .attr('viewBox', '0 0 10 10')
-      .attr('refX', 9).attr('refY', 5)
-      .attr('markerWidth', 8).attr('markerHeight', 8)
-      .attr('orient', 'auto-start-reverse')
+    defs.append('marker').attr('id', 'wf-arrow-external')
+      .attr('viewBox', '0 0 10 10').attr('refX', 9).attr('refY', 5)
+      .attr('markerWidth', 8).attr('markerHeight', 8).attr('orient', 'auto')
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#d4a03c');
   }
 
-  // Root <g> for zoom transform
   let rootG = svg.select('g.wf-root');
   if (rootG.empty()) rootG = svg.append('g').attr('class', 'wf-root');
 
-  // --- Groups ---
+  // ─── Groups (process + subprocess boxes) ───
+  const processGroups = layout.groups.filter(g => !g.isSubprocess);
+  const subGroups = layout.groups.filter(g => g.isSubprocess);
+
+  // Process groups
   const groupSel = rootG.selectAll('g.wf-group')
-    .data(layout.groups, d => d.processId);
+    .data(processGroups, d => d.processId);
 
   const groupEnter = groupSel.enter().append('g')
-    .attr('class', 'wf-group')
-    .attr('opacity', 0);
-
+    .attr('class', 'wf-group').attr('opacity', 0);
   groupEnter.append('rect').attr('class', 'wf-group-bg');
   groupEnter.append('rect').attr('class', 'wf-group-header');
   groupEnter.append('text').attr('class', 'wf-group-label');
   groupEnter.append('text').attr('class', 'wf-group-toggle');
 
   const groupMerge = groupEnter.merge(groupSel);
-
   groupMerge.transition(t).attr('opacity', 1);
 
-  groupMerge.select('rect.wf-group-bg')
-    .transition(t)
+  groupMerge.select('rect.wf-group-bg').transition(t)
     .attr('x', d => d.x).attr('y', d => d.y)
     .attr('width', d => d.width).attr('height', d => d.height)
     .attr('fill', d => d.color.bg).attr('stroke', d => d.color.border)
     .attr('opacity', d => d.collapsed ? 0 : 0.5);
 
-  groupMerge.select('rect.wf-group-header')
-    .transition(t)
+  groupMerge.select('rect.wf-group-header').transition(t)
     .attr('x', d => d.x).attr('y', d => d.y)
     .attr('width', d => d.width).attr('height', GROUP_HEADER_HEIGHT)
     .attr('fill', d => d.color.header).attr('stroke', d => d.color.border)
@@ -591,21 +642,59 @@ export function renderDiagram(svgElement, layout, callbacks) {
     .style('cursor', 'pointer')
     .on('click', (event, d) => callbacks.onGroupClick(d.processId));
 
-  groupMerge.select('text.wf-group-label')
-    .transition(t)
+  groupMerge.select('text.wf-group-label').transition(t)
     .attr('x', d => d.x + 12).attr('y', d => d.y + 21)
     .attr('opacity', d => d.collapsed ? 0 : 1)
     .text(d => d.processName || d.processId);
 
-  groupMerge.select('text.wf-group-toggle')
-    .transition(t)
+  groupMerge.select('text.wf-group-toggle').transition(t)
     .attr('x', d => d.x + d.width - 70).attr('y', d => d.y + 21)
     .attr('opacity', d => d.collapsed ? 0 : 1)
     .text('[ collapse ]');
 
   groupSel.exit().transition(t).attr('opacity', 0).remove();
 
-  // --- Edges ---
+  // Subprocess groups
+  const subSel = rootG.selectAll('g.wf-subgroup')
+    .data(subGroups, d => d.processId);
+
+  const subEnter = subSel.enter().append('g')
+    .attr('class', 'wf-subgroup').attr('opacity', 0);
+  subEnter.append('rect').attr('class', 'wf-subgroup-bg');
+  subEnter.append('rect').attr('class', 'wf-subgroup-header');
+  subEnter.append('text').attr('class', 'wf-subgroup-label');
+  subEnter.append('text').attr('class', 'wf-subgroup-toggle');
+
+  const subMerge = subEnter.merge(subSel);
+  subMerge.transition(t).attr('opacity', 1);
+
+  subMerge.select('rect.wf-subgroup-bg').transition(t)
+    .attr('x', d => d.x).attr('y', d => d.y)
+    .attr('width', d => d.width).attr('height', d => d.height)
+    .attr('fill', d => d.color.bg).attr('stroke', d => d.color.border)
+    .attr('opacity', 0.3);
+
+  subMerge.select('rect.wf-subgroup-header').transition(t)
+    .attr('x', d => d.x).attr('y', d => d.y)
+    .attr('width', d => d.width).attr('height', SUB_HEADER_HEIGHT)
+    .attr('fill', d => d.color.header).attr('stroke', d => d.color.border);
+
+  subMerge.select('rect.wf-subgroup-header')
+    .style('cursor', 'pointer')
+    .on('click', (event, d) => callbacks.onSubprocessClick(d.processId));
+
+  subMerge.select('text.wf-subgroup-label').transition(t)
+    .attr('x', d => d.x + 10).attr('y', d => d.y + 19)
+    .text(d => d.processName || d.processId);
+
+  subMerge.select('text.wf-subgroup-toggle').transition(t)
+    .attr('x', d => d.x + d.width - 65).attr('y', d => d.y + 19)
+    .text('[ collapse ]');
+
+  subSel.exit().transition(t).attr('opacity', 0).remove();
+
+  // ─── Edges ───
+  assignEdgePorts(layout.edges);
   const edgeSel = rootG.selectAll('g.wf-edge')
     .data(layout.edges, d => `${d.source}\u2192${d.target}`);
 
@@ -613,149 +702,144 @@ export function renderDiagram(svgElement, layout, callbacks) {
   edgeEnter.append('path').attr('opacity', 0);
 
   const edgeMerge = edgeEnter.merge(edgeSel);
-
-  // Set class for internal/external coloring
-  edgeMerge
-    .attr('class', d => `wf-edge wf-edge-${d.edgeType}`);
+  edgeMerge.attr('class', d =>
+    `wf-edge wf-edge-${d.edgeType}${d.bidirectional ? ' wf-bidirectional' : ''}`);
 
   edgeMerge.select('path')
     .on('mouseenter', (event, d) => callbacks.onEdgeHover(d, event))
     .on('mouseleave', () => callbacks.onEdgeLeave())
-    .transition(t)
-    .attr('opacity', 1)
+    .transition(t).attr('opacity', 1)
     .attr('d', edgePath)
+    .attr('stroke-width', d => d.bidirectional ? 2.5 : 1.5)
     .attr('marker-end', d => `url(#wf-arrow-${d.edgeType})`);
 
   edgeSel.exit().transition(t).attr('opacity', 0).remove();
 
-  // --- Drag behavior (shared by normal + summary nodes) ---
+  // ─── Drag behavior ───
   function makeDrag() {
     let dragStartX, dragStartY, didDrag;
     return d3.drag()
-      .on('start', function (event, d) {
-        dragStartX = event.x;
-        dragStartY = event.y;
-        didDrag = false;
+      .on('start', function (event) {
+        dragStartX = event.x; dragStartY = event.y; didDrag = false;
         d3.select(this).classed('wf-dragging', true).raise();
       })
       .on('drag', function (event, d) {
-        const dx = event.x - dragStartX;
-        const dy = event.y - dragStartY;
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDrag = true;
-        d.x = event.x;
-        d.y = event.y;
+        if (Math.abs(event.x - dragStartX) > 3 || Math.abs(event.y - dragStartY) > 3) didDrag = true;
+        d.x = event.x; d.y = event.y;
         d3.select(this).attr('transform', `translate(${d.x}, ${d.y})`);
+        assignEdgePorts(layout.edges);
         edgeMerge.select('path').attr('d', edgePath);
       })
       .on('end', function (event, d) {
         d3.select(this).classed('wf-dragging', false);
         if (!didDrag) {
-          // Treat as click: expand/collapse for nodes, group toggle for summary
-          if (d.type === 'summary') {
-            callbacks.onGroupClick(d.processId);
-          } else if (d.hiddenChildren > 0 || d.isExpanded) {
-            callbacks.onNodeClick(d.id);
-          }
+          if (d.type === 'summary') callbacks.onGroupClick(d.processId);
+          else if (d.type === 'subsummary') callbacks.onSubprocessClick(d.subprocessId);
         }
       });
   }
 
-  // --- Normal nodes ---
+  // ─── Normal nodes ───
   const normalNodes = layout.nodes.filter(n => n.type === 'normal');
   const nodeSel = rootG.selectAll('g.wf-node')
     .data(normalNodes, d => d.id);
 
   const nodeEnter = nodeSel.enter().append('g')
-    .attr('opacity', 0)
+    .attr('class', 'wf-node').attr('opacity', 0)
     .attr('transform', d => `translate(${d.x}, ${d.y})`);
-
   nodeEnter.append('rect');
-  nodeEnter.append('text').attr('class', 'wf-node-label');
-  nodeEnter.append('text').attr('class', 'wf-expand-badge');
+  nodeEnter.append('text');
 
   const nodeMerge = nodeEnter.merge(nodeSel);
-
-  // Set classes: wf-node + wf-expandable if has hidden children
-  nodeMerge
-    .attr('class', d => `wf-node${d.hiddenChildren > 0 ? ' wf-expandable' : ''}`);
-
-  nodeMerge.transition(t)
-    .attr('opacity', 1)
+  nodeMerge.transition(t).attr('opacity', 1)
     .attr('transform', d => `translate(${d.x}, ${d.y})`);
-
   nodeMerge.select('rect')
-    .attr('width', d => d.width).attr('height', d => d.height);
-
-  nodeMerge.select('text.wf-node-label')
-    .attr('x', d => d.width / 2)
-    .attr('y', d => d.hiddenChildren > 0 ? d.height / 2 : d.height / 2 + 4)
-    .attr('text-anchor', 'middle')
-    .text(d => {
-      const maxChars = Math.floor(d.width / 7);
-      return d.name.length > maxChars
-        ? d.name.slice(0, maxChars - 1) + '\u2026'
-        : d.name;
+    .attr('width', d => d.width).attr('height', d => d.height)
+    .attr('fill', d => {
+      if (d.nodeRole === 'initial') return '#e8f5e8';  // light green
+      if (d.nodeRole === 'final') return '#fce8e8';    // light red
+      return 'white';
+    })
+    .attr('stroke', d => {
+      if (d.nodeRole === 'initial') return '#4a9d4a';  // green border
+      if (d.nodeRole === 'final') return '#c95b5b';    // red border
+      return '#5a9bd5';
     });
-
-  // Badge showing hidden child count
-  nodeMerge.select('text.wf-expand-badge')
+  nodeMerge.select('text')
     .attr('x', d => d.width / 2)
-    .attr('y', d => d.height / 2 + 14)
+    .attr('y', d => d.height / 2 + (d.compact ? 3 : 4))
     .attr('text-anchor', 'middle')
-    .text(d => d.hiddenChildren > 0
-      ? `+ ${d.hiddenChildren} more`
-      : '');
-
+    .attr('font-size', d => d.compact ? '10px' : '12px')
+    .text(d => {
+      const charWidth = d.compact ? 6 : 7;
+      const max = Math.floor(d.width / charWidth);
+      return d.name.length > max ? d.name.slice(0, max - 1) + '\u2026' : d.name;
+    });
   nodeMerge
     .on('mouseenter', (event, d) => callbacks.onNodeHover(d, event))
     .on('mouseleave', () => callbacks.onNodeLeave());
-
   nodeMerge.call(makeDrag());
-
   nodeSel.exit().transition(t).attr('opacity', 0).remove();
 
-  // --- Summary (collapsed) nodes ---
+  // ─── Summary nodes (collapsed process) ───
   const summaryNodes = layout.nodes.filter(n => n.type === 'summary');
   const sumSel = rootG.selectAll('g.wf-summary-node')
     .data(summaryNodes, d => d.id);
 
   const sumEnter = sumSel.enter().append('g')
-    .attr('class', 'wf-summary-node')
-    .attr('opacity', 0)
+    .attr('class', 'wf-summary-node').attr('opacity', 0)
     .attr('transform', d => `translate(${d.x}, ${d.y})`);
-
   sumEnter.append('rect');
   sumEnter.append('text').attr('class', 'wf-summary-label');
   sumEnter.append('text').attr('class', 'wf-summary-count');
 
   const sumMerge = sumEnter.merge(sumSel);
-
-  sumMerge.transition(t)
-    .attr('opacity', 1)
+  sumMerge.transition(t).attr('opacity', 1)
     .attr('transform', d => `translate(${d.x}, ${d.y})`);
-
-  sumMerge.select('rect')
-    .attr('width', d => d.width).attr('height', d => d.height);
-
+  sumMerge.select('rect').attr('width', d => d.width).attr('height', d => d.height);
   sumMerge.select('text.wf-summary-label')
-    .attr('x', d => d.width / 2)
-    .attr('y', d => d.height / 2)
-    .attr('text-anchor', 'middle')
-    .text(d => d.name);
-
+    .attr('x', d => d.width / 2).attr('y', d => d.height / 2)
+    .attr('text-anchor', 'middle').text(d => d.name);
   sumMerge.select('text.wf-summary-count')
-    .attr('x', d => d.width / 2)
-    .attr('y', d => d.height / 2 + 16)
+    .attr('x', d => d.width / 2).attr('y', d => d.height / 2 + 16)
     .attr('text-anchor', 'middle')
-    .text(d => `(${d.nodeCount} states)`);
-
+    .text(d => d.subprocessCount > 0
+      ? `(${d.subprocessCount} sub-processes)`
+      : `(${d.nodeCount} states)`);
   sumMerge
     .on('mouseenter', (event, d) => callbacks.onNodeHover(d, event))
     .on('mouseleave', () => callbacks.onNodeLeave());
-
   sumMerge.call(makeDrag());
-
   sumSel.exit().transition(t).attr('opacity', 0).remove();
+
+  // ─── Sub-summary nodes (collapsed subprocess) ───
+  const subSummaryNodes = layout.nodes.filter(n => n.type === 'subsummary');
+  const ssSel = rootG.selectAll('g.wf-subsummary-node')
+    .data(subSummaryNodes, d => d.id);
+
+  const ssEnter = ssSel.enter().append('g')
+    .attr('class', 'wf-subsummary-node').attr('opacity', 0)
+    .attr('transform', d => `translate(${d.x}, ${d.y})`);
+  ssEnter.append('rect');
+  ssEnter.append('text').attr('class', 'wf-summary-label');
+  ssEnter.append('text').attr('class', 'wf-summary-count');
+
+  const ssMerge = ssEnter.merge(ssSel);
+  ssMerge.transition(t).attr('opacity', 1)
+    .attr('transform', d => `translate(${d.x}, ${d.y})`);
+  ssMerge.select('rect').attr('width', d => d.width).attr('height', d => d.height);
+  ssMerge.select('text.wf-summary-label')
+    .attr('x', d => d.width / 2).attr('y', d => d.height / 2)
+    .attr('text-anchor', 'middle').text(d => d.name);
+  ssMerge.select('text.wf-summary-count')
+    .attr('x', d => d.width / 2).attr('y', d => d.height / 2 + 14)
+    .attr('text-anchor', 'middle')
+    .text(d => `(${d.nodeCount} states)`);
+  ssMerge
+    .on('mouseenter', (event, d) => callbacks.onNodeHover(d, event))
+    .on('mouseleave', () => callbacks.onNodeLeave());
+  ssMerge.call(makeDrag());
+  ssSel.exit().transition(t).attr('opacity', 0).remove();
 }
 
 // ─── setupZoom ───────────────────────────────────────────────────────────────
@@ -767,14 +851,12 @@ export function setupZoom(svgElement) {
   const zoomBehavior = d3.zoom()
     .scaleExtent([0.2, 4])
     .filter(event => {
-      // Always allow wheel zoom
       if (event.type === 'wheel') return true;
-      // For mousedown/touchstart: only allow pan from the SVG background
       if (event.type === 'mousedown' || event.type === 'touchstart') {
         let el = event.target;
         while (el && el !== svgElement) {
-          const cls = el.getAttribute && el.getAttribute('class') || '';
-          if (cls.includes('wf-node') || cls.includes('wf-summary-node')) {
+          const cls = (el.getAttribute && el.getAttribute('class')) || '';
+          if (cls.includes('wf-node') || cls.includes('wf-summary-node') || cls.includes('wf-subsummary-node')) {
             return false;
           }
           el = el.parentNode;
