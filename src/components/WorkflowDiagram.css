@@ -94,18 +94,6 @@
   pointer-events: none;
 }
 
-/* --- Expandable nodes (have hidden children) --- */
-.wf-node.wf-expandable rect {
-  stroke: #3a7cbd;
-  stroke-width: 2;
-  stroke-dasharray: none;
-}
-
-.wf-node.wf-expandable text.wf-expand-badge {
-  font-size: 10px;
-  fill: #5a8ab5;
-  pointer-events: none;
-}
 
 /* --- Summary (collapsed) nodes --- */
 .wf-summary-node rect {
@@ -122,6 +110,67 @@
   cursor: grabbing;
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
   stroke-width: 2.5;
+}
+
+/* --- Sub-summary (collapsed subprocess) nodes --- */
+.wf-subsummary-node rect {
+  rx: 8;
+  ry: 8;
+  fill: #f5f8fc;
+  stroke: #7bafd4;
+  stroke-width: 1.5;
+  cursor: grab;
+  transition: filter 0.15s;
+}
+
+.wf-subsummary-node rect:hover {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
+  stroke-width: 2;
+}
+
+.wf-subsummary-node.wf-dragging rect {
+  cursor: grabbing;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+}
+
+.wf-subsummary-node text.wf-summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #3a6a8a;
+  pointer-events: none;
+}
+
+.wf-subsummary-node text.wf-summary-count {
+  font-size: 10px;
+  fill: #6a9ab5;
+  pointer-events: none;
+}
+
+/* --- Subprocess group boxes --- */
+.wf-subgroup rect.wf-subgroup-bg {
+  rx: 6;
+  ry: 6;
+  stroke-width: 1;
+  stroke-dasharray: 4 2;
+}
+
+.wf-subgroup rect.wf-subgroup-header {
+  rx: 6;
+  ry: 6;
+  cursor: pointer;
+}
+
+.wf-subgroup text.wf-subgroup-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #444;
+  pointer-events: none;
+}
+
+.wf-subgroup text.wf-subgroup-toggle {
+  font-size: 10px;
+  fill: #666;
+  pointer-events: none;
 }
 
 .wf-summary-node rect:hover {
@@ -173,6 +222,15 @@
   stroke: #b8862a;
 }
 
+/* Bidirectional edges */
+.wf-edge.wf-bidirectional path {
+  stroke: #9b6fbd;
+}
+
+.wf-edge.wf-bidirectional path:hover {
+  stroke: #7a4fa0;
+}
+
 /* --- Loading / error states --- */
 .workflow-diagram-loading {
   display: flex;
@@ -191,36 +249,46 @@
   color: var(--medium-red);
 }
 
-/* --- Popover overrides --- */
-.wf-popover {
+/* --- Tooltip (positioned div) --- */
+.wf-tooltip {
+  position: absolute;
+  z-index: 100;
   max-width: 380px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  pointer-events: none;
   font-size: 13px;
 }
 
-.wf-popover .popover-header {
+.wf-tooltip-header {
   font-size: 13px;
   font-weight: 600;
   background: #f0f5fa;
+  padding: 6px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  border-radius: 6px 6px 0 0;
 }
 
-.wf-popover .popover-body {
+.wf-tooltip-body {
   padding: 8px 12px;
 }
 
-.wf-popover .wf-popover-atp {
+.wf-popover-atp {
   font-family: monospace;
   font-size: 11px;
   color: #666;
   margin-bottom: 4px;
 }
 
-.wf-popover .wf-popover-process {
+.wf-popover-process {
   font-size: 12px;
   color: #555;
   margin-bottom: 8px;
 }
 
-.wf-popover .wf-popover-section-title {
+.wf-popover-section-title {
   font-weight: 600;
   font-size: 12px;
   margin-top: 6px;
@@ -228,23 +296,23 @@
   color: #444;
 }
 
-.wf-popover .wf-popover-transition {
+.wf-popover-transition {
   font-size: 12px;
   padding: 2px 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.wf-popover .wf-popover-transition:last-child {
+.wf-popover-transition:last-child {
   border-bottom: none;
 }
 
-.wf-popover .wf-popover-detail {
+.wf-popover-detail {
   font-size: 11px;
   color: #666;
   margin-left: 8px;
 }
 
-.wf-popover .wf-popover-arrow {
+.wf-popover-arrow {
   font-size: 11px;
   color: #999;
   margin: 0 4px;

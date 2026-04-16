@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Spinner, Overlay, Popover } from 'react-bootstrap';
+import { Spinner } from 'react-bootstrap';
 import { api } from '../api';
 import { computeLayout, renderDiagram, setupZoom } from './workflowDiagramLayout';
 import './WorkflowDiagram.css';
@@ -7,8 +7,9 @@ import './WorkflowDiagram.css';
 const WorkflowDiagram = ({ mod }) => {
   const [tagData, setTagData] = useState(null);
   const [collapsedProcesses, setCollapsedProcesses] = useState(new Set());
-  const [expandedNodes, setExpandedNodes] = useState(new Set());
+  const [expandedSubprocesses, setExpandedSubprocesses] = useState(new Set());
   const [hoveredElement, setHoveredElement] = useState(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,7 +17,6 @@ const WorkflowDiagram = ({ mod }) => {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const resetZoomRef = useRef(null);
-  const popoverTarget = useRef(null);
 
   // ─── Fetch data ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -28,13 +28,12 @@ const WorkflowDiagram = ({ mod }) => {
         const result = await api.get(`/workflow_tag/workflow_diagram/${mod}`);
         if (!cancelled) {
           setTagData(result.data);
-          // Collapse all processes by default
           const allProcessIds = new Set();
           for (const node of result.data) {
             if (node.workflow_process) allProcessIds.add(node.workflow_process);
           }
           setCollapsedProcesses(allProcessIds);
-          setExpandedNodes(new Set());
+          setExpandedSubprocesses(new Set());
         }
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load workflow diagram');
@@ -50,13 +49,10 @@ const WorkflowDiagram = ({ mod }) => {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const ro = new ResizeObserver(entries => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) {
-          setDimensions({ width, height });
-        }
+        if (width > 0 && height > 0) setDimensions({ width, height });
       }
     });
     ro.observe(container);
@@ -65,94 +61,67 @@ const WorkflowDiagram = ({ mod }) => {
 
   // ─── Zoom setup ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (svgRef.current) {
-      resetZoomRef.current = setupZoom(svgRef.current);
-    }
+    if (svgRef.current) resetZoomRef.current = setupZoom(svgRef.current);
   }, [tagData]);
 
-  // ─── Callbacks for D3 ────────────────────────────────────────────────
+  // ─── Callbacks ───────────────────────────────────────────────────────
   const onGroupClick = useCallback((processId) => {
     setCollapsedProcesses(prev => {
       const next = new Set(prev);
-      if (next.has(processId)) {
-        next.delete(processId);
-      } else {
-        next.add(processId);
-      }
+      if (next.has(processId)) next.delete(processId);
+      else next.add(processId);
       return next;
     });
     setHoveredElement(null);
   }, []);
 
-  const onNodeClick = useCallback((nodeId) => {
-    setExpandedNodes(prev => {
+  const onSubprocessClick = useCallback((subprocessId) => {
+    setExpandedSubprocesses(prev => {
       const next = new Set(prev);
-      if (next.has(nodeId)) {
-        next.delete(nodeId);
-      } else {
-        next.add(nodeId);
-      }
+      if (next.has(subprocessId)) next.delete(subprocessId);
+      else next.add(subprocessId);
       return next;
     });
     setHoveredElement(null);
   }, []);
 
   const onNodeHover = useCallback((nodeData, event) => {
-    const rect = {
-      top: event.clientY - 5,
-      left: event.clientX + 10,
-      bottom: event.clientY + 5,
-      right: event.clientX + 20,
-      width: 10,
-      height: 10,
-      x: event.clientX + 10,
-      y: event.clientY - 5,
-    };
-    popoverTarget.current = { getBoundingClientRect: () => rect };
+    const cr = containerRef.current
+      ? containerRef.current.getBoundingClientRect()
+      : { left: 0, top: 0 };
+    setHoverPos({ x: event.clientX - cr.left + 15, y: event.clientY - cr.top - 10 });
     setHoveredElement({ type: 'node', data: nodeData });
   }, []);
 
   const onEdgeHover = useCallback((edgeData, event) => {
-    const rect = {
-      top: event.clientY - 5,
-      left: event.clientX + 10,
-      bottom: event.clientY + 5,
-      right: event.clientX + 20,
-      width: 10,
-      height: 10,
-      x: event.clientX + 10,
-      y: event.clientY - 5,
-    };
-    popoverTarget.current = { getBoundingClientRect: () => rect };
+    const cr = containerRef.current
+      ? containerRef.current.getBoundingClientRect()
+      : { left: 0, top: 0 };
+    setHoverPos({ x: event.clientX - cr.left + 15, y: event.clientY - cr.top - 10 });
     setHoveredElement({ type: 'edge', data: edgeData });
   }, []);
 
-  const onHoverLeave = useCallback(() => {
-    setHoveredElement(null);
-  }, []);
+  const onHoverLeave = useCallback(() => setHoveredElement(null), []);
 
   const callbacks = useMemo(() => ({
-    onNodeHover,
-    onNodeLeave: onHoverLeave,
-    onEdgeHover,
-    onEdgeLeave: onHoverLeave,
-    onGroupClick,
-    onNodeClick,
-  }), [onNodeHover, onHoverLeave, onEdgeHover, onGroupClick, onNodeClick]);
+    onNodeHover, onNodeLeave: onHoverLeave,
+    onEdgeHover, onEdgeLeave: onHoverLeave,
+    onGroupClick, onSubprocessClick,
+  }), [onNodeHover, onHoverLeave, onEdgeHover, onGroupClick, onSubprocessClick]);
 
-  // ─── Compute layout & render ─────────────────────────────────────────
+  // ─── Layout & render ─────────────────────────────────────────────────
   useEffect(() => {
     if (!tagData || !svgRef.current) return;
     const layout = computeLayout(
-      tagData, collapsedProcesses, expandedNodes,
+      tagData, collapsedProcesses, expandedSubprocesses,
       dimensions.width, dimensions.height
     );
     renderDiagram(svgRef.current, layout, callbacks);
-  }, [tagData, collapsedProcesses, expandedNodes, dimensions, callbacks]);
+  }, [tagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks]);
 
-  // ─── Popover content builders ────────────────────────────────────────
-  const renderNodePopover = () => {
-    if (!hoveredElement || hoveredElement.type !== 'node') return <span />;
+  // ─── Tooltip builders ────────────────────────────────────────────────
+  const renderNodeTooltip = () => {
+    if (!hoveredElement || hoveredElement.type !== 'node') return null;
     const data = hoveredElement.data;
 
     const incoming = [];
@@ -167,19 +136,14 @@ const WorkflowDiagram = ({ mod }) => {
     }
 
     return (
-      <Popover className="wf-popover" id="wf-node-popover">
-        <Popover.Title as="h3">{data.name}</Popover.Title>
-        <Popover.Content>
+      <>
+        <div className="wf-tooltip-header">{data.name}</div>
+        <div className="wf-tooltip-body">
           <div className="wf-popover-atp">{data.id}</div>
           <div className="wf-popover-process">{data.processName}</div>
-          {data.type === 'summary' && (
+          {(data.type === 'summary' || data.type === 'subsummary') && (
             <div style={{ marginBottom: 6 }}>
-              <strong>{data.nodeCount}</strong> states in this process. Click to expand.
-            </div>
-          )}
-          {data.hiddenChildren > 0 && (
-            <div style={{ marginBottom: 6, color: '#5a8ab5' }}>
-              Click to reveal {data.hiddenChildren} hidden descendant{data.hiddenChildren > 1 ? 's' : ''}.
+              <strong>{data.nodeCount}</strong> states{data.subprocessCount > 0 ? `, ${data.subprocessCount} sub-processes` : ''}. Click to expand.
             </div>
           )}
           {data.transitions && data.transitions.length > 0 && (
@@ -204,51 +168,73 @@ const WorkflowDiagram = ({ mod }) => {
               ))}
             </>
           )}
-        </Popover.Content>
-      </Popover>
+        </div>
+      </>
     );
   };
 
-  const renderEdgePopover = () => {
-    if (!hoveredElement || hoveredElement.type !== 'edge') return <span />;
-    const data = hoveredElement.data;
+  const renderEdgeTooltip = () => {
+    if (!hoveredElement || hoveredElement.type !== 'edge') return null;
+    const edge = hoveredElement.data;
+    const fwd = edge.data;
+    const rev = edge.reverseData;
 
     return (
-      <Popover className="wf-popover" id="wf-edge-popover">
-        <Popover.Title as="h3">
-          {data.data.sourceName} &rarr; {data.data.to_name}
-        </Popover.Title>
-        <Popover.Content>
-          <div className="wf-popover-transition">
-            <strong>Type:</strong> {data.data.transition_type}
+      <>
+        <div className="wf-tooltip-header">
+          {fwd.sourceName} {edge.bidirectional ? '\u21C4' : '\u2192'} {fwd.to_name}
+        </div>
+        <div className="wf-tooltip-body">
+          {/* Forward direction */}
+          <div className="wf-popover-section-title">
+            {fwd.sourceName} &rarr; {fwd.to_name}
           </div>
-          {data.data.condition && (
+          <div className="wf-popover-transition">
+            <strong>Type:</strong> {fwd.transition_type}
+          </div>
+          {fwd.condition && (
             <div className="wf-popover-transition">
-              <strong>Condition:</strong> {data.data.condition}
+              <strong>Condition:</strong> {fwd.condition}
             </div>
           )}
-          {data.data.requirements.length > 0 && (
+          {fwd.requirements.length > 0 && (
+            <div className="wf-popover-transition">
+              <strong>Requires:</strong> {fwd.requirements.join(', ')}
+            </div>
+          )}
+          {fwd.actions.length > 0 && (
+            <div className="wf-popover-transition">
+              <strong>Actions:</strong> {fwd.actions.join(', ')}
+            </div>
+          )}
+          {/* Reverse direction (if bidirectional) */}
+          {rev && (
             <>
-              <div className="wf-popover-section-title">Requirements</div>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
-                {data.data.requirements.map((r, i) => (
-                  <li key={i} style={{ fontSize: 12 }}>{r}</li>
-                ))}
-              </ul>
+              <div className="wf-popover-section-title" style={{ marginTop: 8 }}>
+                {rev.sourceName} &rarr; {rev.to_name}
+              </div>
+              <div className="wf-popover-transition">
+                <strong>Type:</strong> {rev.transition_type}
+              </div>
+              {rev.condition && (
+                <div className="wf-popover-transition">
+                  <strong>Condition:</strong> {rev.condition}
+                </div>
+              )}
+              {rev.requirements.length > 0 && (
+                <div className="wf-popover-transition">
+                  <strong>Requires:</strong> {rev.requirements.join(', ')}
+                </div>
+              )}
+              {rev.actions.length > 0 && (
+                <div className="wf-popover-transition">
+                  <strong>Actions:</strong> {rev.actions.join(', ')}
+                </div>
+              )}
             </>
           )}
-          {data.data.actions.length > 0 && (
-            <>
-              <div className="wf-popover-section-title">Actions</div>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
-                {data.data.actions.map((a, i) => (
-                  <li key={i} style={{ fontSize: 12 }}>{a}</li>
-                ))}
-              </ul>
-            </>
-          )}
-        </Popover.Content>
-      </Popover>
+        </div>
+      </>
     );
   };
 
@@ -262,11 +248,7 @@ const WorkflowDiagram = ({ mod }) => {
   }
 
   if (error) {
-    return (
-      <div className="workflow-diagram-error">
-        Error: {error}
-      </div>
-    );
+    return <div className="workflow-diagram-error">Error: {error}</div>;
   }
 
   return (
@@ -278,19 +260,11 @@ const WorkflowDiagram = ({ mod }) => {
       >
         Reset Zoom
       </button>
-      <Overlay
-        show={hoveredElement !== null}
-        target={popoverTarget.current}
-        placement="right"
-        containerPadding={20}
-      >
-        {hoveredElement
-          ? hoveredElement.type === 'node'
-            ? renderNodePopover()
-            : renderEdgePopover()
-          : <span />
-        }
-      </Overlay>
+      {hoveredElement && (
+        <div className="wf-tooltip" style={{ left: hoverPos.x, top: hoverPos.y }}>
+          {hoveredElement.type === 'node' ? renderNodeTooltip() : renderEdgeTooltip()}
+        </div>
+      )}
     </div>
   );
 };
