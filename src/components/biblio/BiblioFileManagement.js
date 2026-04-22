@@ -759,8 +759,11 @@ const FileEditor = ({ onFileStatusChange }) => {
     }
   };
 
-  // Method suffixes used in converted file display names
-  const METHOD_SUFFIXES = ['_grobid', '_docling', '_marker', '_merged'];
+  // Method suffixes used in converted file display names.
+  // PDFX outputs use _grobid/_docling/_marker/_merged; XML-derived outputs use
+  // _nxml (from nXML sources) and _tei (from TEI sources). Stripping any of
+  // these yields the source display_name used as the grouping key.
+  const METHOD_SUFFIXES = ['_grobid', '_docling', '_marker', '_merged', '_nxml', '_tei'];
 
   // Create a mapping of base display_name to converted files (markdown and TEI)
   // Converted files have names like "PMC123_grobid" but we need to map to "PMC123"
