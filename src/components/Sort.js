@@ -340,7 +340,7 @@ const Sort = () => {
             {viewMode === 'Sort' && (
               <>
                 <RowDivider />
-                <Row className="mb-3 align-items-end">
+                <Row className="mb-3 align-items-end justify-content-center">
                   <Col md={4}>
                     <Form.Group className="mb-0">
                       <Form.Label style={{ fontWeight: 'bold' }}>Search:</Form.Label>
@@ -358,13 +358,14 @@ const Sort = () => {
                       </InputGroup>
                     </Form.Group>
                   </Col>
-                  <Col md={3}>
+                  <Col md="auto">
                     <Form.Group className="mb-0">
                       <Form.Label style={{ fontWeight: 'bold' }}>Source:</Form.Label>
                       <Form.Control
                         as="select"
                         value={sortSource}
                         onChange={(e) => handleSortSourceChange(e.target.value)}
+                        style={{ minWidth: '180px' }}
                       >
                         <option value="">All Sources</option>
                         {sortSources.map(source => (
@@ -375,20 +376,21 @@ const Sort = () => {
                       </Form.Control>
                     </Form.Group>
                   </Col>
-                  <Col md={2}>
+                  <Col md="auto">
                     <Form.Group className="mb-0">
                       <Form.Label style={{ fontWeight: 'bold' }}>Order:</Form.Label>
                       <Form.Control
                         as="select"
                         value={sortOrder}
                         onChange={(e) => handleSortOrderChange(e.target.value)}
+                        style={{ minWidth: '130px' }}
                       >
                         <option value="desc">Newest First</option>
                         <option value="asc">Oldest First</option>
                       </Form.Control>
                     </Form.Group>
                   </Col>
-                  <Col md={1}>
+                  <Col md="auto">
                     {(searchQuery || sortSource || sortOrder !== 'desc') && (
                       <Button
                         variant="outline-danger"
