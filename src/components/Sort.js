@@ -350,7 +350,7 @@ const Sort = () => {
                       <InputGroup>
                         <Form.Control
                           type="text"
-                          placeholder="Search titles, abstracts, journals, authors..."
+                          placeholder="Search titles, journals, authors..."
                           value={searchInputValue}
                           onChange={(e) => setSearchInputValue(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
