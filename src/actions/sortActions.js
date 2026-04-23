@@ -18,7 +18,7 @@ export const changeFieldSortMods = (e) => {
   };
 };
 
-export const sortButtonModsQuery = (mod, sortType) => dispatch => {
+export const sortButtonModsQuery = (mod, sortType, searchQuery = '', sortSource = '', sortBy = 'curie', sortOrder = 'desc') => dispatch => {
   dispatch({
     type: 'SORT_SET_IS_LOADING',
     payload: true
@@ -34,9 +34,21 @@ export const sortButtonModsQuery = (mod, sortType) => dispatch => {
       return
   }
   const sortGetModsQuery = async () => {
-    const url = (sortType === 'needs_review') ?
-                '/sort/need_review?count=100&mod_abbreviation=' + mod :
+    let url = (sortType === 'needs_review') ?
+                '/sort/need_review?mod_abbreviation=' + mod :
                 '/sort/prepublication_pipeline?count=100&mod_abbreviation=' + mod;
+
+    // Add search and filter parameters for needs_review
+    if (sortType === 'needs_review') {
+      if (searchQuery) {
+        url += '&search_query=' + encodeURIComponent(searchQuery);
+      }
+      if (sortSource) {
+        url += '&sort_source=' + encodeURIComponent(sortSource);
+      }
+      url += '&sort_by=' + sortBy + '&sort_order=' + sortOrder;
+    }
+
     // console.log(url);
     try {
       const res = await api.get(url);
@@ -69,6 +81,34 @@ export const sortButtonModsQuery = (mod, sortType) => dispatch => {
     });
   }
   sortGetModsQuery()
+};
+
+export const fetchSortSources = (mod) => dispatch => {
+  if (mod === 'No') {
+    dispatch({
+      type: 'SET_SORT_SOURCES',
+      payload: []
+    });
+    return;
+  }
+
+  const fetchSources = async () => {
+    try {
+      const url = '/sort/need_review/sort_sources?mod_abbreviation=' + mod;
+      const res = await api.get(url);
+      dispatch({
+        type: 'SET_SORT_SOURCES',
+        payload: res.data || []
+      });
+    } catch (error) {
+      console.error('Error fetching sort sources:', error);
+      dispatch({
+        type: 'SET_SORT_SOURCES',
+        payload: []
+      });
+    }
+  };
+  fetchSources();
 };
 
 

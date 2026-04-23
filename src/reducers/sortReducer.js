@@ -9,7 +9,8 @@ const initialState = {
   updateAlert: 0,
   updateFailure: 0,
   updateMessages: [],
-  isLoading: false
+  isLoading: false,
+  sortSources: []  // Available mod_corpus_sort_source values for the current MOD
 };
 
 // const initialState = {
@@ -71,6 +72,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         isLoading: action.payload
+      }
+
+    case 'SET_SORT_SOURCES':
+      return {
+        ...state,
+        sortSources: action.payload
       }
 
     case 'SORT_BUTTON_MODS_QUERY':

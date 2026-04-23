@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import {
   sortButtonModsQuery,
+  fetchSortSources,
   removeReferenceFromSortLive,
   changeSortCorpusToggler,
   changeSortWorkflowToggler,
@@ -10,7 +11,7 @@ import {
   setSortUpdating
 } from '../actions/sortActions';
 import { setReferenceCurie, setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioActions';
-import { Spinner, Form, Container, Row, Col, Button, Alert } from 'react-bootstrap';
+import { Spinner, Form, Container, Row, Col, Button, Alert, InputGroup } from 'react-bootstrap';
 import "react-bootstrap-typeahead/css/Typeahead.css";
 import { api } from "../api";
 import Modal from 'react-bootstrap/Modal';
@@ -48,6 +49,26 @@ const Sort = () => {
   const [recentlySortedData, setRecentlySortedData] = useState([]);
   const [showInsidePapers, setShowInsidePapers] = useState(true);
 
+  // Search and filter state
+  const [searchInputValue, setSearchInputValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortSource, setSortSource] = useState('');
+  const [sortBy, setSortBy] = useState('curie');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const sortSources = useSelector(state => state.sort.sortSources);
+
+  // Label mapping for sort source values
+  const sortSourceLabels = {
+    'mod_pubmed_search': 'MOD PubMed Search',
+    'dqm_files': 'DQM Files',
+    'manual_creation': 'Manual Creation',
+    'automated_alliance': 'Automated Alliance',
+    'assigned_for_review': 'Assigned for Review',
+    'prepublication_pipeline': 'Prepublication Pipeline',
+    'gaf': 'GAF',
+    'interaction': 'Interaction'
+  };
+
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   let activeMod = accessLevel;
 
@@ -64,6 +85,13 @@ const Sort = () => {
 
   let buttonUpdateDisabled = sortUpdating > 0;
 
+  // Fetch available sort sources when entering Sort view
+  useEffect(() => {
+    if (viewMode === 'Sort' && accessLevel) {
+      dispatch(fetchSortSources(accessLevel));
+    }
+  }, [viewMode, accessLevel, dispatch]);
+
   // Fetch "to sort" / prepublication list when viewMode changes
   useEffect(() => {
     let mappedSortType = null;
@@ -77,7 +105,11 @@ const Sort = () => {
 
     if (mappedSortType && sortUpdating === 0 && accessLevel) {
       console.log(`Dispatching sortButtonModsQuery with mod: ${accessLevel}, sortType: ${mappedSortType}`);
-      dispatch(sortButtonModsQuery(accessLevel, mappedSortType));
+      if (mappedSortType === 'needs_review') {
+        dispatch(sortButtonModsQuery(accessLevel, mappedSortType, searchQuery, sortSource, sortBy, sortOrder));
+      } else {
+        dispatch(sortButtonModsQuery(accessLevel, mappedSortType));
+      }
     }
   }, [viewMode, sortUpdating, accessLevel, dispatch]);
 
@@ -127,6 +159,35 @@ const Sort = () => {
       .catch(error => {
         console.error('Error fetching recently sorted papers:', error);
       });
+  };
+
+  // Search handler
+  const handleSearch = () => {
+    setSearchQuery(searchInputValue);
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchInputValue, sortSource, sortBy, sortOrder));
+  };
+
+  // Sort source filter handler
+  const handleSortSourceChange = (newSortSource) => {
+    setSortSource(newSortSource);
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, newSortSource, sortBy, sortOrder));
+  };
+
+  // Sort by/order handler
+  const handleSortChange = (newSortBy, newSortOrder) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, sortSource, newSortBy, newSortOrder));
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchInputValue('');
+    setSearchQuery('');
+    setSortSource('');
+    setSortBy('curie');
+    setSortOrder('desc');
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', '', '', 'curie', 'desc'));
   };
 
   // Handler for 'Find sorted papers' button
@@ -277,6 +338,97 @@ const Sort = () => {
         )}
         {(viewMode === 'Sort' || viewMode === 'Prepublication') &&
           <>
+            {/* Search and Filter Controls - Only for Sort view */}
+            {viewMode === 'Sort' && (
+              <>
+                <RowDivider />
+                <Row className="mb-3 align-items-end">
+                  <Col md={4}>
+                    <Form.Group className="mb-0">
+                      <Form.Label style={{ fontWeight: 'bold' }}>Search:</Form.Label>
+                      <InputGroup>
+                        <Form.Control
+                          type="text"
+                          placeholder="Search titles, abstracts, journals, authors..."
+                          value={searchInputValue}
+                          onChange={(e) => setSearchInputValue(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+                        <Button variant="outline-secondary" onClick={handleSearch}>
+                          Search
+                        </Button>
+                      </InputGroup>
+                    </Form.Group>
+                  </Col>
+                  <Col md={3}>
+                    <Form.Group className="mb-0">
+                      <Form.Label style={{ fontWeight: 'bold' }}>Source:</Form.Label>
+                      <Form.Control
+                        as="select"
+                        value={sortSource}
+                        onChange={(e) => handleSortSourceChange(e.target.value)}
+                      >
+                        <option value="">All Sources</option>
+                        {sortSources.map(source => (
+                          <option key={source} value={source}>
+                            {sortSourceLabels[source] || source}
+                          </option>
+                        ))}
+                      </Form.Control>
+                    </Form.Group>
+                  </Col>
+                  <Col md={2}>
+                    <Form.Group className="mb-0">
+                      <Form.Label style={{ fontWeight: 'bold' }}>Sort by:</Form.Label>
+                      <Form.Control
+                        as="select"
+                        value={sortBy}
+                        onChange={(e) => handleSortChange(e.target.value, sortOrder)}
+                      >
+                        <option value="curie">Reference ID</option>
+                        <option value="date_published">Publication Year</option>
+                      </Form.Control>
+                    </Form.Group>
+                  </Col>
+                  <Col md={2}>
+                    <Form.Group className="mb-0">
+                      <Form.Label style={{ fontWeight: 'bold' }}>Order:</Form.Label>
+                      <Form.Control
+                        as="select"
+                        value={sortOrder}
+                        onChange={(e) => handleSortChange(sortBy, e.target.value)}
+                      >
+                        <option value="desc">Newest First</option>
+                        <option value="asc">Oldest First</option>
+                      </Form.Control>
+                    </Form.Group>
+                  </Col>
+                  <Col md={1}>
+                    {(searchQuery || sortSource || sortBy !== 'curie' || sortOrder !== 'desc') && (
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={handleClearFilters}
+                        title="Clear all filters"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </Col>
+                </Row>
+                {(searchQuery || sortSource) && (
+                  <Row className="mb-2">
+                    <Col>
+                      <small className="text-muted">
+                        {searchQuery && <span>Searching for: "<strong>{searchQuery}</strong>"</span>}
+                        {searchQuery && sortSource && <span> | </span>}
+                        {sortSource && <span>Source: <strong>{sortSourceLabels[sortSource] || sortSource}</strong></span>}
+                      </small>
+                    </Col>
+                  </Row>
+                )}
+              </>
+            )}
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
               <Row>
@@ -296,7 +448,11 @@ const Sort = () => {
             {referencesToSortLive && referencesToSortLive.length === 0 && (
               <div>
                 <br />
-                <p>No Papers to sort</p>
+                {(searchQuery || sortSource) ? (
+                  <p>No papers found matching your search criteria. <Button variant="link" onClick={handleClearFilters}>Clear filters</Button></p>
+                ) : (
+                  <p>No Papers to sort</p>
+                )}
               </div>
             )}
             {referencesToSortLive && referencesToSortLive.length > 0 && (
