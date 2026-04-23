@@ -56,23 +56,32 @@ export const sortButtonModsQuery = (mod, sortType, searchQuery = '', sortSource 
       // console.log(response);
       let response_payload = mod + ' not found';
       let response_found = 'not found';
+      let total_count = 0;
       if (response !== undefined) {
         // console.log('response not undefined');
         response_found = 'found';
-        response_payload = response;
+        // Handle new response format with total_count and references
+        if (sortType === 'needs_review' && response.references !== undefined) {
+          response_payload = response.references;
+          total_count = response.total_count || 0;
+        } else {
+          response_payload = response;
+        }
       }
       // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
       console.log('dispatch QUERY_BUTTON');
       dispatch({
         type: 'SORT_BUTTON_MODS_QUERY',
         payload: response_payload,
-        responseFound: response_found
+        responseFound: response_found,
+        totalCount: total_count
       });
     } catch (error) {
       dispatch({
         type: 'SORT_BUTTON_MODS_QUERY',
         payload: mod + ' not found',
-        responseFound: 'not found'
+        responseFound: 'not found',
+        totalCount: 0
       });
     }
     dispatch({

@@ -10,7 +10,8 @@ const initialState = {
   updateFailure: 0,
   updateMessages: [],
   isLoading: false,
-  sortSources: []  // Available mod_corpus_sort_source values for the current MOD
+  sortSources: [],  // Available mod_corpus_sort_source values for the current MOD
+  totalCount: 0     // Total count of matching references (for pagination info)
 };
 
 // const initialState = {
@@ -109,7 +110,8 @@ export default function(state = initialState, action) {
         ...state,
         getPapersToSortFlag: false,
         referencesToSortLive: action.payload,
-        referencesToSortDb: referencesToSortDb
+        referencesToSortDb: referencesToSortDb,
+        totalCount: action.totalCount || 0
       }
 //         referencesToSort: [{'title': "A conserved serine residue regulates the stability of Drosophila Salvador and human WW domain-containing adaptor 45 through proteasomal degradation.", 'abstract': "The abstract one goes here" }, {'title': "Phylogenetic-based propagation of functional annotations within the Gene Ontology consortium.", 'abstract': "The abstract two goes here" }]
 

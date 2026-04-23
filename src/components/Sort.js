@@ -56,6 +56,7 @@ const Sort = () => {
   const [sortBy, setSortBy] = useState('curie');
   const [sortOrder, setSortOrder] = useState('desc');
   const sortSources = useSelector(state => state.sort.sortSources);
+  const totalCount = useSelector(state => state.sort.totalCount);
 
   // Label mapping for sort source values
   const sortSourceLabels = {
@@ -416,17 +417,24 @@ const Sort = () => {
                     )}
                   </Col>
                 </Row>
-                {(searchQuery || sortSource) && (
-                  <Row className="mb-2">
-                    <Col>
-                      <small className="text-muted">
-                        {searchQuery && <span>Searching for: "<strong>{searchQuery}</strong>"</span>}
-                        {searchQuery && sortSource && <span> | </span>}
-                        {sortSource && <span>Source: <strong>{sortSourceLabels[sortSource] || sortSource}</strong></span>}
-                      </small>
-                    </Col>
-                  </Row>
-                )}
+                <Row className="mb-2">
+                  <Col>
+                    <small className="text-muted">
+                      {viewMode === 'Sort' && (
+                        <span>
+                          <strong>{totalCount}</strong> total papers
+                          {referencesToSortLive && referencesToSortLive.length > 0 && totalCount > referencesToSortLive.length && (
+                            <span> (showing {referencesToSortLive.length})</span>
+                          )}
+                        </span>
+                      )}
+                      {(searchQuery || sortSource) && <span> | </span>}
+                      {searchQuery && <span>Searching for: "<strong>{searchQuery}</strong>"</span>}
+                      {searchQuery && sortSource && <span> | </span>}
+                      {sortSource && <span>Source: <strong>{sortSourceLabels[sortSource] || sortSource}</strong></span>}
+                    </small>
+                  </Col>
+                </Row>
               </>
             )}
             <RowDivider />
