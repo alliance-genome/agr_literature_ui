@@ -53,7 +53,6 @@ const Sort = () => {
   const [searchInputValue, setSearchInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortSource, setSortSource] = useState('');
-  const [sortBy, setSortBy] = useState('curie');
   const [sortOrder, setSortOrder] = useState('desc');
   const sortSources = useSelector(state => state.sort.sortSources);
   const totalCount = useSelector(state => state.sort.totalCount);
@@ -107,7 +106,7 @@ const Sort = () => {
     if (mappedSortType && sortUpdating === 0 && accessLevel) {
       console.log(`Dispatching sortButtonModsQuery with mod: ${accessLevel}, sortType: ${mappedSortType}`);
       if (mappedSortType === 'needs_review') {
-        dispatch(sortButtonModsQuery(accessLevel, mappedSortType, searchQuery, sortSource, sortBy, sortOrder));
+        dispatch(sortButtonModsQuery(accessLevel, mappedSortType, searchQuery, sortSource, 'date_published', sortOrder));
       } else {
         dispatch(sortButtonModsQuery(accessLevel, mappedSortType));
       }
@@ -165,20 +164,19 @@ const Sort = () => {
   // Search handler
   const handleSearch = () => {
     setSearchQuery(searchInputValue);
-    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchInputValue, sortSource, sortBy, sortOrder));
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchInputValue, sortSource, 'date_published', sortOrder));
   };
 
   // Sort source filter handler
   const handleSortSourceChange = (newSortSource) => {
     setSortSource(newSortSource);
-    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, newSortSource, sortBy, sortOrder));
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, newSortSource, 'date_published', sortOrder));
   };
 
-  // Sort by/order handler
-  const handleSortChange = (newSortBy, newSortOrder) => {
-    setSortBy(newSortBy);
+  // Sort order handler
+  const handleSortOrderChange = (newSortOrder) => {
     setSortOrder(newSortOrder);
-    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, sortSource, newSortBy, newSortOrder));
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, sortSource, 'date_published', newSortOrder));
   };
 
   // Clear all filters
@@ -186,9 +184,8 @@ const Sort = () => {
     setSearchInputValue('');
     setSearchQuery('');
     setSortSource('');
-    setSortBy('curie');
     setSortOrder('desc');
-    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', '', '', 'curie', 'desc'));
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', '', '', 'date_published', 'desc'));
   };
 
   // Handler for 'Find sorted papers' button
@@ -380,24 +377,11 @@ const Sort = () => {
                   </Col>
                   <Col md={2}>
                     <Form.Group className="mb-0">
-                      <Form.Label style={{ fontWeight: 'bold' }}>Sort by:</Form.Label>
-                      <Form.Control
-                        as="select"
-                        value={sortBy}
-                        onChange={(e) => handleSortChange(e.target.value, sortOrder)}
-                      >
-                        <option value="curie">Reference ID</option>
-                        <option value="date_published">Publication Year</option>
-                      </Form.Control>
-                    </Form.Group>
-                  </Col>
-                  <Col md={2}>
-                    <Form.Group className="mb-0">
                       <Form.Label style={{ fontWeight: 'bold' }}>Order:</Form.Label>
                       <Form.Control
                         as="select"
                         value={sortOrder}
-                        onChange={(e) => handleSortChange(sortBy, e.target.value)}
+                        onChange={(e) => handleSortOrderChange(e.target.value)}
                       >
                         <option value="desc">Newest First</option>
                         <option value="asc">Oldest First</option>
@@ -405,7 +389,7 @@ const Sort = () => {
                     </Form.Group>
                   </Col>
                   <Col md={1}>
-                    {(searchQuery || sortSource || sortBy !== 'curie' || sortOrder !== 'desc') && (
+                    {(searchQuery || sortSource || sortOrder !== 'desc') && (
                       <Button
                         variant="outline-danger"
                         size="sm"
