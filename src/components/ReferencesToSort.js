@@ -228,7 +228,7 @@ const ReferencesToSort = ({
                 .map((xref, idx) => {
                   const obsoleteTag = xref.is_obsolete ?
                     (<span key={`obsolete-${idx}`} style={{ color: 'red', marginRight: '4px' }}>obsolete</span>) : null;
-                  const content = xref['url'].endsWith('/') ? (
+                  const content = (!xref['url'] || xref['url'].endsWith('/')) ? (
                     <span key={`xref-${idx}`}>{obsoleteTag}{xref['curie']}</span>
                   ) : (
                     <span key={`xref-${idx}`}>{obsoleteTag}
