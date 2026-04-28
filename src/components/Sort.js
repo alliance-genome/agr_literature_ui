@@ -174,7 +174,9 @@ const Sort = () => {
                   'topic': "ATP:0000123",
                   'entity_type': "ATP:0000123",
                   'entity_id_validation': "alliance",
-                  'topic_entity_tag_source_id': topicEntitySourceId
+                  'topic_entity_tag_source_id': topicEntitySourceId,
+                  'data_novelty': "ATP:0000335",
+                  'negated': false
                 };
                 subPath = 'topic_entity_tag/';
                 const field = null;
