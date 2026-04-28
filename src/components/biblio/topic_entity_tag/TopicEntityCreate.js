@@ -484,7 +484,13 @@ const TopicEntityCreate = () => {
       if (field === 'selectedSpecies') {
         newRows[index].selectedSpecies = value; // store selected species
       }
-	
+
+      // Clear entity fields when species is set to empty (entities require species for validation)
+      if (field === 'taxonSelect' && (value === "" || value === undefined)) {
+        currentRow.entityText = "";
+        currentRow.entityResultList = [];
+      }
+
       // Validate the row when relevant fields change
       if (['entityText', 'taxonSelect', 'entityTypeSelect'].includes(field)) {
         handleEntityValidation(index, value);
@@ -1049,11 +1055,13 @@ const TopicEntityCreate = () => {
                     options={typeaheadOptions}
           	  selected={row.selectedSpecies || row.entityResultList.map(entity => `${entity.entityTypeSymbol} ${entity.curie}`)}
                   />
-                ) : ( 	
+                ) : (
                   <Form.Control
                     as="textarea"
                     id={`entitytextarea-${index}`}
                     value={row.entityText}
+                    disabled={!row.taxonSelect || row.taxonSelect === ""}
+                    placeholder={!row.taxonSelect || row.taxonSelect === "" ? "Select species to add entities" : ""}
                     onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}
                   />
                 )}
