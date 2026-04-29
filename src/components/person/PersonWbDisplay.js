@@ -113,7 +113,7 @@ const PersonWbDisplay = ({ person }) => {
       </Card>
 
       <Section title="Personal Identification">
-        <FieldRow label="standardname" ts={recordTs}>{person.display_name}</FieldRow>
+        <FieldRow label="display_name" ts={recordTs}>{person.display_name}</FieldRow>
         {names.length === 0 ? (
           <FieldRow label="name" />
         ) : (
