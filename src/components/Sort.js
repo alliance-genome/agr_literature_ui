@@ -57,6 +57,11 @@ const Sort = () => {
   const sortSources = useSelector(state => state.sort.sortSources);
   const totalCount = useSelector(state => state.sort.totalCount);
 
+  // Bulk selection state
+  const [selectedPapers, setSelectedPapers] = useState(new Set());
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkResult, setBulkResult] = useState(null);
+
   // Label mapping for sort source values
   const sortSourceLabels = {
     'mod_pubmed_search': 'MOD PubMed Search',
@@ -185,7 +190,75 @@ const Sort = () => {
     setSearchQuery('');
     setSortSource('');
     setSortOrder('desc');
+    setSelectedPapers(new Set());
     dispatch(sortButtonModsQuery(accessLevel, 'needs_review', '', '', 'date_published', 'desc'));
+  };
+
+  // Bulk selection handlers
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allIds = new Set(referencesToSortLive.map(ref => ref.mod_corpus_association_id));
+      setSelectedPapers(allIds);
+    } else {
+      setSelectedPapers(new Set());
+    }
+  };
+
+  const handleSelectPaper = (mcaId) => {
+    setSelectedPapers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(mcaId)) {
+        newSet.delete(mcaId);
+      } else {
+        newSet.add(mcaId);
+      }
+      return newSet;
+    });
+  };
+
+  const isAllSelected = referencesToSortLive && referencesToSortLive.length > 0 &&
+    referencesToSortLive.every(ref => selectedPapers.has(ref.mod_corpus_association_id));
+
+  // Bulk move OUT handler
+  const handleBulkMoveOut = async () => {
+    if (selectedPapers.size === 0) return;
+
+    setBulkUpdating(true);
+    setBulkResult(null);
+
+    try {
+      const response = await api.patch('/reference/mod_corpus_association/batch', {
+        mod_corpus_association_ids: Array.from(selectedPapers),
+        corpus: false,
+        force_out: false
+      });
+
+      const result = response.data;
+      setBulkResult(result);
+
+      // Remove successfully updated papers from the list
+      const successfulIds = new Set(
+        result.results.filter(r => r.success).map(r => r.mod_corpus_association_id)
+      );
+
+      // Clear selection and trigger refresh
+      setSelectedPapers(new Set());
+
+      if (successfulIds.size > 0) {
+        // Refresh the list to remove sorted papers
+        dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, sortSource, 'date_published', sortOrder));
+      }
+    } catch (error) {
+      console.error('Bulk update error:', error);
+      setBulkResult({
+        total_requested: selectedPapers.size,
+        successful: 0,
+        failed: selectedPapers.size,
+        results: [{ success: false, message: error.response?.data?.detail || 'Bulk update failed' }]
+      });
+    } finally {
+      setBulkUpdating(false);
+    }
   };
 
   // Handler for 'Find sorted papers' button
@@ -423,6 +496,84 @@ const Sort = () => {
                     </small>
                   </Col>
                 </Row>
+                {/* Bulk Selection Controls */}
+                {referencesToSortLive && referencesToSortLive.length > 0 && (
+                  <Row className="mb-3 align-items-center">
+                    <Col md="auto">
+                      <Form.Check
+                        type="checkbox"
+                        id="select-all-papers"
+                        label={`Select All (${referencesToSortLive.length})`}
+                        checked={isAllSelected}
+                        onChange={handleSelectAll}
+                        style={{ fontWeight: 'bold' }}
+                      />
+                    </Col>
+                    <Col md="auto">
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={handleBulkMoveOut}
+                        disabled={selectedPapers.size === 0 || bulkUpdating}
+                      >
+                        {bulkUpdating ? (
+                          <>
+                            <Spinner animation="border" size="sm" /> Moving...
+                          </>
+                        ) : (
+                          `Move Selected OUT (${selectedPapers.size})`
+                        )}
+                      </Button>
+                    </Col>
+                    {selectedPapers.size > 0 && (
+                      <Col md="auto">
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => setSelectedPapers(new Set())}
+                        >
+                          Clear Selection
+                        </Button>
+                      </Col>
+                    )}
+                  </Row>
+                )}
+                {/* Bulk Result Alert */}
+                {bulkResult && (
+                  <Row className="mb-3">
+                    <Col>
+                      <Alert
+                        variant={bulkResult.failed === 0 ? 'success' : bulkResult.successful === 0 ? 'danger' : 'warning'}
+                        onClose={() => setBulkResult(null)}
+                        dismissible
+                      >
+                        <Alert.Heading>
+                          {bulkResult.failed === 0 ? 'Bulk Update Successful' : 'Bulk Update Complete'}
+                        </Alert.Heading>
+                        <p>
+                          <strong>{bulkResult.successful}</strong> papers moved OUT successfully.
+                          {bulkResult.failed > 0 && (
+                            <span> <strong>{bulkResult.failed}</strong> failed.</span>
+                          )}
+                        </p>
+                        {bulkResult.failed > 0 && (
+                          <details>
+                            <summary>Show failed items</summary>
+                            <ul style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                              {bulkResult.results
+                                .filter(r => !r.success)
+                                .map((r, idx) => (
+                                  <li key={idx}>
+                                    {r.reference_curie || `ID: ${r.mod_corpus_association_id}`}: {r.message}
+                                  </li>
+                                ))}
+                            </ul>
+                          </details>
+                        )}
+                      </Alert>
+                    </Col>
+                  </Row>
+                )}
               </>
             )}
             <RowDivider />
@@ -470,6 +621,9 @@ const Sort = () => {
                     topicEntitySourceId={topicEntitySourceId}
                     accessToken={accessToken}
                     activeMod={activeMod}
+                    isSelected={selectedPapers.has(reference.mod_corpus_association_id)}
+                    onSelectChange={handleSelectPaper}
+                    showCheckbox={viewMode === 'Sort'}
                   />
                 ))}
                 <RowDivider />

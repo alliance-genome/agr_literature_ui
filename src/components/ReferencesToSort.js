@@ -33,7 +33,10 @@ const ReferencesToSort = ({
   speciesTypeaheadRef,
   topicEntitySourceId,
   accessToken,
-  activeMod
+  activeMod,
+  isSelected = false,
+  onSelectChange = null,
+  showCheckbox = false
 }) => {
   const dispatch = useDispatch();
 
@@ -194,8 +197,20 @@ const ReferencesToSort = ({
   return (
     <div key={`reference-div-${index}`}>
       <Row key={`reference-row-${index}`}>
+        {/* Selection Checkbox */}
+        {showCheckbox && (
+          <Col lg="auto" className="Col-general Col-display d-flex align-items-center" style={{ backgroundColor, padding: '.5rem', minWidth: '40px' }}>
+            <Form.Check
+              type="checkbox"
+              id={`select-paper-${index}`}
+              checked={isSelected}
+              onChange={() => onSelectChange && onSelectChange(reference.mod_corpus_association_id)}
+              style={{ transform: 'scale(1.3)' }}
+            />
+          </Col>
+        )}
         {/* Reference Details */}
-        <Col lg={7} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor, padding: '.5rem' }}>
+        <Col lg={showCheckbox ? 6 : 7} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor, padding: '.5rem' }}>
           <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
             <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: reference['title'] }} />
             <br />
@@ -476,6 +491,9 @@ ReferencesToSort.propTypes = {
   topicEntitySourceId: PropTypes.string,
   accessToken: PropTypes.string.isRequired,
   activeMod: PropTypes.string.isRequired,
+  isSelected: PropTypes.bool,
+  onSelectChange: PropTypes.func,
+  showCheckbox: PropTypes.bool,
 };
 
 export default ReferencesToSort;
