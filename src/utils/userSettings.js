@@ -54,7 +54,7 @@ export async function listPersonSettings({
   // Create the request promise
   const requestPromise = (async () => {
     try {
-      const response = await api.get(`/person_setting/by/email/${encodeURIComponent(email)}`);
+      const response = await api.get(`/person_setting/by_email/${encodeURIComponent(email)}`);
 
       if (response.status === 204 || !Array.isArray(response.data)) {
         console.log(`No settings found for email: ${email}`);
@@ -166,7 +166,7 @@ export const makeDefaultPersonSetting = async ({ email, componentName, person_se
     console.log(`Setting ${person_setting_id} as default for component: ${componentName}`);
 
     // First, get current settings to find existing default
-    const response = await api.get(`/person_setting/by/email/${encodeURIComponent(email)}`);
+    const response = await api.get(`/person_setting/by_email/${encodeURIComponent(email)}`);
     const allSettings = response.data;
 
     if (Array.isArray(allSettings)) {
