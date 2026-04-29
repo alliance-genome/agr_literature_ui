@@ -103,9 +103,9 @@ const TopicEntityCreate = () => {
 
   const taxonList = useMemo(() => {
     const unsortedTaxonList = Object.values(modToTaxon || {}).flat();
-    unsortedTaxonList.push("");
     unsortedTaxonList.push("use_wb");
     unsortedTaxonList.push("NCBITaxon:9606");
+    // Sort species by name, excluding empty string
     let sortedList = unsortedTaxonList.sort((a, b) => (curieToNameTaxon[a] > curieToNameTaxon[b] ? 1 : -1));
 
     // Reorder to put user's MOD species first
@@ -113,6 +113,9 @@ const TopicEntityCreate = () => {
       const filteredTaxonList = sortedList.filter((x) => !modToTaxon[accessLevel].includes(x));
       sortedList = modToTaxon[accessLevel].concat(filteredTaxonList);
     }
+
+    // Add "No species" option at the end
+    sortedList.push("");
 
     return sortedList;
   }, [modToTaxon, curieToNameTaxon, accessLevel]);
@@ -466,9 +469,9 @@ const TopicEntityCreate = () => {
       }
 
       // Calculate disabledAddButton for the current row
+      // Species is optional - tags can be created without species
       const disabledAddButton =
         (currentRow.topicSelect === speciesATP && !currentRow.isSpeciesSelected) ||
-        (currentRow.topicSelect !== speciesATP && (!currentRow.taxonSelect || currentRow.taxonSelect === "")) ||
         !topicEntitySourceId ||
         !currentRow.topicSelect;
 
@@ -481,7 +484,13 @@ const TopicEntityCreate = () => {
       if (field === 'selectedSpecies') {
         newRows[index].selectedSpecies = value; // store selected species
       }
-	
+
+      // Clear entity fields when species is set to empty (entities require species for validation)
+      if (field === 'taxonSelect' && (value === "" || value === undefined)) {
+        currentRow.entityText = "";
+        currentRow.entityResultList = [];
+      }
+
       // Validate the row when relevant fields change
       if (['entityText', 'taxonSelect', 'entityTypeSelect'].includes(field)) {
         handleEntityValidation(index, value);
@@ -630,12 +639,12 @@ const TopicEntityCreate = () => {
             forApiArray.push([null, subPath, updateJson, method]);
           }
         }
-      } else if (row.taxonSelect !== "" && row.taxonSelect !== undefined) {
-        //const updateJson = initializeUpdateJson(refCurie, row, null, "alliance");
+      } else {
+        // Allow tags without species (species is optional)
         const updateJson = initializeUpdateJson(refCurie, row, null, null, dataNoveltyAtp);
-        // console.log("updateJson = " + JSON.stringify(updateJson, null, 2));
         forApiArray.push([null, subPath, updateJson, method]);
-    } }
+      }
+    }
 
     if (forApiArray.length === 0) {
       console.error("No valid data to submit.");
@@ -986,7 +995,7 @@ const TopicEntityCreate = () => {
                 >
                   {taxonList.map((option, idx) => (
                     <option key={idx} value={option}>
-                      {curieToNameTaxon[option]}
+                      {option === "" ? "(No species)" : curieToNameTaxon[option]}
                     </option>
                   ))}
                 </Form.Control>
@@ -1046,11 +1055,13 @@ const TopicEntityCreate = () => {
                     options={typeaheadOptions}
           	  selected={row.selectedSpecies || row.entityResultList.map(entity => `${entity.entityTypeSymbol} ${entity.curie}`)}
                   />
-                ) : ( 	
+                ) : (
                   <Form.Control
                     as="textarea"
                     id={`entitytextarea-${index}`}
                     value={row.entityText}
+                    disabled={!row.taxonSelect || row.taxonSelect === ""}
+                    placeholder={!row.taxonSelect || row.taxonSelect === "" ? "Select species to add entities" : ""}
                     onChange={(e) => handleRowChange(index, 'entityText', e.target.value)}
                   />
                 )}
