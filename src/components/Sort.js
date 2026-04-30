@@ -468,7 +468,7 @@ const Sort = () => {
                   <Col md="auto">
                     {(searchQuery || sortSource || sortOrder !== 'desc') && (
                       <Button
-                        variant="outline-danger"
+                        variant="danger"
                         size="sm"
                         onClick={handleClearFilters}
                         title="Clear all filters"
@@ -547,7 +547,7 @@ const Sort = () => {
                     style={{ fontWeight: 'bold', marginRight: '10px' }}
                   />
                   <Button
-                    variant="outline-danger"
+                    variant="danger"
                     size="sm"
                     onClick={handleBulkMoveOut}
                     disabled={selectedPapers.size === 0 || bulkUpdating}
@@ -631,7 +631,7 @@ const Sort = () => {
                       style={{ fontWeight: 'bold', marginRight: '10px' }}
                     />
                     <Button
-                      variant="outline-danger"
+                      variant="danger"
                       size="sm"
                       onClick={handleBulkMoveOut}
                       disabled={selectedPapers.size === 0 || bulkUpdating}
