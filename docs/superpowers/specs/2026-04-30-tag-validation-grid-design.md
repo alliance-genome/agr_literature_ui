@@ -115,6 +115,44 @@ A header bar above the grid, sharing space with the existing `BiblioPreferenceCo
   - `[ ] Confidence score`
 - **Topic filter** — a `MultiFilter` (the same `TopicFilter.jsx` pattern) listing all currently-loaded topic columns. Toggling hides/shows columns.
 - **+ Add topic** button — opens a typeahead popover that searches `/atp/search_topic/{query}?mod_abbr={mod}` (mirroring the existing TET creation form's topic select). Selecting a topic adds it as a new column. Note: an added topic may be entirely empty across the loaded references; that's fine — curators can still validate via the strip.
+- **Source filter** — a `MultiFilter` listing every source (`source_method / secondary_data_provider_abbreviation`) found in the loaded TETs. Selecting a subset hides mini-rows from non-selected sources across all topic columns simultaneously. This is the cross-column equivalent of the per-source filtering the per-paper TET table does via its source-method column.
+
+### Filters and sorting
+
+Mirroring the existing per-paper TET table (`TopicEntityTable.js`), every column is sortable and filterable. AgGrid's default sort behavior plus the existing `caseInsensitiveComparator` are used; filters are a mix of built-in text filters and custom `MultiFilter`-derived components.
+
+**Reference column** (sticky-left):
+
+- `sortable: true` — clicking the header rotates through asc / desc / none. Default sort: `date_published` desc.
+- `filter: true` (AgGrid text filter) on a `valueGetter` that joins title + curie + PMID + journal + authors + year, so a single free-text filter matches any of those.
+- An optional sub-header row offers radio buttons to choose the sort key (Title / Date / Curie / Journal). For the demo this is nice-to-have — the column-header click defaults to date.
+
+**Topic columns** (one per topic):
+
+Cells contain a *stack of TETs grouped by source*, so neither a plain text filter nor a single value comparator is appropriate. We use a custom filter component, `TopicCellFilter`, registered on each topic column. Its predicate operates on the cell's underlying TET array (the row's TETs whose `topic` curie matches the column).
+
+`TopicCellFilter` is a checkbox group inside the AgGrid filter popover (same UX as `MultiFilter`):
+
+- `[ ] has any tag` (cell has at least one TET)
+- `[ ] has Y` (any TET with `negated=false`)
+- `[ ] has N` (any TET with `negated=true`)
+- `[ ] has note` (any TET with non-null `note`)
+- `[ ] my validation present` (any TET created by the current uid)
+- `[ ] empty` (no TETs)
+
+Multiple selections combine as **OR** within the column filter (mirroring `MultiFilter`'s semantics). Across columns, AgGrid's filter combine is **AND** as usual.
+
+For sorting topic columns, `comparator` returns a numeric rank: `2` if the cell has any Y, `1` if only N, `0` if empty. This puts the most "interesting" cells at the top by default. Curators can shift-click multiple topic headers to layer sorts.
+
+**Global filtering interactions**:
+
+- The toolbar's **Source filter** is wired through the AgGrid Quick Filter API, but applied at the cell-renderer level so it hides mini-rows rather than rows. After applying it, `TopicCellFilter` predicates run against the *visible* mini-row set, so "has any tag" reflects what the user is actually looking at.
+- The existing `state.biblio.filteredTags` mechanism used by `TopicEntityTable.js` is **not** reused here — it's tailored to a single reference. The new component manages its own filter state locally.
+
+The filter components live in `src/components/refs_tet_validation/filters/`:
+
+- `TopicCellFilter.jsx` — the per-topic-column filter described above.
+- Reuses `src/components/AgGrid/MultiFilter.jsx` directly for the toolbar's topic and source filters.
 
 ### Loading + error states
 
@@ -183,6 +221,7 @@ New:
 - `src/components/refs_tet_validation/cellRenderers/SourceMiniRow.jsx`
 - `src/components/refs_tet_validation/cellRenderers/CellValidationStrip.jsx`
 - `src/components/refs_tet_validation/cellRenderers/NoteModal.jsx`
+- `src/components/refs_tet_validation/filters/TopicCellFilter.jsx`
 - `src/components/refs_tet_validation/hooks/useReferenceTets.js` (resolve + fetch + re-fetch one row)
 
 Modified:
