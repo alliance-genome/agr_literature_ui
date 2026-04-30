@@ -536,23 +536,22 @@ const Sort = () => {
             )}
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
-              <Row className="align-items-center justify-content-center">
-                <Col md="auto">
+              <Row className="align-items-center">
+                <Col md={4} className="d-flex align-items-center">
                   <Form.Check
                     type="checkbox"
                     id="select-all-papers"
                     label={`Select All (${referencesToSortLive.length})`}
                     checked={isAllSelected}
                     onChange={handleSelectAll}
-                    style={{ fontWeight: 'bold' }}
+                    style={{ fontWeight: 'bold', marginRight: '10px' }}
                   />
-                </Col>
-                <Col md="auto">
                   <Button
                     variant="outline-danger"
                     size="sm"
                     onClick={handleBulkMoveOut}
                     disabled={selectedPapers.size === 0 || bulkUpdating}
+                    style={{ marginRight: '5px' }}
                   >
                     {bulkUpdating ? (
                       <>
@@ -562,9 +561,7 @@ const Sort = () => {
                       `Move Selected OUT (${selectedPapers.size})`
                     )}
                   </Button>
-                </Col>
-                {selectedPapers.size > 0 && (
-                  <Col md="auto">
+                  {selectedPapers.size > 0 && (
                     <Button
                       variant="link"
                       size="sm"
@@ -572,9 +569,9 @@ const Sort = () => {
                     >
                       Clear
                     </Button>
-                  </Col>
-                )}
-                <Col md="auto">
+                  )}
+                </Col>
+                <Col md={4} className="text-center">
                   <SortSubmitUpdateRouter />
                   <Button
                     as="input"
@@ -585,6 +582,7 @@ const Sort = () => {
                     onClick={() => updateSorting()}
                   />
                 </Col>
+                <Col md={4}></Col>
               </Row>
             }
             {referencesToSortLive && referencesToSortLive.length === 0 && (
@@ -622,23 +620,22 @@ const Sort = () => {
                   />
                 ))}
                 <RowDivider />
-                <Row className="align-items-center justify-content-center">
-                  <Col md="auto">
+                <Row className="align-items-center">
+                  <Col md={4} className="d-flex align-items-center">
                     <Form.Check
                       type="checkbox"
                       id="select-all-papers-bottom"
                       label={`Select All (${referencesToSortLive.length})`}
                       checked={isAllSelected}
                       onChange={handleSelectAll}
-                      style={{ fontWeight: 'bold' }}
+                      style={{ fontWeight: 'bold', marginRight: '10px' }}
                     />
-                  </Col>
-                  <Col md="auto">
                     <Button
                       variant="outline-danger"
                       size="sm"
                       onClick={handleBulkMoveOut}
                       disabled={selectedPapers.size === 0 || bulkUpdating}
+                      style={{ marginRight: '5px' }}
                     >
                       {bulkUpdating ? (
                         <>
@@ -648,9 +645,7 @@ const Sort = () => {
                         `Move Selected OUT (${selectedPapers.size})`
                       )}
                     </Button>
-                  </Col>
-                  {selectedPapers.size > 0 && (
-                    <Col md="auto">
+                    {selectedPapers.size > 0 && (
                       <Button
                         variant="link"
                         size="sm"
@@ -658,9 +653,9 @@ const Sort = () => {
                       >
                         Clear
                       </Button>
-                    </Col>
-                  )}
-                  <Col md="auto">
+                    )}
+                  </Col>
+                  <Col md={4} className="text-center">
                     <SortSubmitUpdateRouter />
                     <Button
                       as="input"
@@ -671,6 +666,7 @@ const Sort = () => {
                       onClick={() => updateSorting()}
                     />
                   </Col>
+                  <Col md={4}></Col>
                 </Row>
               </Container>
             )}
