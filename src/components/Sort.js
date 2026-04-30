@@ -536,8 +536,8 @@ const Sort = () => {
             )}
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
-              <Row className="align-items-center justify-content-center">
-                <Col md="auto" className="d-flex align-items-center">
+              <Row className="align-items-center">
+                <Col md={4} className="d-flex align-items-center">
                   <Form.Check
                     type="checkbox"
                     id="select-all-papers"
@@ -571,7 +571,7 @@ const Sort = () => {
                     </Button>
                   )}
                 </Col>
-                <Col md="auto" className="ml-4">
+                <Col md={4} className="text-center">
                   <SortSubmitUpdateRouter />
                   <Button
                     as="input"
@@ -582,6 +582,7 @@ const Sort = () => {
                     onClick={() => updateSorting()}
                   />
                 </Col>
+                <Col md={4}></Col>
               </Row>
             }
             {referencesToSortLive && referencesToSortLive.length === 0 && (
@@ -619,8 +620,8 @@ const Sort = () => {
                   />
                 ))}
                 <RowDivider />
-                <Row className="align-items-center justify-content-center">
-                  <Col md="auto" className="d-flex align-items-center">
+                <Row className="align-items-center">
+                  <Col md={4} className="d-flex align-items-center">
                     <Form.Check
                       type="checkbox"
                       id="select-all-papers-bottom"
@@ -654,7 +655,7 @@ const Sort = () => {
                       </Button>
                     )}
                   </Col>
-                  <Col md="auto" className="ml-4">
+                  <Col md={4} className="text-center">
                     <SortSubmitUpdateRouter />
                     <Button
                       as="input"
@@ -665,6 +666,7 @@ const Sort = () => {
                       onClick={() => updateSorting()}
                     />
                   </Col>
+                  <Col md={4}></Col>
                 </Row>
               </Container>
             )}
