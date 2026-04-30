@@ -10,7 +10,7 @@
 
 A working demo (1–2 hour curator meeting) of a UI component that takes a list of reference IDs (mixed types) and renders a per-source aggregated view of Topic Entity Tag (TET) data per topic, so curators can validate tags across many references at once. The component must be **modular**: usable both as a togglable view on the search results page and as a standalone page with manual ID entry.
 
-The validation action creates a new manual TET tag with `negated=False` (correct) or `negated=True` (incorrect) for the (reference, topic) pair, mirroring the existing per-paper `ValidationByCurator` flow.
+The validation action creates a new manual TET tag with `negated=False` ("topic present") or `negated=True` ("topic not present") for the (reference, topic) pair. The action is intentionally framed as a generic assertion about the topic in the reference, not as validating a specific existing tag — so it works whether the cell already has source rows or is empty. The TET-creation mechanics still mirror the existing per-paper `ValidationByCurator` flow.
 
 ## Non-goals (for the demo)
 
@@ -77,7 +77,7 @@ Custom AgGrid cell renderer per topic column. For each cell:
 │ <source-label>   …                                               │
 │ ⋯                                                                │
 │ ─────────────────                                                │
-│ [✓ correct]  [✗ incorrect]   ← validation strip                  │
+│ [✓ topic present]  [✗ topic not present]   ← validation strip    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -86,7 +86,7 @@ Custom AgGrid cell renderer per topic column. For each cell:
 - **Note icon → modal**: shown whenever `note` is present, regardless of inline-note toggle. Clicking opens a Bootstrap `Modal` titled "Note — `<source-label>`" with the full note text.
 - **Confidence-level badge** (toggle): shown when on AND `confidence_level` is non-null.
 - **Confidence-score badge** (toggle): shown when on AND `confidence_score` is non-null. Rendered as `0.NN`.
-- **Validation strip**: at the bottom of each non-empty cell (and at the top/center of empty cells). Two icons: green check (validate as correct → `negated=false`) and red X (validate as incorrect → `negated=true`). Clicking POSTs `/topic_entity_tag/` with:
+- **Validation strip**: at the bottom of each non-empty cell (and at the top/center of empty cells). Two icons with hover labels: green check ("topic present" → new TET with `negated=false`) and red X ("topic not present" → new TET with `negated=true`). The labels are deliberately generic — the action is *the curator asserting whether the topic is present in the reference*, independent of any specific existing tag, so this works whether the cell already has source rows or is empty. Clicking POSTs `/topic_entity_tag/` with:
   ```json
   {
     "reference_curie": "<row's curie>",
