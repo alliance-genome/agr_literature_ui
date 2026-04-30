@@ -265,7 +265,9 @@ const Person = () => {
                   {activeTab === 'ccdisplay' && <PersonCcDisplay person={personData} />}
                 </Tab>
                 <Tab eventKey="editor" title="Editor">
-                  {activeTab === 'editor' && <PersonEditor person={personData} />}
+                  {activeTab === 'editor' && (
+                    <PersonEditor key={personData.curie} person={personData} />
+                  )}
                 </Tab>
                 <Tab eventKey="json" title="JSON">
                   {activeTab === 'json' && <PersonJson person={personData} />}
