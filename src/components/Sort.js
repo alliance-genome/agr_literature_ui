@@ -536,8 +536,10 @@ const Sort = () => {
             )}
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
-              <Row className="align-items-center">
-                <Col md={4} className="d-flex align-items-center">
+              <Row className="align-items-center justify-content-center">
+                {/* Empty checkbox-width column for alignment with paper cards */}
+                <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
+                <Col lg={6} className="d-flex align-items-center">
                   <Form.Check
                     type="checkbox"
                     id="select-all-papers"
@@ -571,7 +573,8 @@ const Sort = () => {
                     </Button>
                   )}
                 </Col>
-                <Col md={4} className="text-center">
+                <Col lg={1}></Col>
+                <Col lg={2} className="text-center">
                   <SortSubmitUpdateRouter />
                   <Button
                     as="input"
@@ -582,7 +585,7 @@ const Sort = () => {
                     onClick={() => updateSorting()}
                   />
                 </Col>
-                <Col md={4}></Col>
+                <Col lg={2}></Col>
               </Row>
             }
             {referencesToSortLive && referencesToSortLive.length === 0 && (
@@ -620,8 +623,10 @@ const Sort = () => {
                   />
                 ))}
                 <RowDivider />
-                <Row className="align-items-center">
-                  <Col md={4} className="d-flex align-items-center">
+                <Row className="align-items-center justify-content-center">
+                  {/* Empty checkbox-width column for alignment with paper cards */}
+                  <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
+                  <Col lg={6} className="d-flex align-items-center">
                     <Form.Check
                       type="checkbox"
                       id="select-all-papers-bottom"
@@ -655,7 +660,8 @@ const Sort = () => {
                       </Button>
                     )}
                   </Col>
-                  <Col md={4} className="text-center">
+                  <Col lg={1}></Col>
+                  <Col lg={2} className="text-center">
                     <SortSubmitUpdateRouter />
                     <Button
                       as="input"
@@ -666,7 +672,7 @@ const Sort = () => {
                       onClick={() => updateSorting()}
                     />
                   </Col>
-                  <Col md={4}></Col>
+                  <Col lg={2}></Col>
                 </Row>
               </Container>
             )}
