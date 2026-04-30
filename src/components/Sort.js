@@ -496,48 +496,6 @@ const Sort = () => {
                     </small>
                   </Col>
                 </Row>
-                {/* Bulk Selection Controls */}
-                {referencesToSortLive && referencesToSortLive.length > 0 && (
-                  <Row className="mb-3 align-items-center">
-                    <Col md="auto">
-                      <Form.Check
-                        type="checkbox"
-                        id="select-all-papers"
-                        label={`Select All (${referencesToSortLive.length})`}
-                        checked={isAllSelected}
-                        onChange={handleSelectAll}
-                        style={{ fontWeight: 'bold' }}
-                      />
-                    </Col>
-                    <Col md="auto">
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={handleBulkMoveOut}
-                        disabled={selectedPapers.size === 0 || bulkUpdating}
-                      >
-                        {bulkUpdating ? (
-                          <>
-                            <Spinner animation="border" size="sm" /> Moving...
-                          </>
-                        ) : (
-                          `Move Selected OUT (${selectedPapers.size})`
-                        )}
-                      </Button>
-                    </Col>
-                    {selectedPapers.size > 0 && (
-                      <Col md="auto">
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => setSelectedPapers(new Set())}
-                        >
-                          Clear Selection
-                        </Button>
-                      </Col>
-                    )}
-                  </Row>
-                )}
                 {/* Bulk Result Alert */}
                 {bulkResult && (
                   <Row className="mb-3">
@@ -578,17 +536,54 @@ const Sort = () => {
             )}
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
-              <Row>
-                <Col lg={12} className="text-center">
+              <Row className="align-items-center justify-content-center">
+                <Col md="auto">
+                  <Form.Check
+                    type="checkbox"
+                    id="select-all-papers"
+                    label={`Select All (${referencesToSortLive.length})`}
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    style={{ fontWeight: 'bold' }}
+                  />
+                </Col>
+                <Col md="auto">
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={handleBulkMoveOut}
+                    disabled={selectedPapers.size === 0 || bulkUpdating}
+                  >
+                    {bulkUpdating ? (
+                      <>
+                        <Spinner animation="border" size="sm" /> Moving...
+                      </>
+                    ) : (
+                      `Move Selected OUT (${selectedPapers.size})`
+                    )}
+                  </Button>
+                </Col>
+                {selectedPapers.size > 0 && (
+                  <Col md="auto">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => setSelectedPapers(new Set())}
+                    >
+                      Clear
+                    </Button>
+                  </Col>
+                )}
+                <Col md="auto">
                   <SortSubmitUpdateRouter />
                   <Button
                     as="input"
-                    style={{ width: '200px' }} // Set width
+                    style={{ width: '200px' }}
                     type="button"
                     disabled={buttonUpdateDisabled}
                     value="Update Sorting"
                     onClick={() => updateSorting()}
-                  />{' '}
+                  />
                 </Col>
               </Row>
             }
@@ -627,17 +622,56 @@ const Sort = () => {
                   />
                 ))}
                 <RowDivider />
-                <Row><Col>
-                  <SortSubmitUpdateRouter />
-                  <Button
-                    as="input"
-                    style={{ width: '200px' }} // Set width
-                    type="button"
-                    disabled={buttonUpdateDisabled}
-                    value="Update Sorting"
-                    onClick={() => updateSorting()}
-                  />{' '}
-                </Col></Row>
+                <Row className="align-items-center justify-content-center">
+                  <Col md="auto">
+                    <Form.Check
+                      type="checkbox"
+                      id="select-all-papers-bottom"
+                      label={`Select All (${referencesToSortLive.length})`}
+                      checked={isAllSelected}
+                      onChange={handleSelectAll}
+                      style={{ fontWeight: 'bold' }}
+                    />
+                  </Col>
+                  <Col md="auto">
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={handleBulkMoveOut}
+                      disabled={selectedPapers.size === 0 || bulkUpdating}
+                    >
+                      {bulkUpdating ? (
+                        <>
+                          <Spinner animation="border" size="sm" /> Moving...
+                        </>
+                      ) : (
+                        `Move Selected OUT (${selectedPapers.size})`
+                      )}
+                    </Button>
+                  </Col>
+                  {selectedPapers.size > 0 && (
+                    <Col md="auto">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => setSelectedPapers(new Set())}
+                      >
+                        Clear
+                      </Button>
+                    </Col>
+                  )}
+                  <Col md="auto">
+                    <SortSubmitUpdateRouter />
+                    <Button
+                      as="input"
+                      style={{ width: '200px' }}
+                      type="button"
+                      disabled={buttonUpdateDisabled}
+                      value="Update Sorting"
+                      onClick={() => updateSorting()}
+                    />
+                  </Col>
+                </Row>
               </Container>
             )}
           </>
