@@ -196,7 +196,7 @@ const ReferencesToSort = ({
 
   return (
     <div key={`reference-div-${index}`}>
-      <Row key={`reference-row-${index}`}>
+      <Row key={`reference-row-${index}`} className="justify-content-center">
         {/* Selection Checkbox */}
         {showCheckbox && (
           <Col lg="auto" className="Col-general Col-display d-flex align-items-center" style={{ backgroundColor, padding: '.5rem', minWidth: '40px' }}>
