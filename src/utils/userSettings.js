@@ -9,7 +9,7 @@ const CACHE_DURATION = 5000; // 5 seconds
 async function getPersonIdByEmail({ email }) {
   console.log(`Getting person_id for cognito_id: ${email}`);
 
-  const response = await api.get(`/person/by/email/${encodeURIComponent(email)}`);
+  const response = await api.get(`/person/by_email/${encodeURIComponent(email)}`);
 
   if (response.status === 204 || !response.data) {
     throw new Error(`No person found for email: ${email}`);
