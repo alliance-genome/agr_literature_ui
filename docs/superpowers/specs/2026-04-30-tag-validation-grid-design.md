@@ -250,4 +250,4 @@ The existing `ValidationByCurator.jsx` is **not** modified, but the new `CellVal
 - Bulk backend endpoint (`POST /curation_status/per_source_tet_summary`) once the demo validates the UX.
 - Saved/named validation lists (SCRUM-5982).
 - File upload for ID list.
-- Persisting cell-display toggles in user settings.
+- **Saved display-option presets with labels**, mirroring the per-paper TET table. The existing `src/components/settings/BiblioPreferenceControls.js` is already a generic wrapper around `AgGridTablePreferenceControls` (it accepts a `componentName` prop, defaulting to `'tet_table'`). Adopting it here is a matter of mounting it in `TetValidationGrid` with `componentName='tet_validation_grid'` and wiring `getInitialItems` / `updateColDefsWithItems` / `setItems` / `setColDefs` to our local column-state and cell-display-toggle state. The toggles (inline note / confidence level / confidence score), source filter, topic-column visibility, and sort/filter models would all participate in the saved preset. Deferred until after the demo so the MVP stays small.
