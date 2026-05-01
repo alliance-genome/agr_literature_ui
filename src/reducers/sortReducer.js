@@ -82,7 +82,6 @@ export default function(state = initialState, action) {
       }
 
     case 'SORT_BUTTON_MODS_QUERY':
-      console.log('reducer SORT_BUTTON_MODS_QUERY');
       // console.log(action.payload);
       for (let reference of action.payload) {
         reference['workflow'] = 'experimental';

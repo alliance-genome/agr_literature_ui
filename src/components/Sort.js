@@ -21,6 +21,87 @@ import PropTypes from 'prop-types';
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
+// Label mapping for sort source values (module-level constant)
+const sortSourceLabels = {
+  'mod_pubmed_search': 'MOD PubMed Search',
+  'dqm_files': 'DQM Files',
+  'manual_creation': 'Manual Creation',
+  'automated_alliance': 'Automated Alliance',
+  'assigned_for_review': 'Assigned for Review',
+  'prepublication_pipeline': 'Prepublication Pipeline',
+  'gaf': 'GAF',
+  'interaction': 'Interaction'
+};
+
+// Extracted component to avoid duplication of bulk selection controls
+const BulkSelectionControls = ({
+  checkboxId,
+  referencesCount,
+  isAllSelected,
+  handleSelectAll,
+  selectedCount,
+  handleBulkMoveOut,
+  bulkUpdating,
+  clearSelection,
+  activeMod
+}) => {
+  if (activeMod !== 'SGD') return null;
+
+  return (
+    <>
+      {/* Empty checkbox-width column for alignment with paper cards */}
+      <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
+      <Col lg={6} className="d-flex align-items-center">
+        <Form.Check
+          type="checkbox"
+          id={checkboxId}
+          label={`Select All (${referencesCount})`}
+          checked={isAllSelected}
+          onChange={handleSelectAll}
+          style={{ fontWeight: 'bold', marginRight: '10px' }}
+        />
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={handleBulkMoveOut}
+          disabled={selectedCount === 0 || bulkUpdating}
+          style={{ marginRight: '5px' }}
+        >
+          {bulkUpdating ? (
+            <>
+              <Spinner animation="border" size="sm" /> Moving...
+            </>
+          ) : (
+            `Move Selected OUT (${selectedCount})`
+          )}
+        </Button>
+        {selectedCount > 0 && (
+          <Button
+            variant="link"
+            size="sm"
+            onClick={clearSelection}
+          >
+            Clear
+          </Button>
+        )}
+      </Col>
+      <Col lg={1}></Col>
+    </>
+  );
+};
+
+BulkSelectionControls.propTypes = {
+  checkboxId: PropTypes.string.isRequired,
+  referencesCount: PropTypes.number.isRequired,
+  isAllSelected: PropTypes.bool.isRequired,
+  handleSelectAll: PropTypes.func.isRequired,
+  selectedCount: PropTypes.number.isRequired,
+  handleBulkMoveOut: PropTypes.func.isRequired,
+  bulkUpdating: PropTypes.bool.isRequired,
+  clearSelection: PropTypes.func.isRequired,
+  activeMod: PropTypes.string.isRequired
+};
+
 const Sort = () => {
   // Selectors
   const referencesToSortLive = useSelector(state => state.sort.referencesToSortLive);
@@ -62,18 +143,6 @@ const Sort = () => {
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [bulkResult, setBulkResult] = useState(null);
 
-  // Label mapping for sort source values
-  const sortSourceLabels = {
-    'mod_pubmed_search': 'MOD PubMed Search',
-    'dqm_files': 'DQM Files',
-    'manual_creation': 'Manual Creation',
-    'automated_alliance': 'Automated Alliance',
-    'assigned_for_review': 'Assigned for Review',
-    'prepublication_pipeline': 'Prepublication Pipeline',
-    'gaf': 'GAF',
-    'interaction': 'Interaction'
-  };
-
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   let activeMod = accessLevel;
 
@@ -109,7 +178,6 @@ const Sort = () => {
     }
 
     if (mappedSortType && sortUpdating === 0 && accessLevel) {
-      console.log(`Dispatching sortButtonModsQuery with mod: ${accessLevel}, sortType: ${mappedSortType}`);
       if (mappedSortType === 'needs_review') {
         dispatch(sortButtonModsQuery(accessLevel, mappedSortType, searchQuery, sortSource, 'date_published', sortOrder));
       } else {
@@ -171,18 +239,21 @@ const Sort = () => {
   // Search handler
   const handleSearch = () => {
     setSearchQuery(searchInputValue);
+    setSelectedPapers(new Set());
     dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchInputValue, sortSource, 'date_published', sortOrder));
   };
 
   // Sort source filter handler
   const handleSortSourceChange = (newSortSource) => {
     setSortSource(newSortSource);
+    setSelectedPapers(new Set());
     dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, newSortSource, 'date_published', sortOrder));
   };
 
   // Sort order handler
   const handleSortOrderChange = (newSortOrder) => {
     setSortOrder(newSortOrder);
+    setSelectedPapers(new Set());
     dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, sortSource, 'date_published', newSortOrder));
   };
 
@@ -539,48 +610,17 @@ const Sort = () => {
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
               <Row className="align-items-center justify-content-center">
-                {/* Bulk selection controls - only for SGD */}
-                {activeMod === 'SGD' && (
-                  <>
-                    {/* Empty checkbox-width column for alignment with paper cards */}
-                    <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
-                    <Col lg={6} className="d-flex align-items-center">
-                      <Form.Check
-                        type="checkbox"
-                        id="select-all-papers"
-                        label={`Select All (${referencesToSortLive.length})`}
-                        checked={isAllSelected}
-                        onChange={handleSelectAll}
-                        style={{ fontWeight: 'bold', marginRight: '10px' }}
-                      />
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={handleBulkMoveOut}
-                        disabled={selectedPapers.size === 0 || bulkUpdating}
-                        style={{ marginRight: '5px' }}
-                      >
-                        {bulkUpdating ? (
-                          <>
-                            <Spinner animation="border" size="sm" /> Moving...
-                          </>
-                        ) : (
-                          `Move Selected OUT (${selectedPapers.size})`
-                        )}
-                      </Button>
-                      {selectedPapers.size > 0 && (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => setSelectedPapers(new Set())}
-                        >
-                          Clear
-                        </Button>
-                      )}
-                    </Col>
-                    <Col lg={1}></Col>
-                  </>
-                )}
+                <BulkSelectionControls
+                  checkboxId="select-all-papers"
+                  referencesCount={referencesToSortLive.length}
+                  isAllSelected={isAllSelected}
+                  handleSelectAll={handleSelectAll}
+                  selectedCount={selectedPapers.size}
+                  handleBulkMoveOut={handleBulkMoveOut}
+                  bulkUpdating={bulkUpdating}
+                  clearSelection={() => setSelectedPapers(new Set())}
+                  activeMod={activeMod}
+                />
                 <Col lg={2} className="text-center">
                   <SortSubmitUpdateRouter />
                   <Button
@@ -610,7 +650,7 @@ const Sort = () => {
                 <RowDivider />
                 {referencesToSortLive.map((reference, index) => (
                   <ReferencesToSort
-                    key={`reference div ${index}`}
+                    key={`reference-${reference.mod_corpus_association_id}`}
                     reference={reference}
                     index={index}
                     canSort={true}
@@ -631,48 +671,17 @@ const Sort = () => {
                 ))}
                 <RowDivider />
                 <Row className="align-items-center justify-content-center">
-                  {/* Bulk selection controls - only for SGD */}
-                  {activeMod === 'SGD' && (
-                    <>
-                      {/* Empty checkbox-width column for alignment with paper cards */}
-                      <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
-                      <Col lg={6} className="d-flex align-items-center">
-                        <Form.Check
-                          type="checkbox"
-                          id="select-all-papers-bottom"
-                          label={`Select All (${referencesToSortLive.length})`}
-                          checked={isAllSelected}
-                          onChange={handleSelectAll}
-                          style={{ fontWeight: 'bold', marginRight: '10px' }}
-                        />
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={handleBulkMoveOut}
-                          disabled={selectedPapers.size === 0 || bulkUpdating}
-                          style={{ marginRight: '5px' }}
-                        >
-                          {bulkUpdating ? (
-                            <>
-                              <Spinner animation="border" size="sm" /> Moving...
-                            </>
-                          ) : (
-                            `Move Selected OUT (${selectedPapers.size})`
-                          )}
-                        </Button>
-                        {selectedPapers.size > 0 && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => setSelectedPapers(new Set())}
-                          >
-                            Clear
-                          </Button>
-                        )}
-                      </Col>
-                      <Col lg={1}></Col>
-                    </>
-                  )}
+                  <BulkSelectionControls
+                    checkboxId="select-all-papers-bottom"
+                    referencesCount={referencesToSortLive.length}
+                    isAllSelected={isAllSelected}
+                    handleSelectAll={handleSelectAll}
+                    selectedCount={selectedPapers.size}
+                    handleBulkMoveOut={handleBulkMoveOut}
+                    bulkUpdating={bulkUpdating}
+                    clearSelection={() => setSelectedPapers(new Set())}
+                    activeMod={activeMod}
+                  />
                   <Col lg={2} className="text-center">
                     <SortSubmitUpdateRouter />
                     <Button
@@ -757,7 +766,7 @@ const Sort = () => {
                         .filter(ref => ref['mod_corpus_association_corpus'] === showInsidePapers)
                         .map((reference, index) => (
                           <ReferencesToSort
-                            key={`reference div ${index}`}
+                            key={`reference-${reference.mod_corpus_association_id}`}
                             reference={reference}
                             index={index}
                             canSort={true}

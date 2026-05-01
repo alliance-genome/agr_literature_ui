@@ -8,7 +8,6 @@ import { api } from "../api";
 // const port = 49161;
 
 export const changeFieldSortMods = (e) => {
-  console.log('action change field ' + e.target.name + ' to ' + e.target.value);
   return {
     type: 'CHANGE_FIELD_SORT_MODS',
     payload: {
@@ -27,7 +26,6 @@ export const sortButtonModsQuery = (mod, sortType, searchQuery = '', sortSource 
     type: 'CHANGE_FIELD_SORT_TYPE',
     payload: sortType
   });
-  console.log('in sortButtonModsQuery action');
   // console.log("payload " + payload);
   // https://dev4004-literature-rest.alliancegenome.org/sort/need_review?mod_abbreviation=RGD&count=2
   if (mod === 'No') {
@@ -69,7 +67,6 @@ export const sortButtonModsQuery = (mod, sortType, searchQuery = '', sortSource 
         }
       }
       // need dispatch because "Actions must be plain objects. Use custom middleware for async actions."
-      console.log('dispatch QUERY_BUTTON');
       dispatch({
         type: 'SORT_BUTTON_MODS_QUERY',
         payload: response_payload,
@@ -122,7 +119,6 @@ export const fetchSortSources = (mod) => dispatch => {
 
 
 export const changeSortCorpusToggler = (e) => {
-  console.log('action change sort corpus toggler radio ' + e.target.id + ' to ' + e.target.value);
   return {
     type: 'CHANGE_SORT_CORPUS_TOGGLER',
     payload: e.target.id
@@ -130,7 +126,6 @@ export const changeSortCorpusToggler = (e) => {
 };
 
 export const changeSortWorkflowToggler = (e) => {
-  console.log('action change sort workflow toggler radio ' + e.target.id + ' to ' + e.target.value);
   return {
     type: 'CHANGE_SORT_WORKFLOW_TOGGLER',
     payload: e.target.id
@@ -144,7 +139,6 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
 
   const createUpdateButtonSort = async () => {
     const url = '/' + subPath;
-    console.log(url);
 
     try {
       const res = await api.request({
@@ -161,7 +155,6 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
         if (((method === 'PATCH') && (res.status !== 202)) ||
             ((method === 'DELETE') && (res.status !== 204)) ||
             ((method === 'POST') && (res.status !== 201))) {
-          console.log('updateButtonSort action response not updated');
           if (typeof(response.detail) !== 'object') {
             response_message = response.detail;
           } else if (typeof(response.detail[0].msg) !== 'object') {
@@ -173,7 +166,6 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
         if ((method === 'POST') && (res.status === 201)) {
           newId = typeof response === 'number' ? response : parseInt(response);
         }
-        console.log('dispatch UPDATE_BUTTON_SORT');
       }
 
       setTimeout(() => {
@@ -209,7 +201,6 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
 };
 
 export const closeSortUpdateAlert = () => {
-  console.log("action closeSortUpdateAlert");
   return {
     type: 'CLOSE_SORT_UPDATE_ALERT'
   };
@@ -223,7 +214,6 @@ export const setSortUpdating = (payload) => {
 };
 
 export const sortButtonSetRadiosAll = (payload) => {
-  console.log("action sortButtonSetRadiosAll");
   return {
     type: 'SORT_BUTTON_SET_RADIO_ALL',
     payload: payload
@@ -232,7 +222,6 @@ export const sortButtonSetRadiosAll = (payload) => {
 
 // New action creator: removeReferenceFromSortLive
 export const removeReferenceFromSortLive = (index) => {
-  console.log("action removeReferenceFromSortLive");
   return {
     type: 'REMOVE_REFERENCE_FROM_SORT_LIVE',
     payload: index
