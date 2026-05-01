@@ -496,8 +496,8 @@ const Sort = () => {
                     </small>
                   </Col>
                 </Row>
-                {/* Bulk Result Alert */}
-                {bulkResult && (
+                {/* Bulk Result Alert - only for SGD */}
+                {activeMod === 'SGD' && bulkResult && (
                   <Row className="mb-3">
                     <Col>
                       <Alert
@@ -537,43 +537,48 @@ const Sort = () => {
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
               <Row className="align-items-center justify-content-center">
-                {/* Empty checkbox-width column for alignment with paper cards */}
-                <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
-                <Col lg={6} className="d-flex align-items-center">
-                  <Form.Check
-                    type="checkbox"
-                    id="select-all-papers"
-                    label={`Select All (${referencesToSortLive.length})`}
-                    checked={isAllSelected}
-                    onChange={handleSelectAll}
-                    style={{ fontWeight: 'bold', marginRight: '10px' }}
-                  />
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={handleBulkMoveOut}
-                    disabled={selectedPapers.size === 0 || bulkUpdating}
-                    style={{ marginRight: '5px' }}
-                  >
-                    {bulkUpdating ? (
-                      <>
-                        <Spinner animation="border" size="sm" /> Moving...
-                      </>
-                    ) : (
-                      `Move Selected OUT (${selectedPapers.size})`
-                    )}
-                  </Button>
-                  {selectedPapers.size > 0 && (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={() => setSelectedPapers(new Set())}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </Col>
-                <Col lg={1}></Col>
+                {/* Bulk selection controls - only for SGD */}
+                {activeMod === 'SGD' && (
+                  <>
+                    {/* Empty checkbox-width column for alignment with paper cards */}
+                    <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
+                    <Col lg={6} className="d-flex align-items-center">
+                      <Form.Check
+                        type="checkbox"
+                        id="select-all-papers"
+                        label={`Select All (${referencesToSortLive.length})`}
+                        checked={isAllSelected}
+                        onChange={handleSelectAll}
+                        style={{ fontWeight: 'bold', marginRight: '10px' }}
+                      />
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleBulkMoveOut}
+                        disabled={selectedPapers.size === 0 || bulkUpdating}
+                        style={{ marginRight: '5px' }}
+                      >
+                        {bulkUpdating ? (
+                          <>
+                            <Spinner animation="border" size="sm" /> Moving...
+                          </>
+                        ) : (
+                          `Move Selected OUT (${selectedPapers.size})`
+                        )}
+                      </Button>
+                      {selectedPapers.size > 0 && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => setSelectedPapers(new Set())}
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </Col>
+                    <Col lg={1}></Col>
+                  </>
+                )}
                 <Col lg={2} className="text-center">
                   <SortSubmitUpdateRouter />
                   <Button
@@ -619,48 +624,53 @@ const Sort = () => {
                     activeMod={activeMod}
                     isSelected={selectedPapers.has(reference.mod_corpus_association_id)}
                     onSelectChange={handleSelectPaper}
-                    showCheckbox={viewMode === 'Sort'}
+                    showCheckbox={viewMode === 'Sort' && activeMod === 'SGD'}
                   />
                 ))}
                 <RowDivider />
                 <Row className="align-items-center justify-content-center">
-                  {/* Empty checkbox-width column for alignment with paper cards */}
-                  <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
-                  <Col lg={6} className="d-flex align-items-center">
-                    <Form.Check
-                      type="checkbox"
-                      id="select-all-papers-bottom"
-                      label={`Select All (${referencesToSortLive.length})`}
-                      checked={isAllSelected}
-                      onChange={handleSelectAll}
-                      style={{ fontWeight: 'bold', marginRight: '10px' }}
-                    />
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={handleBulkMoveOut}
-                      disabled={selectedPapers.size === 0 || bulkUpdating}
-                      style={{ marginRight: '5px' }}
-                    >
-                      {bulkUpdating ? (
-                        <>
-                          <Spinner animation="border" size="sm" /> Moving...
-                        </>
-                      ) : (
-                        `Move Selected OUT (${selectedPapers.size})`
-                      )}
-                    </Button>
-                    {selectedPapers.size > 0 && (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => setSelectedPapers(new Set())}
-                      >
-                        Clear
-                      </Button>
-                    )}
-                  </Col>
-                  <Col lg={1}></Col>
+                  {/* Bulk selection controls - only for SGD */}
+                  {activeMod === 'SGD' && (
+                    <>
+                      {/* Empty checkbox-width column for alignment with paper cards */}
+                      <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
+                      <Col lg={6} className="d-flex align-items-center">
+                        <Form.Check
+                          type="checkbox"
+                          id="select-all-papers-bottom"
+                          label={`Select All (${referencesToSortLive.length})`}
+                          checked={isAllSelected}
+                          onChange={handleSelectAll}
+                          style={{ fontWeight: 'bold', marginRight: '10px' }}
+                        />
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={handleBulkMoveOut}
+                          disabled={selectedPapers.size === 0 || bulkUpdating}
+                          style={{ marginRight: '5px' }}
+                        >
+                          {bulkUpdating ? (
+                            <>
+                              <Spinner animation="border" size="sm" /> Moving...
+                            </>
+                          ) : (
+                            `Move Selected OUT (${selectedPapers.size})`
+                          )}
+                        </Button>
+                        {selectedPapers.size > 0 && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => setSelectedPapers(new Set())}
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </Col>
+                      <Col lg={1}></Col>
+                    </>
+                  )}
                   <Col lg={2} className="text-center">
                     <SortSubmitUpdateRouter />
                     <Button
