@@ -496,4 +496,37 @@ ReferencesToSort.propTypes = {
   showCheckbox: PropTypes.bool,
 };
 
-export default ReferencesToSort;
+// Custom comparison function for React.memo
+// Only re-render if props that affect this specific paper card change
+const arePropsEqual = (prevProps, nextProps) => {
+  // Check scalar props
+  if (prevProps.index !== nextProps.index) return false;
+  if (prevProps.activeMod !== nextProps.activeMod) return false;
+  if (prevProps.isSelected !== nextProps.isSelected) return false;
+  if (prevProps.showCheckbox !== nextProps.showCheckbox) return false;
+  if (prevProps.topicEntitySourceId !== nextProps.topicEntitySourceId) return false;
+
+  // Check reference object (compare by mod_corpus_association_id and corpus state)
+  if (prevProps.reference.mod_corpus_association_id !== nextProps.reference.mod_corpus_association_id) return false;
+  if (prevProps.reference.mod_corpus_association_corpus !== nextProps.reference.mod_corpus_association_corpus) return false;
+  if (prevProps.reference.workflow !== nextProps.reference.workflow) return false;
+
+  // Check array props at this specific index only
+  const idx = prevProps.index;
+  const prevSpecies = prevProps.speciesSelect[idx];
+  const nextSpecies = nextProps.speciesSelect[idx];
+  if (prevSpecies !== nextSpecies) {
+    // Deep compare arrays if both exist
+    if (!prevSpecies || !nextSpecies) return false;
+    if (prevSpecies.length !== nextSpecies.length) return false;
+    for (let i = 0; i < prevSpecies.length; i++) {
+      if (prevSpecies[i] !== nextSpecies[i]) return false;
+    }
+  }
+
+  if (prevProps.speciesSelectLoading[idx] !== nextProps.speciesSelectLoading[idx]) return false;
+
+  return true;
+};
+
+export default React.memo(ReferencesToSort, arePropsEqual);
