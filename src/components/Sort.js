@@ -116,6 +116,8 @@ const Sort = () => {
         dispatch(sortButtonModsQuery(accessLevel, mappedSortType));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Note: searchQuery, sortSource, sortOrder intentionally omitted - changes handled by explicit handlers
   }, [viewMode, sortUpdating, accessLevel, dispatch]);
 
   // Fetch recently sorted papers when viewMode is "Recently sorted"
@@ -425,7 +427,7 @@ const Sort = () => {
                           placeholder="Search titles, abstracts, journals, authors..."
                           value={searchInputValue}
                           onChange={(e) => setSearchInputValue(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         />
                         <Button variant="outline-secondary" onClick={handleSearch}>
                           Search
