@@ -8,14 +8,18 @@
 
 ## Goal
 
-A working demo (1–2 hour curator meeting) of a UI component that takes a list of reference IDs (mixed types) and renders a per-source aggregated view of Topic Entity Tag (TET) data per topic, so curators can validate tags across many references at once. The component must be **modular**: usable both as a togglable view on the search results page and as a standalone page with manual ID entry.
+A working demo (1–2 hour curator meeting) of a UI component that takes a list of reference IDs and renders a per-source aggregated view of Topic Entity Tag (TET) data per topic, so curators can validate tags across many references at once.
+
+For the demo the component is integrated **only into the existing search results page** as a togglable grid view; the IDs are the curies of the current search results. The component itself is still built modularly (its public API is `referenceIds: string[]` plus an optional `topics` prop), so future entry points — most immediately a multi-ID paste/search box on the same search page, and longer-term a dedicated standalone page — can plug into it without changes.
 
 The validation action creates a new manual TET tag with `negated=False` ("topic present") or `negated=True` ("topic not present") for the (reference, topic) pair. The action is intentionally framed as a generic assertion about the topic in the reference, not as validating a specific existing tag — so it works whether the cell already has source rows or is empty. The TET-creation mechanics still mirror the existing per-paper `ValidationByCurator` flow.
 
 ## Non-goals (for the demo)
 
+- A standalone page with manual ID entry (deferred — see "Out of scope, follow-up tickets"; the component is built so adding the page later is a thin wrapper).
+- A multi-ID paste/search box on the search page (also deferred — same component reuse path).
 - Saved/named validation lists or switching between lists (covered by SCRUM-5982 follow-up).
-- File upload for ID lists (textarea covers the demo need).
+- File upload for ID lists.
 - Editing existing TET tags or curation_status fields.
 - Pagination beyond what AgGrid row virtualization gives for free.
 
@@ -161,42 +165,9 @@ The filter components live in `src/components/refs_tet_validation/filters/`:
 - Unresolved IDs: yellow banner above the grid listing them.
 - Network failure on TETs for a particular reference: that row shows a single error cell spanning all topic columns with a retry button.
 
-## Standalone page
+## Search-page integration (sole entry point for the demo)
 
-Path: `src/components/refs_tet_validation/RefsTagsValidationPage.jsx`
-Route: `/RefsTagsValidation` (registered in `AppWithRouterAccess.js`)
-
-Layout:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ Tag Validation                                                  │
-│                                                                 │
-│ Reference IDs (one per line):                                   │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │ AGRKB:101000000123456                                       │ │
-│ │ PMID:12345678                                               │ │
-│ │ WB:WBPaper00012345                                          │ │
-│ │ doi:10.1234/abc.5678                                        │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-│                                                                 │
-│ Topics (optional — empty = show topics found in data):          │
-│ [ typeahead multi-select against /atp/search_topic ]            │
-│                                                                 │
-│ [ Submit ]                                                      │
-│                                                                 │
-│ ─────────────── grid renders below ───────────────              │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-- Textarea: split on `\n`, trim, drop empties. No client-side ID-shape validation — the backend is the source of truth, and unresolved IDs surface in the unresolved-banner above the grid (same path as any other resolution failure). This avoids false negatives on unfamiliar xref prefixes.
-- Topic select: typeahead multi-select reusing the same `react-bootstrap-typeahead`-based component the TET creation form uses; queries `/atp/search_topic/{query}?mod_abbr={accessLevel}`.
-- Submit hands off to `<TetValidationGrid referenceIds={ids} topics={selectedTopics} />`.
-- The page is gated to logged-in users (per existing patterns).
-
-## Search-page integration
-
-In `SearchLayout.js` (or adjacent), add a small toggle group above the result list: **List view** / **TET grid view**. State lives in `SearchLayout` local state.
+In `SearchLayout.js` (or adjacent), add a small toggle group above the result list: **List view** / **TET grid view**. State lives in `SearchLayout` local state. The toggle is the only way to reach the grid in the demo.
 
 When **TET grid view** is selected:
 
@@ -211,13 +182,16 @@ When **TET grid view** is selected:
 
 When the user has not selected any topic facets, `topicsFromSearchFacets` is `undefined` and the grid falls back to data-driven columns. This matches the user requirement that *when topics are selected in the search, only those should appear in the grid*.
 
+### Future hook: multi-ID paste/search box on the same page
+
+The next planned enhancement (deferred to a follow-up ticket) is a button on the search page that opens a paste box where curators can enter many reference IDs at once (mixed types: AGRKB curies, PMIDs, MOD xrefs, DOIs). The pasted IDs would either supplement or replace the search-results-derived `referenceIds` array fed to `TetValidationGrid`. Because the component already accepts an arbitrary `referenceIds` array, this is purely a search-page UX addition — no changes to `TetValidationGrid` will be required when we build it.
+
 ## Code organization & touched files
 
 New:
 
 - `src/components/refs_tet_validation/TetValidationGrid.jsx`
 - `src/components/refs_tet_validation/TetValidationGrid.css` (cell layout, badges)
-- `src/components/refs_tet_validation/RefsTagsValidationPage.jsx`
 - `src/components/refs_tet_validation/cellRenderers/SourceMiniRow.jsx`
 - `src/components/refs_tet_validation/cellRenderers/CellValidationStrip.jsx`
 - `src/components/refs_tet_validation/cellRenderers/NoteModal.jsx`
@@ -226,11 +200,9 @@ New:
 
 Modified:
 
-- `src/components/AppWithRouterAccess.js` — register `/RefsTagsValidation` route.
 - `src/components/search/SearchLayout.js` — add the List/TET-grid toggle and integration block.
-- `src/components/NavigationBar.js` — add a top-level link to the standalone page (gated to logged-in users).
 
-The existing `ValidationByCurator.jsx` is **not** modified, but the new `CellValidationStrip` borrows its TET-creation pattern (with empty entity/species, `force_insertion: true`).
+The existing `ValidationByCurator.jsx` is **not** modified, but the new `CellValidationStrip` borrows its TET-creation pattern (with empty entity/species, `force_insertion: true`). No new routes or navigation entries are added in this iteration — the grid is reachable only through the search page.
 
 ## Testing
 
@@ -247,6 +219,8 @@ The existing `ValidationByCurator.jsx` is **not** modified, but the new `CellVal
 
 ## Out of scope, follow-up tickets
 
+- **Multi-ID paste/search box on the search page** — a button next to the List/Grid toggle that opens a textarea where curators can paste many reference IDs at once (mixed types: AGRKB curies, PMIDs, MOD xrefs, DOIs). The pasted set replaces or supplements `searchResults.map(r => r.curie)` as the `referenceIds` prop fed to `TetValidationGrid`. Topic input on submit reuses the same typeahead against `/atp/search_topic/{q}?mod_abbr={mod}` that the topic-filter "+ Add topic" button already uses. This is the immediate next-iteration follow-up after the demo.
+- **Standalone page with manual ID entry** at `/RefsTagsValidation` — once the search-page integration ships, wrap the same `TetValidationGrid` in a route component (`RefsTagsValidationPage.jsx`) with the same paste-IDs textarea + topic typeahead, registered in `AppWithRouterAccess.js` and linked from `NavigationBar.js`. No changes to `TetValidationGrid` itself are required.
 - Bulk backend endpoint (`POST /curation_status/per_source_tet_summary`) once the demo validates the UX.
 - Saved/named validation lists (SCRUM-5982).
 - File upload for ID list.
