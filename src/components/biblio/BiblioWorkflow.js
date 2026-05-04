@@ -1561,21 +1561,19 @@ const BiblioWorkflow = () => {
           <Spinner animation="border" role="status" />
         </div>
       ) : (
-        <div style={containerStyle}>
-          <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
-            <AgGridReact
-              rowData={preCurationRowData}
-              columnDefs={preCurationColumns}
-              enableCellTextSelection={true}
-              ensureDomOrder={true}
-              suppressColumnVirtualisation={true}
-              domLayout="autoHeight"
-              getRowClass={(params) => {
-                if (params.data?.isUserMod) return 'ag-row-striped-dark';
-                return 'ag-row-striped-light';
-              }}
-            />
-          </div>
+        <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%', marginBottom: 10 }}>
+          <AgGridReact
+            rowData={preCurationRowData}
+            columnDefs={preCurationColumns}
+            enableCellTextSelection={true}
+            ensureDomOrder={true}
+            suppressColumnVirtualisation={true}
+            domLayout="autoHeight"
+            getRowClass={(params) => {
+              if (params.data?.isUserMod) return 'ag-row-striped-dark';
+              return 'ag-row-striped-light';
+            }}
+          />
         </div>
       )}
 
@@ -1588,7 +1586,6 @@ const BiblioWorkflow = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          marginLeft: '10%',
           color: '#007bff'
         }}
       >
@@ -1597,17 +1594,15 @@ const BiblioWorkflow = () => {
         </span>
       </div>
       {isPreCurationExpanded && preCurationData?.details && (
-        <div style={containerStyle}>
-          <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
-            <AgGridReact
-              rowData={preCurationData.details}
-              columnDefs={workflowDetailsColumns}
-              enableCellTextSelection={true}
-              ensureDomOrder={true}
-              suppressColumnVirtualisation={true}
-              domLayout="autoHeight"
-            />
-          </div>
+        <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%', marginBottom: 10 }}>
+          <AgGridReact
+            rowData={preCurationData.details}
+            columnDefs={workflowDetailsColumns}
+            enableCellTextSelection={true}
+            ensureDomOrder={true}
+            suppressColumnVirtualisation={true}
+            domLayout="autoHeight"
+          />
         </div>
       )}
 
