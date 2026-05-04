@@ -7,7 +7,7 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Container, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faExclamation, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faExclamation, faCheckCircle, faTimesCircle, faHourglass, faCircle } from '@fortawesome/free-solid-svg-icons';
 import { patchWorkflowTag, deleteWorkflowTag, transitionWorkflowTag } from './WorkflowTagService';
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
@@ -80,6 +80,8 @@ const BiblioWorkflow = () => {
   const [apiErrorMessage, setApiErrorMessage] = useState('');
   const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
   const [indexingPriorityData, setIndexingPriorityData] = useState([]);
+  const [preCurationData, setPreCurationData] = useState(null);
+  const [isPreCurationExpanded, setIsPreCurationExpanded] = useState(false);
    
 
   const fmtScore = (s) => (s == null ? '' : Number.isFinite(Number(s)) ? Number(s).toFixed(2) : s);
@@ -136,7 +138,22 @@ const BiblioWorkflow = () => {
       indexing_priority_id: null,
     };
   }, [referenceCurie, accessLevel]);
-    
+
+  // Fetch pre-curation workflow overview data
+  const fetchPreCurationWorkflow = useCallback(async () => {
+    const url = `/workflow_tag/pre_curation_overview/${referenceCurie}`;
+    try {
+      const result = await api.get(url);
+      setPreCurationData(result.data);
+    } catch (error) {
+      console.error('Error fetching pre-curation workflow:', error);
+    }
+  }, [referenceCurie]);
+
+  useEffect(() => {
+    fetchPreCurationWorkflow();
+  }, [fetchPreCurationWorkflow]);
+
   // fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
     async () => {
@@ -450,6 +467,171 @@ const BiblioWorkflow = () => {
 	  sortable: true,
 	  filter: true
       },
+  ];
+
+  // Pre-curation status icon renderer
+  const PreCurationStatusIcon = ({ value }) => {
+    if (!value || !value.status) {
+      return null;  // blank for no workflow
+    }
+    const status = value.status;
+    if (status === 'complete') {
+      return <FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} title="Complete" />;
+    } else if (status === 'failed') {
+      return <FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} title="Failed" />;
+    } else if (status === 'in_progress') {
+      return <FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} title="In Progress" />;
+    }
+    return null;
+  };
+
+  // Inside corpus status renderer
+  const InsideCorpusRenderer = ({ value }) => {
+    if (value === true) {
+      return <FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} title="Inside Corpus" />;
+    } else if (value === false) {
+      return <span title="Outside Corpus">-</span>;
+    }
+    return null;  // null/undefined
+  };
+
+  // Process pre-curation data for AG Grid
+  const preCurationRowData = useMemo(() => {
+    if (!preCurationData || !preCurationData.workflows) return [];
+
+    const workflows = preCurationData.workflows;
+    const mods = Object.keys(workflows).sort();
+
+    // Put user's MOD first
+    const userModIndex = mods.indexOf(accessLevel);
+    if (userModIndex > 0) {
+      mods.splice(userModIndex, 1);
+      mods.unshift(accessLevel);
+    }
+
+    return mods.map((mod, index) => ({
+      mod,
+      isUserMod: mod === accessLevel,
+      showDivider: index === 0 && userModIndex >= 0,
+      inside_corpus: workflows[mod]?.inside_corpus,
+      file_upload: workflows[mod]?.file_upload,
+      text_conversion: workflows[mod]?.text_conversion,
+      email_extraction: workflows[mod]?.email_extraction,
+      topic_classification: workflows[mod]?.topic_classification,
+      entity_extraction: workflows[mod]?.entity_extraction,
+      curation_classification: workflows[mod]?.curation_classification
+    }));
+  }, [preCurationData, accessLevel]);
+
+  // Pre-curation workflow column definitions
+  const preCurationColumns = [
+    {
+      headerName: 'MOD',
+      field: 'mod',
+      width: 80,
+      cellStyle: (params) => ({
+        textAlign: 'left',
+        fontWeight: params.data?.isUserMod ? 'bold' : 'normal'
+      }),
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Inside corpus',
+      field: 'inside_corpus',
+      width: 110,
+      cellRenderer: InsideCorpusRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'File upload status',
+      field: 'file_upload',
+      width: 130,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Text conversion',
+      field: 'text_conversion',
+      width: 130,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Email extraction',
+      field: 'email_extraction',
+      width: 130,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Topic classification',
+      field: 'topic_classification',
+      width: 140,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Entity extraction',
+      field: 'entity_extraction',
+      width: 130,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Curation classification',
+      field: 'curation_classification',
+      width: 160,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+  ];
+
+  // Workflow details column definitions (for expanded view)
+  const workflowDetailsColumns = [
+    {
+      headerName: 'MOD',
+      field: 'abbreviation',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true
+    },
+    {
+      headerName: 'Workflow Tag',
+      field: 'workflow_tag_name',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true
+    },
+    {
+      headerName: 'Updater',
+      field: 'updated_by_name',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true
+    },
+    {
+      headerName: 'Date Updated',
+      field: 'date_updated',
+      valueFormatter: timestampToDateFormatter,
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true
+    },
   ];
 
   const renderHasData = (params) => {
@@ -1370,20 +1552,56 @@ const BiblioWorkflow = () => {
 
   return (
     <div>
-      {/* File Upload Status Section */}
+      {/* Pre-curation Workflow Section */}
       <strong style={{ display: 'block', margin: '20px 0 10px' }}>
-        File Upload Current Status
+        Pre-curation Workflow
       </strong>
-      {isLoadingData ? (
+      {!preCurationData ? (
         <div className="text-center">
           <Spinner animation="border" role="status" />
         </div>
       ) : (
         <div style={containerStyle}>
-            <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
+          <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
             <AgGridReact
-              rowData={data}
-              columnDefs={columns}
+              rowData={preCurationRowData}
+              columnDefs={preCurationColumns}
+              enableCellTextSelection={true}
+              ensureDomOrder={true}
+              suppressColumnVirtualisation={true}
+              domLayout="autoHeight"
+              getRowClass={(params) => {
+                if (params.data?.isUserMod) return 'ag-row-striped-dark';
+                return 'ag-row-striped-light';
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Expandable Workflow Details Section */}
+      <div
+        onClick={() => setIsPreCurationExpanded(!isPreCurationExpanded)}
+        style={{
+          cursor: 'pointer',
+          margin: '10px 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginLeft: '10%',
+          color: '#007bff'
+        }}
+      >
+        <span style={{ fontWeight: 'bold' }}>
+          Workflow Details {isPreCurationExpanded ? '-' : '+'}
+        </span>
+      </div>
+      {isPreCurationExpanded && preCurationData?.details && (
+        <div style={containerStyle}>
+          <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
+            <AgGridReact
+              rowData={preCurationData.details}
+              columnDefs={workflowDetailsColumns}
               enableCellTextSelection={true}
               ensureDomOrder={true}
               suppressColumnVirtualisation={true}
