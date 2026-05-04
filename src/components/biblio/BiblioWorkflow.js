@@ -7,7 +7,7 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Container, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faExclamation, faCheckCircle, faTimesCircle, faHourglass, faCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faExclamation, faCheckCircle, faTimesCircle, faHourglass, faCircle, faClock } from '@fortawesome/free-solid-svg-icons';
 import { patchWorkflowTag, deleteWorkflowTag, transitionWorkflowTag } from './WorkflowTagService';
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
@@ -481,9 +481,28 @@ const BiblioWorkflow = () => {
       return <FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} title="Failed" />;
     } else if (status === 'in_progress') {
       return <FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} title="In Progress" />;
+    } else if (status === 'needed') {
+      return <FontAwesomeIcon icon={faClock} style={{ color: '#6c757d' }} title="Needed" />;
     }
     return null;
   };
+
+  // Pre-curation workflow legend component
+  const PreCurationLegend = () => (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '20px',
+      margin: '10px 0',
+      fontSize: '0.9em',
+      color: '#666'
+    }}>
+      <span><FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} /> Complete</span>
+      <span><FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} /> Failed</span>
+      <span><FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} /> In Progress</span>
+      <span><FontAwesomeIcon icon={faClock} style={{ color: '#6c757d' }} /> Needed</span>
+    </div>
+  );
 
   // Inside corpus status renderer
   const InsideCorpusRenderer = ({ value }) => {
@@ -1560,22 +1579,25 @@ const BiblioWorkflow = () => {
           <Spinner animation="border" role="status" />
         </div>
       ) : (
-        <div style={containerStyle}>
-          <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
-            <AgGridReact
-              rowData={preCurationRowData}
-              columnDefs={preCurationColumns}
-              enableCellTextSelection={true}
-              ensureDomOrder={true}
-              suppressColumnVirtualisation={true}
-              domLayout="autoHeight"
-              getRowClass={(params) => {
-                if (params.data?.isUserMod) return 'ag-row-striped-dark';
-                return 'ag-row-striped-light';
-              }}
-            />
+        <>
+          <PreCurationLegend />
+          <div style={containerStyle}>
+            <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
+              <AgGridReact
+                rowData={preCurationRowData}
+                columnDefs={preCurationColumns}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+                suppressColumnVirtualisation={true}
+                domLayout="autoHeight"
+                getRowClass={(params) => {
+                  if (params.data?.isUserMod) return 'ag-row-striped-dark';
+                  return 'ag-row-striped-light';
+                }}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Expandable Workflow Details Section */}
