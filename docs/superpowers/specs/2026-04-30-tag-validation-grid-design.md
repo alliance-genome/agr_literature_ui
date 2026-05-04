@@ -12,7 +12,7 @@ A working demo (1–2 hour curator meeting) of a UI component that takes a list 
 
 For the demo the component is integrated **only into the existing search results page** as a togglable grid view; the IDs are the curies of the current search results. The component itself is still built modularly (its public API is `referenceIds: string[]` plus an optional `topics` prop), so future entry points — most immediately a multi-ID paste/search box on the same search page, and longer-term a dedicated standalone page — can plug into it without changes.
 
-The validation action creates a new manual TET tag with `negated=False` ("topic present") or `negated=True` ("topic not present") for the (reference, topic) pair. The action is intentionally framed as a generic assertion about the topic in the reference, not as validating a specific existing tag — so it works whether the cell already has source rows or is empty. The TET-creation mechanics still mirror the existing per-paper `ValidationByCurator` flow.
+The validation action creates a new manual TET tag with `negated=False` ("positive") or `negated=True` ("negative") for the (reference, topic) pair — same vocabulary as the `'positive'` / `'negative'` arguments already used by `ValidationByCurator.handleValidationClick`. The action is intentionally framed as a generic assertion about the topic in the reference, not as validating a specific existing tag — so it works whether the cell already has source rows or is empty. The TET-creation mechanics still mirror the existing per-paper `ValidationByCurator` flow.
 
 ## Non-goals (for the demo)
 
@@ -81,7 +81,7 @@ Custom AgGrid cell renderer per topic column. For each cell:
 │ <source-label>   …                                               │
 │ ⋯                                                                │
 │ ─────────────────                                                │
-│ [✓ topic present]  [✗ topic not present]   ← validation strip    │
+│ [✓ positive]  [✗ negative]   ← validation strip                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -90,7 +90,7 @@ Custom AgGrid cell renderer per topic column. For each cell:
 - **Note icon → modal**: shown whenever `note` is present, regardless of inline-note toggle. Clicking opens a Bootstrap `Modal` titled "Note — `<source-label>`" with the full note text.
 - **Confidence-level badge** (toggle): shown when on AND `confidence_level` is non-null.
 - **Confidence-score badge** (toggle): shown when on AND `confidence_score` is non-null. Rendered as `0.NN`.
-- **Validation strip**: at the bottom of each non-empty cell (and at the top/center of empty cells). Two icons with hover labels: green check ("topic present" → new TET with `negated=false`) and red X ("topic not present" → new TET with `negated=true`). The labels are deliberately generic — the action is *the curator asserting whether the topic is present in the reference*, independent of any specific existing tag, so this works whether the cell already has source rows or is empty. Clicking POSTs `/topic_entity_tag/` with:
+- **Validation strip**: at the bottom of each non-empty cell (and at the top/center of empty cells). Two icons with hover labels: green check ("positive" → new TET with `negated=false`) and red X ("negative" → new TET with `negated=true`). The labels match the existing `'positive'` / `'negative'` vocabulary in `ValidationByCurator.handleValidationClick` and are deliberately generic — the action is *the curator asserting whether the topic is present in the reference*, independent of any specific existing tag, so this works whether the cell already has source rows or is empty. Clicking POSTs `/topic_entity_tag/` with:
   ```json
   {
     "reference_curie": "<row's curie>",
