@@ -1,0 +1,136 @@
+.tetv-banner-unresolved {
+  background: #fff3cd;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border: 1px solid #ffe69c;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.tetv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 6px 8px;
+  align-items: center;
+}
+.tetv-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tetv-toolbar-multi {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px 8px;
+  min-width: 200px;
+}
+
+.tetv-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+}
+.tetv-source-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tetv-source-group-sep {
+  border-top: 1px dotted #ddd;
+  padding-top: 2px;
+}
+.tetv-mini-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.tetv-source-label {
+  color: #555;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tetv-pill {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+}
+.tetv-pill-y { background: #28a745; }
+.tetv-pill-n { background: #dc3545; }
+.tetv-dot-y, .tetv-dot-n {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.tetv-dot-y { background: #28a745; }
+.tetv-dot-n { background: #dc3545; }
+.tetv-inline-note {
+  color: #333;
+  font-style: italic;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tetv-note-btn {
+  background: none;
+  border: 0;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+}
+.tetv-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #eef;
+  color: #335;
+}
+.tetv-badge-score {
+  background: #efe;
+  color: #353;
+}
+
+.tetv-strip {
+  display: flex;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid #eee;
+}
+.tetv-strip-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+.tetv-strip-pos { color: #28a745; }
+.tetv-strip-neg { color: #dc3545; }
+.tetv-strip-active { background: #f5f5f5; }
+
+.tetv-ref-cell {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  line-height: 1.3;
+}
+.tetv-ref-title { font-weight: 600; }
+.tetv-ref-meta,
+.tetv-ref-authors {
+  font-size: 11px;
+  color: #666;
+}
