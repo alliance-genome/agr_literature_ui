@@ -500,19 +500,18 @@ const BiblioWorkflow = () => {
     if (!preCurationData || !preCurationData.workflows) return [];
 
     const workflows = preCurationData.workflows;
-    const mods = Object.keys(workflows).sort();
+    let mods = Object.keys(workflows).sort();
 
-    // Put user's MOD first
+    // Put user's MOD first if it exists in the table
     const userModIndex = mods.indexOf(accessLevel);
     if (userModIndex > 0) {
-      mods.splice(userModIndex, 1);
-      mods.unshift(accessLevel);
+      // Remove from current position and add to the beginning
+      mods = [accessLevel, ...mods.filter(mod => mod !== accessLevel)];
     }
 
-    return mods.map((mod, index) => ({
+    return mods.map((mod) => ({
       mod,
       isUserMod: mod === accessLevel,
-      showDivider: index === 0 && userModIndex >= 0,
       inside_corpus: workflows[mod]?.inside_corpus,
       file_upload: workflows[mod]?.file_upload,
       text_conversion: workflows[mod]?.text_conversion,
