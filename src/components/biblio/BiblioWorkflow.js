@@ -1553,7 +1553,7 @@ const BiblioWorkflow = () => {
   return (
     <div>
       {/* Pre-curation Workflow Section */}
-      <strong style={{ display: 'block', margin: '20px 0 10px' }}>
+      <strong style={{ display: 'block', margin: '20px 0 10px', textAlign: 'center' }}>
         Pre-curation Workflow
       </strong>
       {!preCurationData ? (
@@ -1561,48 +1561,55 @@ const BiblioWorkflow = () => {
           <Spinner animation="border" role="status" />
         </div>
       ) : (
-        <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%', marginBottom: 10 }}>
-          <AgGridReact
-            rowData={preCurationRowData}
-            columnDefs={preCurationColumns}
-            enableCellTextSelection={true}
-            ensureDomOrder={true}
-            suppressColumnVirtualisation={true}
-            domLayout="autoHeight"
-            getRowClass={(params) => {
-              if (params.data?.isUserMod) return 'ag-row-striped-dark';
-              return 'ag-row-striped-light';
-            }}
-          />
+        <div style={containerStyle}>
+          <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
+            <AgGridReact
+              rowData={preCurationRowData}
+              columnDefs={preCurationColumns}
+              enableCellTextSelection={true}
+              ensureDomOrder={true}
+              suppressColumnVirtualisation={true}
+              domLayout="autoHeight"
+              getRowClass={(params) => {
+                if (params.data?.isUserMod) return 'ag-row-striped-dark';
+                return 'ag-row-striped-light';
+              }}
+            />
+          </div>
         </div>
       )}
 
       {/* Expandable Workflow Details Section */}
-      <div
-        onClick={() => setIsPreCurationExpanded(!isPreCurationExpanded)}
-        style={{
-          cursor: 'pointer',
-          margin: '10px 0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          color: '#007bff'
-        }}
-      >
-        <span style={{ fontWeight: 'bold' }}>
-          Workflow Details {isPreCurationExpanded ? '-' : '+'}
-        </span>
+      <div style={containerStyle}>
+        <div
+          onClick={() => setIsPreCurationExpanded(!isPreCurationExpanded)}
+          style={{
+            cursor: 'pointer',
+            margin: '10px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#007bff',
+            width: '80%'
+          }}
+        >
+          <span style={{ fontWeight: 'bold' }}>
+            Workflow Details {isPreCurationExpanded ? '-' : '+'}
+          </span>
+        </div>
       </div>
       {isPreCurationExpanded && preCurationData?.details && (
-        <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%', marginBottom: 10 }}>
-          <AgGridReact
-            rowData={preCurationData.details}
-            columnDefs={workflowDetailsColumns}
-            enableCellTextSelection={true}
-            ensureDomOrder={true}
-            suppressColumnVirtualisation={true}
-            domLayout="autoHeight"
-          />
+        <div style={containerStyle}>
+          <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
+            <AgGridReact
+              rowData={preCurationData.details}
+              columnDefs={workflowDetailsColumns}
+              enableCellTextSelection={true}
+              ensureDomOrder={true}
+              suppressColumnVirtualisation={true}
+              domLayout="autoHeight"
+            />
+          </div>
         </div>
       )}
 
