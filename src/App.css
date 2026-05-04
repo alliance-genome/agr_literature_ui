@@ -748,3 +748,8 @@ em {
 .ag-theme-quartz .ag-row-striped-light {
   background-color: #f8f9fa;  /* Light grey */
 }
+
+.number-range-widget {
+  margin-top: 30px;
+  margin-right: 20px;
+}
