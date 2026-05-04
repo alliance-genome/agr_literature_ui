@@ -528,7 +528,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'MOD',
       field: 'mod',
-      width: 80,
+      flex: 1,
       cellStyle: (params) => ({
         textAlign: 'left',
         fontWeight: params.data?.isUserMod ? 'bold' : 'normal'
@@ -538,7 +538,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'Inside corpus',
       field: 'inside_corpus',
-      width: 110,
+      flex: 1,
       cellRenderer: InsideCorpusRenderer,
       cellStyle: { textAlign: 'center' },
       headerClass: 'wft-bold-header wft-header-bg',
@@ -546,7 +546,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'File upload status',
       field: 'file_upload',
-      width: 130,
+      flex: 1,
       cellRenderer: PreCurationStatusIcon,
       cellStyle: { textAlign: 'center' },
       headerClass: 'wft-bold-header wft-header-bg',
@@ -554,7 +554,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'Text conversion',
       field: 'text_conversion',
-      width: 130,
+      flex: 1,
       cellRenderer: PreCurationStatusIcon,
       cellStyle: { textAlign: 'center' },
       headerClass: 'wft-bold-header wft-header-bg',
@@ -562,7 +562,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'Email extraction',
       field: 'email_extraction',
-      width: 130,
+      flex: 1,
       cellRenderer: PreCurationStatusIcon,
       cellStyle: { textAlign: 'center' },
       headerClass: 'wft-bold-header wft-header-bg',
@@ -570,7 +570,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'Topic classification',
       field: 'topic_classification',
-      width: 140,
+      flex: 1,
       cellRenderer: PreCurationStatusIcon,
       cellStyle: { textAlign: 'center' },
       headerClass: 'wft-bold-header wft-header-bg',
@@ -578,7 +578,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'Entity extraction',
       field: 'entity_extraction',
-      width: 130,
+      flex: 1,
       cellRenderer: PreCurationStatusIcon,
       cellStyle: { textAlign: 'center' },
       headerClass: 'wft-bold-header wft-header-bg',
@@ -586,7 +586,7 @@ const BiblioWorkflow = () => {
     {
       headerName: 'Curation classification',
       field: 'curation_classification',
-      width: 160,
+      flex: 1,
       cellRenderer: PreCurationStatusIcon,
       cellStyle: { textAlign: 'center' },
       headerClass: 'wft-bold-header wft-header-bg',
