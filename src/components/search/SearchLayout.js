@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import SearchBar from "./SearchBar";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
+import ToggleButtonGroup from 'react-bootstrap/ToggleButtonGroup';
+import ToggleButton from 'react-bootstrap/ToggleButton';
 import Facets from './Facets';
 import SearchResults from "./SearchResults";
 import SearchOptions from "./SearchOptions";
 import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
+import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faTimes } from '@fortawesome/free-solid-svg-icons';
 
@@ -22,6 +26,21 @@ const SearchLayout = () => {
     const dragRef = useRef({ startX: 0, startWidth: 0 });
     const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
     const [facetsCollapsed, setFacetsCollapsed] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+    const [view, setView] = useState('list'); // 'list' | 'grid'
+
+    const searchResults = useSelector((s) => s.search.searchResults);
+    const searchFacetsValues = useSelector((s) => s.search.searchFacetsValues);
+
+    const referenceIds = useMemo(
+        () => (searchResults || []).map((r) => r.curie).filter(Boolean),
+        [searchResults]
+    );
+    const topicsForGrid = useMemo(() => {
+        const arr = searchFacetsValues?.topics;
+        if (!Array.isArray(arr) || arr.length === 0) return undefined;
+        // Values may be curies or names; the grid resolves names via the topic-name map fallback
+        return arr.map((v) => ({ curie: v, name: v }));
+    }, [searchFacetsValues]);
 
     // Handle window resize
     useEffect(() => {
@@ -181,7 +200,7 @@ const SearchLayout = () => {
                                 />
                             )}
 
-                            {/* Search Results */}
+                            {/* Search Results / TET grid */}
                             <div style={{
                                 flex: 1,
                                 minWidth: 0,
@@ -190,7 +209,32 @@ const SearchLayout = () => {
                                 padding: 0,
                                 marginLeft: isMobile ? 0 : undefined
                             }}>
-                                <SearchResults/>
+                                {referenceIds.length > 0 && (
+                                    <div style={{ padding: '6px 0' }}>
+                                        <ToggleButtonGroup
+                                            type="radio"
+                                            name="tetv-view"
+                                            value={view}
+                                            onChange={setView}
+                                            size="sm"
+                                        >
+                                            <ToggleButton id="tetv-view-list" value="list" variant="outline-secondary">
+                                                List view
+                                            </ToggleButton>
+                                            <ToggleButton id="tetv-view-grid" value="grid" variant="outline-secondary">
+                                                TET grid view
+                                            </ToggleButton>
+                                        </ToggleButtonGroup>
+                                    </div>
+                                )}
+                                {view === 'list' ? (
+                                    <SearchResults/>
+                                ) : (
+                                    <TetValidationGrid
+                                        referenceIds={referenceIds}
+                                        topics={topicsForGrid}
+                                    />
+                                )}
                             </div>
                         </div>
                     </Col>
