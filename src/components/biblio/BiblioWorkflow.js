@@ -22,6 +22,51 @@ const MANUAL_INDEXING_TBD = "ATP:0000359"; // manual indexing status TBD
 const MANUAL_INDEXING_WONT_INDEX = "ATP:0000343"; // won't manually index
 const NO_GENETIC_DATA = "ATP:0000207"; // no genetic data
 
+// Pre-curation status icon renderer (moved outside component to avoid recreation on every render)
+const PreCurationStatusIcon = ({ value }) => {
+  if (!value || !value.status) {
+    return null;  // blank for no workflow
+  }
+  const status = value.status;
+  if (status === 'complete') {
+    return <FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} title="Complete" />;
+  } else if (status === 'failed') {
+    return <FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} title="Failed" />;
+  } else if (status === 'in_progress') {
+    return <FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} title="In Progress" />;
+  } else if (status === 'needed') {
+    return <FontAwesomeIcon icon={faClock} style={{ color: '#6c757d' }} title="Needed" />;
+  }
+  return null;
+};
+
+// Inside corpus status renderer (moved outside component to avoid recreation on every render)
+const InsideCorpusRenderer = ({ value }) => {
+  if (value === true) {
+    return <FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} title="Inside Corpus" />;
+  } else if (value === false) {
+    return <span title="Outside Corpus">-</span>;
+  }
+  return null;  // null/undefined
+};
+
+// Pre-curation workflow legend component (moved outside component to avoid recreation on every render)
+const PreCurationLegend = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '20px',
+    margin: '10px 0',
+    fontSize: '0.9em',
+    color: '#666'
+  }}>
+    <span><FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} /> Complete</span>
+    <span><FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} /> Failed</span>
+    <span><FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} /> In Progress</span>
+    <span><FontAwesomeIcon icon={faClock} style={{ color: '#6c757d' }} /> Needed</span>
+  </div>
+);
+
 export const timestampToDateFormatter = (params) => {
   if (params.value === null) { return ''; }	// e.g. aggregated_curation_status_and_tet_info without tet
   if (params.value === '') { return ''; }	// e.g. indexing priority
@@ -147,6 +192,8 @@ const BiblioWorkflow = () => {
       setPreCurationData(result.data);
     } catch (error) {
       console.error('Error fetching pre-curation workflow:', error);
+      // Set empty data to stop the spinner on error
+      setPreCurationData({ mods: [], workflows: {}, details: [] });
     }
   }, [referenceCurie]);
 
@@ -468,51 +515,6 @@ const BiblioWorkflow = () => {
 	  filter: true
       },
   ];
-
-  // Pre-curation status icon renderer
-  const PreCurationStatusIcon = ({ value }) => {
-    if (!value || !value.status) {
-      return null;  // blank for no workflow
-    }
-    const status = value.status;
-    if (status === 'complete') {
-      return <FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} title="Complete" />;
-    } else if (status === 'failed') {
-      return <FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} title="Failed" />;
-    } else if (status === 'in_progress') {
-      return <FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} title="In Progress" />;
-    } else if (status === 'needed') {
-      return <FontAwesomeIcon icon={faClock} style={{ color: '#6c757d' }} title="Needed" />;
-    }
-    return null;
-  };
-
-  // Pre-curation workflow legend component
-  const PreCurationLegend = () => (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '20px',
-      margin: '10px 0',
-      fontSize: '0.9em',
-      color: '#666'
-    }}>
-      <span><FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} /> Complete</span>
-      <span><FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} /> Failed</span>
-      <span><FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} /> In Progress</span>
-      <span><FontAwesomeIcon icon={faClock} style={{ color: '#6c757d' }} /> Needed</span>
-    </div>
-  );
-
-  // Inside corpus status renderer
-  const InsideCorpusRenderer = ({ value }) => {
-    if (value === true) {
-      return <FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} title="Inside Corpus" />;
-    } else if (value === false) {
-      return <span title="Outside Corpus">-</span>;
-    }
-    return null;  // null/undefined
-  };
 
   // Process pre-curation data for AG Grid
   const preCurationRowData = useMemo(() => {
@@ -1603,7 +1605,15 @@ const BiblioWorkflow = () => {
       {/* Expandable Workflow Details Section */}
       <div style={containerStyle}>
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => setIsPreCurationExpanded(!isPreCurationExpanded)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsPreCurationExpanded(!isPreCurationExpanded);
+            }
+          }}
           style={{
             cursor: 'pointer',
             margin: '10px 0',
