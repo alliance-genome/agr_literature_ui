@@ -16,8 +16,6 @@ import TopicFilter from '../AgGrid/TopicFilter';
 import { setAllTopics } from '../../actions/biblioActions';
 
 
-const file_upload_process_atp_id = "ATP:0000140";
-
 const MANUAL_INDEXING_TBD = "ATP:0000359"; // manual indexing status TBD
 const MANUAL_INDEXING_WONT_INDEX = "ATP:0000343"; // won't manually index
 const NO_GENETIC_DATA = "ATP:0000207"; // no genetic data
@@ -113,9 +111,6 @@ const BiblioWorkflow = () => {
 
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
 
-  const [data, setData] = useState([]);
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [key, setKey] = useState(0);
   const [curationData, setCurationData] = useState([]);
   const [curationWholePaperData, setCurationWholePaperData] = useState([]);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
@@ -341,27 +336,6 @@ const BiblioWorkflow = () => {
   }, [fetchIndexingWorkflowOverview]);
 
   useEffect(() => {
-    const fetchWFTdata = async () => {
-      const url = "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
-      setIsLoadingData(true);
-      try {
-        const result = await api.get(url);
-        const processedData = result.data.map((item) => ({
-          ...item,
-          updated_by: item.email ? item.email : item.updated_by,
-        }));
-        setData(processedData);
-        setKey(prevKey => prevKey + 1);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoadingData(false);
-      }
-    };
-    fetchWFTdata();
-  }, [referenceCurie]);
-
-  useEffect(() => {
     const fetchCurationStatuses = async () => {
       // REST /ontology/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
       const urls = {
@@ -475,46 +449,6 @@ const BiblioWorkflow = () => {
       </Modal>
     );
   };
-    
-  const columns = [
-      {
-	  headerName: 'MOD',
-	  field: 'abbreviation',
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
-      {
-	  headerName: 'Workflow Tag',
-	  field: 'workflow_tag_name',
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
-      {
-	  headerName: 'Updater',
-	  field: 'updated_by_name',
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
-      {
-	  headerName: 'Date Updated',
-	  field: 'date_updated',
-          valueFormatter: timestampToDateFormatter,
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
-  ];
 
   // Process pre-curation data for AG Grid
   const preCurationRowData = useMemo(() => {
