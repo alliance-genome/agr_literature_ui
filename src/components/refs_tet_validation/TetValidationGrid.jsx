@@ -16,7 +16,6 @@ import {
   groupTetsByTopicAndSource,
   sourceLabel,
   normalizeCurie,
-  validationSortRank,
 } from './helpers/groupTets';
 import IdsCell from './cellRenderers/IdsCell';
 import TitleCell from './cellRenderers/TitleCell';
@@ -27,7 +26,7 @@ import SourcesCell from './cellRenderers/SourcesCell';
 import ConfScoreCell from './cellRenderers/ConfScoreCell';
 import ConfLevelCell from './cellRenderers/ConfLevelCell';
 import NoteCell from './cellRenderers/NoteCell';
-import ValidationFilter from './filters/ValidationFilter';
+import IdPrefixFilter from './filters/IdPrefixFilter';
 import TetGridToolbar from './toolbar/TetGridToolbar';
 import { api } from '../../api';
 import {
@@ -135,6 +134,25 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     const s = new Set();
     for (const r of rows)
       for (const t of r.tets || []) s.add(sourceLabel(t.topic_entity_tag_source));
+    return [...s].sort();
+  }, [rows]);
+
+  // Distinct curie prefixes across all loaded references — fed to IdPrefixFilter.
+  const allIdPrefixes = useMemo(() => {
+    const s = new Set();
+    for (const r of rows) {
+      if (r.curie) {
+        const p = String(r.curie).split(':')[0];
+        if (p) s.add(p.toUpperCase());
+      }
+      const xrefs = r.biblio?.cross_references || [];
+      for (const x of xrefs) {
+        if (x?.curie) {
+          const p = String(x.curie).split(':')[0];
+          if (p) s.add(p.toUpperCase());
+        }
+      }
+    }
     return [...s].sort();
   }, [rows]);
 
@@ -362,8 +380,8 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
       autoHeight: true,
       wrapText: true,
       cellRenderer: IdsCell,
-      filter: 'agTextColumnFilter',
-      filterParams: { buttons: ['apply', 'clear'] },
+      filter: IdPrefixFilter,
+      filterParams: { availablePrefixes: allIdPrefixes },
       valueGetter: (p) => {
         const r = p.data?.biblio || {};
         const xrefs = (r.cross_references || []).map((x) => x.curie).join(' ');
@@ -418,14 +436,12 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             width: 110,
             minWidth: 96,
             autoHeight: true,
-            sortable: true,
-            filter: ValidationFilter,
+            sortable: false,
+            filter: false,
             cellRenderer: ValidationCell,
             cellClass: leftmostClass,
             headerClass: 'tetv-topic-subheader',
             cellRendererParams: { topicCurie: t.curie, refetchRow },
-            comparator: (a, b) =>
-              validationSortRank(a) - validationSortRank(b),
           },
           {
             headerName: 'Sources',
@@ -505,6 +521,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     displayOptions,
     refetchRow,
     sourceFilterModel,
+    allIdPrefixes,
   ]);
 
   return (

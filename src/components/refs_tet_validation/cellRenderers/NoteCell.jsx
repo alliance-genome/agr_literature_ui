@@ -4,8 +4,6 @@ import { faStickyNote } from '@fortawesome/free-solid-svg-icons';
 import NoteModal from './NoteModal';
 import { buildEntries } from '../helpers/buildEntries';
 
-const truncate = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + '…' : s);
-
 export default function NoteCell(params) {
   const tets = params.value || [];
   const { displayOptions, sourceFilterModel } =
@@ -36,7 +34,7 @@ export default function NoteCell(params) {
             <div className="tetv-mini-row" key={e.key}>
               {expand && (
                 <span className="tetv-inline-note" title={note}>
-                  {truncate(note, 80)}
+                  {note}
                 </span>
               )}
               <button
@@ -71,7 +69,14 @@ export default function NoteCell(params) {
           <div className="tetv-mini-row" key={e.key}>
             {expand && (
               <span className="tetv-inline-note" title={body}>
-                {truncate(noted[0].note, 60)}
+                {noted.map((x, i) => (
+                  <span key={i} className="tetv-inline-note-line">
+                    <span className="tetv-inline-note-entity">
+                      {x.entity || '(no entity)'}:
+                    </span>{' '}
+                    {x.note}
+                  </span>
+                ))}
               </span>
             )}
             <button

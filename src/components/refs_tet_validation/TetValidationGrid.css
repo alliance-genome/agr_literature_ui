@@ -65,6 +65,21 @@
   color: #555;
   white-space: nowrap;
 }
+.tetv-quick-link {
+  background: none;
+  border: 1px solid transparent;
+  color: #2a6db5;
+  font-size: 11px;
+  padding: 0 4px;
+  cursor: pointer;
+  border-radius: 3px;
+  text-decoration: underline;
+}
+.tetv-quick-link:hover {
+  background: #eef4fb;
+  border-color: #cfdef0;
+  text-decoration: none;
+}
 
 /* Each topic is rendered as a column group with two children: Validation
    (narrow, just buttons) and Sources (wide, source mini-rows).
@@ -236,10 +251,20 @@
 .tetv-inline-note {
   color: #333;
   font-style: italic;
-  max-width: 240px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Full note text — wraps freely, no truncation. */
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tetv-inline-note-line {
+  display: block;
+}
+.tetv-inline-note-entity {
+  font-weight: 600;
+  font-style: normal;
+  color: #2a2f36;
 }
 .tetv-note-btn {
   background: none;

@@ -137,6 +137,22 @@ export default function TetGridToolbar({
 
       <span className="tetv-toolbar-group tetv-toolbar-select">
         <span className="tetv-toolbar-label">Topics:</span>
+        <button
+          type="button"
+          className="tetv-quick-link"
+          onClick={() => handleTopicChange(topicOptions)}
+          title="Select all topics"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          className="tetv-quick-link"
+          onClick={() => handleTopicChange([])}
+          title="Deselect all topics"
+        >
+          None
+        </button>
         <div style={{ minWidth: 240, flex: '1 1 240px' }}>
           <CollapsibleMultiSelect
             options={topicOptions}
@@ -151,6 +167,22 @@ export default function TetGridToolbar({
 
       <span className="tetv-toolbar-group tetv-toolbar-select">
         <span className="tetv-toolbar-label">Sources:</span>
+        <button
+          type="button"
+          className="tetv-quick-link"
+          onClick={() => handleSourceChange(sourceOptions)}
+          title="Select all sources"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          className="tetv-quick-link"
+          onClick={() => handleSourceChange([])}
+          title="Deselect all sources"
+        >
+          None
+        </button>
         <div style={{ minWidth: 240, flex: '1 1 240px' }}>
           <CollapsibleMultiSelect
             options={sourceOptions}
