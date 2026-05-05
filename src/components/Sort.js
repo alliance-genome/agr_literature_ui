@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import {
   sortButtonModsQuery,
+  fetchSortSources,
   removeReferenceFromSortLive,
   changeSortCorpusToggler,
   changeSortWorkflowToggler,
@@ -10,7 +11,7 @@ import {
   setSortUpdating
 } from '../actions/sortActions';
 import { setReferenceCurie, setGetReferenceCurieFlag, getCuratorSourceId } from '../actions/biblioActions';
-import { Spinner, Form, Container, Row, Col, Button, Alert } from 'react-bootstrap';
+import { Spinner, Form, Container, Row, Col, Button, Alert, InputGroup } from 'react-bootstrap';
 import "react-bootstrap-typeahead/css/Typeahead.css";
 import { api } from "../api";
 import Modal from 'react-bootstrap/Modal';
@@ -19,6 +20,87 @@ import ReferencesToSort from './ReferencesToSort';
 import PropTypes from 'prop-types';
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
+
+// Label mapping for sort source values (module-level constant)
+const sortSourceLabels = {
+  'mod_pubmed_search': 'MOD PubMed Search',
+  'dqm_files': 'DQM Files',
+  'manual_creation': 'Manual Creation',
+  'automated_alliance': 'Automated Alliance',
+  'assigned_for_review': 'Assigned for Review',
+  'prepublication_pipeline': 'Prepublication Pipeline',
+  'gaf': 'GAF',
+  'interaction': 'Interaction'
+};
+
+// Extracted component to avoid duplication of bulk selection controls
+const BulkSelectionControls = ({
+  checkboxId,
+  referencesCount,
+  isAllSelected,
+  handleSelectAll,
+  selectedCount,
+  handleBulkMoveOut,
+  bulkUpdating,
+  clearSelection,
+  activeMod
+}) => {
+  if (activeMod !== 'SGD') return null;
+
+  return (
+    <>
+      {/* Empty checkbox-width column for alignment with paper cards */}
+      <Col lg="auto" style={{ minWidth: '40px', padding: '.5rem' }}></Col>
+      <Col lg={6} className="d-flex align-items-center">
+        <Form.Check
+          type="checkbox"
+          id={checkboxId}
+          label={`Select All (${referencesCount})`}
+          checked={isAllSelected}
+          onChange={handleSelectAll}
+          style={{ fontWeight: 'bold', marginRight: '10px' }}
+        />
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={handleBulkMoveOut}
+          disabled={selectedCount === 0 || bulkUpdating}
+          style={{ marginRight: '5px' }}
+        >
+          {bulkUpdating ? (
+            <>
+              <Spinner animation="border" size="sm" /> Moving...
+            </>
+          ) : (
+            `Move Selected OUT (${selectedCount})`
+          )}
+        </Button>
+        {selectedCount > 0 && (
+          <Button
+            variant="link"
+            size="sm"
+            onClick={clearSelection}
+          >
+            Clear
+          </Button>
+        )}
+      </Col>
+      <Col lg={1}></Col>
+    </>
+  );
+};
+
+BulkSelectionControls.propTypes = {
+  checkboxId: PropTypes.string.isRequired,
+  referencesCount: PropTypes.number.isRequired,
+  isAllSelected: PropTypes.bool.isRequired,
+  handleSelectAll: PropTypes.func.isRequired,
+  selectedCount: PropTypes.number.isRequired,
+  handleBulkMoveOut: PropTypes.func.isRequired,
+  bulkUpdating: PropTypes.bool.isRequired,
+  clearSelection: PropTypes.func.isRequired,
+  activeMod: PropTypes.string.isRequired
+};
 
 const Sort = () => {
   // Selectors
@@ -48,6 +130,19 @@ const Sort = () => {
   const [recentlySortedData, setRecentlySortedData] = useState([]);
   const [showInsidePapers, setShowInsidePapers] = useState(true);
 
+  // Search and filter state
+  const [searchInputValue, setSearchInputValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortSource, setSortSource] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const sortSources = useSelector(state => state.sort.sortSources);
+  const totalCount = useSelector(state => state.sort.totalCount);
+
+  // Bulk selection state
+  const [selectedPapers, setSelectedPapers] = useState(new Set());
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkResult, setBulkResult] = useState(null);
+
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   let activeMod = accessLevel;
 
@@ -64,6 +159,13 @@ const Sort = () => {
 
   let buttonUpdateDisabled = sortUpdating > 0;
 
+  // Fetch available sort sources when entering Sort view
+  useEffect(() => {
+    if (viewMode === 'Sort' && accessLevel) {
+      dispatch(fetchSortSources(accessLevel));
+    }
+  }, [viewMode, accessLevel, dispatch]);
+
   // Fetch "to sort" / prepublication list when viewMode changes
   useEffect(() => {
     let mappedSortType = null;
@@ -76,9 +178,14 @@ const Sort = () => {
     }
 
     if (mappedSortType && sortUpdating === 0 && accessLevel) {
-      console.log(`Dispatching sortButtonModsQuery with mod: ${accessLevel}, sortType: ${mappedSortType}`);
-      dispatch(sortButtonModsQuery(accessLevel, mappedSortType));
+      if (mappedSortType === 'needs_review') {
+        dispatch(sortButtonModsQuery(accessLevel, mappedSortType, searchQuery, sortSource, 'date_published', sortOrder));
+      } else {
+        dispatch(sortButtonModsQuery(accessLevel, mappedSortType));
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Note: searchQuery, sortSource, sortOrder intentionally omitted - changes handled by explicit handlers
   }, [viewMode, sortUpdating, accessLevel, dispatch]);
 
   // Fetch recently sorted papers when viewMode is "Recently sorted"
@@ -127,6 +234,104 @@ const Sort = () => {
       .catch(error => {
         console.error('Error fetching recently sorted papers:', error);
       });
+  };
+
+  // Search handler
+  const handleSearch = () => {
+    setSearchQuery(searchInputValue);
+    setSelectedPapers(new Set());
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchInputValue, sortSource, 'date_published', sortOrder));
+  };
+
+  // Sort source filter handler
+  const handleSortSourceChange = (newSortSource) => {
+    setSortSource(newSortSource);
+    setSelectedPapers(new Set());
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, newSortSource, 'date_published', sortOrder));
+  };
+
+  // Sort order handler
+  const handleSortOrderChange = (newSortOrder) => {
+    setSortOrder(newSortOrder);
+    setSelectedPapers(new Set());
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, sortSource, 'date_published', newSortOrder));
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchInputValue('');
+    setSearchQuery('');
+    setSortSource('');
+    setSortOrder('desc');
+    setSelectedPapers(new Set());
+    dispatch(sortButtonModsQuery(accessLevel, 'needs_review', '', '', 'date_published', 'desc'));
+  };
+
+  // Bulk selection handlers
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allIds = new Set(referencesToSortLive.map(ref => ref.mod_corpus_association_id));
+      setSelectedPapers(allIds);
+    } else {
+      setSelectedPapers(new Set());
+    }
+  };
+
+  const handleSelectPaper = (mcaId) => {
+    setSelectedPapers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(mcaId)) {
+        newSet.delete(mcaId);
+      } else {
+        newSet.add(mcaId);
+      }
+      return newSet;
+    });
+  };
+
+  const isAllSelected = referencesToSortLive && referencesToSortLive.length > 0 &&
+    referencesToSortLive.every(ref => selectedPapers.has(ref.mod_corpus_association_id));
+
+  // Bulk move OUT handler
+  const handleBulkMoveOut = async () => {
+    if (selectedPapers.size === 0) return;
+
+    setBulkUpdating(true);
+    setBulkResult(null);
+
+    try {
+      const response = await api.patch('/reference/mod_corpus_association/batch', {
+        mod_corpus_association_ids: Array.from(selectedPapers),
+        corpus: false,
+        force_out: false
+      });
+
+      const result = response.data;
+      setBulkResult(result);
+
+      // Remove successfully updated papers from the list
+      const successfulIds = new Set(
+        result.results.filter(r => r.success).map(r => r.mod_corpus_association_id)
+      );
+
+      // Clear selection and trigger refresh
+      setSelectedPapers(new Set());
+
+      if (successfulIds.size > 0) {
+        // Refresh the list to remove sorted papers
+        dispatch(sortButtonModsQuery(accessLevel, 'needs_review', searchQuery, sortSource, 'date_published', sortOrder));
+      }
+    } catch (error) {
+      console.error('Bulk update error:', error);
+      setBulkResult({
+        total_requested: selectedPapers.size,
+        successful: 0,
+        failed: selectedPapers.size,
+        results: [{ success: false, message: error.response?.data?.detail || 'Bulk update failed' }]
+      });
+    } finally {
+      setBulkUpdating(false);
+    }
   };
 
   // Handler for 'Find sorted papers' button
@@ -279,26 +484,165 @@ const Sort = () => {
         )}
         {(viewMode === 'Sort' || viewMode === 'Prepublication') &&
           <>
+            {/* Search and Filter Controls - Only for Sort view */}
+            {viewMode === 'Sort' && (
+              <>
+                <RowDivider />
+                <Row className="mb-3 align-items-end justify-content-center">
+                  <Col md={4}>
+                    <Form.Group className="mb-0">
+                      <Form.Label style={{ fontWeight: 'bold' }}>Search:</Form.Label>
+                      <InputGroup>
+                        <Form.Control
+                          type="text"
+                          placeholder="Search titles, abstracts, journals, authors..."
+                          value={searchInputValue}
+                          onChange={(e) => setSearchInputValue(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+                        <Button variant="outline-secondary" onClick={handleSearch}>
+                          Search
+                        </Button>
+                      </InputGroup>
+                    </Form.Group>
+                  </Col>
+                  <Col md="auto">
+                    <Form.Group className="mb-0">
+                      <Form.Label style={{ fontWeight: 'bold' }}>Source:</Form.Label>
+                      <Form.Control
+                        as="select"
+                        value={sortSource}
+                        onChange={(e) => handleSortSourceChange(e.target.value)}
+                        style={{ minWidth: '180px' }}
+                      >
+                        <option value="">All Sources</option>
+                        {sortSources.map(source => (
+                          <option key={source} value={source}>
+                            {sortSourceLabels[source] || source}
+                          </option>
+                        ))}
+                      </Form.Control>
+                    </Form.Group>
+                  </Col>
+                  <Col md="auto">
+                    <Form.Group className="mb-0">
+                      <Form.Label style={{ fontWeight: 'bold' }}>Order:</Form.Label>
+                      <Form.Control
+                        as="select"
+                        value={sortOrder}
+                        onChange={(e) => handleSortOrderChange(e.target.value)}
+                        style={{ minWidth: '130px' }}
+                      >
+                        <option value="desc">Newest First</option>
+                        <option value="asc">Oldest First</option>
+                      </Form.Control>
+                    </Form.Group>
+                  </Col>
+                  <Col md="auto">
+                    {(searchQuery || sortSource || sortOrder !== 'desc') && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleClearFilters}
+                        title="Clear all filters"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </Col>
+                </Row>
+                <Row className="mb-2">
+                  <Col>
+                    <small className="text-muted">
+                      {viewMode === 'Sort' && (
+                        <span>
+                          <strong>{totalCount}</strong> total papers
+                          {referencesToSortLive && referencesToSortLive.length > 0 && totalCount > referencesToSortLive.length && (
+                            <span> (showing {referencesToSortLive.length})</span>
+                          )}
+                        </span>
+                      )}
+                      {(searchQuery || sortSource) && <span> | </span>}
+                      {searchQuery && <span>Searching for: "<strong>{searchQuery}</strong>"</span>}
+                      {searchQuery && sortSource && <span> | </span>}
+                      {sortSource && <span>Source: <strong>{sortSourceLabels[sortSource] || sortSource}</strong></span>}
+                    </small>
+                  </Col>
+                </Row>
+                {/* Bulk Result Alert - only for SGD */}
+                {activeMod === 'SGD' && bulkResult && (
+                  <Row className="mb-3">
+                    <Col>
+                      <Alert
+                        variant={bulkResult.failed === 0 ? 'success' : bulkResult.successful === 0 ? 'danger' : 'warning'}
+                        onClose={() => setBulkResult(null)}
+                        dismissible
+                      >
+                        <Alert.Heading>
+                          {bulkResult.failed === 0 ? 'Bulk Update Successful' : 'Bulk Update Complete'}
+                        </Alert.Heading>
+                        <p>
+                          <strong>{bulkResult.successful}</strong> papers moved OUT successfully.
+                          {bulkResult.failed > 0 && (
+                            <span> <strong>{bulkResult.failed}</strong> failed.</span>
+                          )}
+                        </p>
+                        {bulkResult.failed > 0 && (
+                          <details>
+                            <summary>Show failed items</summary>
+                            <ul style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                              {bulkResult.results
+                                .filter(r => !r.success)
+                                .map((r, idx) => (
+                                  <li key={idx}>
+                                    {r.reference_curie || `ID: ${r.mod_corpus_association_id}`}: {r.message}
+                                  </li>
+                                ))}
+                            </ul>
+                          </details>
+                        )}
+                      </Alert>
+                    </Col>
+                  </Row>
+                )}
+              </>
+            )}
             <RowDivider />
             {referencesToSortLive && referencesToSortLive.length > 0 &&
-              <Row>
-                <Col lg={12} className="text-center">
+              <Row className="align-items-center justify-content-center">
+                <BulkSelectionControls
+                  checkboxId="select-all-papers"
+                  referencesCount={referencesToSortLive.length}
+                  isAllSelected={isAllSelected}
+                  handleSelectAll={handleSelectAll}
+                  selectedCount={selectedPapers.size}
+                  handleBulkMoveOut={handleBulkMoveOut}
+                  bulkUpdating={bulkUpdating}
+                  clearSelection={() => setSelectedPapers(new Set())}
+                  activeMod={activeMod}
+                />
+                <Col lg={2} className="text-center">
                   <SortSubmitUpdateRouter />
                   <Button
                     as="input"
-                    style={{ width: '200px' }} // Set width
+                    style={{ width: '200px' }}
                     type="button"
                     disabled={buttonUpdateDisabled}
                     value="Update Sorting"
                     onClick={() => updateSorting()}
-                  />{' '}
+                  />
                 </Col>
+                <Col lg={2}></Col>
               </Row>
             }
             {referencesToSortLive && referencesToSortLive.length === 0 && (
               <div>
                 <br />
-                <p>No Papers to sort</p>
+                {(searchQuery || sortSource) ? (
+                  <p>No papers found matching your search criteria. <Button variant="link" onClick={handleClearFilters}>Clear filters</Button></p>
+                ) : (
+                  <p>No Papers to sort</p>
+                )}
               </div>
             )}
             {referencesToSortLive && referencesToSortLive.length > 0 && (
@@ -306,7 +650,7 @@ const Sort = () => {
                 <RowDivider />
                 {referencesToSortLive.map((reference, index) => (
                   <ReferencesToSort
-                    key={`reference div ${index}`}
+                    key={`reference-${reference.mod_corpus_association_id}`}
                     reference={reference}
                     index={index}
                     canSort={true}
@@ -320,20 +664,37 @@ const Sort = () => {
                     topicEntitySourceId={topicEntitySourceId}
                     accessToken={accessToken}
                     activeMod={activeMod}
+                    isSelected={selectedPapers.has(reference.mod_corpus_association_id)}
+                    onSelectChange={handleSelectPaper}
+                    showCheckbox={viewMode === 'Sort' && activeMod === 'SGD'}
                   />
                 ))}
                 <RowDivider />
-                <Row><Col>
-                  <SortSubmitUpdateRouter />
-                  <Button
-                    as="input"
-                    style={{ width: '200px' }} // Set width
-                    type="button"
-                    disabled={buttonUpdateDisabled}
-                    value="Update Sorting"
-                    onClick={() => updateSorting()}
-                  />{' '}
-                </Col></Row>
+                <Row className="align-items-center justify-content-center">
+                  <BulkSelectionControls
+                    checkboxId="select-all-papers-bottom"
+                    referencesCount={referencesToSortLive.length}
+                    isAllSelected={isAllSelected}
+                    handleSelectAll={handleSelectAll}
+                    selectedCount={selectedPapers.size}
+                    handleBulkMoveOut={handleBulkMoveOut}
+                    bulkUpdating={bulkUpdating}
+                    clearSelection={() => setSelectedPapers(new Set())}
+                    activeMod={activeMod}
+                  />
+                  <Col lg={2} className="text-center">
+                    <SortSubmitUpdateRouter />
+                    <Button
+                      as="input"
+                      style={{ width: '200px' }}
+                      type="button"
+                      disabled={buttonUpdateDisabled}
+                      value="Update Sorting"
+                      onClick={() => updateSorting()}
+                    />
+                  </Col>
+                  <Col lg={2}></Col>
+                </Row>
               </Container>
             )}
           </>
@@ -405,7 +766,7 @@ const Sort = () => {
                         .filter(ref => ref['mod_corpus_association_corpus'] === showInsidePapers)
                         .map((reference, index) => (
                           <ReferencesToSort
-                            key={`reference div ${index}`}
+                            key={`reference-${reference.mod_corpus_association_id}`}
                             reference={reference}
                             index={index}
                             canSort={true}

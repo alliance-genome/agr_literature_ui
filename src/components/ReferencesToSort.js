@@ -33,7 +33,10 @@ const ReferencesToSort = ({
   speciesTypeaheadRef,
   topicEntitySourceId,
   accessToken,
-  activeMod
+  activeMod,
+  isSelected = false,
+  onSelectChange = null,
+  showCheckbox = false
 }) => {
   const dispatch = useDispatch();
 
@@ -193,9 +196,21 @@ const ReferencesToSort = ({
 
   return (
     <div key={`reference-div-${index}`}>
-      <Row key={`reference-row-${index}`}>
+      <Row key={`reference-row-${index}`} className="justify-content-center">
+        {/* Selection Checkbox */}
+        {showCheckbox && (
+          <Col lg="auto" className="Col-general Col-display d-flex align-items-center" style={{ backgroundColor, padding: '.5rem', minWidth: '40px' }}>
+            <Form.Check
+              type="checkbox"
+              id={`select-paper-${index}`}
+              checked={isSelected}
+              onChange={() => onSelectChange && onSelectChange(reference.mod_corpus_association_id)}
+              style={{ transform: 'scale(1.3)' }}
+            />
+          </Col>
+        )}
         {/* Reference Details */}
-        <Col lg={7} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor, padding: '.5rem' }}>
+        <Col lg={showCheckbox ? 6 : 7} className="Col-general Col-display" style={{ display: 'flex', flexDirection: 'column', backgroundColor, padding: '.5rem' }}>
           <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
             <span style={{ fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: reference['title'] }} />
             <br />
@@ -228,7 +243,7 @@ const ReferencesToSort = ({
                 .map((xref, idx) => {
                   const obsoleteTag = xref.is_obsolete ?
                     (<span key={`obsolete-${idx}`} style={{ color: 'red', marginRight: '4px' }}>obsolete</span>) : null;
-                  const content = xref['url'].endsWith('/') ? (
+                  const content = (!xref['url'] || xref['url'].endsWith('/')) ? (
                     <span key={`xref-${idx}`}>{obsoleteTag}{xref['curie']}</span>
                   ) : (
                     <span key={`xref-${idx}`}>{obsoleteTag}
@@ -240,8 +255,8 @@ const ReferencesToSort = ({
             </span>
           </div>
           <div style={{ alignSelf: 'flex-start', marginBottom: '.5rem' }}>
-            <strong>Alliance Category:</strong> <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: reference['category'].replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()), }} />
-            <strong>Pub Status:</strong> <span dangerouslySetInnerHTML={{ __html: reference['pubmed_publication_status'] }} />
+            <strong>Alliance Category:</strong> <span style={{ marginRight: '1.5rem' }} dangerouslySetInnerHTML={{ __html: (reference['category'] || '').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()), }} />
+            <strong>Pub Status:</strong> <span dangerouslySetInnerHTML={{ __html: reference['pubmed_publication_status'] || '' }} />
           </div>
           {/*
           <div style={{alignSelf: 'flex-start'}} ><FileElement  referenceCurie={reference['curie']}/></div>
@@ -476,6 +491,42 @@ ReferencesToSort.propTypes = {
   topicEntitySourceId: PropTypes.string,
   accessToken: PropTypes.string.isRequired,
   activeMod: PropTypes.string.isRequired,
+  isSelected: PropTypes.bool,
+  onSelectChange: PropTypes.func,
+  showCheckbox: PropTypes.bool,
 };
 
-export default ReferencesToSort;
+// Custom comparison function for React.memo
+// Only re-render if props that affect this specific paper card change
+const arePropsEqual = (prevProps, nextProps) => {
+  // Check scalar props
+  if (prevProps.index !== nextProps.index) return false;
+  if (prevProps.activeMod !== nextProps.activeMod) return false;
+  if (prevProps.isSelected !== nextProps.isSelected) return false;
+  if (prevProps.showCheckbox !== nextProps.showCheckbox) return false;
+  if (prevProps.topicEntitySourceId !== nextProps.topicEntitySourceId) return false;
+
+  // Check reference object (compare by mod_corpus_association_id and corpus state)
+  if (prevProps.reference.mod_corpus_association_id !== nextProps.reference.mod_corpus_association_id) return false;
+  if (prevProps.reference.mod_corpus_association_corpus !== nextProps.reference.mod_corpus_association_corpus) return false;
+  if (prevProps.reference.workflow !== nextProps.reference.workflow) return false;
+
+  // Check array props at this specific index only
+  const idx = prevProps.index;
+  const prevSpecies = prevProps.speciesSelect[idx];
+  const nextSpecies = nextProps.speciesSelect[idx];
+  if (prevSpecies !== nextSpecies) {
+    // Deep compare arrays if both exist
+    if (!prevSpecies || !nextSpecies) return false;
+    if (prevSpecies.length !== nextSpecies.length) return false;
+    for (let i = 0; i < prevSpecies.length; i++) {
+      if (prevSpecies[i] !== nextSpecies[i]) return false;
+    }
+  }
+
+  if (prevProps.speciesSelectLoading[idx] !== nextProps.speciesSelectLoading[idx]) return false;
+
+  return true;
+};
+
+export default React.memo(ReferencesToSort, arePropsEqual);

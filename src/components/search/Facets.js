@@ -15,6 +15,7 @@ import {
     setDatePubmedModified,
     setDatePublished,
     setDateCreated,
+    setConfidenceScore,
     setApplyToSingleTag,
     removeDatePubmedAdded,
     removeDatePubmedModified,
@@ -43,6 +44,7 @@ import wbIcon from '../../images/wb_icon.png';
 import fbIcon from '../../images/fb_icon.png';
 import xbIcon from '../../images/xb_icon.png';
 import zfinIcon from '../../images/zfin_icon.png';
+import {Slider} from "@mui/material";
 
 const MOD_ICONS = {
   SGD: sgdIcon,
@@ -92,7 +94,8 @@ export const RENAME_FACETS = {
         label: "Date Range: Added to ABC",
         value: (state) => state.search.dateCreated,
         action: removeDateCreated
-    }
+    },
+    "confidence_scores": "Confidence Score"
 }
 
 
@@ -100,7 +103,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation"], 
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name","language"],
-    "Topics and Entities": ["topics", "confidence_levels", "source_methods", "source_evidence_assertions", "data_novelty"],
+    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
@@ -396,15 +399,16 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
                 let key = facetToInclude.replaceAll(' ', '_');
-                if (!['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty',
+                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty',
                         'file_workflow', 'manual_indexing', 'reference_classification',
 		                'entity_extraction', 'curation_classification', 'community_curation'].includes(key)) {
                     key = key + '.keyword';
                 }
-                
+
                 if (!searchFacets[key]?.buckets?.length) return null;
 
                 const displayName = renameFacets[key] || key.replace(/(\.keyword|_)/g, ' ');
+
                 const isOpen = openSubFacets.has(facetToInclude);
 
 		// --- detect the specific facet for mod reference types ---
@@ -434,7 +438,8 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                         <Collapse in={isOpen}>
                             <div style={{ marginLeft: '20px' }}>
                                 {facetToInclude === 'authors.name' && <AuthorFilter />}
-                                {searchFacets[key].buckets.map(bucket => (
+                                {facetToInclude === 'confidence_scores' && <NumberRangeWidget/>}
+                                {facetToInclude !== 'confidence_scores' && searchFacets[key].buckets.map(bucket => (
                                     <Container key={bucket.key}>
                                         <Row className="facet-item">
 
@@ -483,6 +488,30 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         </div>
     );
 };
+const NumberRangeWidget = () => {
+    const confidenceScore = useSelector(state => state.search.confidenceScore);
+    const dispatch = useDispatch();
+
+    const handleChange = (event, newValue) => {
+        dispatch(setConfidenceScore(newValue));
+        dispatch(searchReferences());
+    };
+
+    return (
+        <div className="number-range-widget">
+            <Slider
+                aria-label="Always visible"
+                size="small"
+                value ={confidenceScore}
+                onChange={handleChange}
+                min={0}
+                max={1}
+                step={0.05}
+                valueLabelDisplay="on"
+            />
+        </div>
+    )
+}
 
 
 const AuthorFilter = () => {
@@ -625,26 +654,6 @@ const Facets = () => {
 
       setOpenFacets(newOpenFacets);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-
-    /*
-    useEffect(() => {                                                    
-	if (applyToSingleTag) {
-	    const topics = searchFacetsValues['topics'] || [];
-	    const confidenceLevels = searchFacetsValues['confidence_levels'] || [];
-	    if (topics.length > 1 || confidenceLevels.length > 1) {
-		setShowWarning(true);
-		setTimeout(() => {
-		    setShowWarning(false);
-		}, 6000);
-	    } else {
-		setShowWarning(false);
-	    }
-	} else {
-	    setShowWarning(false);
-	}
-    }, [applyToSingleTag, searchFacetsValues]);
-    */
 
     return (
         <>

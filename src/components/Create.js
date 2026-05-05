@@ -1,8 +1,10 @@
-// import { Link } from 'react-router-dom'
-import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
+
+import { api } from '../api';
 
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
@@ -32,6 +34,7 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
 import Alert from 'react-bootstrap/Alert'
+import InputGroup from 'react-bootstrap/InputGroup';
 
 
 function useGetAccessLevel() {
@@ -366,6 +369,186 @@ const CreateActionRouter = () => {
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
+const PERSON_XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
+const PERSON_STATUS_OPTIONS = ['active', 'retired', 'deceased'];
+const MockupCreatePersonTitle = 'Mockup only — not wired to the API';
+
+const classifyPersonInput = (raw) => {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('AGRKB:') || trimmed.startsWith('AGR:')) {
+    return { endpoint: '/person/' + trimmed };
+  }
+  if (PERSON_XREF_PREFIXES.some((p) => trimmed.startsWith(p + ':'))) {
+    return { endpoint: '/person/by_person_cross_reference/' + trimmed };
+  }
+  if (trimmed.includes('@')) {
+    return { endpoint: '/person/by_email/' + encodeURIComponent(trimmed) };
+  }
+  return { endpoint: '/person/by_name?name=' + encodeURIComponent(trimmed) };
+};
+
+const CreatePerson = () => {
+  const [inputValue, setInputValue] = useState('');
+  const [matches, setMatches] = useState(null);
+  const [searchError, setSearchError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const [displayName, setDisplayName] = useState('');
+  const [status, setStatus] = useState('active');
+  const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
+  const [lastName, setLastName] = useState('');
+
+  const handleQuery = async () => {
+    const classified = classifyPersonInput(inputValue);
+    if (!classified) return;
+    setIsLoading(true);
+    setSearchError('');
+    setMatches(null);
+    setHasSearched(false);
+    try {
+      const res = await api.get(classified.endpoint);
+      let list = [];
+      if (Array.isArray(res.data)) {
+        list = res.data;
+      } else if (res.data && typeof res.data === 'object' && (res.data.curie || res.data.person_id)) {
+        list = [res.data];
+      }
+      setMatches(list);
+      setHasSearched(true);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      const status404 = err?.response?.status === 404;
+      if (status404) {
+        setMatches([]);
+        setHasSearched(true);
+      } else {
+        setSearchError(typeof detail === 'string' ? detail : 'An unexpected error occurred.');
+        setHasSearched(true);
+        setMatches([]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Container>
+      <div style={{ maxWidth: '40em', marginBottom: '1em' }}>
+        <InputGroup>
+          <Form.Control
+            placeholder="e.g., AGRKB:103000000000001, ORCID:0000-0001-2345-6789, WB:WBPerson12345, jane.doe@example.org, or Jane Doe"
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={(e) => { if (e.charCode === 13) handleQuery(); }}
+          />
+          <Button onClick={handleQuery} disabled={isLoading} variant="outline-secondary">
+            {isLoading ? <Spinner animation="border" size="sm" /> : <span>Query Person</span>}
+          </Button>
+        </InputGroup>
+      </div>
+
+      {searchError && (
+        <Alert variant="danger" onClose={() => setSearchError('')} dismissible>
+          {searchError}
+        </Alert>
+      )}
+
+      {hasSearched && matches && matches.length > 0 && (
+        <div style={{ marginBottom: '1em' }}>
+          <strong>{matches.length} existing match{matches.length > 1 ? 'es' : ''} found:</strong>
+          <ul style={{ listStyle: 'none', paddingLeft: 0, marginTop: 4 }}>
+            {matches.map((m, i) => (
+              <li key={m.curie ?? m.person_id ?? i} style={{ padding: '4px 0' }}>
+                <Link to={`/person?personCurie=${encodeURIComponent(m.curie ?? '')}`}>
+                  {m.display_name || '(no display name)'}
+                </Link>
+                <span style={{ color: '#888', marginLeft: 8, fontSize: '0.9em' }}>
+                  {m.curie}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {hasSearched && matches && matches.length === 0 && !searchError && (
+        <div style={{ marginBottom: '1em', color: '#888' }}>
+          No existing person matches found.
+        </div>
+      )}
+
+      {hasSearched && (
+        <Form>
+          <p style={{ marginTop: '0.5em' }}>
+            If you've checked that the person you're looking for does not exist, fill out the fields below to create.
+          </p>
+          <Form.Group as={Row} key="newPersonDisplayName">
+            <Form.Label column sm="2">display_name</Form.Label>
+            <Col sm="6">
+              <Form.Control
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </Col>
+          </Form.Group>
+          <Form.Group as={Row} key="newPersonStatus">
+            <Form.Label column sm="2">status</Form.Label>
+            <Col sm="3">
+              <Form.Control
+                as="select"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                {PERSON_STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </Form.Control>
+            </Col>
+          </Form.Group>
+          <Form.Group as={Row} key="newPersonName">
+            <Form.Label column sm="2">name</Form.Label>
+            <Col sm="3">
+              <Form.Control
+                placeholder="first_name"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </Col>
+            <Col sm="3">
+              <Form.Control
+                placeholder="middle_name"
+                type="text"
+                value={middleName}
+                onChange={(e) => setMiddleName(e.target.value)}
+              />
+            </Col>
+            <Col sm="3">
+              <Form.Control
+                placeholder="last_name"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </Col>
+          </Form.Group>
+          <div style={{ marginTop: '1em' }}>
+            <Button variant="primary" disabled title={MockupCreatePersonTitle}>
+              Create (mockup)
+            </Button>
+            <span style={{ color: '#888', marginLeft: 12 }}>{MockupCreatePersonTitle}</span>
+          </div>
+        </Form>
+      )}
+    </Container>
+  );
+};
+
 const Create = () => {
   const createRedirectToBiblio = useSelector(state => state.create.redirectToBiblio);
   const createRedirectCurie = useSelector(state => state.create.redirectCurie);
@@ -408,6 +591,14 @@ const Create = () => {
       <h4>Create a new Resource</h4>
       <p>Create a new resource from NLM or ISSN curie</p>
       <CreateResource />
+      {process.env.REACT_APP_DEV_OR_STAGE_OR_PROD !== 'prod' && (
+        <>
+          <hr style={{marginTop: '2em', marginBottom: '2em'}} />
+          <h4>Create a new Person</h4>
+          <p>Create a new Person manually after checking it does not exist.</p>
+          <CreatePerson />
+        </>
+      )}
     </div>
   )
 }
