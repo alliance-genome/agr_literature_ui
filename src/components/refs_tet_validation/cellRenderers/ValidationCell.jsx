@@ -19,20 +19,6 @@ export default function ValidationCell(params) {
   const referenceCurie = params.data?.curie;
 
   const validations = professionalBiocuratorTopicTets(tets);
-  // eslint-disable-next-line no-console
-  console.debug('[ValidationCell]', {
-    topicCurie,
-    referenceCurie,
-    valueLen: tets.length,
-    validations: validations.length,
-    sample: tets[0]
-      ? {
-          entity: tets[0].entity,
-          negated: tets[0].negated,
-          src: tets[0].topic_entity_tag_source,
-        }
-      : null,
-  });
   if (validations.length > 0) {
     const positives = validations.filter((t) => !t.negated).length;
     const negatives = validations.filter((t) => t.negated).length;

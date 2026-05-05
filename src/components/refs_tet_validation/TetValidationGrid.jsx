@@ -212,6 +212,15 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     return () => ro.disconnect();
   }, [gridApi]);
 
+  // Force AgGrid to recompute per-row classes when the visible-topic set
+  // changes. AgGrid caches row classes after first render, so toggling a
+  // topic on/off otherwise leaves stale row colours from the previous
+  // visibility set. Cheap for our row counts (<= a few hundred).
+  useEffect(() => {
+    if (!gridApi) return;
+    gridApi.redrawRows?.();
+  }, [gridApi, hiddenTopicCuries, topicColumns]);
+
   // Auto-size topic sub-columns to fit content (no vertical stacking), then,
   // if the total column width is narrower than the visible center viewport,
   // grow the Sources column(s) to fill the remaining horizontal space.

@@ -10,12 +10,37 @@ import { api } from '../../../api';
 // /reference/by_cross_reference/{id}. We do NOT fall back from one to the other
 // because they target disjoint identifier spaces — a fallback only generates
 // noise 404s in the backend log.
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Retry an axios call on 5xx / network errors with exponential backoff.
+ * 4xx errors fail fast (a 404 should never be retried). Default 3 retries
+ * with delays 250 / 750 / 2250 ms.
+ */
+async function withBackoff(fn, { delays = [250, 750, 2250] } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      const status = e?.response?.status;
+      const retryable =
+        status === undefined || (status >= 500 && status < 600);
+      if (!retryable || attempt === delays.length) throw e;
+      await sleep(delays[attempt]);
+    }
+  }
+  throw lastErr;
+}
+
 export async function resolveOne(id) {
   const url = id.startsWith('AGRKB:')
     ? `/reference/${id}`
     : `/reference/by_cross_reference/${id}`;
   try {
-    const r = await api.get(url);
+    const r = await withBackoff(() => api.get(url));
     return r.data;
   } catch (e) {
     // eslint-disable-next-line no-console
@@ -30,8 +55,8 @@ export async function resolveOne(id) {
 
 export async function fetchTets(curie) {
   try {
-    const r = await api.get(
-      `/topic_entity_tag/by_reference/${curie}?page=1&page_size=8000`
+    const r = await withBackoff(() =>
+      api.get(`/topic_entity_tag/by_reference/${curie}?page=1&page_size=8000`)
     );
     // Existing TET table uses result.data directly as the array
     return Array.isArray(r.data) ? r.data : (r.data?.topic_entity_tags || []);
