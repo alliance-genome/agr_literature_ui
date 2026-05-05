@@ -178,7 +178,7 @@ When **TET grid view** is selected:
 />
 ```
 
-`topicsFromSearchFacets` is derived from `state.search.searchFacetsValues.topics` (the existing topic facet stores a list of values; verify during implementation whether they are curies or names — the existing facet rendering code in `Facets.js` already does the mapping and we will reuse the same lookup). Each value is normalized to `{curie, name}` using the same curie→name map the search facets render with.
+`topicsFromSearchFacets` is derived from `state.search.searchFacetsValues.topics`. The values are always ATP curies (the `bucket.key` from the topic aggregation; the human-readable name is `bucket.name` and is added server-side by `add_curie_to_name_values` in `search_crud.py`). Each curie is wrapped as `{ curie, name: undefined }` and the grid resolves the display name via `/ontology/map_curie_to_name/atpterm/{curie}`.
 
 When the user has not selected any topic facets, `topicsFromSearchFacets` is `undefined` and the grid falls back to data-driven columns. This matches the user requirement that *when topics are selected in the search, only those should appear in the grid*.
 

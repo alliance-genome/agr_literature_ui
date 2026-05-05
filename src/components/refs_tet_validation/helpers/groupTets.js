@@ -7,10 +7,18 @@ export function sourceLabel(source) {
   return method;
 }
 
+// Normalize an ATP/ECO curie to canonical uppercase form so case differences
+// between ES bucket keys, TET DB rows, and the ATP cache don't cause silent
+// mismatches. (Existing TopicEntityTable.js does the same via bucket.key.toUpperCase().)
+export function normalizeCurie(curie) {
+  if (!curie) return curie;
+  return String(curie).toUpperCase();
+}
+
 export function groupTetsByTopicAndSource(tets) {
   const byTopic = new Map();
   for (const tet of tets || []) {
-    const topicKey = tet.topic;
+    const topicKey = normalizeCurie(tet.topic);
     const label = sourceLabel(tet.topic_entity_tag_source);
     if (!byTopic.has(topicKey)) byTopic.set(topicKey, new Map());
     const bySource = byTopic.get(topicKey);
@@ -25,6 +33,36 @@ export function cellSortRank(tets) {
   if (arr.length === 0) return 0;
   if (arr.some((t) => t.negated === false)) return 2;
   return 1;
+}
+
+/** Validation state of a (reference, topic) cell, considering only
+ *  professional-biocurator topic-level TETs.
+ *  Returns one of: 'unvalidated' | 'positive' | 'negative' | 'conflict'. */
+export function validationState(tets) {
+  const validations = (tets || []).filter(
+    (t) =>
+      !t.entity &&
+      t.topic_entity_tag_source?.validation_type === 'professional_biocurator'
+  );
+  if (validations.length === 0) return 'unvalidated';
+  const hasPos = validations.some((t) => !t.negated);
+  const hasNeg = validations.some((t) => t.negated);
+  if (hasPos && hasNeg) return 'conflict';
+  return hasPos ? 'positive' : 'negative';
+}
+
+export const VALIDATION_FILTER_KEYS = [
+  'unvalidated',
+  'positive',
+  'negative',
+  'conflict',
+];
+
+/** Stable numeric ordering for AgGrid sort: unvalidated < conflict <
+ *  negative < positive. Curators can flip via shift-click for descending. */
+export function validationSortRank(tets) {
+  const s = validationState(tets);
+  return { unvalidated: 0, conflict: 1, negative: 2, positive: 3 }[s] || 0;
 }
 
 export const TOPIC_CELL_FILTER_KEYS = [

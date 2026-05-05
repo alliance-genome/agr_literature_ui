@@ -1,3 +1,39 @@
+.tetv-grid-wrapper {
+  padding-left: 12px;
+}
+/* Sticky AgGrid header + a separate sticky horizontal scrollbar at the top.
+   With domLayout="autoHeight" the grid has no internal vertical scrolling — the
+   page is the only scroller. We pin .ag-header so column headers stay visible
+   only once the user has actually scrolled past them; position:sticky kicks in
+   exactly at top:0. The override on .ag-root-wrapper / .ag-root removes the
+   overflow:hidden ancestors that would otherwise clip the sticky child. */
+.tetv-grid-wrapper .ag-root-wrapper,
+.tetv-grid-wrapper .ag-root,
+.tetv-grid-wrapper .ag-body-viewport {
+  overflow: visible;
+}
+/* Top scrollbar lives between the AgGrid header and the body (DOM-moved into
+   .ag-root after .ag-header at runtime). The sticky `top` is set inline based
+   on the measured header height so it pins right below the header when the
+   page scrolls. */
+.tetv-top-scroll {
+  position: sticky;
+  z-index: 3;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #fff;
+  border-top: 1px solid #d6d9dd;
+  border-bottom: 1px solid #e1e4e8;
+  height: 14px;
+}
+.tetv-top-scroll-inner {
+  height: 1px;
+}
+.tetv-grid-wrapper .ag-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
 .tetv-banner-unresolved {
   background: #fff3cd;
   padding: 6px 10px;
@@ -19,18 +55,129 @@
   align-items: center;
   gap: 6px;
 }
-.tetv-toolbar-multi {
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 4px 8px;
-  min-width: 200px;
+.tetv-toolbar-select {
+  flex: 1 1 280px;
+  min-width: 240px;
+  max-width: 480px;
+}
+.tetv-toolbar-label {
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap;
 }
 
-.tetv-cell {
+/* Each topic is rendered as a column group with two children: Validation
+   (narrow, just buttons) and Sources (wide, source mini-rows).
+   We draw a thick left border on the leftmost cell of each topic group to
+   visually separate adjacent topic groups. */
+.tetv-validation-cell {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4px 2px;
+  height: 100%;
+}
+.tetv-sources-cell,
+.tetv-attr-cell {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 4px;
+  padding: 4px 6px;
+  min-width: 0;
+}
+.tetv-attr-value {
+  font-size: 12px;
+  color: #2a2f36;
+  font-variant-numeric: tabular-nums;
+}
+.tetv-note-count {
+  font-size: 11px;
+  margin-left: 2px;
+}
+/* Inner separators between sub-columns within a topic group, matching the
+   sub-header borders. The leftmost cell of each topic group keeps a thicker
+   left border to separate adjacent topic groups. */
+.tetv-grid-wrapper .ag-cell {
+  border-right: 1px solid #e1e4e8;
+}
+.tetv-grid-wrapper .ag-header-cell.tetv-topic-subheader,
+.tetv-grid-wrapper .ag-header-group-cell.tetv-topic-group-header {
+  border-right: 1px solid #d6d9dd;
+}
+.tetv-topic-group-leftmost {
+  border-left: 2px solid #c9c9c9 !important;
+}
+/* Header — slightly darker than the body, aligned with the bootstrap-grey
+   palette already used in other AGR tables. */
+.tetv-grid-wrapper .ag-header,
+.tetv-grid-wrapper .ag-header-row {
+  background: #e2e7ec;
+}
+.tetv-grid-wrapper .ag-header-cell,
+.tetv-grid-wrapper .ag-header-group-cell {
+  background: #e2e7ec;
+  color: #2a2f36;
+  font-weight: 600;
+}
+.ag-header-group-cell.tetv-topic-group-header {
+  border-left: 2px solid #c9c9c9;
+  background: #e2e7ec;
+  font-weight: 700;
+  color: #1f2937;
+}
+.ag-header-cell.tetv-topic-subheader {
+  background: #eef1f4;
+  font-size: 11px;
+  color: #4a5260;
+  font-weight: 600;
+}
+/* Alternating row tones for readability. */
+.tetv-grid-wrapper .ag-row {
+  background: #ffffff;
+}
+.tetv-grid-wrapper .ag-row-odd {
+  background: #f7f9fb;
+}
+.tetv-grid-wrapper .ag-row:hover {
+  background: #eef4fb;
+}
+/* Reference rows that already carry a professional-biocurator topic-level
+   TET on at least one topic — soft amber background so curators spot them
+   immediately. Overrides the zebra striping. */
+.tetv-grid-wrapper .ag-row.tetv-row-validated,
+.tetv-grid-wrapper .ag-row.tetv-row-validated.ag-row-odd {
+  background: #fff7e6;
+}
+.tetv-grid-wrapper .ag-row.tetv-row-validated:hover {
+  background: #ffefcc;
+}
+
+/* Status text shown in the Validation cell when a professional-biocurator
+   topic-level tag exists for that (ref, topic). Replaces the ✓/✗ buttons. */
+.tetv-validation-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.2;
+  border: 1px solid transparent;
+}
+.tetv-validated-pos {
+  background: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+.tetv-validated-neg {
+  background: #f8d7da;
+  color: #721c24;
+  border-color: #f5c6cb;
+}
+.tetv-validated-conflict {
+  background: #fff3cd;
+  color: #856404;
+  border-color: #ffeeba;
 }
 .tetv-source-group {
   display: flex;
@@ -47,13 +194,15 @@
   gap: 6px;
   font-size: 12px;
   line-height: 1.3;
+  flex-wrap: nowrap;
+  /* Single-line mini-rows so the columns can be auto-sized to fit content
+     without vertical stacking. The grid horizontal-scrolls when wider than
+     the viewport. */
 }
 .tetv-source-label {
   color: #555;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
 .tetv-pill {
   display: inline-block;
@@ -66,6 +215,16 @@
 }
 .tetv-pill-y { background: #28a745; }
 .tetv-pill-n { background: #dc3545; }
+/* Entity count badge — distinct violet so curators can spot it apart from
+   the Y/N pills used for topic-only tags. */
+.tetv-pill-entity { background: #6f42c1; }
+.tetv-pill-entity-neg { background: #4c2a85; }
+.tetv-pill-clickable {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.tetv-pill-clickable:hover { filter: brightness(1.08); }
 .tetv-dot-y, .tetv-dot-n {
   width: 8px;
   height: 8px;
@@ -101,36 +260,65 @@
   color: #353;
 }
 
+/* Validation strip: horizontal pair of icon-only buttons. */
 .tetv-strip {
   display: flex;
+  flex-direction: row;
   gap: 6px;
-  padding-top: 4px;
-  border-top: 1px solid #eee;
+  padding: 0;
+  border: 0;
+  flex: 0 0 auto;
 }
 .tetv-strip-btn {
   background: none;
   border: 1px solid #ddd;
   border-radius: 4px;
-  padding: 2px 6px;
+  padding: 1px 4px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  justify-content: center;
+  width: 30px;
+  height: 24px;
+  font-size: 15px;
+  line-height: 1;
 }
+.tetv-strip-btn:disabled { opacity: 0.4; cursor: default; }
 .tetv-strip-pos { color: #28a745; }
 .tetv-strip-neg { color: #dc3545; }
-.tetv-strip-active { background: #f5f5f5; }
+.tetv-strip-pos:hover:not(:disabled) { background: #e6f4ea; }
+.tetv-strip-neg:hover:not(:disabled) { background: #fbeaec; }
+.tetv-strip-active { background: #f0f0f0; border-color: #999; }
 
-.tetv-ref-cell {
+.tetv-title-cell,
+.tetv-ids-cell {
   display: flex;
   flex-direction: column;
   padding: 4px;
   line-height: 1.3;
+  white-space: normal;
 }
-.tetv-ref-title { font-weight: 600; }
-.tetv-ref-meta,
+.tetv-ref-title {
+  font-weight: 600;
+  word-break: break-word;
+}
+.tetv-ref-journal {
+  font-size: 11px;
+  color: #555;
+  font-style: italic;
+}
 .tetv-ref-authors {
   font-size: 11px;
   color: #666;
 }
+.tetv-ref-curie,
+.tetv-ref-pmid,
+.tetv-ref-xref,
+.tetv-ref-year {
+  font-size: 11px;
+  color: #555;
+  font-family: monospace;
+  word-break: break-all;
+}
+.tetv-ref-curie { color: #333; font-weight: 600; }
+.tetv-ref-year { color: #888; }

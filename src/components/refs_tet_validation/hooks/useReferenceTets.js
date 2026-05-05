@@ -1,17 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../api';
 
+// CURIEs go into URL path segments unencoded — matches the rest of the UI
+// (e.g. biblioActions.js, TopicEntityTable.js). Percent-encoding ':' to '%3A'
+// breaks routing in some intermediaries.
+//
+// AGRKB curies are *canonical reference curies* and must hit /reference/{curie}.
+// Anything else is treated as a cross-reference and goes through
+// /reference/by_cross_reference/{id}. We do NOT fall back from one to the other
+// because they target disjoint identifier spaces — a fallback only generates
+// noise 404s in the backend log.
 export async function resolveOne(id) {
+  const url = id.startsWith('AGRKB:')
+    ? `/reference/${id}`
+    : `/reference/by_cross_reference/${id}`;
   try {
-    if (id.startsWith('AGRKB:')) {
-      const r = await api.get(`/reference/${encodeURIComponent(id)}`);
-      return r.data;
-    }
-    const r = await api.get(
-      `/reference/by_cross_reference/${encodeURIComponent(id)}`
-    );
+    const r = await api.get(url);
     return r.data;
-  } catch {
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[TetValidationGrid] Could not resolve ${id}:`,
+      e?.response?.status,
+      e?.response?.data?.detail || e?.message
+    );
     return null;
   }
 }
@@ -19,11 +31,17 @@ export async function resolveOne(id) {
 export async function fetchTets(curie) {
   try {
     const r = await api.get(
-      `/topic_entity_tag/by_reference/${encodeURIComponent(curie)}?page=1&page_size=8000`
+      `/topic_entity_tag/by_reference/${curie}?page=1&page_size=8000`
     );
     // Existing TET table uses result.data directly as the array
     return Array.isArray(r.data) ? r.data : (r.data?.topic_entity_tags || []);
-  } catch {
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[TetValidationGrid] fetchTets failed for ${curie}:`,
+      e?.response?.status,
+      e?.response?.data?.detail || e?.message
+    );
     return [];
   }
 }

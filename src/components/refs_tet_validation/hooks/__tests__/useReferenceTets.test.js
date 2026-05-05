@@ -13,7 +13,7 @@ describe('resolveOne', () => {
       data: { curie: 'AGRKB:42', title: 'X' },
     });
     const out = await resolveOne('AGRKB:42');
-    expect(api.get).toHaveBeenCalledWith('/reference/AGRKB%3A42');
+    expect(api.get).toHaveBeenCalledWith('/reference/AGRKB:42');
     expect(out.curie).toBe('AGRKB:42');
   });
 
@@ -23,7 +23,7 @@ describe('resolveOne', () => {
     });
     const out = await resolveOne('PMID:12345');
     expect(api.get).toHaveBeenCalledWith(
-      '/reference/by_cross_reference/PMID%3A12345'
+      '/reference/by_cross_reference/PMID:12345'
     );
     expect(out.curie).toBe('AGRKB:42');
   });
@@ -43,7 +43,7 @@ describe('fetchTets', () => {
     const tets = await fetchTets('AGRKB:42');
     expect(tets).toHaveLength(2);
     expect(api.get).toHaveBeenCalledWith(
-      '/topic_entity_tag/by_reference/AGRKB%3A42?page=1&page_size=8000'
+      '/topic_entity_tag/by_reference/AGRKB:42?page=1&page_size=8000'
     );
   });
 

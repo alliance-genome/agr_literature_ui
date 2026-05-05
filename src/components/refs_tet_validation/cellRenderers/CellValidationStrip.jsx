@@ -55,9 +55,9 @@ export default function CellValidationStrip({
         onClick={() => submit('positive')}
         disabled={busy || !topicEntitySourceId}
         title="positive (topic present)"
+        aria-label="positive (topic present)"
       >
         <FontAwesomeIcon icon={faCheckCircle} />
-        <span>positive</span>
       </button>
       <button
         type="button"
@@ -65,9 +65,9 @@ export default function CellValidationStrip({
         onClick={() => submit('negative')}
         disabled={busy || !topicEntitySourceId}
         title="negative (topic not present)"
+        aria-label="negative (topic not present)"
       >
         <FontAwesomeIcon icon={faTimesCircle} />
-        <span>negative</span>
       </button>
     </div>
   );

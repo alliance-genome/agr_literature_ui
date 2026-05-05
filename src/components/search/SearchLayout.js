@@ -30,6 +30,7 @@ const SearchLayout = () => {
 
     const searchResults = useSelector((s) => s.search.searchResults);
     const searchFacetsValues = useSelector((s) => s.search.searchFacetsValues);
+    const searchLoading = useSelector((s) => s.search.searchLoading);
 
     const referenceIds = useMemo(
         () => (searchResults || []).map((r) => r.curie).filter(Boolean),
@@ -38,8 +39,10 @@ const SearchLayout = () => {
     const topicsForGrid = useMemo(() => {
         const arr = searchFacetsValues?.topics;
         if (!Array.isArray(arr) || arr.length === 0) return undefined;
-        // Values may be curies or names; the grid resolves names via the topic-name map fallback
-        return arr.map((v) => ({ curie: v, name: v }));
+        // searchFacetsValues.topics is always a list of ATP curies (the bucket.key
+        // values from the topic aggregation); display names are looked up by the
+        // grid via /ontology/map_curie_to_name/atpterm/{curie}.
+        return arr.map((curie) => ({ curie, name: undefined }));
     }, [searchFacetsValues]);
 
     // Handle window resize
@@ -229,6 +232,10 @@ const SearchLayout = () => {
                                 )}
                                 {view === 'list' ? (
                                     <SearchResults/>
+                                ) : searchLoading ? (
+                                    // Hide the grid entirely while the underlying search is
+                                    // refetching — avoids AgGrid flashing "no rows to show".
+                                    null
                                 ) : (
                                     <TetValidationGrid
                                         referenceIds={referenceIds}
