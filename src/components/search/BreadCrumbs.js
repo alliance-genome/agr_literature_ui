@@ -13,7 +13,7 @@ import {
     removeDatePubmedModified,
     removeDatePublished,
     removeDateCreated,
-    downloadSearchReferences
+    downloadSearchReferences, setConfidenceScore
 } from "../../actions/searchActions";
 import { RENAME_FACETS } from "./Facets";
 import BreadcrumbItem from "./BreadCrumbItem";
@@ -26,6 +26,7 @@ const BreadCrumbs = () => {
     const datePubmedModified = useSelector(state => state.search.datePubmedModified);
     const datePublished = useSelector(state => state.search.datePublished);
     const dateCreated = useSelector(state => state.search.dateCreated);
+    const confidenceScore = useSelector(state => state.search.confidenceScore);
     const searchResultsCount = useSelector(state => state.search.searchResultsCount);
     const dispatch = useDispatch();
 
@@ -68,6 +69,11 @@ const BreadCrumbs = () => {
         dispatch(searchReferences());
     };
 
+    const handleRemoveRange = (action) => {
+        dispatch(setConfidenceScore([0,1]));
+        dispatch(searchReferences());
+    }
+
     const handleRemoveFacet = (facet, value) => {
 
         //Remove NOT Confidence Levels if no topic is selected.
@@ -90,6 +96,7 @@ const BreadCrumbs = () => {
     };
 
     const dateKeys = ["datePubmedAdded", "datePubmedModified", "datePublished", "dateCreated"];
+    const rangeKeys = ["confidence_scores"];
     const dateValues = { datePubmedAdded, datePubmedModified, datePublished, dateCreated };
 
     const downloadButtonLabel = (searchResultsCount > 1000) ? 'Download 1000 Results' : 'Download';
@@ -172,6 +179,18 @@ const BreadCrumbs = () => {
                                 />
                             );
                         })}
+                      {rangeKeys.map(key => {
+                          const rangeFacet = RENAME_FACETS[key];
+                          const rangeValue = confidenceScore[0] === 0 && confidenceScore[1] === 1 ? null : confidenceScore;
+                          return rangeValue && (
+                              <BreadcrumbItem
+                                  key={`${key}_breadcrumb`}
+                                  label={rangeFacet}
+                                  onRemove={() => handleRemoveRange()}
+                              />
+                          );
+                      })}
+
                         {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || dateKeys.some(key => dateValues[key])) &&
                             <Button onClick={handleClearAll}>Clear All</Button>}
                       </div>
