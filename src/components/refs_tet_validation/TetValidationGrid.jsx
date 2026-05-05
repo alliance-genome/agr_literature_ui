@@ -88,6 +88,44 @@ function sortFilterValues(values) {
   });
 }
 
+const ID_COLUMN_MIN_WIDTH = 200;
+const ID_COLUMN_CHAR_WIDTH = 8.5;
+const ID_COLUMN_PADDING = 42;
+
+const prefixOf = (curie) =>
+  curie ? String(curie).split(':')[0].toUpperCase() : null;
+
+function selectedPrefixAllows(selectedPrefixes, curie) {
+  if (selectedPrefixes === null || selectedPrefixes === undefined) return true;
+  if (!Array.isArray(selectedPrefixes)) return true;
+  return selectedPrefixes.includes(prefixOf(curie));
+}
+
+function estimateIdsColumnWidth(rows, selectedPrefixes) {
+  const visibleIds = [];
+
+  for (const row of rows || []) {
+    if (row.curie && selectedPrefixAllows(selectedPrefixes, row.curie)) {
+      visibleIds.push(row.curie);
+    }
+    for (const xref of row.biblio?.cross_references || []) {
+      if (xref?.curie && selectedPrefixAllows(selectedPrefixes, xref.curie)) {
+        visibleIds.push(xref.curie);
+      }
+    }
+  }
+
+  const longestIdLength = Math.max(
+    0,
+    ...visibleIds.map((id) => String(id).length)
+  );
+
+  return Math.max(
+    ID_COLUMN_MIN_WIDTH,
+    Math.ceil(longestIdLength * ID_COLUMN_CHAR_WIDTH + ID_COLUMN_PADDING)
+  );
+}
+
 export default function TetValidationGrid({ referenceIds, topics, mod }) {
   const dispatch = useDispatch();
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
@@ -306,7 +344,9 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   // Auto-size topic sub-columns to fit content (no vertical stacking), then,
   // if the total column width is narrower than the visible center viewport,
   // grow the Sources column(s) to fill the remaining horizontal space.
-  // Pinned IDs/Title columns are intentionally excluded.
+  // Pinned IDs/Title columns are intentionally excluded. IDs width is computed
+  // from the visible curies/xrefs because AgGrid auto-size can still clip
+  // pinned, non-wrapping cell content.
   useEffect(() => {
     if (!gridApi || rows.length === 0) return undefined;
     const id = setTimeout(() => {
@@ -510,6 +550,19 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     [rows, topicColumns]
   );
 
+  const idsColumnWidth = useMemo(
+    () => estimateIdsColumnWidth(rows, selectedIdPrefixes),
+    [rows, selectedIdPrefixes]
+  );
+
+  useEffect(() => {
+    if (!gridApi) return;
+    gridApi.setColumnWidths?.(
+      [{ key: '__ids', newWidth: idsColumnWidth }],
+      true
+    );
+  }, [gridApi, idsColumnWidth]);
+
   const syncSingleInnerColumnState = useCallback(
     (preferredInnerColId, apiOverride = null) => {
       const apiInstance = apiOverride || gridApi;
@@ -694,9 +747,10 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
       headerName: 'IDs',
       field: '__ids',
       pinned: 'left',
-      width: 200,
+      width: idsColumnWidth,
+      minWidth: ID_COLUMN_MIN_WIDTH,
       autoHeight: true,
-      wrapText: true,
+      wrapText: false,
       cellRenderer: IdsCell,
       cellRendererParams: { selectedPrefixes: selectedIdPrefixes },
       filter: IdPrefixFilter,
@@ -868,6 +922,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     sourceFilterModel,
     allIdPrefixes,
     selectedIdPrefixes,
+    idsColumnWidth,
     innerFilterOptions,
   ]);
 

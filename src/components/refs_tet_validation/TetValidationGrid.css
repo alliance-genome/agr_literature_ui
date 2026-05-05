@@ -239,14 +239,19 @@
   font-weight: 400;
 }
 .tetv-pill {
-  display: inline-block;
-  min-width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
   padding: 0 6px;
-  border-radius: 9px;
+  border-radius: 10px;
   color: #fff;
+  font-size: var(--tetv-small-font-size);
   font-weight: 600;
   text-align: center;
-  line-height: 1.4;
+  line-height: 20px;
+  height: 20px;
+  white-space: nowrap;
 }
 .tetv-pill-y { background: #28a745; }
 .tetv-pill-n { background: #dc3545; }
@@ -309,7 +314,7 @@
 .tetv-strip {
   display: flex;
   flex-direction: row;
-  gap: 6px;
+  gap: 4px;
   padding: 0;
   border: 0;
   flex: 0 0 auto;
@@ -317,16 +322,17 @@
 .tetv-strip-btn {
   background: none;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 1px 4px;
+  border-radius: 9px;
+  padding: 0 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 24px;
-  font-size: 15px;
-  line-height: 1;
+  min-width: 18px;
+  width: auto;
+  height: auto;
+  font-size: inherit;
+  line-height: 1.4;
 }
 .tetv-strip-btn:disabled { opacity: 0.4; cursor: default; }
 .tetv-strip-pos { color: #28a745; }
@@ -341,7 +347,12 @@
   flex-direction: column;
   padding: 4px;
   line-height: 1.3;
+}
+.tetv-title-cell {
   white-space: normal;
+}
+.tetv-ids-cell {
+  white-space: nowrap;
 }
 .tetv-ref-title {
   font-weight: 400;
@@ -362,6 +373,8 @@
   font-size: var(--tetv-secondary-font-size);
   color: #555;
   font-variant-numeric: tabular-nums;
-  word-break: break-all;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
 }
 .tetv-ref-curie { color: #333; font-weight: 600; }

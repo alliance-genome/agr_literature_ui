@@ -14,7 +14,7 @@ import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
 import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
 const MOBILE_BREAKPOINT = 992; // lg breakpoint
 
@@ -27,6 +27,7 @@ const SearchLayout = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
     const [facetsCollapsed, setFacetsCollapsed] = useState(window.innerWidth < MOBILE_BREAKPOINT);
     const [view, setView] = useState('list'); // 'list' | 'grid'
+    const [hasOpenedTopicGrid, setHasOpenedTopicGrid] = useState(false);
 
     const searchResults = useSelector((s) => s.search.searchResults);
     const searchFacetsValues = useSelector((s) => s.search.searchFacetsValues);
@@ -83,9 +84,18 @@ const SearchLayout = () => {
         };
     }, [isDragging]);
 
+    useEffect(() => {
+        if (view === 'grid') {
+            setHasOpenedTopicGrid(true);
+        }
+    }, [view]);
+
     const toggleFacets = useCallback(() => {
         setFacetsCollapsed(prev => !prev);
     }, []);
+
+    const shouldRenderTopicGrid =
+        referenceIds.length > 0 && (view === 'grid' || hasOpenedTopicGrid);
 
     return (
         <div>
@@ -97,21 +107,8 @@ const SearchLayout = () => {
                 </Row>
                 <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
                 <Row>
-                    <Col style={{ padding: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {/* Filter toggle button for mobile */}
-                        {isMobile && (
-                            <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={toggleFacets}
-                                style={{ marginLeft: '10px' }}
-                            >
-                                <FontAwesomeIcon icon={faFilter} /> Filters
-                            </Button>
-                        )}
-                        <div style={{ flex: 1 }}>
-                            <SearchOptions/>
-                        </div>
+                    <Col style={{ padding: 0 }}>
+                        <SearchOptions/>
                     </Col>
                 </Row>
                 <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
@@ -124,42 +121,69 @@ const SearchLayout = () => {
                 {/* The flex container wrapping both the facet panel and search results */}
                 <Row style={{ margin: 0 }}>
                     <Col style={{ padding: 0 }}>
+                        {facetsCollapsed && (
+                            <div style={{
+                                padding: '0 0 6px 0',
+                                backgroundColor: '#fff',
+                                textAlign: 'left',
+                                animation: 'facetToggleFadeIn 180ms ease-out',
+                            }}>
+                                <Button
+                                    variant="outline-secondary"
+                                    size="sm"
+                                    onClick={toggleFacets}
+                                    style={{ whiteSpace: 'nowrap' }}
+                                >
+                                    <FontAwesomeIcon icon={faChevronRight} /> Show facets
+                                </Button>
+                            </div>
+                        )}
                         <div style={{
                             display: "flex",
                             width: '100%',
                             position: 'relative'
                         }}>
-                            {/* Facets Panel (scrollable) */}
+                            {/* Facets Panel (scrollable). Keep Facets mounted when
+                                hidden; remounting it retriggers facet searches. */}
                             <div style={{
-                                width: isMobile ? '280px' : `${facetWidth}px`,
-                                minWidth: isMobile ? '280px' : `${minWidth}px`,
-                                maxWidth: isMobile ? '85vw' : `${maxWidth}px`,
+                                width: !isMobile && facetsCollapsed ? '0px' : (isMobile ? '280px' : `${facetWidth}px`),
+                                minWidth: !isMobile && facetsCollapsed ? '0px' : (isMobile ? '280px' : `${minWidth}px`),
+                                maxWidth: !isMobile && facetsCollapsed ? '0px' : (isMobile ? '85vw' : `${maxWidth}px`),
                                 position: isMobile ? "fixed" : "sticky",
                                 top: isMobile ? "0" : "0px",
                                 left: isMobile ? (facetsCollapsed ? '-100%' : '0') : 'auto',
                                 zIndex: 1000,
                                 height: "100vh",
-                                overflowY: "auto",
+                                overflowY: !isMobile && facetsCollapsed ? "hidden" : "auto",
+                                overflowX: "hidden",
                                 backgroundColor: '#fff',
-                                transition: isMobile ? 'left 0.3s ease-in-out' : 'none',
+                                transition: isMobile
+                                    ? 'left 0.3s ease-in-out'
+                                    : 'width 220ms ease, min-width 220ms ease, max-width 220ms ease, opacity 160ms ease',
                                 boxShadow: isMobile && !facetsCollapsed ? '2px 0 10px rgba(0,0,0,0.3)' : 'none',
+                                opacity: !isMobile && facetsCollapsed ? 0 : 1,
+                                pointerEvents: !isMobile && facetsCollapsed ? 'none' : 'auto',
                             }}>
-                                {/* Close button for mobile facets */}
-                                {isMobile && (
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        padding: '10px',
-                                        borderBottom: '1px solid #eee',
-                                        backgroundColor: '#f8f9fa'
-                                    }}>
-                                        <strong>Filters</strong>
-                                        <Button variant="link" onClick={toggleFacets} style={{ padding: 0 }}>
-                                            <FontAwesomeIcon icon={faTimes} />
-                                        </Button>
-                                    </div>
-                                )}
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '8px 10px',
+                                    borderBottom: '1px solid #eee',
+                                    backgroundColor: '#f8f9fa',
+                                    position: 'sticky',
+                                    top: 0,
+                                    zIndex: 1
+                                }}>
+                                    <strong>Facets</strong>
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        onClick={toggleFacets}
+                                    >
+                                        <FontAwesomeIcon icon={faChevronLeft} /> Hide
+                                    </Button>
+                                </div>
                                 <Facets/>
                             </div>
 
@@ -180,7 +204,7 @@ const SearchLayout = () => {
                             )}
 
                             {/* Resize Handle: is out of scrollbar (desktop only) */}
-                            {!isMobile && (
+                            {!isMobile && !facetsCollapsed && (
                                 <div
                                     style={{
                                         position: 'absolute',
@@ -203,7 +227,7 @@ const SearchLayout = () => {
                                 />
                             )}
 
-                            {/* Search Results / TET grid */}
+                            {/* Search Results / topic grid */}
                             <div style={{
                                 flex: 1,
                                 minWidth: 0,
@@ -225,22 +249,25 @@ const SearchLayout = () => {
                                                 List view
                                             </ToggleButton>
                                             <ToggleButton id="tetv-view-grid" value="grid" variant="outline-secondary">
-                                                TET grid view
+                                                Topic grid view
                                             </ToggleButton>
                                         </ToggleButtonGroup>
                                     </div>
                                 )}
-                                {view === 'list' ? (
+                                <div style={{ display: view === 'list' ? 'block' : 'none' }}>
                                     <SearchResults/>
-                                ) : searchLoading ? (
-                                    // Hide the grid entirely while the underlying search is
-                                    // refetching — avoids AgGrid flashing "no rows to show".
-                                    null
-                                ) : (
-                                    <TetValidationGrid
-                                        referenceIds={referenceIds}
-                                        topics={topicsForGrid}
-                                    />
+                                </div>
+                                {shouldRenderTopicGrid && (
+                                    <div
+                                        style={{
+                                            display: view === 'grid' && !searchLoading ? 'block' : 'none',
+                                        }}
+                                    >
+                                        <TetValidationGrid
+                                            referenceIds={referenceIds}
+                                            topics={topicsForGrid}
+                                        />
+                                    </div>
                                 )}
                             </div>
                         </div>
