@@ -7,6 +7,7 @@ import {
 
 export const INNER_COLUMN_TYPES = Object.freeze({
   VALIDATION: 'validation',
+  TAG: 'tag',
   SOURCES: 'sources',
   CONF_SCORE: 'confScore',
   CONF_LEVEL: 'confLevel',
@@ -15,6 +16,7 @@ export const INNER_COLUMN_TYPES = Object.freeze({
 
 export const CONF_SCORE_FILTER_KEYS = ['has score', 'missing score'];
 export const NOTE_FILTER_KEYS = ['has note', 'empty'];
+export const TAG_FILTER_KEYS = ['Y', 'N', 'entity', 'entity negated', 'empty'];
 
 function visibleEntries(tets, sourceFilterModel) {
   return buildEntries(tets, sourceFilterModel);
@@ -50,6 +52,17 @@ function visibleConfidenceLevels(entries) {
   return levels;
 }
 
+function visibleTagLabels(entries) {
+  const labels = entries.map((entry) => {
+    if (entry.kind === 'topic') {
+      return entry.tets[0]?.negated === true ? 'N' : 'Y';
+    }
+    return entry.kind === 'entity-neg' ? 'entity negated' : 'entity';
+  });
+  if (labels.length === 0) return ['empty'];
+  return labels;
+}
+
 function visibleNotes(entries) {
   return uniqueValues(
     entries.flatMap((entry) => entry.tets.map((tet) => tet.note))
@@ -73,6 +86,8 @@ export function innerColumnFilterValues(kind, tets, sourceFilterModel) {
   switch (kind) {
     case INNER_COLUMN_TYPES.VALIDATION:
       return [validationState(tets)];
+    case INNER_COLUMN_TYPES.TAG:
+      return uniqueValues(visibleTagLabels(entries));
     case INNER_COLUMN_TYPES.SOURCES:
       return uniqueValues(visibleSourceLabels(entries));
     case INNER_COLUMN_TYPES.CONF_SCORE:
@@ -112,6 +127,14 @@ export function innerColumnSortMeta(kind, tets, sourceFilterModel) {
       return {
         rank: validationSortRank(tets),
         text: state,
+      };
+    }
+    case INNER_COLUMN_TYPES.TAG: {
+      const labels = visibleTagLabels(entries);
+      return {
+        rank: labels.includes('empty') ? 0 : 1,
+        count: labels[0] === 'empty' ? 0 : labels.length,
+        text: labels.join(' | ').toLowerCase(),
       };
     }
     case INNER_COLUMN_TYPES.SOURCES: {
@@ -190,6 +213,7 @@ export function compareInnerColumnValues(
 
 export const INNER_COLUMN_FILTER_DEFAULTS = Object.freeze({
   [INNER_COLUMN_TYPES.VALIDATION]: VALIDATION_FILTER_KEYS,
+  [INNER_COLUMN_TYPES.TAG]: TAG_FILTER_KEYS,
   [INNER_COLUMN_TYPES.CONF_SCORE]: CONF_SCORE_FILTER_KEYS,
   [INNER_COLUMN_TYPES.NOTE]: NOTE_FILTER_KEYS,
 });

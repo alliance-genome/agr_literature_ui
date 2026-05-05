@@ -6,9 +6,6 @@ const prefixOf = (curie) =>
 export default function IdsCell(params) {
   const r = params.data?.biblio || {};
   const curie = params.data?.curie;
-  const year = r.date_published
-    ? String(r.date_published).slice(0, 4)
-    : '';
   // selectedPrefixes: null = no filter (show everything),
   // [] = nothing selected, [subset] = only those prefixes are shown.
   const selected = params.colDef?.cellRendererParams?.selectedPrefixes;
@@ -35,7 +32,6 @@ export default function IdsCell(params) {
           {c}
         </div>
       ))}
-      {year && <div className="tetv-ref-year">{year}</div>}
     </div>
   );
 }

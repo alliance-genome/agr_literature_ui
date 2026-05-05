@@ -22,6 +22,7 @@ import TitleCell from './cellRenderers/TitleCell';
 import ValidationCell, {
   professionalBiocuratorTopicTets,
 } from './cellRenderers/ValidationCell';
+import TagsCell from './cellRenderers/TagsCell';
 import SourcesCell from './cellRenderers/SourcesCell';
 import ConfScoreCell from './cellRenderers/ConfScoreCell';
 import ConfLevelCell from './cellRenderers/ConfLevelCell';
@@ -44,6 +45,7 @@ import './TetValidationGrid.css';
 
 const INNER_COLUMN_FILTER_LABELS = {
   [INNER_COLUMN_TYPES.VALIDATION]: 'Validation status',
+  [INNER_COLUMN_TYPES.TAG]: 'Tag',
   [INNER_COLUMN_TYPES.SOURCES]: 'Sources',
   [INNER_COLUMN_TYPES.CONF_SCORE]: 'Confidence score',
   [INNER_COLUMN_TYPES.CONF_LEVEL]: 'Confidence level',
@@ -430,6 +432,11 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         topicCurie: t.curie,
         kind: INNER_COLUMN_TYPES.SOURCES,
       });
+      cols.push({
+        colId: `${t.curie}__tag`,
+        topicCurie: t.curie,
+        kind: INNER_COLUMN_TYPES.TAG,
+      });
       if (displayOptions.showScore) {
         cols.push({
           colId: `${t.curie}__cs`,
@@ -790,8 +797,20 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             headerName: 'Sources',
             colId: t.curie,
             kind: INNER_COLUMN_TYPES.SOURCES,
-            width: 220,
+            width: 180,
             cellRenderer: SourcesCell,
+            cellRendererParams: {
+              topicCurie: t.curie,
+              sourceFilterModel,
+            },
+          }),
+          makeInnerColumn({
+            headerName: 'Tag',
+            colId: `${t.curie}__tag`,
+            kind: INNER_COLUMN_TYPES.TAG,
+            width: 58,
+            minWidth: 52,
+            cellRenderer: TagsCell,
             cellRendererParams: {
               topicCurie: t.curie,
               sourceFilterModel,

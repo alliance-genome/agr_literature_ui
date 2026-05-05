@@ -49,6 +49,23 @@ describe('innerColumnFilterValues', () => {
       innerColumnFilterValues(INNER_COLUMN_TYPES.CONF_LEVEL, [tet()], null)
     ).toEqual(['empty']);
   });
+
+  test('returns tag values for topic and entity badges', () => {
+    const tets = [
+      tet({ topic_entity_tag_id: 1 }),
+      tet({ topic_entity_tag_id: 2, negated: true }),
+      tet({ topic_entity_tag_id: 3, entity: 'WB:WBGene00000001' }),
+      tet({
+        topic_entity_tag_id: 4,
+        entity: 'WB:WBGene00000002',
+        negated: true,
+      }),
+    ];
+
+    expect(
+      innerColumnFilterValues(INNER_COLUMN_TYPES.TAG, tets, null)
+    ).toEqual(['Y', 'N', 'entity', 'entity negated']);
+  });
 });
 
 describe('innerColumnPassesFilter', () => {
