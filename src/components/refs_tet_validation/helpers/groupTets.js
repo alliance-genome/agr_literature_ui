@@ -28,6 +28,21 @@ export function groupTetsByTopicAndSource(tets) {
   return byTopic;
 }
 
+const CURATOR_VALIDATION_TYPES = new Set([
+  'professional_biocurator',
+  'professional_curator',
+]);
+
+export function isCuratorValidationTet(tet) {
+  return (
+    !!tet &&
+    !tet.entity &&
+    CURATOR_VALIDATION_TYPES.has(
+      tet.topic_entity_tag_source?.validation_type
+    )
+  );
+}
+
 export function cellSortRank(tets) {
   const arr = tets || [];
   if (arr.length === 0) return 0;
@@ -39,11 +54,7 @@ export function cellSortRank(tets) {
  *  professional-biocurator topic-level TETs.
  *  Returns one of: 'unvalidated' | 'positive' | 'negative' | 'conflict'. */
 export function validationState(tets) {
-  const validations = (tets || []).filter(
-    (t) =>
-      !t.entity &&
-      t.topic_entity_tag_source?.validation_type === 'professional_biocurator'
-  );
+  const validations = (tets || []).filter(isCuratorValidationTet);
   if (validations.length === 0) return 'unvalidated';
   const hasPos = validations.some((t) => !t.negated);
   const hasNeg = validations.some((t) => t.negated);

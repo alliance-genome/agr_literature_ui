@@ -1,16 +1,11 @@
 import React from 'react';
 import CellValidationStrip from './CellValidationStrip';
-
-const PRO = 'professional_biocurator';
+import { isCuratorValidationTet } from '../helpers/groupTets';
 
 /** TETs from this cell that are *topic-level* and authored by a professional
  *  biocurator (i.e. count as a curator validation). */
 function professionalBiocuratorTopicTets(tets) {
-  return (tets || []).filter(
-    (t) =>
-      !t.entity &&
-      t.topic_entity_tag_source?.validation_type === PRO
-  );
+  return (tets || []).filter(isCuratorValidationTet);
 }
 
 export default function ValidationCell(params) {

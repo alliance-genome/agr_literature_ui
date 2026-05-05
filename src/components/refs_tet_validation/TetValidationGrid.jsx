@@ -27,13 +27,64 @@ import ConfScoreCell from './cellRenderers/ConfScoreCell';
 import ConfLevelCell from './cellRenderers/ConfLevelCell';
 import NoteCell from './cellRenderers/NoteCell';
 import IdPrefixFilter from './filters/IdPrefixFilter';
+import InnerValueFilter from './filters/InnerValueFilter';
 import TetGridToolbar from './toolbar/TetGridToolbar';
 import { api } from '../../api';
 import {
   getCuratorSourceId,
   setTopicEntitySourceId,
 } from '../../actions/biblioActions';
+import {
+  compareInnerColumnValues,
+  innerColumnFilterValues,
+  INNER_COLUMN_FILTER_DEFAULTS,
+  INNER_COLUMN_TYPES,
+} from './helpers/innerColumnUtils';
 import './TetValidationGrid.css';
+
+const INNER_COLUMN_FILTER_LABELS = {
+  [INNER_COLUMN_TYPES.VALIDATION]: 'Validation status',
+  [INNER_COLUMN_TYPES.SOURCES]: 'Sources',
+  [INNER_COLUMN_TYPES.CONF_SCORE]: 'Confidence score',
+  [INNER_COLUMN_TYPES.CONF_LEVEL]: 'Confidence level',
+  [INNER_COLUMN_TYPES.NOTE]: 'Note',
+};
+
+function modelsEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function changedFilterColumns(previousModel, nextModel) {
+  const ids = new Set([
+    ...Object.keys(previousModel || {}),
+    ...Object.keys(nextModel || {}),
+  ]);
+  return [...ids].filter(
+    (colId) => !modelsEqual(previousModel?.[colId], nextModel?.[colId])
+  );
+}
+
+function changedSortColumns(previousModel, nextModel) {
+  const prevByColId = Object.fromEntries(
+    (previousModel || []).map((item) => [item.colId, item.sort || null])
+  );
+  const nextByColId = Object.fromEntries(
+    (nextModel || []).map((item) => [item.colId, item.sort || null])
+  );
+  const ids = new Set([
+    ...Object.keys(prevByColId),
+    ...Object.keys(nextByColId),
+  ]);
+  return [...ids].filter((colId) => prevByColId[colId] !== nextByColId[colId]);
+}
+
+function sortFilterValues(values) {
+  return [...values].sort((a, b) => {
+    if (a === 'empty' && b !== 'empty') return -1;
+    if (a !== 'empty' && b === 'empty') return 1;
+    return String(a).localeCompare(String(b));
+  });
+}
 
 export default function TetValidationGrid({ referenceIds, topics, mod }) {
   const dispatch = useDispatch();
@@ -179,8 +230,16 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   const [headerHeight, setHeaderHeight] = useState(0);
   const topScrollRef = useRef(null);
   const isSyncingRef = useRef(false);
+  const innerStateSyncRef = useRef(false);
+  const prevFilterModelRef = useRef({});
+  const prevSortModelRef = useRef([]);
+  const prevAllowedInnerColIdsRef = useRef(new Set());
 
-  const onGridReady = useCallback((params) => setGridApi(params.api), []);
+  const onGridReady = useCallback((params) => {
+    setGridApi(params.api);
+    prevFilterModelRef.current = params.api.getFilterModel?.() || {};
+    prevSortModelRef.current = params.api.getSortModel?.() || [];
+  }, []);
 
   const updateScrollWidth = useCallback(() => {
     if (!gridApi) return;
@@ -353,6 +412,76 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     setHiddenTopicCuries(next);
   }, []);
 
+  const visibleTopicColumns = useMemo(
+    () => topicColumns.filter((t) => !hiddenTopicCuries.has(t.curie)),
+    [topicColumns, hiddenTopicCuries]
+  );
+
+  const allowedInnerColumns = useMemo(() => {
+    const cols = [];
+    for (const t of visibleTopicColumns) {
+      cols.push({
+        colId: `${t.curie}__val`,
+        topicCurie: t.curie,
+        kind: INNER_COLUMN_TYPES.VALIDATION,
+      });
+      cols.push({
+        colId: t.curie,
+        topicCurie: t.curie,
+        kind: INNER_COLUMN_TYPES.SOURCES,
+      });
+      if (displayOptions.showScore) {
+        cols.push({
+          colId: `${t.curie}__cs`,
+          topicCurie: t.curie,
+          kind: INNER_COLUMN_TYPES.CONF_SCORE,
+        });
+      }
+      if (displayOptions.showLevel) {
+        cols.push({
+          colId: `${t.curie}__cl`,
+          topicCurie: t.curie,
+          kind: INNER_COLUMN_TYPES.CONF_LEVEL,
+        });
+      }
+      cols.push({
+        colId: `${t.curie}__note`,
+        topicCurie: t.curie,
+        kind: INNER_COLUMN_TYPES.NOTE,
+      });
+    }
+    return cols;
+  }, [visibleTopicColumns, displayOptions]);
+
+  const allowedInnerColumnIds = useMemo(
+    () => new Set(allowedInnerColumns.map((col) => col.colId)),
+    [allowedInnerColumns]
+  );
+
+  const innerFilterOptions = useMemo(() => {
+    const sources = new Set();
+    const confidenceLevels = new Set();
+
+    for (const row of rows) {
+      innerColumnFilterValues(
+        INNER_COLUMN_TYPES.SOURCES,
+        row.tets || [],
+        sourceFilterModel
+      ).forEach((value) => sources.add(value));
+      innerColumnFilterValues(
+        INNER_COLUMN_TYPES.CONF_LEVEL,
+        row.tets || [],
+        sourceFilterModel
+      ).forEach((value) => confidenceLevels.add(value));
+    }
+
+    return {
+      ...INNER_COLUMN_FILTER_DEFAULTS,
+      [INNER_COLUMN_TYPES.SOURCES]: sortFilterValues(sources),
+      [INNER_COLUMN_TYPES.CONF_LEVEL]: sortFilterValues(confidenceLevels),
+    };
+  }, [rows, sourceFilterModel]);
+
   const rowData = useMemo(
     () =>
       rows.map((r) => {
@@ -372,6 +501,185 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         };
       }),
     [rows, topicColumns]
+  );
+
+  const syncSingleInnerColumnState = useCallback(
+    (preferredInnerColId, apiOverride = null) => {
+      const apiInstance = apiOverride || gridApi;
+      if (!apiInstance) return;
+
+      const filterModel = apiInstance.getFilterModel?.() || {};
+      const sortModel = apiInstance.getSortModel?.() || [];
+      const filteredInnerColIds = Object.keys(filterModel).filter((colId) =>
+        allowedInnerColumnIds.has(colId)
+      );
+      const sortedInnerColIds = sortModel
+        .filter((item) => item.sort)
+        .map((item) => item.colId)
+        .filter((colId) => allowedInnerColumnIds.has(colId));
+
+      const activeInnerColIds = new Set([
+        ...filteredInnerColIds,
+        ...sortedInnerColIds,
+      ]);
+      if (
+        activeInnerColIds.size <= 1 &&
+        (!preferredInnerColId || activeInnerColIds.has(preferredInnerColId))
+      ) {
+        return;
+      }
+
+      const chosenInnerColId =
+        preferredInnerColId && activeInnerColIds.has(preferredInnerColId)
+          ? preferredInnerColId
+          : sortedInnerColIds[sortedInnerColIds.length - 1] ||
+            filteredInnerColIds[filteredInnerColIds.length - 1] ||
+            null;
+
+      const nextFilterModel = { ...filterModel };
+      Object.keys(nextFilterModel).forEach((colId) => {
+        if (allowedInnerColumnIds.has(colId) && colId !== chosenInnerColId) {
+          delete nextFilterModel[colId];
+        }
+      });
+
+      const nextSortModel = sortModel.filter(
+        (item) =>
+          !allowedInnerColumnIds.has(item.colId) ||
+          item.colId === chosenInnerColId
+      );
+
+      const filterChanged = !modelsEqual(filterModel, nextFilterModel);
+      const sortChanged = !modelsEqual(sortModel, nextSortModel);
+      if (!filterChanged && !sortChanged) return;
+
+      innerStateSyncRef.current = true;
+      try {
+        if (filterChanged) {
+          apiInstance.setFilterModel(
+            Object.keys(nextFilterModel).length > 0 ? nextFilterModel : null
+          );
+        }
+        if (sortChanged) {
+          apiInstance.setSortModel?.(nextSortModel);
+        }
+      } finally {
+        innerStateSyncRef.current = false;
+      }
+
+      prevFilterModelRef.current = apiInstance.getFilterModel?.() || {};
+      prevSortModelRef.current = apiInstance.getSortModel?.() || [];
+    },
+    [gridApi, allowedInnerColumnIds]
+  );
+
+  useEffect(() => {
+    if (!gridApi) return;
+
+    const previousIds = prevAllowedInnerColIdsRef.current;
+    const removedIds = [...previousIds].filter(
+      (colId) => !allowedInnerColumnIds.has(colId)
+    );
+    prevAllowedInnerColIdsRef.current = new Set(allowedInnerColumnIds);
+
+    if (removedIds.length === 0) return;
+
+    const filterModel = gridApi.getFilterModel?.() || {};
+    const sortModel = gridApi.getSortModel?.() || [];
+    const nextFilterModel = { ...filterModel };
+    removedIds.forEach((colId) => delete nextFilterModel[colId]);
+    const nextSortModel = sortModel.filter(
+      (item) => !removedIds.includes(item.colId)
+    );
+
+    const filterChanged = !modelsEqual(filterModel, nextFilterModel);
+    const sortChanged = !modelsEqual(sortModel, nextSortModel);
+    if (!filterChanged && !sortChanged) return;
+
+    innerStateSyncRef.current = true;
+    try {
+      if (filterChanged) {
+        gridApi.setFilterModel(
+          Object.keys(nextFilterModel).length > 0 ? nextFilterModel : null
+        );
+      }
+      if (sortChanged) {
+        gridApi.setSortModel?.(nextSortModel);
+      }
+    } finally {
+      innerStateSyncRef.current = false;
+    }
+
+    prevFilterModelRef.current = gridApi.getFilterModel?.() || {};
+    prevSortModelRef.current = gridApi.getSortModel?.() || [];
+  }, [gridApi, allowedInnerColumnIds]);
+
+  const handleFilterChanged = useCallback(
+    (event) => {
+      const apiInstance = event?.api || gridApi;
+      if (!apiInstance) return;
+
+      const currentFilterModel = apiInstance.getFilterModel?.() || {};
+      const nextIdsModel = currentFilterModel.__ids;
+      setSelectedIdPrefixes(nextIdsModel === undefined ? null : nextIdsModel);
+
+      if (innerStateSyncRef.current) {
+        prevFilterModelRef.current = currentFilterModel;
+        prevSortModelRef.current = apiInstance.getSortModel?.() || [];
+        return;
+      }
+
+      const changedInnerColIds = changedFilterColumns(
+        prevFilterModelRef.current,
+        currentFilterModel
+      ).filter((colId) => allowedInnerColumnIds.has(colId));
+
+      const preferredInnerColId =
+        changedInnerColIds
+          .filter((colId) => currentFilterModel[colId] !== undefined)
+          .slice(-1)[0] ||
+        changedInnerColIds.slice(-1)[0] ||
+        null;
+
+      syncSingleInnerColumnState(preferredInnerColId, apiInstance);
+      prevFilterModelRef.current = apiInstance.getFilterModel?.() || {};
+      prevSortModelRef.current = apiInstance.getSortModel?.() || [];
+    },
+    [gridApi, allowedInnerColumnIds, syncSingleInnerColumnState]
+  );
+
+  const handleSortChanged = useCallback(
+    (event) => {
+      const apiInstance = event?.api || gridApi;
+      if (!apiInstance) return;
+
+      const currentSortModel = apiInstance.getSortModel?.() || [];
+      if (innerStateSyncRef.current) {
+        prevFilterModelRef.current = apiInstance.getFilterModel?.() || {};
+        prevSortModelRef.current = currentSortModel;
+        return;
+      }
+
+      const currentSortByColId = Object.fromEntries(
+        currentSortModel.map((item) => [item.colId, item.sort || null])
+      );
+      const changedInnerColIds = changedSortColumns(
+        prevSortModelRef.current,
+        currentSortModel
+      ).filter((colId) => allowedInnerColumnIds.has(colId));
+
+      const preferredInnerColId =
+        changedInnerColIds
+          .filter((colId) => currentSortByColId[colId])
+          .slice(-1)[0] ||
+        changedInnerColIds.slice(-1)[0] ||
+        null;
+
+      syncSingleInnerColumnState(preferredInnerColId, apiInstance);
+      prevFilterModelRef.current = apiInstance.getFilterModel?.() || {};
+      prevSortModelRef.current = apiInstance.getSortModel?.() || [];
+    },
+    [gridApi, allowedInnerColumnIds, syncSingleInnerColumnState]
   );
 
   const columnDefs = useMemo(() => {
@@ -427,88 +735,103 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     // columns. Sources is always there; Conf Sc / Conf Lvl follow the toolbar
     // toggles for visibility. The Note column is always present and changes
     // its rendering based on the "Expand notes" toggle.
-    const topicGroups = topicColumns
-      .filter((t) => !hiddenTopicCuries.has(t.curie))
-      .map((t, idx) => {
+    const topicGroups = visibleTopicColumns.map((t, idx) => {
         const leftmostClass =
           idx === 0 ? '' : 'tetv-topic-group-leftmost';
+        const topicField = `__topic_${t.curie}`;
+        const makeInnerColumn = ({
+          headerName,
+          colId,
+          kind,
+          width,
+          minWidth,
+          cellRenderer,
+          cellRendererParams = {},
+          cellClass = '',
+        }) => ({
+          headerName,
+          colId,
+          field: topicField,
+          width,
+          minWidth,
+          autoHeight: true,
+          sortable: true,
+          filter: InnerValueFilter,
+          filterParams: {
+            availableValues: innerFilterOptions[kind] || [],
+            filterLabel: INNER_COLUMN_FILTER_LABELS[kind],
+            innerFieldType: kind,
+            sourceFilterModel,
+          },
+          comparator: (valueA, valueB) =>
+            compareInnerColumnValues(
+              kind,
+              valueA,
+              valueB,
+              sourceFilterModel
+            ),
+          cellRenderer,
+          cellClass,
+          headerClass: 'tetv-topic-subheader',
+          cellRendererParams,
+        });
         const children = [
-          {
+          makeInnerColumn({
             headerName: 'Validation',
             colId: `${t.curie}__val`,
-            field: `__topic_${t.curie}`,
+            kind: INNER_COLUMN_TYPES.VALIDATION,
             width: 110,
             minWidth: 96,
-            autoHeight: true,
-            sortable: false,
-            filter: false,
             cellRenderer: ValidationCell,
             cellClass: leftmostClass,
-            headerClass: 'tetv-topic-subheader',
             cellRendererParams: { topicCurie: t.curie, refetchRow },
-          },
-          {
+          }),
+          makeInnerColumn({
             headerName: 'Sources',
             colId: t.curie,
-            field: `__topic_${t.curie}`,
+            kind: INNER_COLUMN_TYPES.SOURCES,
             width: 220,
-            autoHeight: true,
-            sortable: false,
-            filter: false,
             cellRenderer: SourcesCell,
-            headerClass: 'tetv-topic-subheader',
             cellRendererParams: {
               topicCurie: t.curie,
               sourceFilterModel,
             },
-          },
+          }),
         ];
         if (displayOptions.showScore) {
-          children.push({
+          children.push(makeInnerColumn({
             headerName: 'conf sc',
             colId: `${t.curie}__cs`,
-            field: `__topic_${t.curie}`,
+            kind: INNER_COLUMN_TYPES.CONF_SCORE,
             width: 70,
             minWidth: 60,
-            autoHeight: true,
-            sortable: false,
-            filter: false,
             cellRenderer: ConfScoreCell,
-            headerClass: 'tetv-topic-subheader',
             cellRendererParams: { sourceFilterModel },
-          });
+          }));
         }
         if (displayOptions.showLevel) {
-          children.push({
+          children.push(makeInnerColumn({
             headerName: 'conf lvl',
             colId: `${t.curie}__cl`,
-            field: `__topic_${t.curie}`,
+            kind: INNER_COLUMN_TYPES.CONF_LEVEL,
             width: 86,
             minWidth: 70,
-            autoHeight: true,
-            sortable: false,
-            filter: false,
             cellRenderer: ConfLevelCell,
-            headerClass: 'tetv-topic-subheader',
             cellRendererParams: { sourceFilterModel },
-          });
+          }));
         }
-        children.push({
+        children.push(makeInnerColumn({
           headerName: 'note',
           colId: `${t.curie}__note`,
-          field: `__topic_${t.curie}`,
+          kind: INNER_COLUMN_TYPES.NOTE,
           width: displayOptions.inlineNote ? 240 : 60,
           minWidth: 48,
-          autoHeight: true,
-          sortable: false,
-          filter: false,
           cellRenderer: NoteCell,
-          headerClass: 'tetv-topic-subheader',
           cellRendererParams: {
             displayOptions,
             sourceFilterModel,
           },
-        });
+        }));
         return {
           headerName: t.name || t.curie,
           groupId: `tg-${t.curie}`,
@@ -520,13 +843,13 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
 
     return [idsCol, titleCol, ...topicGroups];
   }, [
-    topicColumns,
-    hiddenTopicCuries,
+    visibleTopicColumns,
     displayOptions,
     refetchRow,
     sourceFilterModel,
     allIdPrefixes,
     selectedIdPrefixes,
+    innerFilterOptions,
   ]);
 
   return (
@@ -577,13 +900,8 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             reactiveCustomComponents
             onGridReady={onGridReady}
             onBodyScroll={onBodyScroll}
-            onFilterChanged={() => {
-              const m = gridApi?.getFilterModel?.();
-              const next = m?.['__ids'];
-              setSelectedIdPrefixes(
-                next === undefined ? null : next
-              );
-            }}
+            onFilterChanged={handleFilterChanged}
+            onSortChanged={handleSortChanged}
             getRowClass={(p) => {
               if (!p?.data) return '';
               // Only consider topics currently visible. A validation on a

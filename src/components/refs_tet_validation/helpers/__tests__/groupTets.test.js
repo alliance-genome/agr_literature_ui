@@ -3,6 +3,7 @@ import {
   groupTetsByTopicAndSource,
   cellSortRank,
   cellPredicate,
+  validationState,
 } from '../groupTets';
 
 describe('sourceLabel', () => {
@@ -149,5 +150,21 @@ describe('cellPredicate', () => {
       true
     );
     expect(cellPredicate([], uid, ['has N', 'has Y'])).toBe(false);
+  });
+});
+
+describe('validationState', () => {
+  test('treats professional_curator topic validations as validated', () => {
+    expect(
+      validationState([
+        {
+          negated: false,
+          entity: null,
+          topic_entity_tag_source: {
+            validation_type: 'professional_curator',
+          },
+        },
+      ])
+    ).toBe('positive');
   });
 });
