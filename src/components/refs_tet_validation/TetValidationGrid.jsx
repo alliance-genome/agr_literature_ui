@@ -163,6 +163,9 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   });
   const [hiddenTopicCuries, setHiddenTopicCuries] = useState(new Set());
   const [sourceFilterModel, setSourceFilterModel] = useState(null);
+  // Mirrors the IdPrefixFilter's column model so IdsCell can hide the
+  // corresponding curie/xref lines inside each cell as well as filtering rows.
+  const [selectedIdPrefixes, setSelectedIdPrefixes] = useState(null);
   const userTouchedHiddenRef = useRef(false);
 
   // Sticky top horizontal scrollbar that mirrors AgGrid's horizontal scroll.
@@ -380,6 +383,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
       autoHeight: true,
       wrapText: true,
       cellRenderer: IdsCell,
+      cellRendererParams: { selectedPrefixes: selectedIdPrefixes },
       filter: IdPrefixFilter,
       filterParams: { availablePrefixes: allIdPrefixes },
       valueGetter: (p) => {
@@ -522,6 +526,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     refetchRow,
     sourceFilterModel,
     allIdPrefixes,
+    selectedIdPrefixes,
   ]);
 
   return (
@@ -569,8 +574,16 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             animateRows={false}
             suppressRowClickSelection
             suppressColumnVirtualisation
+            reactiveCustomComponents
             onGridReady={onGridReady}
             onBodyScroll={onBodyScroll}
+            onFilterChanged={() => {
+              const m = gridApi?.getFilterModel?.();
+              const next = m?.['__ids'];
+              setSelectedIdPrefixes(
+                next === undefined ? null : next
+              );
+            }}
             getRowClass={(p) => {
               if (!p?.data) return '';
               // Only consider topics currently visible. A validation on a

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGridFilter } from 'ag-grid-react';
 
 /** Set of curie prefixes (uppercase) found on a row: the canonical AGRKB
@@ -20,7 +20,11 @@ export function rowPrefixes(data) {
 }
 
 /** AgGrid filter that keeps rows whose curie/xref set intersects the
- *  user-selected prefix list. Multi-select; empty model passes everything. */
+ *  user-selected prefix list. UX:
+ *   - Default state (model === null): all checkboxes checked, filter inactive.
+ *   - Uncheck a prefix → only rows with the remaining prefixes are shown.
+ *   - "None" button → empty model → no rows shown.
+ *   - "All"  button → null model  → filter cleared.  */
 const IdPrefixFilter = ({
   model: rawModel,
   onModelChange,
@@ -30,9 +34,16 @@ const IdPrefixFilter = ({
   const [closeFilter, setCloseFilter] = useState();
   const [unappliedModel, setUnappliedModel] = useState(model);
 
+  // null model means "all selected / no filter". Anything else is the
+  // explicit allowed subset (possibly empty = "show nothing").
+  const effectiveSelected = useMemo(() => {
+    if (unappliedModel === null) return new Set(availablePrefixes);
+    return new Set(unappliedModel);
+  }, [unappliedModel, availablePrefixes]);
+
   const doesFilterPass = useCallback(
     (params) => {
-      if (!model || model.length === 0) return true;
+      if (model === null) return true;
       const prefixes = rowPrefixes(params.data);
       return model.some((p) => prefixes.has(p));
     },
@@ -48,15 +59,22 @@ const IdPrefixFilter = ({
   useEffect(() => setUnappliedModel(model), [model]);
 
   const onChange = (key, checked) => {
-    const next = checked
-      ? [...(unappliedModel || []), key]
-      : (unappliedModel || []).filter((k) => k !== key);
-    setUnappliedModel(next.length === 0 ? null : next);
+    const next = new Set(effectiveSelected);
+    if (checked) next.add(key);
+    else next.delete(key);
+    // If everything is selected, normalise back to null (= no filter).
+    if (
+      availablePrefixes.length > 0 &&
+      next.size === availablePrefixes.length
+    ) {
+      setUnappliedModel(null);
+    } else {
+      setUnappliedModel([...next]);
+    }
   };
 
-  const setAll = () =>
-    setUnappliedModel(availablePrefixes.length === 0 ? null : [...availablePrefixes]);
-  const setNone = () => setUnappliedModel(null);
+  const setAll = () => setUnappliedModel(null);
+  const setNone = () => setUnappliedModel([]);
 
   const apply = () => {
     onModelChange(unappliedModel);
@@ -68,18 +86,10 @@ const IdPrefixFilter = ({
       <div>ID prefix</div>
       <hr />
       <div style={{ marginBottom: 4 }}>
-        <button
-          type="button"
-          className="tetv-quick-link"
-          onClick={setAll}
-        >
+        <button type="button" className="tetv-quick-link" onClick={setAll}>
           All
         </button>
-        <button
-          type="button"
-          className="tetv-quick-link"
-          onClick={setNone}
-        >
+        <button type="button" className="tetv-quick-link" onClick={setNone}>
           None
         </button>
       </div>
@@ -92,7 +102,7 @@ const IdPrefixFilter = ({
             <input
               type="checkbox"
               id={`ipf-${p}`}
-              checked={!!(unappliedModel && unappliedModel.includes(p))}
+              checked={effectiveSelected.has(p)}
               onChange={(e) => onChange(p, e.target.checked)}
             />
             <label htmlFor={`ipf-${p}`}> {p}</label>
