@@ -12,9 +12,17 @@ const ValidationFilter = ({ model: rawModel, onModelChange }) => {
 
   const doesFilterPass = useCallback(
     (params) => {
-      if (!model || model.length === 0) return true;
       const state = validationState(params.value);
-      return model.includes(state);
+      const pass =
+        !model || model.length === 0 ? true : model.includes(state);
+      // eslint-disable-next-line no-console
+      console.debug('[ValidationFilter] doesFilterPass', {
+        model,
+        valueLen: Array.isArray(params.value) ? params.value.length : null,
+        state,
+        pass,
+      });
+      return pass;
     },
     [model]
   );
@@ -35,6 +43,8 @@ const ValidationFilter = ({ model: rawModel, onModelChange }) => {
   };
 
   const apply = () => {
+    // eslint-disable-next-line no-console
+    console.debug('[ValidationFilter] apply', { unappliedModel });
     onModelChange(unappliedModel);
     if (closeFilter) closeFilter();
   };
