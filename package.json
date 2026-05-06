@@ -21,7 +21,7 @@
     "ag-grid-community": "32.3.8",
     "ag-grid-react": "~32.3.8",
     "ajv": "^8.17.1",
-    "axios": "^0.30.0",
+    "axios": "^0.31.1",
     "bootstrap": "^4.6.0",
     "chokidar": "^3.5.2",
     "d3": "~7.9.0",
