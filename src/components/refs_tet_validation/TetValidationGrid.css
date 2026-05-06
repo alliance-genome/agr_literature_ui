@@ -5,13 +5,64 @@
   --tetv-font-size: 1rem;
   --tetv-secondary-font-size: 0.875rem;
   --tetv-small-font-size: 0.8rem;
+  --tetv-accent: #3f8fa3;
+  --tetv-accent-dark: #256274;
+  --tetv-ink: #1f2937;
+  --tetv-muted: #667085;
+  --tetv-line: #d9e1ea;
+  --tetv-soft: #f6f9fb;
   --ag-font-family: var(--tetv-font-family);
   --ag-font-size: var(--tetv-font-size);
-  --ag-foreground-color: var(--font-black);
+  --ag-foreground-color: var(--tetv-ink);
+  --ag-border-color: var(--tetv-line);
+  --ag-row-border-color: #e9eef4;
+  --ag-header-column-resize-handle-color: #9fb3c6;
+  --ag-selected-row-background-color: #e8f3f6;
   font-family: var(--tetv-font-family);
   font-size: var(--tetv-font-size);
-  padding-left: 12px;
+  color: var(--tetv-ink);
+  background: #fff;
+  border: 1px solid var(--tetv-line);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(31, 41, 55, 0.08);
+  box-sizing: border-box;
+  margin-top: 8px;
+  margin-left: 12px;
+  padding: 0 0 12px;
 }
+
+.tetv-view-switchbar {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 10px;
+}
+.tetv-view-toggle {
+  background: #f2f6f8;
+  border: 1px solid #d7e1e8;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  padding: 3px;
+}
+.tetv-view-toggle .btn {
+  align-items: center;
+  border: 0;
+  border-radius: 6px !important;
+  display: inline-flex;
+  gap: 6px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.35rem 0.65rem;
+}
+.tetv-view-toggle .btn-outline-secondary {
+  color: #506172;
+}
+.tetv-view-toggle .btn-outline-secondary:hover,
+.tetv-view-toggle .btn-outline-secondary:not(:disabled):not(.disabled).active {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.12);
+  color: #256274;
+}
+
 /* Sticky AgGrid header + a separate sticky horizontal scrollbar at the top.
    With domLayout="autoHeight" the grid has no internal vertical scrolling — the
    page is the only scroller. We pin .ag-header so column headers stay visible
@@ -23,6 +74,11 @@
 .tetv-grid-wrapper .ag-body-viewport {
   overflow: visible;
 }
+.tetv-grid-wrapper .ag-root-wrapper {
+  border-left: 0;
+  border-radius: 0 0 8px 8px;
+  border-right: 0;
+}
 /* Top scrollbar lives between the AgGrid header and the body (DOM-moved into
    .ag-root after .ag-header at runtime). The sticky `top` is set inline based
    on the measured header height so it pins right below the header when the
@@ -32,10 +88,10 @@
   z-index: 3;
   overflow-x: auto;
   overflow-y: hidden;
-  background: #fff;
-  border-top: 1px solid #d6d9dd;
-  border-bottom: 1px solid #e1e4e8;
-  height: 14px;
+  background: #f8fafc;
+  border-top: 1px solid #d7e1e8;
+  border-bottom: 1px solid #dfe7ef;
+  height: 16px;
 }
 .tetv-top-scroll-inner {
   height: 1px;
@@ -48,17 +104,19 @@
 .tetv-banner-unresolved {
   background: #fff3cd;
   padding: 6px 10px;
-  margin-bottom: 6px;
+  margin: 10px 12px 0;
   border: 1px solid #ffe69c;
-  border-radius: 4px;
+  border-radius: 7px;
   font-size: var(--tetv-font-size);
 }
 
 .tetv-toolbar {
+  background: #fbfcfd;
+  border-bottom: 1px solid var(--tetv-line);
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  padding: 6px 8px;
+  gap: 10px 14px;
+  padding: 10px 12px;
   align-items: center;
 }
 .tetv-toolbar-group {
@@ -66,30 +124,58 @@
   align-items: center;
   gap: 6px;
 }
+.tetv-toolbar-options {
+  background: #fff;
+  border: 1px solid #e1e8ef;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04);
+  gap: 12px;
+  padding: 6px 10px;
+}
+.tetv-toolbar-options .form-check {
+  align-items: center;
+  display: inline-flex;
+  margin-bottom: 0;
+  margin-right: 0;
+}
+.tetv-toolbar-options .form-check-input {
+  margin-top: 0;
+}
+.tetv-toolbar-options .form-check-label {
+  color: #344054;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 600;
+  padding-left: 4px;
+}
 .tetv-toolbar-select {
   flex: 1 1 280px;
   min-width: 240px;
   max-width: 480px;
 }
 .tetv-toolbar-label {
-  font-size: var(--tetv-font-size);
-  color: #555;
+  font-size: var(--tetv-secondary-font-size);
+  color: #344054;
+  font-weight: 700;
   white-space: nowrap;
 }
 .tetv-quick-link {
-  background: none;
-  border: 1px solid transparent;
-  color: #2a6db5;
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  color: var(--tetv-accent-dark);
   font-size: var(--tetv-secondary-font-size);
-  padding: 0 4px;
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 5px 8px;
   cursor: pointer;
-  border-radius: 3px;
-  text-decoration: underline;
+  border-radius: 999px;
 }
 .tetv-quick-link:hover {
-  background: #eef4fb;
-  border-color: #cfdef0;
-  text-decoration: none;
+  background: #e8f3f6;
+  border-color: #a9ccd6;
+}
+.tetv-select-shell {
+  flex: 1 1 240px;
+  min-width: 240px;
 }
 
 /* Each topic is rendered as a column group with two children: Validation
@@ -128,37 +214,39 @@
    sub-header borders. The leftmost cell of each topic group keeps a thicker
    left border to separate adjacent topic groups. */
 .tetv-grid-wrapper .ag-cell {
-  border-right: 1px solid #e1e4e8;
+  border-right: 1px solid #e5ebf1;
 }
 .tetv-grid-wrapper .ag-header-cell.tetv-topic-subheader,
 .tetv-grid-wrapper .ag-header-group-cell.tetv-topic-group-header {
-  border-right: 1px solid #d6d9dd;
+  border-right: 1px solid #d0dce7;
 }
 .tetv-topic-group-leftmost {
-  border-left: 2px solid #c9c9c9 !important;
+  border-left: 3px solid #a9ccd6 !important;
 }
-/* Header — slightly darker than the body, aligned with the bootstrap-grey
-   palette already used in other AGR tables. */
 .tetv-grid-wrapper .ag-header,
 .tetv-grid-wrapper .ag-header-row {
-  background: #e2e7ec;
+  background: #eef4f7;
 }
 .tetv-grid-wrapper .ag-header-cell,
 .tetv-grid-wrapper .ag-header-group-cell {
-  background: #e2e7ec;
-  color: #2a2f36;
-  font-weight: 600;
+  background: #eef4f7;
+  color: var(--tetv-ink);
+  font-weight: 700;
+}
+.tetv-grid-wrapper .ag-header-cell-label,
+.tetv-grid-wrapper .ag-header-group-cell-label {
+  align-items: center;
 }
 .ag-header-group-cell.tetv-topic-group-header {
-  border-left: 2px solid #c9c9c9;
-  background: #e2e7ec;
+  border-left: 3px solid #a9ccd6;
+  background: linear-gradient(180deg, #e7f1f4, #dfeaf0);
   font-weight: 700;
-  color: #1f2937;
+  color: var(--tetv-accent-dark);
 }
 .ag-header-cell.tetv-topic-subheader {
-  background: #eef1f4;
+  background: #f8fafc;
   font-size: var(--tetv-secondary-font-size);
-  color: #4a5260;
+  color: #475467;
   font-weight: 600;
 }
 /* Alternating row tones for readability. */
@@ -166,48 +254,49 @@
   background: #ffffff;
 }
 .tetv-grid-wrapper .ag-row-odd {
-  background: #f7f9fb;
+  background: #f8fafc;
 }
 .tetv-grid-wrapper .ag-row:hover {
-  background: #eef4fb;
+  background: #edf8f7;
 }
 /* Reference rows that already carry a professional-biocurator topic-level
    TET on at least one topic — soft amber background so curators spot them
    immediately. Overrides the zebra striping. */
 .tetv-grid-wrapper .ag-row.tetv-row-validated,
 .tetv-grid-wrapper .ag-row.tetv-row-validated.ag-row-odd {
-  background: #fff7e6;
+  background: #fff8ed;
 }
 .tetv-grid-wrapper .ag-row.tetv-row-validated:hover {
-  background: #ffefcc;
+  background: #ffefd1;
 }
 
 /* Status text shown in the Validation cell when a professional-biocurator
    topic-level tag exists for that (ref, topic). Replaces the ✓/✗ buttons. */
 .tetv-validation-status {
   font-size: var(--tetv-secondary-font-size);
-  font-weight: 600;
-  padding: 3px 6px;
-  border-radius: 4px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
   text-align: center;
   white-space: normal;
   line-height: 1.2;
   border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.08);
 }
 .tetv-validated-pos {
-  background: #d4edda;
-  color: #155724;
-  border-color: #c3e6cb;
+  background: #dff4e7;
+  color: #17613a;
+  border-color: #b9e4c8;
 }
 .tetv-validated-neg {
-  background: #f8d7da;
-  color: #721c24;
-  border-color: #f5c6cb;
+  background: #fde3e8;
+  color: #8f2435;
+  border-color: #f7bdc8;
 }
 .tetv-validated-conflict {
-  background: #fff3cd;
-  color: #856404;
-  border-color: #ffeeba;
+  background: #fff0c9;
+  color: #855600;
+  border-color: #f3d27e;
 }
 .tetv-source-group {
   display: flex;
@@ -234,45 +323,49 @@
   width: 100%;
 }
 .tetv-source-label {
-  color: #555;
+  color: #475467;
   white-space: nowrap;
-  font-weight: 400;
+  font-weight: 500;
 }
 .tetv-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  padding: 0 6px;
-  border-radius: 10px;
+  min-width: 26px;
+  padding: 0 7px;
+  border-radius: 999px;
   color: #fff;
   font-size: var(--tetv-small-font-size);
-  font-weight: 600;
+  font-weight: 800;
   text-align: center;
   line-height: 20px;
   height: 20px;
   white-space: nowrap;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.13);
 }
-.tetv-pill-y { background: #28a745; }
-.tetv-pill-n { background: #dc3545; }
+.tetv-pill-y { background: #268d52; }
+.tetv-pill-n { background: #c63f4f; }
 /* Entity count badge — distinct violet so curators can spot it apart from
    the Y/N pills used for topic-only tags. */
-.tetv-pill-entity { background: #6f42c1; }
-.tetv-pill-entity-neg { background: #4c2a85; }
+.tetv-pill-entity { background: #6679c8; }
+.tetv-pill-entity-neg { background: #495aa2; }
 .tetv-pill-clickable {
   border: 0;
   cursor: pointer;
   font: inherit;
 }
-.tetv-pill-clickable:hover { filter: brightness(1.08); }
+.tetv-pill-clickable:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
 .tetv-dot-y, .tetv-dot-n {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   display: inline-block;
 }
-.tetv-dot-y { background: #28a745; }
-.tetv-dot-n { background: #dc3545; }
+.tetv-dot-y { background: #268d52; }
+.tetv-dot-n { background: #c63f4f; }
 .tetv-inline-note {
   color: #333;
   font-style: italic;
@@ -294,35 +387,37 @@
 .tetv-note-btn {
   background: none;
   border: 0;
-  color: #6c757d;
+  color: #667085;
   cursor: pointer;
-  padding: 0;
+  padding: 0 2px;
 }
+.tetv-note-btn:hover { color: var(--tetv-accent-dark); }
 .tetv-badge {
   font-size: var(--tetv-small-font-size);
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: #eef;
-  color: #335;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #edf1fb;
+  color: #3c4f8f;
+  font-weight: 700;
 }
 .tetv-badge-score {
-  background: #efe;
-  color: #353;
+  background: #e8f4ed;
+  color: #276749;
 }
 
 /* Validation strip: horizontal pair of icon-only buttons. */
 .tetv-strip {
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: 5px;
   padding: 0;
   border: 0;
   flex: 0 0 auto;
 }
 .tetv-strip-btn {
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 9px;
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  border-radius: 999px;
   padding: 0 6px;
   cursor: pointer;
   display: inline-flex;
@@ -333,13 +428,24 @@
   height: auto;
   font-size: inherit;
   line-height: 1.4;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
 .tetv-strip-btn:disabled { opacity: 0.4; cursor: default; }
-.tetv-strip-pos { color: #28a745; }
-.tetv-strip-neg { color: #dc3545; }
-.tetv-strip-pos:hover:not(:disabled) { background: #e6f4ea; }
-.tetv-strip-neg:hover:not(:disabled) { background: #fbeaec; }
-.tetv-strip-active { background: #f0f0f0; border-color: #999; }
+.tetv-strip-pos { color: #268d52; }
+.tetv-strip-neg { color: #c63f4f; }
+.tetv-strip-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.tetv-strip-pos:hover:not(:disabled) {
+  background: #e7f5ec;
+  border-color: #9ad0ae;
+}
+.tetv-strip-neg:hover:not(:disabled) {
+  background: #fdecef;
+  border-color: #e8a5af;
+}
+.tetv-strip-active {
+  background: #f2f6f8;
+  border-color: #8ba6b6;
+}
 
 .tetv-title-cell,
 .tetv-ids-cell {
@@ -355,17 +461,18 @@
   white-space: nowrap;
 }
 .tetv-ref-title {
-  font-weight: 400;
+  color: var(--tetv-ink);
+  font-weight: 600;
   word-break: break-word;
 }
 .tetv-ref-journal {
   font-size: var(--tetv-secondary-font-size);
-  color: #555;
+  color: #667085;
   font-style: italic;
 }
 .tetv-ref-authors {
   font-size: var(--tetv-secondary-font-size);
-  color: #666;
+  color: #667085;
 }
 .tetv-ref-curie,
 .tetv-ref-pmid,
@@ -377,4 +484,44 @@
   word-break: normal;
   white-space: nowrap;
 }
-.tetv-ref-curie { color: #333; font-weight: 600; }
+.tetv-ref-curie { color: var(--tetv-accent-dark); font-weight: 700; }
+
+@media (max-width: 992px) {
+  .tetv-view-switchbar {
+    justify-content: center;
+  }
+  .tetv-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .tetv-toolbar-group,
+  .tetv-toolbar-select {
+    max-width: none;
+    width: 100%;
+  }
+  .tetv-toolbar-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 576px) {
+  .tetv-grid-wrapper {
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+    margin-left: 0;
+  }
+  .tetv-view-toggle {
+    width: 100%;
+  }
+  .tetv-view-toggle .btn {
+    flex: 1 1 50%;
+    justify-content: center;
+  }
+  .tetv-select-shell {
+    min-width: 0;
+    width: 100%;
+  }
+}

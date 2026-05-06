@@ -3,11 +3,24 @@ import { Form } from 'react-bootstrap';
 import Select from 'react-select';
 
 const compactSelectStyles = {
-  control: (base) => ({ ...base, minHeight: 30 }),
+  control: (base, state) => ({
+    ...base,
+    minHeight: 34,
+    borderColor: state.isFocused ? '#3f8fa3' : '#ccd6e0',
+    borderRadius: 8,
+    boxShadow: state.isFocused ? '0 0 0 3px rgba(63, 143, 163, 0.16)' : 'none',
+    '&:hover': { borderColor: state.isFocused ? '#3f8fa3' : '#9eb2c4' },
+  }),
   valueContainer: (base) => ({ ...base, padding: '0 6px' }),
   input: (base) => ({ ...base, margin: 0, padding: 0 }),
-  indicatorsContainer: (base) => ({ ...base, height: 30 }),
-  multiValue: (base) => ({ ...base, margin: '2px' }),
+  indicatorsContainer: (base) => ({ ...base, minHeight: 34 }),
+  multiValue: (base) => ({
+    ...base,
+    margin: '2px',
+    borderRadius: 7,
+    backgroundColor: '#e8f3f6',
+  }),
+  multiValueLabel: (base) => ({ ...base, color: '#204a57', fontWeight: 600 }),
   menu: (base) => ({ ...base, zIndex: 9999 }),
   menuPortal: (base) => ({ ...base, zIndex: 9999 }),
   placeholder: (base) => ({ ...base, color: '#444' }),
@@ -102,7 +115,7 @@ export default function TetGridToolbar({
 
   return (
     <div className="tetv-toolbar">
-      <span className="tetv-toolbar-group">
+      <span className="tetv-toolbar-group tetv-toolbar-options">
         <Form.Check
           inline
           type="checkbox"
@@ -153,7 +166,7 @@ export default function TetGridToolbar({
         >
           None
         </button>
-        <div style={{ minWidth: 240, flex: '1 1 240px' }}>
+        <div className="tetv-select-shell">
           <CollapsibleMultiSelect
             options={topicOptions}
             value={topicSelectedValues}
@@ -183,7 +196,7 @@ export default function TetGridToolbar({
         >
           None
         </button>
-        <div style={{ minWidth: 240, flex: '1 1 240px' }}>
+        <div className="tetv-select-shell">
           <CollapsibleMultiSelect
             options={sourceOptions}
             value={sourceSelectedValues}

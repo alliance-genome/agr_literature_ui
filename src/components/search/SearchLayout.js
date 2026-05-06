@@ -14,7 +14,12 @@ import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
 import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import {
+    faChevronLeft,
+    faChevronRight,
+    faListUl,
+    faThLarge,
+} from '@fortawesome/free-solid-svg-icons';
 
 const MOBILE_BREAKPOINT = 992; // lg breakpoint
 
@@ -237,19 +242,20 @@ const SearchLayout = () => {
                                 marginLeft: isMobile ? 0 : undefined
                             }}>
                                 {referenceIds.length > 0 && (
-                                    <div style={{ padding: '6px 0' }}>
+                                    <div className="tetv-view-switchbar">
                                         <ToggleButtonGroup
                                             type="radio"
                                             name="tetv-view"
                                             value={view}
                                             onChange={setView}
                                             size="sm"
+                                            className="tetv-view-toggle"
                                         >
                                             <ToggleButton id="tetv-view-list" value="list" variant="outline-secondary">
-                                                List view
+                                                <FontAwesomeIcon icon={faListUl} /> List view
                                             </ToggleButton>
                                             <ToggleButton id="tetv-view-grid" value="grid" variant="outline-secondary">
-                                                Topic grid view
+                                                <FontAwesomeIcon icon={faThLarge} /> Topic grid
                                             </ToggleButton>
                                         </ToggleButtonGroup>
                                     </div>
