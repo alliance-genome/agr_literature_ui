@@ -972,8 +972,11 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             suppressRowClickSelection
             suppressColumnVirtualisation
             reactiveCustomComponents
+            enableCellTextSelection
+            ensureDomOrder
             onGridReady={onGridReady}
             onBodyScroll={onBodyScroll}
+            onFilterChanged={onFilterChanged}
             onFilterChanged={handleFilterChanged}
             onSortChanged={handleSortChanged}
             getRowClass={(p) => {
