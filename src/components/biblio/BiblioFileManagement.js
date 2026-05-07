@@ -334,6 +334,9 @@ const OpenAccess = () => {
 
   const licenseName = referenceJsonLive["copyright_license_name"];
   const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
+  const imagePermission = referenceJsonLive["effective_image_permission"] || {};
+  const imagePermissionSource = imagePermission["source"] ? imagePermission["source"].split('_').join(' ') : 'none';
+  const imagePermissionToShow = `${imagePermission["can_display_images"] ? "can display images" : "cannot display images"} (${imagePermissionSource})`;
 
   let lastUpdatedBy = ''
   if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
@@ -388,6 +391,12 @@ const OpenAccess = () => {
                   <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '160px' }}>{licenseToShow !== '' ? "Update" : "Add"} License</div>
                 </>
             }
+          </Col>
+        </Row>
+        <Row key='image_permission'>
+          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>image permission</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
+            <span title={imagePermission["reason"] || ''}>{imagePermissionToShow}</span>
           </Col>
         </Row>
         {showAlert && alert && <Alert variant="success">{alert}</Alert>}
@@ -934,18 +943,22 @@ const FileEditor = ({ onFileStatusChange }) => {
           
   let rowReferencefileElements = [];
   // Filter out all converted files (TEI and markdown) from the main display
-  const referenceFilesWithAccess = referenceFiles.filter((referenceFile) =>
-    (referenceJsonLive["copyright_license_open_access"] === true ||
+  const canDisplayImages = referenceJsonLive["effective_image_permission"]?.["can_display_images"] === true;
+  const hasReferenceFileAccess = (referenceFile) => (
+    referenceJsonLive["copyright_license_open_access"] === true ||
+    (referenceFile.file_class === 'figure' && canDisplayImages) ||
     accessLevel === 'developer' ||
-    referenceFile.referencefile_mods.some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null)) &&
-    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)  // Exclude converted files
+    referenceFile.referencefile_mods.some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null)
+  );
+
+  const referenceFilesWithAccess = referenceFiles.filter((referenceFile) =>
+    hasReferenceFileAccess(referenceFile) &&
+    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)
   );
 
   const referenceFilesNoAccess = referenceFiles.filter((referenceFile) =>
-    (referenceJsonLive["copyright_license_open_access"] !== true &&
-    accessLevel !== 'developer' &&
-    referenceFile.referencefile_mods.every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null)) &&
-    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)  // Exclude converted files
+    !hasReferenceFileAccess(referenceFile) &&
+    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)
   );
 
   referenceFilesWithAccess.sort(reffileCompareFn);
