@@ -7,7 +7,7 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Container, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faExclamation, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faExclamation, faCheckCircle, faTimesCircle, faHourglass, faCircle, faClock } from '@fortawesome/free-solid-svg-icons';
 import { patchWorkflowTag, deleteWorkflowTag, transitionWorkflowTag } from './WorkflowTagService';
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
@@ -16,11 +16,54 @@ import TopicFilter from '../AgGrid/TopicFilter';
 import { setAllTopics } from '../../actions/biblioActions';
 
 
-const file_upload_process_atp_id = "ATP:0000140";
-
 const MANUAL_INDEXING_TBD = "ATP:0000359"; // manual indexing status TBD
 const MANUAL_INDEXING_WONT_INDEX = "ATP:0000343"; // won't manually index
 const NO_GENETIC_DATA = "ATP:0000207"; // no genetic data
+
+// Pre-curation status icon renderer (moved outside component to avoid recreation on every render)
+const PreCurationStatusIcon = ({ value }) => {
+  if (!value || !value.status) {
+    return null;  // blank for no workflow
+  }
+  const status = value.status;
+  if (status === 'complete') {
+    return <FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} title="Complete" />;
+  } else if (status === 'failed') {
+    return <FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} title="Failed" />;
+  } else if (status === 'in_progress') {
+    return <FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} title="In Progress" />;
+  } else if (status === 'needed') {
+    return <FontAwesomeIcon icon={faClock} style={{ color: '#6c757d' }} title="Needed" />;
+  }
+  return null;
+};
+
+// Inside corpus status renderer (moved outside component to avoid recreation on every render)
+const InsideCorpusRenderer = ({ value }) => {
+  if (value === true) {
+    return <FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} title="Inside Corpus" />;
+  } else if (value === false) {
+    return <span title="Outside Corpus">-</span>;
+  }
+  return null;  // null/undefined
+};
+
+// Pre-curation workflow legend component (moved outside component to avoid recreation on every render)
+const PreCurationLegend = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '20px',
+    margin: '10px 0',
+    fontSize: '0.9em',
+    color: '#666'
+  }}>
+    <span><FontAwesomeIcon icon={faCheck} style={{ color: 'green' }} /> Complete</span>
+    <span><FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} /> Failed</span>
+    <span><FontAwesomeIcon icon={faHourglass} style={{ color: '#8B4513' }} /> In Progress</span>
+    <span><FontAwesomeIcon icon={faClock} style={{ color: '#6c757d' }} /> Needed</span>
+  </div>
+);
 
 export const timestampToDateFormatter = (params) => {
   if (params.value === null) { return ''; }	// e.g. aggregated_curation_status_and_tet_info without tet
@@ -68,9 +111,6 @@ const BiblioWorkflow = () => {
 
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
 
-  const [data, setData] = useState([]);
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [key, setKey] = useState(0);
   const [curationData, setCurationData] = useState([]);
   const [curationWholePaperData, setCurationWholePaperData] = useState([]);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
@@ -80,6 +120,8 @@ const BiblioWorkflow = () => {
   const [apiErrorMessage, setApiErrorMessage] = useState('');
   const [indexingWorkflowData, setIndexingWorkflowData] = useState([]);
   const [indexingPriorityData, setIndexingPriorityData] = useState([]);
+  const [preCurationData, setPreCurationData] = useState(null);
+  const [isPreCurationExpanded, setIsPreCurationExpanded] = useState(false);
    
 
   const fmtScore = (s) => (s == null ? '' : Number.isFinite(Number(s)) ? Number(s).toFixed(2) : s);
@@ -136,7 +178,24 @@ const BiblioWorkflow = () => {
       indexing_priority_id: null,
     };
   }, [referenceCurie, accessLevel]);
-    
+
+  // Fetch pre-curation workflow overview data
+  const fetchPreCurationWorkflow = useCallback(async () => {
+    const url = `/workflow_tag/pre_curation_overview/${referenceCurie}`;
+    try {
+      const result = await api.get(url);
+      setPreCurationData(result.data);
+    } catch (error) {
+      console.error('Error fetching pre-curation workflow:', error);
+      // Set empty data to stop the spinner on error
+      setPreCurationData({ mods: [], workflows: {}, details: [] });
+    }
+  }, [referenceCurie]);
+
+  useEffect(() => {
+    fetchPreCurationWorkflow();
+  }, [fetchPreCurationWorkflow]);
+
   // fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
     async () => {
@@ -277,27 +336,6 @@ const BiblioWorkflow = () => {
   }, [fetchIndexingWorkflowOverview]);
 
   useEffect(() => {
-    const fetchWFTdata = async () => {
-      const url = "/workflow_tag/get_current_workflow_status/" + referenceCurie + "/all/" + file_upload_process_atp_id;
-      setIsLoadingData(true);
-      try {
-        const result = await api.get(url);
-        const processedData = result.data.map((item) => ({
-          ...item,
-          updated_by: item.email ? item.email : item.updated_by,
-        }));
-        setData(processedData);
-        setKey(prevKey => prevKey + 1);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoadingData(false);
-      }
-    };
-    fetchWFTdata();
-  }, [referenceCurie]);
-
-  useEffect(() => {
     const fetchCurationStatuses = async () => {
       // REST /ontology/search_descendants/{ancestor_curie}/{direct_children_only}/{include_self}/{include_names}
       const urls = {
@@ -411,45 +449,143 @@ const BiblioWorkflow = () => {
       </Modal>
     );
   };
-    
-  const columns = [
-      {
-	  headerName: 'MOD',
-	  field: 'abbreviation',
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
-      {
-	  headerName: 'Workflow Tag',
-	  field: 'workflow_tag_name',
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
-      {
-	  headerName: 'Updater',
-	  field: 'updated_by_name',
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
-      {
-	  headerName: 'Date Updated',
-	  field: 'date_updated',
-          valueFormatter: timestampToDateFormatter,
-	  flex: 1,
-	  cellStyle: { textAlign: 'left' },
-	  headerClass: 'wft-bold-header wft-header-bg',
-	  sortable: true,
-	  filter: true
-      },
+
+  // Process pre-curation data for AG Grid
+  const preCurationRowData = useMemo(() => {
+    if (!preCurationData || !preCurationData.workflows) return [];
+
+    const workflows = preCurationData.workflows;
+    let mods = Object.keys(workflows).sort();
+
+    // Put user's MOD first if it exists in the table
+    const userModIndex = mods.indexOf(accessLevel);
+    if (userModIndex > 0) {
+      // Remove from current position and add to the beginning
+      mods = [accessLevel, ...mods.filter(mod => mod !== accessLevel)];
+    }
+
+    return mods.map((mod) => ({
+      mod,
+      isUserMod: mod === accessLevel,
+      inside_corpus: workflows[mod]?.inside_corpus,
+      file_upload: workflows[mod]?.file_upload,
+      text_conversion: workflows[mod]?.text_conversion,
+      email_extraction: workflows[mod]?.email_extraction,
+      topic_classification: workflows[mod]?.topic_classification,
+      entity_extraction: workflows[mod]?.entity_extraction,
+      curation_classification: workflows[mod]?.curation_classification
+    }));
+  }, [preCurationData, accessLevel]);
+
+  // Pre-curation workflow column definitions
+  const preCurationColumns = [
+    {
+      headerName: 'MOD',
+      field: 'mod',
+      flex: 1,
+      cellStyle: (params) => ({
+        textAlign: 'left',
+        fontWeight: params.data?.isUserMod ? 'bold' : 'normal'
+      }),
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Inside corpus',
+      field: 'inside_corpus',
+      flex: 1,
+      cellRenderer: InsideCorpusRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'File upload status',
+      field: 'file_upload',
+      flex: 1,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Text conversion',
+      field: 'text_conversion',
+      flex: 1,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Email extraction',
+      field: 'email_extraction',
+      flex: 1,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Topic classification',
+      field: 'topic_classification',
+      flex: 1,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Entity extraction',
+      field: 'entity_extraction',
+      flex: 1,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Curation classification',
+      field: 'curation_classification',
+      flex: 1,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+  ];
+
+  // Workflow details column definitions (for expanded view)
+  const workflowDetailsColumns = [
+    {
+      headerName: 'MOD',
+      field: 'abbreviation',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true
+    },
+    {
+      headerName: 'Workflow Tag',
+      field: 'workflow_tag_name',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true
+    },
+    {
+      headerName: 'Updater',
+      field: 'updated_by_name',
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true
+    },
+    {
+      headerName: 'Date Updated',
+      field: 'date_updated',
+      valueFormatter: timestampToDateFormatter,
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header wft-header-bg',
+      sortable: true,
+      filter: true
+    },
   ];
 
   const renderHasData = (params) => {
@@ -1370,20 +1506,69 @@ const BiblioWorkflow = () => {
 
   return (
     <div>
-      {/* File Upload Status Section */}
-      <strong style={{ display: 'block', margin: '20px 0 10px' }}>
-        File Upload Current Status
+      {/* Pre-curation Workflow Section */}
+      <strong style={{ display: 'block', margin: '20px 0 10px', textAlign: 'center' }}>
+        Pre-curation Workflow
       </strong>
-      {isLoadingData ? (
+      {!preCurationData ? (
         <div className="text-center">
           <Spinner animation="border" role="status" />
         </div>
       ) : (
-        <div style={containerStyle}>
+        <>
+          <PreCurationLegend />
+          <div style={containerStyle}>
             <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
+              <AgGridReact
+                rowData={preCurationRowData}
+                columnDefs={preCurationColumns}
+                enableCellTextSelection={true}
+                ensureDomOrder={true}
+                suppressColumnVirtualisation={true}
+                domLayout="autoHeight"
+                getRowClass={(params) => {
+                  if (params.data?.isUserMod) return 'ag-row-striped-dark';
+                  return 'ag-row-striped-light';
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Expandable Workflow Details Section */}
+      <div style={containerStyle}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setIsPreCurationExpanded(!isPreCurationExpanded)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsPreCurationExpanded(!isPreCurationExpanded);
+            }
+          }}
+          style={{
+            cursor: 'pointer',
+            margin: '10px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#007bff',
+            width: '80%'
+          }}
+        >
+          <span style={{ fontWeight: 'bold' }}>
+            Workflow Details {isPreCurationExpanded ? '-' : '+'}
+          </span>
+        </div>
+      </div>
+      {isPreCurationExpanded && preCurationData?.details && (
+        <div style={containerStyle}>
+          <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 10 }}>
             <AgGridReact
-              rowData={data}
-              columnDefs={columns}
+              rowData={preCurationData.details}
+              columnDefs={workflowDetailsColumns}
               enableCellTextSelection={true}
               ensureDomOrder={true}
               suppressColumnVirtualisation={true}
