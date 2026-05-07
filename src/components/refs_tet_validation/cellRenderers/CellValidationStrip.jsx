@@ -11,10 +11,18 @@ export default function CellValidationStrip({
   topicName,
   cellTets,
   onValidated,
+  curationStatusOptions = [],
+  curationTagOptions = [],
 }) {
   const uid = useSelector((s) => s.isLogged.uid);
+  const userEmail = useSelector((s) => s.isLogged.email);
+  const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
+  const testerMod = useSelector((s) => s.isLogged.testerMod);
+  const accessLevelMod =
+    testerMod && testerMod !== 'No' ? testerMod : cognitoMod;
   const topicEntitySourceId = useSelector((s) => s.biblio.topicEntitySourceId);
-  // pending = null | { kind, note, status: 'editing'|'submitting'|'success'|'error', errorMessage? }
+  // pending = null | { kind, note, status, errorMessage?,
+  //                    includeCuration, curStatus, curTag, curNote }
   const [pending, setPending] = useState(null);
 
   const myExisting = (cellTets || []).find((t) => t.created_by === uid);
@@ -28,7 +36,15 @@ export default function CellValidationStrip({
 
   const openConfirm = (kind) => {
     if (noSource) return;
-    setPending({ kind, note: '', status: 'editing' });
+    setPending({
+      kind,
+      note: '',
+      status: 'editing',
+      includeCuration: false,
+      curStatus: '',
+      curTag: '',
+      curNote: '',
+    });
   };
   const closeConfirm = () => setPending(null);
 
@@ -37,7 +53,7 @@ export default function CellValidationStrip({
     setPending((s) => ({ ...s, status: 'submitting' }));
     const negated = pending.kind === 'negative';
     const note = pending.note?.trim() || null;
-    const payload = {
+    const tetPayload = {
       reference_curie: referenceCurie,
       topic: topicCurie,
       negated,
@@ -46,23 +62,48 @@ export default function CellValidationStrip({
       entity: null,
       entity_type: null,
       species: null,
-      // Generic "unspecified" data-novelty parent term in the ATP ontology.
-      // The existing TopicEntityCreate form uses the same default when no
-      // specific novelty is selected (TopicEntityCreate.js:553).
       data_novelty: 'ATP:0000335',
       confidence_score: null,
       confidence_level: null,
       note,
     };
     try {
+      // 1) always create the validation TET tag
       // eslint-disable-next-line no-console
-      console.debug('[CellValidationStrip] submit', payload);
-      const res = await api.post('/topic_entity_tag/', payload);
+      console.debug('[CellValidationStrip] submit TET', tetPayload);
+      const res = await api.post('/topic_entity_tag/', tetPayload);
       // eslint-disable-next-line no-console
-      console.debug('[CellValidationStrip] submit OK', res?.status, res?.data);
+      console.debug('[CellValidationStrip] TET OK', res?.status, res?.data);
+
+      // 2) optionally create / update a curation status entry for this
+      //    (reference, mod, topic) — only if the user toggled the section on
+      //    and provided at least one value.
+      if (
+        pending.includeCuration &&
+        accessLevelMod &&
+        (pending.curStatus || pending.curTag || pending.curNote.trim())
+      ) {
+        const curPayload = {
+          mod_abbreviation: accessLevelMod,
+          reference_curie: referenceCurie,
+          topic: topicCurie,
+          curation_status: pending.curStatus || null,
+          curation_tag: pending.curTag || null,
+          note: pending.curNote.trim() || null,
+        };
+        // eslint-disable-next-line no-console
+        console.debug('[CellValidationStrip] submit curation_status', curPayload);
+        const cur = await api.post('/curation_status/', curPayload);
+        // eslint-disable-next-line no-console
+        console.debug(
+          '[CellValidationStrip] curation_status OK',
+          cur?.status,
+          cur?.data
+        );
+      }
+
       if (onValidated) await onValidated(referenceCurie);
       setPending((s) => ({ ...s, status: 'success' }));
-      // Auto-close success state after a short pause so curators can move on.
       setTimeout(closeConfirm, 1500);
     } catch (e) {
       const status = e?.response?.status;
@@ -80,6 +121,7 @@ export default function CellValidationStrip({
   };
 
   const isSubmitting = pending?.status === 'submitting';
+  const noneStyle = { color: '#98a2b3' };
 
   return (
     <>
@@ -111,29 +153,27 @@ export default function CellValidationStrip({
         onHide={isSubmitting ? undefined : closeConfirm}
         centered
         backdrop={isSubmitting ? 'static' : true}
+        size="lg"
       >
         <Modal.Header closeButton={!isSubmitting}>
-          <Modal.Title>
-            {pending?.kind === 'negative'
-              ? 'Mark topic as not present'
-              : 'Mark topic as present'}
-          </Modal.Title>
+          <Modal.Title>Topic validation</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {pending &&
             (pending.status === 'editing' || pending.status === 'submitting') && (
               <>
-                <p style={{ marginBottom: 8 }}>
-                  <strong>Topic:</strong> {topicName || topicCurie}
-                  <br />
-                  <strong>Reference:</strong> <code>{referenceCurie}</code>
+                <p style={{ marginBottom: 12 }}>
+                  This will create a new <strong>validation TET tag</strong>{' '}
+                  attributed to{' '}
+                  <strong>{userEmail || uid || '(unknown user)'}</strong>.
                 </p>
-                <Form.Group>
-                  <Form.Label>Optional note</Form.Label>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Note (optional)</Form.Label>
                   <Form.Control
                     as="textarea"
                     rows={3}
-                    placeholder="Optional context for this validation…"
+                    placeholder="Optional note for this validation…"
                     value={pending.note}
                     onChange={(e) =>
                       setPending((s) => ({ ...s, note: e.target.value }))
@@ -141,6 +181,175 @@ export default function CellValidationStrip({
                     disabled={isSubmitting}
                   />
                 </Form.Group>
+
+                <div className="tetv-curation-toggle mb-3">
+                  <Form.Check
+                    type="checkbox"
+                    id="tetv-include-curation"
+                    label="Also update the curation status for this topic on this reference"
+                    checked={pending.includeCuration}
+                    onChange={(e) =>
+                      setPending((s) => ({
+                        ...s,
+                        includeCuration: e.target.checked,
+                      }))
+                    }
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {pending.includeCuration && (
+                  <div className="tetv-curation-section mb-3">
+                    <Form.Group className="mb-2">
+                      <Form.Label>Curation status</Form.Label>
+                      <Form.Control
+                        as="select"
+                        value={pending.curStatus}
+                        onChange={(e) =>
+                          setPending((s) => ({
+                            ...s,
+                            curStatus: e.target.value,
+                          }))
+                        }
+                        disabled={isSubmitting}
+                      >
+                        <option value="">— none —</option>
+                        {curationStatusOptions.map((o) => (
+                          <option key={o.curie} value={o.curie}>
+                            {o.name} ({o.curie})
+                          </option>
+                        ))}
+                      </Form.Control>
+                    </Form.Group>
+
+                    <Form.Group className="mb-2">
+                      <Form.Label>Curation tag (controlled)</Form.Label>
+                      <Form.Control
+                        as="select"
+                        value={pending.curTag}
+                        onChange={(e) =>
+                          setPending((s) => ({
+                            ...s,
+                            curTag: e.target.value,
+                          }))
+                        }
+                        disabled={isSubmitting}
+                      >
+                        <option value="">— none —</option>
+                        {curationTagOptions.map((o) => (
+                          <option key={o.curie} value={o.curie}>
+                            {o.name} ({o.curie})
+                          </option>
+                        ))}
+                      </Form.Control>
+                    </Form.Group>
+
+                    <Form.Group>
+                      <Form.Label>Curation note (free text)</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        placeholder="Optional free-text note for the curation status…"
+                        value={pending.curNote}
+                        onChange={(e) =>
+                          setPending((s) => ({
+                            ...s,
+                            curNote: e.target.value,
+                          }))
+                        }
+                        disabled={isSubmitting}
+                      />
+                    </Form.Group>
+                  </div>
+                )}
+
+                <div className="tetv-validation-fields">
+                  <div className="tetv-validation-fields-title">
+                    New tag fields
+                  </div>
+                  <dl className="tetv-validation-fields-list">
+                    <dt>Reference</dt>
+                    <dd><code>{referenceCurie}</code></dd>
+
+                    <dt>Topic</dt>
+                    <dd>
+                      {topicName || topicCurie}{' '}
+                      <small style={{ color: '#667085' }}>
+                        ({topicCurie})
+                      </small>
+                    </dd>
+
+                    <dt>Negated</dt>
+                    <dd>
+                      {pending.kind === 'negative'
+                        ? 'true (topic not present)'
+                        : 'false (topic present)'}
+                    </dd>
+
+                    <dt>Source</dt>
+                    <dd>
+                      professional biocurator (
+                      {accessLevelMod || 'your MOD'} via abc_literature_system
+                      {topicEntitySourceId
+                        ? `, source id #${topicEntitySourceId}`
+                        : ''}
+                      )
+                    </dd>
+
+                    <dt>Data novelty</dt>
+                    <dd>
+                      <code>ATP:0000335</code> (unspecified)
+                    </dd>
+
+                    <dt>Entity / entity type / species</dt>
+                    <dd style={noneStyle}>none (topic-level tag)</dd>
+
+                    <dt>Confidence score / level</dt>
+                    <dd style={noneStyle}>none</dd>
+
+                    <dt>Created by</dt>
+                    <dd>{userEmail || uid || '(unknown)'}</dd>
+
+                    <dt>Note</dt>
+                    <dd
+                      style={
+                        pending.note?.trim() ? undefined : noneStyle
+                      }
+                    >
+                      {pending.note?.trim() || '(empty)'}
+                    </dd>
+
+                    {pending.includeCuration && (
+                      <>
+                        <dt>Curation status</dt>
+                        <dd
+                          style={
+                            pending.curStatus ? undefined : noneStyle
+                          }
+                        >
+                          {pending.curStatus || 'none'}
+                        </dd>
+
+                        <dt>Curation tag</dt>
+                        <dd
+                          style={pending.curTag ? undefined : noneStyle}
+                        >
+                          {pending.curTag || 'none'}
+                        </dd>
+
+                        <dt>Curation note</dt>
+                        <dd
+                          style={
+                            pending.curNote.trim() ? undefined : noneStyle
+                          }
+                        >
+                          {pending.curNote.trim() || '(empty)'}
+                        </dd>
+                      </>
+                    )}
+                  </dl>
+                </div>
+
                 {isSubmitting && (
                   <p style={{ marginTop: 12, color: '#555' }}>
                     <Spinner animation="border" size="sm" /> Submitting…
@@ -191,7 +400,7 @@ export default function CellValidationStrip({
                 variant={pending.kind === 'negative' ? 'danger' : 'success'}
                 onClick={handleConfirm}
               >
-                Confirm {pending.kind === 'negative' ? 'not present' : 'present'}
+                Confirm {pending.kind === 'negative' ? 'negative' : 'positive'}
               </Button>
             </>
           )}

@@ -10,8 +10,13 @@ function professionalBiocuratorTopicTets(tets) {
 
 export default function ValidationCell(params) {
   const tets = params.value || [];
-  const { topicCurie, topicName, refetchRow } =
-    params.colDef.cellRendererParams || {};
+  const {
+    topicCurie,
+    topicName,
+    refetchRow,
+    curationStatusOptions,
+    curationTagOptions,
+  } = params.colDef.cellRendererParams || {};
   const referenceCurie = params.data?.curie;
 
   const validations = professionalBiocuratorTopicTets(tets);
@@ -49,6 +54,8 @@ export default function ValidationCell(params) {
         topicName={topicName}
         cellTets={tets}
         onValidated={refetchRow}
+        curationStatusOptions={curationStatusOptions}
+        curationTagOptions={curationTagOptions}
       />
     </div>
   );

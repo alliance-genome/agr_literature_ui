@@ -134,6 +134,46 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   const accessToken = useSelector((s) => s.isLogged.accessToken);
+  const [curationStatusOptions, setCurationStatusOptions] = useState([]);
+  const [curationTagOptions, setCurationTagOptions] = useState([]);
+
+  // Controlled vocabularies for the optional "Also update curation status"
+  // section in the validation modal. Fetched once on mount; mirrors the
+  // existing per-paper TET workflow (BiblioWorkflow.js).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [statusRes, tagRes1, tagRes2] = await Promise.all([
+          api.get('/ontology/search_descendants/ATP:0000230/true/false/true'),
+          api.get('/ontology/search_descendants/ATP:0000208/false/true/true'),
+          api.get('/ontology/search_descendants/ATP:0000227/false/true/true'),
+        ]);
+        if (cancelled) return;
+        setCurationStatusOptions(
+          (statusRes.data || []).map((e) => ({ curie: e.curie, name: e.name }))
+        );
+        setCurationTagOptions(
+          [...(tagRes1.data || []), ...(tagRes2.data || [])].map((e) => ({
+            curie: e.curie,
+            name: e.name,
+          }))
+        );
+      } catch (e) {
+        // Non-fatal — the curation section will just show empty drop-downs.
+        // eslint-disable-next-line no-console
+        console.warn(
+          '[TetValidationGrid] failed to load curation vocabularies',
+          e?.response?.status,
+          e?.message
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const topicEntitySourceId = useSelector(
     (s) => s.biblio.topicEntitySourceId
   );
@@ -862,12 +902,14 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
               topicCurie: t.curie,
               topicName: t.name || t.curie,
               refetchRow,
+              curationStatusOptions,
+              curationTagOptions,
             },
           }),
           makeInnerColumn({
             headerName: 'Sources',
             headerTooltip:
-              'TET tags for this topic grouped by source pipeline (textpresso, manual, abc_entity_extractor, …). Y / N pills mark topic-level positive / negative tags; the violet "{N}E" badge means an entity-level extraction with N entities (click it to see the full list).',
+              'Source pipelines that produced TET tags for this topic on this reference (e.g. textpresso, manual, abc_entity_extractor). The cell only lists the source labels — the actual Y / N / {N}E breakdown is shown in the adjacent Tag column.',
             colId: t.curie,
             kind: INNER_COLUMN_TYPES.SOURCES,
             width: 180,
@@ -880,7 +922,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
           makeInnerColumn({
             headerName: 'Tag',
             headerTooltip:
-              'Compact, source-agnostic summary of all TET tags for this topic on this reference. Same Y / N / {N}E vocabulary as the Sources column but with no source labels — useful when you only need to know whether the topic is tagged at all.',
+              'Per-source TET tag pills for this topic. Y (green) = topic-level positive tag; N (red) = topic-level negated tag; "{N}E" (violet) = an entity-level extraction with N entities (click the badge to see the full list of entities). Each row aligns with the matching source label in the Sources column to its left.',
             colId: `${t.curie}__tag`,
             kind: INNER_COLUMN_TYPES.TAG,
             width: 58,
@@ -955,6 +997,8 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     selectedIdPrefixes,
     idsColumnWidth,
     innerFilterOptions,
+    curationStatusOptions,
+    curationTagOptions,
   ]);
 
   return (

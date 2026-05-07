@@ -552,6 +552,53 @@
   color: var(--tetv-accent-dark);
 }
 
+/* Optional curation-status section in the validation confirmation modal. */
+.tetv-curation-toggle {
+  background: #fbfcfd;
+  border: 1px solid #e1e8ef;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.tetv-curation-section {
+  background: #f6f9fb;
+  border: 1px solid #e1e8ef;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+/* "New tag fields" preview block inside the validation confirmation modal. */
+.tetv-validation-fields {
+  background: #f6f9fb;
+  border: 1px solid #e1e8ef;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.tetv-validation-fields-title {
+  color: #475467;
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.tetv-validation-fields-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+.tetv-validation-fields-list dt {
+  color: #667085;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.tetv-validation-fields-list dd {
+  color: #1f2937;
+  font-size: 0.9em;
+  margin: 0;
+  word-break: break-word;
+}
+
 /* Inline error indicator next to the validation strip when a submit fails. */
 .tetv-strip-error {
   align-items: center;
