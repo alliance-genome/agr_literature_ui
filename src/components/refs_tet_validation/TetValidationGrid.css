@@ -525,3 +525,46 @@
     width: 100%;
   }
 }
+
+/* Header label + ? help icon. Renders inside both regular column headers and
+   column-group headers via HeaderWithHelp / HeaderGroupWithHelp. */
+.tetv-header-with-help {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  min-width: 0;
+}
+.tetv-header-with-help .tetv-header-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tetv-header-help {
+  align-items: center;
+  color: #7a8aa0;
+  cursor: help;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.85em;
+  line-height: 1;
+}
+.tetv-header-help:hover {
+  color: var(--tetv-accent-dark);
+}
+
+/* Inline error indicator next to the validation strip when a submit fails. */
+.tetv-strip-error {
+  align-items: center;
+  background: #fdecea;
+  border: 1px solid #f5b7b1;
+  border-radius: 50%;
+  color: #b03a2e;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  height: 20px;
+  justify-content: center;
+  margin-left: 4px;
+  width: 20px;
+}
+

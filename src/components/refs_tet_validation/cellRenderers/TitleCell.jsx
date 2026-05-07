@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 export default function TitleCell(params) {
   const r = params.data?.biblio || {};
@@ -13,8 +12,10 @@ export default function TitleCell(params) {
   return (
     <div className="tetv-title-cell">
       <div className="tetv-ref-title">
-        <Link
-          to={`/Biblio?action=display&referenceCurie=${encodeURIComponent(curie)}`}
+        <a
+          href={`/Biblio?action=display&referenceCurie=${encodeURIComponent(curie)}`}
+          target="_blank"
+          rel="noreferrer noopener"
           dangerouslySetInnerHTML={{ __html: r.title || curie }}
         />
       </div>

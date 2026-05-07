@@ -19,6 +19,8 @@ import {
 } from './helpers/groupTets';
 import IdsCell from './cellRenderers/IdsCell';
 import TitleCell from './cellRenderers/TitleCell';
+import HeaderWithHelp from './cellRenderers/HeaderWithHelp';
+import HeaderGroupWithHelp from './cellRenderers/HeaderGroupWithHelp';
 import ValidationCell, {
   professionalBiocuratorTopicTets,
 } from './cellRenderers/ValidationCell';
@@ -745,6 +747,9 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   const columnDefs = useMemo(() => {
     const idsCol = {
       headerName: 'IDs',
+      innerHeaderComponent: HeaderWithHelp,
+      headerTooltip:
+        'Reference identifiers — the canonical AGRKB curie plus every cross-reference (PMID, MOD curies, DOI, …) and the publication year. Click the filter icon in the header to filter by prefix.',
       field: '__ids',
       pinned: 'left',
       width: idsColumnWidth,
@@ -771,6 +776,9 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
 
     const titleCol = {
       headerName: 'Title',
+      innerHeaderComponent: HeaderWithHelp,
+      headerTooltip:
+        'Publication title (links to the Biblio page) with journal name and authors.',
       field: '__title',
       pinned: 'left',
       width: 320,
@@ -802,6 +810,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         const topicField = `__topic_${t.curie}`;
         const makeInnerColumn = ({
           headerName,
+          headerTooltip,
           colId,
           kind,
           width,
@@ -811,6 +820,8 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
           cellClass = '',
         }) => ({
           headerName,
+          headerTooltip,
+          innerHeaderComponent: HeaderWithHelp,
           colId,
           field: topicField,
           width,
@@ -839,16 +850,24 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         const children = [
           makeInnerColumn({
             headerName: 'Validation',
+            headerTooltip:
+              'Validation by professional biocurators. When at least one curator has submitted a topic-level tag, the cell shows the validation status (validated positive / validated negative / validation conflict). Otherwise, ✓ and ✗ buttons let the curator submit one.',
             colId: `${t.curie}__val`,
             kind: INNER_COLUMN_TYPES.VALIDATION,
             width: 110,
             minWidth: 96,
             cellRenderer: ValidationCell,
             cellClass: leftmostClass,
-            cellRendererParams: { topicCurie: t.curie, refetchRow },
+            cellRendererParams: {
+              topicCurie: t.curie,
+              topicName: t.name || t.curie,
+              refetchRow,
+            },
           }),
           makeInnerColumn({
             headerName: 'Sources',
+            headerTooltip:
+              'TET tags for this topic grouped by source pipeline (textpresso, manual, abc_entity_extractor, …). Y / N pills mark topic-level positive / negative tags; the violet "{N}E" badge means an entity-level extraction with N entities (click it to see the full list).',
             colId: t.curie,
             kind: INNER_COLUMN_TYPES.SOURCES,
             width: 180,
@@ -860,6 +879,8 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
           }),
           makeInnerColumn({
             headerName: 'Tag',
+            headerTooltip:
+              'Compact, source-agnostic summary of all TET tags for this topic on this reference. Same Y / N / {N}E vocabulary as the Sources column but with no source labels — useful when you only need to know whether the topic is tagged at all.',
             colId: `${t.curie}__tag`,
             kind: INNER_COLUMN_TYPES.TAG,
             width: 58,
@@ -874,6 +895,8 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         if (displayOptions.showScore) {
           children.push(makeInnerColumn({
             headerName: 'conf sc',
+            headerTooltip:
+              'Confidence score (0.00 – 1.00) of the TET tag, when reported by the source pipeline. For entity-level buckets, the cell shows the min – max range across that bucket.',
             colId: `${t.curie}__cs`,
             kind: INNER_COLUMN_TYPES.CONF_SCORE,
             width: 70,
@@ -885,6 +908,8 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         if (displayOptions.showLevel) {
           children.push(makeInnerColumn({
             headerName: 'conf lvl',
+            headerTooltip:
+              'Confidence level label (e.g. high / medium / low) of the TET tag, when reported by the source pipeline. For entity-level buckets, the cell shows the count of distinct levels if they vary.',
             colId: `${t.curie}__cl`,
             kind: INNER_COLUMN_TYPES.CONF_LEVEL,
             width: 86,
@@ -895,6 +920,8 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         }
         children.push(makeInnerColumn({
           headerName: 'note',
+          headerTooltip:
+            'Free-text notes attached to TET tags. Click the 📝 icon for the full note in a modal; toggle "Expand notes" in the toolbar to render note text inline.',
           colId: `${t.curie}__note`,
           kind: INNER_COLUMN_TYPES.NOTE,
           width: displayOptions.inlineNote ? 240 : 60,
@@ -907,6 +934,10 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         }));
         return {
           headerName: t.name || t.curie,
+          innerHeaderGroupComponent: HeaderGroupWithHelp,
+          headerTooltip:
+            `Topic "${t.name || t.curie}" (${t.curie}) — a topic from the MOD's ATP subset. ` +
+            'Sub-columns show the validation status, per-source TET data, a compact tag summary, and (optionally) confidence and notes for this topic on each reference.',
           groupId: `tg-${t.curie}`,
           marryChildren: true,
           headerClass: 'tetv-topic-group-header',
@@ -974,9 +1005,9 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             reactiveCustomComponents
             enableCellTextSelection
             ensureDomOrder
+            enableBrowserTooltips
             onGridReady={onGridReady}
             onBodyScroll={onBodyScroll}
-            onFilterChanged={onFilterChanged}
             onFilterChanged={handleFilterChanged}
             onSortChanged={handleSortChanged}
             getRowClass={(p) => {
