@@ -199,6 +199,7 @@ const Workflow = ({ workflowRefreshTrigger }) => {
 	    'atpName': ''
 	})
     );
+    if (!wfTags) { return modFileStatus; }
     for (const [index, wfTag] of wfTags.entries()) {
       const reference_workflow_tag_id = wfTag['reference_workflow_tag_id'];
       let atp = ''; let atpName = '';
