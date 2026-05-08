@@ -338,10 +338,14 @@ const OpenAccess = () => {
   const imagePermissionName = imagePermission["image_permission_name"] || null;
   const imagePermissionSource = imagePermission["source"];
   const canDisplayImages = imagePermission["can_display_images"] ? "can display images" : "cannot display images";
-  // Show source: "(open access)" for license, "(permission name)" for resource permission
-  const imagePermissionSourceLabel = imagePermissionSource === "reference_copyright_license"
-    ? "open access"
-    : imagePermissionName;
+  // Show source label based on where permission came from
+  const getSourceLabel = () => {
+    if (imagePermissionSource === "reference_open_access") return "reference open access";
+    if (imagePermissionSource === "resource_open_access") return "resource open access";
+    if (imagePermissionSource === "resource_image_permission") return imagePermissionName;
+    return null;
+  };
+  const imagePermissionSourceLabel = getSourceLabel();
 
   let lastUpdatedBy = ''
   if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
