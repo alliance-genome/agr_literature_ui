@@ -199,6 +199,7 @@ const Workflow = ({ workflowRefreshTrigger }) => {
 	    'atpName': ''
 	})
     );
+    if (!wfTags) { return modFileStatus; }
     for (const [index, wfTag] of wfTags.entries()) {
       const reference_workflow_tag_id = wfTag['reference_workflow_tag_id'];
       let atp = ''; let atpName = '';
@@ -334,6 +335,18 @@ const OpenAccess = () => {
 
   const licenseName = referenceJsonLive["copyright_license_name"];
   const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
+  const imagePermission = referenceJsonLive["effective_image_permission"] || {};
+  const imagePermissionName = imagePermission["image_permission_name"] || null;
+  const imagePermissionSource = imagePermission["source"];
+  const canDisplayImages = imagePermission["can_display_images"] ? "can display images" : "cannot display images";
+  // Show source label based on where permission came from
+  const getSourceLabel = () => {
+    if (imagePermissionSource === "reference_open_access") return "reference open access";
+    if (imagePermissionSource === "resource_open_access") return "resource open access";
+    if (imagePermissionSource === "resource_image_permission") return imagePermissionName;
+    return null;
+  };
+  const imagePermissionSourceLabel = getSourceLabel();
 
   let lastUpdatedBy = ''
   if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
@@ -388,6 +401,13 @@ const OpenAccess = () => {
                   <div className={`form-control biblio-button`} type="submit" onClick={(e) => addLicense(e)} style={{ width: '160px' }}>{licenseToShow !== '' ? "Update" : "Add"} License</div>
                 </>
             }
+          </Col>
+        </Row>
+        <Row key='image_permission'>
+          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>image permission</Col>
+          <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
+            <span><strong>{canDisplayImages}</strong></span>
+            {imagePermissionSourceLabel && <span style={{ marginLeft: '10px', color: '#666' }}>({imagePermissionSourceLabel})</span>}
           </Col>
         </Row>
         {showAlert && alert && <Alert variant="success">{alert}</Alert>}
@@ -934,18 +954,22 @@ const FileEditor = ({ onFileStatusChange }) => {
           
   let rowReferencefileElements = [];
   // Filter out all converted files (TEI and markdown) from the main display
-  const referenceFilesWithAccess = referenceFiles.filter((referenceFile) =>
-    (referenceJsonLive["copyright_license_open_access"] === true ||
+  const canDisplayImages = referenceJsonLive["effective_image_permission"]?.["can_display_images"] === true;
+  const hasReferenceFileAccess = (referenceFile) => (
+    referenceJsonLive["copyright_license_open_access"] === true ||
+    (referenceFile.file_class === 'figure' && canDisplayImages) ||
     accessLevel === 'developer' ||
-    referenceFile.referencefile_mods.some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null)) &&
-    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)  // Exclude converted files
+    referenceFile.referencefile_mods.some((mod) => mod.mod_abbreviation === accessLevel || mod.mod_abbreviation === null)
+  );
+
+  const referenceFilesWithAccess = referenceFiles.filter((referenceFile) =>
+    hasReferenceFileAccess(referenceFile) &&
+    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)
   );
 
   const referenceFilesNoAccess = referenceFiles.filter((referenceFile) =>
-    (referenceJsonLive["copyright_license_open_access"] !== true &&
-    accessLevel !== 'developer' &&
-    referenceFile.referencefile_mods.every((mod) => mod.mod_abbreviation !== accessLevel && mod.mod_abbreviation !== null)) &&
-    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)  // Exclude converted files
+    !hasReferenceFileAccess(referenceFile) &&
+    !ALL_CONVERTED_FILE_CLASSES.includes(referenceFile.file_class)
   );
 
   referenceFilesWithAccess.sort(reffileCompareFn);
