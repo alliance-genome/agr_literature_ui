@@ -335,8 +335,8 @@ const OpenAccess = () => {
   const licenseName = referenceJsonLive["copyright_license_name"];
   const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
   const imagePermission = referenceJsonLive["effective_image_permission"] || {};
-  const imagePermissionSource = imagePermission["source"] ? imagePermission["source"].split('_').join(' ') : 'none';
-  const imagePermissionToShow = `${imagePermission["can_display_images"] ? "can display images" : "cannot display images"} (${imagePermissionSource})`;
+  const imagePermissionName = imagePermission["image_permission_name"] || null;
+  const canDisplayImages = imagePermission["can_display_images"] ? "can display images" : "cannot display images";
 
   let lastUpdatedBy = ''
   if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
@@ -396,7 +396,8 @@ const OpenAccess = () => {
         <Row key='image_permission'>
           <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>image permission</Col>
           <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
-            <span title={imagePermission["reason"] || ''}>{imagePermissionToShow}</span>
+            <span><strong>{canDisplayImages}</strong></span>
+            {imagePermissionName && <span style={{ marginLeft: '10px', color: '#666' }}>({imagePermissionName})</span>}
           </Col>
         </Row>
         {showAlert && alert && <Alert variant="success">{alert}</Alert>}
