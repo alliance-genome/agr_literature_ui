@@ -174,8 +174,8 @@ const ReferencesToSort = ({
 
   const orderedAuthorsLive = [];
   for (const value of reference['authors'].values()) {
-    let idx = value['order'] - 1;
-    if (idx < 0) { idx = 0; }      // temporary fix for fake authors have an 'order' field value of 0
+    let idx = value['author_order'] - 1;
+    if (idx < 0) { idx = 0; }      // temporary fix for fake authors have an 'author_order' field value of 0
     orderedAuthorsLive[idx] = value;
   }
 

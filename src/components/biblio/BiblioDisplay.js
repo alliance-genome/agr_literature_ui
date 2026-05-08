@@ -365,14 +365,14 @@ const RowDisplayAuthors = ({ fieldIndex, fieldName, referenceJsonLive, reference
   const orderedAuthorsDb = [];
 
   for (const value of referenceJsonLive['authors'].values()) {
-    let idx = (value?.order ?? 1) - 1;
+    let idx = (value?.author_order ?? 1) - 1;
     if (idx < 0) idx = 0; // temporary fix for fake authors have an 'order' field value of 0
     orderedAuthorsLive[idx] = value;
   }
 
   if (referenceJsonDb?.authors) {
     for (const value of referenceJsonDb['authors'].values()) {
-      let idx = (value?.order ?? 1) - 1;
+      let idx = (value?.author_order ?? 1) - 1;
       if (idx < 0) idx = 0; // temporary fix for fake authors have an 'order' field value of 0
       orderedAuthorsDb[idx] = value;
     }
@@ -474,7 +474,7 @@ const RowDisplayAuthors = ({ fieldIndex, fieldName, referenceJsonLive, reference
 
       rowAuthorElements.push(
         <Row key={`author ${index}`} className="Row-general" xs={2} md={4} lg={6}>
-          <Col className="Col-general Col-display Col-display-left">author {value['order']}</Col>
+          <Col className="Col-general Col-display Col-display-left">author {value['author_order']}</Col>
           <Col className={`Col-general Col-display ${updatedFlagAuthor} `} lg={{ span: 10 }}>
             <div key={`author ${index}`}>
               <span dangerouslySetInnerHTML={{ __html: value['name'] }} />

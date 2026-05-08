@@ -117,10 +117,10 @@ export const checkHasPmid = (referenceJsonLive) => {
 const getStoreAuthorIndexFromDomIndex = (indexDomAuthorInfo, newAuthorInfoChange) => {
   // indexDomAuthorInfo is the index of the author info in the DOM
   // indexAuthorInfo is the index of the author info in the redux store, for updating non-order info
-  let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']	// replace placeholder with index from store order value matches dom
+  let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['author_order']	// replace placeholder with index from store order value matches dom
   for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
 // console.log('loop index ' + authorReorderIndexDictIndex + ' for ' + indexDomAuthorInfo);
-    if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) {
+    if (newAuthorInfoChange[authorReorderIndexDictIndex]['author_order'] - 1 === indexDomAuthorInfo) {
 // console.log('loop index match ' + authorReorderIndexDictIndex + ' to ' + indexDomAuthorInfo);
       indexAuthorInfo = authorReorderIndexDictIndex
       break } }
@@ -588,7 +588,7 @@ export default function(state = initialState, action) {
       else if (subfieldAuthorInfo === 'affiliations') {
 //         let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] = authorInfoNewValue; }
-      else if (subfieldAuthorInfo === 'order') {
+      else if (subfieldAuthorInfo === 'author_order') {
         let oldAuthorOrder = indexDomAuthorInfo + 1
         let newAuthorOrder = parseInt(authorInfoNewValue)
         // console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
@@ -596,19 +596,19 @@ export default function(state = initialState, action) {
         for (let authorReorderDict of newAuthorInfoChange) {
           // console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
           if (newAuthorOrder < oldAuthorOrder) {
-            if (authorReorderDict['order'] === oldAuthorOrder) {
+            if (authorReorderDict['author_order'] === oldAuthorOrder) {
               authorReorderDict['needsChange'] = true;
-              authorReorderDict['order'] = newAuthorOrder }
-            else if ( (authorReorderDict['order'] >= newAuthorOrder) && (authorReorderDict['order'] < oldAuthorOrder) ) {
+              authorReorderDict['author_order'] = newAuthorOrder }
+            else if ( (authorReorderDict['author_order'] >= newAuthorOrder) && (authorReorderDict['author_order'] < oldAuthorOrder) ) {
               authorReorderDict['needsChange'] = true;
-              authorReorderDict['order'] += 1 } }
+              authorReorderDict['author_order'] += 1 } }
           else if (newAuthorOrder > oldAuthorOrder) {
-            if (authorReorderDict['order'] === oldAuthorOrder) {
+            if (authorReorderDict['author_order'] === oldAuthorOrder) {
               authorReorderDict['needsChange'] = true;
-              authorReorderDict['order'] = newAuthorOrder }
-            else if ( (authorReorderDict['order'] <= newAuthorOrder) && (authorReorderDict['order'] > oldAuthorOrder) ) {
+              authorReorderDict['author_order'] = newAuthorOrder }
+            else if ( (authorReorderDict['author_order'] <= newAuthorOrder) && (authorReorderDict['author_order'] > oldAuthorOrder) ) {
               authorReorderDict['needsChange'] = true;
-              authorReorderDict['order'] -= 1 } } } }
+              authorReorderDict['author_order'] -= 1 } } } }
       else {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = authorInfoNewValue; }
       // console.log(newAuthorInfoChange)
@@ -795,8 +795,8 @@ export default function(state = initialState, action) {
         if (revertAuthorId === 'new') {
 //           console.log('reset to initialize dict indexDomAuthorRevert ' + indexDomAuthorRevert)
           const revertNewAuthorDict = JSON.parse(JSON.stringify(action.payload.initializeDict))
-          revertNewAuthorDict['order'] = state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order']
-//           console.log('reset to initialize dict set order to ' + state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order'])
+          revertNewAuthorDict['author_order'] = state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['author_order']
+//           console.log('reset to initialize dict set order to ' + state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['author_order'])
 // console.log(revertNewAuthorDict)
           revertValue[indexStoreAuthorRevert] = revertNewAuthorDict }
         else {
@@ -806,8 +806,8 @@ export default function(state = initialState, action) {
             if (dbRevertAuthorDict['author_id'] === revertAuthorId) {
 // console.log('loop match ' + dbRevertAuthorDict['author_id'] + ' to ' + revertAuthorId);
               const revertNewAuthorDict = JSON.parse(JSON.stringify(dbRevertAuthorDict))
-              revertNewAuthorDict['order'] = state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order']
-//               console.log('reset to initialize dict set order to ' + state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['order'])
+              revertNewAuthorDict['author_order'] = state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['author_order']
+//               console.log('reset to initialize dict set order to ' + state.referenceJsonLive[fieldStringArrayRevert][indexStoreAuthorRevert]['author_order'])
 // console.log(revertNewAuthorDict)
               revertValue[indexStoreAuthorRevert] = revertNewAuthorDict
               break } } } }

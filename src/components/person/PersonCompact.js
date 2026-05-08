@@ -16,8 +16,8 @@ const PersonCompact = ({ person }) => {
   const notes = person.notes ?? [];
   const roles = person.mod_roles ?? [];
 
-  const primaryEmail = emails.find(e => e.primary)?.email_address || emails[0]?.email_address || null;
-  const primaryNameRow = names.find(n => n.primary) || names[0];
+  const primaryEmail = emails.find(e => e.is_primary)?.email_address || emails[0]?.email_address || null;
+  const primaryNameRow = names.find(n => n.is_primary) || names[0];
   const primaryName = primaryNameRow ? fullName(primaryNameRow) : null;
   const status = person.active_status || 'unknown';
   const statusVariant = status === 'active' ? 'success' : 'secondary';

@@ -31,8 +31,8 @@ const NamesCard = ({ names }) => {
           <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: 0 }}>
             {list.map((n, i) => (
               <li key={n.person_name_id ?? i} style={{ padding: '2px 0' }}>
-                {n.primary && <span title="primary" style={{ color: '#e7a700' }}>★ </span>}
-                <span style={{ fontWeight: n.primary ? 600 : 400 }}>
+                {n.is_primary && <span title="primary" style={{ color: '#e7a700' }}>★ </span>}
+                <span style={{ fontWeight: n.is_primary ? 600 : 400 }}>
                   {fullName(n) || <span style={muted}>(blank)</span>}
                 </span>
               </li>
@@ -58,10 +58,10 @@ const EmailsCard = ({ emails }) => {
               const invalid = !!e.date_invalidated;
               return (
                 <li key={e.email_id ?? i} style={{ padding: '2px 0' }}>
-                  {e.primary && <span title="primary" style={{ color: '#e7a700' }}>★ </span>}
+                  {e.is_primary && <span title="primary" style={{ color: '#e7a700' }}>★ </span>}
                   <span
                     style={{
-                      fontWeight: e.primary ? 600 : 400,
+                      fontWeight: e.is_primary ? 600 : 400,
                       textDecoration: invalid ? 'line-through' : 'none',
                       color: invalid ? '#888' : 'inherit',
                     }}
