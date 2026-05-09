@@ -60,7 +60,8 @@ describe('resolveOne', () => {
     api.get.mockRejectedValue({ response: { status: 500 } });
     const out = await resolveOne('AGRKB:8');
     expect(out).toBeNull();
-    expect(api.get).toHaveBeenCalledTimes(4);
+    // 1 initial + 5 backoff retries
+    expect(api.get).toHaveBeenCalledTimes(6);
   });
 });
 
@@ -88,6 +89,7 @@ describe('fetchTets', () => {
     api.get.mockRejectedValue(new Error('network'));
     const tets = await fetchTets('AGRKB:err');
     expect(tets).toEqual([]);
-    expect(api.get).toHaveBeenCalledTimes(4);
+    // 1 initial + 5 backoff retries
+    expect(api.get).toHaveBeenCalledTimes(6);
   });
 });

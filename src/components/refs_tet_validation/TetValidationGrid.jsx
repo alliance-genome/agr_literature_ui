@@ -787,7 +787,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   const columnDefs = useMemo(() => {
     const idsCol = {
       headerName: 'IDs',
-      innerHeaderComponent: HeaderWithHelp,
+      headerComponent: HeaderWithHelp,
       headerTooltip:
         'Reference identifiers — the canonical AGRKB curie plus every cross-reference (PMID, MOD curies, DOI, …) and the publication year. Click the filter icon in the header to filter by prefix.',
       field: '__ids',
@@ -816,7 +816,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
 
     const titleCol = {
       headerName: 'Title',
-      innerHeaderComponent: HeaderWithHelp,
+      headerComponent: HeaderWithHelp,
       headerTooltip:
         'Publication title (links to the Biblio page) with journal name and authors.',
       field: '__title',
@@ -861,7 +861,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         }) => ({
           headerName,
           headerTooltip,
-          innerHeaderComponent: HeaderWithHelp,
+          headerComponent: HeaderWithHelp,
           colId,
           field: topicField,
           width,
@@ -976,7 +976,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         }));
         return {
           headerName: t.name || t.curie,
-          innerHeaderGroupComponent: HeaderGroupWithHelp,
+          headerGroupComponent: HeaderGroupWithHelp,
           headerTooltip:
             `Topic "${t.name || t.curie}" (${t.curie}) — a topic from the MOD's ATP subset. ` +
             'Sub-columns show the validation status, per-source TET data, a compact tag summary, and (optionally) confidence and notes for this topic on each reference.',

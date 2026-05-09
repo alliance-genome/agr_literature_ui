@@ -18,7 +18,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * 4xx errors fail fast (a 404 should never be retried). Default 3 retries
  * with delays 250 / 750 / 2250 ms.
  */
-async function withBackoff(fn, { delays = [250, 750, 2250] } = {}) {
+async function withBackoff(fn, { delays = [500, 1500, 4500, 13500, 40500] } = {}) {
   let lastErr;
   for (let attempt = 0; attempt <= delays.length; attempt++) {
     try {
@@ -97,7 +97,7 @@ export function useReferenceTets(referenceIds) {
       );
       const newRows = [];
       const newUnresolved = [];
-      const concurrency = 8;
+      const concurrency = 2;
       let cursor = 0;
       async function worker() {
         while (cursor < ids.length) {
