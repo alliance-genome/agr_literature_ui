@@ -97,7 +97,7 @@ export function useReferenceTets(referenceIds) {
       );
       const newRows = [];
       const newUnresolved = [];
-      const concurrency = 2;
+      const concurrency = 10;
       let cursor = 0;
       async function worker() {
         while (cursor < ids.length) {
