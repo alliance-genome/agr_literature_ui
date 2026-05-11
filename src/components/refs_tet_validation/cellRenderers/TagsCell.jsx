@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { buildEntries } from '../helpers/buildEntries';
+import EvidencePanels from './EvidencePanels';
 
 function PillTopic({ tet }) {
   const negated = tet.negated === true;
@@ -40,26 +41,31 @@ export default function TagsCell(params) {
 
   return (
     <div className="tetv-tag-cell">
-      {entries.map((e) => (
-        <div className="tetv-mini-row tetv-tag-row" key={e.key}>
-          {e.kind === 'topic' ? (
-            <PillTopic tet={e.tets[0]} />
-          ) : (
-            <PillEntityCount
-              count={e.tets.length}
-              negated={e.kind === 'entity-neg'}
-              entitiesText={
-                e.tets
-                  .slice(0, 20)
-                  .map(entityLabel)
-                  .filter(Boolean)
-                  .join(', ') +
-                (e.tets.length > 20 ? `, ... (+${e.tets.length - 20} more)` : '')
-              }
-            />
-          )}
-        </div>
-      ))}
+      <EvidencePanels
+        entries={entries}
+        renderEntry={(e) => (
+          <div className="tetv-mini-row tetv-tag-row" key={e.key}>
+            {e.kind === 'topic' ? (
+              <PillTopic tet={e.tets[0]} />
+            ) : (
+              <PillEntityCount
+                count={e.tets.length}
+                negated={e.kind === 'entity-neg'}
+                entitiesText={
+                  e.tets
+                    .slice(0, 20)
+                    .map(entityLabel)
+                    .filter(Boolean)
+                    .join(', ') +
+                  (e.tets.length > 20
+                    ? `, ... (+${e.tets.length - 20} more)`
+                    : '')
+                }
+              />
+            )}
+          </div>
+        )}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStickyNote } from '@fortawesome/free-solid-svg-icons';
 import NoteModal from './NoteModal';
 import { buildEntries } from '../helpers/buildEntries';
+import EvidencePanels from './EvidencePanels';
 
 export default function NoteCell(params) {
   const tets = params.value || [];
@@ -17,9 +18,7 @@ export default function NoteCell(params) {
 
   const [modal, setModal] = useState(null); // { title, body } | null
 
-  return (
-    <div className="tetv-attr-cell">
-      {entries.map((e) => {
+  const renderEntry = (e) => {
         if (e.kind === 'topic') {
           const t = e.tets[0];
           const note = t.note;
@@ -97,7 +96,11 @@ export default function NoteCell(params) {
             </button>
           </div>
         );
-      })}
+  };
+
+  return (
+    <div className="tetv-attr-cell">
+      <EvidencePanels entries={entries} renderEntry={renderEntry} />
       <NoteModal
         show={!!modal}
         onHide={() => setModal(null)}

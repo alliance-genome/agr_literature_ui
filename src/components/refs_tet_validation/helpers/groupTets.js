@@ -33,6 +33,18 @@ const CURATOR_VALIDATION_TYPES = new Set([
   'professional_curator',
 ]);
 
+/** True for any TET whose source is a professional-biocurator source —
+ *  regardless of entity. Useful to hide curator-submitted rows from the
+ *  Sources column, since they already surface in the Validation column. */
+export function isCuratorSourceTet(tet) {
+  return (
+    !!tet &&
+    CURATOR_VALIDATION_TYPES.has(
+      tet?.topic_entity_tag_source?.validation_type
+    )
+  );
+}
+
 export function isCuratorValidationTet(tet) {
   return (
     !!tet &&
