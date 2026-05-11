@@ -42,6 +42,7 @@ const initialState = {
     'mod_reference_types.keyword': INITIAL_FACETS_LIMIT,
     'category.keyword': INITIAL_FACETS_LIMIT,
     'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT,
+    'retraction_status.keyword': INITIAL_FACETS_LIMIT,
     'authors.name.keyword': INITIAL_FACETS_LIMIT,
     'topics': INITIAL_FACETS_LIMIT,
     'confidence_levels': INITIAL_FACETS_LIMIT,
