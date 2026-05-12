@@ -103,7 +103,7 @@ export const RENAME_FACETS = {
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation"], 
-    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction_status", "authors.name", "language"],
+    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
     "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
@@ -217,7 +217,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction_status"];
+    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status"];
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
