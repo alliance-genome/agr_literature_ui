@@ -699,7 +699,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
                 </div>
               ) : (
                 <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
-                 {( qcReportObsoleteEntities["'date-produced'"] !== null) &&
+                 {( qcReportObsoleteEntities['date-produced'] !== null) &&
                   (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportObsoleteEntities['date-produced'])}<br /><br /></div>) }
                  {( ( qcReportObsoleteEntities["obsolete_entities"] !== null) && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) ? (
                   <AgGridReact
@@ -802,7 +802,7 @@ const QCReportRetractedPapers = ({modSection}) => {
                             </div>
                         ) : (
                             <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
-                                {( qcReportRedactedPapers["'date-produced'"] !== null) &&
+                                {( qcReportRedactedPapers['date-produced'] !== null) &&
                                     (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportRedactedPapers['date-produced'])}<br /><br /></div>) }
                                 {( ( qcReportRedactedPapers["redacted-references"] !== null) && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) ? (
                                     <AgGridReact
@@ -984,7 +984,7 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
                 </div>
               ) : (
                 <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
-                 {( qcReportDuplicateOrcids["'date-produced'"] !== null) &&
+                 {( qcReportDuplicateOrcids['date-produced'] !== null) &&
                   (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportDuplicateOrcids['date-produced'])}<br /><br /></div>) }
                  {( ( qcReportDuplicateOrcids["duplicate_orcids"] !== null) && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) ? (
                   <AgGridReact

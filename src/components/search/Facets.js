@@ -64,6 +64,7 @@ export const RENAME_FACETS = {
     "mods_in_corpus_or_needs_review.keyword": "corpus - in corpus or needs review",
     "authors.name.keyword": "Authors",
     "mod_reference_types.keyword": "MOD reference type",
+    "retraction_status.keyword": "Retraction Status",
     "topics": "Topic",
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
@@ -102,7 +103,7 @@ export const RENAME_FACETS = {
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation"], 
-    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "authors.name","language"],
+    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
     "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
@@ -216,7 +217,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels"];
+    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status"];
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
@@ -461,10 +462,10 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                                     : sourceEvidenceAssertionDescriptions[bucket.key]) || 'No description available.'}
                                                             </Tooltip>
                                                         }
-                                                    >                                                                                                                 
-                                                        <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />                                      
-                                                    </OverlayTrigger>                                                                                                 
-                                                ) : (                                                                                                                 
+                                                    >
+                                                        <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
+                                                    </OverlayTrigger>
+                                                ) : (
                                                     <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
                                                 )}                                                                                                                                                {isModRefTypeFacet && renderModIcons(bucket.key)}
                                             </Col>                                                                                                                    
