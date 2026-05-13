@@ -30,18 +30,30 @@ function getGroupColor(id) {
  * E.g., "manual indexing in progress" -> "in progress" (when process is "manual indexing")
  */
 function shortenStateName(stateName, processName) {
-  if (!stateName || !processName) return stateName;
+  if (!stateName) return stateName;
+  if (!processName) return stateName;
 
-  // Normalize for comparison
+  // Normalize for comparison (lowercase, trimmed)
   const normalizedProcess = processName.toLowerCase().trim();
   const normalizedState = stateName.toLowerCase().trim();
 
   // If state starts with process name, remove it
   if (normalizedState.startsWith(normalizedProcess)) {
-    const shortened = stateName.slice(processName.length).trim();
+    // Use normalizedProcess.length to handle case differences correctly
+    const shortened = normalizedState.slice(normalizedProcess.length).trim();
     // If it's now empty or just punctuation, keep original
     if (shortened && shortened.length > 2) {
-      return shortened;
+      // Capitalize first letter of shortened name
+      return shortened.charAt(0).toUpperCase() + shortened.slice(1);
+    }
+  }
+
+  // Try alternative: check if state contains common suffixes we can extract
+  const suffixes = ['needed', 'in progress', 'complete', 'failed', 'blocked', 'unavailable', 'uploaded', 'extracted'];
+  for (const suffix of suffixes) {
+    if (normalizedState.endsWith(suffix)) {
+      // Capitalize first letter
+      return suffix.charAt(0).toUpperCase() + suffix.slice(1);
     }
   }
 
@@ -617,7 +629,7 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
         nodes.push({
           id: nid,
           name: nd.name,
-          shortName: shortenStateName(nd.name, processName),
+          shortName: shortenStateName(nd.name, nd.processName),
           nodeRole,
           stateCategory,
           isSelected,
