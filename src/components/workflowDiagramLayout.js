@@ -25,6 +25,85 @@ function getGroupColor(id) {
   return GROUP_COLORS[hashString(id) % GROUP_COLORS.length];
 }
 
+/**
+ * Shorten a state name by removing redundant workflow/process prefix.
+ * E.g., "manual indexing in progress" -> "in progress" (when process is "manual indexing")
+ */
+function shortenStateName(stateName, processName) {
+  if (!stateName || !processName) return stateName;
+
+  // Normalize for comparison
+  const normalizedProcess = processName.toLowerCase().trim();
+  const normalizedState = stateName.toLowerCase().trim();
+
+  // If state starts with process name, remove it
+  if (normalizedState.startsWith(normalizedProcess)) {
+    const shortened = stateName.slice(processName.length).trim();
+    // If it's now empty or just punctuation, keep original
+    if (shortened && shortened.length > 2) {
+      return shortened;
+    }
+  }
+
+  return stateName;
+}
+
+/**
+ * Classify a state name into a semantic category for layout ordering.
+ * Returns: 'initial' (needed), 'progress', 'complete', 'failed', 'blocked', 'other'
+ */
+function classifyState(stateName) {
+  if (!stateName) return 'other';
+  const name = stateName.toLowerCase();
+
+  // Initial/needed states - should be at top
+  if (name.includes('needed') || name.includes('waiting') || name.includes('pending')) {
+    return 'initial';
+  }
+  // In progress states - middle
+  if (name.includes('in progress') || name.includes('in_progress') || name.includes('processing')) {
+    return 'progress';
+  }
+  // Complete/final states - bottom of main flow
+  if (name.includes('complete') || name.includes('uploaded') || name.includes('converted') ||
+      name.includes('extracted') || name.includes('indexed') || name.includes('done')) {
+    return 'complete';
+  }
+  // Failed states - to the side
+  if (name.includes('failed') || name.includes('error')) {
+    return 'failed';
+  }
+  // Blocked/unavailable states - to the side
+  if (name.includes('blocked') || name.includes('unavailable') || name.includes("won't")) {
+    return 'blocked';
+  }
+  // Status/internal states (often technical)
+  if (name.includes('status') || name.includes('task')) {
+    return 'internal';
+  }
+
+  return 'other';
+}
+
+/**
+ * Check if a state is considered "internal" (for hiding option)
+ */
+function isInternalState(stateName) {
+  const category = classifyState(stateName);
+  return category === 'internal';
+}
+
+// Semantic ordering priority (lower = earlier in layout)
+const STATE_PRIORITY = {
+  'initial': 0,
+  'progress': 1,
+  'other': 2,
+  'complete': 3,
+  'failed': 4,
+  'blocked': 4,
+  'internal': 5,
+};
+
 // ─── Data transformation ─────────────────────────────────────────────────────
 
 function buildGraph(tagData) {
@@ -177,19 +256,19 @@ function orderGroups(processGroups, edges, nodeToProcess) {
 
 // ─── Layout constants ────────────────────────────────────────────────────────
 
-const NODE_WIDTH = 180;
+const NODE_WIDTH = 200;      // Increased from 180 to avoid truncation
 const NODE_HEIGHT = 40;
-const SUMMARY_WIDTH = 220;
-const SUMMARY_HEIGHT = 50;
-const SUB_SUMMARY_WIDTH = 200;
-const SUB_SUMMARY_HEIGHT = 44;
-const GROUP_PADDING = 20;
-const GROUP_HEADER_HEIGHT = 32;
-const SUB_HEADER_HEIGHT = 28;
-const GROUP_GAP = 30;
-const SUB_GAP = 16;
-const NODE_X_GAP = 24;
-const NODE_Y_GAP = 16;
+const SUMMARY_WIDTH = 240;   // Increased from 220
+const SUMMARY_HEIGHT = 60;   // Increased from 50
+const SUB_SUMMARY_WIDTH = 220; // Increased from 200
+const SUB_SUMMARY_HEIGHT = 50; // Increased from 44
+const GROUP_PADDING = 24;    // Increased from 20
+const GROUP_HEADER_HEIGHT = 36; // Increased from 32
+const SUB_HEADER_HEIGHT = 30;   // Increased from 28
+const GROUP_GAP = 50;        // Increased from 30 for better spacing
+const SUB_GAP = 20;          // Increased from 16
+const NODE_X_GAP = 28;       // Increased from 24
+const NODE_Y_GAP = 20;       // Increased from 16
 
 // ─── computeLayout ──────────────────────────────────────────────────────────
 
@@ -199,8 +278,14 @@ const NODE_Y_GAP = 16;
  * @param {Set} expandedSubprocesses - subprocess IDs whose nodes are visible
  * @param {number} width
  * @param {number} height
+ * @param {Object} options - Additional layout options
+ * @param {boolean} options.hideInternalStates - Hide internal/status states
+ * @param {string} options.selectedNodeId - Node ID to highlight and show edges for
+ * @param {string} options.currentStateId - Current state to highlight (e.g., for a reference)
  */
-export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses, width, height) {
+export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses, width, height, options = {}) {
+  const { hideInternalStates = false, selectedNodeId = null, currentStateId = null } = options;
+
   if (!tagData || tagData.length === 0) {
     return { nodes: [], edges: [], groups: [], viewBox: '0 0 800 600' };
   }
@@ -264,7 +349,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
         const internalEdges = allEdges.filter(
           e => ids.includes(e.source) && ids.includes(e.target)
         );
-        const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId);
+        const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
         layoutNodes.push(...result.nodes);
         maxWidth = Math.max(maxWidth, result.width);
         innerY = result.bottomY + SUB_GAP;
@@ -304,7 +389,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           const internalEdges = allEdges.filter(
             e => ids.includes(e.source) && ids.includes(e.target)
           );
-          const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId);
+          const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
           layoutNodes.push(...result.nodes);
 
           // Add subprocess group box
@@ -349,6 +434,11 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     const src = nodeToLayoutId.get(e.source);
     const tgt = nodeToLayoutId.get(e.target);
     if (!src || !tgt || src === tgt) continue;
+
+    // If a node is selected, only show edges connected to it
+    if (selectedNodeId && src !== selectedNodeId && tgt !== selectedNodeId) {
+      continue;
+    }
 
     // Canonical key: always smaller id first, so A→B and B→A share a key
     const [lo, hi] = src < tgt ? [src, tgt] : [tgt, src];
@@ -442,14 +532,27 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 /**
  * Layout a set of nodes in rows (layered). Returns { nodes, width, height, bottomY }.
  */
-function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processId, processName, color, nodeToLayoutId) {
+function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processId, processName, color, nodeToLayoutId, options = {}) {
+  const { hideInternalStates = false, selectedNodeId = null, currentStateId = null } = options;
+
   // Filter out nodes already placed by another group/subprocess
-  const ids = nodeIds.filter(id => !nodeToLayoutId.has(id));
+  let ids = nodeIds.filter(id => !nodeToLayoutId.has(id));
+
+  // Optionally filter out internal states
+  if (hideInternalStates) {
+    ids = ids.filter(id => {
+      const nd = nodeMap.get(id);
+      return nd && !isInternalState(nd.name);
+    });
+  }
+
   if (ids.length === 0) {
     return { nodes: [], width: 0, height: 0, bottomY: startY };
   }
 
   const filteredEdges = edges.filter(e => ids.includes(e.source) && ids.includes(e.target));
+
+  // Use semantic ordering: group by state category, then by topological layer
   const layers = assignLayers(ids, filteredEdges);
 
   // Determine initial/final states within this node set
@@ -457,21 +560,33 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
   const initialIds = new Set(ids.filter(id => parents.get(id).length === 0));
   const finalIds = new Set(ids.filter(id => children.get(id).length === 0));
 
-  const layerBuckets = new Map();
-  for (const [nid, layer] of layers) {
-    if (!layerBuckets.has(layer)) layerBuckets.set(layer, []);
-    layerBuckets.get(layer).push(nid);
+  // Group nodes by semantic category first, then by layer
+  const categoryBuckets = new Map();
+  for (const nid of ids) {
+    const nd = nodeMap.get(nid);
+    const category = classifyState(nd?.name);
+    const priority = STATE_PRIORITY[category] ?? 2;
+    const layer = layers.get(nid) || 0;
+    // Composite key: priority * 100 + layer (ensures category grouping with sub-ordering)
+    const compositeLayer = priority * 100 + layer;
+    if (!categoryBuckets.has(compositeLayer)) categoryBuckets.set(compositeLayer, []);
+    categoryBuckets.get(compositeLayer).push(nid);
   }
-  const sortedLayers = [...layerBuckets.keys()].sort((a, b) => a - b);
+
+  // Sort by composite layer
+  const sortedLayers = [...categoryBuckets.keys()].sort((a, b) => a - b);
+
+  // Use categoryBuckets instead of layerBuckets
+  const layerBuckets = categoryBuckets;
 
   // Adaptive sizing: use compact nodes when total node count is large
   const totalNodes = ids.length;
   const compact = totalNodes > 6;
-  const nw = compact ? 130 : NODE_WIDTH;
-  const nh = compact ? 32 : NODE_HEIGHT;
-  const xGap = compact ? 16 : NODE_X_GAP;
-  const yGap = compact ? 12 : NODE_Y_GAP;
-  const maxPerRow = compact ? 5 : 6; // wrap layers wider than this
+  const nw = compact ? 160 : NODE_WIDTH;   // Increased from 130
+  const nh = compact ? 36 : NODE_HEIGHT;   // Increased from 32
+  const xGap = compact ? 18 : NODE_X_GAP;  // Increased from 16
+  const yGap = compact ? 14 : NODE_Y_GAP;  // Increased from 12
+  const maxPerRow = compact ? 4 : 5; // Reduced to avoid crowding
 
   const nodes = [];
   let maxRowWidth = 0;
@@ -496,10 +611,17 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
         const nd = nodeMap.get(nid);
         const nodeRole = initialIds.has(nid) ? 'initial'
           : finalIds.has(nid) ? 'final' : 'normal';
+        const isSelected = selectedNodeId === nid;
+        const isCurrent = currentStateId === nid;
+        const stateCategory = classifyState(nd.name);
         nodes.push({
           id: nid,
           name: nd.name,
+          shortName: shortenStateName(nd.name, processName),
           nodeRole,
+          stateCategory,
+          isSelected,
+          isCurrent,
           x: startX + ni * (nw + xGap),
           y: startY + currentRow * (nh + yGap),
           width: nw, height: nh,
@@ -756,28 +878,38 @@ export function renderDiagram(svgElement, layout, callbacks) {
   nodeMerge.select('rect')
     .attr('width', d => d.width).attr('height', d => d.height)
     .attr('fill', d => {
+      if (d.isCurrent) return '#fff3cd';  // yellow highlight for current state
+      if (d.isSelected) return '#cce5ff'; // blue highlight for selected
       if (d.nodeRole === 'initial') return '#e8f5e8';  // light green
       if (d.nodeRole === 'final') return '#fce8e8';    // light red
       return 'white';
     })
     .attr('stroke', d => {
+      if (d.isCurrent) return '#ffc107';  // gold border for current
+      if (d.isSelected) return '#0056b3'; // dark blue for selected
       if (d.nodeRole === 'initial') return '#4a9d4a';  // green border
       if (d.nodeRole === 'final') return '#c95b5b';    // red border
       return '#5a9bd5';
-    });
+    })
+    .attr('stroke-width', d => (d.isCurrent || d.isSelected) ? 3 : 1.5);
   nodeMerge.select('text')
     .attr('x', d => d.width / 2)
     .attr('y', d => d.height / 2 + (d.compact ? 3 : 4))
     .attr('text-anchor', 'middle')
     .attr('font-size', d => d.compact ? '10px' : '12px')
     .text(d => {
+      const displayName = d.shortName || d.name;
       const charWidth = d.compact ? 6 : 7;
       const max = Math.floor(d.width / charWidth);
-      return d.name.length > max ? d.name.slice(0, max - 1) + '\u2026' : d.name;
+      return displayName.length > max ? displayName.slice(0, max - 1) + '\u2026' : displayName;
     });
   nodeMerge
     .on('mouseenter', (event, d) => callbacks.onNodeHover(d, event))
-    .on('mouseleave', () => callbacks.onNodeLeave());
+    .on('mouseleave', () => callbacks.onNodeLeave())
+    .on('click', (event, d) => {
+      if (callbacks.onNodeClick) callbacks.onNodeClick(d.id);
+    })
+    .style('cursor', 'pointer');
   nodeMerge.call(makeDrag());
   nodeSel.exit().transition(t).attr('opacity', 0).remove();
 
