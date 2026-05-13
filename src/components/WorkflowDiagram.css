@@ -19,24 +19,106 @@
   cursor: grabbing;
 }
 
-/* --- Reset zoom button --- */
-.workflow-diagram-reset-zoom {
+/* --- Controls panel --- */
+.workflow-diagram-controls {
   position: absolute;
   top: 10px;
   right: 10px;
   z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.workflow-diagram-btn {
   padding: 4px 10px;
   font-size: 12px;
   background: white;
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
-.workflow-diagram-reset-zoom:hover {
+.workflow-diagram-btn:hover {
   opacity: 1;
   border-color: #999;
+  background: #f8f9fa;
+}
+
+.workflow-diagram-btn-active {
+  background: #e7f1ff;
+  border-color: #0056b3;
+  color: #0056b3;
+}
+
+.workflow-diagram-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  padding: 4px 8px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+
+.workflow-diagram-toggle:hover {
+  opacity: 1;
+  border-color: #999;
+}
+
+.workflow-diagram-toggle input {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* --- Legend --- */
+.workflow-diagram-legend {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 10;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  opacity: 0.95;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.workflow-diagram-legend .legend-title {
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 4px;
+}
+
+.workflow-diagram-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  color: #555;
+}
+
+.workflow-diagram-legend .legend-item svg {
+  flex-shrink: 0;
+}
+
+.workflow-diagram-legend .legend-hint {
+  font-size: 10px;
+  color: #888;
+  font-style: italic;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #eee;
 }
 
 /* --- Group bounding boxes --- */

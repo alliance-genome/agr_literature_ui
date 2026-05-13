@@ -4,7 +4,7 @@ import { api } from '../api';
 import { computeLayout, renderDiagram, setupZoom } from './workflowDiagramLayout';
 import './WorkflowDiagram.css';
 
-const WorkflowDiagram = ({ mod }) => {
+const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [tagData, setTagData] = useState(null);
   const [collapsedProcesses, setCollapsedProcesses] = useState(new Set());
   const [expandedSubprocesses, setExpandedSubprocesses] = useState(new Set());
@@ -13,6 +13,10 @@ const WorkflowDiagram = ({ mod }) => {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [singleExpand, setSingleExpand] = useState(true); // Only allow one group expanded at a time
+  const [allProcessIds, setAllProcessIds] = useState(new Set());
+  const [hideInternalStates, setHideInternalStates] = useState(false); // Hide internal/status states
+  const [selectedNodeId, setSelectedNodeId] = useState(null); // Selected node for edge filtering
 
   const containerRef = useRef(null);
   const svgRef = useRef(null);
@@ -28,11 +32,12 @@ const WorkflowDiagram = ({ mod }) => {
         const result = await api.get(`/workflow_tag/workflow_diagram/${mod}`);
         if (!cancelled) {
           setTagData(result.data);
-          const allProcessIds = new Set();
+          const processIds = new Set();
           for (const node of result.data) {
-            if (node.workflow_process) allProcessIds.add(node.workflow_process);
+            if (node.workflow_process) processIds.add(node.workflow_process);
           }
-          setCollapsedProcesses(allProcessIds);
+          setAllProcessIds(processIds);
+          setCollapsedProcesses(new Set(processIds)); // Start all collapsed
           setExpandedSubprocesses(new Set());
         }
       } catch (err) {
@@ -67,13 +72,29 @@ const WorkflowDiagram = ({ mod }) => {
   // ─── Callbacks ───────────────────────────────────────────────────────
   const onGroupClick = useCallback((processId) => {
     setCollapsedProcesses(prev => {
-      const next = new Set(prev);
-      if (next.has(processId)) next.delete(processId);
-      else next.add(processId);
-      return next;
+      const isCurrentlyCollapsed = prev.has(processId);
+      if (isCurrentlyCollapsed) {
+        // Expanding this group
+        if (singleExpand) {
+          // Collapse all others, expand only this one
+          const next = new Set(allProcessIds);
+          next.delete(processId);
+          return next;
+        } else {
+          const next = new Set(prev);
+          next.delete(processId);
+          return next;
+        }
+      } else {
+        // Collapsing this group
+        const next = new Set(prev);
+        next.add(processId);
+        return next;
+      }
     });
+    setExpandedSubprocesses(new Set()); // Collapse all subprocesses when changing groups
     setHoveredElement(null);
-  }, []);
+  }, [singleExpand, allProcessIds]);
 
   const onSubprocessClick = useCallback((subprocessId) => {
     setExpandedSubprocesses(prev => {
@@ -103,21 +124,27 @@ const WorkflowDiagram = ({ mod }) => {
 
   const onHoverLeave = useCallback(() => setHoveredElement(null), []);
 
+  // Click on a normal node to select it (show only its edges)
+  const onNodeClick = useCallback((nodeId) => {
+    setSelectedNodeId(prev => prev === nodeId ? null : nodeId); // Toggle selection
+  }, []);
+
   const callbacks = useMemo(() => ({
     onNodeHover, onNodeLeave: onHoverLeave,
     onEdgeHover, onEdgeLeave: onHoverLeave,
-    onGroupClick, onSubprocessClick,
-  }), [onNodeHover, onHoverLeave, onEdgeHover, onGroupClick, onSubprocessClick]);
+    onGroupClick, onSubprocessClick, onNodeClick,
+  }), [onNodeHover, onHoverLeave, onEdgeHover, onGroupClick, onSubprocessClick, onNodeClick]);
 
   // ─── Layout & render ─────────────────────────────────────────────────
   useEffect(() => {
     if (!tagData || !svgRef.current) return;
     const layout = computeLayout(
       tagData, collapsedProcesses, expandedSubprocesses,
-      dimensions.width, dimensions.height
+      dimensions.width, dimensions.height,
+      { hideInternalStates, selectedNodeId, currentStateId }
     );
     renderDiagram(svgRef.current, layout, callbacks);
-  }, [tagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks]);
+  }, [tagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, hideInternalStates, selectedNodeId, currentStateId]);
 
   // ─── Tooltip builders ────────────────────────────────────────────────
   const renderNodeTooltip = () => {
@@ -238,6 +265,17 @@ const WorkflowDiagram = ({ mod }) => {
     );
   };
 
+  const handleCollapseAll = useCallback(() => {
+    setCollapsedProcesses(new Set(allProcessIds));
+    setExpandedSubprocesses(new Set());
+    setSelectedNodeId(null);
+    setHoveredElement(null);
+  }, [allProcessIds]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedNodeId(null);
+  }, []);
+
   // ─── Render ──────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -254,12 +292,79 @@ const WorkflowDiagram = ({ mod }) => {
   return (
     <div className="workflow-diagram-container" ref={containerRef}>
       <svg ref={svgRef} />
-      <button
-        className="workflow-diagram-reset-zoom"
-        onClick={() => resetZoomRef.current && resetZoomRef.current()}
-      >
-        Reset Zoom
-      </button>
+      {/* Controls panel */}
+      <div className="workflow-diagram-controls">
+        <button
+          className="workflow-diagram-btn"
+          onClick={() => resetZoomRef.current && resetZoomRef.current()}
+        >
+          Reset Zoom
+        </button>
+        <button
+          className="workflow-diagram-btn"
+          onClick={handleCollapseAll}
+        >
+          Collapse All
+        </button>
+        {selectedNodeId && (
+          <button
+            className="workflow-diagram-btn workflow-diagram-btn-active"
+            onClick={handleClearSelection}
+          >
+            Show All Edges
+          </button>
+        )}
+        <label className="workflow-diagram-toggle">
+          <input
+            type="checkbox"
+            checked={singleExpand}
+            onChange={(e) => setSingleExpand(e.target.checked)}
+          />
+          <span>Single expand</span>
+        </label>
+        <label className="workflow-diagram-toggle">
+          <input
+            type="checkbox"
+            checked={hideInternalStates}
+            onChange={(e) => setHideInternalStates(e.target.checked)}
+          />
+          <span>Hide status states</span>
+        </label>
+      </div>
+      {/* Legend */}
+      <div className="workflow-diagram-legend">
+        <div className="legend-title">Edges</div>
+        <div className="legend-item">
+          <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#5a9bd5" strokeWidth="2" /><polygon points="24,3 30,6 24,9" fill="#5a9bd5" /></svg>
+          <span>Internal transition</span>
+        </div>
+        <div className="legend-item">
+          <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#d4a03c" strokeWidth="2" strokeDasharray="4 2" /><polygon points="24,3 30,6 24,9" fill="#d4a03c" /></svg>
+          <span>Cross-workflow</span>
+        </div>
+        <div className="legend-item">
+          <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#9b6fbd" strokeWidth="2.5" /><polygon points="24,3 30,6 24,9" fill="#9b6fbd" /></svg>
+          <span>Bidirectional</span>
+        </div>
+        <div className="legend-title" style={{ marginTop: 8 }}>States</div>
+        <div className="legend-item">
+          <svg width="20" height="14"><rect x="1" y="1" width="18" height="12" rx="3" fill="#e8f5e8" stroke="#4a9d4a" strokeWidth="1.5" /></svg>
+          <span>Initial (needed)</span>
+        </div>
+        <div className="legend-item">
+          <svg width="20" height="14"><rect x="1" y="1" width="18" height="12" rx="3" fill="#fce8e8" stroke="#c95b5b" strokeWidth="1.5" /></svg>
+          <span>Final (complete)</span>
+        </div>
+        {currentStateId && (
+          <div className="legend-item">
+            <svg width="20" height="14"><rect x="1" y="1" width="18" height="12" rx="3" fill="#fff3cd" stroke="#ffc107" strokeWidth="2" /></svg>
+            <span>Current state</span>
+          </div>
+        )}
+        <div className="legend-item legend-hint">
+          <span>Click a state to filter edges</span>
+        </div>
+      </div>
       {hoveredElement && (
         <div className="wf-tooltip" style={{ left: hoverPos.x, top: hoverPos.y }}>
           {hoveredElement.type === 'node' ? renderNodeTooltip() : renderEdgeTooltip()}
