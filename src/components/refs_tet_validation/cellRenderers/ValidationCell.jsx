@@ -120,7 +120,7 @@ export default function ValidationCell(params) {
       );
     } else if (positives > 0 || negatives > 0) {
       const isPositive = positives > 0;
-      label = isPositive ? 'validated positive' : 'validated negative';
+      label = isPositive ? 'positive' : 'negative';
       cls = isPositive
         ? 'tetv-validation-status tetv-validated-pos'
         : 'tetv-validation-status tetv-validated-neg';

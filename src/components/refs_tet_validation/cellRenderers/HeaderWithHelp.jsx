@@ -12,6 +12,7 @@ import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons';
  */
 export default function HeaderWithHelp(params) {
   const {
+    api,
     displayName,
     column,
     enableSorting,
@@ -21,13 +22,30 @@ export default function HeaderWithHelp(params) {
   } = params;
   const help = column?.getColDef?.()?.headerTooltip;
   const menuButtonRef = useRef(null);
+  const filterButtonRef = useRef(null);
   const [sortDir, setSortDir] = useState(column?.getSort?.() || null);
+  const [filterActive, setFilterActive] = useState(
+    column?.isFilterActive?.() || false
+  );
+  // Only render the filter icon when the column opts in via
+  // headerComponentParams.showFilterIcon — keeps the other column headers
+  // clean (the IDs column is currently the only one that exposes a popup
+  // filter directly from the header).
+  const filterAllowed =
+    Boolean(params?.showFilterIcon) &&
+    (column?.isFilterAllowed?.() ?? Boolean(column?.getColDef?.()?.filter));
 
   useEffect(() => {
     if (!column) return undefined;
     const onSortChanged = () => setSortDir(column.getSort?.() || null);
+    const onFilterChanged = () =>
+      setFilterActive(column.isFilterActive?.() || false);
     column.addEventListener?.('sortChanged', onSortChanged);
-    return () => column.removeEventListener?.('sortChanged', onSortChanged);
+    column.addEventListener?.('filterChanged', onFilterChanged);
+    return () => {
+      column.removeEventListener?.('sortChanged', onSortChanged);
+      column.removeEventListener?.('filterChanged', onFilterChanged);
+    };
   }, [column]);
 
   const onLabelClick = (e) => {
@@ -38,6 +56,19 @@ export default function HeaderWithHelp(params) {
   const onMenuClick = (e) => {
     e.stopPropagation();
     showColumnMenu?.(menuButtonRef.current);
+  };
+
+  const onFilterClick = (e) => {
+    e.stopPropagation();
+    // v32 community exposes showColumnFilter(colKey) on the grid api; fall
+    // back to opening the column menu (where the filter tab lives) if not
+    // available so we never silently no-op.
+    const colKey = column?.getColId?.();
+    if (api?.showColumnFilter && colKey) {
+      api.showColumnFilter(colKey);
+    } else if (showColumnMenu) {
+      showColumnMenu(filterButtonRef.current);
+    }
   };
 
   return (
@@ -64,6 +95,20 @@ export default function HeaderWithHelp(params) {
           onClick={(e) => e.stopPropagation()}
         >
           <FontAwesomeIcon icon={faCircleQuestion} />
+        </span>
+      )}
+      {filterAllowed && (
+        <span
+          ref={filterButtonRef}
+          className={`ag-header-icon tetv-header-filter${
+            filterActive ? ' tetv-header-filter-active' : ''
+          }`}
+          onClick={onFilterClick}
+          role="button"
+          aria-label={filterActive ? 'Filter (active)' : 'Filter'}
+          title={filterActive ? 'Filter (active)' : 'Filter'}
+        >
+          <span className="ag-icon ag-icon-filter" aria-hidden="true" />
         </span>
       )}
       {enableMenu && (

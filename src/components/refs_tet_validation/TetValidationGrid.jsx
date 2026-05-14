@@ -47,7 +47,7 @@ import './TetValidationGrid.css';
 
 const INNER_COLUMN_FILTER_LABELS = {
   [INNER_COLUMN_TYPES.VALIDATION]: 'Validation status',
-  [INNER_COLUMN_TYPES.TAG]: 'Tag',
+  [INNER_COLUMN_TYPES.TAG]: 'Data',
   [INNER_COLUMN_TYPES.SOURCES]: 'Sources',
   [INNER_COLUMN_TYPES.CONF_SCORE]: 'Confidence score',
   [INNER_COLUMN_TYPES.CONF_LEVEL]: 'Confidence level',
@@ -299,7 +299,25 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   // Mirrors the IdPrefixFilter's column model so IdsCell can hide the
   // corresponding curie/xref lines inside each cell as well as filtering rows.
   const [selectedIdPrefixes, setSelectedIdPrefixes] = useState(null);
+  // True while the autosize/fill-extra passes are running. Used to render a
+  // light overlay so the curator knows the layout is still adjusting and
+  // mid-resize column widths aren't a bug.
+  const [isResizing, setIsResizing] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const userTouchedHiddenRef = useRef(false);
+  const idsFilterDefaultAppliedRef = useRef(false);
+
+  // Esc closes fullscreen. Listener is attached only while fullscreen is
+  // active so we don't intercept Esc anywhere else in the app.
+  useEffect(() => {
+    if (!isFullscreen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setIsFullscreen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isFullscreen]);
+
 
   // Sticky top horizontal scrollbar that mirrors AgGrid's horizontal scroll.
   // It only spans the scrollable center area — the pinned-left IDs/Title
@@ -311,7 +329,6 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   const [pinnedLeftWidth, setPinnedLeftWidth] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(0);
   const topScrollRef = useRef(null);
-  const isSyncingRef = useRef(false);
   const innerStateSyncRef = useRef(false);
   const prevFilterModelRef = useRef({});
   const prevSortModelRef = useRef([]);
@@ -389,73 +406,224 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   // Pinned IDs/Title columns are intentionally excluded. IDs width is computed
   // from the visible curies/xrefs because AgGrid auto-size can still clip
   // pinned, non-wrapping cell content.
+  //
+  // With ~50 rows AgGrid's autoSizeColumns occasionally returns before all
+  // cells have finished laying out, leaving columns too narrow (and, as a
+  // side-effect, group headers wider than their children get clipped on
+  // horizontal scroll-back). We schedule a two-pass run: first pass settles
+  // most columns; second pass fixes anything the first missed.
+  const autoSizeAndFill = useCallback(() => {
+    if (!gridApi) return;
+    const cols = gridApi.getDisplayedCenterColumns?.() || [];
+    const colIds = cols.map((c) => c.getColId?.()).filter(Boolean);
+    if (colIds.length === 0) return;
+    gridApi.autoSizeColumns?.(colIds, false);
+    requestAnimationFrame(() => {
+      const wrapper = topScrollRef.current?.closest('.tetv-grid-wrapper');
+      const viewport = wrapper?.querySelector('.ag-center-cols-viewport');
+      if (!viewport) return;
+      const visibleW = viewport.clientWidth;
+      const totalW = cols.reduce(
+        (s, c) => s + (c.getActualWidth?.() || 0),
+        0
+      );
+      const extra = visibleW - totalW;
+      if (extra <= 0) return;
+      // Sources columns have colId === topic curie (no `__suffix`).
+      const sourcesCols = cols.filter((c) => {
+        const cid = c.getColId?.() || '';
+        return cid && !cid.includes('__');
+      });
+      if (sourcesCols.length === 0) return;
+      const perCol = Math.floor(extra / sourcesCols.length);
+      const widths = sourcesCols.map((c) => ({
+        key: c.getColId(),
+        newWidth: c.getActualWidth() + perCol,
+      }));
+      gridApi.setColumnWidths?.(widths, true);
+    });
+  }, [gridApi]);
+
   useEffect(() => {
     if (!gridApi || rows.length === 0) return undefined;
-    const id = setTimeout(() => {
-      const cols = gridApi.getDisplayedCenterColumns?.() || [];
-      const colIds = cols.map((c) => c.getColId?.()).filter(Boolean);
-      if (colIds.length === 0) return;
-      gridApi.autoSizeColumns?.(colIds, false);
-      // Wait one frame for the autoSize to apply, then expand to fill.
-      requestAnimationFrame(() => {
-        const wrapper = topScrollRef.current?.closest('.tetv-grid-wrapper');
-        const viewport = wrapper?.querySelector('.ag-center-cols-viewport');
-        if (!viewport) return;
-        const visibleW = viewport.clientWidth;
-        const totalW = cols.reduce(
-          (s, c) => s + (c.getActualWidth?.() || 0),
-          0
-        );
-        const extra = visibleW - totalW;
-        if (extra <= 0) return;
-        // Sources columns have colId === topic curie (no `__suffix`).
-        const sourcesCols = cols.filter((c) => {
-          const cid = c.getColId?.() || '';
-          return cid && !cid.includes('__');
+    let cancelled = false;
+    const handles = { raf1: 0, raf2: 0, t1: 0, t2: 0 };
+    setIsResizing(true);
+    // Scale the wait with row count: with 50+ rows of auto-height cells
+    // AgGrid's layout pass takes longer than the default 150 ms, so the
+    // first autoSize was measuring partially-rendered cells. The cap is
+    // tightened (450 ms) now that onFirstDataRendered also drives an
+    // earlier pass — the timeout below is a safety net, not the main path.
+    const baseWait = Math.min(450, 60 + 5 * rows.length);
+    const schedule = () => {
+      handles.raf1 = requestAnimationFrame(() => {
+        if (cancelled) return;
+        handles.raf2 = requestAnimationFrame(() => {
+          if (cancelled) return;
+          handles.t1 = setTimeout(() => {
+            if (cancelled) return;
+            autoSizeAndFill();
+            // Second pass — after the first autoSize has flushed and any
+            // dependent layout has settled, re-run to catch columns whose
+            // cells finished rendering after the first pass.
+            handles.t2 = setTimeout(() => {
+              if (cancelled) return;
+              autoSizeAndFill();
+              setIsResizing(false);
+            }, 200);
+          }, baseWait);
         });
-        if (sourcesCols.length === 0) return;
-        const perCol = Math.floor(extra / sourcesCols.length);
-        const widths = sourcesCols.map((c) => ({
-          key: c.getColId(),
-          newWidth: c.getActualWidth() + perCol,
-        }));
-        gridApi.setColumnWidths?.(widths, true);
       });
-    }, 150);
-    return () => clearTimeout(id);
+    };
+    schedule();
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(handles.raf1);
+      cancelAnimationFrame(handles.raf2);
+      clearTimeout(handles.t1);
+      clearTimeout(handles.t2);
+    };
   }, [
     gridApi,
     rows,
     displayOptions,
     sourceFilterModel,
     hiddenTopicCuries,
+    // Re-run when the IDs filter selection changes: the pinned __ids column
+    // recomputes its width from `selectedIdPrefixes`, which in turn changes
+    // how much horizontal space is left for the center columns. Without
+    // this dep the Sources fill-extra pass would never recalculate after
+    // the user adds/removes prefixes, leaving topic columns mis-sized.
+    selectedIdPrefixes,
+    autoSizeAndFill,
   ]);
 
-  const onTopScroll = useCallback(() => {
-    if (!topScrollRef.current || isSyncingRef.current) return;
-    isSyncingRef.current = true;
-    const left = topScrollRef.current.scrollLeft;
-    const wrapper = topScrollRef.current.closest('.tetv-grid-wrapper');
-    const centerViewport = wrapper?.querySelector('.ag-center-cols-viewport');
-    if (centerViewport) centerViewport.scrollLeft = left;
-    requestAnimationFrame(() => {
-      isSyncingRef.current = false;
+  // Toggling fullscreen changes the available viewport width, so the
+  // Sources fill-extra pass needs to recompute. Re-run autosize on the
+  // next frame after the layout has switched.
+  useEffect(() => {
+    if (!gridApi) return undefined;
+    setIsResizing(true);
+    const id = requestAnimationFrame(() => {
+      autoSizeAndFill();
+      requestAnimationFrame(() => setIsResizing(false));
     });
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFullscreen]);
+
+  // Snap scrollLeft values within EDGE_SNAP_PX of either edge to the exact
+  // edge. Native scroll containers can settle at fractional pixels (e.g.
+  // 0.4) and AgGrid mirrors that back via getHorizontalPixelRange, leaving
+  // the body a sliver short of the left edge even when the top scrollbar
+  // is visually pinned to 0. Forcing the edge fixes the "stuck a few px
+  // from the left" case.
+  const EDGE_SNAP_PX = 1.5;
+  const ECHO_TOLERANCE_PX = 1.5;
+  const snapToEdge = (value, max) => {
+    if (value <= EDGE_SNAP_PX) return 0;
+    if (max > 0 && value >= max - EDGE_SNAP_PX) return max;
+    return value;
+  };
+
+  // Bidirectional scroll sync without event dropping. The previous
+  // implementation gated each handler on `isSyncingRef` for a RAF cycle to
+  // avoid the top→body→top echo loop, but that dropped any scroll events
+  // that fired during the RAF — and on a fast drag the *last* event (the
+  // one that finally lands at 0) can be the dropped one, leaving the body
+  // stuck a few pixels right of the left edge while the bar shows 0. The
+  // new pattern never drops events: instead we remember the value we just
+  // pushed in each direction and treat a near-match from the other side as
+  // an echo, ignoring just that one event.
+  const lastSentToBodyRef = useRef(null);
+  const lastSentToTopRef = useRef(null);
+  const scrollSettleTimerRef = useRef(null);
+
+  const findCenterViewport = useCallback(() => {
+    const wrapper = topScrollRef.current?.closest('.tetv-grid-wrapper');
+    return wrapper?.querySelector('.ag-center-cols-viewport') || null;
   }, []);
+
+  // Debounced settle pass: after the user stops scrolling for SETTLE_MS,
+  // force both viewports to the same snapped position. On the very first
+  // scroll cycle AgGrid's internal scroll pipeline can race with our
+  // top→body writes — typically the *last* write of a fast drag lands
+  // while AgGrid is mid-layout and gets effectively ignored, leaving the
+  // body a few px right of the snapped edge. Subsequent cycles work
+  // because the pipeline is warm. The settle pass corrects the residue.
+  const SETTLE_MS = 60;
+  const scheduleSettle = useCallback(() => {
+    if (scrollSettleTimerRef.current) {
+      clearTimeout(scrollSettleTimerRef.current);
+    }
+    scrollSettleTimerRef.current = setTimeout(() => {
+      scrollSettleTimerRef.current = null;
+      const el = topScrollRef.current;
+      const centerViewport = findCenterViewport();
+      if (!el || !centerViewport) return;
+      const max = Math.max(0, el.scrollWidth - el.clientWidth);
+      const target = snapToEdge(el.scrollLeft, max);
+      if (el.scrollLeft !== target) el.scrollLeft = target;
+      if (centerViewport.scrollLeft !== target) {
+        lastSentToBodyRef.current = target;
+        centerViewport.scrollLeft = target;
+      }
+    }, SETTLE_MS);
+  }, [findCenterViewport]);
+
+  const onTopScroll = useCallback(() => {
+    const el = topScrollRef.current;
+    if (!el) return;
+    const max = Math.max(0, el.scrollWidth - el.clientWidth);
+    const left = snapToEdge(el.scrollLeft, max);
+    if (
+      lastSentToTopRef.current !== null &&
+      Math.abs(left - lastSentToTopRef.current) <= ECHO_TOLERANCE_PX
+    ) {
+      lastSentToTopRef.current = null;
+      scheduleSettle();
+      return;
+    }
+    if (left !== el.scrollLeft) el.scrollLeft = left;
+    const centerViewport = findCenterViewport();
+    if (centerViewport) {
+      lastSentToBodyRef.current = left;
+      centerViewport.scrollLeft = left;
+    }
+    scheduleSettle();
+  }, [findCenterViewport, scheduleSettle]);
 
   const onBodyScroll = useCallback(
     (e) => {
-      if (isSyncingRef.current) return;
       if (e?.direction !== 'horizontal') return;
-      if (!topScrollRef.current || !gridApi) return;
-      isSyncingRef.current = true;
+      const el = topScrollRef.current;
+      if (!el || !gridApi) return;
       const range = gridApi.getHorizontalPixelRange?.();
-      if (range) topScrollRef.current.scrollLeft = range.left;
-      requestAnimationFrame(() => {
-        isSyncingRef.current = false;
-      });
+      if (!range) return;
+      const max = Math.max(0, el.scrollWidth - el.clientWidth);
+      const left = snapToEdge(range.left, max);
+      if (
+        lastSentToBodyRef.current !== null &&
+        Math.abs(left - lastSentToBodyRef.current) <= ECHO_TOLERANCE_PX
+      ) {
+        lastSentToBodyRef.current = null;
+        scheduleSettle();
+        return;
+      }
+      lastSentToTopRef.current = left;
+      el.scrollLeft = left;
+      scheduleSettle();
     },
-    [gridApi]
+    [gridApi, scheduleSettle]
+  );
+
+  useEffect(
+    () => () => {
+      if (scrollSettleTimerRef.current) {
+        clearTimeout(scrollSettleTimerRef.current);
+      }
+    },
+    []
   );
 
   // When a topics prop is provided, default-hide everything that isn't in it,
@@ -604,6 +772,20 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
       true
     );
   }, [gridApi, idsColumnWidth]);
+
+  // Default the ID-prefix filter to AGRKB-only on first load — applied once
+  // per mount and only when AGRKB is actually present in the loaded data.
+  useEffect(() => {
+    if (!gridApi || idsFilterDefaultAppliedRef.current) return;
+    if (!allIdPrefixes.includes('AGRKB')) return;
+    const currentModel = gridApi.getFilterModel?.() || {};
+    if (currentModel.__ids !== undefined) {
+      idsFilterDefaultAppliedRef.current = true;
+      return;
+    }
+    gridApi.setFilterModel({ ...currentModel, __ids: ['AGRKB'] });
+    idsFilterDefaultAppliedRef.current = true;
+  }, [gridApi, allIdPrefixes]);
 
   const syncSingleInnerColumnState = useCallback(
     (preferredInnerColId, apiOverride = null) => {
@@ -788,6 +970,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     const idsCol = {
       headerName: 'IDs',
       headerComponent: HeaderWithHelp,
+      headerComponentParams: { showFilterIcon: true },
       headerTooltip:
         'Reference identifiers — the canonical AGRKB curie plus every cross-reference (PMID, MOD curies, DOI, …) and the publication year. Click the filter icon in the header to filter by prefix.',
       field: '__ids',
@@ -805,13 +988,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         const xrefs = (r.cross_references || []).map((x) => x.curie).join(' ');
         return `${p.data?.curie || ''} ${xrefs} ${r.date_published || ''}`;
       },
-      sortable: true,
-      sort: 'desc',
-      comparator: (_a, _b, na, nb) => {
-        const da = na.data?.biblio?.date_published || '';
-        const db = nb.data?.biblio?.date_published || '';
-        return da.localeCompare(db);
-      },
+      sortable: false,
     };
 
     const titleCol = {
@@ -922,9 +1099,9 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             },
           }),
           makeInnerColumn({
-            headerName: 'Tag',
+            headerName: 'Data',
             headerTooltip:
-              'Per-source TET tag pills for this topic. Y (green) = topic-level positive tag; N (red) = topic-level negated tag; "{N}E" (violet) = an entity-level extraction with N entities (click the badge to see the full list of entities). Each row aligns with the matching source label in the Sources column to its left.',
+              'Per-source TET data pills for this topic. Y (green) = topic-level positive tag; N (red) = topic-level negated tag; "{N}E" (violet) = an entity-level extraction with N entities (click the badge to see the full list of entities). Each row aligns with the matching source label in the Sources column to its left.',
             colId: `${t.curie}__tag`,
             kind: INNER_COLUMN_TYPES.TAG,
             width: 58,
@@ -984,6 +1161,12 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             'Sub-columns show the validation status, per-source TET data, a compact tag summary, and (optionally) confidence and notes for this topic on each reference.',
           groupId: `tg-${t.curie}`,
           marryChildren: true,
+          // Allow long topic names to wrap inside the group header instead of
+          // being clipped — when autoSize shrinks the children below the
+          // header text width, the title would otherwise disappear on
+          // horizontal scroll-back.
+          wrapHeaderText: true,
+          autoHeaderHeight: true,
           headerClass: 'tetv-topic-group-header',
           children,
         };
@@ -1005,9 +1188,23 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
 
   return (
     <div
-      className="ag-theme-quartz tetv-grid-wrapper"
+      className={`ag-theme-quartz tetv-grid-wrapper${
+        isFullscreen ? ' tetv-fullscreen' : ''
+      }`}
       style={{ width: '100%' }}
     >
+      <button
+        type="button"
+        className="tetv-fullscreen-toggle"
+        onClick={() => setIsFullscreen((v) => !v)}
+        title={
+          isFullscreen
+            ? 'Exit fullscreen (Esc)'
+            : 'Expand grid to fullscreen'
+        }
+      >
+        {isFullscreen ? '⤡ Exit fullscreen' : '⤢ Fullscreen'}
+      </button>
       {unresolved.length > 0 && (
         <div className="tetv-banner-unresolved">
           Could not resolve {unresolved.length} ID(s):{' '}
@@ -1026,10 +1223,10 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
       />
       {loading ? (
         <div style={{ padding: 16 }}>
-          <Spinner animation="border" size="sm" /> Loading…
+          <Spinner animation="border" size="sm" /> Loading TET data
         </div>
       ) : (
-        <>
+        <div className="tetv-grid-stack">
           <div
             className="tetv-top-scroll"
             ref={topScrollRef}
@@ -1041,6 +1238,16 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
               style={{ width: scrollContentWidth }}
             />
           </div>
+          {isResizing && (
+            <div
+              className="tetv-resize-overlay"
+              role="status"
+              aria-live="polite"
+            >
+              <Spinner animation="border" size="sm" />
+              <span>Adjusting columns…</span>
+            </div>
+          )}
           <AgGridReact
             rowData={rowData}
             columnDefs={columnDefs}
@@ -1053,6 +1260,19 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             ensureDomOrder
             enableBrowserTooltips
             onGridReady={onGridReady}
+            onFirstDataRendered={() => {
+              // AgGrid signals first paint complete — run autosize on the
+              // next frame so we measure cells that are now in the DOM.
+              // With ~50 rows this is the only reliable signal that all
+              // cells have laid out; the row-count-scaled fallback in the
+              // useEffect above still runs as a safety net. We keep the
+              // resizing overlay on until autosize has flushed.
+              setIsResizing(true);
+              requestAnimationFrame(() => {
+                autoSizeAndFill();
+                requestAnimationFrame(() => setIsResizing(false));
+              });
+            }}
             onBodyScroll={onBodyScroll}
             onFilterChanged={handleFilterChanged}
             onSortChanged={handleSortChanged}
@@ -1073,7 +1293,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
               return '';
             }}
           />
-        </>
+        </div>
       )}
     </div>
   );

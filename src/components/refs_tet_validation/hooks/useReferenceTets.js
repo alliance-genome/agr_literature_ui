@@ -78,6 +78,20 @@ export function useReferenceTets(referenceIds) {
   const reqIdRef = useRef(0);
 
   const loadRow = useCallback(async (input) => {
+    // AGRKB inputs are already canonical, so /reference/{id} and
+    // /topic_entity_tag/by_reference/{id} can be fired in parallel — that
+    // halves the per-row round-trip count for the common search-driven case
+    // where the grid is loaded with AGRKB curies. Non-AGRKB inputs still
+    // need the resolve step first because the TETs endpoint keys off the
+    // canonical AGRKB curie returned by /reference/by_cross_reference.
+    if (input.startsWith('AGRKB:')) {
+      const [ref, tets] = await Promise.all([
+        resolveOne(input),
+        fetchTets(input),
+      ]);
+      if (!ref?.curie) return { input, ref: null };
+      return { input, ref, tets };
+    }
     const ref = await resolveOne(input);
     if (!ref?.curie) return { input, ref: null };
     const tets = await fetchTets(ref.curie);

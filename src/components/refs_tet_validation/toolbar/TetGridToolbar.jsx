@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Form } from 'react-bootstrap';
-import Select from 'react-select';
+import Select, { components as selectComponents } from 'react-select';
 
 const compactSelectStyles = {
   control: (base, state) => ({
@@ -29,12 +29,17 @@ const compactSelectStyles = {
 /**
  * Multi-select that collapses to a "X of Y selected" summary when the menu is
  * closed and only renders chips while the menu is open. Keeps the toolbar
- * compact when many items are selected.
+ * compact when many items are selected. When `onSelectAll`/`onUnselectAll`
+ * are provided, a small action bar with "Select all" / "Unselect all" is
+ * rendered at the top of the dropdown menu — the buttons live inside the
+ * popup so the toolbar itself stays clean.
  */
 function CollapsibleMultiSelect({
   options,
   value,
   onChange,
+  onSelectAll,
+  onUnselectAll,
   placeholderOpen = 'Type to filter…',
   placeholderClosedFormatter = (selected, total) =>
     `${selected} of ${total} selected`,
@@ -42,6 +47,48 @@ function CollapsibleMultiSelect({
   const [open, setOpen] = useState(false);
   const total = options.length;
   const selected = value.length;
+
+  const MenuList = useMemo(() => {
+    if (!onSelectAll && !onUnselectAll) return undefined;
+    const Wrapped = (props) => (
+      <selectComponents.MenuList {...props}>
+        <div
+          className="tetv-multiselect-actions"
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {onSelectAll && (
+            <button
+              type="button"
+              className="tetv-multiselect-action"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelectAll();
+              }}
+            >
+              Select all
+            </button>
+          )}
+          {onUnselectAll && (
+            <button
+              type="button"
+              className="tetv-multiselect-action"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onUnselectAll();
+              }}
+            >
+              Unselect all
+            </button>
+          )}
+        </div>
+        {props.children}
+      </selectComponents.MenuList>
+    );
+    return Wrapped;
+  }, [onSelectAll, onUnselectAll]);
+
   return (
     <Select
       isMulti
@@ -60,6 +107,7 @@ function CollapsibleMultiSelect({
       styles={compactSelectStyles}
       menuPortalTarget={document.body}
       menuPosition="fixed"
+      components={MenuList ? { MenuList } : undefined}
     />
   );
 }
@@ -150,27 +198,13 @@ export default function TetGridToolbar({
 
       <span className="tetv-toolbar-group tetv-toolbar-select">
         <span className="tetv-toolbar-label">Topics:</span>
-        <button
-          type="button"
-          className="tetv-quick-link"
-          onClick={() => handleTopicChange(topicOptions)}
-          title="Select all topics"
-        >
-          All
-        </button>
-        <button
-          type="button"
-          className="tetv-quick-link"
-          onClick={() => handleTopicChange([])}
-          title="Deselect all topics"
-        >
-          None
-        </button>
         <div className="tetv-select-shell">
           <CollapsibleMultiSelect
             options={topicOptions}
             value={topicSelectedValues}
             onChange={handleTopicChange}
+            onSelectAll={() => handleTopicChange(topicOptions)}
+            onUnselectAll={() => handleTopicChange([])}
             placeholderClosedFormatter={(s, t) =>
               `${s} of ${t} topics shown`
             }
@@ -180,27 +214,13 @@ export default function TetGridToolbar({
 
       <span className="tetv-toolbar-group tetv-toolbar-select">
         <span className="tetv-toolbar-label">Sources:</span>
-        <button
-          type="button"
-          className="tetv-quick-link"
-          onClick={() => handleSourceChange(sourceOptions)}
-          title="Select all sources"
-        >
-          All
-        </button>
-        <button
-          type="button"
-          className="tetv-quick-link"
-          onClick={() => handleSourceChange([])}
-          title="Deselect all sources"
-        >
-          None
-        </button>
         <div className="tetv-select-shell">
           <CollapsibleMultiSelect
             options={sourceOptions}
             value={sourceSelectedValues}
             onChange={handleSourceChange}
+            onSelectAll={() => handleSourceChange(sourceOptions)}
+            onUnselectAll={() => handleSourceChange([])}
             placeholderClosedFormatter={(s, t) =>
               `${s} of ${t} sources shown`
             }

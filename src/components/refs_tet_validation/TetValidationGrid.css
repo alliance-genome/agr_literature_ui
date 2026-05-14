@@ -608,12 +608,15 @@
 }
 
 /* Header label + ? help icon. Renders inside both regular column headers and
-   column-group headers via HeaderWithHelp / HeaderGroupWithHelp. */
+   column-group headers via HeaderWithHelp / HeaderGroupWithHelp. Uses a full
+   width flex container so trailing icons (e.g. the filter funnel) can be
+   pushed to the right edge via margin-left: auto. */
 .tetv-header-with-help {
   align-items: center;
-  display: inline-flex;
+  display: flex;
   gap: 6px;
   min-width: 0;
+  width: 100%;
 }
 .tetv-header-with-help .tetv-header-label {
   white-space: normal;
@@ -631,6 +634,141 @@
 }
 .tetv-header-help:hover {
   color: var(--tetv-accent-dark);
+}
+/* Filter funnel icon rendered in HeaderWithHelp when the column opts in via
+   headerComponentParams.showFilterIcon. Uses AgGrid's built-in
+   .ag-icon-filter glyph to match the rest of the app. Pushed to the right
+   edge of the header cell so it doesn't crowd the label / help icon. */
+.tetv-header-filter {
+  align-items: center;
+  color: #7a8aa0;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.95em;
+  line-height: 1;
+  margin-left: auto;
+  padding: 0 2px;
+}
+.tetv-header-filter:hover {
+  color: var(--tetv-accent-dark);
+}
+.tetv-header-filter-active {
+  color: var(--tetv-accent-dark);
+}
+.tetv-header-filter-active::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tetv-accent-dark);
+  margin-left: 2px;
+}
+
+/* Action bar rendered at the top of the react-select dropdown menu (Topics
+   and Sources multi-selects). Keeps the bulk select/unselect actions inside
+   the popup so the toolbar itself stays uncluttered. */
+.tetv-multiselect-actions {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e1e8ef;
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.tetv-multiselect-action {
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  border-radius: 999px;
+  color: var(--tetv-accent-dark);
+  cursor: pointer;
+  flex: 1 1 0;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 5px 8px;
+}
+.tetv-multiselect-action:hover {
+  background: #e8f3f6;
+  border-color: #a9ccd6;
+}
+
+/* Wrapper that hosts the top scrollbar + AgGrid; gives the resize overlay an
+   absolute-positioning anchor without taking over the whole page-level
+   layout. */
+.tetv-grid-stack {
+  position: relative;
+}
+
+/* Floating "adjusting columns" toast shown while autoSize is in flight.
+   Anchored to the top-center of the grid stack so it visually sits on top
+   of the topic grid itself, not in the page corner. The stack uses
+   position: relative which provides the containing block. */
+.tetv-resize-overlay {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--tetv-line);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(31, 41, 55, 0.18);
+  color: var(--tetv-accent-dark);
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Fullscreen toggle pill in the top-right of the grid wrapper. Sits above
+   the sticky header (z-index 4) and the resize overlay (z-index 50). */
+.tetv-fullscreen-toggle {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  border-radius: 999px;
+  color: var(--tetv-accent-dark);
+  cursor: pointer;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 6px 12px;
+  box-shadow: 0 2px 6px rgba(31, 41, 55, 0.08);
+}
+.tetv-fullscreen-toggle:hover {
+  background: #e8f3f6;
+  border-color: #a9ccd6;
+}
+
+/* Fullscreen mode: the wrapper covers the viewport and gains its own
+   internal vertical scroller (the normal layout uses the page as the
+   scroller, but in fullscreen there is no page below us). */
+.tetv-grid-wrapper.tetv-fullscreen {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  overflow: auto;
+  z-index: 2000;
+  background: #fff;
+}
+.tetv-grid-wrapper.tetv-fullscreen .tetv-fullscreen-toggle {
+  position: fixed;
 }
 
 /* Optional curation-status section in the validation confirmation modal. */
