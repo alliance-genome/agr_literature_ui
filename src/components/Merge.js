@@ -760,25 +760,25 @@ const MergeSubmitDataTransferUpdateButton = () => {
     if ('authors' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['authors'] !== null) {
       const orderedAuthors = [];
       for (const value of referenceMeta1['referenceJson']['authors'].values()) {
-        let index = value['order'] - 1;
-        if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'order' field value of 0
+        let index = value['author_order'] - 1;
+        if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'author_order' field value of 0
         orderedAuthors[index] = value; }
       for (const [index, authDict] of orderedAuthors.entries()) {
-        // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' order ' + authDict['order']);
+        // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' author_order ' + authDict['author_order']);
         let swap = false;
         if (authDict['toggle']) { swap = !swap; }
         if (pmidKeepReference === 2) { swap = !swap; }
         if (swap) {
-          // console.log('remove ' + authDict['author_id'] + ' ' + authDict['order']);
+          // console.log('remove ' + authDict['author_id'] + ' ' + authDict['author_order']);
           let subPath = 'author/' + authDict['author_id'];
           let array = [ subPath, null, 'DELETE', 0, null, null];
-          forApiArray.push( array ); } 
-        else { 
+          forApiArray.push( array ); }
+        else {
           authorOrder++;
           // console.log('no swap raise authorOrder to ' + authorOrder);
           if (authorOrder-1 !== index) {
             // console.log('reorder ' + authDict['author_id'] + ' to authorOrder ' + authorOrder);
-            const updateJsonAuth1 = { 'order': authorOrder }
+            const updateJsonAuth1 = { 'author_order': authorOrder }
             let subPath = 'author/' + authDict['author_id'];
             let array = [ subPath, updateJsonAuth1, 'PATCH', 0, null, null];
             forApiArray.push( array );
@@ -786,20 +786,20 @@ const MergeSubmitDataTransferUpdateButton = () => {
     if ('authors' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['authors'] !== null) {
       const orderedAuthors = [];
       for (const value of referenceMeta2['referenceJson']['authors'].values()) {
-        let index = value['order'] - 1;
-        if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'order' field value of 0
+        let index = value['author_order'] - 1;
+        if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'author_order' field value of 0
         orderedAuthors[index] = value; }
       for (const authDict of orderedAuthors.values()) {
       // for (const [index, authDict] of orderedAuthors.entries())
-        // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' order ' + authDict['order']);
+        // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' author_order ' + authDict['author_order']);
         let swap = false;
         if (authDict['toggle']) { swap = !swap; }
         if (pmidKeepReference === 2) { swap = !swap; }
         if (swap) {
           authorOrder++;
-          // console.log('transfer ' + authDict['author_id'] + ' ' + authDict['order'] + ' to ' + authorOrder);
+          // console.log('transfer ' + authDict['author_id'] + ' ' + authDict['author_order'] + ' to ' + authorOrder);
           const referenceCurie = referenceMeta1.curie;
-          const updateJsonAuth2 = { 'reference_curie': referenceCurie, 'order': authorOrder }
+          const updateJsonAuth2 = { 'reference_curie': referenceCurie, 'author_order': authorOrder }
           let subPath = 'author/' + authDict['author_id'];
           let array = [ subPath, updateJsonAuth2, 'PATCH', 0, null, null];
           forApiArray.push( array ); } 
@@ -1383,7 +1383,7 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
     maxLength = referenceMeta1['referenceJson'][fieldName].length; }
   if (referenceMeta2['referenceJson'][fieldName] !== null && referenceMeta2['referenceJson'][fieldName].length > maxLength) {
     maxLength = referenceMeta2['referenceJson'][fieldName].length; }
-  const autFields = ['first_name', 'last_name', 'name', 'order', 'corresponding_author', 'first_author', 'toggle'];
+  const autFields = ['first_name', 'last_name', 'name', 'author_order', 'corresponding_author', 'first_author', 'toggle'];
   let maxOrder = 0;
   const isLocked = GenerateIsLocked(fieldName, hasPmid);
   const element0 = GenerateFieldLabel(fieldName, isLocked);
@@ -1408,15 +1408,15 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
         aut1Data['name'] = aut1Data['first_name'] + ' ' + aut1Data['last_name'] }
       else if ( aut1Data['first_name'] !== '') { aut1Data['name'] = aut1Data['first_name'] }
       else if ( aut1Data['last_name'] !== '') { aut1Data['name'] = aut1Data['last_name'] }
-      string1 = aut1Data['order'] + ' - ' + aut1Data['name'];
-      if (aut1Data['order'] > maxOrder) { maxOrder = aut1Data['order']; }
+      string1 = aut1Data['author_order'] + ' - ' + aut1Data['name'];
+      if (aut1Data['author_order'] > maxOrder) { maxOrder = aut1Data['author_order']; }
       if ( aut1Data['orcid'] !== '') { string1 += ' - ' + aut1Data['orcid']; }
 //       if ( aut1Data['corresponding_author'] !== true) { string1 += " <Badge>corresponding</Badge>"; }
       element1 = (<div className={`div-merge ${keepClass1}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 1, i, null))} >{string1}
         { (aut1Data['first_author'] === true) && <> <Badge variant="secondary">first</Badge></> }
         { (aut1Data['corresponding_author'] === true) && <> <Badge variant="secondary">corresponding</Badge></> }
         </div>);
-      author1Elements[aut1Data['order'] - 1] = element1; }
+      author1Elements[aut1Data['author_order'] - 1] = element1; }
     if (referenceMeta2['referenceJson'][fieldName] !== null &&
         referenceMeta2['referenceJson'][fieldName][i] !== null && referenceMeta2['referenceJson'][fieldName][i] !== undefined) {
       let aut2 = referenceMeta2['referenceJson'][fieldName][i];
@@ -1430,14 +1430,14 @@ const RowDisplayPairAuthors = ({fieldName, referenceMeta1, referenceMeta2, refer
         aut2Data['name'] = aut2Data['first_name'] + ' ' + aut2Data['last_name'] }
       else if ( aut2Data['first_name'] !== '') { aut2Data['name'] = aut2Data['first_name'] }
       else if ( aut2Data['last_name'] !== '') { aut2Data['name'] = aut2Data['last_name'] }
-      string2 = aut2Data['order'] + ' - ' + aut2Data['name'];
-      if (aut2Data['order'] > maxOrder) { maxOrder = aut2Data['order']; }
+      string2 = aut2Data['author_order'] + ' - ' + aut2Data['name'];
+      if (aut2Data['author_order'] > maxOrder) { maxOrder = aut2Data['author_order']; }
       if ( aut2Data['orcid'] !== '') { string2 += ' - ' + aut2Data['orcid']; }
       element2 = (<div className={`div-merge ${keepClass2}`} onClick={() => dispatch(mergeToggleIndependent(fieldName, 2, i, null))} >{string2}
         { (aut2Data['first_author'] === true) && <> <Badge variant="secondary">first</Badge></> }
         { (aut2Data['corresponding_author'] === true) && <> <Badge variant="secondary">corresponding</Badge></> }
         </div>);
-      author2Elements[aut2Data['order'] - 1] = element2; }
+      author2Elements[aut2Data['author_order'] - 1] = element2; }
   }
   for (let i = 0; i < maxOrder; i++) {
     const element1 = (author1Elements[i] !== undefined) ? author1Elements[i] : '';

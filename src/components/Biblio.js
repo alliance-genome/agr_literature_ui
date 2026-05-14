@@ -410,6 +410,7 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
   const rowReferencefileSupplementElements = []
   let hasAddedFigure = false;  // Track if the first figure has been added
   let hasAccessToTarball = false;
+  const canDisplayImages = referenceJsonLive["effective_image_permission"]?.["can_display_images"] === true;
   referenceFiles.sort(reffileCompareFn);
   for (const[index, referencefileDict] of referenceFiles.entries()) {
     let is_ok = false;
@@ -439,7 +440,11 @@ export const RowDisplayReferencefiles = ({displayOrEditor}) => {
       >
         <div>{filename}</div>
       </OverlayTrigger>);
-    } else if (referenceJsonLive["copyright_license_open_access"] === true || accessLevel === 'developer') {
+    } else if (
+      referenceJsonLive["copyright_license_open_access"] === true ||
+      (referencefileDict['file_class'] === 'figure' && canDisplayImages) ||
+      accessLevel === 'developer'
+    ) {
       is_ok = true;
     }
     if (is_ok) {

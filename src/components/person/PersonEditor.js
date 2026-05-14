@@ -121,7 +121,7 @@ const PersonEditor = ({ person }) => {
             <Form.Control placeholder="First" defaultValue={n.first_name ?? ''} />
             <Form.Control placeholder="Middle" defaultValue={n.middle_name ?? ''} />
             <Form.Control placeholder="Last" defaultValue={n.last_name ?? ''} />
-            <Form.Check type="checkbox" label="primary" defaultChecked={!!n.primary} style={{ whiteSpace: 'nowrap' }} />
+            <Form.Check type="checkbox" label="primary" defaultChecked={!!n.is_primary} style={{ whiteSpace: 'nowrap' }} />
             {trashBtn}
           </div>
         )}
@@ -134,7 +134,7 @@ const PersonEditor = ({ person }) => {
         renderRow={(e) => (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Form.Control type="email" defaultValue={e.email_address ?? ''} />
-            <Form.Check type="checkbox" label="primary" defaultChecked={!!e.primary} style={{ whiteSpace: 'nowrap' }} />
+            <Form.Check type="checkbox" label="primary" defaultChecked={!!e.is_primary} style={{ whiteSpace: 'nowrap' }} />
             {trashBtn}
           </div>
         )}

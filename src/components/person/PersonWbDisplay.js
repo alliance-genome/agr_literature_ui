@@ -120,7 +120,7 @@ const PersonWbDisplay = ({ person }) => {
           names.map((n, i) => (
             <FieldRow
               key={n.person_name_id ?? i}
-              label={n.primary ? 'name (primary)' : 'name'}
+              label={n.is_primary ? 'name (primary)' : 'name'}
               ts={tsLabel(n.updated_by, n.date_updated)}
             >
               {fullName(n) || <span style={muted}>(blank)</span>}
@@ -138,7 +138,7 @@ const PersonWbDisplay = ({ person }) => {
             {activeEmails.map((e, i) => (
               <FieldRow
                 key={e.email_id ?? i}
-                label={e.primary ? 'email (primary)' : 'email'}
+                label={e.is_primary ? 'email (primary)' : 'email'}
                 ts={tsLabel(e.updated_by, e.date_updated)}
               >
                 {e.email_address}

@@ -40,27 +40,30 @@ const BreadCrumbs = () => {
     const isExceptionFacet = (facet) => {
 	// Match either:
 	// 1. language.keyword (Bibliographic Data's language)
-	// 2. Any Alliance Metadata facets
-       return facet === 'language.keyword' || facet.startsWith('mods_');
+	// 2. retraction_status.keyword (Bibliographic Data's retraction status)
+	// 3. Any Alliance Metadata facets
+       return facet === 'language.keyword' || facet === 'retraction_status.keyword' || facet.startsWith('mods_');
     };
     
     const getFacetLabel = (facet, value) => {
         const displayValue = getDisplayName(facet, value);
-        const categoryName = RENAME_FACETS[facet]?.label || 
+        const renameFacet = RENAME_FACETS[facet];
+        const categoryName = (typeof renameFacet === 'string' ? renameFacet : renameFacet?.label) ||
                             facet.replace('.keyword', '')
                                  .replaceAll('_', ' ');
-        
+
         return isExceptionFacet(facet) ? `${categoryName}: ${displayValue}` : displayValue;
     };
 
     const getExcludedFacetLabel = (facet, value) => {
         const displayValue = getDisplayName(facet, value);
-        const categoryName = RENAME_FACETS[facet]?.label || 
+        const renameFacet = RENAME_FACETS[facet];
+        const categoryName = (typeof renameFacet === 'string' ? renameFacet : renameFacet?.label) ||
                             facet.replace('.keyword', '')
                                  .replaceAll('_', ' ');
-        
-        return isExceptionFacet(facet) ? 
-            `Exclude ${categoryName}: ${displayValue}` : 
+
+        return isExceptionFacet(facet) ?
+            `Exclude ${categoryName}: ${displayValue}` :
             `Exclude ${displayValue}`;
     };
 

@@ -144,7 +144,7 @@ const PersonWbEditor = ({ person }) => {
     first_name: '',
     middle_name: '',
     last_name: '',
-    primary: false,
+    is_primary: false,
     _ts: null,
     _by: null,
   });
@@ -153,7 +153,7 @@ const PersonWbEditor = ({ person }) => {
     first_name: n.first_name ?? '',
     middle_name: n.middle_name ?? '',
     last_name: n.last_name ?? '',
-    primary: !!n.primary,
+    is_primary: !!n.is_primary,
     _ts: n.date_updated ?? null,
     _by: n.updated_by ?? null,
   }));
@@ -166,7 +166,7 @@ const PersonWbEditor = ({ person }) => {
   // Emails
   const emptyEmail = () => ({
     email_address: '',
-    primary: false,
+    is_primary: false,
     invalidated: false,
     _origInvalidatedDate: null,
     _ts: null,
@@ -175,7 +175,7 @@ const PersonWbEditor = ({ person }) => {
   const emailIsEmpty = (e) => !e.email_address;
   const initialEmails = (p.emails ?? []).map((e) => ({
     email_address: e.email_address ?? '',
-    primary: !!e.primary,
+    is_primary: !!e.is_primary,
     invalidated: !!e.date_invalidated,
     _origInvalidatedDate: e.date_invalidated ?? null,
     _ts: e.date_updated ?? null,
@@ -222,18 +222,18 @@ const PersonWbEditor = ({ person }) => {
   const [notes, updateNote, removeNote] = useAutoGrowList(initialNotes, emptyNote, noteIsEmpty);
 
   const setNamePrimary = (idx) =>
-    setNames((prev) => prev.map((row, i) => ({ ...row, primary: i === idx })));
+    setNames((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
   const setEmailPrimary = (idx) =>
-    setEmails((prev) => prev.map((row, i) => ({ ...row, primary: i === idx })));
+    setEmails((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
 
   const labelForName = (n, i) => {
     if (i === names.length - 1 && nameIsEmpty(n)) return 'name (new)';
-    return n.primary ? 'name (primary)' : 'name';
+    return n.is_primary ? 'name (primary)' : 'name';
   };
   const labelForEmail = (e, i) => {
     if (i === emails.length - 1 && emailIsEmpty(e)) return 'email (new)';
     if (e.invalidated) return 'old_email';
-    return e.primary ? 'email (primary)' : 'email';
+    return e.is_primary ? 'email (primary)' : 'email';
   };
   const labelForUrl = (u, i) =>
     i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (new)' : 'webpage';
@@ -305,7 +305,7 @@ const PersonWbEditor = ({ person }) => {
                   id={`wb-name-primary-${i}`}
                   name="wb-name-primary"
                   label="primary"
-                  checked={n.primary}
+                  checked={n.is_primary}
                   onChange={(e) => {
                     if (e.target.checked) setNamePrimary(i);
                   }}
@@ -348,7 +348,7 @@ const PersonWbEditor = ({ person }) => {
                     id={`wb-email-primary-${i}`}
                     name="wb-email-primary"
                     label="primary"
-                    checked={e.primary}
+                    checked={e.is_primary}
                     onChange={(ev) => {
                       if (ev.target.checked) setEmailPrimary(i);
                     }}

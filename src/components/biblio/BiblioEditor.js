@@ -362,7 +362,7 @@ const BiblioSubmitUpdateButton = () => {
 
 
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-      const authorFields = [ 'order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations' ];
+      const authorFields = [ 'author_order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations' ];
 
       // 1. Delete authors marked for deletion
       for (const [index, authorDict] of referenceJsonLive['authors'].entries()) {
@@ -379,7 +379,7 @@ const BiblioSubmitUpdateButton = () => {
         .filter(authorDict => !(authorDict.deleteMe === true))
         .map(authorDict => ({
           authorDict,
-          originalOrder: authorDict.order
+          originalOrder: authorDict.author_order
         }));
       // Sort by original order
       survivingAuthors.sort((a, b) => a.originalOrder - b.originalOrder);
@@ -388,7 +388,7 @@ const BiblioSubmitUpdateButton = () => {
       for (let i = 0; i < survivingAuthors.length; i++) {
         let { authorDict, originalOrder } = survivingAuthors[i];
         let newOrder = i + 1;
-        authorDict.order = newOrder;  // update local order
+        authorDict.author_order = newOrder;  // update local order
         survivingAuthors[i].orderChanged = (originalOrder !== newOrder);
       }
 
@@ -691,12 +691,20 @@ const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb})
 
 const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
   const dispatch = useDispatch();
-  const dateRangeStart = ('date_published_start' in referenceJsonLive && referenceJsonLive['date_published_start'] !== null) ?
-                          new Date(referenceJsonLive['date_published_start']) : null
-  const dateRangeEnd = ('date_published_end' in referenceJsonLive && referenceJsonLive['date_published_end'] !== null) ?
-                          new Date(referenceJsonLive['date_published_end']) : null
+  const toValidDate = (raw) => {
+    if (raw === null || raw === undefined || raw === '') return null;
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  const rawStart = referenceJsonLive['date_published_start'];
+  const rawEnd = referenceJsonLive['date_published_end'];
+  const dateRangeStart = toValidDate(rawStart);
+  const dateRangeEnd = toValidDate(rawEnd);
+  const startInvalid = rawStart !== null && rawStart !== undefined && rawStart !== '' && dateRangeStart === null;
+  const endInvalid = rawEnd !== null && rawEnd !== undefined && rawEnd !== '' && dateRangeEnd === null;
   // purposely don't allow clearing the date picker, because curators don't want to allow it to be set back to empty
-  return (<DateRangePicker value={[dateRangeStart, dateRangeEnd]} clearIcon={null} disabled={disabled}
+  return (<>
+    <DateRangePicker value={[dateRangeStart, dateRangeEnd]} clearIcon={null} disabled={disabled}
             onChange={(newDateRangeArr) => {
               if (newDateRangeArr === null) {
                 // dispatch(changeFieldDatePublishedRange([null, null]));	// curators don't want to be able to set blank date, but it also causes the page to crash
@@ -707,7 +715,17 @@ const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
                 if (newDateRangeArr[1] !== null) {
                   newDateRangeArr[1] = new Date(newDateRangeArr[1].toDateString()).toISOString().substring(0, 10); }
                 dispatch(changeFieldDatePublishedRange(newDateRangeArr)) }
-            }} />)
+            }} />
+    {(startInvalid || endInvalid) && (
+      <div style={{color: 'red', fontSize: '0.85em', marginTop: '0.25em'}}>
+        Invalid stored {startInvalid && endInvalid ? 'dates' : 'date'}:&nbsp;
+        {startInvalid && <code>{String(rawStart)}</code>}
+        {startInvalid && endInvalid && ' – '}
+        {endInvalid && <code>{String(rawEnd)}</code>}
+        &nbsp;— please re-select a range.
+      </div>
+    )}
+  </>)
 } // const BiblioDateComponent
 
 
@@ -1121,19 +1139,19 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   const hasPmid = useSelector(state => state.biblio.hasPmid);
   const authorExpand = useSelector(state => state.biblio.authorExpand);
 //   const revertDictFields = 'order, name, first_name, last_name, orcid, first_author, corresponding_author, affiliations'
-  const updatableFields = ['order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations']
+  const updatableFields = ['author_order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations']
   let authorOrder = 1;
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) { authorOrder = referenceJsonLive['authors'].length + 1; }
-  const initializeDict = {'order': authorOrder, 'name': '', 'first_name': '', 'last_name': '', orcid: null, first_author: false, corresponding_author: false, affiliations: [], 'author_id': 'new'}
+  const initializeDict = {'author_order': authorOrder, 'name': '', 'first_name': '', 'last_name': '', orcid: null, first_author: false, corresponding_author: false, affiliations: [], 'author_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
   if (fieldsDisplayOnly.includes(fieldName)) { disabled = 'disabled'; }
 
   function getStoreAuthorIndexFromDomIndex(indexDomAuthorInfo, newAuthorInfoChange) {
     if (!(indexDomAuthorInfo in newAuthorInfoChange)) { return 0; }
-    let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['order']        // replace placeholder with index from store order value matches dom
+    let indexAuthorInfo = newAuthorInfoChange[indexDomAuthorInfo]['author_order']        // replace placeholder with index from store order value matches dom
     for (let authorReorderIndexDictIndex in newAuthorInfoChange) {
-      if (newAuthorInfoChange[authorReorderIndexDictIndex]['order'] - 1 === indexDomAuthorInfo) {
+      if (newAuthorInfoChange[authorReorderIndexDictIndex]['author_order'] - 1 === indexDomAuthorInfo) {
         indexAuthorInfo = authorReorderIndexDictIndex
         break } }
     return indexAuthorInfo }
@@ -1144,8 +1162,8 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
     let highestAuthorOrder = 0;		// previously was using referenceJsonLive['authors'].length, but there could be a gap in the order from db
     for (const value  of referenceJsonLive['authors'].values()) {
-      if (value['order'] > highestAuthorOrder) { highestAuthorOrder = value['order']; }
-      let index = value['order'] - 1;
+      if (value['author_order'] > highestAuthorOrder) { highestAuthorOrder = value['author_order']; }
+      let index = value['author_order'] - 1;
       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
       orderedAuthors[index] = value; }
 
@@ -1272,7 +1290,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
           rowAuthorsElements.push(
             <Form.Group as={Row} key={`${fieldName} ${index}`}>
               <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
-              <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSizeName} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {authorDict['order']} - {authorDict['name']}</Col>
+              <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSizeName} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {authorDict['author_order']} - {authorDict['name']}</Col>
               {buttonsElement}
             </Form.Group>);
 }
@@ -1282,7 +1300,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
               <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
               <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabledName} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
               <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
-              <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['order']} updatedFlag={updatedDict['order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} order`} minNumber="1"
+              <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['author_order']} updatedFlag={updatedDict['author_order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} author_order`} minNumber="1"
  maxNumber={highestAuthorOrder} dispatchAction={changeFieldAuthorsReferenceJson} />
               {buttonsElement}
             </Form.Group>);
