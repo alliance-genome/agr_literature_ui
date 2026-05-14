@@ -3,6 +3,8 @@ import React from 'react';
 export default function TitleCell(params) {
   const r = params.data?.biblio || {};
   const curie = params.data?.curie;
+  const showAuthors =
+    params.colDef?.cellRendererParams?.showAuthors === true;
   const authorList = r.authors || [];
   const authors =
     authorList
@@ -19,8 +21,12 @@ export default function TitleCell(params) {
           dangerouslySetInnerHTML={{ __html: r.title || curie }}
         />
       </div>
-      {r.journal && <div className="tetv-ref-journal">{r.journal}</div>}
-      {authors && <div className="tetv-ref-authors">{authors}</div>}
+      {showAuthors && r.journal && (
+        <div className="tetv-ref-journal">{r.journal}</div>
+      )}
+      {showAuthors && authors && (
+        <div className="tetv-ref-authors">{authors}</div>
+      )}
     </div>
   );
 }

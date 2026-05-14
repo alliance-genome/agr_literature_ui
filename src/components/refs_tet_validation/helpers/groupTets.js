@@ -2,8 +2,8 @@ export function sourceLabel(source) {
   const method = source?.source_method || 'unknown';
   const sec = source?.secondary_data_provider_abbreviation;
   const dp = source?.data_provider;
-  if (sec) return `${method} / ${sec}`;
-  if (dp) return `${method} / ${dp}`;
+  if (sec) return `${method} - ${sec}`;
+  if (dp) return `${method} - ${dp}`;
   return method;
 }
 

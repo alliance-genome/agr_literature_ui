@@ -194,6 +194,20 @@ export default function TetGridToolbar({
             setDisplayOptions({ ...displayOptions, showScore: e.target.checked })
           }
         />
+        <Form.Check
+          inline
+          type="checkbox"
+          id="tetv-show-authors"
+          label="Show authors"
+          title="Show the journal name and author list under each title"
+          checked={!!displayOptions.showAuthors}
+          onChange={(e) =>
+            setDisplayOptions({
+              ...displayOptions,
+              showAuthors: e.target.checked,
+            })
+          }
+        />
       </span>
 
       <span className="tetv-toolbar-group tetv-toolbar-select">

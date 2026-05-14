@@ -1,5 +1,8 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilePdf, faPenSquare } from '@fortawesome/free-solid-svg-icons';
+import { api } from '../../../api';
 
 const prefixOf = (curie) =>
   curie ? String(curie).split(':')[0].toUpperCase() : null;
@@ -34,6 +37,20 @@ function ExternalIdLink({ curie, href, className }) {
   );
 }
 
+/** Open the main PDF for a reference in a new tab. Mirrors the
+ *  SearchResults list-view FileDownloadIcon flow. */
+function downloadMainPdf(referencefileId) {
+  api
+    .get(`/reference/referencefile/download_file/${referencefileId}`, {
+      responseType: 'blob',
+    })
+    .then((response) => {
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const pdfUrl = window.URL.createObjectURL(blob);
+      window.open(pdfUrl, '_blank');
+    });
+}
+
 export default function IdsCell(params) {
   const r = params.data?.biblio || {};
   const curie = params.data?.curie;
@@ -43,6 +60,9 @@ export default function IdsCell(params) {
   const crossReferenceResults = useSelector(
     (s) => s.search?.crossReferenceResults
   );
+  const isSignedIn = useSelector((s) => s.isLogged?.isSignedIn);
+  const curiePDFIDsMap = useSelector((s) => s.search?.curiePDFIDsMap);
+  const mainPdfId = curie ? curiePDFIDsMap?.[curie] : null;
 
   const allowed = (p) => {
     if (selected === null || selected === undefined) return true;
@@ -57,6 +77,9 @@ export default function IdsCell(params) {
   // Stable display order: PMID first, then everything else in original order.
   const pmid = xrefs.find((c) => c.startsWith('PMID:'));
   const otherXrefs = xrefs.filter((c) => !c.startsWith('PMID:'));
+
+  const showTetIcon = curie && isSignedIn;
+  const showPdfIcon = Boolean(mainPdfId);
 
   return (
     <div className="tetv-ids-cell">
@@ -90,6 +113,35 @@ export default function IdsCell(params) {
           />
         </div>
       ))}
+      {(showTetIcon || showPdfIcon) && (
+        <div className="tetv-ref-actions">
+          {showTetIcon && (
+            <a
+              className="tetv-ref-action tetv-ref-action-tet"
+              href={`/Biblio/?action=entity&referenceCurie=${encodeURIComponent(curie)}`}
+              target="_blank"
+              rel="noreferrer noopener"
+              title="Open in the TET editor"
+              aria-label="Open in the TET editor"
+            >
+              <FontAwesomeIcon icon={faPenSquare} />
+              <span className="tetv-ref-action-label">TET</span>
+            </a>
+          )}
+          {showPdfIcon && (
+            <button
+              type="button"
+              className="tetv-ref-action tetv-ref-action-pdf"
+              onClick={() => downloadMainPdf(mainPdfId)}
+              title="Open main PDF"
+              aria-label="Open main PDF"
+            >
+              <FontAwesomeIcon icon={faFilePdf} />
+              <span className="tetv-ref-action-label">PDF</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

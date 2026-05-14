@@ -24,6 +24,8 @@ import HeaderGroupWithHelp from './cellRenderers/HeaderGroupWithHelp';
 import ValidationCell, {
   professionalBiocuratorTopicTets,
 } from './cellRenderers/ValidationCell';
+import BulkValidationModal from './cellRenderers/BulkValidationModal';
+import BulkActionBar from './toolbar/BulkActionBar';
 import TagsCell from './cellRenderers/TagsCell';
 import SourcesCell from './cellRenderers/SourcesCell';
 import ConfScoreCell from './cellRenderers/ConfScoreCell';
@@ -293,6 +295,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     inlineNote: false,
     showLevel: false,
     showScore: false,
+    showAuthors: false,
   });
   const [hiddenTopicCuries, setHiddenTopicCuries] = useState(new Set());
   const [sourceFilterModel, setSourceFilterModel] = useState(null);
@@ -304,6 +307,12 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   // mid-resize column widths aren't a bug.
   const [isResizing, setIsResizing] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Bulk-validation: set of canonical reference curies the curator has
+  // checkbox-selected. `bulkPending` carries the modal's open state +
+  // chosen polarity + topic; when null the modal is hidden.
+  const [selectedRefCuries, setSelectedRefCuries] = useState(() => new Set());
+  const [bulkTopicCurie, setBulkTopicCurie] = useState(null);
+  const [bulkPending, setBulkPending] = useState(null);
   const userTouchedHiddenRef = useRef(false);
   const idsFilterDefaultAppliedRef = useRef(false);
 
@@ -967,6 +976,27 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   );
 
   const columnDefs = useMemo(() => {
+    // Leading checkbox column — pinned left, narrow, drives bulk-action
+    // selection. headerCheckboxSelectionFilteredOnly means the header tick
+    // only selects rows that survive the current filters (IDs prefix,
+    // Title, etc.), which is what curators expect.
+    const selectCol = {
+      headerName: '',
+      colId: '__select',
+      pinned: 'left',
+      width: 44,
+      minWidth: 40,
+      maxWidth: 56,
+      sortable: false,
+      filter: false,
+      resizable: false,
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+      headerCheckboxSelectionFilteredOnly: true,
+      cellClass: 'tetv-select-cell',
+      headerClass: 'tetv-select-header',
+      suppressMovable: true,
+    };
     const idsCol = {
       headerName: 'IDs',
       headerComponent: HeaderWithHelp,
@@ -1002,6 +1032,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
       autoHeight: true,
       wrapText: true,
       cellRenderer: TitleCell,
+      cellRendererParams: { showAuthors: displayOptions.showAuthors },
       filter: 'agTextColumnFilter',
       filterParams: { buttons: ['apply', 'clear'] },
       valueGetter: (p) => {
@@ -1172,7 +1203,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         };
       });
 
-    return [idsCol, titleCol, ...topicGroups];
+    return [selectCol, idsCol, titleCol, ...topicGroups];
   }, [
     visibleTopicColumns,
     displayOptions,
@@ -1221,6 +1252,19 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         sourceFilterModel={sourceFilterModel}
         setSourceFilterModel={setSourceFilterModel}
       />
+      <BulkActionBar
+        selectedCount={selectedRefCuries.size}
+        visibleTopics={visibleTopicColumns}
+        bulkTopicCurie={bulkTopicCurie}
+        setBulkTopicCurie={setBulkTopicCurie}
+        onValidate={(kind, topicCurie) =>
+          setBulkPending({ kind, topicCurie })
+        }
+        onClearSelection={() => {
+          setSelectedRefCuries(new Set());
+          gridApi?.deselectAll?.();
+        }}
+      />
       {loading ? (
         <div style={{ padding: 16 }}>
           <Spinner animation="border" size="sm" /> Loading TET data
@@ -1259,6 +1303,16 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             enableCellTextSelection
             ensureDomOrder
             enableBrowserTooltips
+            rowSelection="multiple"
+            getRowId={(p) => p.data?.curie || p.data?.input}
+            onSelectionChanged={(ev) => {
+              const next = new Set(
+                (ev.api.getSelectedRows?.() || [])
+                  .map((r) => r?.curie)
+                  .filter(Boolean)
+              );
+              setSelectedRefCuries(next);
+            }}
             onGridReady={onGridReady}
             onFirstDataRendered={() => {
               // AgGrid signals first paint complete — run autosize on the
@@ -1294,6 +1348,33 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
             }}
           />
         </div>
+      )}
+      {bulkPending && (
+        <BulkValidationModal
+          show={!!bulkPending}
+          onHide={() => setBulkPending(null)}
+          kind={bulkPending.kind}
+          topicCurie={bulkPending.topicCurie}
+          topicName={
+            topicColumns.find((t) => t.curie === bulkPending.topicCurie)
+              ?.name || bulkPending.topicCurie
+          }
+          references={(() => {
+            const topicField = `__topic_${bulkPending.topicCurie}`;
+            return [...selectedRefCuries].map((curie) => {
+              const row = rowData.find((r) => r.curie === curie);
+              const tets = row?.[topicField] || [];
+              return {
+                curie,
+                alreadyValidated:
+                  professionalBiocuratorTopicTets(tets).length > 0,
+              };
+            });
+          })()}
+          onRowUpdated={refetchRow}
+          curationStatusOptions={curationStatusOptions}
+          curationTagOptions={curationTagOptions}
+        />
       )}
     </div>
   );

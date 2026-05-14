@@ -354,13 +354,13 @@
 /* Status text shown in the Validation cell when a professional-biocurator
    topic-level tag exists for that (ref, topic). Replaces the ✓/✗ buttons. */
 .tetv-validation-status {
-  font-size: var(--tetv-secondary-font-size);
+  font-size: 1rem;
   font-weight: 700;
-  padding: 4px 8px;
+  padding: 7px 14px;
   border-radius: 999px;
   text-align: center;
   white-space: normal;
-  line-height: 1.2;
+  line-height: 1.25;
   border: 1px solid transparent;
   box-shadow: 0 1px 2px rgba(31, 41, 55, 0.08);
 }
@@ -566,6 +566,108 @@
   white-space: nowrap;
 }
 .tetv-ref-curie { color: var(--tetv-accent-dark); font-weight: 700; }
+
+/* Per-reference action strip rendered at the bottom of IdsCell. Mirrors
+   the list-view's TET-editor + main-PDF buttons but in a compact pill
+   layout so it doesn't dominate the pinned column. */
+.tetv-ref-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.tetv-ref-action {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  border-radius: 999px;
+  color: var(--tetv-accent-dark);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--tetv-small-font-size);
+  font-weight: 700;
+  gap: 4px;
+  line-height: 1.1;
+  padding: 3px 8px;
+  text-decoration: none;
+}
+.tetv-ref-action:hover {
+  background: #e8f3f6;
+  border-color: #a9ccd6;
+  color: var(--tetv-accent-dark);
+  text-decoration: none;
+}
+.tetv-ref-action-pdf {
+  color: #8c2c2c;
+  border-color: #e6c2c2;
+}
+.tetv-ref-action-pdf:hover {
+  background: #fbecec;
+  border-color: #d99a9a;
+  color: #6e2222;
+}
+.tetv-ref-action-label {
+  font-size: var(--tetv-small-font-size);
+}
+
+/* Leading pinned checkbox column for bulk selection. Compact + centered. */
+.tetv-grid-wrapper .ag-cell.tetv-select-cell,
+.tetv-grid-wrapper .ag-header-cell.tetv-select-header {
+  padding-left: 8px;
+  padding-right: 4px;
+}
+.tetv-grid-wrapper .ag-cell.tetv-select-cell .ag-selection-checkbox,
+.tetv-grid-wrapper .ag-header-cell.tetv-select-header .ag-header-select-all {
+  margin: 0;
+}
+
+/* Bulk-action bar — visible only when at least one row is checkbox-selected.
+   Sits between the regular toolbar and the grid, with a coloured stripe so
+   the curator notices they're operating on a multi-row batch. */
+.tetv-bulk-bar {
+  align-items: center;
+  background: #fff8ed;
+  border-bottom: 1px solid var(--tetv-line);
+  border-top: 1px solid var(--tetv-line);
+  border-left: 4px solid #f3b765;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 10px 12px;
+}
+.tetv-bulk-count {
+  color: #6b4a16;
+  font-weight: 600;
+}
+.tetv-bulk-count strong {
+  color: #855600;
+  font-size: 1.05em;
+}
+.tetv-bulk-msg {
+  color: #475467;
+}
+.tetv-bulk-topic {
+  align-items: center;
+  display: inline-flex;
+}
+.tetv-bulk-label {
+  color: #344054;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+}
+.tetv-bulk-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.tetv-bulk-clear {
+  color: #6b4a16;
+  text-decoration: none;
+}
+.tetv-bulk-clear:hover {
+  color: #855600;
+  text-decoration: underline;
+}
 
 @media (max-width: 992px) {
   .tetv-view-switchbar {
