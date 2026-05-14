@@ -691,12 +691,20 @@ const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb})
 
 const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
   const dispatch = useDispatch();
-  const dateRangeStart = ('date_published_start' in referenceJsonLive && referenceJsonLive['date_published_start'] !== null) ?
-                          new Date(referenceJsonLive['date_published_start']) : null
-  const dateRangeEnd = ('date_published_end' in referenceJsonLive && referenceJsonLive['date_published_end'] !== null) ?
-                          new Date(referenceJsonLive['date_published_end']) : null
+  const toValidDate = (raw) => {
+    if (raw === null || raw === undefined || raw === '') return null;
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  const rawStart = referenceJsonLive['date_published_start'];
+  const rawEnd = referenceJsonLive['date_published_end'];
+  const dateRangeStart = toValidDate(rawStart);
+  const dateRangeEnd = toValidDate(rawEnd);
+  const startInvalid = rawStart !== null && rawStart !== undefined && rawStart !== '' && dateRangeStart === null;
+  const endInvalid = rawEnd !== null && rawEnd !== undefined && rawEnd !== '' && dateRangeEnd === null;
   // purposely don't allow clearing the date picker, because curators don't want to allow it to be set back to empty
-  return (<DateRangePicker value={[dateRangeStart, dateRangeEnd]} clearIcon={null} disabled={disabled}
+  return (<>
+    <DateRangePicker value={[dateRangeStart, dateRangeEnd]} clearIcon={null} disabled={disabled}
             onChange={(newDateRangeArr) => {
               if (newDateRangeArr === null) {
                 // dispatch(changeFieldDatePublishedRange([null, null]));	// curators don't want to be able to set blank date, but it also causes the page to crash
@@ -707,7 +715,17 @@ const BiblioDateComponent = ({referenceJsonLive, disabled}) => {
                 if (newDateRangeArr[1] !== null) {
                   newDateRangeArr[1] = new Date(newDateRangeArr[1].toDateString()).toISOString().substring(0, 10); }
                 dispatch(changeFieldDatePublishedRange(newDateRangeArr)) }
-            }} />)
+            }} />
+    {(startInvalid || endInvalid) && (
+      <div style={{color: 'red', fontSize: '0.85em', marginTop: '0.25em'}}>
+        Invalid stored {startInvalid && endInvalid ? 'dates' : 'date'}:&nbsp;
+        {startInvalid && <code>{String(rawStart)}</code>}
+        {startInvalid && endInvalid && ' – '}
+        {endInvalid && <code>{String(rawEnd)}</code>}
+        &nbsp;— please re-select a range.
+      </div>
+    )}
+  </>)
 } // const BiblioDateComponent
 
 
