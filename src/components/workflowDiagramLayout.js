@@ -650,6 +650,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     let targetId = toSummaryId || nodeToLayoutId.get(trigger.toState);
 
     if (!sourceId || !targetId || sourceId === targetId) continue;
+    if (selectedNodeId && sourceId !== selectedNodeId && targetId !== selectedNodeId) continue;
 
     const canonKey = `${sourceId}\u2194${targetId}`;
     if (edgeMap.has(canonKey)) continue; // Don't duplicate
