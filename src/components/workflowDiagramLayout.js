@@ -641,6 +641,65 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
   }
   const layoutEdges = [...edgeMap.values()];
 
+  const addSyntheticEdge = (sourceNode, targetNode, edgeType, data, options = {}) => {
+    if (!sourceNode || !targetNode || sourceNode.id === targetNode.id) return;
+    const edgeKey = `${options.keyPrefix || 'synthetic'}:${sourceNode.id}\u2192${targetNode.id}`;
+    const normalKey = `${sourceNode.id}\u2192${targetNode.id}`;
+    if (edgeMap.has(edgeKey) || edgeMap.has(normalKey)) return;
+
+    const edge = {
+      source: sourceNode.id,
+      target: targetNode.id,
+      sourceNode,
+      targetNode,
+      edgeType,
+      data,
+      isPrimaryFlow: !!options.isPrimaryFlow,
+      isTrigger: !!options.isTrigger,
+      synthetic: true,
+      bidirectional: false,
+      reverseData: null,
+      _directionKeys: new Set([normalKey]),
+    };
+    edgeMap.set(edgeKey, edge);
+    layoutEdges.push(edge);
+  };
+
+  const visibleNodesByProcess = new Map();
+  for (const node of layoutNodes) {
+    if (node.type !== 'normal') continue;
+    if (!visibleNodesByProcess.has(node.processId)) visibleNodesByProcess.set(node.processId, []);
+    visibleNodesByProcess.get(node.processId).push(node);
+  }
+  for (const nodes of visibleNodesByProcess.values()) {
+    const initialNodes = nodes.filter(n => n.stateCategory === 'initial');
+    const progressNodes = nodes.filter(n => n.stateCategory === 'progress');
+    const completeNodes = nodes.filter(n => n.stateCategory === 'complete');
+
+    for (const sourceNode of initialNodes) {
+      for (const targetNode of progressNodes) {
+        addSyntheticEdge(sourceNode, targetNode, 'internal', {
+          sourceName: sourceNode.name,
+          to_name: targetNode.name,
+          transition_type: 'primary workflow',
+          requirements: [],
+          actions: [],
+        }, { isPrimaryFlow: true, keyPrefix: 'primary' });
+      }
+    }
+    for (const sourceNode of progressNodes) {
+      for (const targetNode of completeNodes) {
+        addSyntheticEdge(sourceNode, targetNode, 'internal', {
+          sourceName: sourceNode.name,
+          to_name: targetNode.name,
+          transition_type: 'primary workflow',
+          requirements: [],
+          actions: [],
+        }, { isPrimaryFlow: true, keyPrefix: 'primary' });
+      }
+    }
+  }
+
   // ─── Add cross-workflow trigger edges ───
   // These show process-to-process triggers when source or target process is collapsed
   for (const trigger of CROSS_WORKFLOW_TRIGGERS) {
@@ -659,7 +718,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 
     const normalCanonKey = `${sourceId}\u2194${targetId}`;
     const triggerKey = `trigger:${trigger.fromState}\u2192${trigger.toState}:${sourceId}\u2192${targetId}`;
-    if (edgeMap.has(normalCanonKey) || edgeMap.has(triggerKey)) continue; // Don't duplicate
+    if (edgeMap.has(triggerKey) || (!trigger.keepWhenNodeSelected && edgeMap.has(normalCanonKey))) continue; // Don't duplicate
 
     const srcNode = layoutNodes.find(n => n.id === sourceId);
     const tgtNode = layoutNodes.find(n => n.id === targetId);
@@ -669,7 +728,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     const fromStateName = nodeMap.get(trigger.fromState)?.name || trigger.fromState;
     const toStateName = nodeMap.get(trigger.toState)?.name || trigger.toState;
 
-    layoutEdges.push({
+    const triggerEdge = {
       source: sourceId,
       target: targetId,
       sourceNode: srcNode,
@@ -688,7 +747,9 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       bidirectional: false,
       reverseData: null,
       _directionKeys: new Set([`${sourceId}\u2192${targetId}`]),
-    });
+    };
+    edgeMap.set(triggerKey, triggerEdge);
+    layoutEdges.push(triggerEdge);
   }
   layoutEdges.sort((a, b) => {
     if (a.isPrimaryFlow === b.isPrimaryFlow) return 0;
