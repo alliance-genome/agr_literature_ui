@@ -118,46 +118,34 @@
 }
 
 .workflow-diagram-legend .legend-content {
-  margin-top: 6px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #eee;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .workflow-diagram-legend .legend-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .workflow-diagram-legend .legend-label {
   font-weight: 600;
   color: #444;
-  min-width: 40px;
-}
-
-.workflow-diagram-legend .legend-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.workflow-diagram-legend .legend-title {
-  font-weight: 600;
-  font-size: 11px;
-  margin-bottom: 4px;
-  color: #333;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 2px;
+  min-width: 45px;
+  font-size: 10px;
 }
 
 .workflow-diagram-legend .legend-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin: 2px 0;
-  color: #555;
+  gap: 3px;
+  margin-right: 10px;
   font-size: 10px;
+  color: #555;
 }
 
 .workflow-diagram-legend .legend-item svg {
