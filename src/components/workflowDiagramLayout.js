@@ -268,9 +268,12 @@ const CROSS_WORKFLOW_TRIGGERS = [
 const CUSTOM_GROUP_LAYOUT = {
   'ATP:0000140': { row: 0, order: 0 },  // file upload - row 0, first
   'ATP:0000273': { row: 0, order: 1 },  // manual indexing - row 0, second
-  'ATP:0000161': { row: 1, order: 0 },  // text conversion - row 1, first
-  'ATP:0000354': { row: 1, order: 1 },  // email extraction - row 1, second
+  'ATP:0000161': { row: 1, order: 0 },  // text conversion - row 1, centered
+  'ATP:0000354': { row: 2, order: 0 },  // email extraction - row 2, centered
 };
+
+// Gap between boxes in the same row (smaller = closer together)
+const ROW_BOX_GAP = 20;
 
 function orderGroups(processGroups, edges, nodeToProcess) {
   const groupIds = [...processGroups.keys()];
@@ -370,13 +373,12 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 
   // Process groups row by row
   for (const rowGroupIds of rowGroups) {
-    const rowHasCollapsed = rowGroupIds.some(gid => collapsedProcesses.has(gid));
-    const rowHasExpanded = rowGroupIds.some(gid => !collapsedProcesses.has(gid));
-
     // Calculate horizontal positions for groups in this row
     const numInRow = rowGroupIds.length;
-    const totalRowWidth = numInRow * (SUMMARY_WIDTH + GROUP_GAP) - GROUP_GAP;
-    let startX = width / 2 - totalRowWidth / 2;
+    // Use smaller gap (ROW_BOX_GAP) for boxes in the same row
+    const boxGap = numInRow > 1 ? ROW_BOX_GAP : 0;
+    const totalRowWidth = numInRow * SUMMARY_WIDTH + (numInRow - 1) * boxGap;
+    const startX = width / 2 - totalRowWidth / 2;
     let maxRowHeight = 0;
 
     for (let colIdx = 0; colIdx < rowGroupIds.length; colIdx++) {
@@ -387,7 +389,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       if (collapsedProcesses.has(gid)) {
         // ─── Collapsed process: single summary node ───
         const summaryId = `summary:${gid}`;
-        const sx = numInRow > 1 ? startX + colIdx * (SUMMARY_WIDTH + GROUP_GAP) : width / 2 - SUMMARY_WIDTH / 2;
+        const sx = numInRow > 1 ? startX + colIdx * (SUMMARY_WIDTH + boxGap) : width / 2 - SUMMARY_WIDTH / 2;
         const totalNodes = pg.directNodeIds.length +
           [...pg.subprocesses.values()].reduce((s, sp) => s + sp.nodeIds.length, 0);
 
