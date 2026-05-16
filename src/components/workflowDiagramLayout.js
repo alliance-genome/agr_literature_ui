@@ -683,7 +683,10 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 }
 
 /**
- * Layout a set of nodes in rows (layered). Returns { nodes, width, height, bottomY }.
+ * Layout a set of nodes with main flow centered and side states on left/right.
+ * Main flow: initial (needed) → progress → complete (top to bottom, centered)
+ * Side states: failed/blocked/unavailable (positioned to left or right)
+ * Returns { nodes, width, height, bottomY }.
  */
 function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processId, processName, color, nodeToLayoutId, options = {}) {
   const { hideInternalStates = false, selectedNodeId = null, currentStateId = null } = options;
@@ -705,92 +708,152 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
 
   const filteredEdges = edges.filter(e => ids.includes(e.source) && ids.includes(e.target));
 
-  // Use semantic ordering: group by state category, then by topological layer
-  const layers = assignLayers(ids, filteredEdges);
-
   // Determine initial/final states within this node set
   const { parents, children } = buildAdjacency(ids, filteredEdges);
   const initialIds = new Set(ids.filter(id => parents.get(id).length === 0));
   const finalIds = new Set(ids.filter(id => children.get(id).length === 0));
 
-  // Group nodes by semantic category first, then by layer
-  const categoryBuckets = new Map();
+  // Separate nodes into main flow and side states
+  const mainFlowNodes = [];  // initial, progress, complete - centered vertical flow
+  const leftSideNodes = [];  // blocked/unavailable - left side
+  const rightSideNodes = []; // failed - right side (or could be left too)
+
   for (const nid of ids) {
     const nd = nodeMap.get(nid);
     const category = classifyState(nd?.name);
-    const priority = STATE_PRIORITY[category] ?? 2;
-    const layer = layers.get(nid) || 0;
-    // Composite key: priority * 100 + layer (ensures category grouping with sub-ordering)
-    const compositeLayer = priority * 100 + layer;
-    if (!categoryBuckets.has(compositeLayer)) categoryBuckets.set(compositeLayer, []);
-    categoryBuckets.get(compositeLayer).push(nid);
+
+    if (category === 'initial' || category === 'progress' || category === 'complete') {
+      mainFlowNodes.push({ id: nid, category, priority: STATE_PRIORITY[category] });
+    } else if (category === 'blocked') {
+      leftSideNodes.push({ id: nid, category });
+    } else if (category === 'failed') {
+      rightSideNodes.push({ id: nid, category });
+    } else {
+      // Other states go to left side
+      leftSideNodes.push({ id: nid, category });
+    }
   }
 
-  // Sort by composite layer
-  const sortedLayers = [...categoryBuckets.keys()].sort((a, b) => a - b);
+  // Sort main flow by priority (initial → progress → complete)
+  mainFlowNodes.sort((a, b) => a.priority - b.priority);
 
-  // Use categoryBuckets instead of layerBuckets
-  const layerBuckets = categoryBuckets;
-
-  // Adaptive sizing: use compact nodes when total node count is large
+  // Adaptive sizing
   const totalNodes = ids.length;
   const compact = totalNodes > 6;
-  const nw = compact ? 160 : NODE_WIDTH;   // Increased from 130
-  const nh = compact ? 36 : NODE_HEIGHT;   // Increased from 32
-  const xGap = compact ? 18 : NODE_X_GAP;  // Increased from 16
-  const yGap = compact ? 14 : NODE_Y_GAP;  // Increased from 12
-  const maxPerRow = compact ? 4 : 5; // Reduced to avoid crowding
+  const nw = compact ? 160 : NODE_WIDTH;
+  const nh = compact ? 36 : NODE_HEIGHT;
+  const yGap = compact ? 14 : NODE_Y_GAP;
+  const sideXGap = 40; // Horizontal gap between main flow and side nodes
 
   const nodes = [];
-  let maxRowWidth = 0;
-  let currentRow = 0;
+  const centerX = containerWidth / 2 - nw / 2;
 
-  for (let li = 0; li < sortedLayers.length; li++) {
-    const nodesInLayer = layerBuckets.get(sortedLayers[li]);
+  // Layout main flow nodes (centered, vertical)
+  let mainY = startY;
+  for (const item of mainFlowNodes) {
+    const nid = item.id;
+    const nd = nodeMap.get(nid);
+    const nodeRole = initialIds.has(nid) ? 'initial'
+      : finalIds.has(nid) ? 'final' : 'normal';
+    const isSelected = selectedNodeId === nid;
+    const isCurrent = currentStateId === nid;
 
-    // Split layer into chunks if too wide
-    const chunks = [];
-    for (let c = 0; c < nodesInLayer.length; c += maxPerRow) {
-      chunks.push(nodesInLayer.slice(c, c + maxPerRow));
-    }
-
-    for (const chunk of chunks) {
-      const rowWidth = chunk.length * (nw + xGap) - xGap;
-      maxRowWidth = Math.max(maxRowWidth, rowWidth);
-      const startX = containerWidth / 2 - rowWidth / 2;
-
-      for (let ni = 0; ni < chunk.length; ni++) {
-        const nid = chunk[ni];
-        const nd = nodeMap.get(nid);
-        const nodeRole = initialIds.has(nid) ? 'initial'
-          : finalIds.has(nid) ? 'final' : 'normal';
-        const isSelected = selectedNodeId === nid;
-        const isCurrent = currentStateId === nid;
-        const stateCategory = classifyState(nd.name);
-        nodes.push({
-          id: nid,
-          name: nd.name,
-          shortName: shortenStateName(nd.name, nd.processName),
-          nodeRole,
-          stateCategory,
-          isSelected,
-          isCurrent,
-          x: startX + ni * (nw + xGap),
-          y: startY + currentRow * (nh + yGap),
-          width: nw, height: nh,
-          type: 'normal',
-          compact,
-          processId, processName, color,
-          transitions: nd.transitions,
-        });
-        nodeToLayoutId.set(nid, nid);
-      }
-      currentRow++;
-    }
+    nodes.push({
+      id: nid,
+      name: nd.name,
+      shortName: shortenStateName(nd.name, nd.processName),
+      nodeRole,
+      stateCategory: item.category,
+      isSelected,
+      isCurrent,
+      x: centerX,
+      y: mainY,
+      width: nw, height: nh,
+      type: 'normal',
+      compact,
+      processId, processName, color,
+      transitions: nd.transitions,
+    });
+    nodeToLayoutId.set(nid, nid);
+    mainY += nh + yGap;
   }
 
-  const contentHeight = Math.max(currentRow * (nh + yGap) - yGap, nh);
-  return { nodes, width: maxRowWidth, height: contentHeight, bottomY: startY + contentHeight };
+  // Calculate vertical range for side nodes (align with main flow)
+  const mainFlowHeight = mainFlowNodes.length > 0 ? (mainFlowNodes.length * (nh + yGap) - yGap) : nh;
+  const sideStartY = startY + (mainFlowHeight / 2) - ((leftSideNodes.length + rightSideNodes.length) * (nh + yGap) / 4);
+
+  // Layout left side nodes (unavailable, blocked, other)
+  let leftY = Math.max(startY, sideStartY);
+  const leftX = centerX - nw - sideXGap;
+  for (const item of leftSideNodes) {
+    const nid = item.id;
+    const nd = nodeMap.get(nid);
+    const nodeRole = initialIds.has(nid) ? 'initial'
+      : finalIds.has(nid) ? 'final' : 'normal';
+    const isSelected = selectedNodeId === nid;
+    const isCurrent = currentStateId === nid;
+
+    nodes.push({
+      id: nid,
+      name: nd.name,
+      shortName: shortenStateName(nd.name, nd.processName),
+      nodeRole,
+      stateCategory: item.category,
+      isSelected,
+      isCurrent,
+      x: leftX,
+      y: leftY,
+      width: nw, height: nh,
+      type: 'normal',
+      compact,
+      processId, processName, color,
+      transitions: nd.transitions,
+    });
+    nodeToLayoutId.set(nid, nid);
+    leftY += nh + yGap;
+  }
+
+  // Layout right side nodes (failed)
+  let rightY = Math.max(startY, sideStartY);
+  const rightX = centerX + nw + sideXGap;
+  for (const item of rightSideNodes) {
+    const nid = item.id;
+    const nd = nodeMap.get(nid);
+    const nodeRole = initialIds.has(nid) ? 'initial'
+      : finalIds.has(nid) ? 'final' : 'normal';
+    const isSelected = selectedNodeId === nid;
+    const isCurrent = currentStateId === nid;
+
+    nodes.push({
+      id: nid,
+      name: nd.name,
+      shortName: shortenStateName(nd.name, nd.processName),
+      nodeRole,
+      stateCategory: item.category,
+      isSelected,
+      isCurrent,
+      x: rightX,
+      y: rightY,
+      width: nw, height: nh,
+      type: 'normal',
+      compact,
+      processId, processName, color,
+      transitions: nd.transitions,
+    });
+    nodeToLayoutId.set(nid, nid);
+    rightY += nh + yGap;
+  }
+
+  // Calculate total dimensions
+  const maxY = Math.max(mainY, leftY, rightY) - yGap;
+  const contentHeight = maxY - startY;
+
+  // Calculate width: include side columns if present
+  let totalWidth = nw; // main flow width
+  if (leftSideNodes.length > 0) totalWidth += nw + sideXGap;
+  if (rightSideNodes.length > 0) totalWidth += nw + sideXGap;
+
+  return { nodes, width: totalWidth, height: contentHeight, bottomY: maxY };
 }
 
 // ─── Edge path helper ────────────────────────────────────────────────────────
