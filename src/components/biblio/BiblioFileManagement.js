@@ -337,13 +337,24 @@ const OpenAccess = () => {
   const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
   const imagePermission = referenceJsonLive["effective_image_permission"] || {};
   const imagePermissionName = imagePermission["image_permission_name"] || null;
+  const imagePermissionUrl = imagePermission["permission_url"] || null;
   const imagePermissionSource = imagePermission["source"];
   const canDisplayImages = imagePermission["can_display_images"] ? "can display images" : "cannot display images";
   // Show source label based on where permission came from
   const getSourceLabel = () => {
     if (imagePermissionSource === "reference_open_access") return "reference open access";
     if (imagePermissionSource === "resource_open_access") return "resource open access";
-    if (imagePermissionSource === "resource_image_permission") return imagePermissionName;
+    if (imagePermissionSource === "resource_image_permission") {
+      // Return link if URL is available, otherwise just the name
+      if (imagePermissionUrl) {
+        return (
+          <a href={imagePermissionUrl} target="_blank" rel="noopener noreferrer">
+            {imagePermissionName}
+          </a>
+        );
+      }
+      return imagePermissionName;
+    }
     return null;
   };
   const imagePermissionSourceLabel = getSourceLabel();
