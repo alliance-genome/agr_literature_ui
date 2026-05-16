@@ -605,6 +605,9 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       nodeMap.get(e.source)?.name,
       nodeMap.get(e.target)?.name
     );
+    if (!selectedNodeId && edgeType === 'internal' && !isPrimaryFlow) {
+      continue;
+    }
 
     // Primary workflow edges stay directed so the normal Needed → In progress
     // → Complete/Uploaded path remains visible even if reverse special-case
