@@ -95,7 +95,7 @@
 }
 
 .workflow-legend.expanded {
-  padding: 8px 12px;
+  padding: 10px 14px;
   min-width: 360px;
 }
 
@@ -106,6 +106,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .workflow-legend-title:hover {
@@ -126,7 +128,7 @@
 .workflow-legend-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
   margin-top: 6px;
   white-space: nowrap;
 }
