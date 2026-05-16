@@ -379,6 +379,18 @@
   stroke-width: 2.5;
 }
 
+.wf-edge.wf-edge-primary path {
+  opacity: 1;
+}
+
+.wf-edge.wf-edge-special path {
+  opacity: 0.48;
+}
+
+.wf-edge.wf-edge-special path:hover {
+  opacity: 0.9;
+}
+
 /* Internal edges (within same process group) */
 .wf-edge.wf-edge-internal path {
   stroke: #5a9bd5;
