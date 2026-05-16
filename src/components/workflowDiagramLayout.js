@@ -246,10 +246,51 @@ function assignLayers(nodeIds, edges) {
 
 // ─── Group ordering ──────────────────────────────────────────────────────────
 
+// Cross-workflow trigger definitions (state-to-state triggers between processes)
+// These define which state in one process triggers which state in another
+const CROSS_WORKFLOW_TRIGGERS = [
+  {
+    fromProcess: 'ATP:0000140',  // file upload
+    fromState: 'ATP:0000134',    // files uploaded
+    toProcess: 'ATP:0000161',    // text conversion
+    toState: 'ATP:0000162',      // text conversion needed
+  },
+  {
+    fromProcess: 'ATP:0000161',  // text conversion
+    fromState: 'ATP:0000163',    // file converted to text
+    toProcess: 'ATP:0000354',    // email extraction
+    toState: 'ATP:0000358',      // email extraction needed
+  },
+];
+
+// Custom row layout for specific MODs (processId -> row number)
+// Processes in same row will be arranged horizontally
+const CUSTOM_GROUP_LAYOUT = {
+  'ATP:0000140': { row: 0, order: 0 },  // file upload - row 0, first
+  'ATP:0000273': { row: 0, order: 1 },  // manual indexing - row 0, second
+  'ATP:0000161': { row: 1, order: 0 },  // text conversion - row 1, first
+  'ATP:0000354': { row: 1, order: 1 },  // email extraction - row 1, second
+};
+
 function orderGroups(processGroups, edges, nodeToProcess) {
   const groupIds = [...processGroups.keys()];
   if (groupIds.length <= 1) return groupIds;
 
+  // Check if we have custom layout for these groups
+  const hasCustomLayout = groupIds.some(gid => CUSTOM_GROUP_LAYOUT[gid]);
+
+  if (hasCustomLayout) {
+    // Sort by custom row, then order within row
+    groupIds.sort((a, b) => {
+      const layoutA = CUSTOM_GROUP_LAYOUT[a] || { row: 99, order: 99 };
+      const layoutB = CUSTOM_GROUP_LAYOUT[b] || { row: 99, order: 99 };
+      if (layoutA.row !== layoutB.row) return layoutA.row - layoutB.row;
+      return layoutA.order - layoutB.order;
+    });
+    return groupIds;
+  }
+
+  // Default: use flow score
   const flowScore = new Map();
   for (const gid of groupIds) flowScore.set(gid, 0);
 
@@ -264,6 +305,20 @@ function orderGroups(processGroups, edges, nodeToProcess) {
 
   groupIds.sort((a, b) => (flowScore.get(a) || 0) - (flowScore.get(b) || 0));
   return groupIds;
+}
+
+// Get row groups for horizontal layout
+function getRowGroups(orderedGroupIds) {
+  const rows = new Map(); // row number -> [groupIds]
+  for (const gid of orderedGroupIds) {
+    const layout = CUSTOM_GROUP_LAYOUT[gid];
+    const rowNum = layout ? layout.row : 99;
+    if (!rows.has(rowNum)) rows.set(rowNum, []);
+    rows.get(rowNum).push(gid);
+  }
+  // Sort rows by row number and return as array of arrays
+  const sortedRows = [...rows.entries()].sort((a, b) => a[0] - b[0]);
+  return sortedRows.map(([, ids]) => ids);
 }
 
 // ─── Layout constants ────────────────────────────────────────────────────────
@@ -299,145 +354,163 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
   const { hideInternalStates = false, selectedNodeId = null, currentStateId = null } = options;
 
   if (!tagData || tagData.length === 0) {
-    return { nodes: [], edges: [], groups: [], viewBox: '0 0 800 600' };
+    return { nodes: [], edges: [], groups: [], viewBox: '0 0 800 600', crossWorkflowTriggers: [] };
   }
 
   const { nodeMap, edges: allEdges, processGroups, nodeToProcess } = buildGraph(tagData);
   const orderedGroupIds = orderGroups(processGroups, allEdges, nodeToProcess);
+  const rowGroups = getRowGroups(orderedGroupIds);
 
   const layoutNodes = [];
   const layoutGroups = [];
   const nodeToLayoutId = new Map();
+  const processIdToSummaryId = new Map(); // Track summary IDs for cross-workflow edges
 
   let currentY = GROUP_GAP;
 
-  for (const gid of orderedGroupIds) {
-    const pg = processGroups.get(gid);
-    const color = getGroupColor(gid);
+  // Process groups row by row
+  for (const rowGroupIds of rowGroups) {
+    const rowHasCollapsed = rowGroupIds.some(gid => collapsedProcesses.has(gid));
+    const rowHasExpanded = rowGroupIds.some(gid => !collapsedProcesses.has(gid));
 
-    if (collapsedProcesses.has(gid)) {
-      // ─── Collapsed process: single summary node ───
-      const summaryId = `summary:${gid}`;
-      const sx = width / 2 - SUMMARY_WIDTH / 2;
-      const totalNodes = pg.directNodeIds.length +
-        [...pg.subprocesses.values()].reduce((s, sp) => s + sp.nodeIds.length, 0);
+    // Calculate horizontal positions for groups in this row
+    const numInRow = rowGroupIds.length;
+    const totalRowWidth = numInRow * (SUMMARY_WIDTH + GROUP_GAP) - GROUP_GAP;
+    let startX = width / 2 - totalRowWidth / 2;
+    let maxRowHeight = 0;
 
-      layoutNodes.push({
-        id: summaryId,
-        name: pg.processName || gid,
-        x: sx, y: currentY,
-        width: SUMMARY_WIDTH, height: SUMMARY_HEIGHT,
-        type: 'summary',
-        processId: gid, processName: pg.processName,
-        nodeCount: totalNodes,
-        subprocessCount: pg.subprocesses.size,
-        color,
-      });
+    for (let colIdx = 0; colIdx < rowGroupIds.length; colIdx++) {
+      const gid = rowGroupIds[colIdx];
+      const pg = processGroups.get(gid);
+      const color = getGroupColor(gid);
 
-      // Map all nodes in this process to the summary
-      for (const nid of pg.directNodeIds) nodeToLayoutId.set(nid, summaryId);
-      for (const sp of pg.subprocesses.values()) {
-        for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, summaryId);
-      }
+      if (collapsedProcesses.has(gid)) {
+        // ─── Collapsed process: single summary node ───
+        const summaryId = `summary:${gid}`;
+        const sx = numInRow > 1 ? startX + colIdx * (SUMMARY_WIDTH + GROUP_GAP) : width / 2 - SUMMARY_WIDTH / 2;
+        const totalNodes = pg.directNodeIds.length +
+          [...pg.subprocesses.values()].reduce((s, sp) => s + sp.nodeIds.length, 0);
 
-      layoutGroups.push({
-        processId: gid, processName: pg.processName,
-        collapsed: true,
-        x: sx - 10, y: currentY - 10,
-        width: SUMMARY_WIDTH + 20, height: SUMMARY_HEIGHT + 20,
-        color,
-      });
+        layoutNodes.push({
+          id: summaryId,
+          name: pg.processName || gid,
+          x: sx, y: currentY,
+          width: SUMMARY_WIDTH, height: SUMMARY_HEIGHT,
+          type: 'summary',
+          processId: gid, processName: pg.processName,
+          nodeCount: totalNodes,
+          subprocessCount: pg.subprocesses.size,
+          color,
+        });
 
-      currentY += SUMMARY_HEIGHT + GROUP_GAP;
-    } else {
-      // ─── Expanded process: show subprocesses ───
-      const groupStartY = currentY + GROUP_HEADER_HEIGHT + GROUP_PADDING;
-      let innerY = groupStartY;
-      let maxWidth = 280;
+        // Map all nodes in this process to the summary
+        for (const nid of pg.directNodeIds) nodeToLayoutId.set(nid, summaryId);
+        for (const sp of pg.subprocesses.values()) {
+          for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, summaryId);
+        }
+        processIdToSummaryId.set(gid, summaryId);
 
-      // Direct nodes (no subprocess) — lay them out if any
-      if (pg.directNodeIds.length > 0) {
-        const ids = pg.directNodeIds.filter(id => nodeMap.has(id));
-        const internalEdges = allEdges.filter(
-          e => ids.includes(e.source) && ids.includes(e.target)
-        );
-        const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
-        layoutNodes.push(...result.nodes);
-        maxWidth = Math.max(maxWidth, result.width);
-        innerY = result.bottomY + SUB_GAP;
-      }
+        layoutGroups.push({
+          processId: gid, processName: pg.processName,
+          collapsed: true,
+          x: sx - 10, y: currentY - 10,
+          width: SUMMARY_WIDTH + 20, height: SUMMARY_HEIGHT + 20,
+          color,
+        });
 
-      // Subprocesses
-      for (const sp of pg.subprocesses.values()) {
-        const spColor = getGroupColor(sp.subprocessId);
+        maxRowHeight = Math.max(maxRowHeight, SUMMARY_HEIGHT + GROUP_GAP);
+      } else {
+        // ─── Expanded process: show subprocesses ───
+        const groupStartY = currentY + GROUP_HEADER_HEIGHT + GROUP_PADDING;
+        let innerY = groupStartY;
+        let maxWidth = 280;
 
-        if (!expandedSubprocesses.has(sp.subprocessId)) {
-          // Collapsed subprocess: summary node
-          const spSummaryId = `subsummary:${sp.subprocessId}`;
-          const sx = width / 2 - SUB_SUMMARY_WIDTH / 2;
-
-          layoutNodes.push({
-            id: spSummaryId,
-            name: sp.subprocessName || sp.subprocessId,
-            x: sx, y: innerY,
-            width: SUB_SUMMARY_WIDTH, height: SUB_SUMMARY_HEIGHT,
-            type: 'subsummary',
-            processId: gid, processName: pg.processName,
-            subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
-            nodeCount: sp.nodeIds.length,
-            color: spColor,
-          });
-
-          for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, spSummaryId);
-
-          maxWidth = Math.max(maxWidth, SUB_SUMMARY_WIDTH + GROUP_PADDING * 2);
-          innerY += SUB_SUMMARY_HEIGHT + SUB_GAP;
-        } else {
-          // Expanded subprocess: show nodes with sub-header
-          const subHeaderY = innerY;
-          innerY += SUB_HEADER_HEIGHT + 8;
-
-          const ids = sp.nodeIds.filter(id => nodeMap.has(id));
+        // Direct nodes (no subprocess) — lay them out if any
+        if (pg.directNodeIds.length > 0) {
+          const ids = pg.directNodeIds.filter(id => nodeMap.has(id));
           const internalEdges = allEdges.filter(
             e => ids.includes(e.source) && ids.includes(e.target)
           );
           const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
           layoutNodes.push(...result.nodes);
-
-          // Add subprocess group box
-          const spWidth = Math.max(result.width + GROUP_PADDING, SUB_SUMMARY_WIDTH + GROUP_PADDING);
-          const spHeight = SUB_HEADER_HEIGHT + 8 + result.height + GROUP_PADDING;
-          const spX = width / 2 - spWidth / 2;
-
-          layoutGroups.push({
-            processId: sp.subprocessId, processName: sp.subprocessName,
-            collapsed: false,
-            isSubprocess: true,
-            parentProcessId: gid,
-            x: spX, y: subHeaderY,
-            width: spWidth, height: spHeight,
-            color: spColor,
-          });
-
-          maxWidth = Math.max(maxWidth, spWidth + GROUP_PADDING);
+          maxWidth = Math.max(maxWidth, result.width);
           innerY = result.bottomY + SUB_GAP;
         }
+
+        // Subprocesses
+        for (const sp of pg.subprocesses.values()) {
+          const spColor = getGroupColor(sp.subprocessId);
+
+          if (!expandedSubprocesses.has(sp.subprocessId)) {
+            // Collapsed subprocess: summary node
+            const spSummaryId = `subsummary:${sp.subprocessId}`;
+            const sx = width / 2 - SUB_SUMMARY_WIDTH / 2;
+
+            layoutNodes.push({
+              id: spSummaryId,
+              name: sp.subprocessName || sp.subprocessId,
+              x: sx, y: innerY,
+              width: SUB_SUMMARY_WIDTH, height: SUB_SUMMARY_HEIGHT,
+              type: 'subsummary',
+              processId: gid, processName: pg.processName,
+              subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
+              nodeCount: sp.nodeIds.length,
+              color: spColor,
+            });
+
+            for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, spSummaryId);
+
+            maxWidth = Math.max(maxWidth, SUB_SUMMARY_WIDTH + GROUP_PADDING * 2);
+            innerY += SUB_SUMMARY_HEIGHT + SUB_GAP;
+          } else {
+            // Expanded subprocess: show nodes with sub-header
+            const subHeaderY = innerY;
+            innerY += SUB_HEADER_HEIGHT + 8;
+
+            const ids = sp.nodeIds.filter(id => nodeMap.has(id));
+            const internalEdges = allEdges.filter(
+              e => ids.includes(e.source) && ids.includes(e.target)
+            );
+            const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
+            layoutNodes.push(...result.nodes);
+
+            // Add subprocess group box
+            const spWidth = Math.max(result.width + GROUP_PADDING, SUB_SUMMARY_WIDTH + GROUP_PADDING);
+            const spHeight = SUB_HEADER_HEIGHT + 8 + result.height + GROUP_PADDING;
+            const spX = width / 2 - spWidth / 2;
+
+            layoutGroups.push({
+              processId: sp.subprocessId, processName: sp.subprocessName,
+              collapsed: false,
+              isSubprocess: true,
+              parentProcessId: gid,
+              x: spX, y: subHeaderY,
+              width: spWidth, height: spHeight,
+              color: spColor,
+            });
+
+            maxWidth = Math.max(maxWidth, spWidth + GROUP_PADDING);
+            innerY = result.bottomY + SUB_GAP;
+          }
+        }
+
+        const groupHeight = innerY - currentY + GROUP_PADDING - SUB_GAP;
+        const groupWidth = Math.max(maxWidth + GROUP_PADDING * 2, 300);
+        const groupX = width / 2 - groupWidth / 2;
+
+        layoutGroups.push({
+          processId: gid, processName: pg.processName,
+          collapsed: false,
+          x: groupX, y: currentY,
+          width: groupWidth, height: groupHeight,
+          color,
+        });
+
+        maxRowHeight = Math.max(maxRowHeight, groupHeight + GROUP_GAP);
       }
-
-      const groupHeight = innerY - currentY + GROUP_PADDING - SUB_GAP;
-      const groupWidth = Math.max(maxWidth + GROUP_PADDING * 2, 300);
-      const groupX = width / 2 - groupWidth / 2;
-
-      layoutGroups.push({
-        processId: gid, processName: pg.processName,
-        collapsed: false,
-        x: groupX, y: currentY,
-        width: groupWidth, height: groupHeight,
-        color,
-      });
-
-      currentY += groupHeight + GROUP_GAP;
     }
+    // Move to next row
+    currentY += maxRowHeight;
   }
 
   // ─── Build layout edges (merge bidirectional into one) ───
@@ -486,6 +559,53 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     });
   }
   const layoutEdges = [...edgeMap.values()];
+
+  // ─── Add cross-workflow trigger edges ───
+  // These show process-to-process triggers when source or target process is collapsed
+  for (const trigger of CROSS_WORKFLOW_TRIGGERS) {
+    const fromSummaryId = processIdToSummaryId.get(trigger.fromProcess);
+    const toSummaryId = processIdToSummaryId.get(trigger.toProcess);
+
+    // Only add if at least one of the processes is collapsed (showing summary)
+    if (!fromSummaryId && !toSummaryId) continue;
+
+    // Determine the actual source and target nodes
+    let sourceId = fromSummaryId || nodeToLayoutId.get(trigger.fromState);
+    let targetId = toSummaryId || nodeToLayoutId.get(trigger.toState);
+
+    if (!sourceId || !targetId || sourceId === targetId) continue;
+
+    const canonKey = `${sourceId}\u2194${targetId}`;
+    if (edgeMap.has(canonKey)) continue; // Don't duplicate
+
+    const srcNode = layoutNodes.find(n => n.id === sourceId);
+    const tgtNode = layoutNodes.find(n => n.id === targetId);
+    if (!srcNode || !tgtNode) continue;
+
+    // Get names for the trigger states
+    const fromStateName = nodeMap.get(trigger.fromState)?.name || trigger.fromState;
+    const toStateName = nodeMap.get(trigger.toState)?.name || trigger.toState;
+
+    layoutEdges.push({
+      source: sourceId,
+      target: targetId,
+      sourceNode: srcNode,
+      targetNode: tgtNode,
+      edgeType: 'external',
+      isTrigger: true,
+      data: {
+        sourceName: fromStateName,
+        to_name: toStateName,
+        transition_type: 'trigger',
+        condition: `${fromStateName} triggers ${toStateName}`,
+        requirements: [],
+        actions: [`Sets ${toStateName}`],
+      },
+      bidirectional: false,
+      reverseData: null,
+      _directionKeys: new Set([`${sourceId}\u2192${targetId}`]),
+    });
+  }
 
   // ─── Force simulation ───
   if (layoutNodes.length > 1 && layoutEdges.length > 0) {
@@ -538,7 +658,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     e.targetNode = layoutNodes.find(n => n.id === e.target);
   }
 
-  return { nodes: layoutNodes, edges: layoutEdges, groups: layoutGroups, viewBox };
+  return { nodes: layoutNodes, edges: layoutEdges, groups: layoutGroups, viewBox, crossWorkflowTriggers: CROSS_WORKFLOW_TRIGGERS };
 }
 
 /**
@@ -695,7 +815,23 @@ function edgePath(d) {
   const sOff = sn.width * 0.6 * (d._sPort || 0);
   const tOff = tn.width * 0.6 * (d._tPort || 0);
 
-  // Always exit bottom of source, enter top of target
+  // Check if nodes are roughly on the same row (horizontal layout)
+  const sameRow = Math.abs(sn.y - tn.y) < sn.height;
+
+  if (sameRow) {
+    // Horizontal edge: exit from right side, enter from left side
+    const isLeftToRight = sn.x < tn.x;
+    const sx = isLeftToRight ? sn.x + sn.width : sn.x;
+    const sy = sn.y + sn.height / 2;
+    const tx = isLeftToRight ? tn.x : tn.x + tn.width;
+    const ty = tn.y + tn.height / 2;
+    const midX = (sx + tx) / 2;
+    // Slight curve downward for visual distinction
+    const curveY = Math.max(sy, ty) + 30;
+    return `M ${sx} ${sy} Q ${midX} ${curveY}, ${tx} ${ty}`;
+  }
+
+  // Vertical edge: exit from bottom, enter from top
   const sx = sn.x + sn.width / 2 + sOff;
   const sy = sn.y + sn.height;
   const tx = tn.x + tn.width / 2 + tOff;
