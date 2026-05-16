@@ -1066,9 +1066,11 @@ const ReportsContainer = () => {
               <Tab eventKey={`${mod}_stats`} title="Workflow Statistics">
                 <WorkflowStatModTablesContainer modSection={mod} />
               </Tab>
-              <Tab eventKey={`${mod}_diagram`} title="Workflow Diagram">
-                <WorkflowDiagram mod={mod} />
-              </Tab>
+              {!['MGI', 'RGD', 'XB'].includes(mod) && (
+                <Tab eventKey={`${mod}_diagram`} title="Workflow Diagram">
+                  <WorkflowDiagram mod={mod} />
+                </Tab>
+              )}
               {modsWithModels.has(mod) && (
                 <Tab eventKey={`${mod}_models`} title="Models">
                   <ModelsTable modSection={mod} />
