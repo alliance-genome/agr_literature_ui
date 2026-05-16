@@ -816,7 +816,7 @@ function assignEdgePorts(edges) {
 function edgePath(d) {
   const sn = d.sourceNode;
   const tn = d.targetNode;
-  const gap = 10;
+  const gap = 5;  // Gap between arrow and target box top
 
   // Spread ports across 60% of node width
   const sOff = sn.width * 0.6 * (d._sPort || 0);
@@ -877,8 +877,8 @@ export function renderDiagram(svgElement, layout, callbacks) {
   }
   if (defs.select('#wf-arrow-external').empty()) {
     defs.append('marker').attr('id', 'wf-arrow-external')
-      .attr('viewBox', '0 0 10 10').attr('refX', 9).attr('refY', 5)
-      .attr('markerWidth', 8).attr('markerHeight', 8).attr('orient', 'auto')
+      .attr('viewBox', '0 0 10 10').attr('refX', 10).attr('refY', 5)
+      .attr('markerWidth', 6).attr('markerHeight', 6).attr('orient', 'auto')
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#d4a03c');
   }
 
