@@ -105,6 +105,13 @@ function isInternalState(stateName) {
   return category === 'internal';
 }
 
+function isPrimaryWorkflowTransition(sourceName, targetName) {
+  const sourceCategory = classifyState(sourceName);
+  const targetCategory = classifyState(targetName);
+  return (sourceCategory === 'initial' && targetCategory === 'progress') ||
+    (sourceCategory === 'progress' && targetCategory === 'complete');
+}
+
 // Semantic ordering priority (lower = earlier in layout)
 const STATE_PRIORITY = {
   'initial': 0,
@@ -587,22 +594,6 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       continue;
     }
 
-    // Canonical key: always smaller id first, so A→B and B→A share a key
-    const [lo, hi] = src < tgt ? [src, tgt] : [tgt, src];
-    const canonKey = `${lo}\u2194${hi}`;
-    const forwardKey = `${src}\u2192${tgt}`;
-
-    if (edgeMap.has(canonKey)) {
-      const existing = edgeMap.get(canonKey);
-      // If this direction wasn't recorded yet, mark as bidirectional
-      if (!existing._directionKeys.has(forwardKey)) {
-        existing._directionKeys.add(forwardKey);
-        existing.bidirectional = true;
-        existing.reverseData = e.data;
-      }
-      continue;
-    }
-
     const srcNode = layoutNodes.find(n => n.id === src);
     const tgtNode = layoutNodes.find(n => n.id === tgt);
     if (!srcNode || !tgtNode) continue;
@@ -610,11 +601,34 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     const srcProc = nodeToProcess.get(e.source) || srcNode.processId;
     const tgtProc = nodeToProcess.get(e.target) || tgtNode.processId;
     const edgeType = (srcProc === tgtProc) ? 'internal' : 'external';
+    const isPrimaryFlow = isPrimaryWorkflowTransition(
+      nodeMap.get(e.source)?.name,
+      nodeMap.get(e.target)?.name
+    );
 
-    edgeMap.set(canonKey, {
+    // Primary workflow edges stay directed so the normal Needed → In progress
+    // → Complete/Uploaded path remains visible even if reverse special-case
+    // transitions also exist.
+    const [lo, hi] = src < tgt ? [src, tgt] : [tgt, src];
+    const canonKey = `${lo}\u2194${hi}`;
+    const forwardKey = `${src}\u2192${tgt}`;
+    const edgeKey = isPrimaryFlow ? forwardKey : canonKey;
+
+    if (edgeMap.has(edgeKey)) {
+      const existing = edgeMap.get(edgeKey);
+      if (!isPrimaryFlow && !existing._directionKeys.has(forwardKey)) {
+        existing._directionKeys.add(forwardKey);
+        existing.bidirectional = true;
+        existing.reverseData = e.data;
+      }
+      continue;
+    }
+
+    edgeMap.set(edgeKey, {
       source: src, target: tgt,
       sourceNode: srcNode, targetNode: tgtNode,
       edgeType, data: e.data,
+      isPrimaryFlow,
       bidirectional: false,
       reverseData: null,
       _directionKeys: new Set([forwardKey]),
@@ -668,6 +682,10 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       _directionKeys: new Set([`${sourceId}\u2192${targetId}`]),
     });
   }
+  layoutEdges.sort((a, b) => {
+    if (a.isPrimaryFlow === b.isPrimaryFlow) return 0;
+    return a.isPrimaryFlow ? 1 : -1;
+  });
 
   // ─── Force simulation ───
   // Only apply to normal nodes (not summary/subsummary which should stay centered)
