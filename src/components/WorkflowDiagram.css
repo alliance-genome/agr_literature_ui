@@ -85,13 +85,56 @@
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid #ddd;
   border-radius: 4px;
-  padding: 6px 10px;
   font-size: 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.workflow-diagram-legend.collapsed {
+  padding: 4px 8px;
+}
+
+.workflow-diagram-legend.expanded {
+  padding: 6px 10px;
+}
+
+.workflow-diagram-legend .legend-header {
   display: flex;
-  flex-direction: row;
-  gap: 12px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 11px;
+  color: #333;
+  user-select: none;
+}
+
+.workflow-diagram-legend .legend-header:hover {
+  color: #0056b3;
+}
+
+.workflow-diagram-legend .legend-toggle {
+  font-size: 9px;
+  color: #666;
+}
+
+.workflow-diagram-legend .legend-content {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workflow-diagram-legend .legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.workflow-diagram-legend .legend-label {
+  font-weight: 600;
+  color: #444;
+  min-width: 40px;
 }
 
 .workflow-diagram-legend .legend-section {
