@@ -77,81 +77,139 @@
 }
 
 /* --- Legend --- */
-.workflow-diagram-legend {
+.workflow-legend {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 12px;
+  left: 12px;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.95);
+  background: #fff;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+  color: #555;
 }
 
-.workflow-diagram-legend.collapsed {
-  padding: 4px 8px;
-}
-
-.workflow-diagram-legend.expanded {
+.workflow-legend.collapsed {
   padding: 6px 10px;
 }
 
-.workflow-diagram-legend .legend-header {
+.workflow-legend.expanded {
+  padding: 8px 12px;
+  min-width: 360px;
+}
+
+.workflow-legend-title {
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
   display: flex;
   align-items: center;
   gap: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 11px;
-  color: #333;
-  user-select: none;
 }
 
-.workflow-diagram-legend .legend-header:hover {
+.workflow-legend-title:hover {
   color: #0056b3;
 }
 
-.workflow-diagram-legend .legend-toggle {
-  font-size: 9px;
+.workflow-legend-toggle {
+  font-size: 10px;
   color: #666;
 }
 
-.workflow-diagram-legend .legend-content {
-  margin-top: 8px;
-  padding-top: 6px;
+.workflow-legend-content {
+  margin-top: 6px;
   border-top: 1px solid #eee;
-  display: grid;
-  grid-template-columns: 45px 75px 95px 85px;
-  gap: 4px 8px;
-  align-items: center;
-  font-size: 10px;
+  padding-top: 5px;
 }
 
-.workflow-diagram-legend .legend-label {
-  font-weight: 600;
-  color: #444;
-}
-
-.workflow-diagram-legend .legend-item {
-  display: inline-flex;
+.workflow-legend-row {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  color: #555;
+  gap: 14px;
+  margin-top: 6px;
   white-space: nowrap;
 }
 
-.workflow-diagram-legend .legend-item svg {
+.workflow-legend-row:first-child {
+  margin-top: 0;
+}
+
+.workflow-legend-label {
+  font-weight: 600;
+  color: #444;
+  width: 52px;
   flex-shrink: 0;
 }
 
-.workflow-diagram-legend .legend-hint {
-  font-size: 9px;
-  color: #888;
-  font-style: italic;
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid #eee;
+.workflow-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.workflow-legend-edge {
+  width: 32px;
+  height: 0;
+  border-top: 2px solid #3b82c4;
+  position: relative;
+}
+
+.workflow-legend-edge::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border-left: 6px solid #3b82c4;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.workflow-legend-edge.cross {
+  border-top-style: dashed;
+  border-color: #d6a02f;
+}
+
+.workflow-legend-edge.cross::after {
+  border-left-color: #d6a02f;
+}
+
+.workflow-legend-edge.bidirectional {
+  border-color: #8e62b8;
+}
+
+.workflow-legend-edge.bidirectional::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -4px;
+  border-right: 6px solid #8e62b8;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.workflow-legend-edge.bidirectional::after {
+  border-left-color: #8e62b8;
+}
+
+.workflow-legend-state {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1.5px solid;
+  display: inline-block;
+}
+
+.workflow-legend-state.needed {
+  border-color: #4caf50;
+}
+
+.workflow-legend-state.internal {
+  border-color: #3b82c4;
+}
+
+.workflow-legend-state.complete {
+  border-color: #d9534f;
 }
 
 /* --- Group bounding boxes --- */
