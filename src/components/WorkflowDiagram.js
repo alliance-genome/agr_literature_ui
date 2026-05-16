@@ -17,6 +17,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [allProcessIds, setAllProcessIds] = useState(new Set());
   const [hideInternalStates, setHideInternalStates] = useState(false); // Hide internal/status states
   const [selectedNodeId, setSelectedNodeId] = useState(null); // Selected node for edge filtering
+  const [legendExpanded, setLegendExpanded] = useState(false); // Legend collapsed by default
 
   const containerRef = useRef(null);
   const svgRef = useRef(null);
@@ -331,43 +332,46 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
           <span>Hide status states</span>
         </label>
       </div>
-      {/* Legend - horizontal at bottom center */}
-      <div className="workflow-diagram-legend">
-        <div className="legend-section">
-          <div className="legend-title">Edges</div>
-          <div className="legend-item">
-            <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#5a9bd5" strokeWidth="2" /><polygon points="19,2 24,5 19,8" fill="#5a9bd5" /></svg>
-            <span>Internal</span>
-          </div>
-          <div className="legend-item">
-            <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#d4a03c" strokeWidth="2" strokeDasharray="3 2" /><polygon points="19,2 24,5 19,8" fill="#d4a03c" /></svg>
-            <span>Cross-workflow</span>
-          </div>
-          <div className="legend-item">
-            <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#9b6fbd" strokeWidth="2" /><polygon points="19,2 24,5 19,8" fill="#9b6fbd" /></svg>
-            <span>Bidirectional</span>
-          </div>
+      {/* Collapsible Legend */}
+      <div className={`workflow-diagram-legend ${legendExpanded ? 'expanded' : 'collapsed'}`}>
+        <div className="legend-header" onClick={() => setLegendExpanded(!legendExpanded)}>
+          <span className="legend-toggle">{legendExpanded ? '▼' : '▶'}</span>
+          <span>Legend</span>
         </div>
-        <div className="legend-section">
-          <div className="legend-title">States</div>
-          <div className="legend-item">
-            <svg width="16" height="12"><rect x="1" y="1" width="14" height="10" rx="2" fill="#e8f5e8" stroke="#4a9d4a" strokeWidth="1" /></svg>
-            <span>Initial (needed)</span>
-          </div>
-          <div className="legend-item">
-            <svg width="16" height="12"><rect x="1" y="1" width="14" height="10" rx="2" fill="#fce8e8" stroke="#c95b5b" strokeWidth="1" /></svg>
-            <span>Final (complete)</span>
-          </div>
-          {currentStateId && (
-            <div className="legend-item">
-              <svg width="16" height="12"><rect x="1" y="1" width="14" height="10" rx="2" fill="#fff3cd" stroke="#ffc107" strokeWidth="1.5" /></svg>
-              <span>Current</span>
+        {legendExpanded && (
+          <div className="legend-content">
+            <div className="legend-row">
+              <span className="legend-label">Edges:</span>
+              <span className="legend-item">
+                <svg width="20" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#5a9bd5" strokeWidth="2" /><polygon points="14,2 18,4 14,6" fill="#5a9bd5" /></svg>
+                Internal
+              </span>
+              <span className="legend-item">
+                <svg width="20" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#d4a03c" strokeWidth="2" strokeDasharray="3 2" /><polygon points="14,2 18,4 14,6" fill="#d4a03c" /></svg>
+                Cross-workflow
+              </span>
+              <span className="legend-item">
+                <svg width="20" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#9b6fbd" strokeWidth="2" /><polygon points="14,2 18,4 14,6" fill="#9b6fbd" /></svg>
+                Bidirectional
+              </span>
             </div>
-          )}
-        </div>
-        <div className="legend-section">
-          <div className="legend-hint">Click a state to filter edges</div>
-        </div>
+            <div className="legend-row">
+              <span className="legend-label">States:</span>
+              <span className="legend-item">
+                <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="#e8f5e8" stroke="#4a9d4a" strokeWidth="1" /></svg>
+                Needed
+              </span>
+              <span className="legend-item">
+                <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="white" stroke="#5a9bd5" strokeWidth="1" /></svg>
+                Internal
+              </span>
+              <span className="legend-item">
+                <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="#fce8e8" stroke="#c95b5b" strokeWidth="1" /></svg>
+                Complete
+              </span>
+            </div>
+          </div>
+        )}
       </div>
       {hoveredElement && (
         <div className="wf-tooltip" style={{ left: hoverPos.x, top: hoverPos.y }}>
