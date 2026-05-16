@@ -589,11 +589,6 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     const tgt = nodeToLayoutId.get(e.target);
     if (!src || !tgt || src === tgt) continue;
 
-    // If a node is selected, only show edges connected to it
-    if (selectedNodeId && src !== selectedNodeId && tgt !== selectedNodeId) {
-      continue;
-    }
-
     const srcNode = layoutNodes.find(n => n.id === src);
     const tgtNode = layoutNodes.find(n => n.id === tgt);
     if (!srcNode || !tgtNode) continue;
@@ -605,6 +600,10 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       nodeMap.get(e.source)?.name,
       nodeMap.get(e.target)?.name
     );
+    const isSelectedEdge = selectedNodeId && (src === selectedNodeId || tgt === selectedNodeId);
+    if (selectedNodeId && !isSelectedEdge && !isPrimaryFlow) {
+      continue;
+    }
     if (!selectedNodeId && edgeType === 'internal' && !isPrimaryFlow) {
       continue;
     }
@@ -632,6 +631,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       sourceNode: srcNode, targetNode: tgtNode,
       edgeType, data: e.data,
       isPrimaryFlow,
+      isSelectedEdge,
       bidirectional: false,
       reverseData: null,
       _directionKeys: new Set([forwardKey]),
@@ -1129,14 +1129,14 @@ export function renderDiagram(svgElement, layout, callbacks) {
 
   const edgeMerge = edgeEnter.merge(edgeSel);
   edgeMerge.attr('class', d =>
-    `wf-edge wf-edge-${d.edgeType}${d.isPrimaryFlow ? ' wf-edge-primary' : ' wf-edge-special'}${d.bidirectional ? ' wf-bidirectional' : ''}`);
+    `wf-edge wf-edge-${d.edgeType}${d.isPrimaryFlow ? ' wf-edge-primary' : ' wf-edge-special'}${d.isSelectedEdge ? ' wf-edge-selected' : ''}${d.bidirectional ? ' wf-bidirectional' : ''}`);
 
   edgeMerge.select('path')
     .on('mouseenter', (event, d) => callbacks.onEdgeHover(d, event))
     .on('mouseleave', () => callbacks.onEdgeLeave())
     .transition(t).attr('opacity', 1)
     .attr('d', edgePath)
-    .attr('stroke-width', d => d.isPrimaryFlow ? 2.25 : d.bidirectional ? 1.75 : 1.35)
+    .attr('stroke-width', d => (d.isPrimaryFlow || d.isSelectedEdge) ? 2.25 : d.bidirectional ? 1.75 : 1.35)
     .attr('marker-end', d => `url(#wf-arrow-${d.edgeType})`);
 
   edgeSel.exit().transition(t).attr('opacity', 0).remove();
