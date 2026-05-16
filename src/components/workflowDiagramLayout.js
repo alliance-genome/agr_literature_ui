@@ -273,7 +273,7 @@ const CUSTOM_GROUP_LAYOUT = {
 };
 
 // Gap between boxes in the same row (smaller = closer together)
-const ROW_BOX_GAP = 20;
+const ROW_BOX_GAP = 10;
 
 function orderGroups(processGroups, edges, nodeToProcess) {
   const groupIds = [...processGroups.keys()];
@@ -610,9 +610,13 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
   }
 
   // ─── Force simulation ───
-  if (layoutNodes.length > 1 && layoutEdges.length > 0) {
-    const simNodes = layoutNodes.map(n => ({ ...n }));
+  // Only apply to normal nodes (not summary/subsummary which should stay centered)
+  const normalNodes = layoutNodes.filter(n => n.type === 'normal');
+  if (normalNodes.length > 1 && layoutEdges.length > 0) {
+    const simNodes = normalNodes.map(n => ({ ...n }));
+    const normalNodeIds = new Set(normalNodes.map(n => n.id));
     const simLinks = layoutEdges
+      .filter(e => normalNodeIds.has(e.source) && normalNodeIds.has(e.target))
       .map(e => {
         const si = simNodes.findIndex(n => n.id === e.source);
         const ti = simNodes.findIndex(n => n.id === e.target);
@@ -635,9 +639,10 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
         .alphaDecay(0.05).stop();
 
       for (let i = 0; i < 80; i++) simulation.tick();
+      // Update only normal node positions
       for (let i = 0; i < simNodes.length; i++) {
-        layoutNodes[i].x = simNodes[i].x;
-        // Y stays at the hierarchical position (fy locked it)
+        const layoutNode = layoutNodes.find(n => n.id === simNodes[i].id);
+        if (layoutNode) layoutNode.x = simNodes[i].x;
       }
     }
   }
