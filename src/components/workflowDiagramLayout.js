@@ -387,13 +387,36 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 
   // Process groups row by row
   for (const rowGroupIds of rowGroups) {
-    // Calculate horizontal positions for groups in this row
     const numInRow = rowGroupIds.length;
-    // Use smaller gap (ROW_BOX_GAP) for boxes in the same row
     const boxGap = numInRow > 1 ? ROW_BOX_GAP : 0;
-    const totalRowWidth = numInRow * SUMMARY_WIDTH + (numInRow - 1) * boxGap;
-    const startX = width / 2 - totalRowWidth / 2;
+
+    // First pass: calculate actual widths for each group
+    const groupWidths = [];
+    const groupHeights = [];
+    const groupData = []; // Store computed data for each group
+
+    for (const gid of rowGroupIds) {
+      const pg = processGroups.get(gid);
+      if (collapsedProcesses.has(gid)) {
+        groupWidths.push(SUMMARY_WIDTH);
+        groupHeights.push(SUMMARY_HEIGHT);
+        groupData.push({ collapsed: true });
+      } else {
+        // Estimate expanded width (will be refined during layout)
+        const estimatedWidth = 350; // Approximate expanded group width
+        groupWidths.push(estimatedWidth);
+        groupHeights.push(200); // Will be calculated during layout
+        groupData.push({ collapsed: false });
+      }
+    }
+
+    // Calculate total row width and starting X position
+    const totalRowWidth = groupWidths.reduce((sum, w) => sum + w, 0) + (numInRow - 1) * boxGap;
+    let rowStartX = width / 2 - totalRowWidth / 2;
     let maxRowHeight = 0;
+
+    // Track X position as we place groups
+    let currentX = rowStartX;
 
     for (let colIdx = 0; colIdx < rowGroupIds.length; colIdx++) {
       const gid = rowGroupIds[colIdx];
@@ -403,7 +426,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       if (collapsedProcesses.has(gid)) {
         // ─── Collapsed process: single summary node ───
         const summaryId = `summary:${gid}`;
-        const sx = numInRow > 1 ? startX + colIdx * (SUMMARY_WIDTH + boxGap) : width / 2 - SUMMARY_WIDTH / 2;
+        const sx = currentX;
         const totalNodes = pg.directNodeIds.length +
           [...pg.subprocesses.values()].reduce((s, sp) => s + sp.nodeIds.length, 0);
 
@@ -434,6 +457,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           color,
         });
 
+        currentX += SUMMARY_WIDTH + boxGap;
         maxRowHeight = Math.max(maxRowHeight, SUMMARY_HEIGHT + GROUP_GAP);
       } else {
         // ─── Expanded process: show subprocesses ───
@@ -512,7 +536,15 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 
         const groupHeight = innerY - currentY + GROUP_PADDING - SUB_GAP;
         const groupWidth = Math.max(maxWidth + GROUP_PADDING * 2, 300);
-        const groupX = width / 2 - groupWidth / 2;
+
+        // Position expanded group - if multiple in row, use currentX; otherwise center
+        let groupX;
+        if (numInRow > 1) {
+          groupX = currentX;
+          currentX += groupWidth + boxGap;
+        } else {
+          groupX = width / 2 - groupWidth / 2;
+        }
 
         layoutGroups.push({
           processId: gid, processName: pg.processName,
