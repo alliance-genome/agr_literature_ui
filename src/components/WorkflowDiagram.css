@@ -79,20 +79,18 @@
 /* --- Legend --- */
 .workflow-diagram-legend {
   position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 10px;
+  left: 10px;
   z-index: 10;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 11px;
-  opacity: 0.95;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   display: flex;
   flex-direction: row;
-  gap: 20px;
+  gap: 12px;
   align-items: flex-start;
 }
 
