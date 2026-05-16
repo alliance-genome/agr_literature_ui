@@ -369,6 +369,7 @@
 /* --- Edges --- */
 .wf-edge path {
   fill: none;
+  stroke: #5a9bd5;  /* Default blue stroke */
   stroke-width: 1.5;
   cursor: pointer;
   transition: stroke 0.15s, stroke-width 0.15s;
