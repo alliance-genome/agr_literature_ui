@@ -342,10 +342,10 @@ function getRowGroups(orderedGroupIds) {
 
 const NODE_WIDTH = 200;      // Increased from 180 to avoid truncation
 const NODE_HEIGHT = 40;
-const SUMMARY_WIDTH = 240;   // Increased from 220
-const SUMMARY_HEIGHT = 60;   // Increased from 50
-const SUB_SUMMARY_WIDTH = 220; // Increased from 200
-const SUB_SUMMARY_HEIGHT = 50; // Increased from 44
+const SUMMARY_WIDTH = 180;   // Reduced to fit more boxes horizontally
+const SUMMARY_HEIGHT = 55;   // Slightly reduced
+const SUB_SUMMARY_WIDTH = 170; // Reduced to fit more boxes
+const SUB_SUMMARY_HEIGHT = 45; // Slightly reduced
 const GROUP_PADDING = 24;    // Increased from 20
 const GROUP_HEADER_HEIGHT = 36; // Increased from 32
 const SUB_HEADER_HEIGHT = 30;   // Increased from 28
