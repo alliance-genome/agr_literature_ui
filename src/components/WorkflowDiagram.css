@@ -387,6 +387,10 @@
   opacity: 0.48;
 }
 
+.wf-edge.wf-edge-selected path {
+  opacity: 1;
+}
+
 .wf-edge.wf-edge-special path:hover {
   opacity: 0.9;
 }
