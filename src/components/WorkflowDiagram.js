@@ -333,21 +333,25 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         </label>
       </div>
       {/* Collapsible Legend */}
-      <div className={`workflow-diagram-legend ${legendExpanded ? 'expanded' : 'collapsed'}`}>
-        <div className="legend-header" onClick={() => setLegendExpanded(!legendExpanded)}>
-          <span className="legend-toggle">{legendExpanded ? '▼' : '▶'}</span>
+      <div className={`workflow-legend ${legendExpanded ? 'expanded' : 'collapsed'}`}>
+        <div className="workflow-legend-title" onClick={() => setLegendExpanded(!legendExpanded)}>
+          <span className="workflow-legend-toggle">{legendExpanded ? '▼' : '▶'}</span>
           <span>Legend</span>
         </div>
         {legendExpanded && (
-          <div className="legend-content">
-            <span className="legend-label">Edges:</span>
-            <span className="legend-item"><svg width="18" height="8"><line x1="0" y1="4" x2="14" y2="4" stroke="#5a9bd5" strokeWidth="2" /><polygon points="12,2 16,4 12,6" fill="#5a9bd5" /></svg> Internal</span>
-            <span className="legend-item"><svg width="18" height="8"><line x1="0" y1="4" x2="14" y2="4" stroke="#d4a03c" strokeWidth="2" strokeDasharray="3 2" /><polygon points="12,2 16,4 12,6" fill="#d4a03c" /></svg> Cross-workflow</span>
-            <span className="legend-item"><svg width="18" height="8"><line x1="0" y1="4" x2="14" y2="4" stroke="#9b6fbd" strokeWidth="2" /><polygon points="12,2 16,4 12,6" fill="#9b6fbd" /></svg> Bidirectional</span>
-            <span className="legend-label">States:</span>
-            <span className="legend-item"><svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="#e8f5e8" stroke="#4a9d4a" strokeWidth="1" /></svg> Needed</span>
-            <span className="legend-item"><svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="white" stroke="#5a9bd5" strokeWidth="1" /></svg> Internal</span>
-            <span className="legend-item"><svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="#fce8e8" stroke="#c95b5b" strokeWidth="1" /></svg> Complete</span>
+          <div className="workflow-legend-content">
+            <div className="workflow-legend-row">
+              <span className="workflow-legend-label">Edges:</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-edge"></span> Internal</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-edge cross"></span> Cross-workflow</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-edge bidirectional"></span> Bidirectional</span>
+            </div>
+            <div className="workflow-legend-row">
+              <span className="workflow-legend-label">States:</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-state needed"></span> Needed</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-state internal"></span> Internal</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-state complete"></span> Complete</span>
+            </div>
           </div>
         )}
       </div>
