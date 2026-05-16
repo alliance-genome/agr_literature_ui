@@ -261,6 +261,18 @@ const CROSS_WORKFLOW_TRIGGERS = [
     toProcess: 'ATP:0000354',    // email extraction
     toState: 'ATP:0000358',      // email extraction needed
   },
+  {
+    fromProcess: 'ATP:0000161',  // text conversion
+    fromState: 'ATP:0000163',    // file converted to text
+    toProcess: 'ATP:0000165',    // reference classification
+    toState: 'ATP:0000166',      // reference classification needed
+  },
+  {
+    fromProcess: 'ATP:0000161',  // text conversion
+    fromState: 'ATP:0000163',    // file converted to text
+    toProcess: 'ATP:0000172',    // entity extraction
+    toState: 'ATP:0000173',      // entity extraction needed
+  },
 ];
 
 // Custom row layout for specific MODs (processId -> row number)
@@ -269,7 +281,9 @@ const CUSTOM_GROUP_LAYOUT = {
   'ATP:0000140': { row: 0, order: 0 },  // file upload - row 0, first
   'ATP:0000273': { row: 0, order: 1 },  // manual indexing - row 0, second
   'ATP:0000161': { row: 1, order: 0 },  // text conversion - row 1, centered
-  'ATP:0000354': { row: 2, order: 0 },  // email extraction - row 2, centered
+  'ATP:0000172': { row: 2, order: 0 },  // entity extraction - row 2, first
+  'ATP:0000165': { row: 2, order: 1 },  // reference classification - row 2, second
+  'ATP:0000354': { row: 2, order: 2 },  // email extraction - row 2, third
 };
 
 // Gap between boxes in the same row (smaller = closer together)
