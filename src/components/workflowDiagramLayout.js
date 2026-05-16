@@ -720,7 +720,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 
     const normalCanonKey = `${sourceId}\u2194${targetId}`;
     const triggerKey = `trigger:${trigger.fromState}\u2192${trigger.toState}:${sourceId}\u2192${targetId}`;
-    if (edgeMap.has(triggerKey) || (!trigger.keepWhenNodeSelected && edgeMap.has(normalCanonKey))) continue; // Don't duplicate
+    if (edgeMap.has(normalCanonKey) || edgeMap.has(triggerKey)) continue; // Don't duplicate
 
     const srcNode = layoutNodes.find(n => n.id === sourceId);
     const tgtNode = layoutNodes.find(n => n.id === targetId);
