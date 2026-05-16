@@ -261,12 +261,14 @@ const CROSS_WORKFLOW_TRIGGERS = [
     fromState: 'ATP:0000134',    // files uploaded
     toProcess: 'ATP:0000161',    // text conversion
     toState: 'ATP:0000162',      // text conversion needed
+    keepWhenNodeSelected: true,
   },
   {
     fromProcess: 'ATP:0000161',  // text conversion
     fromState: 'ATP:0000163',    // file converted to text
     toProcess: 'ATP:0000354',    // email extraction
     toState: 'ATP:0000358',      // email extraction needed
+    keepWhenNodeSelected: true,
   },
   {
     fromProcess: 'ATP:0000161',  // text conversion
@@ -653,10 +655,11 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     let targetId = toSummaryId || nodeToLayoutId.get(trigger.toState);
 
     if (!sourceId || !targetId || sourceId === targetId) continue;
-    if (selectedNodeId && sourceId !== selectedNodeId && targetId !== selectedNodeId) continue;
+    if (selectedNodeId && sourceId !== selectedNodeId && targetId !== selectedNodeId && !trigger.keepWhenNodeSelected) continue;
 
-    const canonKey = `${sourceId}\u2194${targetId}`;
-    if (edgeMap.has(canonKey)) continue; // Don't duplicate
+    const normalCanonKey = `${sourceId}\u2194${targetId}`;
+    const triggerKey = `trigger:${trigger.fromState}\u2192${trigger.toState}:${sourceId}\u2192${targetId}`;
+    if (edgeMap.has(normalCanonKey) || edgeMap.has(triggerKey)) continue; // Don't duplicate
 
     const srcNode = layoutNodes.find(n => n.id === sourceId);
     const tgtNode = layoutNodes.find(n => n.id === targetId);
@@ -673,6 +676,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       targetNode: tgtNode,
       edgeType: 'external',
       isTrigger: true,
+      isPrimaryFlow: !!trigger.keepWhenNodeSelected,
       data: {
         sourceName: fromStateName,
         to_name: toStateName,
