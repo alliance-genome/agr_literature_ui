@@ -340,36 +340,32 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         </div>
         {legendExpanded && (
           <div className="legend-content">
-            <div className="legend-row">
-              <span className="legend-label">Edges:</span>
-              <span className="legend-item">
-                <svg width="20" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#5a9bd5" strokeWidth="2" /><polygon points="14,2 18,4 14,6" fill="#5a9bd5" /></svg>
-                Internal
-              </span>
-              <span className="legend-item">
-                <svg width="20" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#d4a03c" strokeWidth="2" strokeDasharray="3 2" /><polygon points="14,2 18,4 14,6" fill="#d4a03c" /></svg>
-                Cross-workflow
-              </span>
-              <span className="legend-item">
-                <svg width="20" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#9b6fbd" strokeWidth="2" /><polygon points="14,2 18,4 14,6" fill="#9b6fbd" /></svg>
-                Bidirectional
-              </span>
-            </div>
-            <div className="legend-row">
-              <span className="legend-label">States:</span>
-              <span className="legend-item">
-                <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="#e8f5e8" stroke="#4a9d4a" strokeWidth="1" /></svg>
-                Needed
-              </span>
-              <span className="legend-item">
-                <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="white" stroke="#5a9bd5" strokeWidth="1" /></svg>
-                Internal
-              </span>
-              <span className="legend-item">
-                <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="#fce8e8" stroke="#c95b5b" strokeWidth="1" /></svg>
-                Complete
-              </span>
-            </div>
+            <span className="legend-label">Edges:</span>
+            <span className="legend-item">
+              <svg width="18" height="8"><line x1="0" y1="4" x2="14" y2="4" stroke="#5a9bd5" strokeWidth="2" /><polygon points="12,2 16,4 12,6" fill="#5a9bd5" /></svg>
+              Internal
+            </span>
+            <span className="legend-item">
+              <svg width="18" height="8"><line x1="0" y1="4" x2="14" y2="4" stroke="#d4a03c" strokeWidth="2" strokeDasharray="3 2" /><polygon points="12,2 16,4 12,6" fill="#d4a03c" /></svg>
+              Cross-workflow
+            </span>
+            <span className="legend-item">
+              <svg width="18" height="8"><line x1="0" y1="4" x2="14" y2="4" stroke="#9b6fbd" strokeWidth="2" /><polygon points="12,2 16,4 12,6" fill="#9b6fbd" /></svg>
+              Bidirectional
+            </span>
+            <span className="legend-label">States:</span>
+            <span className="legend-item">
+              <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="#e8f5e8" stroke="#4a9d4a" strokeWidth="1" /></svg>
+              Needed
+            </span>
+            <span className="legend-item">
+              <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="white" stroke="#5a9bd5" strokeWidth="1" /></svg>
+              Internal
+            </span>
+            <span className="legend-item">
+              <svg width="12" height="10"><rect x="1" y="1" width="10" height="8" rx="2" fill="#fce8e8" stroke="#c95b5b" strokeWidth="1" /></svg>
+              Complete
+            </span>
           </div>
         )}
       </div>

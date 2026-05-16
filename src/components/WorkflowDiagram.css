@@ -121,31 +121,24 @@
   margin-top: 8px;
   padding-top: 6px;
   border-top: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.workflow-diagram-legend .legend-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 45px 75px 95px 85px;
+  gap: 4px 8px;
   align-items: center;
-  gap: 4px;
+  font-size: 10px;
 }
 
 .workflow-diagram-legend .legend-label {
   font-weight: 600;
   color: #444;
-  min-width: 45px;
-  font-size: 10px;
 }
 
 .workflow-diagram-legend .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-right: 10px;
-  font-size: 10px;
+  gap: 4px;
   color: #555;
+  white-space: nowrap;
 }
 
 .workflow-diagram-legend .legend-item svg {
