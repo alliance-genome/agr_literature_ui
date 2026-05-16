@@ -461,6 +461,8 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
         maxRowHeight = Math.max(maxRowHeight, SUMMARY_HEIGHT + GROUP_GAP);
       } else {
         // ─── Expanded process: show subprocesses ───
+        const groupNodeStart = layoutNodes.length;
+        const groupBoxStart = layoutGroups.length;
         const groupStartY = currentY + GROUP_HEADER_HEIGHT + GROUP_PADDING;
         let innerY = groupStartY;
         let maxWidth = 280;
@@ -544,6 +546,18 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           currentX += groupWidth + boxGap;
         } else {
           groupX = width / 2 - groupWidth / 2;
+        }
+
+        const groupCenterX = groupX + groupWidth / 2;
+        const layoutCenterX = width / 2;
+        const groupOffsetX = groupCenterX - layoutCenterX;
+        if (groupOffsetX !== 0) {
+          for (let i = groupNodeStart; i < layoutNodes.length; i++) {
+            layoutNodes[i].x += groupOffsetX;
+          }
+          for (let i = groupBoxStart; i < layoutGroups.length; i++) {
+            layoutGroups[i].x += groupOffsetX;
+          }
         }
 
         layoutGroups.push({
@@ -1246,7 +1260,8 @@ export function renderDiagram(svgElement, layout, callbacks) {
 
 export function setupZoom(svgElement) {
   const svg = d3.select(svgElement);
-  const rootG = svg.select('g.wf-root');
+  let rootG = svg.select('g.wf-root');
+  if (rootG.empty()) rootG = svg.append('g').attr('class', 'wf-root');
 
   const zoomBehavior = d3.zoom()
     .scaleExtent([0.2, 4])
