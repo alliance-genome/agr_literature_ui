@@ -642,8 +642,11 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       const anchors = simNodes.map(n => ({ x: n.x, y: n.y }));
 
       // Fix Y positions so topological (from->to) ordering is preserved.
-      // Only let the simulation adjust X to reduce edge crossings.
-      for (const n of simNodes) n.fy = n.y;
+      // Also fix X for main flow nodes to keep them centered.
+      for (const n of simNodes) {
+        n.fy = n.y;
+        if (n.isMainFlow) n.fx = n.x;  // Keep main flow nodes centered
+      }
 
       const simulation = d3.forceSimulation(simNodes)
         .force('link', d3.forceLink(simLinks).distance(80).strength(0.2))
@@ -771,6 +774,7 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
       width: nw, height: nh,
       type: 'normal',
       compact,
+      isMainFlow: true,  // Mark as main flow to fix X position in simulation
       processId, processName, color,
       transitions: nd.transitions,
     });
