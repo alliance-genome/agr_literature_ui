@@ -275,12 +275,14 @@ const CROSS_WORKFLOW_TRIGGERS = [
     fromState: 'ATP:0000163',    // file converted to text
     toProcess: 'ATP:0000165',    // reference classification
     toState: 'ATP:0000166',      // reference classification needed
+    keepWhenNodeSelected: true,
   },
   {
     fromProcess: 'ATP:0000161',  // text conversion
     fromState: 'ATP:0000163',    // file converted to text
     toProcess: 'ATP:0000172',    // entity extraction
     toState: 'ATP:0000173',      // entity extraction needed
+    keepWhenNodeSelected: true,
   },
 ];
 
