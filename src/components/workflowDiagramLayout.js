@@ -1332,7 +1332,15 @@ export function renderDiagram(svgElement, layout, callbacks) {
         d3.select(this).classed('wf-dragging', false);
         if (!didDrag) {
           if (d.type === 'summary') callbacks.onGroupClick(d.processId);
-          else if (d.type === 'subsummary') callbacks.onSubprocessClick(d.subprocessId);
+          else if (d.type === 'subsummary') {
+            // For "failed" subprocesses, select to show transitions instead of expanding
+            const isFailedSubprocess = d.subprocessName && d.subprocessName.toLowerCase().includes('failed');
+            if (isFailedSubprocess && callbacks.onNodeClick) {
+              callbacks.onNodeClick(d.id);
+            } else {
+              callbacks.onSubprocessClick(d.subprocessId);
+            }
+          }
         }
       });
   }
