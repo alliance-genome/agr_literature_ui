@@ -96,6 +96,17 @@
   border-color: #0056b3;
 }
 
+.workflow-diagram-process-dropdown {
+  font-size: 11px;
+  padding: 3px 6px;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+}
+
 .workflow-diagram-hint {
   position: absolute;
   top: 48px;
