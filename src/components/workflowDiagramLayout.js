@@ -12,6 +12,8 @@ const GROUP_COLORS = [
   { bg: '#e8f5f0', border: '#5bb59b', header: '#d4eae2' },
 ];
 
+let markerInstanceCounter = 0;
+
 function hashString(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -1127,6 +1129,13 @@ export function renderDiagram(svgElement, layout, callbacks) {
   const svg = d3.select(svgElement);
   svg.selectAll('*').interrupt();
   const t = svg.transition().duration(500).ease(d3.easeCubicInOut);
+  if (!svgElement.__workflowMarkerId) {
+    markerInstanceCounter += 1;
+    svgElement.__workflowMarkerId = `wf-arrow-${markerInstanceCounter}`;
+  }
+  const markerPrefix = svgElement.__workflowMarkerId;
+  const internalArrowId = `${markerPrefix}-internal`;
+  const externalArrowId = `${markerPrefix}-external`;
 
   svg.attr('viewBox', layout.viewBox);
 
@@ -1135,16 +1144,18 @@ export function renderDiagram(svgElement, layout, callbacks) {
   if (defs.empty()) defs = svg.append('defs');
 
   // End arrows (point forward)
-  if (defs.select('#wf-arrow-internal').empty()) {
-    defs.append('marker').attr('id', 'wf-arrow-internal')
-      .attr('viewBox', '0 0 10 10').attr('refX', 9).attr('refY', 5)
-      .attr('markerWidth', 8).attr('markerHeight', 8).attr('orient', 'auto')
+  if (defs.select(`#${internalArrowId}`).empty()) {
+    defs.append('marker').attr('id', internalArrowId)
+      .attr('viewBox', '0 0 10 10').attr('refX', 9.5).attr('refY', 5)
+      .attr('markerWidth', 10).attr('markerHeight', 10).attr('orient', 'auto')
+      .attr('markerUnits', 'strokeWidth')
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#5a9bd5');
   }
-  if (defs.select('#wf-arrow-external').empty()) {
-    defs.append('marker').attr('id', 'wf-arrow-external')
-      .attr('viewBox', '0 0 10 10').attr('refX', 10).attr('refY', 5)
-      .attr('markerWidth', 6).attr('markerHeight', 6).attr('orient', 'auto')
+  if (defs.select(`#${externalArrowId}`).empty()) {
+    defs.append('marker').attr('id', externalArrowId)
+      .attr('viewBox', '0 0 10 10').attr('refX', 9.5).attr('refY', 5)
+      .attr('markerWidth', 10).attr('markerHeight', 10).attr('orient', 'auto')
+      .attr('markerUnits', 'strokeWidth')
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#d4a03c');
   }
 
@@ -1254,7 +1265,7 @@ export function renderDiagram(svgElement, layout, callbacks) {
     .transition(t).attr('opacity', 1)
     .attr('d', edgePath)
     .attr('stroke-width', d => (d.isPrimaryFlow || d.isSelectedEdge) ? 2.25 : d.bidirectional ? 1.75 : 1.35)
-    .attr('marker-end', d => `url(#wf-arrow-${d.edgeType})`);
+    .attr('marker-end', d => `url(#${markerPrefix}-${d.edgeType})`);
 
   edgeSel.exit().transition(t).attr('opacity', 0).remove();
 
