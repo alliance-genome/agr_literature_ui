@@ -544,6 +544,14 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           }
         }
 
+        // If ALL subprocesses are side states (no main flow), put them in center instead
+        if (mainFlowSubprocesses.length === 0 && sideSubprocesses.length > 0) {
+          for (const item of sideSubprocesses) {
+            mainFlowSubprocesses.push({ ...item, priority: STATE_PRIORITY[item.category] || 99 });
+          }
+          sideSubprocesses.length = 0;
+        }
+
         // Sort main flow subprocesses by priority
         mainFlowSubprocesses.sort((a, b) => a.priority - b.priority);
 
@@ -979,6 +987,16 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
       // All side states (blocked, failed, unavailable, other) go to left side
       leftSideNodes.push({ id: nid, category });
     }
+  }
+
+  // If ALL nodes are side states (no main flow), put them in center instead
+  // This handles subprocesses like "entity extraction failed" where all states are failed
+  if (mainFlowNodes.length === 0 && leftSideNodes.length > 0) {
+    // Move all left side nodes to main flow for center layout
+    for (const item of leftSideNodes) {
+      mainFlowNodes.push({ ...item, priority: STATE_PRIORITY[item.category] || 99 });
+    }
+    leftSideNodes.length = 0; // Clear left side
   }
 
   // Sort main flow by priority (initial → progress → complete)
