@@ -345,6 +345,9 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
           <span>Hide status states</span>
         </label>
       </div>
+      <div className="workflow-diagram-hint">
+        Click a state to show transitions to/from it
+      </div>
       {/* Collapsible Legend */}
       <div className={`workflow-legend ${legendExpanded ? 'expanded' : 'collapsed'}`}>
         <div className="workflow-legend-title" onClick={() => setLegendExpanded(!legendExpanded)}>
