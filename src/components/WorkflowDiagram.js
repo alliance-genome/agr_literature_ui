@@ -362,12 +362,6 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
               <span className="workflow-legend-item"><span className="workflow-legend-edge cross"></span> Cross-workflow</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge bidirectional"></span> Bidirectional</span>
             </div>
-            <div className="workflow-legend-row">
-              <span className="workflow-legend-label">States:</span>
-              <span className="workflow-legend-item"><span className="workflow-legend-state needed"></span> Needed</span>
-              <span className="workflow-legend-item"><span className="workflow-legend-state progress"></span> In progress</span>
-              <span className="workflow-legend-item"><span className="workflow-legend-state complete"></span> Complete</span>
-            </div>
           </div>
         )}
       </div>
