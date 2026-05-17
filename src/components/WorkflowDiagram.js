@@ -365,7 +365,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
             <div className="workflow-legend-row">
               <span className="workflow-legend-label">States:</span>
               <span className="workflow-legend-item"><span className="workflow-legend-state needed"></span> Needed</span>
-              <span className="workflow-legend-item"><span className="workflow-legend-state internal"></span> Internal</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-state progress"></span> In progress</span>
               <span className="workflow-legend-item"><span className="workflow-legend-state complete"></span> Complete</span>
             </div>
           </div>

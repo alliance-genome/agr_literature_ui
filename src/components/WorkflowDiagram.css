@@ -218,15 +218,15 @@
 }
 
 .workflow-legend-state.needed {
-  border-color: #4caf50;
+  border-color: #4a9d4a;
 }
 
-.workflow-legend-state.internal {
-  border-color: #3b82c4;
+.workflow-legend-state.progress {
+  border-color: #5a9bd5;
 }
 
 .workflow-legend-state.complete {
-  border-color: #d9534f;
+  border-color: #c95b5b;
 }
 
 /* --- Group bounding boxes --- */
