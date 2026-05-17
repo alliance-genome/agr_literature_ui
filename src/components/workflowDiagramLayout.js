@@ -394,6 +394,7 @@ const GROUP_PADDING = 24;    // Increased from 20
 const GROUP_HEADER_HEIGHT = 36; // Increased from 32
 const SUB_HEADER_HEIGHT = 30;   // Increased from 28
 const GROUP_GAP = 50;        // Increased from 30 for better spacing
+const TOP_PADDING = 60;      // Extra top padding to avoid overlapping controls
 const SUB_GAP = 20;          // Increased from 16
 const NODE_X_GAP = 28;       // Increased from 24
 const NODE_Y_GAP = 20;       // Increased from 16
@@ -427,7 +428,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
   const nodeToLayoutId = new Map();
   const processIdToSummaryId = new Map(); // Track summary IDs for cross-workflow edges
 
-  let currentY = GROUP_GAP;
+  let currentY = TOP_PADDING;
 
   // Process groups row by row
   for (const rowGroupIds of rowGroups) {
