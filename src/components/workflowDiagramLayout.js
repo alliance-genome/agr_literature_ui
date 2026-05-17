@@ -161,6 +161,9 @@ function buildGraph(tagData) {
   const nodeToProcess = new Map();
 
   for (const node of tagData) {
+    // Skip nodes without a proper workflow_process (unassigned/internal states)
+    if (!node.workflow_process) continue;
+
     nodeMap.set(node.tag, {
       id: node.tag,
       name: node.tag_name,
@@ -171,8 +174,8 @@ function buildGraph(tagData) {
       transitions: node.transitions || [],
     });
 
-    const pid = node.workflow_process || '__unassigned__';
-    const pname = node.workflow_process_name || 'Unassigned';
+    const pid = node.workflow_process;
+    const pname = node.workflow_process_name || pid;
     nodeToProcess.set(node.tag, pid);
 
     if (!processGroups.has(pid)) {
