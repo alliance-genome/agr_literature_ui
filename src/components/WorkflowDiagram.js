@@ -182,6 +182,11 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
               <strong>{data.nodeCount}</strong> states{data.subprocessCount > 0 ? `, ${data.subprocessCount} sub-processes` : ''}. Click to expand.
             </div>
           )}
+          {data.type === 'normal' && (
+            <div className="wf-popover-hint">
+              Click to show transitions to and from this state.
+            </div>
+          )}
           {data.transitions && data.transitions.length > 0 && (
             <>
               <div className="wf-popover-section-title">Outgoing transitions</div>
