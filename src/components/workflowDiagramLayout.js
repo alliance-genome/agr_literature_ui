@@ -525,61 +525,123 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           innerY = result.bottomY + SUB_GAP;
         }
 
-        // Subprocesses
+        // Subprocesses - separate into main flow and side states
+        const mainFlowSubprocesses = [];  // needed, in progress, complete
+        const sideSubprocesses = [];      // failed, blocked, etc.
+        const expandedSubprocessList = [];
+
         for (const sp of pg.subprocesses.values()) {
-          const spColor = getGroupColor(sp.subprocessId);
-
-          if (!expandedSubprocesses.has(sp.subprocessId)) {
-            // Collapsed subprocess: summary node
-            const spSummaryId = `subsummary:${sp.subprocessId}`;
-            const sx = width / 2 - SUB_SUMMARY_WIDTH / 2;
-
-            layoutNodes.push({
-              id: spSummaryId,
-              name: sp.subprocessName || sp.subprocessId,
-              x: sx, y: innerY,
-              width: SUB_SUMMARY_WIDTH, height: SUB_SUMMARY_HEIGHT,
-              type: 'subsummary',
-              processId: gid, processName: pg.processName,
-              subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
-              nodeCount: sp.nodeIds.length,
-              color: spColor,
-            });
-
-            for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, spSummaryId);
-
-            maxWidth = Math.max(maxWidth, SUB_SUMMARY_WIDTH + GROUP_PADDING * 2);
-            innerY += SUB_SUMMARY_HEIGHT + SUB_GAP;
+          if (expandedSubprocesses.has(sp.subprocessId)) {
+            expandedSubprocessList.push(sp);
           } else {
-            // Expanded subprocess: show nodes with sub-header
-            const subHeaderY = innerY;
-            innerY += SUB_HEADER_HEIGHT + 8;
-
-            const ids = sp.nodeIds.filter(id => nodeMap.has(id));
-            const internalEdges = allEdges.filter(
-              e => ids.includes(e.source) && ids.includes(e.target)
-            );
-            const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
-            layoutNodes.push(...result.nodes);
-
-            // Add subprocess group box
-            const spWidth = Math.max(result.width + GROUP_PADDING, SUB_SUMMARY_WIDTH + GROUP_PADDING);
-            const spHeight = SUB_HEADER_HEIGHT + 8 + result.height + GROUP_PADDING;
-            const spX = width / 2 - spWidth / 2;
-
-            layoutGroups.push({
-              processId: sp.subprocessId, processName: sp.subprocessName,
-              collapsed: false,
-              isSubprocess: true,
-              parentProcessId: gid,
-              x: spX, y: subHeaderY,
-              width: spWidth, height: spHeight,
-              color: spColor,
-            });
-
-            maxWidth = Math.max(maxWidth, spWidth + GROUP_PADDING);
-            innerY = result.bottomY + SUB_GAP;
+            // Categorize collapsed subprocesses by their name
+            const category = classifyState(sp.subprocessName);
+            if (category === 'initial' || category === 'progress' || category === 'complete') {
+              mainFlowSubprocesses.push({ sp, category, priority: STATE_PRIORITY[category] });
+            } else {
+              sideSubprocesses.push({ sp, category });
+            }
           }
+        }
+
+        // Sort main flow subprocesses by priority
+        mainFlowSubprocesses.sort((a, b) => a.priority - b.priority);
+
+        // Calculate positions for side subprocesses
+        const sideXGap = 40;
+        const centerX = width / 2 - SUB_SUMMARY_WIDTH / 2;
+        const leftX = centerX - SUB_SUMMARY_WIDTH - sideXGap;
+
+        // Layout main flow subprocesses (center)
+        for (const { sp } of mainFlowSubprocesses) {
+          const spColor = getGroupColor(sp.subprocessId);
+          const spSummaryId = `subsummary:${sp.subprocessId}`;
+
+          layoutNodes.push({
+            id: spSummaryId,
+            name: sp.subprocessName || sp.subprocessId,
+            x: centerX, y: innerY,
+            width: SUB_SUMMARY_WIDTH, height: SUB_SUMMARY_HEIGHT,
+            type: 'subsummary',
+            processId: gid, processName: pg.processName,
+            subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
+            nodeCount: sp.nodeIds.length,
+            color: spColor,
+          });
+
+          for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, spSummaryId);
+          innerY += SUB_SUMMARY_HEIGHT + SUB_GAP;
+        }
+
+        // Calculate vertical center for side subprocesses
+        const mainFlowHeight = mainFlowSubprocesses.length > 0
+          ? (mainFlowSubprocesses.length * (SUB_SUMMARY_HEIGHT + SUB_GAP) - SUB_GAP)
+          : SUB_SUMMARY_HEIGHT;
+        const sideStartY = groupStartY + (mainFlowHeight / 2) - (sideSubprocesses.length * (SUB_SUMMARY_HEIGHT + SUB_GAP) / 2);
+        let sideY = Math.max(groupStartY, sideStartY);
+
+        // Layout side subprocesses (left)
+        for (const { sp } of sideSubprocesses) {
+          const spColor = getGroupColor(sp.subprocessId);
+          const spSummaryId = `subsummary:${sp.subprocessId}`;
+
+          layoutNodes.push({
+            id: spSummaryId,
+            name: sp.subprocessName || sp.subprocessId,
+            x: leftX, y: sideY,
+            width: SUB_SUMMARY_WIDTH, height: SUB_SUMMARY_HEIGHT,
+            type: 'subsummary',
+            processId: gid, processName: pg.processName,
+            subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
+            nodeCount: sp.nodeIds.length,
+            color: spColor,
+          });
+
+          for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, spSummaryId);
+          sideY += SUB_SUMMARY_HEIGHT + SUB_GAP;
+        }
+
+        // Update maxWidth to include side column if present
+        if (sideSubprocesses.length > 0) {
+          maxWidth = Math.max(maxWidth, (SUB_SUMMARY_WIDTH * 2) + sideXGap + GROUP_PADDING * 2);
+        } else {
+          maxWidth = Math.max(maxWidth, SUB_SUMMARY_WIDTH + GROUP_PADDING * 2);
+        }
+
+        // Update innerY to account for both columns
+        innerY = Math.max(innerY, sideY);
+
+        // Layout expanded subprocesses
+        for (const sp of expandedSubprocessList) {
+          const spColor = getGroupColor(sp.subprocessId);
+          // Expanded subprocess: show nodes with sub-header
+          const subHeaderY = innerY;
+          innerY += SUB_HEADER_HEIGHT + 8;
+
+          const ids = sp.nodeIds.filter(id => nodeMap.has(id));
+          const internalEdges = allEdges.filter(
+            e => ids.includes(e.source) && ids.includes(e.target)
+          );
+          const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
+          layoutNodes.push(...result.nodes);
+
+          // Add subprocess group box
+          const spWidth = Math.max(result.width + GROUP_PADDING, SUB_SUMMARY_WIDTH + GROUP_PADDING);
+          const spHeight = SUB_HEADER_HEIGHT + 8 + result.height + GROUP_PADDING;
+          const spX = width / 2 - spWidth / 2;
+
+          layoutGroups.push({
+            processId: sp.subprocessId, processName: sp.subprocessName,
+            collapsed: false,
+            isSubprocess: true,
+            parentProcessId: gid,
+            x: spX, y: subHeaderY,
+            width: spWidth, height: spHeight,
+            color: spColor,
+          });
+
+          maxWidth = Math.max(maxWidth, spWidth + GROUP_PADDING);
+          innerY = result.bottomY + SUB_GAP;
         }
 
         const groupHeight = innerY - currentY + GROUP_PADDING - SUB_GAP;
