@@ -1148,14 +1148,14 @@ export function renderDiagram(svgElement, layout, callbacks) {
   if (defs.select(`#${internalArrowId}`).empty()) {
     defs.append('marker').attr('id', internalArrowId)
       .attr('viewBox', '0 0 10 10').attr('refX', 9.5).attr('refY', 5)
-      .attr('markerWidth', 10).attr('markerHeight', 10).attr('orient', 'auto')
+      .attr('markerWidth', 6).attr('markerHeight', 6).attr('orient', 'auto')
       .attr('markerUnits', 'strokeWidth')
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#5a9bd5');
   }
   if (defs.select(`#${externalArrowId}`).empty()) {
     defs.append('marker').attr('id', externalArrowId)
       .attr('viewBox', '0 0 10 10').attr('refX', 9.5).attr('refY', 5)
-      .attr('markerWidth', 10).attr('markerHeight', 10).attr('orient', 'auto')
+      .attr('markerWidth', 6).attr('markerHeight', 6).attr('orient', 'auto')
       .attr('markerUnits', 'strokeWidth')
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#d4a03c');
   }
