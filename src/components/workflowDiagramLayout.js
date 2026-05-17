@@ -112,6 +112,16 @@ function isPrimaryWorkflowTransition(sourceName, targetName) {
     (sourceCategory === 'progress' && targetCategory === 'complete');
 }
 
+function normalizeWorkflowName(name) {
+  return (name || '').toLowerCase().trim();
+}
+
+function isProcessPlaceholderNode(node, processId, processName) {
+  if (!node) return false;
+  return node.tag === processId ||
+    normalizeWorkflowName(node.tag_name) === normalizeWorkflowName(processName);
+}
+
 // Semantic ordering priority (lower = earlier in layout)
 const STATE_PRIORITY = {
   'initial': 0,
@@ -153,6 +163,7 @@ function buildGraph(tagData) {
         processName: pname,
         subprocesses: new Map(),
         directNodeIds: [],  // nodes without a subprocess
+        placeholderNodeIds: [],
       });
     }
     const pg = processGroups.get(pid);
@@ -170,7 +181,11 @@ function buildGraph(tagData) {
       const spNodeIds = pg.subprocesses.get(spid).nodeIds;
       if (!spNodeIds.includes(node.tag)) spNodeIds.push(node.tag);
     } else {
-      if (!pg.directNodeIds.includes(node.tag)) pg.directNodeIds.push(node.tag);
+      if (isProcessPlaceholderNode(node, pid, pname)) {
+        if (!pg.placeholderNodeIds.includes(node.tag)) pg.placeholderNodeIds.push(node.tag);
+      } else if (!pg.directNodeIds.includes(node.tag)) {
+        pg.directNodeIds.push(node.tag);
+      }
     }
 
     for (const t of node.transitions || []) {
@@ -455,6 +470,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 
         // Map all nodes in this process to the summary
         for (const nid of pg.directNodeIds) nodeToLayoutId.set(nid, summaryId);
+        for (const nid of pg.placeholderNodeIds || []) nodeToLayoutId.set(nid, summaryId);
         for (const sp of pg.subprocesses.values()) {
           for (const nid of sp.nodeIds) nodeToLayoutId.set(nid, summaryId);
         }
@@ -1243,7 +1259,6 @@ export function renderDiagram(svgElement, layout, callbacks) {
     .attr('transform', d => `translate(${d.x}, ${d.y})`);
   nodeEnter.append('rect');
   nodeEnter.append('text').attr('class', 'wf-node-label');
-  nodeEnter.append('text').attr('class', 'wf-node-hint');
 
   const nodeMerge = nodeEnter.merge(nodeSel);
   nodeMerge.each(function () {
@@ -1251,9 +1266,7 @@ export function renderDiagram(svgElement, layout, callbacks) {
     if (node.select('text.wf-node-label').empty()) {
       node.select('text').attr('class', 'wf-node-label');
     }
-    if (node.select('text.wf-node-hint').empty()) {
-      node.append('text').attr('class', 'wf-node-hint');
-    }
+    node.selectAll('text.wf-node-hint').remove();
   });
   nodeMerge.transition(t).attr('opacity', 1)
     .attr('transform', d => `translate(${d.x}, ${d.y})`);
@@ -1276,7 +1289,7 @@ export function renderDiagram(svgElement, layout, callbacks) {
     .attr('stroke-width', d => (d.isCurrent || d.isSelected) ? 3 : 1.5);
   nodeMerge.select('text.wf-node-label')
     .attr('x', d => d.width / 2)
-    .attr('y', d => d.isMainFlow ? d.height / 2 + (d.compact ? 3 : 4) : d.height / 2 - 2)
+    .attr('y', d => d.height / 2 + (d.compact ? 3 : 4))
     .attr('text-anchor', 'middle')
     .attr('font-size', d => d.compact ? '10px' : '12px')
     .text(d => {
@@ -1285,12 +1298,6 @@ export function renderDiagram(svgElement, layout, callbacks) {
       const max = Math.floor(d.width / charWidth);
       return displayName.length > max ? displayName.slice(0, max - 1) + '\u2026' : displayName;
     });
-  nodeMerge.select('text.wf-node-hint')
-    .attr('x', d => d.width / 2)
-    .attr('y', d => d.height / 2 + (d.compact ? 11 : 12))
-    .attr('text-anchor', 'middle')
-    .attr('font-size', d => d.compact ? '8px' : '9px')
-    .text(d => d.isMainFlow ? '' : (d.isSelected ? 'paths shown' : 'click for paths'));
   nodeMerge
     .on('mouseenter', (event, d) => callbacks.onNodeHover(d, event))
     .on('mouseleave', () => callbacks.onNodeLeave())
