@@ -1076,6 +1076,7 @@ function edgePath(d) {
 
 export function renderDiagram(svgElement, layout, callbacks) {
   const svg = d3.select(svgElement);
+  svg.selectAll('*').interrupt();
   const t = svg.transition().duration(500).ease(d3.easeCubicInOut);
 
   svg.attr('viewBox', layout.viewBox);

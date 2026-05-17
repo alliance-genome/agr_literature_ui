@@ -58,7 +58,15 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     const ro = new ResizeObserver(entries => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) setDimensions({ width, height });
+        if (width > 0 && height > 0) {
+          const nextWidth = Math.round(width);
+          const nextHeight = Math.round(height);
+          setDimensions(prev => (
+            prev.width === nextWidth && prev.height === nextHeight
+              ? prev
+              : { width: nextWidth, height: nextHeight }
+          ));
+        }
       }
     });
     ro.observe(container);
