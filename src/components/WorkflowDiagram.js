@@ -22,6 +22,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [selectedProcessDatatype, setSelectedProcessDatatype] = useState({}); // Map of process name -> selected datatype
   const [summaryPositions, setSummaryPositions] = useState({}); // Map of processName -> {x, y} for dropdown positioning
   const [zoomTransform, setZoomTransform] = useState(null); // Track zoom transform for dropdown positioning
+  const [processNameToId, setProcessNameToId] = useState({}); // Map of process name -> process ID
 
   const containerRef = useRef(null);
   const svgRef = useRef(null);
@@ -40,9 +41,16 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
           setTagData(result.data);
           const processIds = new Set();
           const datatypesByProcess = {}; // Map process name -> Set of datatypes
+          const nameToId = {}; // Map process name (lowercase) -> process ID
 
           for (const node of result.data) {
-            if (node.workflow_process) processIds.add(node.workflow_process);
+            if (node.workflow_process) {
+              processIds.add(node.workflow_process);
+              // Build process name to ID mapping
+              if (node.workflow_process_name) {
+                nameToId[node.workflow_process_name.toLowerCase()] = node.workflow_process;
+              }
+            }
 
             // Extract datatype from tag names
             const name = node.tag_name || '';
@@ -52,13 +60,15 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
             for (const suffix of statusSuffixes) {
               if (name.toLowerCase().endsWith(suffix)) {
                 const datatype = name.slice(0, -suffix.length).trim();
+                const datatypeLower = datatype.toLowerCase();
                 // Check if this is a datatype under entity extraction or reference classification
-                if (processName.toLowerCase() === 'entity extraction' && datatype !== 'entity extraction') {
+                // Exclude the parent process name itself (case-insensitive)
+                if (processName.toLowerCase() === 'entity extraction' && datatypeLower !== 'entity extraction') {
                   if (!datatypesByProcess['entity extraction']) {
                     datatypesByProcess['entity extraction'] = new Set();
                   }
                   datatypesByProcess['entity extraction'].add(datatype);
-                } else if (processName.toLowerCase() === 'reference classification' && datatype !== 'reference classification') {
+                } else if (processName.toLowerCase() === 'reference classification' && datatypeLower !== 'reference classification') {
                   if (!datatypesByProcess['reference classification']) {
                     datatypesByProcess['reference classification'] = new Set();
                   }
@@ -77,6 +87,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
 
           setAllProcessIds(processIds);
           setProcessDatatypes(datatypesMap);
+          setProcessNameToId(nameToId);
           setCollapsedProcesses(new Set(processIds)); // Start all collapsed
           setExpandedSubprocesses(new Set());
           setSelectedProcessDatatype({}); // Reset datatype filters when MOD changes
@@ -250,10 +261,9 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         const processName = (node.processName || '').toLowerCase();
         if (processName === 'entity extraction' || processName === 'reference classification') {
           positions[processName] = {
-            x: node.x + node.width + 8, // Position to the right of the summary node
-            y: node.y + node.height / 2 - 12, // Vertically centered
-            svgX: node.x,
-            svgY: node.y,
+            // Position below the summary node, centered horizontally
+            svgX: node.x + node.width / 2,
+            svgY: node.y + node.height + 5,
             width: node.width,
             height: node.height,
             isCollapsed: true,
@@ -268,10 +278,10 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         const processName = (group.processName || '').toLowerCase();
         if ((processName === 'entity extraction' || processName === 'reference classification') && !positions[processName]) {
           positions[processName] = {
-            // Position to the right of the group header
-            svgX: group.x + group.width - 80, // Near the right edge of header
-            svgY: group.y + 8, // In the header area
-            width: 0,
+            // Position in the group header, near the right
+            svgX: group.x + group.width - 90,
+            svgY: group.y + 8,
+            width: group.width,
             height: 0,
             isCollapsed: false,
           };
@@ -456,7 +466,29 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
       ...prev,
       [processName]: datatype || '',
     }));
-  }, []);
+
+    // Auto-expand the process when a datatype is selected
+    if (datatype) {
+      const processId = processNameToId[processName];
+      if (processId) {
+        setCollapsedProcesses(prev => {
+          if (prev.has(processId)) {
+            // Expand this process (and collapse others if singleExpand is on)
+            if (singleExpand) {
+              const next = new Set(allProcessIds);
+              next.delete(processId);
+              return next;
+            } else {
+              const next = new Set(prev);
+              next.delete(processId);
+              return next;
+            }
+          }
+          return prev;
+        });
+      }
+    }
+  }, [processNameToId, singleExpand, allProcessIds]);
 
   // ─── Render ──────────────────────────────────────────────────────────
   if (loading) {
@@ -533,32 +565,40 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
           </div>
         )}
       </div>
-      {/* Per-process datatype dropdowns positioned next to summary nodes or group headers */}
+      {/* Per-process datatype dropdowns positioned below summary nodes or in group headers */}
       {Object.entries(summaryPositions).map(([processName, pos]) => {
         const datatypes = processDatatypes[processName];
         if (!datatypes || datatypes.length === 0) return null;
 
         // Convert SVG coordinates to screen coordinates
-        // For collapsed: position to the right of the summary node
-        // For expanded: position in the group header
-        const offsetX = pos.isCollapsed ? pos.width + 8 : 0;
-        const offsetY = pos.isCollapsed ? pos.height / 2 - 10 : 0;
-        const screenPos = svgToScreenCoords(pos.svgX + offsetX, pos.svgY + offsetY);
+        const screenPos = svgToScreenCoords(pos.svgX, pos.svgY);
         if (!screenPos) return null;
 
         // Capitalize first letter of process name for display
         const displayName = processName.charAt(0).toUpperCase() + processName.slice(1);
 
-        return (
-          <select
-            key={processName}
-            className="workflow-diagram-select workflow-diagram-process-dropdown"
-            style={{
+        // For collapsed boxes, center the dropdown below the box
+        // For expanded groups, position in the header
+        const dropdownStyle = pos.isCollapsed
+          ? {
+              position: 'absolute',
+              left: screenPos.x,
+              top: screenPos.y,
+              transform: 'translateX(-50%)', // Center horizontally
+              zIndex: 15,
+            }
+          : {
               position: 'absolute',
               left: screenPos.x,
               top: screenPos.y,
               zIndex: 15,
-            }}
+            };
+
+        return (
+          <select
+            key={processName}
+            className="workflow-diagram-select workflow-diagram-process-dropdown"
+            style={dropdownStyle}
             value={selectedProcessDatatype[processName] || ''}
             onChange={(e) => handleDatatypeChange(processName, e.target.value)}
             title={`Filter ${displayName} by datatype`}
