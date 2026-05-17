@@ -122,6 +122,22 @@ function isProcessPlaceholderNode(node, processId, processName) {
     normalizeWorkflowName(node.tag_name) === normalizeWorkflowName(processName);
 }
 
+function findProcessLayoutNodeId(processId, processName, layoutNodes) {
+  const processSummary = layoutNodes.find(n => n.type === 'summary' && n.processId === processId);
+  if (processSummary) return processSummary.id;
+
+  const normalizedProcessName = normalizeWorkflowName(processName);
+  const subprocessSummary = layoutNodes.find(n =>
+    n.type === 'subsummary' &&
+    n.processId === processId &&
+    normalizeWorkflowName(n.subprocessName || n.name).startsWith(normalizedProcessName)
+  );
+  if (subprocessSummary) return subprocessSummary.id;
+
+  const visibleState = layoutNodes.find(n => n.type === 'normal' && n.processId === processId);
+  return visibleState?.id || null;
+}
+
 // Semantic ordering priority (lower = earlier in layout)
 const STATE_PRIORITY = {
   'initial': 0,
@@ -728,23 +744,40 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     if (!fromSummaryId && !toSummaryId) continue;
 
     // Determine the actual source and target nodes
-    let sourceId = fromSummaryId || nodeToLayoutId.get(trigger.fromState);
-    let targetId = toSummaryId || nodeToLayoutId.get(trigger.toState);
+    const sourceProcessName = processGroups.get(trigger.fromProcess)?.processName;
+    const targetProcessName = processGroups.get(trigger.toProcess)?.processName;
+    let sourceId = fromSummaryId || nodeToLayoutId.get(trigger.fromState) ||
+      findProcessLayoutNodeId(trigger.fromProcess, sourceProcessName, layoutNodes);
+    let targetId = toSummaryId || nodeToLayoutId.get(trigger.toState) ||
+      findProcessLayoutNodeId(trigger.toProcess, targetProcessName, layoutNodes);
 
     if (!sourceId || !targetId || sourceId === targetId) continue;
     if (selectedNodeId && sourceId !== selectedNodeId && targetId !== selectedNodeId && !trigger.keepWhenNodeSelected) continue;
 
+    // Get names for the trigger states
+    const fromStateName = nodeMap.get(trigger.fromState)?.name || trigger.fromState;
+    const toStateName = nodeMap.get(trigger.toState)?.name || trigger.toState;
+
     const normalCanonKey = `${sourceId}\u2194${targetId}`;
     const triggerKey = `trigger:${trigger.fromState}\u2192${trigger.toState}:${sourceId}\u2192${targetId}`;
-    if (edgeMap.has(normalCanonKey) || edgeMap.has(triggerKey)) continue; // Don't duplicate
+    if (edgeMap.has(triggerKey)) continue; // Don't duplicate
+    if (edgeMap.has(normalCanonKey)) {
+      const existingEdge = edgeMap.get(normalCanonKey);
+      existingEdge.edgeType = 'external';
+      existingEdge.isTrigger = true;
+      existingEdge.isPrimaryFlow = !!trigger.keepWhenNodeSelected;
+      existingEdge.data = {
+        ...existingEdge.data,
+        sourceName: fromStateName,
+        to_name: toStateName,
+        transition_type: 'trigger',
+      };
+      continue;
+    }
 
     const srcNode = layoutNodes.find(n => n.id === sourceId);
     const tgtNode = layoutNodes.find(n => n.id === targetId);
     if (!srcNode || !tgtNode) continue;
-
-    // Get names for the trigger states
-    const fromStateName = nodeMap.get(trigger.fromState)?.name || trigger.fromState;
-    const toStateName = nodeMap.get(trigger.toState)?.name || trigger.toState;
 
     const triggerEdge = {
       source: sourceId,
