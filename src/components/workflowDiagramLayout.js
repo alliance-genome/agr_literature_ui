@@ -905,8 +905,7 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
 
   // Separate nodes into main flow and side states
   const mainFlowNodes = [];  // initial, progress, complete - centered vertical flow
-  const leftSideNodes = [];  // blocked/unavailable - left side
-  const rightSideNodes = []; // failed - right side (or could be left too)
+  const leftSideNodes = [];  // blocked/unavailable/failed - left side
 
   for (const nid of ids) {
     const nd = nodeMap.get(nid);
@@ -914,12 +913,8 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
 
     if (category === 'initial' || category === 'progress' || category === 'complete') {
       mainFlowNodes.push({ id: nid, category, priority: STATE_PRIORITY[category] });
-    } else if (category === 'blocked') {
-      leftSideNodes.push({ id: nid, category });
-    } else if (category === 'failed') {
-      rightSideNodes.push({ id: nid, category });
     } else {
-      // Other states go to left side
+      // All side states (blocked, failed, unavailable, other) go to left side
       leftSideNodes.push({ id: nid, category });
     }
   }
@@ -971,9 +966,9 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
 
   // Calculate vertical range for side nodes (align with main flow)
   const mainFlowHeight = mainFlowNodes.length > 0 ? (mainFlowNodes.length * (nh + yGap) - yGap) : nh;
-  const sideStartY = startY + (mainFlowHeight / 2) - ((leftSideNodes.length + rightSideNodes.length) * (nh + yGap) / 4);
+  const sideStartY = startY + (mainFlowHeight / 2) - (leftSideNodes.length * (nh + yGap) / 2);
 
-  // Layout left side nodes (unavailable, blocked, other)
+  // Layout left side nodes (unavailable, blocked, failed, other)
   let leftY = Math.max(startY, sideStartY);
   const leftX = centerX - nw - sideXGap;
   for (const item of leftSideNodes) {
@@ -1004,45 +999,13 @@ function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processI
     leftY += nh + yGap;
   }
 
-  // Layout right side nodes (failed)
-  let rightY = Math.max(startY, sideStartY);
-  const rightX = centerX + nw + sideXGap;
-  for (const item of rightSideNodes) {
-    const nid = item.id;
-    const nd = nodeMap.get(nid);
-    const nodeRole = initialIds.has(nid) ? 'initial'
-      : finalIds.has(nid) ? 'final' : 'normal';
-    const isSelected = selectedNodeId === nid;
-    const isCurrent = currentStateId === nid;
-
-    nodes.push({
-      id: nid,
-      name: nd.name,
-      shortName: shortenStateName(nd.name, nd.processName),
-      nodeRole,
-      stateCategory: item.category,
-      isSelected,
-      isCurrent,
-      x: rightX,
-      y: rightY,
-      width: nw, height: nh,
-      type: 'normal',
-      compact,
-      processId, processName, color,
-      transitions: nd.transitions,
-    });
-    nodeToLayoutId.set(nid, nid);
-    rightY += nh + yGap;
-  }
-
   // Calculate total dimensions
-  const maxY = Math.max(mainY, leftY, rightY) - yGap;
+  const maxY = Math.max(mainY, leftY) - yGap;
   const contentHeight = maxY - startY;
 
-  // Calculate width: include side columns if present
+  // Calculate width: include side column if present
   let totalWidth = nw; // main flow width
   if (leftSideNodes.length > 0) totalWidth += nw + sideXGap;
-  if (rightSideNodes.length > 0) totalWidth += nw + sideXGap;
 
   return { nodes, width: totalWidth, height: contentHeight, bottomY: maxY };
 }
