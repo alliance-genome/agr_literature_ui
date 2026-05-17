@@ -99,14 +99,6 @@ function classifyState(stateName) {
   return 'other';
 }
 
-/**
- * Check if a state is considered "internal" (for hiding option)
- */
-function isInternalState(stateName) {
-  const category = classifyState(stateName);
-  return category === 'internal';
-}
-
 function isPrimaryWorkflowTransition(sourceName, targetName) {
   const sourceCategory = classifyState(sourceName);
   const targetCategory = classifyState(targetName);
@@ -411,12 +403,11 @@ const NODE_Y_GAP = 20;       // Increased from 16
  * @param {number} width
  * @param {number} height
  * @param {Object} options - Additional layout options
- * @param {boolean} options.hideInternalStates - Hide internal/status states
  * @param {string} options.selectedNodeId - Node ID to highlight and show edges for
  * @param {string} options.currentStateId - Current state to highlight (e.g., for a reference)
  */
 export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses, width, height, options = {}) {
-  const { hideInternalStates = false, selectedNodeId = null, currentStateId = null } = options;
+  const { selectedNodeId = null, currentStateId = null } = options;
 
   if (!tagData || tagData.length === 0) {
     return { nodes: [], edges: [], groups: [], viewBox: '0 0 800 600', crossWorkflowTriggers: [] };
@@ -522,7 +513,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           const internalEdges = allEdges.filter(
             e => ids.includes(e.source) && ids.includes(e.target)
           );
-          const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
+          const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { selectedNodeId, currentStateId });
           layoutNodes.push(...result.nodes);
           maxWidth = Math.max(maxWidth, result.width);
           innerY = result.bottomY + SUB_GAP;
@@ -633,7 +624,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           const internalEdges = allEdges.filter(
             e => ids.includes(e.source) && ids.includes(e.target)
           );
-          const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { hideInternalStates, selectedNodeId, currentStateId });
+          const result = layoutNodeSet(ids, internalEdges, nodeMap, innerY, width, gid, pg.processName, color, nodeToLayoutId, { selectedNodeId, currentStateId });
           layoutNodes.push(...result.nodes);
 
           // Add subprocess group box
@@ -952,18 +943,10 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
  * Returns { nodes, width, height, bottomY }.
  */
 function layoutNodeSet(nodeIds, edges, nodeMap, startY, containerWidth, processId, processName, color, nodeToLayoutId, options = {}) {
-  const { hideInternalStates = false, selectedNodeId = null, currentStateId = null } = options;
+  const { selectedNodeId = null, currentStateId = null } = options;
 
   // Filter out nodes already placed by another group/subprocess
-  let ids = nodeIds.filter(id => !nodeToLayoutId.has(id));
-
-  // Optionally filter out internal states
-  if (hideInternalStates) {
-    ids = ids.filter(id => {
-      const nd = nodeMap.get(id);
-      return nd && !isInternalState(nd.name);
-    });
-  }
+  const ids = nodeIds.filter(id => !nodeToLayoutId.has(id));
 
   if (ids.length === 0) {
     return { nodes: [], width: 0, height: 0, bottomY: startY };

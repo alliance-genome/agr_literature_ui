@@ -15,7 +15,6 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [error, setError] = useState(null);
   const [singleExpand, setSingleExpand] = useState(true); // Only allow one group expanded at a time
   const [allProcessIds, setAllProcessIds] = useState(new Set());
-  const [hideInternalStates, setHideInternalStates] = useState(false); // Hide internal/status states
   const [selectedNodeId, setSelectedNodeId] = useState(null); // Selected node for edge filtering
   const [legendExpanded, setLegendExpanded] = useState(false); // Legend collapsed by default
   const [processDatatypes, setProcessDatatypes] = useState({}); // Map of process name -> available datatypes
@@ -269,7 +268,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     const layout = computeLayout(
       filteredTagData, collapsedProcesses, expandedSubprocesses,
       dimensions.width, dimensions.height,
-      { hideInternalStates, selectedNodeId, currentStateId }
+      { selectedNodeId, currentStateId }
     );
     layoutRef.current = layout;
     renderDiagram(svgRef.current, layout, callbacks);
@@ -313,7 +312,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     }
 
     setSummaryPositions(positions);
-  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, hideInternalStates, selectedNodeId, currentStateId]);
+  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, selectedNodeId, currentStateId]);
 
   // ─── Tooltip builders ────────────────────────────────────────────────
   const renderNodeTooltip = () => {
@@ -558,14 +557,6 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
             onChange={(e) => setSingleExpand(e.target.checked)}
           />
           <span>Single expand</span>
-        </label>
-        <label className="workflow-diagram-toggle">
-          <input
-            type="checkbox"
-            checked={hideInternalStates}
-            onChange={(e) => setHideInternalStates(e.target.checked)}
-          />
-          <span>Hide status states</span>
         </label>
       </div>
       <div className="workflow-diagram-hint">
