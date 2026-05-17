@@ -18,6 +18,8 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [hideInternalStates, setHideInternalStates] = useState(false); // Hide internal/status states
   const [selectedNodeId, setSelectedNodeId] = useState(null); // Selected node for edge filtering
   const [legendExpanded, setLegendExpanded] = useState(false); // Legend collapsed by default
+  const [selectedDatatype, setSelectedDatatype] = useState(''); // Filter by datatype (e.g., "gene extraction")
+  const [availableDatatypes, setAvailableDatatypes] = useState([]); // List of datatypes for dropdown
 
   const containerRef = useRef(null);
   const svgRef = useRef(null);
@@ -34,12 +36,30 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         if (!cancelled) {
           setTagData(result.data);
           const processIds = new Set();
+          const datatypes = new Set();
           for (const node of result.data) {
             if (node.workflow_process) processIds.add(node.workflow_process);
+            // Extract datatype from tag names like "gene extraction needed" or "disease classification in progress"
+            const name = node.tag_name || '';
+            const statusSuffixes = [' needed', ' in progress', ' complete', ' failed', ' uploaded', ' converted', ' extracted'];
+            for (const suffix of statusSuffixes) {
+              if (name.toLowerCase().endsWith(suffix)) {
+                const datatype = name.slice(0, -suffix.length).trim();
+                // Only add if it's a specific datatype (not the parent process name)
+                if (datatype && !datatype.includes('entity extraction') && !datatype.includes('reference classification') &&
+                    !datatype.includes('file upload') && !datatype.includes('text conversion') && !datatype.includes('manual indexing') &&
+                    !datatype.includes('email extraction') && !datatype.includes('curation classification')) {
+                  datatypes.add(datatype);
+                }
+                break;
+              }
+            }
           }
           setAllProcessIds(processIds);
+          setAvailableDatatypes([...datatypes].sort());
           setCollapsedProcesses(new Set(processIds)); // Start all collapsed
           setExpandedSubprocesses(new Set());
+          setSelectedDatatype(''); // Reset datatype filter when MOD changes
         }
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load workflow diagram');
@@ -144,16 +164,41 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     onGroupClick, onSubprocessClick, onNodeClick,
   }), [onNodeHover, onHoverLeave, onEdgeHover, onGroupClick, onSubprocessClick, onNodeClick]);
 
+  // ─── Filter data by selected datatype ─────────────────────────────────
+  const filteredTagData = useMemo(() => {
+    if (!tagData || !selectedDatatype) return tagData;
+
+    // Filter to only include nodes that match the selected datatype
+    const datatypeLower = selectedDatatype.toLowerCase();
+    return tagData.filter(node => {
+      const name = (node.tag_name || '').toLowerCase();
+      // Include if name starts with the datatype
+      if (name.startsWith(datatypeLower)) return true;
+      // Also include parent process/subprocess nodes for context
+      const processName = (node.workflow_process_name || '').toLowerCase();
+      const subprocessName = (node.workflow_subprocess_name || '').toLowerCase();
+      if (processName === 'entity extraction' || processName === 'reference classification' ||
+          subprocessName.includes('entity extraction') || subprocessName.includes('reference classification')) {
+        // Only include parent nodes, not other datatype nodes
+        return name.startsWith(datatypeLower) ||
+               name === processName ||
+               ['needed', 'in progress', 'complete', 'failed'].some(s => name === `${processName} ${s}`) ||
+               ['needed', 'in progress', 'complete', 'failed'].some(s => name === subprocessName);
+      }
+      return true; // Include non-datatype nodes (file upload, text conversion, etc.)
+    });
+  }, [tagData, selectedDatatype]);
+
   // ─── Layout & render ─────────────────────────────────────────────────
   useEffect(() => {
-    if (!tagData || !svgRef.current) return;
+    if (!filteredTagData || !svgRef.current) return;
     const layout = computeLayout(
-      tagData, collapsedProcesses, expandedSubprocesses,
+      filteredTagData, collapsedProcesses, expandedSubprocesses,
       dimensions.width, dimensions.height,
       { hideInternalStates, selectedNodeId, currentStateId }
     );
     renderDiagram(svgRef.current, layout, callbacks);
-  }, [tagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, hideInternalStates, selectedNodeId, currentStateId]);
+  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, hideInternalStates, selectedNodeId, currentStateId]);
 
   // ─── Tooltip builders ────────────────────────────────────────────────
   const renderNodeTooltip = () => {
@@ -344,6 +389,18 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
           />
           <span>Hide status states</span>
         </label>
+        {availableDatatypes.length > 0 && (
+          <select
+            className="workflow-diagram-select"
+            value={selectedDatatype}
+            onChange={(e) => setSelectedDatatype(e.target.value)}
+          >
+            <option value="">All datatypes</option>
+            {availableDatatypes.map(dt => (
+              <option key={dt} value={dt}>{dt}</option>
+            ))}
+          </select>
+        )}
       </div>
       <div className="workflow-diagram-hint">
         Click a state to show transitions to/from it

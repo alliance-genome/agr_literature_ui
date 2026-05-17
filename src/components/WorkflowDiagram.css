@@ -76,6 +76,26 @@
   cursor: pointer;
 }
 
+.workflow-diagram-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #555;
+  max-width: 180px;
+}
+
+.workflow-diagram-select:hover {
+  border-color: #999;
+}
+
+.workflow-diagram-select:focus {
+  outline: none;
+  border-color: #0056b3;
+}
+
 .workflow-diagram-hint {
   position: absolute;
   top: 48px;
