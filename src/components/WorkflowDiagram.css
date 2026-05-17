@@ -209,25 +209,6 @@
   border-left-color: #8e62b8;
 }
 
-.workflow-legend-state {
-  width: 13px;
-  height: 13px;
-  border-radius: 3px;
-  border: 1.5px solid;
-  display: inline-block;
-}
-
-.workflow-legend-state.needed {
-  border-color: #4a9d4a;
-}
-
-.workflow-legend-state.progress {
-  border-color: #5a9bd5;
-}
-
-.workflow-legend-state.complete {
-  border-color: #c95b5b;
-}
 
 /* --- Group bounding boxes --- */
 .wf-group rect.wf-group-bg {
