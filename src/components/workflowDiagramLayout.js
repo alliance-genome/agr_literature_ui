@@ -1242,9 +1242,19 @@ export function renderDiagram(svgElement, layout, callbacks) {
     .attr('class', 'wf-node').attr('opacity', 0)
     .attr('transform', d => `translate(${d.x}, ${d.y})`);
   nodeEnter.append('rect');
-  nodeEnter.append('text');
+  nodeEnter.append('text').attr('class', 'wf-node-label');
+  nodeEnter.append('text').attr('class', 'wf-node-hint');
 
   const nodeMerge = nodeEnter.merge(nodeSel);
+  nodeMerge.each(function () {
+    const node = d3.select(this);
+    if (node.select('text.wf-node-label').empty()) {
+      node.select('text').attr('class', 'wf-node-label');
+    }
+    if (node.select('text.wf-node-hint').empty()) {
+      node.append('text').attr('class', 'wf-node-hint');
+    }
+  });
   nodeMerge.transition(t).attr('opacity', 1)
     .attr('transform', d => `translate(${d.x}, ${d.y})`);
   nodeMerge.select('rect')
@@ -1264,9 +1274,9 @@ export function renderDiagram(svgElement, layout, callbacks) {
       return '#5a9bd5';
     })
     .attr('stroke-width', d => (d.isCurrent || d.isSelected) ? 3 : 1.5);
-  nodeMerge.select('text')
+  nodeMerge.select('text.wf-node-label')
     .attr('x', d => d.width / 2)
-    .attr('y', d => d.height / 2 + (d.compact ? 3 : 4))
+    .attr('y', d => d.isMainFlow ? d.height / 2 + (d.compact ? 3 : 4) : d.height / 2 - 2)
     .attr('text-anchor', 'middle')
     .attr('font-size', d => d.compact ? '10px' : '12px')
     .text(d => {
@@ -1275,6 +1285,12 @@ export function renderDiagram(svgElement, layout, callbacks) {
       const max = Math.floor(d.width / charWidth);
       return displayName.length > max ? displayName.slice(0, max - 1) + '\u2026' : displayName;
     });
+  nodeMerge.select('text.wf-node-hint')
+    .attr('x', d => d.width / 2)
+    .attr('y', d => d.height / 2 + (d.compact ? 11 : 12))
+    .attr('text-anchor', 'middle')
+    .attr('font-size', d => d.compact ? '8px' : '9px')
+    .text(d => d.isMainFlow ? '' : (d.isSelected ? 'paths shown' : 'click for paths'));
   nodeMerge
     .on('mouseenter', (event, d) => callbacks.onNodeHover(d, event))
     .on('mouseleave', () => callbacks.onNodeLeave())
