@@ -1467,7 +1467,7 @@ export function renderDiagram(svgElement, layout, callbacks) {
 
 // ─── setupZoom ───────────────────────────────────────────────────────────────
 
-export function setupZoom(svgElement) {
+export function setupZoom(svgElement, onTransformChange) {
   const svg = d3.select(svgElement);
   let rootG = svg.select('g.wf-root');
   if (rootG.empty()) rootG = svg.append('g').attr('class', 'wf-root');
@@ -1490,11 +1490,17 @@ export function setupZoom(svgElement) {
     })
     .on('zoom', (event) => {
       rootG.attr('transform', event.transform);
+      if (onTransformChange) {
+        onTransformChange(event.transform);
+      }
     });
 
   svg.call(zoomBehavior);
 
   return () => {
     svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity);
+    if (onTransformChange) {
+      onTransformChange(d3.zoomIdentity);
+    }
   };
 }
