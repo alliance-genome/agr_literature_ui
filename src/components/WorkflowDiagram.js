@@ -207,37 +207,60 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     const hasActiveFilters = Object.values(selectedProcessDatatype).some(dt => dt);
     if (!hasActiveFilters) return tagData;
 
-    return tagData.filter(node => {
-      const name = (node.tag_name || '').toLowerCase();
-      const processName = (node.workflow_process_name || '').toLowerCase();
+    return tagData
+      .filter(node => {
+        const name = (node.tag_name || '').toLowerCase();
+        const processName = (node.workflow_process_name || '').toLowerCase();
 
-      // Check entity extraction filter
-      if (processName === 'entity extraction') {
-        const selectedDt = selectedProcessDatatype['entity extraction'];
-        if (selectedDt) {
-          const dtLower = selectedDt.toLowerCase();
-          // Include if matches the selected datatype
-          if (name.startsWith(dtLower)) return true;
-          // Exclude other entity extraction nodes
-          return false;
+        // Check entity extraction filter
+        if (processName === 'entity extraction') {
+          const selectedDt = selectedProcessDatatype['entity extraction'];
+          if (selectedDt) {
+            const dtLower = selectedDt.toLowerCase();
+            // Include if matches the selected datatype
+            if (name.startsWith(dtLower)) return true;
+            // Exclude other entity extraction nodes
+            return false;
+          }
         }
-      }
 
-      // Check reference classification filter
-      if (processName === 'reference classification') {
-        const selectedDt = selectedProcessDatatype['reference classification'];
-        if (selectedDt) {
-          const dtLower = selectedDt.toLowerCase();
-          // Include if matches the selected datatype
-          if (name.startsWith(dtLower)) return true;
-          // Exclude other reference classification nodes
-          return false;
+        // Check reference classification filter
+        if (processName === 'reference classification') {
+          const selectedDt = selectedProcessDatatype['reference classification'];
+          if (selectedDt) {
+            const dtLower = selectedDt.toLowerCase();
+            // Include if matches the selected datatype
+            if (name.startsWith(dtLower)) return true;
+            // Exclude other reference classification nodes
+            return false;
+          }
         }
-      }
 
-      // Include all other nodes
-      return true;
-    });
+        // Include all other nodes
+        return true;
+      })
+      .map(node => {
+        const processName = (node.workflow_process_name || '').toLowerCase();
+
+        // When a datatype filter is active for a process, flatten the subprocess structure
+        // by removing the subprocess association so nodes appear directly under the process
+        if (processName === 'entity extraction' && selectedProcessDatatype['entity extraction']) {
+          return {
+            ...node,
+            workflow_subprocess: null,
+            workflow_subprocess_name: null,
+          };
+        }
+        if (processName === 'reference classification' && selectedProcessDatatype['reference classification']) {
+          return {
+            ...node,
+            workflow_subprocess: null,
+            workflow_subprocess_name: null,
+          };
+        }
+
+        return node;
+      });
   }, [tagData, selectedProcessDatatype]);
 
   // ─── Layout & render ─────────────────────────────────────────────────
