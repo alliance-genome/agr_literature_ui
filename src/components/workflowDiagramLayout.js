@@ -14,6 +14,30 @@ const GROUP_COLORS = [
 
 let markerInstanceCounter = 0;
 
+
+// These two database workflows are real roll-up workflows. They summarize
+// the detailed datatype workflows below them.
+const ROLLUP_WORKFLOWS = {
+  'ATP:0000172': {
+    label: 'Entity extraction',
+    badge: 'roll-up',
+    summaryText: 'overall status',
+    helperText:
+      'Overall status across all extraction workflows. Complete only when all extraction workflows are complete; failed if any extraction workflow fails.',
+  },
+  'ATP:0000165': {
+    label: 'Reference classification',
+    badge: 'roll-up',
+    summaryText: 'overall status',
+    helperText:
+      'Overall status across all classification workflows for this paper.',
+  },
+};
+
+function getRollupWorkflow(processId) {
+  return ROLLUP_WORKFLOWS[processId] || null;
+}
+
 function hashString(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -130,13 +154,6 @@ function findProcessLayoutNodeId(processId, processName, layoutNodes) {
 
   const visibleState = layoutNodes.find(n => n.type === 'normal' && n.processId === processId);
   return visibleState?.id || null;
-}
-
-
-function isDefinedCrossWorkflowTrigger(sourceId, targetId) {
-  return CROSS_WORKFLOW_TRIGGERS.some(trigger =>
-    trigger.fromState === sourceId && trigger.toState === targetId
-  );
 }
 
 // Semantic ordering priority (lower = earlier in layout)
@@ -410,12 +427,11 @@ const NODE_Y_GAP = 20;       // Increased from 16
  * @param {number} width
  * @param {number} height
  * @param {Object} options - Additional layout options
- * @param {string} options.selectedNodeId - Node ID to highlight and show transitions for
+ * @param {string} options.selectedNodeId - Node ID to highlight and show edges for
  * @param {string} options.currentStateId - Current state to highlight (e.g., for a reference)
- * @param {boolean} options.showAllTransitions - Show every transition instead of only the main workflow
  */
 export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses, width, height, options = {}) {
-  const { selectedNodeId = null, currentStateId = null, showAllTransitions = false } = options;
+  const { selectedNodeId = null, currentStateId = null } = options;
 
   if (!tagData || tagData.length === 0) {
     return { nodes: [], edges: [], groups: [], viewBox: '0 0 800 600', crossWorkflowTriggers: [] };
@@ -477,9 +493,11 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
         const totalNodes = pg.directNodeIds.length +
           [...pg.subprocesses.values()].reduce((s, sp) => s + sp.nodeIds.length, 0);
 
+        const rollupWorkflow = getRollupWorkflow(gid);
+
         layoutNodes.push({
           id: summaryId,
-          name: pg.processName || gid,
+          name: rollupWorkflow?.label || pg.processName || gid,
           x: sx, y: currentY,
           width: SUMMARY_WIDTH, height: SUMMARY_HEIGHT,
           type: 'summary',
@@ -487,6 +505,10 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           nodeCount: totalNodes,
           subprocessCount: pg.subprocesses.size,
           color,
+          isRollup: !!rollupWorkflow,
+          rollupBadge: rollupWorkflow?.badge || null,
+          rollupSummaryText: rollupWorkflow?.summaryText || null,
+          rollupHelperText: rollupWorkflow?.helperText || null,
         });
 
         // Map all nodes in this process to the summary
@@ -503,6 +525,9 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           x: sx - 10, y: currentY - 10,
           width: SUMMARY_WIDTH + 20, height: SUMMARY_HEIGHT + 20,
           color,
+          isRollup: !!rollupWorkflow,
+          rollupBadge: rollupWorkflow?.badge || null,
+          rollupHelperText: rollupWorkflow?.helperText || null,
         });
 
         currentX += SUMMARY_WIDTH + boxGap;
@@ -576,8 +601,6 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
             processId: gid, processName: pg.processName,
             subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
             nodeCount: sp.nodeIds.length,
-            stateCategory: classifyState(sp.subprocessName),
-            isMainFlow: true,
             color: spColor,
           });
 
@@ -606,8 +629,6 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
             processId: gid, processName: pg.processName,
             subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
             nodeCount: sp.nodeIds.length,
-            stateCategory: classifyState(sp.subprocessName),
-            isMainFlow: false,
             color: spColor,
           });
 
@@ -682,12 +703,17 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
           }
         }
 
+        const rollupWorkflow = getRollupWorkflow(gid);
+
         layoutGroups.push({
           processId: gid, processName: pg.processName,
           collapsed: false,
           x: groupX, y: currentY,
           width: groupWidth, height: groupHeight,
           color,
+          isRollup: !!rollupWorkflow,
+          rollupBadge: rollupWorkflow?.badge || null,
+          rollupHelperText: rollupWorkflow?.helperText || null,
         });
 
         maxRowHeight = Math.max(maxRowHeight, groupHeight + GROUP_GAP);
@@ -704,12 +730,6 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     const tgt = nodeToLayoutId.get(e.target);
     if (!src || !tgt || src === tgt) continue;
 
-    // Cross-workflow handoffs are rendered from CROSS_WORKFLOW_TRIGGERS below.
-    // Skipping the raw transition here prevents duplicate arrows, especially
-    // when the source process is collapsed and the target process is expanded
-    // (for example: file upload -> text conversion Needed).
-    if (isDefinedCrossWorkflowTrigger(e.source, e.target)) continue;
-
     const srcNode = layoutNodes.find(n => n.id === src);
     const tgtNode = layoutNodes.find(n => n.id === tgt);
     if (!srcNode || !tgtNode) continue;
@@ -721,30 +741,13 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       nodeMap.get(e.source)?.name,
       nodeMap.get(e.target)?.name
     );
-    const isSelectedEdge = !!selectedNodeId && (src === selectedNodeId || tgt === selectedNodeId);
-
-    // Default/simple view: keep only the main internal workflow path here.
-    // Cross-workflow trigger arrows are added later from CROSS_WORKFLOW_TRIGGERS.
-    // Focused view: keep only transitions connected to the selected state, plus the main path.
-    // Full view: keep everything.
-    if (!showAllTransitions) {
-      if (selectedNodeId) {
-        if (!isSelectedEdge && !isPrimaryFlow) continue;
-      } else if (!isPrimaryFlow) {
-        continue;
-      }
+    const isSelectedEdge = selectedNodeId && (src === selectedNodeId || tgt === selectedNodeId);
+    if (selectedNodeId && !isSelectedEdge && !isPrimaryFlow) {
+      continue;
     }
-
-    const isSideTransition = !isPrimaryFlow && (
-      srcNode.isMainFlow === false ||
-      tgtNode.isMainFlow === false ||
-      srcNode.stateCategory === 'failed' ||
-      srcNode.stateCategory === 'blocked' ||
-      srcNode.stateCategory === 'internal' ||
-      tgtNode.stateCategory === 'failed' ||
-      tgtNode.stateCategory === 'blocked' ||
-      tgtNode.stateCategory === 'internal'
-    );
+    if (!selectedNodeId && edgeType === 'internal' && !isPrimaryFlow) {
+      continue;
+    }
 
     // Primary workflow edges stay directed so the normal Needed → In progress
     // → Complete/Uploaded path remains visible even if reverse special-case
@@ -770,8 +773,6 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       edgeType, data: e.data,
       isPrimaryFlow,
       isSelectedEdge,
-      isSideTransition,
-      showAllTransitions,
       bidirectional: false,
       reverseData: null,
       _directionKeys: new Set([forwardKey]),
@@ -794,8 +795,6 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       data,
       isPrimaryFlow: !!options.isPrimaryFlow,
       isTrigger: !!options.isTrigger,
-      isSideTransition: false,
-      showAllTransitions,
       synthetic: true,
       bidirectional: false,
       reverseData: null,
@@ -841,13 +840,13 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
   }
 
   // ─── Add cross-workflow trigger edges ───
-  // Always add these handoff arrows, whether the source/target workflows are
-  // collapsed or expanded. When a workflow is expanded we connect the real
-  // state nodes (for example Uploaded → Needed); when collapsed we fall back to
-  // the summary node for that workflow.
+  // These show process-to-process triggers when source or target process is collapsed
   for (const trigger of CROSS_WORKFLOW_TRIGGERS) {
     const fromSummaryId = processIdToSummaryId.get(trigger.fromProcess);
     const toSummaryId = processIdToSummaryId.get(trigger.toProcess);
+
+    // Only add if at least one of the processes is collapsed (showing summary)
+    if (!fromSummaryId && !toSummaryId) continue;
 
     // Determine the actual source and target nodes
     const sourceProcessName = processGroups.get(trigger.fromProcess)?.processName;
@@ -893,8 +892,6 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       edgeType: 'external',
       isTrigger: true,
       isPrimaryFlow: !!trigger.keepWhenNodeSelected,
-      isSideTransition: false,
-      showAllTransitions,
       data: {
         sourceName: fromStateName,
         to_name: toStateName,
@@ -1154,53 +1151,38 @@ function assignEdgePorts(edges) {
 function edgePath(d) {
   const sn = d.sourceNode;
   const tn = d.targetNode;
-  const gap = 6;
+  const gap = 5;  // Gap between arrow and target box top
 
-  const sourceCenterX = sn.x + sn.width / 2;
-  const sourceCenterY = sn.y + sn.height / 2;
-  const targetCenterX = tn.x + tn.width / 2;
-  const targetCenterY = tn.y + tn.height / 2;
-  const sameRow = Math.abs(sourceCenterY - targetCenterY) < Math.max(sn.height, tn.height) * 0.75;
-  const sideTransition = d.isSideTransition && !d.isPrimaryFlow;
+  // Spread ports across 60% of node width
+  const sOff = sn.width * 0.6 * (d._sPort || 0);
+  const tOff = tn.width * 0.6 * (d._tPort || 0);
 
-  // Exception/side-state transitions are routed as soft side curves so they do
-  // not cut through the main Needed → In progress → Complete/Uploaded column.
-  if (sideTransition) {
-    const sourceOnLeft = sourceCenterX <= targetCenterX;
-    const sx = sourceOnLeft ? sn.x + sn.width : sn.x;
-    const sy = sourceCenterY;
-    const tx = sourceOnLeft ? tn.x : tn.x + tn.width;
-    const ty = targetCenterY;
-    const dx = Math.max(Math.abs(tx - sx), 90);
-    const bow = d.isSelectedEdge ? 42 : 64;
-    const c1x = sx + (sourceOnLeft ? dx * 0.45 : -dx * 0.45);
-    const c2x = tx + (sourceOnLeft ? -dx * 0.45 : dx * 0.45);
-    const c1y = sy + (ty >= sy ? bow : -bow);
-    const c2y = ty + (ty >= sy ? -bow : bow);
-    return `M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tx} ${ty}`;
-  }
+  // Check if nodes are roughly on the same row (horizontal layout)
+  const sameRow = Math.abs(sn.y - tn.y) < sn.height;
 
   if (sameRow) {
-    const isLeftToRight = sourceCenterX < targetCenterX;
+    // Horizontal edge: exit from right side, enter from left side
+    const isLeftToRight = sn.x < tn.x;
     const sx = isLeftToRight ? sn.x + sn.width : sn.x;
-    const sy = sourceCenterY;
-    const tx = isLeftToRight ? tn.x - gap : tn.x + tn.width + gap;
-    const ty = targetCenterY;
+    const sy = sn.y + sn.height / 2;
+    const tx = isLeftToRight ? tn.x : tn.x + tn.width;
+    const ty = tn.y + tn.height / 2;
     const midX = (sx + tx) / 2;
-    const curveY = Math.max(sy, ty) + 28;
+    // Slight curve downward for visual distinction
+    const curveY = Math.max(sy, ty) + 30;
     return `M ${sx} ${sy} Q ${midX} ${curveY}, ${tx} ${ty}`;
   }
 
-  const sOff = sn.width * 0.6 * (d._sPort || 0);
-  const tOff = tn.width * 0.6 * (d._tPort || 0);
-  const sx = sourceCenterX + sOff;
+  // Vertical edge: exit from bottom, enter from top
+  const sx = sn.x + sn.width / 2 + sOff;
   const sy = sn.y + sn.height;
-  const tx = targetCenterX + tOff;
+  const tx = tn.x + tn.width / 2 + tOff;
   const ty = tn.y - gap;
 
+  // If target is above source (back-edge), route around with a wider curve
   if (tn.y < sn.y + sn.height) {
     const loopOut = Math.max(Math.abs(sx - tx), 80) + 40;
-    const side = sx <= tx ? -1 : 1;
+    const side = sx <= tx ? -1 : 1; // curve left or right to avoid overlap
     const mx = Math.min(sn.x, tn.x) + side * loopOut;
     return `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`;
   }
@@ -1261,6 +1243,8 @@ export function renderDiagram(svgElement, layout, callbacks) {
   groupEnter.append('rect').attr('class', 'wf-group-bg');
   groupEnter.append('rect').attr('class', 'wf-group-header');
   groupEnter.append('text').attr('class', 'wf-group-label');
+  groupEnter.append('text').attr('class', 'wf-group-badge');
+  groupEnter.append('text').attr('class', 'wf-group-helper');
   groupEnter.append('text').attr('class', 'wf-group-toggle');
 
   const groupMerge = groupEnter.merge(groupSel);
@@ -1286,6 +1270,16 @@ export function renderDiagram(svgElement, layout, callbacks) {
     .attr('x', d => d.x + 12).attr('y', d => d.y + 21)
     .attr('opacity', d => d.collapsed ? 0 : 1)
     .text(d => d.processName || d.processId);
+
+  groupMerge.select('text.wf-group-badge').transition(t)
+    .attr('x', d => d.x + 150).attr('y', d => d.y + 21)
+    .attr('opacity', d => d.collapsed || !d.isRollup ? 0 : 1)
+    .text(d => d.rollupBadge ? `[${d.rollupBadge}]` : '');
+
+  groupMerge.select('text.wf-group-helper').transition(t)
+    .attr('x', d => d.x + 12).attr('y', d => d.y + GROUP_HEADER_HEIGHT + 18)
+    .attr('opacity', d => d.collapsed || !d.rollupHelperText ? 0 : 1)
+    .text(d => d.rollupHelperText || '');
 
   groupMerge.select('text.wf-group-toggle').transition(t)
     .attr('x', d => d.x + d.width - 70).attr('y', d => d.y + 21)
@@ -1343,24 +1337,14 @@ export function renderDiagram(svgElement, layout, callbacks) {
 
   const edgeMerge = edgeEnter.merge(edgeSel);
   edgeMerge.attr('class', d =>
-    `wf-edge wf-edge-${d.edgeType}${d.isPrimaryFlow ? ' wf-edge-primary' : ' wf-edge-special'}${d.isSelectedEdge ? ' wf-edge-selected' : ''}${d.isSideTransition ? ' wf-edge-side' : ''}${d.showAllTransitions ? ' wf-edge-full-view' : ''}${d.bidirectional ? ' wf-bidirectional' : ''}`);
+    `wf-edge wf-edge-${d.edgeType}${d.isPrimaryFlow ? ' wf-edge-primary' : ' wf-edge-special'}${d.isSelectedEdge ? ' wf-edge-selected' : ''}${d.bidirectional ? ' wf-bidirectional' : ''}`);
 
   edgeMerge.select('path')
     .on('mouseenter', (event, d) => callbacks.onEdgeHover(d, event))
     .on('mouseleave', () => callbacks.onEdgeLeave())
-    .transition(t)
-    .attr('opacity', d => {
-      if (d.isSelectedEdge || d.isPrimaryFlow || d.isTrigger) return 1;
-      if (d.showAllTransitions && d.isSideTransition) return 0.16;
-      if (d.showAllTransitions) return 0.28;
-      return 0.45;
-    })
+    .transition(t).attr('opacity', 1)
     .attr('d', edgePath)
-    .attr('stroke-width', d => {
-      if (d.isPrimaryFlow || d.isSelectedEdge) return 2.25;
-      if (d.showAllTransitions && d.isSideTransition) return 1;
-      return d.bidirectional ? 1.75 : 1.35;
-    })
+    .attr('stroke-width', d => (d.isPrimaryFlow || d.isSelectedEdge) ? 2.25 : d.bidirectional ? 1.75 : 1.35)
     .attr('marker-end', d => `url(#${markerPrefix}-${d.edgeType})`);
 
   edgeSel.exit().transition(t).attr('opacity', 0).remove();
@@ -1385,10 +1369,9 @@ export function renderDiagram(svgElement, layout, callbacks) {
         if (!didDrag) {
           if (d.type === 'summary') callbacks.onGroupClick(d.processId);
           else if (d.type === 'subsummary') {
-            // Side-state subgroups (Failed, Blocked, Unavailable, won't..., Status TBD)
-            // are shown as context by default. Clicking them should focus their
-            // incoming/outgoing transitions instead of expanding into extra detail.
-            if (d.isMainFlow === false && callbacks.onNodeClick) {
+            // For "failed" subprocesses, select to show transitions instead of expanding
+            const isFailedSubprocess = d.subprocessName && d.subprocessName.toLowerCase().includes('failed');
+            if (isFailedSubprocess && callbacks.onNodeClick) {
               callbacks.onNodeClick(d.id);
             } else {
               callbacks.onSubprocessClick(d.subprocessId);
@@ -1479,9 +1462,11 @@ export function renderDiagram(svgElement, layout, callbacks) {
   sumMerge.select('text.wf-summary-count')
     .attr('x', d => d.width / 2).attr('y', d => d.height / 2 + 16)
     .attr('text-anchor', 'middle')
-    .text(d => d.subprocessCount > 0
-      ? `(${d.subprocessCount} sub-processes)`
-      : `(${d.nodeCount} states)`);
+    .text(d => d.isRollup
+      ? d.rollupSummaryText
+      : d.subprocessCount > 0
+        ? `(${d.subprocessCount} sub-processes)`
+        : `(${d.nodeCount} states)`);
   sumMerge
     .on('mouseenter', (event, d) => callbacks.onNodeHover(d, event))
     .on('mouseleave', () => callbacks.onNodeLeave());
