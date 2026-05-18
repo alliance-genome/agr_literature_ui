@@ -23,14 +23,14 @@ const ROLLUP_WORKFLOWS = {
     badge: 'roll-up',
     summaryText: 'overall status',
     helperText:
-      'Overall status across all extraction workflows. Complete only when all extraction workflows are complete; failed if any extraction workflow fails.',
+      'Overall status across extraction workflows.',
   },
   'ATP:0000165': {
     label: 'Reference classification',
     badge: 'roll-up',
     summaryText: 'overall status',
     helperText:
-      'Overall status across all classification workflows for this paper.',
+      'Overall status across classification workflows.',
   },
 };
 
@@ -350,7 +350,7 @@ const CUSTOM_GROUP_LAYOUT = {
 };
 
 // Gap between boxes in the same row (smaller = closer together)
-const ROW_BOX_GAP = 10;
+const ROW_BOX_GAP = 28;
 
 function orderGroups(processGroups, edges, nodeToProcess) {
   const groupIds = [...processGroups.keys()];

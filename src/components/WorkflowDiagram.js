@@ -328,8 +328,8 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         if ((processName === 'entity extraction' || processName === 'reference classification') && !positions[processName]) {
           positions[processName] = {
             // Position in the group header, near the right
-            svgX: group.x + group.width - 90,
-            svgY: group.y + 8,
+            svgX: group.x + group.width - 160,
+            svgY: group.y + 42,
             width: group.width,
             height: 0,
             isCollapsed: false,
