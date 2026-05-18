@@ -22,13 +22,13 @@ const ROLLUP_WORKFLOWS = {
     label: 'Entity extraction',
     badge: 'roll-up',
     summaryText: 'overall status',
-    helperText: 'Overall status across extraction workflows.',
+    helperText: '',
   },
   'ATP:0000165': {
     label: 'Reference classification',
     badge: 'roll-up',
     summaryText: 'overall status',
-    helperText: 'Overall status across classification workflows.',
+    helperText: '',
   },
 };
 
@@ -599,7 +599,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 
           layoutNodes.push({
             id: spSummaryId,
-            name: sp.subprocessName || sp.subprocessId,
+            name: rollupWorkflow ? shortenStateName(sp.subprocessName || sp.subprocessId, rollupWorkflow.label || pg.processName) : (sp.subprocessName || sp.subprocessId),
             x: centerX, y: innerY,
             width: SUB_SUMMARY_WIDTH, height: SUB_SUMMARY_HEIGHT,
             type: 'subsummary',
@@ -629,7 +629,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
 
           layoutNodes.push({
             id: spSummaryId,
-            name: sp.subprocessName || sp.subprocessId,
+            name: rollupWorkflow ? shortenStateName(sp.subprocessName || sp.subprocessId, rollupWorkflow.label || pg.processName) : (sp.subprocessName || sp.subprocessId),
             x: leftX, y: sideY,
             width: SUB_SUMMARY_WIDTH, height: SUB_SUMMARY_HEIGHT,
             type: 'subsummary',
@@ -1323,7 +1323,11 @@ export function renderDiagram(svgElement, layout, callbacks) {
     .text(d => d.processName || d.processId);
 
   groupMerge.select('text.wf-group-badge').transition(t)
-    .attr('x', d => d.x + 150).attr('y', d => d.y + 21)
+    .attr('x', d => {
+      const labelLength = (d.processName || d.processId || '').length;
+      return d.x + 12 + Math.min(260, Math.max(155, labelLength * 8 + 16));
+    })
+    .attr('y', d => d.y + 21)
     .attr('opacity', d => d.collapsed || !d.isRollup ? 0 : 1)
     .text(d => d.rollupBadge ? `[${d.rollupBadge}]` : '');
 
