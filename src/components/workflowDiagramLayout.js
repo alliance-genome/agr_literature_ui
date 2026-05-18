@@ -132,6 +132,13 @@ function findProcessLayoutNodeId(processId, processName, layoutNodes) {
   return visibleState?.id || null;
 }
 
+
+function isDefinedCrossWorkflowTrigger(sourceId, targetId) {
+  return CROSS_WORKFLOW_TRIGGERS.some(trigger =>
+    trigger.fromState === sourceId && trigger.toState === targetId
+  );
+}
+
 // Semantic ordering priority (lower = earlier in layout)
 const STATE_PRIORITY = {
   'initial': 0,
@@ -696,6 +703,12 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     const src = nodeToLayoutId.get(e.source);
     const tgt = nodeToLayoutId.get(e.target);
     if (!src || !tgt || src === tgt) continue;
+
+    // Cross-workflow handoffs are rendered from CROSS_WORKFLOW_TRIGGERS below.
+    // Skipping the raw transition here prevents duplicate arrows, especially
+    // when the source process is collapsed and the target process is expanded
+    // (for example: file upload -> text conversion Needed).
+    if (isDefinedCrossWorkflowTrigger(e.source, e.target)) continue;
 
     const srcNode = layoutNodes.find(n => n.id === src);
     const tgtNode = layoutNodes.find(n => n.id === tgt);
