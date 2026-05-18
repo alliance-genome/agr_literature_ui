@@ -339,6 +339,7 @@ const OpenAccess = () => {
   const imagePermission = referenceJsonLive["effective_image_permission"] || {};
   const imagePermissionName = imagePermission["image_permission_name"] || null;
   const imagePermissionUrl = imagePermission["permission_url"] || null;
+  const permissionDocUrl = imagePermission["permission_doc_url"] || null;
   const imagePermissionSource = imagePermission["source"];
   const permissionTextRaw = imagePermission["permission_text"] || null;
   const startYear = imagePermission["start_year"] || null;
@@ -568,10 +569,18 @@ const OpenAccess = () => {
                   </div>
                 )}
                 {imagePermissionUrl && (
-                  <div>
+                  <div style={{ marginBottom: '5px' }}>
                     <strong>Publisher Permissions Page:</strong>{' '}
                     <a href={imagePermissionUrl} target="_blank" rel="noopener noreferrer">
                       {imagePermissionUrl}
+                    </a>
+                  </div>
+                )}
+                {permissionDocUrl && (
+                  <div>
+                    <strong>Permission Documentation:</strong>{' '}
+                    <a href={permissionDocUrl} target="_blank" rel="noopener noreferrer">
+                      View Permission Document
                     </a>
                   </div>
                 )}
