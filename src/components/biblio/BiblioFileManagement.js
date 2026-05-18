@@ -314,6 +314,7 @@ const OpenAccess = () => {
   const dispatch = useDispatch();
   const [licenseData, setLicenseData] = useState([]);
   const [newLicense, setNewLicense] = useState('');
+  const [showPermissionDetails, setShowPermissionDetails] = useState(false);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"]
   const accessToken = useSelector(state => state.isLogged.accessToken);
@@ -339,7 +340,20 @@ const OpenAccess = () => {
   const imagePermissionName = imagePermission["image_permission_name"] || null;
   const imagePermissionUrl = imagePermission["permission_url"] || null;
   const imagePermissionSource = imagePermission["source"];
+  const permissionText = imagePermission["permission_text"] || null;
+  const startYear = imagePermission["start_year"] || null;
+  const endYear = imagePermission["end_year"] || null;
+  const notes = imagePermission["notes"] || null;
   const canDisplayImages = imagePermission["can_display_images"] ? "can display images" : "cannot display images";
+
+  // Check if this is an Alliance-granted permission (has permission name from resource_image_permission)
+  const hasAlliancePermission = imagePermissionName && (
+    imagePermissionName.toLowerCase().includes('permission granted') ||
+    imagePermissionName.toLowerCase().includes('blanket permission') ||
+    imagePermissionName.toLowerCase().includes('contract') ||
+    imagePermissionName.toLowerCase().includes('display allowed')
+  );
+
   // Show source label based on where permission came from
   const getSourceLabel = () => {
     if (imagePermissionSource === "reference_open_access") return "reference open access";
@@ -358,6 +372,14 @@ const OpenAccess = () => {
     return null;
   };
   const imagePermissionSourceLabel = getSourceLabel();
+
+  // Format year range for display
+  const getYearRange = () => {
+    if (startYear && endYear) return `${startYear}-${endYear}`;
+    if (startYear) return `${startYear}-present`;
+    if (endYear) return `up to ${endYear}`;
+    return null;
+  };
 
   let lastUpdatedBy = ''
   if (referenceJsonLive["copyright_license_last_updated_by"] && referenceJsonLive["copyright_license_last_updated_by"] !== 'default_user') {
@@ -417,8 +439,71 @@ const OpenAccess = () => {
         <Row key='image_permission'>
           <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>image permission</Col>
           <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }}>
-            <span><strong>{canDisplayImages}</strong></span>
-            {imagePermissionSourceLabel && <span style={{ marginLeft: '10px', color: '#666' }}>({imagePermissionSourceLabel})</span>}
+            <div>
+              <span><strong>{canDisplayImages}</strong></span>
+              {imagePermissionSourceLabel && <span style={{ marginLeft: '10px', color: '#666' }}>({imagePermissionSourceLabel})</span>}
+              {imagePermissionName && (permissionText || notes || getYearRange()) && (
+                <button
+                  className="button-to-link"
+                  style={{ marginLeft: '10px', fontSize: '0.9em' }}
+                  onClick={() => setShowPermissionDetails(!showPermissionDetails)}
+                >
+                  {showPermissionDetails ? 'hide details' : 'show details'}
+                </button>
+              )}
+            </div>
+            {showPermissionDetails && imagePermissionName && (
+              <div style={{
+                marginTop: '10px',
+                padding: '10px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '4px',
+                border: '1px solid #dee2e6',
+                fontSize: '0.9em'
+              }}>
+                {hasAlliancePermission && (
+                  <div style={{ marginBottom: '8px', color: '#28a745', fontWeight: 'bold' }}>
+                    Alliance-Granted Permission
+                  </div>
+                )}
+                <div style={{ marginBottom: '5px' }}>
+                  <strong>Permission Type:</strong> {imagePermissionName}
+                </div>
+                {getYearRange() && (
+                  <div style={{ marginBottom: '5px' }}>
+                    <strong>Year Range:</strong> {getYearRange()}
+                  </div>
+                )}
+                {permissionText && (
+                  <div style={{ marginBottom: '5px' }}>
+                    <strong>Attribution Text:</strong>
+                    <div style={{
+                      marginTop: '5px',
+                      padding: '8px',
+                      backgroundColor: '#fff',
+                      border: '1px solid #e9ecef',
+                      borderRadius: '3px',
+                      fontStyle: 'italic'
+                    }}>
+                      {permissionText}
+                    </div>
+                  </div>
+                )}
+                {notes && (
+                  <div style={{ marginBottom: '5px' }}>
+                    <strong>Notes:</strong> {notes}
+                  </div>
+                )}
+                {imagePermissionUrl && (
+                  <div>
+                    <strong>Publisher Permissions Page:</strong>{' '}
+                    <a href={imagePermissionUrl} target="_blank" rel="noopener noreferrer">
+                      {imagePermissionUrl}
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
           </Col>
         </Row>
         {showAlert && alert && <Alert variant="success">{alert}</Alert>}
