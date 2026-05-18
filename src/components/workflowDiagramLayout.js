@@ -1330,15 +1330,24 @@ export function renderDiagram(svgElement, layout, callbacks) {
 
   const edgeMerge = edgeEnter.merge(edgeSel);
   edgeMerge.attr('class', d =>
-    `wf-edge wf-edge-${d.edgeType}${d.isPrimaryFlow ? ' wf-edge-primary' : ' wf-edge-special'}${d.isSelectedEdge ? ' wf-edge-selected' : ''}${d.isSideTransition ? ' wf-edge-side' : ''}${d.bidirectional ? ' wf-bidirectional' : ''}`);
+    `wf-edge wf-edge-${d.edgeType}${d.isPrimaryFlow ? ' wf-edge-primary' : ' wf-edge-special'}${d.isSelectedEdge ? ' wf-edge-selected' : ''}${d.isSideTransition ? ' wf-edge-side' : ''}${d.showAllTransitions ? ' wf-edge-full-view' : ''}${d.bidirectional ? ' wf-bidirectional' : ''}`);
 
   edgeMerge.select('path')
     .on('mouseenter', (event, d) => callbacks.onEdgeHover(d, event))
     .on('mouseleave', () => callbacks.onEdgeLeave())
     .transition(t)
-    .attr('opacity', d => (d.isSelectedEdge || d.isPrimaryFlow || d.isTrigger) ? 1 : 0.45)
+    .attr('opacity', d => {
+      if (d.isSelectedEdge || d.isPrimaryFlow || d.isTrigger) return 1;
+      if (d.showAllTransitions && d.isSideTransition) return 0.16;
+      if (d.showAllTransitions) return 0.28;
+      return 0.45;
+    })
     .attr('d', edgePath)
-    .attr('stroke-width', d => (d.isPrimaryFlow || d.isSelectedEdge) ? 2.25 : d.bidirectional ? 1.75 : 1.35)
+    .attr('stroke-width', d => {
+      if (d.isPrimaryFlow || d.isSelectedEdge) return 2.25;
+      if (d.showAllTransitions && d.isSideTransition) return 1;
+      return d.bidirectional ? 1.75 : 1.35;
+    })
     .attr('marker-end', d => `url(#${markerPrefix}-${d.edgeType})`);
 
   edgeSel.exit().transition(t).attr('opacity', 0).remove();

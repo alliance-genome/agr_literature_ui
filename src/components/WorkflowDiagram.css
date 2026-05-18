@@ -559,3 +559,19 @@
   color: #999;
   margin: 0 4px;
 }
+/* Full view is intended for debugging. Keep exception/status transitions very quiet
+   so the main workflow remains readable even when all transitions are visible. */
+.wf-edge.wf-edge-full-view.wf-edge-side path {
+  opacity: 0.16;
+  stroke-width: 1;
+}
+
+.wf-edge.wf-edge-full-view.wf-edge-special:not(.wf-edge-side) path {
+  opacity: 0.28;
+}
+
+.wf-edge.wf-edge-full-view.wf-edge-side path:hover,
+.wf-edge.wf-edge-full-view.wf-edge-special path:hover {
+  opacity: 0.85;
+  stroke-width: 1.75;
+}
