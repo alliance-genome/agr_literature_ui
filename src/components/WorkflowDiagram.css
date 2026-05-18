@@ -99,8 +99,8 @@
 .workflow-diagram-process-dropdown {
   font-size: 11px;
   padding: 3px 6px;
-  width: 170px;
-  max-width: 170px;
+  width: 210px;
+  max-width: 210px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

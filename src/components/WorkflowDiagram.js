@@ -307,31 +307,16 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     // Also check expanded groups for dropdown positioning
     const positions = {};
 
-    // First check summary nodes (collapsed processes)
-    for (const node of layout.nodes) {
-      if (node.type === 'summary') {
-        const processName = (node.processName || '').toLowerCase();
-        if (processName === 'entity extraction' || processName === 'reference classification') {
-          positions[processName] = {
-            // Position below the summary node, centered horizontally
-            svgX: node.x + node.width / 2,
-            svgY: node.y + node.height + 5,
-            width: node.width,
-            height: node.height,
-            isCollapsed: true,
-          };
-        }
-      }
-    }
-
-    // Then check expanded groups (if not already found as summary)
+    // Show datatype dropdowns only for expanded roll-up groups.
+    // Keeping them off collapsed summary boxes prevents confusing cases where a
+    // collapsed roll-up says "overall status" while a datatype filter is shown below it.
     for (const group of layout.groups) {
       if (!group.isSubprocess && !group.collapsed) {
         const processName = (group.processName || '').toLowerCase();
-        if ((processName === 'entity extraction' || processName === 'reference classification') && !positions[processName]) {
+        if (processName === 'entity extraction' || processName === 'reference classification') {
           positions[processName] = {
-            // Position in the group header, near the right
-            svgX: group.x + group.width - 160,
+            // Position just under the group header, aligned near the right edge.
+            svgX: group.x + group.width - 190,
             svgY: group.y + 42,
             width: group.width,
             height: 0,
