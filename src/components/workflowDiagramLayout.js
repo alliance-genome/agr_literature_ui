@@ -403,11 +403,12 @@ const NODE_Y_GAP = 20;       // Increased from 16
  * @param {number} width
  * @param {number} height
  * @param {Object} options - Additional layout options
- * @param {string} options.selectedNodeId - Node ID to highlight and show edges for
+ * @param {string} options.selectedNodeId - Node ID to highlight and show transitions for
  * @param {string} options.currentStateId - Current state to highlight (e.g., for a reference)
+ * @param {boolean} options.showAllTransitions - Show every transition instead of only the main workflow
  */
 export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses, width, height, options = {}) {
-  const { selectedNodeId = null, currentStateId = null } = options;
+  const { selectedNodeId = null, currentStateId = null, showAllTransitions = false } = options;
 
   if (!tagData || tagData.length === 0) {
     return { nodes: [], edges: [], groups: [], viewBox: '0 0 800 600', crossWorkflowTriggers: [] };
@@ -568,6 +569,8 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
             processId: gid, processName: pg.processName,
             subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
             nodeCount: sp.nodeIds.length,
+            stateCategory: classifyState(sp.subprocessName),
+            isMainFlow: true,
             color: spColor,
           });
 
@@ -596,6 +599,8 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
             processId: gid, processName: pg.processName,
             subprocessId: sp.subprocessId, subprocessName: sp.subprocessName,
             nodeCount: sp.nodeIds.length,
+            stateCategory: classifyState(sp.subprocessName),
+            isMainFlow: false,
             color: spColor,
           });
 
@@ -703,13 +708,30 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       nodeMap.get(e.source)?.name,
       nodeMap.get(e.target)?.name
     );
-    const isSelectedEdge = selectedNodeId && (src === selectedNodeId || tgt === selectedNodeId);
-    if (selectedNodeId && !isSelectedEdge && !isPrimaryFlow) {
-      continue;
+    const isSelectedEdge = !!selectedNodeId && (src === selectedNodeId || tgt === selectedNodeId);
+
+    // Default/simple view: keep only the main internal workflow path here.
+    // Cross-workflow trigger arrows are added later from CROSS_WORKFLOW_TRIGGERS.
+    // Focused view: keep only transitions connected to the selected state, plus the main path.
+    // Full view: keep everything.
+    if (!showAllTransitions) {
+      if (selectedNodeId) {
+        if (!isSelectedEdge && !isPrimaryFlow) continue;
+      } else if (!isPrimaryFlow) {
+        continue;
+      }
     }
-    if (!selectedNodeId && edgeType === 'internal' && !isPrimaryFlow) {
-      continue;
-    }
+
+    const isSideTransition = !isPrimaryFlow && (
+      srcNode.isMainFlow === false ||
+      tgtNode.isMainFlow === false ||
+      srcNode.stateCategory === 'failed' ||
+      srcNode.stateCategory === 'blocked' ||
+      srcNode.stateCategory === 'internal' ||
+      tgtNode.stateCategory === 'failed' ||
+      tgtNode.stateCategory === 'blocked' ||
+      tgtNode.stateCategory === 'internal'
+    );
 
     // Primary workflow edges stay directed so the normal Needed → In progress
     // → Complete/Uploaded path remains visible even if reverse special-case
@@ -735,6 +757,8 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       edgeType, data: e.data,
       isPrimaryFlow,
       isSelectedEdge,
+      isSideTransition,
+      showAllTransitions,
       bidirectional: false,
       reverseData: null,
       _directionKeys: new Set([forwardKey]),
@@ -757,6 +781,8 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       data,
       isPrimaryFlow: !!options.isPrimaryFlow,
       isTrigger: !!options.isTrigger,
+      isSideTransition: false,
+      showAllTransitions,
       synthetic: true,
       bidirectional: false,
       reverseData: null,
@@ -854,6 +880,8 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       edgeType: 'external',
       isTrigger: true,
       isPrimaryFlow: !!trigger.keepWhenNodeSelected,
+      isSideTransition: false,
+      showAllTransitions,
       data: {
         sourceName: fromStateName,
         to_name: toStateName,
@@ -1113,38 +1141,53 @@ function assignEdgePorts(edges) {
 function edgePath(d) {
   const sn = d.sourceNode;
   const tn = d.targetNode;
-  const gap = 5;  // Gap between arrow and target box top
+  const gap = 6;
 
-  // Spread ports across 60% of node width
-  const sOff = sn.width * 0.6 * (d._sPort || 0);
-  const tOff = tn.width * 0.6 * (d._tPort || 0);
+  const sourceCenterX = sn.x + sn.width / 2;
+  const sourceCenterY = sn.y + sn.height / 2;
+  const targetCenterX = tn.x + tn.width / 2;
+  const targetCenterY = tn.y + tn.height / 2;
+  const sameRow = Math.abs(sourceCenterY - targetCenterY) < Math.max(sn.height, tn.height) * 0.75;
+  const sideTransition = d.isSideTransition && !d.isPrimaryFlow;
 
-  // Check if nodes are roughly on the same row (horizontal layout)
-  const sameRow = Math.abs(sn.y - tn.y) < sn.height;
+  // Exception/side-state transitions are routed as soft side curves so they do
+  // not cut through the main Needed → In progress → Complete/Uploaded column.
+  if (sideTransition) {
+    const sourceOnLeft = sourceCenterX <= targetCenterX;
+    const sx = sourceOnLeft ? sn.x + sn.width : sn.x;
+    const sy = sourceCenterY;
+    const tx = sourceOnLeft ? tn.x : tn.x + tn.width;
+    const ty = targetCenterY;
+    const dx = Math.max(Math.abs(tx - sx), 90);
+    const bow = d.isSelectedEdge ? 42 : 64;
+    const c1x = sx + (sourceOnLeft ? dx * 0.45 : -dx * 0.45);
+    const c2x = tx + (sourceOnLeft ? -dx * 0.45 : dx * 0.45);
+    const c1y = sy + (ty >= sy ? bow : -bow);
+    const c2y = ty + (ty >= sy ? -bow : bow);
+    return `M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tx} ${ty}`;
+  }
 
   if (sameRow) {
-    // Horizontal edge: exit from right side, enter from left side
-    const isLeftToRight = sn.x < tn.x;
+    const isLeftToRight = sourceCenterX < targetCenterX;
     const sx = isLeftToRight ? sn.x + sn.width : sn.x;
-    const sy = sn.y + sn.height / 2;
-    const tx = isLeftToRight ? tn.x : tn.x + tn.width;
-    const ty = tn.y + tn.height / 2;
+    const sy = sourceCenterY;
+    const tx = isLeftToRight ? tn.x - gap : tn.x + tn.width + gap;
+    const ty = targetCenterY;
     const midX = (sx + tx) / 2;
-    // Slight curve downward for visual distinction
-    const curveY = Math.max(sy, ty) + 30;
+    const curveY = Math.max(sy, ty) + 28;
     return `M ${sx} ${sy} Q ${midX} ${curveY}, ${tx} ${ty}`;
   }
 
-  // Vertical edge: exit from bottom, enter from top
-  const sx = sn.x + sn.width / 2 + sOff;
+  const sOff = sn.width * 0.6 * (d._sPort || 0);
+  const tOff = tn.width * 0.6 * (d._tPort || 0);
+  const sx = sourceCenterX + sOff;
   const sy = sn.y + sn.height;
-  const tx = tn.x + tn.width / 2 + tOff;
+  const tx = targetCenterX + tOff;
   const ty = tn.y - gap;
 
-  // If target is above source (back-edge), route around with a wider curve
   if (tn.y < sn.y + sn.height) {
     const loopOut = Math.max(Math.abs(sx - tx), 80) + 40;
-    const side = sx <= tx ? -1 : 1; // curve left or right to avoid overlap
+    const side = sx <= tx ? -1 : 1;
     const mx = Math.min(sn.x, tn.x) + side * loopOut;
     return `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`;
   }
@@ -1287,12 +1330,13 @@ export function renderDiagram(svgElement, layout, callbacks) {
 
   const edgeMerge = edgeEnter.merge(edgeSel);
   edgeMerge.attr('class', d =>
-    `wf-edge wf-edge-${d.edgeType}${d.isPrimaryFlow ? ' wf-edge-primary' : ' wf-edge-special'}${d.isSelectedEdge ? ' wf-edge-selected' : ''}${d.bidirectional ? ' wf-bidirectional' : ''}`);
+    `wf-edge wf-edge-${d.edgeType}${d.isPrimaryFlow ? ' wf-edge-primary' : ' wf-edge-special'}${d.isSelectedEdge ? ' wf-edge-selected' : ''}${d.isSideTransition ? ' wf-edge-side' : ''}${d.bidirectional ? ' wf-bidirectional' : ''}`);
 
   edgeMerge.select('path')
     .on('mouseenter', (event, d) => callbacks.onEdgeHover(d, event))
     .on('mouseleave', () => callbacks.onEdgeLeave())
-    .transition(t).attr('opacity', 1)
+    .transition(t)
+    .attr('opacity', d => (d.isSelectedEdge || d.isPrimaryFlow || d.isTrigger) ? 1 : 0.45)
     .attr('d', edgePath)
     .attr('stroke-width', d => (d.isPrimaryFlow || d.isSelectedEdge) ? 2.25 : d.bidirectional ? 1.75 : 1.35)
     .attr('marker-end', d => `url(#${markerPrefix}-${d.edgeType})`);
@@ -1319,9 +1363,10 @@ export function renderDiagram(svgElement, layout, callbacks) {
         if (!didDrag) {
           if (d.type === 'summary') callbacks.onGroupClick(d.processId);
           else if (d.type === 'subsummary') {
-            // For "failed" subprocesses, select to show transitions instead of expanding
-            const isFailedSubprocess = d.subprocessName && d.subprocessName.toLowerCase().includes('failed');
-            if (isFailedSubprocess && callbacks.onNodeClick) {
+            // Side-state subgroups (Failed, Blocked, Unavailable, won't..., Status TBD)
+            // are shown as context by default. Clicking them should focus their
+            // incoming/outgoing transitions instead of expanding into extra detail.
+            if (d.isMainFlow === false && callbacks.onNodeClick) {
               callbacks.onNodeClick(d.id);
             } else {
               callbacks.onSubprocessClick(d.subprocessId);
