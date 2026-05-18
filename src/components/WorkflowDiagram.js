@@ -41,7 +41,8 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [error, setError] = useState(null);
   const [singleExpand, setSingleExpand] = useState(true); // Only allow one group expanded at a time
   const [allProcessIds, setAllProcessIds] = useState(new Set());
-  const [selectedNodeId, setSelectedNodeId] = useState(null); // Selected node for edge filtering
+  const [selectedNodeId, setSelectedNodeId] = useState(null); // Selected node for focused transition view
+  const [showAllTransitions, setShowAllTransitions] = useState(false); // Simple view by default
   const [legendExpanded, setLegendExpanded] = useState(false); // Legend collapsed by default
   const [processDatatypes, setProcessDatatypes] = useState({}); // Map of process name -> available datatypes
   const [selectedProcessDatatype, setSelectedProcessDatatype] = useState({}); // Map of process name -> selected datatype
@@ -211,8 +212,11 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
 
   const onHoverLeave = useCallback(() => setHoveredElement(null), []);
 
-  // Click on a normal node to select it (show only its edges)
+  // Click on a state to focus only its incoming/outgoing transitions.
+  // If the user is in full-transition mode, switch back to the cleaner
+  // focused mode instead of leaving every transition visible.
   const onNodeClick = useCallback((nodeId) => {
+    setShowAllTransitions(false);
     setSelectedNodeId(prev => prev === nodeId ? null : nodeId); // Toggle selection
   }, []);
 
@@ -225,7 +229,6 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const isRollupStateForProcess = useCallback((node, processName) => {
     const nodeName = (node.tag_name || '').toLowerCase();
     const normalizedProcessName = (processName || '').toLowerCase();
-
     return STATUS_SUFFIXES.some(suffix => nodeName === `${normalizedProcessName}${suffix}`);
   }, []);
 
@@ -295,7 +298,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     const layout = computeLayout(
       filteredTagData, collapsedProcesses, expandedSubprocesses,
       dimensions.width, dimensions.height,
-      { selectedNodeId, currentStateId }
+      { selectedNodeId, currentStateId, showAllTransitions }
     );
     layoutRef.current = layout;
     renderDiagram(svgRef.current, layout, callbacks);
@@ -339,7 +342,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     }
 
     setSummaryPositions(positions);
-  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, selectedNodeId, currentStateId]);
+  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, selectedNodeId, currentStateId, showAllTransitions]);
 
   // ─── Tooltip builders ────────────────────────────────────────────────
   const renderNodeTooltip = () => {
@@ -365,7 +368,10 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
           <div className="wf-popover-process">{data.processName}</div>
           {(data.type === 'summary' || data.type === 'subsummary') && (
             <div style={{ marginBottom: 6 }}>
-              <strong>{data.nodeCount}</strong> states{data.subprocessCount > 0 ? `, ${data.subprocessCount} sub-processes` : ''}. Click to expand.
+              <strong>{data.nodeCount}</strong> states{data.subprocessCount > 0 ? `, ${data.subprocessCount} sub-processes` : ''}.{' '}
+              {data.type === 'subsummary' && data.isMainFlow === false
+                ? 'Click to show incoming and outgoing transitions.'
+                : 'Click to expand.'}
             </div>
           )}
           {data.type === 'normal' && (
@@ -476,6 +482,12 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     setSelectedNodeId(null);
   }, []);
 
+  const handleToggleAllTransitions = useCallback(() => {
+    setShowAllTransitions(prev => !prev);
+    setSelectedNodeId(null);
+    setHoveredElement(null);
+  }, []);
+
   // Convert SVG coordinates to screen coordinates
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const svgToScreenCoords = useCallback((svgX, svgY) => {
@@ -574,9 +586,16 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
             className="workflow-diagram-btn workflow-diagram-btn-active"
             onClick={handleClearSelection}
           >
-            Show All Edges
+            Clear Focus
           </button>
         )}
+        <button
+          className={`workflow-diagram-btn ${showAllTransitions ? 'workflow-diagram-btn-active' : ''}`}
+          onClick={handleToggleAllTransitions}
+          title={showAllTransitions ? 'Return to the simple workflow view' : 'Show all workflow transitions'}
+        >
+          {showAllTransitions ? 'Simple View' : 'Show All Transitions'}
+        </button>
         <label className="workflow-diagram-toggle">
           <input
             type="checkbox"
@@ -587,7 +606,11 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         </label>
       </div>
       <div className="workflow-diagram-hint">
-        Click a state to show transitions to/from it
+        {showAllTransitions
+          ? 'Full view: extra transitions are shown faintly. Click a state for a cleaner focused view.'
+          : selectedNodeId
+            ? 'Focused view: showing incoming and outgoing transitions for the selected state.'
+            : 'Simple view: main workflow only. Click a state to show its incoming and outgoing transitions.'}
       </div>
       {/* Collapsible Legend */}
       <div className={`workflow-legend ${legendExpanded ? 'expanded' : 'collapsed'}`}>
@@ -598,7 +621,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         {legendExpanded && (
           <div className="workflow-legend-content">
             <div className="workflow-legend-row">
-              <span className="workflow-legend-label">Edges:</span>
+              <span className="workflow-legend-label">Transitions:</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge"></span> Internal</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge cross"></span> Cross-workflow</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge bidirectional"></span> Bidirectional</span>
