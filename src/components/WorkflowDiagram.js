@@ -188,8 +188,11 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
 
   const onHoverLeave = useCallback(() => setHoveredElement(null), []);
 
-  // Click on a normal node to select it (show only its edges)
+  // Click on a state to focus only its incoming/outgoing transitions.
+  // If the user is in full-transition mode, switch back to the cleaner
+  // focused mode instead of leaving every transition visible.
   const onNodeClick = useCallback((nodeId) => {
+    setShowAllTransitions(false);
     setSelectedNodeId(prev => prev === nodeId ? null : nodeId); // Toggle selection
   }, []);
 
@@ -578,7 +581,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
       </div>
       <div className="workflow-diagram-hint">
         {showAllTransitions
-          ? 'Showing all transitions. Click Simple View to reduce clutter.'
+          ? 'Full view: extra transitions are shown faintly. Click a state for a cleaner focused view.'
           : selectedNodeId
             ? 'Focused view: showing incoming and outgoing transitions for the selected state.'
             : 'Simple view: main workflow only. Click a state to show its incoming and outgoing transitions.'}
