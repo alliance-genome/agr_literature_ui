@@ -442,7 +442,7 @@ const OpenAccess = () => {
             <div>
               <span><strong>{canDisplayImages}</strong></span>
               {imagePermissionSourceLabel && <span style={{ marginLeft: '10px', color: '#666' }}>({imagePermissionSourceLabel})</span>}
-              {imagePermissionName && (permissionText || notes || getYearRange()) && (
+              {imagePermissionName && (
                 <button
                   className="button-to-link"
                   style={{ marginLeft: '10px', fontSize: '0.9em' }}
