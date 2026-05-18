@@ -421,7 +421,7 @@ const OpenAccess = () => {
     }
 
     // Strip any remaining unreplaced placeholders to avoid showing raw tags to users
-    formatted = formatted.replace(/<[A-Za-z_]+>/g, '').trim();
+    formatted = formatted.replace(/<[A-Za-z_ ]+>/g, '').trim();
     // Clean up any double spaces left after stripping
     formatted = formatted.replace(/\s{2,}/g, ' ');
 
