@@ -4,6 +4,32 @@ import { api } from '../api';
 import { computeLayout, renderDiagram, setupZoom } from './workflowDiagramLayout';
 import './WorkflowDiagram.css';
 
+
+const ROLLUP_PROCESS_CONFIG = {
+  'entity extraction': {
+    overallOptionLabel: 'Overall entity extraction status',
+    detailOptionLabel: 'View extraction workflow',
+  },
+  'reference classification': {
+    overallOptionLabel: 'Overall reference classification status',
+    detailOptionLabel: 'View classification workflow',
+  },
+};
+
+const STATUS_SUFFIXES = [
+  ' needed',
+  ' in progress',
+  ' complete',
+  ' failed',
+  ' uploaded',
+  ' converted',
+  ' extracted',
+];
+
+function getRollupConfig(processName) {
+  return ROLLUP_PROCESS_CONFIG[(processName || '').toLowerCase()] || null;
+}
+
 const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [tagData, setTagData] = useState(null);
   const [collapsedProcesses, setCollapsedProcesses] = useState(new Set());
@@ -15,8 +41,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [error, setError] = useState(null);
   const [singleExpand, setSingleExpand] = useState(true); // Only allow one group expanded at a time
   const [allProcessIds, setAllProcessIds] = useState(new Set());
-  const [selectedNodeId, setSelectedNodeId] = useState(null); // Selected node for focused transition view
-  const [showAllTransitions, setShowAllTransitions] = useState(false); // Simple view by default
+  const [selectedNodeId, setSelectedNodeId] = useState(null); // Selected node for edge filtering
   const [legendExpanded, setLegendExpanded] = useState(false); // Legend collapsed by default
   const [processDatatypes, setProcessDatatypes] = useState({}); // Map of process name -> available datatypes
   const [selectedProcessDatatype, setSelectedProcessDatatype] = useState({}); // Map of process name -> selected datatype
@@ -55,9 +80,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
             // Extract datatype from tag names
             const name = node.tag_name || '';
             const processName = node.workflow_process_name || '';
-            const statusSuffixes = [' needed', ' in progress', ' complete', ' failed', ' uploaded', ' converted', ' extracted'];
-
-            for (const suffix of statusSuffixes) {
+            for (const suffix of STATUS_SUFFIXES) {
               if (name.toLowerCase().endsWith(suffix)) {
                 const datatype = name.slice(0, -suffix.length).trim();
                 const datatypeLower = datatype.toLowerCase();
@@ -188,11 +211,8 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
 
   const onHoverLeave = useCallback(() => setHoveredElement(null), []);
 
-  // Click on a state to focus only its incoming/outgoing transitions.
-  // If the user is in full-transition mode, switch back to the cleaner
-  // focused mode instead of leaving every transition visible.
+  // Click on a normal node to select it (show only its edges)
   const onNodeClick = useCallback((nodeId) => {
-    setShowAllTransitions(false);
     setSelectedNodeId(prev => prev === nodeId ? null : nodeId); // Toggle selection
   }, []);
 
@@ -201,6 +221,13 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     onEdgeHover, onEdgeLeave: onHoverLeave,
     onGroupClick, onSubprocessClick, onNodeClick,
   }), [onNodeHover, onHoverLeave, onEdgeHover, onGroupClick, onSubprocessClick, onNodeClick]);
+
+  const isRollupStateForProcess = useCallback((node, processName) => {
+    const nodeName = (node.tag_name || '').toLowerCase();
+    const normalizedProcessName = (processName || '').toLowerCase();
+
+    return STATUS_SUFFIXES.some(suffix => nodeName === `${normalizedProcessName}${suffix}`);
+  }, []);
 
   // ─── Filter data by selected datatypes per process ─────────────────────
   const filteredTagData = useMemo(() => {
@@ -215,27 +242,23 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         const name = (node.tag_name || '').toLowerCase();
         const processName = (node.workflow_process_name || '').toLowerCase();
 
-        // Check entity extraction filter
+        // Check entity extraction filter. When a datatype is selected,
+        // show the selected detailed workflow only. The empty selection means
+        // the real database roll-up workflow / overall status.
         if (processName === 'entity extraction') {
           const selectedDt = selectedProcessDatatype['entity extraction'];
           if (selectedDt) {
             const dtLower = selectedDt.toLowerCase();
-            // Include if matches the selected datatype
-            if (name.startsWith(dtLower)) return true;
-            // Exclude other entity extraction nodes
-            return false;
+            return name.startsWith(dtLower) && !isRollupStateForProcess(node, processName);
           }
         }
 
-        // Check reference classification filter
+        // Check reference classification filter. Same behavior as entity extraction.
         if (processName === 'reference classification') {
           const selectedDt = selectedProcessDatatype['reference classification'];
           if (selectedDt) {
             const dtLower = selectedDt.toLowerCase();
-            // Include if matches the selected datatype
-            if (name.startsWith(dtLower)) return true;
-            // Exclude other reference classification nodes
-            return false;
+            return name.startsWith(dtLower) && !isRollupStateForProcess(node, processName);
           }
         }
 
@@ -264,7 +287,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
 
         return node;
       });
-  }, [tagData, selectedProcessDatatype]);
+  }, [tagData, selectedProcessDatatype, isRollupStateForProcess]);
 
   // ─── Layout & render ─────────────────────────────────────────────────
   useEffect(() => {
@@ -272,7 +295,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     const layout = computeLayout(
       filteredTagData, collapsedProcesses, expandedSubprocesses,
       dimensions.width, dimensions.height,
-      { selectedNodeId, currentStateId, showAllTransitions }
+      { selectedNodeId, currentStateId }
     );
     layoutRef.current = layout;
     renderDiagram(svgRef.current, layout, callbacks);
@@ -316,7 +339,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     }
 
     setSummaryPositions(positions);
-  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, selectedNodeId, currentStateId, showAllTransitions]);
+  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, selectedNodeId, currentStateId]);
 
   // ─── Tooltip builders ────────────────────────────────────────────────
   const renderNodeTooltip = () => {
@@ -342,10 +365,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
           <div className="wf-popover-process">{data.processName}</div>
           {(data.type === 'summary' || data.type === 'subsummary') && (
             <div style={{ marginBottom: 6 }}>
-              <strong>{data.nodeCount}</strong> states{data.subprocessCount > 0 ? `, ${data.subprocessCount} sub-processes` : ''}.{' '}
-              {data.type === 'subsummary' && data.isMainFlow === false
-                ? 'Click to show incoming and outgoing transitions.'
-                : 'Click to expand.'}
+              <strong>{data.nodeCount}</strong> states{data.subprocessCount > 0 ? `, ${data.subprocessCount} sub-processes` : ''}. Click to expand.
             </div>
           )}
           {data.type === 'normal' && (
@@ -456,12 +476,6 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     setSelectedNodeId(null);
   }, []);
 
-  const handleToggleAllTransitions = useCallback(() => {
-    setShowAllTransitions(prev => !prev);
-    setSelectedNodeId(null);
-    setHoveredElement(null);
-  }, []);
-
   // Convert SVG coordinates to screen coordinates
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const svgToScreenCoords = useCallback((svgX, svgY) => {
@@ -560,16 +574,9 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
             className="workflow-diagram-btn workflow-diagram-btn-active"
             onClick={handleClearSelection}
           >
-            Clear Focus
+            Show All Edges
           </button>
         )}
-        <button
-          className={`workflow-diagram-btn ${showAllTransitions ? 'workflow-diagram-btn-active' : ''}`}
-          onClick={handleToggleAllTransitions}
-          title={showAllTransitions ? 'Return to the simple workflow view' : 'Show all workflow transitions'}
-        >
-          {showAllTransitions ? 'Simple View' : 'Show All Transitions'}
-        </button>
         <label className="workflow-diagram-toggle">
           <input
             type="checkbox"
@@ -580,11 +587,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         </label>
       </div>
       <div className="workflow-diagram-hint">
-        {showAllTransitions
-          ? 'Full view: extra transitions are shown faintly. Click a state for a cleaner focused view.'
-          : selectedNodeId
-            ? 'Focused view: showing incoming and outgoing transitions for the selected state.'
-            : 'Simple view: main workflow only. Click a state to show its incoming and outgoing transitions.'}
+        Click a state to show transitions to/from it
       </div>
       {/* Collapsible Legend */}
       <div className={`workflow-legend ${legendExpanded ? 'expanded' : 'collapsed'}`}>
@@ -595,7 +598,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         {legendExpanded && (
           <div className="workflow-legend-content">
             <div className="workflow-legend-row">
-              <span className="workflow-legend-label">Transitions:</span>
+              <span className="workflow-legend-label">Edges:</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge"></span> Internal</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge cross"></span> Cross-workflow</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge bidirectional"></span> Bidirectional</span>
@@ -614,6 +617,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
 
         // Capitalize first letter of process name for display
         const displayName = processName.charAt(0).toUpperCase() + processName.slice(1);
+        const rollupConfig = getRollupConfig(processName);
 
         // For collapsed boxes, center the dropdown below the box
         // For expanded groups, position in the header
@@ -639,9 +643,11 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
             style={dropdownStyle}
             value={selectedProcessDatatype[processName] || ''}
             onChange={(e) => handleDatatypeChange(processName, e.target.value)}
-            title={`Filter ${displayName} by datatype`}
+            title={rollupConfig?.detailOptionLabel || `Filter ${displayName} by datatype`}
           >
-            <option value="">All {displayName}</option>
+            <option value="">
+              {rollupConfig?.overallOptionLabel || `All ${displayName}`}
+            </option>
             {datatypes.map(dt => (
               <option key={dt} value={dt}>{dt}</option>
             ))}

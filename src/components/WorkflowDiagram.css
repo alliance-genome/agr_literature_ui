@@ -99,7 +99,7 @@
 .workflow-diagram-process-dropdown {
   font-size: 11px;
   padding: 3px 6px;
-  max-width: 160px;
+  max-width: 230px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -142,7 +142,7 @@
 
 .workflow-legend.expanded {
   padding: 10px 14px;
-  min-width: 430px;
+  min-width: 360px;
 }
 
 .workflow-legend-title {
@@ -186,7 +186,7 @@
 .workflow-legend-label {
   font-weight: 600;
   color: #444;
-  width: 78px;
+  width: 52px;
   flex-shrink: 0;
 }
 
@@ -450,23 +450,6 @@
   stroke: #7a4fa0;
 }
 
-
-/* Side-state / exception transitions. These are hidden in Simple View,
-   and appear in Focused View or Full View with a softer visual weight. */
-.wf-edge.wf-edge-side path {
-  stroke-width: 1.35;
-  opacity: 0.45;
-}
-
-.wf-edge.wf-edge-side.wf-edge-selected path {
-  opacity: 1;
-  stroke-width: 2.25;
-}
-
-.wf-edge.wf-edge-side path:hover {
-  opacity: 0.95;
-}
-
 /* --- Loading / error states --- */
 .workflow-diagram-loading {
   display: flex;
@@ -559,19 +542,22 @@
   color: #999;
   margin: 0 4px;
 }
-/* Full view is intended for debugging. Keep exception/status transitions very quiet
-   so the main workflow remains readable even when all transitions are visible. */
-.wf-edge.wf-edge-full-view.wf-edge-side path {
-  opacity: 0.16;
-  stroke-width: 1;
+
+/* --- Roll-up workflow labeling --- */
+.wf-group text.wf-group-badge {
+  font-size: 10px;
+  font-weight: 600;
+  fill: #795800;
+  pointer-events: none;
 }
 
-.wf-edge.wf-edge-full-view.wf-edge-special:not(.wf-edge-side) path {
-  opacity: 0.28;
+.wf-group text.wf-group-helper {
+  font-size: 10px;
+  fill: #555;
+  pointer-events: none;
 }
 
-.wf-edge.wf-edge-full-view.wf-edge-side path:hover,
-.wf-edge.wf-edge-full-view.wf-edge-special path:hover {
-  opacity: 0.85;
-  stroke-width: 1.75;
+.wf-summary-node text.wf-summary-count {
+  text-transform: none;
 }
+
