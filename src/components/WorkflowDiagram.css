@@ -142,7 +142,7 @@
 
 .workflow-legend.expanded {
   padding: 10px 14px;
-  min-width: 360px;
+  min-width: 430px;
 }
 
 .workflow-legend-title {
@@ -186,7 +186,7 @@
 .workflow-legend-label {
   font-weight: 600;
   color: #444;
-  width: 52px;
+  width: 78px;
   flex-shrink: 0;
 }
 
@@ -448,6 +448,23 @@
 
 .wf-edge.wf-bidirectional path:hover {
   stroke: #7a4fa0;
+}
+
+
+/* Side-state / exception transitions. These are hidden in Simple View,
+   and appear in Focused View or Full View with a softer visual weight. */
+.wf-edge.wf-edge-side path {
+  stroke-width: 1.35;
+  opacity: 0.45;
+}
+
+.wf-edge.wf-edge-side.wf-edge-selected path {
+  opacity: 1;
+  stroke-width: 2.25;
+}
+
+.wf-edge.wf-edge-side path:hover {
+  opacity: 0.95;
 }
 
 /* --- Loading / error states --- */
