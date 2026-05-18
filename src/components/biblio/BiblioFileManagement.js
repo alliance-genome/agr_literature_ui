@@ -373,6 +373,19 @@ const OpenAccess = () => {
   const publicationYear = getPublicationYear();
   const articleUrl = getArticleUrl();
 
+  // Extract publisher name from permission name as fallback (e.g., "American Chemical Society (ACS) - Permission Granted" -> "American Chemical Society")
+  const extractPublisherFromPermissionName = (permName) => {
+    if (!permName) return null;
+    // Split by " - " and take the first part, then remove parenthetical abbreviations
+    const parts = permName.split(' - ');
+    if (parts.length > 0) {
+      return parts[0].replace(/\s*\([^)]*\)\s*$/, '').trim();
+    }
+    return null;
+  };
+
+  const effectivePublisher = publisherName || extractPublisherFromPermissionName(imagePermissionName) || imagePermissionUrl;
+
   // Replace placeholders in permission text with actual values
   const formatPermissionText = (text) => {
     if (!text) return null;
@@ -395,12 +408,10 @@ const OpenAccess = () => {
       formatted = formatted.replace(/<Publication_year>/g, publicationYear);
     }
 
-    // Replace Publisher URL/name
-    if (publisherName) {
-      formatted = formatted.replace(/<Publisher_URL>/g, publisherName);
-      formatted = formatted.replace(/<Publisher_name>/g, publisherName);
-    } else if (imagePermissionUrl) {
-      formatted = formatted.replace(/<Publisher_URL>/g, imagePermissionUrl);
+    // Replace Publisher URL/name - use effective publisher (from reference, permission name, or URL)
+    if (effectivePublisher) {
+      formatted = formatted.replace(/<Publisher_URL>/g, effectivePublisher);
+      formatted = formatted.replace(/<Publisher_name>/g, effectivePublisher);
     }
 
     return formatted;
@@ -504,7 +515,7 @@ const OpenAccess = () => {
             <div>
               <span><strong>{canDisplayImages}</strong></span>
               {imagePermissionSourceLabel && <span style={{ marginLeft: '10px', color: '#666' }}>({imagePermissionSourceLabel})</span>}
-              {imagePermissionName && (
+              {imagePermissionSource === "resource_image_permission" && imagePermissionName && (
                 <button
                   className="button-to-link"
                   style={{ marginLeft: '10px', fontSize: '0.9em' }}
@@ -514,7 +525,7 @@ const OpenAccess = () => {
                 </button>
               )}
             </div>
-            {showPermissionDetails && imagePermissionName && (
+            {showPermissionDetails && imagePermissionSource === "resource_image_permission" && imagePermissionName && (
               <div style={{
                 marginTop: '10px',
                 padding: '10px',
