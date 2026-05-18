@@ -385,7 +385,9 @@ const OpenAccess = () => {
     return null;
   };
 
-  const effectivePublisher = publisherName || extractPublisherFromPermissionName(imagePermissionName) || imagePermissionUrl;
+  // Separate publisher name and URL for proper placeholder replacement
+  const effectivePublisherName = publisherName || extractPublisherFromPermissionName(imagePermissionName);
+  const effectivePublisherUrl = imagePermissionUrl;
 
   // Replace placeholders in permission text with actual values
   const formatPermissionText = (text) => {
@@ -409,11 +411,19 @@ const OpenAccess = () => {
       formatted = formatted.replace(/<Publication_year>/g, publicationYear);
     }
 
-    // Replace Publisher URL/name - use effective publisher (from reference, permission name, or URL)
-    if (effectivePublisher) {
-      formatted = formatted.replace(/<Publisher_URL>/g, effectivePublisher);
-      formatted = formatted.replace(/<Publisher_name>/g, effectivePublisher);
+    // Replace Publisher name (human-readable name only)
+    if (effectivePublisherName) {
+      formatted = formatted.replace(/<Publisher_name>/g, effectivePublisherName);
+      formatted = formatted.replace(/<Publisher_URL>/g, effectivePublisherName);
+    } else if (effectivePublisherUrl) {
+      // Fallback to URL only for <Publisher_URL> placeholder
+      formatted = formatted.replace(/<Publisher_URL>/g, effectivePublisherUrl);
     }
+
+    // Strip any remaining unreplaced placeholders to avoid showing raw tags to users
+    formatted = formatted.replace(/<[A-Za-z_]+>/g, '').trim();
+    // Clean up any double spaces left after stripping
+    formatted = formatted.replace(/\s{2,}/g, ' ');
 
     return formatted;
   };
