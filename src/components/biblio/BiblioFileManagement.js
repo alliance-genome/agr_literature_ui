@@ -340,11 +340,73 @@ const OpenAccess = () => {
   const imagePermissionName = imagePermission["image_permission_name"] || null;
   const imagePermissionUrl = imagePermission["permission_url"] || null;
   const imagePermissionSource = imagePermission["source"];
-  const permissionText = imagePermission["permission_text"] || null;
+  const permissionTextRaw = imagePermission["permission_text"] || null;
   const startYear = imagePermission["start_year"] || null;
   const endYear = imagePermission["end_year"] || null;
   const notes = imagePermission["notes"] || null;
   const canDisplayImages = imagePermission["can_display_images"] ? "can display images" : "cannot display images";
+
+  // Extract values for permission text placeholders
+  const getPublicationYear = () => {
+    if (referenceJsonLive["date_published"]) {
+      const match = referenceJsonLive["date_published"].match(/^\d{4}/);
+      return match ? match[0] : null;
+    }
+    return null;
+  };
+
+  const getArticleUrl = () => {
+    const crossRefs = referenceJsonLive["cross_references"] || [];
+    const doiRef = crossRefs.find(ref => ref.curie && ref.curie.startsWith("DOI:"));
+    if (doiRef) {
+      return `https://doi.org/${doiRef.curie.replace("DOI:", "")}`;
+    }
+    const pmidRef = crossRefs.find(ref => ref.curie && ref.curie.startsWith("PMID:"));
+    if (pmidRef) {
+      return `https://pubmed.ncbi.nlm.nih.gov/${pmidRef.curie.replace("PMID:", "")}`;
+    }
+    return null;
+  };
+
+  const journalName = referenceJsonLive["resource_title"] || null;
+  const publisherName = referenceJsonLive["publisher"] || null;
+  const publicationYear = getPublicationYear();
+  const articleUrl = getArticleUrl();
+
+  // Replace placeholders in permission text with actual values
+  const formatPermissionText = (text) => {
+    if (!text) return null;
+    let formatted = text;
+
+    // Replace Journal URL/name
+    if (journalName) {
+      formatted = formatted.replace(/<Journal_URL>/g, journalName);
+    }
+
+    // Replace Article URL (handle typos in templates)
+    if (articleUrl) {
+      formatted = formatted.replace(/<Article_URL>/g, articleUrl);
+      formatted = formatted.replace(/<Articlel_URL>/g, articleUrl);
+      formatted = formatted.replace(/<Link to Article_URL>/g, articleUrl);
+    }
+
+    // Replace Publication year
+    if (publicationYear) {
+      formatted = formatted.replace(/<Publication_year>/g, publicationYear);
+    }
+
+    // Replace Publisher URL/name
+    if (publisherName) {
+      formatted = formatted.replace(/<Publisher_URL>/g, publisherName);
+      formatted = formatted.replace(/<Publisher_name>/g, publisherName);
+    } else if (imagePermissionUrl) {
+      formatted = formatted.replace(/<Publisher_URL>/g, imagePermissionUrl);
+    }
+
+    return formatted;
+  };
+
+  const permissionText = formatPermissionText(permissionTextRaw);
 
   // Check if this is an Alliance-granted permission (has permission name from resource_image_permission)
   const hasAlliancePermission = imagePermissionName && (
