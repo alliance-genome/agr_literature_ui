@@ -841,13 +841,13 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
   }
 
   // ─── Add cross-workflow trigger edges ───
-  // These show process-to-process triggers when source or target process is collapsed
+  // Always add these handoff arrows, whether the source/target workflows are
+  // collapsed or expanded. When a workflow is expanded we connect the real
+  // state nodes (for example Uploaded → Needed); when collapsed we fall back to
+  // the summary node for that workflow.
   for (const trigger of CROSS_WORKFLOW_TRIGGERS) {
     const fromSummaryId = processIdToSummaryId.get(trigger.fromProcess);
     const toSummaryId = processIdToSummaryId.get(trigger.toProcess);
-
-    // Only add if at least one of the processes is collapsed (showing summary)
-    if (!fromSummaryId && !toSummaryId) continue;
 
     // Determine the actual source and target nodes
     const sourceProcessName = processGroups.get(trigger.fromProcess)?.processName;
