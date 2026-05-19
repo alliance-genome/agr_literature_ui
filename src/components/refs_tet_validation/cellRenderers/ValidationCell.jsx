@@ -1,6 +1,8 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import CellValidationStrip from './CellValidationStrip';
 import { isCuratorValidationTet } from '../helpers/groupTets';
+import { speciesBadgeLetter, speciesName } from '../helpers/speciesUtils';
 
 /** TETs from this cell that are *topic-level* and authored by a professional
  *  biocurator (i.e. count as a curator validation). */
@@ -18,6 +20,9 @@ export default function ValidationCell(params) {
     curationTagOptions,
   } = params.colDef.cellRendererParams || {};
   const referenceCurie = params.data?.curie;
+  const curieToNameTaxon = useSelector(
+    (s) => s.biblio.curieToNameTaxon
+  );
 
   const validations = professionalBiocuratorTopicTets(tets);
   if (validations.length > 0) {
@@ -38,7 +43,12 @@ export default function ValidationCell(params) {
         const negated = !!t.negated;
         const key = `${name}|${negated ? 'N' : 'Y'}`;
         if (!groups.has(key)) {
-          groups.set(key, { name, negated, sources: new Map() });
+          groups.set(key, {
+            name,
+            negated,
+            sources: new Map(),
+            species: new Set(),
+          });
         }
         const src = t.topic_entity_tag_source?.source_method;
         if (src) {
@@ -52,6 +62,7 @@ export default function ValidationCell(params) {
           }`;
           groups.get(key).sources.set(src, lab);
         }
+        if (t.species) groups.get(key).species.add(t.species);
       }
       return [...groups.values()].map((g) => ({
         ...g,
@@ -59,6 +70,7 @@ export default function ValidationCell(params) {
           method,
           label,
         })),
+        species: [...g.species],
       }));
     })();
     const uniqueNames = (() => {
@@ -88,6 +100,23 @@ export default function ValidationCell(params) {
         ))}
       </>
     );
+    const SpeciesBadges = ({ taxonCuries }) => (
+      <>
+        {taxonCuries.map((curie) => {
+          const name = speciesName(curieToNameTaxon, curie);
+          return (
+            <span
+              className="tetv-species-icon"
+              key={curie}
+              title={`species: ${name}`}
+              aria-label={`species: ${name}`}
+            >
+              {speciesBadgeLetter(curieToNameTaxon, curie)}
+            </span>
+          );
+        })}
+      </>
+    );
 
     let label, cls, tooltip, attribution;
     if (positives > 0 && negatives > 0) {
@@ -111,6 +140,9 @@ export default function ValidationCell(params) {
                 {p.negated ? 'N' : 'Y'}
               </span>{' '}
               {p.name}
+              {p.species.length > 0 && (
+                <>{' '}<SpeciesBadges taxonCuries={p.species} /></>
+              )}
               {p.sources.length > 0 && (
                 <>{' '}<SourceIcons sources={p.sources} /></>
               )}
@@ -136,6 +168,9 @@ export default function ValidationCell(params) {
                 key={`${p.name}|${p.negated}`}
               >
                 {p.name}
+                {p.species.length > 0 && (
+                  <>{' '}<SpeciesBadges taxonCuries={p.species} /></>
+                )}
                 {p.sources.length > 0 && (
                   <>{' '}<SourceIcons sources={p.sources} /></>
                 )}

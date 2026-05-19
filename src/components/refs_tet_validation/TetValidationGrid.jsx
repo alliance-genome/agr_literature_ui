@@ -36,6 +36,7 @@ import InnerValueFilter from './filters/InnerValueFilter';
 import TetGridToolbar from './toolbar/TetGridToolbar';
 import { api } from '../../api';
 import {
+  fetchTaxonData,
   getCuratorSourceId,
   setTopicEntitySourceId,
 } from '../../actions/biblioActions';
@@ -194,6 +195,13 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
       })();
     }
   }, [effectiveMod, accessToken, topicEntitySourceId, dispatch]);
+
+  // Load taxon data once — the validation cell shows a species badge per TET
+  // and the validation modals seed a default species from the MOD-to-taxon
+  // mapping. Both depend on the curieToNameTaxon + modToTaxon redux state.
+  useEffect(() => {
+    dispatch(fetchTaxonData());
+  }, [dispatch]);
 
   const [topicNameMap, setTopicNameMap] = useState({});
 

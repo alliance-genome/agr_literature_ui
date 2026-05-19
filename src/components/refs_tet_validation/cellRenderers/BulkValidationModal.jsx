@@ -4,6 +4,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 import { Modal, Button, Form, ProgressBar, Spinner } from 'react-bootstrap';
 import { api } from '../../../api';
+import SpeciesPicker from './SpeciesPicker';
+import {
+  defaultSpeciesCurieForMod,
+  speciesName,
+} from '../helpers/speciesUtils';
 
 const BULK_CONCURRENCY = 8;
 
@@ -44,6 +49,8 @@ export default function BulkValidationModal({
   const accessLevelMod =
     testerMod && testerMod !== 'No' ? testerMod : cognitoMod;
   const topicEntitySourceId = useSelector((s) => s.biblio.topicEntitySourceId);
+  const modToTaxon = useSelector((s) => s.biblio.modToTaxon);
+  const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
 
   const eligible = useMemo(
     () => (references || []).filter((r) => !r.alreadyValidated),
@@ -59,6 +66,10 @@ export default function BulkValidationModal({
   const [curStatus, setCurStatus] = useState('');
   const [curTag, setCurTag] = useState('');
   const [curNote, setCurNote] = useState('');
+  // { curie, name } | null — the species that will be applied to every TET
+  // tag in this batch. Defaults to the MOD's single taxon (when there is
+  // one); curators can still clear or override.
+  const [species, setSpecies] = useState(null);
   // status: 'editing' | 'submitting' | 'done' | 'partial' | 'error'
   const [status, setStatus] = useState('editing');
   const [progress, setProgress] = useState({ done: 0, total: 0 });
@@ -76,8 +87,17 @@ export default function BulkValidationModal({
       setProgress({ done: 0, total: 0 });
       setResults([]);
       setRetryQueue(null);
+      const defCurie = defaultSpeciesCurieForMod(modToTaxon, accessLevelMod);
+      setSpecies(
+        defCurie
+          ? {
+              curie: defCurie,
+              name: speciesName(curieToNameTaxon, defCurie),
+            }
+          : null
+      );
     }
-  }, [show]);
+  }, [show, modToTaxon, accessLevelMod, curieToNameTaxon]);
 
   const noSource = !topicEntitySourceId;
   const noEligible = eligible.length === 0;
@@ -92,7 +112,7 @@ export default function BulkValidationModal({
       force_insertion: true,
       entity: null,
       entity_type: null,
-      species: null,
+      species: species?.curie || null,
       data_novelty: 'ATP:0000335',
       confidence_score: null,
       confidence_level: null,
@@ -222,6 +242,20 @@ export default function BulkValidationModal({
                 </dd>
               </dl>
             </div>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Species (optional)</Form.Label>
+              <SpeciesPicker
+                id="tetv-bulk-species"
+                value={species?.curie || null}
+                valueName={species?.name || ''}
+                disabled={isSubmitting}
+                onChange={setSpecies}
+              />
+              <Form.Text muted>
+                Applied to every TET tag created in this batch.
+              </Form.Text>
+            </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label>Note (optional)</Form.Label>

@@ -4,6 +4,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import { api } from '../../../api';
+import SpeciesPicker from './SpeciesPicker';
+import {
+  defaultSpeciesCurieForMod,
+  speciesName,
+} from '../helpers/speciesUtils';
 
 export default function CellValidationStrip({
   referenceCurie,
@@ -21,8 +26,11 @@ export default function CellValidationStrip({
   const accessLevelMod =
     testerMod && testerMod !== 'No' ? testerMod : cognitoMod;
   const topicEntitySourceId = useSelector((s) => s.biblio.topicEntitySourceId);
+  const modToTaxon = useSelector((s) => s.biblio.modToTaxon);
+  const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
   // pending = null | { kind, note, status, errorMessage?,
-  //                    includeCuration, curStatus, curTag, curNote }
+  //                    includeCuration, curStatus, curTag, curNote,
+  //                    species: { curie, name } | null }
   const [pending, setPending] = useState(null);
 
   const myExisting = (cellTets || []).find((t) => t.created_by === uid);
@@ -36,6 +44,14 @@ export default function CellValidationStrip({
 
   const openConfirm = (kind) => {
     if (noSource) return;
+    // Pre-fill the species from the MOD-to-taxon mapping when the MOD has a
+    // single taxon (WB → C. elegans, ZFIN → D. rerio, …). Multi-taxon MODs
+    // (XB) start blank so the curator picks. The curator can still clear or
+    // change the value in the picker.
+    const defCurie = defaultSpeciesCurieForMod(modToTaxon, accessLevelMod);
+    const defaultSpecies = defCurie
+      ? { curie: defCurie, name: speciesName(curieToNameTaxon, defCurie) }
+      : null;
     setPending({
       kind,
       note: '',
@@ -44,6 +60,7 @@ export default function CellValidationStrip({
       curStatus: '',
       curTag: '',
       curNote: '',
+      species: defaultSpecies,
     });
   };
   const closeConfirm = () => setPending(null);
@@ -61,7 +78,7 @@ export default function CellValidationStrip({
       force_insertion: true,
       entity: null,
       entity_type: null,
-      species: null,
+      species: pending.species?.curie || null,
       data_novelty: 'ATP:0000335',
       confidence_score: null,
       confidence_level: null,
@@ -167,6 +184,19 @@ export default function CellValidationStrip({
                   attributed to{' '}
                   <strong>{userEmail || uid || '(unknown user)'}</strong>.
                 </p>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Species (optional)</Form.Label>
+                  <SpeciesPicker
+                    id="tetv-strip-species"
+                    value={pending.species?.curie || null}
+                    valueName={pending.species?.name || ''}
+                    disabled={isSubmitting}
+                    onChange={(next) =>
+                      setPending((s) => ({ ...s, species: next }))
+                    }
+                  />
+                </Form.Group>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Note (optional)</Form.Label>
@@ -301,8 +331,17 @@ export default function CellValidationStrip({
                       <code>ATP:0000335</code> (unspecified)
                     </dd>
 
-                    <dt>Entity / entity type / species</dt>
+                    <dt>Entity / entity type</dt>
                     <dd style={noneStyle}>none (topic-level tag)</dd>
+
+                    <dt>Species</dt>
+                    <dd
+                      style={pending.species ? undefined : noneStyle}
+                    >
+                      {pending.species
+                        ? `${pending.species.name} (${pending.species.curie})`
+                        : 'none'}
+                    </dd>
 
                     <dt>Confidence score / level</dt>
                     <dd style={noneStyle}>none</dd>

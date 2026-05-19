@@ -231,6 +231,25 @@
   margin: 0 2px;
   vertical-align: middle;
 }
+/* Species badge: same shape/size as source icons but a distinct olive hue so
+   curators can tell at a glance which TET tags were submitted for a given
+   species. Hover tooltip carries the full binomial. */
+.tetv-species-icon {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 6px;
+  height: 1.4em;
+  border-radius: 999px;
+  background: #6b7c3a;
+  color: #fff;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 0.8em;
+  line-height: 1.4em;
+  text-align: center;
+  margin: 0 2px;
+  vertical-align: middle;
+}
 .tetv-sources-cell,
 .tetv-tag-cell,
 .tetv-attr-cell {
