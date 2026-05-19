@@ -430,8 +430,9 @@ const OpenAccess = () => {
 
   const permissionText = formatPermissionText(permissionTextRaw);
 
-  // Check if this is an Alliance-granted permission (has permission name from resource_image_permission)
-  const hasAlliancePermission = imagePermissionName && (
+  // Check if this is an Alliance-granted permission that allows image display
+  // Only show green label when can_display_images is true (not for subset permissions)
+  const hasAlliancePermission = imagePermission["can_display_images"] && imagePermissionName && (
     imagePermissionName.toLowerCase().includes('permission granted') ||
     imagePermissionName.toLowerCase().includes('blanket permission') ||
     imagePermissionName.toLowerCase().includes('contract') ||
