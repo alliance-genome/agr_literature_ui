@@ -10,6 +10,7 @@ import createReducer from './createReducer';
 import mergeReducer from './mergeReducer';
 import downloadReducer from './downloadReducer';
 import trackerReducer from './trackerReducer';
+import mlModelsReducer from './mlModelsReducer';
 
 
 export default combineReducers({
@@ -24,5 +25,6 @@ export default combineReducers({
   create: createReducer,
   merge: mergeReducer,
   download: downloadReducer,
-  tracker: trackerReducer
+  tracker: trackerReducer,
+  mlModels: mlModelsReducer
 });

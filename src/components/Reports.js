@@ -10,6 +10,8 @@ import * as d3 from 'd3'
 import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
 import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportObsoleteEntities, setQcreportRecactedPapers, setQcreportDuplicateOrcids } from '../actions/reportsActions';
+import { fetchMLModelsIfNeeded } from '../actions/mlModelsActions';
+import ModelsTable from './reports/ModelsTable';
 
 import { api } from "../api";
 import { AgGridReact } from 'ag-grid-react';
@@ -1139,10 +1141,20 @@ const WorkflowDiagram = () => {
 }
 
 const ReportsContainer = () => {
+  const dispatch = useDispatch();
   const mods = useSelector(state => state.app.mods);
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const activeMod = (testerMod !== 'No') ? testerMod : cognitoMod;
+
+  const mlModelsData = useSelector(state => state.mlModels.data);
+  useEffect(() => { dispatch(fetchMLModelsIfNeeded()); }, [dispatch]);
+  const modsWithModels = useMemo(
+    () => new Set((mlModelsData || []).map(r => r.mod_abbreviation).filter(Boolean)),
+    [mlModelsData]
+  );
+  const anyModels = (mlModelsData || []).length > 0;
+
   return (
     <div>
       <Tabs mountOnEnter="true" defaultActiveKey={activeMod !== 'No' ? activeMod : 'all'} id="mods-tabs">
@@ -1151,6 +1163,11 @@ const ReportsContainer = () => {
             <Tab eventKey="all_stats" title="Workflow Statistics">
               <WorkflowStatTablesContainer modSection='All' />
             </Tab>
+            {anyModels && (
+              <Tab eventKey="all_models" title="Models">
+                <ModelsTable modSection="All" />
+              </Tab>
+            )}
           </Tabs>
         </Tab>
         {mods.map(mod => (
@@ -1168,6 +1185,11 @@ const ReportsContainer = () => {
               <Tab eventKey={`${mod}_stats`} title="Workflow Statistics">
                 <WorkflowStatModTablesContainer modSection={mod} />
               </Tab>
+              {modsWithModels.has(mod) && (
+                <Tab eventKey={`${mod}_models`} title="Models">
+                  <ModelsTable modSection={mod} />
+                </Tab>
+              )}
             </Tabs>
           </Tab>
         ))}

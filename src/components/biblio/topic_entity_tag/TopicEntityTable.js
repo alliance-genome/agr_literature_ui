@@ -549,7 +549,7 @@ const TopicEntityTable = () => {
         filter: true,
         cellDataType: 'text'
       },
-      { headerName: 'Data Novelty', field: 'data_novelty', filter: true, valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty },
+      { headerName: 'Data Novelty', field: 'data_novelty', filter: true, valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty, onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.data_novelty}`) },
       { headerName: 'Confidence Score', field: 'confidence_score', filter: true },
       { headerName: 'Confidence Level', field: 'confidence_level', filter: true },
       { headerName: 'Created By', field: 'created_by', filter: true },
