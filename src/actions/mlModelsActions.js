@@ -6,7 +6,12 @@ export const fetchMLModelsIfNeeded = () => (dispatch, getState) => {
   dispatch({ type: 'ML_MODELS_SET_LOADING', payload: true });
   api.get('/ml_model/all')
     .then(response => {
-      dispatch({ type: 'ML_MODELS_SET_DATA', payload: response.data || [] });
+      const data = (response.data || []).map((row) => ({
+        ...row,
+        production: row.production === true ? 'True' : row.production === false ? 'False' : '',
+        negated: row.negated === true ? 'True' : row.negated === false ? 'False' : ''
+      }));
+      dispatch({ type: 'ML_MODELS_SET_DATA', payload: data });
     })
     .catch(err => {
       console.error('Error fetching ml_model/all:', err);

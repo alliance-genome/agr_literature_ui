@@ -92,7 +92,7 @@ const hasTextSelection = () => {
 const ITEMS_INIT = [
   { headerName: 'Task Type', field: 'task_type', id: 1, checked: true },
   { headerName: 'MOD', field: 'mod_abbreviation', id: 2, checked: true },
-  { headerName: 'Topic', field: 'topic', id: 3, checked: true },
+  { headerName: 'Topic', field: 'topic_name', id: 3, checked: true },
   { headerName: 'Version', field: 'version_num', id: 4, checked: true },
   { headerName: 'Model Type', field: 'model_type', id: 5, checked: true },
   { headerName: 'Precision', field: 'precision', id: 6, checked: true },
@@ -100,9 +100,9 @@ const ITEMS_INIT = [
   { headerName: 'F1', field: 'f1_score', id: 8, checked: true },
   { headerName: 'In Production', field: 'production', id: 9, checked: true },
   { headerName: 'Negated', field: 'negated', id: 10, checked: true },
-  { headerName: 'Data Novelty', field: 'data_novelty', id: 11, checked: true },
+  { headerName: 'Data Novelty', field: 'data_novelty_name', id: 11, checked: true },
   { headerName: 'Dataset ID', field: 'dataset_id', id: 12, checked: true },
-  { headerName: 'Species', field: 'species', id: 13, checked: true },
+  { headerName: 'Species', field: 'species_name', id: 13, checked: true },
   { headerName: 'File Ext', field: 'file_extension', id: 14, checked: true },
   { headerName: 'File Classes', field: 'file_classes', id: 15, checked: true },
   { headerName: 'Description', field: 'description', id: 16, checked: true },
@@ -140,6 +140,9 @@ const ModelsTable = ({ modSection }) => {
   const [fullParameters, setFullParameters] = useState('');
   const [showParametersModal, setShowParametersModal] = useState(false);
 
+  const [selectedCurie, setSelectedCurie] = useState(null);
+  const [showCurieModal, setShowCurieModal] = useState(false);
+
   const [items, setItems] = useState(() => ITEMS_INIT.map((i) => ({ ...i })));
   const [isGridReady, setIsGridReady] = useState(false);
 
@@ -158,6 +161,13 @@ const ModelsTable = ({ modSection }) => {
   }, [notification.show]);
 
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
+
+  const handleCurieClick = (curie) => {
+    if (hasTextSelection()) return;
+    if (!curie || curie === 'null:null') return;
+    setSelectedCurie(curie);
+    setShowCurieModal(true);
+  };
 
   const handleDescriptionClick = (value) => {
     if (hasTextSelection()) return;
@@ -187,12 +197,6 @@ const ModelsTable = ({ modSection }) => {
     return Number.isFinite(n) ? n.toFixed(3) : v;
   }, []);
 
-  const boolFormatter = useCallback((p) => {
-    if (p.value === true) return 'Yes';
-    if (p.value === false) return 'No';
-    return '';
-  }, []);
-
   const getInitialItems = useCallback(() => ITEMS_INIT.map((i) => ({ ...i })), []);
 
   const cols = useMemo(
@@ -201,27 +205,33 @@ const ModelsTable = ({ modSection }) => {
       { headerName: 'MOD', field: 'mod_abbreviation', filter: true, comparator: caseInsensitiveComparator },
       {
         headerName: 'Topic',
-        field: 'topic',
+        field: 'topic_name',
         filter: true,
         comparator: caseInsensitiveComparator,
-        valueGetter: (p) => p.data?.topic_name || p.data?.topic
+        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data?.topic}`)
       },
       { headerName: 'Version', field: 'version_num', filter: 'agNumberColumnFilter' },
       { headerName: 'Model Type', field: 'model_type', filter: true, comparator: caseInsensitiveComparator },
       { headerName: 'Precision', field: 'precision', filter: 'agNumberColumnFilter', valueFormatter: numericFormatter },
       { headerName: 'Recall', field: 'recall', filter: 'agNumberColumnFilter', valueFormatter: numericFormatter },
       { headerName: 'F1', field: 'f1_score', filter: 'agNumberColumnFilter', valueFormatter: numericFormatter },
-      { headerName: 'In Production', field: 'production', filter: true, valueFormatter: boolFormatter },
-      { headerName: 'Negated', field: 'negated', filter: true, valueFormatter: boolFormatter },
+      { headerName: 'In Production', field: 'production', filter: true },
+      { headerName: 'Negated', field: 'negated', filter: true },
       {
         headerName: 'Data Novelty',
-        field: 'data_novelty',
+        field: 'data_novelty_name',
         filter: true,
         comparator: caseInsensitiveComparator,
-        valueGetter: (p) => p.data?.data_novelty_name || p.data?.data_novelty
+        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data?.data_novelty}`)
       },
       { headerName: 'Dataset ID', field: 'dataset_id', filter: 'agNumberColumnFilter' },
-      { headerName: 'Species', field: 'species', filter: true, valueGetter: (p) => p.data?.species || '' },
+      {
+        headerName: 'Species',
+        field: 'species_name',
+        filter: true,
+        comparator: caseInsensitiveComparator,
+        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data?.species}`)
+      },
       { headerName: 'File Ext', field: 'file_extension', filter: true },
       {
         headerName: 'File Classes',
@@ -249,7 +259,7 @@ const ModelsTable = ({ modSection }) => {
       },
       { headerName: 'ID', field: 'ml_model_id', filter: 'agNumberColumnFilter' }
     ],
-    [caseInsensitiveComparator, numericFormatter, boolFormatter]
+    [caseInsensitiveComparator, numericFormatter]
   );
 
   const updateColDefsWithItems = useCallback(
@@ -378,6 +388,15 @@ const ModelsTable = ({ modSection }) => {
 
   return (
     <div>
+      {selectedCurie && (
+        <LongTextModal
+          title="CURIE Information"
+          body={selectedCurie}
+          show={showCurieModal}
+          onHide={() => setShowCurieModal(false)}
+        />
+      )}
+
       {showDescriptionModal && (
         <LongTextModal
           title="Full Description"
