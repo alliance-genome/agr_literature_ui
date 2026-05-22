@@ -155,6 +155,12 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         setZoomTransform(transform);
       });
     }
+    // Cleanup: remove zoom event listeners when effect re-runs or unmounts
+    return () => {
+      if (svgRef.current) {
+        d3.select(svgRef.current).on('.zoom', null);
+      }
+    };
   }, [tagData]);
 
   // ─── Callbacks ───────────────────────────────────────────────────────
