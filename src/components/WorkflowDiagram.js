@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Spinner } from 'react-bootstrap';
+import * as d3 from 'd3';
 import { api } from '../api';
 import { computeLayout, renderDiagram, setupZoom } from './workflowDiagramLayout';
 import './WorkflowDiagram.css';
