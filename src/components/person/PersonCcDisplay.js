@@ -55,13 +55,11 @@ const EmailsCard = ({ emails }) => {
         ) : (
           <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: 0 }}>
             {list.map((e, i) => {
-              const invalid = !!e.date_invalidated;
+              const invalid = !!e.date_made_old_email;
               return (
-                <li key={e.email_id ?? i} style={{ padding: '2px 0' }}>
-                  {e.is_primary && <span title="primary" style={{ color: '#e7a700' }}>★ </span>}
+                <li key={e.email_address ?? i} style={{ padding: '2px 0' }}>
                   <span
                     style={{
-                      fontWeight: e.is_primary ? 600 : 400,
                       textDecoration: invalid ? 'line-through' : 'none',
                       color: invalid ? '#888' : 'inherit',
                     }}
@@ -70,7 +68,7 @@ const EmailsCard = ({ emails }) => {
                   </span>
                   {invalid && (
                     <span style={{ ...muted, fontSize: '0.85em', marginLeft: 6 }}>
-                      (invalidated {formatDate(e.date_invalidated)})
+                      (old since {formatDate(e.date_made_old_email)})
                     </span>
                   )}
                 </li>
@@ -240,8 +238,11 @@ const PersonCcDisplay = ({ person }) => {
                 </div>
               )}
             </Col>
-            <Col xs="auto">
+            <Col xs="auto" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <Badge variant={statusVariant} style={{ fontSize: '0.95em' }}>{status}</Badge>
+              {person.unsubscribe && (
+                <Badge variant="warning" style={{ fontSize: '0.95em' }}>unsubscribed</Badge>
+              )}
             </Col>
           </Row>
         </Card.Body>

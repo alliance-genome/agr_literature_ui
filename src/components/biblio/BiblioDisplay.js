@@ -513,8 +513,7 @@ export const RowDisplayExtractedEmails = ({ referenceJsonLive, displayOrEditor }
   const seen = new Set();
   for (const e of emailsRaw) {
     const addr = (e?.email_address || '').trim();
-    const invalidated = e?.date_invalidated !== null && typeof e?.date_invalidated !== 'undefined';
-    if (!addr || invalidated) continue;
+    if (!addr) continue;
     const key = addr.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
