@@ -1,0 +1,597 @@
+.workflow-diagram-container {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 500px;
+  overflow: hidden;
+  background: #fafbfc;
+  border: 1px solid var(--light-grey);
+  border-radius: 4px;
+}
+
+.workflow-diagram-container svg {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.workflow-diagram-container svg:active {
+  cursor: grabbing;
+}
+
+/* --- Controls panel --- */
+.workflow-diagram-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.workflow-diagram-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.workflow-diagram-btn:hover {
+  opacity: 1;
+  border-color: #999;
+  background: #f8f9fa;
+}
+
+.workflow-diagram-btn-active {
+  background: #e7f1ff;
+  border-color: #0056b3;
+  color: #0056b3;
+}
+
+.workflow-diagram-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  padding: 4px 8px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+
+.workflow-diagram-toggle:hover {
+  opacity: 1;
+  border-color: #999;
+}
+
+.workflow-diagram-toggle input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.workflow-diagram-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #555;
+  max-width: 180px;
+}
+
+.workflow-diagram-select:hover {
+  border-color: #999;
+}
+
+.workflow-diagram-select:focus {
+  outline: none;
+  border-color: #0056b3;
+}
+
+.workflow-diagram-process-dropdown {
+  font-size: 11px;
+  padding: 3px 6px;
+  width: 210px;
+  max-width: 210px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+}
+
+.workflow-diagram-hint {
+  position: absolute;
+  top: 48px;
+  right: 10px;
+  z-index: 10;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #555;
+  font-size: 12px;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+/* --- Legend --- */
+.workflow-legend {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+  color: #555;
+}
+
+.workflow-legend.collapsed {
+  padding: 6px 10px;
+}
+
+.workflow-legend.expanded {
+  padding: 10px 14px;
+  min-width: 430px;
+}
+
+.workflow-legend-title {
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
+
+.workflow-legend-title:hover {
+  color: #0056b3;
+}
+
+.workflow-legend-toggle {
+  font-size: 10px;
+  color: #666;
+}
+
+.workflow-legend-content {
+  margin-top: 6px;
+  border-top: 1px solid #eee;
+  padding-top: 5px;
+}
+
+.workflow-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.workflow-legend-row:first-child {
+  margin-top: 0;
+}
+
+.workflow-legend-label {
+  font-weight: 600;
+  color: #444;
+  width: 78px;
+  flex-shrink: 0;
+}
+
+.workflow-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.workflow-legend-edge {
+  width: 32px;
+  height: 0;
+  border-top: 2px solid #3b82c4;
+  position: relative;
+}
+
+.workflow-legend-edge::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border-left: 6px solid #3b82c4;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.workflow-legend-edge.cross {
+  border-top-style: dashed;
+  border-color: #d6a02f;
+}
+
+.workflow-legend-edge.cross::after {
+  border-left-color: #d6a02f;
+}
+
+.workflow-legend-edge.bidirectional {
+  border-color: #8e62b8;
+}
+
+.workflow-legend-edge.bidirectional::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -4px;
+  border-right: 6px solid #8e62b8;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.workflow-legend-edge.bidirectional::after {
+  border-left-color: #8e62b8;
+}
+
+
+/* --- Group bounding boxes --- */
+.wf-group rect.wf-group-bg {
+  rx: 8;
+  ry: 8;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 3;
+}
+
+.wf-group rect.wf-group-header {
+  rx: 8;
+  ry: 8;
+  cursor: pointer;
+}
+
+.wf-group text.wf-group-label {
+  font-size: 13px;
+  font-weight: 600;
+  fill: #333;
+  pointer-events: none;
+}
+
+.wf-group text.wf-group-toggle {
+  font-size: 11px;
+  fill: #666;
+  pointer-events: none;
+}
+
+/* --- Normal nodes --- */
+.wf-node rect {
+  rx: 6;
+  ry: 6;
+  fill: white;
+  stroke: #5a9bd5;
+  stroke-width: 1.5;
+  cursor: grab;
+  transition: filter 0.15s;
+}
+
+.wf-node rect:hover {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
+  stroke-width: 2;
+}
+
+.wf-node.wf-dragging rect {
+  cursor: grabbing;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+  stroke-width: 2.5;
+}
+
+.wf-node text {
+  font-size: 12px;
+  fill: #333;
+  pointer-events: none;
+}
+
+
+/* --- Summary (collapsed) nodes --- */
+.wf-summary-node rect {
+  rx: 10;
+  ry: 10;
+  fill: #eef3f8;
+  stroke: #3a7cbd;
+  stroke-width: 2;
+  cursor: grab;
+  transition: filter 0.15s;
+}
+
+.wf-summary-node.wf-dragging rect {
+  cursor: grabbing;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+  stroke-width: 2.5;
+}
+
+/* --- Sub-summary (collapsed subprocess) nodes --- */
+.wf-subsummary-node rect {
+  rx: 8;
+  ry: 8;
+  fill: #f5f8fc;
+  stroke: #7bafd4;
+  stroke-width: 1.5;
+  cursor: grab;
+  transition: filter 0.15s;
+}
+
+.wf-subsummary-node rect:hover {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
+  stroke-width: 2;
+}
+
+.wf-subsummary-node.wf-dragging rect {
+  cursor: grabbing;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+}
+
+.wf-subsummary-node text.wf-summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #3a6a8a;
+  pointer-events: none;
+}
+
+.wf-subsummary-node text.wf-summary-count {
+  font-size: 10px;
+  fill: #6a9ab5;
+  pointer-events: none;
+}
+
+/* --- Subprocess group boxes --- */
+.wf-subgroup rect.wf-subgroup-bg {
+  rx: 6;
+  ry: 6;
+  stroke-width: 1;
+  stroke-dasharray: 4 2;
+}
+
+.wf-subgroup rect.wf-subgroup-header {
+  rx: 6;
+  ry: 6;
+  cursor: pointer;
+}
+
+.wf-subgroup text.wf-subgroup-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #444;
+  pointer-events: none;
+}
+
+.wf-subgroup text.wf-subgroup-toggle {
+  font-size: 10px;
+  fill: #666;
+  pointer-events: none;
+}
+
+.wf-summary-node rect:hover {
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+  stroke-width: 2.5;
+}
+
+.wf-summary-node text.wf-summary-label {
+  font-size: 13px;
+  font-weight: 600;
+  fill: #2a5f8f;
+  pointer-events: none;
+}
+
+.wf-summary-node text.wf-summary-count {
+  font-size: 11px;
+  fill: #5a8ab5;
+  pointer-events: none;
+}
+
+/* --- Edges --- */
+.wf-edge path {
+  fill: none;
+  stroke: #5a9bd5;  /* Default blue stroke */
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: stroke 0.15s, stroke-width 0.15s;
+}
+
+.wf-edge path:hover {
+  stroke-width: 2.5;
+}
+
+.wf-edge.wf-edge-primary path {
+  opacity: 1;
+}
+
+.wf-edge.wf-edge-special path {
+  opacity: 0.48;
+}
+
+.wf-edge.wf-edge-selected path {
+  opacity: 1;
+}
+
+.wf-edge.wf-edge-special path:hover {
+  opacity: 0.9;
+}
+
+/* Internal edges (within same process group) */
+.wf-edge.wf-edge-internal path {
+  stroke: #5a9bd5;
+}
+
+.wf-edge.wf-edge-internal path:hover {
+  stroke: #3a7cbd;
+}
+
+/* External edges (cross process groups) */
+.wf-edge.wf-edge-external path {
+  stroke: #d4a03c;
+  stroke-dasharray: 6 3;
+}
+
+.wf-edge.wf-edge-external path:hover {
+  stroke: #b8862a;
+}
+
+/* Bidirectional edges */
+.wf-edge.wf-bidirectional path {
+  stroke: #9b6fbd;
+}
+
+.wf-edge.wf-bidirectional path:hover {
+  stroke: #7a4fa0;
+}
+
+
+/* Side-state / exception transitions. These are hidden in Simple View,
+   and appear in Focused View or Full View with a softer visual weight. */
+.wf-edge.wf-edge-side path {
+  stroke-width: 1.35;
+  opacity: 0.45;
+}
+
+.wf-edge.wf-edge-side.wf-edge-selected path {
+  opacity: 1;
+  stroke-width: 2.25;
+}
+
+.wf-edge.wf-edge-side path:hover {
+  opacity: 0.95;
+}
+
+/* --- Loading / error states --- */
+.workflow-diagram-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  gap: 10px;
+  color: #666;
+}
+
+.workflow-diagram-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--medium-red);
+}
+
+/* --- Tooltip (positioned div) --- */
+.wf-tooltip {
+  position: absolute;
+  z-index: 100;
+  max-width: 380px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  pointer-events: none;
+  font-size: 13px;
+}
+
+.wf-tooltip-header {
+  font-size: 13px;
+  font-weight: 600;
+  background: #f0f5fa;
+  padding: 6px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  border-radius: 6px 6px 0 0;
+}
+
+.wf-tooltip-body {
+  padding: 8px 12px;
+}
+
+.wf-popover-atp {
+  font-family: monospace;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.wf-popover-process {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.wf-popover-hint {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.wf-popover-section-title {
+  font-weight: 600;
+  font-size: 12px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  color: #444;
+}
+
+.wf-popover-transition {
+  font-size: 12px;
+  padding: 2px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.wf-popover-transition:last-child {
+  border-bottom: none;
+}
+
+.wf-popover-detail {
+  font-size: 11px;
+  color: #666;
+  margin-left: 8px;
+}
+
+.wf-popover-arrow {
+  font-size: 11px;
+  color: #999;
+  margin: 0 4px;
+}
+/* Full view is intended for debugging. Keep exception/status transitions very quiet
+   so the main workflow remains readable even when all transitions are visible. */
+.wf-edge.wf-edge-full-view.wf-edge-side path {
+  opacity: 0.16;
+  stroke-width: 1;
+}
+
+.wf-edge.wf-edge-full-view.wf-edge-special:not(.wf-edge-side) path {
+  opacity: 0.28;
+}
+
+.wf-edge.wf-edge-full-view.wf-edge-side path:hover,
+.wf-edge.wf-edge-full-view.wf-edge-special path:hover {
+  opacity: 0.85;
+  stroke-width: 1.75;
+}
+
+
+/* --- Roll-up workflow labeling --- */
+.wf-group text.wf-group-badge {
+  font-size: 10px;
+  font-weight: 600;
+  fill: #795800;
+  pointer-events: none;
+}
+
+.wf-group text.wf-group-helper {
+  font-size: 10px;
+  fill: #555;
+  pointer-events: none;
+}
+
+.wf-summary-node text.wf-summary-count {
+  text-transform: none;
+}
