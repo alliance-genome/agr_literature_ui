@@ -166,26 +166,26 @@ const PersonWbEditor = ({ person }) => {
   // Emails
   const emptyEmail = () => ({
     email_address: '',
-    is_primary: false,
     invalidated: false,
-    _origInvalidatedDate: null,
+    _origOldDate: null,
     _ts: null,
     _by: null,
   });
   const emailIsEmpty = (e) => !e.email_address;
   const initialEmails = (p.emails ?? []).map((e) => ({
     email_address: e.email_address ?? '',
-    is_primary: !!e.is_primary,
-    invalidated: !!e.date_invalidated,
-    _origInvalidatedDate: e.date_invalidated ?? null,
+    invalidated: !!e.date_made_old_email,
+    _origOldDate: e.date_made_old_email ?? null,
     _ts: e.date_updated ?? null,
     _by: e.updated_by ?? null,
   }));
-  const [emails, updateEmail, removeEmail, setEmails] = useAutoGrowList(
+  const [emails, updateEmail, removeEmail] = useAutoGrowList(
     initialEmails,
     emptyEmail,
     emailIsEmpty,
   );
+
+  const [unsubscribe, setUnsubscribe] = React.useState(!!p.unsubscribe);
 
   // Webpages — strings, no per-row timestamp, no who/when shown
   const emptyUrl = () => ({ url: '' });
@@ -223,8 +223,6 @@ const PersonWbEditor = ({ person }) => {
 
   const setNamePrimary = (idx) =>
     setNames((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
-  const setEmailPrimary = (idx) =>
-    setEmails((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
 
   const labelForName = (n, i) => {
     if (i === names.length - 1 && nameIsEmpty(n)) return 'name (new)';
@@ -233,7 +231,7 @@ const PersonWbEditor = ({ person }) => {
   const labelForEmail = (e, i) => {
     if (i === emails.length - 1 && emailIsEmpty(e)) return 'email (new)';
     if (e.invalidated) return 'old_email';
-    return e.is_primary ? 'email (primary)' : 'email';
+    return 'email';
   };
   const labelForUrl = (u, i) =>
     i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (new)' : 'webpage';
@@ -264,6 +262,19 @@ const PersonWbEditor = ({ person }) => {
                 <option key={s} value={s}>{s}</option>
               ))}
             </Form.Control>
+          </FieldLine>
+          <FieldLine label="unsubscribe" ts={recordTs}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6 }}>
+              <input
+                type="checkbox"
+                id="wb-person-unsubscribe"
+                checked={unsubscribe}
+                onChange={(ev) => setUnsubscribe(ev.target.checked)}
+              />
+              <label htmlFor="wb-person-unsubscribe" style={{ marginBottom: 0 }}>
+                unsubscribed from email
+              </label>
+            </div>
           </FieldLine>
         </Card.Body>
       </Card>
@@ -324,10 +335,10 @@ const PersonWbEditor = ({ person }) => {
           {emails.map((e, i) => {
             const isNew = i === emails.length - 1 && emailIsEmpty(e);
             const editTs = tsLabel(e._by, e._ts);
-            const invalidatedNote = e._origInvalidatedDate
-              ? `invalidated ${formatTimestamp(e._origInvalidatedDate)}`
+            const oldNote = e._origOldDate
+              ? `old since ${formatTimestamp(e._origOldDate)}`
               : null;
-            const computed = [invalidatedNote, editTs].filter(Boolean).join(' · ') || null;
+            const computed = [oldNote, editTs].filter(Boolean).join(' · ') || null;
             const ts = isNew ? 'new' : computed;
             return (
               <FieldLine
@@ -344,20 +355,9 @@ const PersonWbEditor = ({ person }) => {
                     style={{ flex: '1 1 240px', minWidth: 200 }}
                   />
                   <Form.Check
-                    type="radio"
-                    id={`wb-email-primary-${i}`}
-                    name="wb-email-primary"
-                    label="primary"
-                    checked={e.is_primary}
-                    onChange={(ev) => {
-                      if (ev.target.checked) setEmailPrimary(i);
-                    }}
-                    style={{ whiteSpace: 'nowrap' }}
-                  />
-                  <Form.Check
                     type="checkbox"
-                    id={`wb-email-invalidated-${i}`}
-                    label="invalidated (old_email)"
+                    id={`wb-email-old-${i}`}
+                    label="mark as old"
                     checked={e.invalidated}
                     onChange={(ev) => updateEmail(i, { invalidated: ev.target.checked })}
                     style={{ whiteSpace: 'nowrap' }}
