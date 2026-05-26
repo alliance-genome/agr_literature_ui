@@ -2,10 +2,12 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 /**
  * Hook that checks for new application versions by polling /version.json.
- * Checks on initial mount and whenever the tab becomes visible.
- * Returns { updateAvailable: boolean } when a newer build is detected.
+ * Checks on initial mount, on a periodic interval, and whenever the tab
+ * becomes visible. Returns { updateAvailable: boolean } when a newer build
+ * is detected.
  */
 const MIN_CHECK_INTERVAL_MS = 60_000; // Don't check more than once per minute
+const POLL_INTERVAL_MS = 5 * 60_000; // Periodic poll cadence (5 minutes)
 
 export const useVersionCheck = () => {
     const initialBuildId = useRef(null);
@@ -56,6 +58,17 @@ export const useVersionCheck = () => {
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [checkVersion]);
+
+    // Poll periodically so the banner appears even if the user never switches
+    // tabs. Firefox does not fire visibilitychange on its own while a tab
+    // remains in the foreground, so without this interval the check would
+    // only run on mount.
+    useEffect(() => {
+        const intervalId = setInterval(checkVersion, POLL_INTERVAL_MS);
+        return () => {
+            clearInterval(intervalId);
         };
     }, [checkVersion]);
 
