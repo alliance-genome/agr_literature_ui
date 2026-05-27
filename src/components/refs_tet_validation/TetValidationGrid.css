@@ -1,0 +1,957 @@
+.tetv-grid-wrapper {
+  --tetv-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+  --tetv-font-size: 1rem;
+  --tetv-secondary-font-size: 0.875rem;
+  --tetv-small-font-size: 0.8rem;
+  --tetv-accent: #3f8fa3;
+  --tetv-accent-dark: #256274;
+  --tetv-ink: #1f2937;
+  --tetv-muted: #667085;
+  --tetv-line: #d9e1ea;
+  --tetv-soft: #f6f9fb;
+  --ag-font-family: var(--tetv-font-family);
+  --ag-font-size: var(--tetv-font-size);
+  --ag-foreground-color: var(--tetv-ink);
+  --ag-border-color: var(--tetv-line);
+  --ag-row-border-color: #94a3b8;
+  --ag-header-column-resize-handle-color: #9fb3c6;
+  --ag-selected-row-background-color: #e8f3f6;
+  font-family: var(--tetv-font-family);
+  font-size: var(--tetv-font-size);
+  color: var(--tetv-ink);
+  background: #fff;
+  border: 1px solid var(--tetv-line);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(31, 41, 55, 0.08);
+  box-sizing: border-box;
+  margin-top: 8px;
+  margin-left: 12px;
+  padding: 0 0 12px;
+}
+
+.tetv-view-switchbar {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 10px;
+}
+.tetv-view-toggle {
+  background: #f2f6f8;
+  border: 1px solid #d7e1e8;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  padding: 3px;
+}
+.tetv-view-toggle .btn {
+  align-items: center;
+  border: 0;
+  border-radius: 6px !important;
+  display: inline-flex;
+  gap: 6px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.35rem 0.65rem;
+}
+.tetv-view-toggle .btn-outline-secondary {
+  color: #506172;
+}
+.tetv-view-toggle .btn-outline-secondary:hover,
+.tetv-view-toggle .btn-outline-secondary:not(:disabled):not(.disabled).active {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.12);
+  color: #256274;
+}
+
+/* Sticky AgGrid header + a separate sticky horizontal scrollbar at the top.
+   With domLayout="autoHeight" the grid has no internal vertical scrolling — the
+   page is the only scroller. We pin .ag-header so column headers stay visible
+   only once the user has actually scrolled past them; position:sticky kicks in
+   exactly at top:0. The override on .ag-root-wrapper / .ag-root removes the
+   overflow:hidden ancestors that would otherwise clip the sticky child. */
+.tetv-grid-wrapper .ag-root-wrapper,
+.tetv-grid-wrapper .ag-root,
+.tetv-grid-wrapper .ag-body-viewport {
+  overflow: visible;
+}
+.tetv-grid-wrapper .ag-root-wrapper {
+  border-left: 0;
+  border-radius: 0 0 8px 8px;
+  border-right: 0;
+}
+/* Top scrollbar lives between the AgGrid header and the body (DOM-moved into
+   .ag-root after .ag-header at runtime). The sticky `top` is set inline based
+   on the measured header height so it pins right below the header when the
+   page scrolls. */
+.tetv-top-scroll {
+  position: sticky;
+  z-index: 3;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #f8fafc;
+  border-top: 1px solid #d7e1e8;
+  border-bottom: 1px solid #dfe7ef;
+  height: 16px;
+}
+.tetv-top-scroll-inner {
+  height: 1px;
+}
+.tetv-grid-wrapper .ag-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+.tetv-banner-unresolved {
+  background: #fff3cd;
+  padding: 6px 10px;
+  margin: 10px 12px 0;
+  border: 1px solid #ffe69c;
+  border-radius: 7px;
+  font-size: var(--tetv-font-size);
+}
+
+.tetv-toolbar {
+  background: #fbfcfd;
+  border-bottom: 1px solid var(--tetv-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 10px 12px;
+  align-items: center;
+}
+.tetv-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tetv-toolbar-options {
+  background: #fff;
+  border: 1px solid #e1e8ef;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04);
+  gap: 12px;
+  padding: 6px 10px;
+}
+.tetv-toolbar-options .form-check {
+  align-items: center;
+  display: inline-flex;
+  margin-bottom: 0;
+  margin-right: 0;
+}
+.tetv-toolbar-options .form-check-input {
+  margin-top: 0;
+}
+.tetv-toolbar-options .form-check-label {
+  color: #344054;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 600;
+  padding-left: 4px;
+}
+.tetv-toolbar-select {
+  flex: 1 1 280px;
+  min-width: 240px;
+  max-width: 480px;
+}
+.tetv-toolbar-label {
+  font-size: var(--tetv-secondary-font-size);
+  color: #344054;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tetv-quick-link {
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  color: var(--tetv-accent-dark);
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.tetv-quick-link:hover {
+  background: #e8f3f6;
+  border-color: #a9ccd6;
+}
+.tetv-select-shell {
+  flex: 1 1 240px;
+  min-width: 240px;
+}
+
+/* Each topic is rendered as a column group with two children: Validation
+   (narrow, just buttons) and Sources (wide, source mini-rows).
+   We draw a thick left border on the leftmost cell of each topic group to
+   visually separate adjacent topic groups. */
+.tetv-validation-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  padding: 4px 2px;
+  height: 100%;
+}
+.tetv-validation-by {
+  font-size: var(--tetv-small-font-size);
+  color: #4a5260;
+  line-height: 1.25;
+  text-align: center;
+  word-break: break-word;
+}
+.tetv-validation-by-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: stretch;
+  width: 100%;
+}
+.tetv-validation-by-mark {
+  display: inline-block;
+  font-weight: 700;
+  min-width: 1.1em;
+  padding: 0 4px;
+  border-radius: 8px;
+  text-align: center;
+  color: #fff;
+}
+.tetv-validation-by-pos { background: #1e7d3a; }
+.tetv-validation-by-neg { background: #b03a2e; }
+.tetv-source-icon {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 6px;
+  height: 1.4em;
+  border-radius: 999px;
+  background: var(--tetv-accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.8em;
+  line-height: 1.4em;
+  text-align: center;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+/* Species badge: same shape/size as source icons but a distinct olive hue so
+   curators can tell at a glance which TET tags were submitted for a given
+   species. Hover tooltip carries the full binomial. */
+.tetv-species-icon {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 6px;
+  height: 1.4em;
+  border-radius: 999px;
+  background: #6b7c3a;
+  color: #fff;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 0.8em;
+  line-height: 1.4em;
+  text-align: center;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+.tetv-sources-cell,
+.tetv-tag-cell,
+.tetv-attr-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 6px;
+  min-width: 0;
+}
+.tetv-tag-cell {
+  align-items: center;
+}
+/* Evidence-assertion panels: one panel per source_evidence_assertion bucket.
+   Sources column shows the assertion name as a panel title; the other
+   per-source columns render a same-height spacer so mini-rows still align
+   horizontally across columns inside a single AgGrid row. */
+.tetv-evidence-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+.tetv-evidence-panel-sep {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #d9e1ea;
+}
+.tetv-evidence-title {
+  font-size: var(--tetv-small-font-size);
+  font-weight: 700;
+  color: var(--tetv-accent-dark);
+  text-transform: lowercase;
+  line-height: 1.3;
+  padding: 0 0 2px;
+  text-align: left;
+}
+.tetv-evidence-title-spacer {
+  font-size: var(--tetv-small-font-size);
+  font-weight: 700;
+  line-height: 1.3;
+  padding: 0 0 2px;
+  visibility: hidden;
+  text-align: left;
+}
+.tetv-evidence-empty {
+  color: var(--tetv-muted);
+  font-size: var(--tetv-small-font-size);
+}
+.tetv-attr-value {
+  font-size: inherit;
+  color: #2a2f36;
+  font-variant-numeric: tabular-nums;
+}
+.tetv-note-count {
+  font-size: var(--tetv-small-font-size);
+  margin-left: 2px;
+}
+/* Inner separators between sub-columns within a topic group, matching the
+   sub-header borders. The leftmost cell of each topic group keeps a thicker
+   left border to separate adjacent topic groups. */
+.tetv-grid-wrapper .ag-cell {
+  border-right: 1px solid #e5ebf1;
+}
+.tetv-grid-wrapper .ag-header-cell.tetv-topic-subheader,
+.tetv-grid-wrapper .ag-header-group-cell.tetv-topic-group-header {
+  border-right: 1px solid #d0dce7;
+}
+.tetv-topic-group-leftmost {
+  border-left: 3px solid #a9ccd6 !important;
+}
+.tetv-grid-wrapper .ag-header,
+.tetv-grid-wrapper .ag-header-row {
+  background: #eef4f7;
+}
+.tetv-grid-wrapper .ag-header-cell,
+.tetv-grid-wrapper .ag-header-group-cell {
+  background: #eef4f7;
+  color: var(--tetv-ink);
+  font-weight: 700;
+}
+.tetv-grid-wrapper .ag-header-cell-label,
+.tetv-grid-wrapper .ag-header-group-cell-label {
+  align-items: center;
+}
+.ag-header-group-cell.tetv-topic-group-header {
+  border-left: 3px solid #a9ccd6;
+  background: linear-gradient(180deg, #e7f1f4, #dfeaf0);
+  font-weight: 700;
+  color: var(--tetv-accent-dark);
+}
+.ag-header-cell.tetv-topic-subheader {
+  background: #f8fafc;
+  font-size: var(--tetv-secondary-font-size);
+  color: #475467;
+  font-weight: 600;
+}
+/* Alternating row tones for readability. Each paper is separated by a
+   prominent slate-grey divider so curators clearly see where one paper ends
+   and the next begins. */
+.tetv-grid-wrapper .ag-row {
+  background: #ffffff;
+  border-bottom: 2px solid #94a3b8;
+}
+.tetv-grid-wrapper .ag-row-odd {
+  background: #f8fafc;
+}
+.tetv-grid-wrapper .ag-row:hover {
+  background: #edf8f7;
+}
+/* Reference rows that already carry a professional-biocurator topic-level
+   TET on at least one topic — soft amber background so curators spot them
+   immediately. Overrides the zebra striping. */
+.tetv-grid-wrapper .ag-row.tetv-row-validated,
+.tetv-grid-wrapper .ag-row.tetv-row-validated.ag-row-odd {
+  background: #fff8ed;
+}
+.tetv-grid-wrapper .ag-row.tetv-row-validated:hover {
+  background: #ffefd1;
+}
+
+/* Status text shown in the Validation cell when a professional-biocurator
+   topic-level tag exists for that (ref, topic). Replaces the ✓/✗ buttons. */
+.tetv-validation-status {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 999px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.25;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.08);
+}
+.tetv-validated-pos {
+  background: #dff4e7;
+  color: #17613a;
+  border-color: #b9e4c8;
+}
+.tetv-validated-neg {
+  background: #fde3e8;
+  color: #8f2435;
+  border-color: #f7bdc8;
+}
+.tetv-validated-conflict {
+  background: #fff0c9;
+  color: #855600;
+  border-color: #f3d27e;
+}
+.tetv-source-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tetv-source-group-sep {
+  border-top: 1px dotted #ddd;
+  padding-top: 2px;
+}
+.tetv-mini-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tetv-font-size);
+  line-height: 1.3;
+  flex-wrap: nowrap;
+  /* Single-line mini-rows so the columns can be auto-sized to fit content
+     without vertical stacking. The grid horizontal-scrolls when wider than
+     the viewport. */
+}
+.tetv-tag-row {
+  justify-content: center;
+  width: 100%;
+}
+.tetv-source-label {
+  color: #475467;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.tetv-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: var(--tetv-small-font-size);
+  font-weight: 800;
+  text-align: center;
+  line-height: 20px;
+  height: 20px;
+  white-space: nowrap;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.13);
+}
+.tetv-pill-y { background: #268d52; }
+.tetv-pill-n { background: #c63f4f; }
+/* Entity count badge — distinct violet so curators can spot it apart from
+   the Y/N pills used for topic-only tags. */
+.tetv-pill-entity { background: #6679c8; }
+.tetv-pill-entity-neg { background: #495aa2; }
+.tetv-pill-clickable {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.tetv-pill-clickable:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.tetv-dot-y, .tetv-dot-n {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.tetv-dot-y { background: #268d52; }
+.tetv-dot-n { background: #c63f4f; }
+.tetv-inline-note {
+  color: #333;
+  font-style: italic;
+  /* Full note text — wraps freely, no truncation. */
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tetv-inline-note-line {
+  display: block;
+}
+.tetv-inline-note-entity {
+  font-weight: 600;
+  font-style: normal;
+  color: #2a2f36;
+}
+.tetv-note-btn {
+  background: none;
+  border: 0;
+  color: #667085;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.tetv-note-btn:hover { color: var(--tetv-accent-dark); }
+.tetv-badge {
+  font-size: var(--tetv-small-font-size);
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #edf1fb;
+  color: #3c4f8f;
+  font-weight: 700;
+}
+.tetv-badge-score {
+  background: #e8f4ed;
+  color: #276749;
+}
+
+/* Validation strip: horizontal pair of icon-only buttons. */
+.tetv-strip {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  flex: 0 0 auto;
+}
+.tetv-strip-btn {
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  width: auto;
+  height: 36px;
+  font-size: 24px;
+  line-height: 1;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.tetv-strip-btn:disabled { opacity: 0.4; cursor: default; }
+.tetv-strip-pos { color: #268d52; }
+.tetv-strip-neg { color: #c63f4f; }
+.tetv-strip-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.tetv-strip-pos:hover:not(:disabled) {
+  background: #e7f5ec;
+  border-color: #9ad0ae;
+}
+.tetv-strip-neg:hover:not(:disabled) {
+  background: #fdecef;
+  border-color: #e8a5af;
+}
+.tetv-strip-active {
+  background: #f2f6f8;
+  border-color: #8ba6b6;
+}
+
+.tetv-title-cell,
+.tetv-ids-cell {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  line-height: 1.3;
+}
+.tetv-title-cell {
+  white-space: normal;
+}
+.tetv-ids-cell {
+  white-space: nowrap;
+}
+.tetv-ref-title {
+  color: var(--tetv-ink);
+  font-weight: 600;
+  word-break: break-word;
+}
+.tetv-ref-journal {
+  font-size: var(--tetv-secondary-font-size);
+  color: #667085;
+  font-style: italic;
+}
+.tetv-ref-authors {
+  font-size: var(--tetv-secondary-font-size);
+  color: #667085;
+}
+.tetv-ref-curie,
+.tetv-ref-pmid,
+.tetv-ref-xref {
+  font-size: var(--tetv-secondary-font-size);
+  color: #555;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
+}
+.tetv-ref-curie { color: var(--tetv-accent-dark); font-weight: 700; }
+
+/* Per-reference action strip rendered at the bottom of IdsCell. Mirrors
+   the list-view's TET-editor + main-PDF buttons but in a compact pill
+   layout so it doesn't dominate the pinned column. */
+.tetv-ref-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.tetv-ref-action {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  border-radius: 999px;
+  color: var(--tetv-accent-dark);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--tetv-small-font-size);
+  font-weight: 700;
+  gap: 4px;
+  line-height: 1.1;
+  padding: 3px 8px;
+  text-decoration: none;
+}
+.tetv-ref-action:hover {
+  background: #e8f3f6;
+  border-color: #a9ccd6;
+  color: var(--tetv-accent-dark);
+  text-decoration: none;
+}
+.tetv-ref-action-pdf {
+  color: #8c2c2c;
+  border-color: #e6c2c2;
+}
+.tetv-ref-action-pdf:hover {
+  background: #fbecec;
+  border-color: #d99a9a;
+  color: #6e2222;
+}
+.tetv-ref-action-label {
+  font-size: var(--tetv-small-font-size);
+}
+
+/* Leading pinned checkbox column for bulk selection. Compact + centered. */
+.tetv-grid-wrapper .ag-cell.tetv-select-cell,
+.tetv-grid-wrapper .ag-header-cell.tetv-select-header {
+  padding-left: 8px;
+  padding-right: 4px;
+}
+.tetv-grid-wrapper .ag-cell.tetv-select-cell .ag-selection-checkbox,
+.tetv-grid-wrapper .ag-header-cell.tetv-select-header .ag-header-select-all {
+  margin: 0;
+}
+
+/* Bulk-action bar — visible only when at least one row is checkbox-selected.
+   Sits between the regular toolbar and the grid, with a coloured stripe so
+   the curator notices they're operating on a multi-row batch. */
+.tetv-bulk-bar {
+  align-items: center;
+  background: #fff8ed;
+  border-bottom: 1px solid var(--tetv-line);
+  border-top: 1px solid var(--tetv-line);
+  border-left: 4px solid #f3b765;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 10px 12px;
+}
+.tetv-bulk-count {
+  color: #6b4a16;
+  font-weight: 600;
+}
+.tetv-bulk-count strong {
+  color: #855600;
+  font-size: 1.05em;
+}
+.tetv-bulk-msg {
+  color: #475467;
+}
+.tetv-bulk-topic {
+  align-items: center;
+  display: inline-flex;
+}
+.tetv-bulk-label {
+  color: #344054;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+}
+.tetv-bulk-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.tetv-bulk-clear {
+  color: #6b4a16;
+  text-decoration: none;
+}
+.tetv-bulk-clear:hover {
+  color: #855600;
+  text-decoration: underline;
+}
+
+@media (max-width: 992px) {
+  .tetv-view-switchbar {
+    justify-content: center;
+  }
+  .tetv-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .tetv-toolbar-group,
+  .tetv-toolbar-select {
+    max-width: none;
+    width: 100%;
+  }
+  .tetv-toolbar-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 576px) {
+  .tetv-grid-wrapper {
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+    margin-left: 0;
+  }
+  .tetv-view-toggle {
+    width: 100%;
+  }
+  .tetv-view-toggle .btn {
+    flex: 1 1 50%;
+    justify-content: center;
+  }
+  .tetv-select-shell {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Header label + ? help icon. Renders inside both regular column headers and
+   column-group headers via HeaderWithHelp / HeaderGroupWithHelp. Uses a full
+   width flex container so trailing icons (e.g. the filter funnel) can be
+   pushed to the right edge via margin-left: auto. */
+.tetv-header-with-help {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+.tetv-header-with-help .tetv-header-label {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
+}
+.tetv-header-help {
+  align-items: center;
+  color: #7a8aa0;
+  cursor: help;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.85em;
+  line-height: 1;
+}
+.tetv-header-help:hover {
+  color: var(--tetv-accent-dark);
+}
+/* Filter funnel icon rendered in HeaderWithHelp when the column opts in via
+   headerComponentParams.showFilterIcon. Uses AgGrid's built-in
+   .ag-icon-filter glyph to match the rest of the app. Pushed to the right
+   edge of the header cell so it doesn't crowd the label / help icon. */
+.tetv-header-filter {
+  align-items: center;
+  color: #7a8aa0;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.95em;
+  line-height: 1;
+  margin-left: auto;
+  padding: 0 2px;
+}
+.tetv-header-filter:hover {
+  color: var(--tetv-accent-dark);
+}
+.tetv-header-filter-active {
+  color: var(--tetv-accent-dark);
+}
+.tetv-header-filter-active::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tetv-accent-dark);
+  margin-left: 2px;
+}
+
+/* Action bar rendered at the top of the react-select dropdown menu (Topics
+   and Sources multi-selects). Keeps the bulk select/unselect actions inside
+   the popup so the toolbar itself stays uncluttered. */
+.tetv-multiselect-actions {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e1e8ef;
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.tetv-multiselect-action {
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  border-radius: 999px;
+  color: var(--tetv-accent-dark);
+  cursor: pointer;
+  flex: 1 1 0;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 5px 8px;
+}
+.tetv-multiselect-action:hover {
+  background: #e8f3f6;
+  border-color: #a9ccd6;
+}
+
+/* Wrapper that hosts the top scrollbar + AgGrid; gives the resize overlay an
+   absolute-positioning anchor without taking over the whole page-level
+   layout. */
+.tetv-grid-stack {
+  position: relative;
+}
+
+/* Floating "adjusting columns" toast shown while autoSize is in flight.
+   Anchored to the top-center of the grid stack so it visually sits on top
+   of the topic grid itself, not in the page corner. The stack uses
+   position: relative which provides the containing block. */
+.tetv-resize-overlay {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--tetv-line);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(31, 41, 55, 0.18);
+  color: var(--tetv-accent-dark);
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Fullscreen toggle pill in the top-right of the grid wrapper. Sits above
+   the sticky header (z-index 4) and the resize overlay (z-index 50). */
+.tetv-fullscreen-toggle {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #d7e1e8;
+  border-radius: 999px;
+  color: var(--tetv-accent-dark);
+  cursor: pointer;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 6px 12px;
+  box-shadow: 0 2px 6px rgba(31, 41, 55, 0.08);
+}
+.tetv-fullscreen-toggle:hover {
+  background: #e8f3f6;
+  border-color: #a9ccd6;
+}
+
+/* Fullscreen mode: the wrapper covers the viewport and gains its own
+   internal vertical scroller (the normal layout uses the page as the
+   scroller, but in fullscreen there is no page below us). */
+.tetv-grid-wrapper.tetv-fullscreen {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  overflow: auto;
+  z-index: 2000;
+  background: #fff;
+}
+.tetv-grid-wrapper.tetv-fullscreen .tetv-fullscreen-toggle {
+  position: fixed;
+}
+
+/* Optional curation-status section in the validation confirmation modal. */
+.tetv-curation-toggle {
+  background: #fbfcfd;
+  border: 1px solid #e1e8ef;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.tetv-curation-section {
+  background: #f6f9fb;
+  border: 1px solid #e1e8ef;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+/* "New tag fields" preview block inside the validation confirmation modal. */
+.tetv-validation-fields {
+  background: #f6f9fb;
+  border: 1px solid #e1e8ef;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.tetv-validation-fields-title {
+  color: #475467;
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.tetv-validation-fields-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+.tetv-validation-fields-list dt {
+  color: #667085;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.tetv-validation-fields-list dd {
+  color: #1f2937;
+  font-size: 0.9em;
+  margin: 0;
+  word-break: break-word;
+}
+
+/* Inline error indicator next to the validation strip when a submit fails. */
+.tetv-strip-error {
+  align-items: center;
+  background: #fdecea;
+  border: 1px solid #f5b7b1;
+  border-radius: 50%;
+  color: #b03a2e;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  height: 20px;
+  justify-content: center;
+  margin-left: 4px;
+  width: 20px;
+}
+
