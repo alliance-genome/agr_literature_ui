@@ -9,6 +9,10 @@ import {
   defaultSpeciesCurieForMod,
   speciesName,
 } from '../helpers/speciesUtils';
+import { debug } from '../helpers/debug';
+
+// How long the success confirmation stays up before the modal auto-closes.
+const SUCCESS_CLOSE_DELAY_MS = 1500;
 
 export default function CellValidationStrip({
   referenceCurie,
@@ -86,11 +90,9 @@ export default function CellValidationStrip({
     };
     try {
       // 1) always create the validation TET tag
-      // eslint-disable-next-line no-console
-      console.debug('[CellValidationStrip] submit TET', tetPayload);
+      debug.log('[CellValidationStrip] submit TET', tetPayload);
       const res = await api.post('/topic_entity_tag/', tetPayload);
-      // eslint-disable-next-line no-console
-      console.debug('[CellValidationStrip] TET OK', res?.status, res?.data);
+      debug.log('[CellValidationStrip] TET OK', res?.status, res?.data);
 
       // 2) optionally create / update a curation status entry for this
       //    (reference, mod, topic) — only if the user toggled the section on
@@ -108,11 +110,9 @@ export default function CellValidationStrip({
           curation_tag: pending.curTag || null,
           note: pending.curNote.trim() || null,
         };
-        // eslint-disable-next-line no-console
-        console.debug('[CellValidationStrip] submit curation_status', curPayload);
+        debug.log('[CellValidationStrip] submit curation_status', curPayload);
         const cur = await api.post('/curation_status/', curPayload);
-        // eslint-disable-next-line no-console
-        console.debug(
+        debug.log(
           '[CellValidationStrip] curation_status OK',
           cur?.status,
           cur?.data
@@ -121,12 +121,11 @@ export default function CellValidationStrip({
 
       if (onValidated) await onValidated(referenceCurie);
       setPending((s) => ({ ...s, status: 'success' }));
-      setTimeout(closeConfirm, 1500);
+      setTimeout(closeConfirm, SUCCESS_CLOSE_DELAY_MS);
     } catch (e) {
       const status = e?.response?.status;
       const detail = e?.response?.data?.detail || e?.message || 'unknown error';
-      // eslint-disable-next-line no-console
-      console.error('[CellValidationStrip] submit failed', status, detail, e);
+      debug.error('[CellValidationStrip] submit failed', status, detail, e);
       setPending((s) => ({
         ...s,
         status: 'error',

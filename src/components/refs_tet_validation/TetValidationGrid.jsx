@@ -46,6 +46,7 @@ import {
   INNER_COLUMN_FILTER_DEFAULTS,
   INNER_COLUMN_TYPES,
 } from './helpers/innerColumnUtils';
+import { debug } from './helpers/debug';
 import './TetValidationGrid.css';
 
 const INNER_COLUMN_FILTER_LABELS = {
@@ -164,8 +165,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         );
       } catch (e) {
         // Non-fatal — the curation section will just show empty drop-downs.
-        // eslint-disable-next-line no-console
-        console.warn(
+        debug.warn(
           '[TetValidationGrid] failed to load curation vocabularies',
           e?.response?.status,
           e?.message

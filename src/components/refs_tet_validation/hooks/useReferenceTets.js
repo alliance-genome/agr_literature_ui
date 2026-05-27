@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../api';
+import { debug } from '../helpers/debug';
 
 // CURIEs go into URL path segments unencoded — matches the rest of the UI
 // (e.g. biblioActions.js, TopicEntityTable.js). Percent-encoding ':' to '%3A'
@@ -13,12 +14,19 @@ import { api } from '../../../api';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Exponential-backoff delays (ms) between retries — 5 retries total.
+const DEFAULT_BACKOFF_DELAYS = [500, 1500, 4500, 13500, 40500];
+// Pull every TET for a reference in one request; references rarely exceed this.
+const TETS_PAGE_SIZE = 8000;
+// How many references to resolve/fetch in parallel.
+const FETCH_CONCURRENCY = 10;
+
 /**
  * Retry an axios call on 5xx / network errors with exponential backoff.
- * 4xx errors fail fast (a 404 should never be retried). Default 3 retries
- * with delays 250 / 750 / 2250 ms.
+ * 4xx errors fail fast (a 404 should never be retried). Default 5 retries
+ * with delays 500 / 1500 / 4500 / 13500 / 40500 ms.
  */
-async function withBackoff(fn, { delays = [500, 1500, 4500, 13500, 40500] } = {}) {
+async function withBackoff(fn, { delays = DEFAULT_BACKOFF_DELAYS } = {}) {
   let lastErr;
   for (let attempt = 0; attempt <= delays.length; attempt++) {
     try {
@@ -43,8 +51,7 @@ export async function resolveOne(id) {
     const r = await withBackoff(() => api.get(url));
     return r.data;
   } catch (e) {
-    // eslint-disable-next-line no-console
-    console.warn(
+    debug.warn(
       `[TetValidationGrid] Could not resolve ${id}:`,
       e?.response?.status,
       e?.response?.data?.detail || e?.message
@@ -56,13 +63,14 @@ export async function resolveOne(id) {
 export async function fetchTets(curie) {
   try {
     const r = await withBackoff(() =>
-      api.get(`/topic_entity_tag/by_reference/${curie}?page=1&page_size=8000`)
+      api.get(
+        `/topic_entity_tag/by_reference/${curie}?page=1&page_size=${TETS_PAGE_SIZE}`
+      )
     );
     // Existing TET table uses result.data directly as the array
     return Array.isArray(r.data) ? r.data : (r.data?.topic_entity_tags || []);
   } catch (e) {
-    // eslint-disable-next-line no-console
-    console.warn(
+    debug.warn(
       `[TetValidationGrid] fetchTets failed for ${curie}:`,
       e?.response?.status,
       e?.response?.data?.detail || e?.message
@@ -111,7 +119,6 @@ export function useReferenceTets(referenceIds) {
       );
       const newRows = [];
       const newUnresolved = [];
-      const concurrency = 10;
       let cursor = 0;
       async function worker() {
         while (cursor < ids.length) {
@@ -131,7 +138,7 @@ export function useReferenceTets(referenceIds) {
         }
       }
       await Promise.all(
-        Array.from({ length: Math.min(concurrency, ids.length) }, worker)
+        Array.from({ length: Math.min(FETCH_CONCURRENCY, ids.length) }, worker)
       );
       if (cancelled || reqId !== reqIdRef.current) return;
       setRows(newRows);

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AsyncTypeahead } from 'react-bootstrap-typeahead';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { api } from '../../../api';
+import { debug } from '../helpers/debug';
 
 /** Single-select species autocomplete used by the validation modals.
  *
@@ -70,8 +71,7 @@ export default function SpeciesPicker({
           }
         } catch (e) {
           // Network / 5xx — clear suggestions, leave the field as is.
-          // eslint-disable-next-line no-console
-          console.warn('[SpeciesPicker] search failed', e?.message);
+          debug.warn('[SpeciesPicker] search failed', e?.message);
           setOptions([]);
         } finally {
           setLoading(false);
