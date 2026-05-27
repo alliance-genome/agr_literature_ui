@@ -8,6 +8,7 @@ import { api } from "../../api";
 import { BiblioSubmitUpdateRouter } from './BiblioEditor';
 import { AuthorExpandToggler } from './BiblioEditor';
 import { splitCurie } from './BiblioEditor';
+import { datasetXrefPrefixes } from './BiblioEditor';
 // import { aggregateCitation } from './BiblioEditor';
 import { RowDisplayReferencefiles } from '../Biblio';
 import { RowDisplayResourcesForCuration } from '../BiblioRowDisplayUtils';
@@ -132,21 +133,23 @@ export const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonL
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
     let anyUpdatedFlag = ''; let xref_list = '';
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+      const [prefix] = splitCurie(crossRefDict['curie']);
+      if (datasetXrefPrefixes.includes(prefix)) { continue; }
       let url = crossRefDict['url'];
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
       let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-             valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
+      if ( (typeof referenceJsonDb['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonDb['cross_references'][index]['curie'] !== 'undefined') ) {
+             valueDbCurie = referenceJsonDb['cross_references'][index]['curie'] }
+      if ( (typeof referenceJsonDb['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonDb['cross_references'][index]['is_obsolete'] !== 'undefined') ) {
+             valueDbIsObsolete = referenceJsonDb['cross_references'][index]['is_obsolete'] }
       if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
       if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
       let isObsolete = '';
-      if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-             if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
+      if ( (typeof referenceJsonLive['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonLive['cross_references'][index]['is_obsolete'] !== 'undefined') ) {
+             if (referenceJsonLive['cross_references'][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
              else { isObsolete = ''; } }
       let updatedFlag = '';
       if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { updatedFlag = 'updated'; anyUpdatedFlag = 'updated'; }
@@ -158,13 +161,61 @@ export const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonL
       ) {
 	url = crossRefDict.pages[0].url;
       }
-	
+
       if (xref_list !== '') { xref_list += " | "; }
       xref_list += `<span style="color: red">${isObsolete}</span> <a href=${url}  rel="noreferrer noopener" target="_blank">${valueLiveCurie}</a>`;
     }
+    if (xref_list === '') { return null; }
     return (
         <Row key='resources_for_curation' className="Row-general" xs={2} md={4} lg={6}>
             <Col className='Col-general Col-display Col-display-left'>cross_references</Col>
+            <Col className={`Col-general Col-display Col-display-right ${anyUpdatedFlag}`} lg={{ span: 10 }}>
+                <div dangerouslySetInnerHTML={{ __html: xref_list }}></div>
+            </Col>
+        </Row>
+    ); }
+  else { return null; } }
+
+
+export const RowDisplayDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
+    let anyUpdatedFlag = ''; let xref_list = '';
+    for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+      const [prefix] = splitCurie(crossRefDict['curie']);
+      if (!datasetXrefPrefixes.includes(prefix)) { continue; }
+      let url = crossRefDict['url'];
+      let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
+      let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
+      if ( (typeof referenceJsonDb['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonDb['cross_references'][index]['curie'] !== 'undefined') ) {
+             valueDbCurie = referenceJsonDb['cross_references'][index]['curie'] }
+      if ( (typeof referenceJsonDb['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonDb['cross_references'][index]['is_obsolete'] !== 'undefined') ) {
+             valueDbIsObsolete = referenceJsonDb['cross_references'][index]['is_obsolete'] }
+      if (valueLiveCurie !== valueDbCurie) { updatedFlagCurie = 'updated'; }
+      if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
+      let isObsolete = '';
+      if ( (typeof referenceJsonLive['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonLive['cross_references'][index]['is_obsolete'] !== 'undefined') ) {
+             if (referenceJsonLive['cross_references'][index]['is_obsolete'] === true) { isObsolete = 'obsolete'; }
+             else { isObsolete = ''; } }
+      if ( (updatedFlagCurie === 'updated') || (updatedFlagIsObsolete === 'updated') ) { anyUpdatedFlag = 'updated'; }
+
+      if (
+        Array.isArray(crossRefDict.pages) &&
+        crossRefDict.pages.length > 0 &&
+        crossRefDict.pages[0].url
+      ) {
+        url = crossRefDict.pages[0].url;
+      }
+
+      if (xref_list !== '') { xref_list += " | "; }
+      xref_list += `<span style="color: red">${isObsolete}</span> <a href=${url}  rel="noreferrer noopener" target="_blank">${valueLiveCurie}</a>`;
+    }
+    if (xref_list === '') { return null; }
+    return (
+        <Row key='datasets' className="Row-general" xs={2} md={4} lg={6}>
+            <Col className='Col-general Col-display Col-display-left'>datasets</Col>
             <Col className={`Col-general Col-display Col-display-right ${anyUpdatedFlag}`} lg={{ span: 10 }}>
                 <div dangerouslySetInnerHTML={{ __html: xref_list }}></div>
             </Col>
@@ -615,6 +666,8 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayModAssociation key="RowDisplayModAssociation" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
 	rowOrderedElements.push(<RowDisplayCrossReferences key="RowDisplayCrossReferences" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'datasets') {
+	rowOrderedElements.push(<RowDisplayDatasets key="RowDisplayDatasets" fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'resources_for_curation') {
         rowOrderedElements.push(<RowDisplayResourcesForCuration key="RowDisplayResourcesForCuration" referenceJsonLive={referenceJsonLive} />); }
     else if (fieldName === 'relations') {

@@ -72,7 +72,9 @@ export const fieldsSimple = ['curie', 'reference_id', 'title', 'category', 'cita
 export const fieldsArrayString = ['keywords', 'pubmed_abstract_languages', 'pubmed_types', 'obsolete_references' ];
  
 export const fieldsBooleanDisplayOnly = ['prepublication_pipeline' ];
-export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'obsolete_references', 'resources_for_curation', 'relations', 'retraction_status', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
+export const fieldsOrdered = [ 'title', 'mod_corpus_associations', 'cross_references', 'datasets', 'obsolete_references', 'resources_for_curation', 'relations', 'retraction_status', 'authors', 'DIVIDER', 'copyright_license_name', 'referencefiles', 'DIVIDER', 'citation', 'abstract', 'pubmed_abstract_languages', 'plain_language_abstract', 'DIVIDER', 'category', 'pubmed_types', 'mod_reference_types', 'prepublication_pipeline', 'DIVIDER', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'DIVIDER', 'editors', 'publisher', 'language', 'DIVIDER', 'date_published', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'DIVIDER', 'keywords', 'mesh_terms' ];
+
+export const datasetXrefPrefixes = ['PDB', 'GEO'];
  
 
 export const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'pubmed_publication_status', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
@@ -91,6 +93,7 @@ enumDict['category'] = ['research_article', 'review_article', 'comment', 'thesis
 enumDict['mods'] = ['', 'AGR', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'XB', 'ZFIN']
 enumDict['personXrefPrefix'] = ['', 'ORCID']
 enumDict['referenceXrefPrefix'] = ['', 'PMID', 'DOI', 'PMCID', 'ISBN', 'Xenbase', 'FB', 'MGI', 'RGD', 'SGD', 'WB', 'ZFIN', 'CGC', 'WBG', 'WM']
+enumDict['datasetXrefPrefix'] = ['', 'PDB', 'GEO']
 enumDict['referenceComcorType'] = ['', 'CommentOn', 'HasComment', 'RetractionOf', 'HasRetraction', 'ErratumFor', 'HasErratum', 'ReprintOf', 'HasReprintA', 'RepublishedFrom', 'RepublishedIn', 'UpdateOf', 'HasUpdate', 'ExpressionOfConcernFor', 'HasExpressionOfConcernFor', 'hasChapter', 'ChapterIn']
 enumDict['modAssociationCorpus'] = ['needs_review', 'inside_corpus', 'outside_corpus']
 enumDict['modAssociationSource'] = ['', 'mod_pubmed_search', 'dqm_files', 'manual_creation', 'automated_alliance', 'assigned_for_review', 'interaction', 'gaf']
@@ -1027,6 +1030,8 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
 
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+      const [curiePrefix] = splitCurie(crossRefDict['curie']);
+      if (datasetXrefPrefixes.includes(curiePrefix)) { continue; }
       let otherColSize = 6;
 //       let buttonsElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
       let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
@@ -1041,55 +1046,147 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
 
       const crossRefDeleted = (('deleteMe' in crossRefDict) && (crossRefDict['deleteMe'] === true)) ? true : false;
 
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['curie'] !== 'undefined') ) {
-             valueDbCurie = referenceJsonDb[fieldName][index]['curie'] }
-      if ( (typeof referenceJsonDb[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonDb[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-             valueDbIsObsolete = referenceJsonDb[fieldName][index]['is_obsolete'] }
+      if ( (typeof referenceJsonDb['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonDb['cross_references'][index]['curie'] !== 'undefined') ) {
+             valueDbCurie = referenceJsonDb['cross_references'][index]['curie'] }
+      if ( (typeof referenceJsonDb['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonDb['cross_references'][index]['is_obsolete'] !== 'undefined') ) {
+             valueDbIsObsolete = referenceJsonDb['cross_references'][index]['is_obsolete'] }
       let [valueDbCuriePrefix, valueDbCurieId] = splitCurie(valueDbCurie);
       if (valueLiveCuriePrefix !== valueDbCuriePrefix) { updatedFlagCuriePrefix = 'updated'; }
       if (valueLiveCurieId !== valueDbCurieId) { updatedFlagCurieId = 'updated'; }
       if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
 
       let obsoleteChecked = '';
-      if ( (typeof referenceJsonLive[fieldName][index] !== 'undefined') &&
-           (typeof referenceJsonLive[fieldName][index]['is_obsolete'] !== 'undefined') ) {
-             if (referenceJsonLive[fieldName][index]['is_obsolete'] === true) { obsoleteChecked = 'checked'; }
+      if ( (typeof referenceJsonLive['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonLive['cross_references'][index]['is_obsolete'] !== 'undefined') ) {
+             if (referenceJsonLive['cross_references'][index]['is_obsolete'] === true) { obsoleteChecked = 'checked'; }
              else { obsoleteChecked = ''; } }
 
       if (crossRefDeleted) {
         rowCrossReferencesElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+          <Form.Group as={Row} key={`cross_references ${index}`}>
+            <Col className="Col-general form-label col-form-label" sm="2" >cross_references </Col>
             <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSize + 1} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveCuriePrefix}:{valueLiveCurieId} {(obsoleteChecked === 'checked') ? 'obsolete' : ''}</Col>
             {buttonsElement}
           </Form.Group>); }
       else {
         rowCrossReferencesElements.push(
-          <Form.Group as={Row} key={`${fieldName} ${index}`}>
-            <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} </Col>
+          <Form.Group as={Row} key={`cross_references ${index}`}>
+            <Col className="Col-general form-label col-form-label" sm="2" >cross_references </Col>
             <Col sm="2">
-              <Form.Control as="select" key={`colElement ${fieldName} ${index} curiePrefix`} id={`${fieldName} ${index} curie prefix`} type="{fieldName}" value={valueLiveCuriePrefix} className={`form-control ${updatedFlagCuriePrefix}`} disabled={disabled} placeholder="curie" onChange={(e) => { dispatch(changeFieldCrossReferencesReferenceJson(e)); validateXref('reference', xrefPatterns, e.target.value, valueLiveCurieId) } } >
+              <Form.Control as="select" key={`colElement cross_references ${index} curiePrefix`} id={`cross_references ${index} curie prefix`} type="cross_references" value={valueLiveCuriePrefix} className={`form-control ${updatedFlagCuriePrefix}`} disabled={disabled} placeholder="curie" onChange={(e) => { dispatch(changeFieldCrossReferencesReferenceJson(e)); validateXref('reference', xrefPatterns, e.target.value, valueLiveCurieId) } } >
                 {'referenceXrefPrefix' in enumDict && enumDict['referenceXrefPrefix'].map((optionValue, index) => (
-                  <option key={`${fieldName} ${index} curie prefix ${optionValue}`}>{optionValue}</option>
+                  <option key={`cross_references ${index} curie prefix ${optionValue}`}>{optionValue}</option>
                 ))}
               </Form.Control>
             </Col>
             <Col sm={otherColSize}>
-              <Form.Control as="input" key={`colElement ${fieldName} ${index} curieId`} id={`${fieldName} ${index} curie id`}  type="{fieldName}" value={valueLiveCurieId} className={`form-control ${updatedFlagCurieId}`} disabled={disabled} placeholder="curie" onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))} onBlur={ (e) => validateXref('reference', xrefPatterns, valueLiveCuriePrefix, valueLiveCurieId) } />
+              <Form.Control as="input" key={`colElement cross_references ${index} curieId`} id={`cross_references ${index} curie id`}  type="cross_references" value={valueLiveCurieId} className={`form-control ${updatedFlagCurieId}`} disabled={disabled} placeholder="curie" onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))} onBlur={ (e) => validateXref('reference', xrefPatterns, valueLiveCuriePrefix, valueLiveCurieId) } />
             </Col>
-            <ColEditorCheckbox key={`colElement ${fieldName} ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`${fieldName} ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
             {buttonsElement}
           </Form.Group>); } } }
   if (disabled === '') {
     rowCrossReferencesElements.push(
-      <Row className="form-group row" key={fieldName} >
-        <Col className="Col-general form-label col-form-label" sm="2" >{fieldName}</Col>
-        <Col sm="10" ><div id={fieldName} className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add {fieldName}</div></Col>
+      <Row className="form-group row" key="cross_references" >
+        <Col className="Col-general form-label col-form-label" sm="2" >cross_references</Col>
+        <Col sm="10" ><div id="cross_references" className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add cross_references</div></Col>
       </Row>);
   }
   return (<>{rowCrossReferencesElements}</>); }
+
+
+const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
+  const dispatch = useDispatch();
+  const hasPmid = useSelector(state => state.biblio.hasPmid);
+  const initializeDict = {'curie': 'PDB:', 'url': null, 'is_obsolete': false, 'cross_reference_id': 'new'}
+  let disabled = ''
+  if (hasPmid && (fieldsPubmed.includes('cross_references'))) { disabled = 'disabled'; }
+  if (fieldsDisplayOnly.includes('cross_references')) { disabled = 'disabled'; }
+  const rowDatasetsElements = []
+
+  const xrefPatterns = useSelector(state => state.biblio.xrefPatterns);
+  function validateXref(datatype, xrefPatterns, prefix, value) {
+    if ( (prefix === '') || (value === '') ) { return; }
+    if (prefix in xrefPatterns[datatype]) {
+      const pattern = xrefPatterns[datatype][prefix];
+      const curie = prefix + ':' + value;
+      var re = new RegExp(pattern);
+      if (re.test(curie) === false) {
+        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' check your entry and try again.'));
+      }
+    } else {
+      console.log('xref prefix ' + prefix + ' not allowed');
+    }
+  }
+
+  if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
+    for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
+      const [livePrefix] = splitCurie(crossRefDict['curie']);
+      if (!datasetXrefPrefixes.includes(livePrefix)) { continue; }
+      let otherColSize = 6;
+      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      if ('cross_reference_id' in crossRefDict && crossRefDict['cross_reference_id'] !== 'new') {
+        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
+      if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 7; }
+
+      let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
+      let updatedFlagCuriePrefix = ''; let updatedFlagCurieId = '';
+      let [valueLiveCuriePrefix, valueLiveCurieId] = splitCurie(valueLiveCurie);
+      let valueLiveIsObsolete = crossRefDict['is_obsolete']; let valueDbIsObsolete = ''; let updatedFlagIsObsolete = '';
+
+      const crossRefDeleted = (('deleteMe' in crossRefDict) && (crossRefDict['deleteMe'] === true)) ? true : false;
+
+      if ( (typeof referenceJsonDb['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonDb['cross_references'][index]['curie'] !== 'undefined') ) {
+             valueDbCurie = referenceJsonDb['cross_references'][index]['curie'] }
+      if ( (typeof referenceJsonDb['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonDb['cross_references'][index]['is_obsolete'] !== 'undefined') ) {
+             valueDbIsObsolete = referenceJsonDb['cross_references'][index]['is_obsolete'] }
+      let [valueDbCuriePrefix, valueDbCurieId] = splitCurie(valueDbCurie);
+      if (valueLiveCuriePrefix !== valueDbCuriePrefix) { updatedFlagCuriePrefix = 'updated'; }
+      if (valueLiveCurieId !== valueDbCurieId) { updatedFlagCurieId = 'updated'; }
+      if (valueLiveIsObsolete !== valueDbIsObsolete) { updatedFlagIsObsolete = 'updated'; }
+
+      let obsoleteChecked = '';
+      if ( (typeof referenceJsonLive['cross_references'][index] !== 'undefined') &&
+           (typeof referenceJsonLive['cross_references'][index]['is_obsolete'] !== 'undefined') ) {
+             if (referenceJsonLive['cross_references'][index]['is_obsolete'] === true) { obsoleteChecked = 'checked'; }
+             else { obsoleteChecked = ''; } }
+
+      if (crossRefDeleted) {
+        rowDatasetsElements.push(
+          <Form.Group as={Row} key={`datasets ${index}`}>
+            <Col className="Col-general form-label col-form-label" sm="2" >datasets </Col>
+            <Col className="Col-general form-label col-form-label updated" sm={2 + otherColSize + 1} ><span style={{color: 'red'}}>Deleted</span>&nbsp; {valueLiveCuriePrefix}:{valueLiveCurieId} {(obsoleteChecked === 'checked') ? 'obsolete' : ''}</Col>
+            {buttonsElement}
+          </Form.Group>); }
+      else {
+        rowDatasetsElements.push(
+          <Form.Group as={Row} key={`datasets ${index}`}>
+            <Col className="Col-general form-label col-form-label" sm="2" >datasets </Col>
+            <Col sm="2">
+              <Form.Control as="select" key={`colElement cross_references ${index} curiePrefix`} id={`cross_references ${index} curie prefix`} type="cross_references" value={valueLiveCuriePrefix} className={`form-control ${updatedFlagCuriePrefix}`} disabled={disabled} placeholder="curie" onChange={(e) => { dispatch(changeFieldCrossReferencesReferenceJson(e)); validateXref('reference', xrefPatterns, e.target.value, valueLiveCurieId) } } >
+                {'datasetXrefPrefix' in enumDict && enumDict['datasetXrefPrefix'].map((optionValue, optionIndex) => (
+                  <option key={`datasets ${index} curie prefix ${optionValue}`}>{optionValue}</option>
+                ))}
+              </Form.Control>
+            </Col>
+            <Col sm={otherColSize}>
+              <Form.Control as="input" key={`colElement cross_references ${index} curieId`} id={`cross_references ${index} curie id`} type="cross_references" value={valueLiveCurieId} className={`form-control ${updatedFlagCurieId}`} disabled={disabled} placeholder="curie" onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))} onBlur={ (e) => validateXref('reference', xrefPatterns, valueLiveCuriePrefix, valueLiveCurieId) } />
+            </Col>
+            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            {buttonsElement}
+          </Form.Group>); } } }
+  if (disabled === '') {
+    rowDatasetsElements.push(
+      <Row className="form-group row" key="datasets" >
+        <Col className="Col-general form-label col-form-label" sm="2" >datasets</Col>
+        <Col sm="10" ><div id="cross_references" className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add datasets</div></Col>
+      </Row>);
+  }
+  return (<>{rowDatasetsElements}</>); }
 
 
 const RowEditorReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
@@ -1514,6 +1611,8 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowEditorModAssociation key={`RowEditorModAssociation ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'cross_references') {
       rowOrderedElements.push(<RowEditorCrossReferences key={`RowEditorCrossReferences ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
+    else if (fieldName === 'datasets') {
+      rowOrderedElements.push(<RowEditorDatasets key={`RowEditorDatasets ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'relations') {
       rowOrderedElements.push(<RowEditorReferenceRelations key={`RowEditorReferenceRelations ${fieldName}`} fieldIndex={fieldIndex} fieldName={fieldName} referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />); }
     else if (fieldName === 'mod_reference_types') {
