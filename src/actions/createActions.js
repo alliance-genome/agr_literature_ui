@@ -3,6 +3,7 @@
 // import notGithubVariables from './notGithubVariables';
 
 import { api } from "../api";
+import { isSuccess, extractCreatedId } from "../api/responseShim";
 
 export const changeCreateActionToggler = (e) => {
   console.log('action change create action toggler radio ' + e.target.id + ' to ' + e.target.value);
@@ -173,9 +174,7 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) =>
             }
           }
         }
-        if (((method === 'PATCH') && (res.status !== 202)) ||
-            ((method === 'DELETE') && (res.status !== 204)) ||
-            ((method === 'POST') && (res.status !== 201))) {
+        if (!isSuccess(res.status)) {
           console.log('updateButtonCreate action response not updated');
           if (typeof(response.detail) !== 'object') {
             response_message = response.detail;
@@ -185,9 +184,10 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) =>
             response_message = 'error: ' + subPath + ' : API status code ' + res.status;
           }
         }
-        if ((method === 'POST') && (res.status === 201)) {
-          // posting a new Alliance reference gives back text
-          newId = typeof response === 'string' ? response.replace(/^"|"$/g, '') : String(response);
+        if (method === 'POST' && isSuccess(res.status)) {
+          // tolerates the legacy bare-string Alliance curie AND the new
+          // full-object response_model=ReferenceSchemaShow shape
+          newId = extractCreatedId(response, subField);
         }
         console.log('dispatch UPDATE_BUTTON_CREATE');
       }
@@ -275,8 +275,8 @@ export const createResource = (prefix, value) => dispatch => {
   const postResource = async () => {
     try {
       const res = await api.post('/resource/add/', { curie: curie });
-      if (res.status === 201) {
-        const newResourceId = typeof res.data === 'string' ? res.data.replace(/^"|"$/g, '') : String(res.data);
+      if (isSuccess(res.status)) {
+        const newResourceId = extractCreatedId(res.data, 'curie');
         dispatch({
           type: 'CREATE_RESOURCE_CREATED',
           payload: 'Resource created successfully: ' + newResourceId

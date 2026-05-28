@@ -4,6 +4,7 @@
 
 import axios from "axios";
 import { api } from "../api";
+import { isSuccess, extractCreatedId } from "../api/responseShim";
 import { getTaxonData } from "../components/biblio/topic_entity_tag/TaxonUtils";
 
 // const port = 11223;
@@ -276,9 +277,7 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
   })
     .then(res => {
       console.log(res);
-      if ( ((method === 'PATCH') && (res.status !== 202)) ||
-        ((method === 'DELETE') && (res.status !== 204)) ||
-        ((method === 'POST') && (res.status !== 201)) ) {
+      if (!isSuccess(res.status)) {
         response_message = 'error: ' + tetId + ' : API status code ' + res.status + ' for method ' + method; }
       dispatch({
         type: dispatchAction,
@@ -307,9 +306,7 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
         .then(res => {
           let response_message;
           //console.log('API Response:', res);
-          if (((method === 'PATCH') && (res.status !== 202)) ||
-            ((method === 'DELETE') && (res.status !== 204)) ||
-            ((method === 'POST') && (res.status !== 201))) {
+          if (!isSuccess(res.status)) {
             response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method;
             reject(new Error(response_message));
           } else {
@@ -853,9 +850,7 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
         // success of delete has no response body
       } else {
         const response = res.data;
-        if (((method === 'PATCH') && (res.status !== 202)) ||
-            ((method === 'DELETE') && (res.status !== 204)) ||
-            ((method === 'POST') && (res.status !== 201))) {
+        if (!isSuccess(res.status)) {
           console.log('updateButtonBiblio action response not updated');
           if (typeof(response.detail) !== 'object') {
             response_message = response.detail;
@@ -865,8 +860,8 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
             response_message = 'error: ' + subPath + ' : API status code ' + res.status;
           }
         }
-        if ((method === 'POST') && (res.status === 201)) {
-          newId = typeof response === 'number' ? response : parseInt(response);
+        if (method === 'POST' && isSuccess(res.status)) {
+          newId = extractCreatedId(response, subField);
         }
         console.log('dispatch UPDATE_BUTTON_BIBLIO');
       }
