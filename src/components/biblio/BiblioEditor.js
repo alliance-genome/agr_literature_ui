@@ -1099,11 +1099,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
 
 const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   const dispatch = useDispatch();
-  const hasPmid = useSelector(state => state.biblio.hasPmid);
-  const initializeDict = {'curie': 'PDB:', 'url': null, 'is_obsolete': false, 'cross_reference_id': 'new'}
-  let disabled = ''
-  if (hasPmid && (fieldsPubmed.includes('cross_references'))) { disabled = 'disabled'; }
-  if (fieldsDisplayOnly.includes('cross_references')) { disabled = 'disabled'; }
+  const disabled = 'disabled';
   const rowDatasetsElements = []
 
   const xrefPatterns = useSelector(state => state.biblio.xrefPatterns);
@@ -1179,13 +1175,6 @@ const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
             <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
             {buttonsElement}
           </Form.Group>); } } }
-  if (disabled === '') {
-    rowDatasetsElements.push(
-      <Row className="form-group row" key="datasets" >
-        <Col className="Col-general form-label col-form-label" sm="2" >datasets</Col>
-        <Col sm="10" ><div id="cross_references" className="form-control biblio-button" onClick={(e) => dispatch(biblioAddNewRowDict(e, initializeDict))} >add datasets</div></Col>
-      </Row>);
-  }
   return (<>{rowDatasetsElements}</>); }
 
 
