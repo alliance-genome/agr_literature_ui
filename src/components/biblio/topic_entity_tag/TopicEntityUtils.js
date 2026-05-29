@@ -118,17 +118,43 @@ export function setupEventListeners(existingTagResponses, accessLevel, dispatch,
     });
 }
 
-// function to check for existing tags and generate an HTML table
+// function to check for existing tags and generate an HTML table.
+//
+// Backend (SCRUM-5716) signals "tag already exists" cases with HTTP 409 + a
+// structured detail body:
+//   { reason: "duplicate" | "opposite_negation" | "different_creator",
+//     message: <human-readable string>,
+//     existing_tag | tag_data: <full tag, get_tet_with_names-enriched>,
+//     existing_tag_id, existing_created_by, existing_note,    // duplicate / different_creator
+//     conflicting_tag_ids: [<int>]                            // opposite_negation
+//   }
+// updateButtonBiblioEntityAdd rejects on 409 with err.response.data.detail
+// preserved on the Error object, so conflict detection lives in the catch
+// branch here (201 new / 200 upsert resolve normally and need no special UI).
 export const checkForExistingTags = async (forApiArray, accessLevel, dispatch, updateButtonBiblioEntityAdd) => {
     let existingTagResponses = [];
     for (const arrayData of forApiArray.values()) {
         try {
-            const response = await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
-            if (response.status.startsWith('exists')) {
-                existingTagResponses.push(response);
-            }
+            await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
         } catch (error) {
-            console.error("Error processing entry: ", error);
+            const status = error?.response?.status;
+            const detail = error?.response?.data?.detail;
+            if (status === 409 && detail && detail.reason) {
+                // Wrap the detail in a {data, message, reason, ...} shape so
+                // setupEventListeners / handleForceInsertionUpdateClick can keep
+                // reading tagResponse.data without further changes.
+                existingTagResponses.push({
+                    reason: detail.reason,
+                    message: detail.message || '',
+                    data: detail.existing_tag || detail.tag_data || {},
+                    existing_tag_id: detail.existing_tag_id,
+                    existing_created_by: detail.existing_created_by,
+                    existing_note: detail.existing_note,
+                    conflicting_tag_ids: detail.conflicting_tag_ids,
+                });
+            } else {
+                console.error("Error processing entry: ", error);
+            }
         }
     }
 
@@ -173,16 +199,18 @@ export const checkForExistingTags = async (forApiArray, accessLevel, dispatch, u
                 tableHTML += `<td>${value !== null ? value : ''}</td>`;
             });
 
-            // adding button with unique ID for each tag
+            // Force Insertion / Update Note only apply to the different_creator
+            // branch (backend bypasses that branch when force_insertion=true).
+            // duplicate and opposite_negation are not bypassable.
             let action_button_html = '';
-            if (tagResponse.status.startsWith("exists:")) {
-		let trimmedStr = tagResponse.status.substring(tagResponse.status.indexOf(':') + 1).trim();
-		let parts = trimmedStr.split(' | ');
-		creator_in_db = parts[0];
+            if (tagResponse.reason === 'different_creator') {
+                if (tagResponse.existing_created_by) {
+                    creator_in_db = tagResponse.existing_created_by;
+                }
                 action_button_html = `<button id="forceInsertionBtn-${index}" class="force-insertion-btn" style="margin-bottom: 5px;" variant="outline-primary" size="sm">Force Insertion</button>`;
-		if (tagResponse.message.startsWith("The tag with")) {
-		    action_button_html += `<button id="updateNoteBtn-${index}" class="update-note-btn" variant="outline-secondary" size="sm">Update Note</button>`;
-		}
+                if (tagResponse.existing_note) {
+                    action_button_html += `<button id="updateNoteBtn-${index}" class="update-note-btn" variant="outline-secondary" size="sm">Update Note</button>`;
+                }
             }
 	    tableHTML += `<td>${creator_in_db}</td>`;
 	    tableHTML += `<td>${tagResponse.message}</td>`;
