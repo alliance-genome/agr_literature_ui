@@ -3,7 +3,7 @@
 // import notGithubVariables from './notGithubVariables';
 
 import { api } from "../api";
-import { isSuccess, extractCreatedId } from "../api/responseShim";
+import { isSuccess } from "../api/httpStatus";
 
 // const port = 11223;
 // const port = 49161;
@@ -163,7 +163,7 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
           }
         }
         if (method === 'POST' && isSuccess(res.status)) {
-          newId = extractCreatedId(response, subField);
+          newId = response?.[subField] ?? null;
         }
       }
 

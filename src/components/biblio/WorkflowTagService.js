@@ -1,6 +1,6 @@
 // src/services/workflowTagService.js
 import { api } from '../../api';
-import { isSuccess } from '../../api/responseShim';
+import { isSuccess } from '../../api/httpStatus';
 
 /**
  * Update an existing workflow tag.

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "../../../api";
-import { isSuccess } from "../../../api/responseShim";
+import { isSuccess } from "../../../api/httpStatus";
 import {
   getDescendantATPIds,
   changeFieldEntityEntityList,

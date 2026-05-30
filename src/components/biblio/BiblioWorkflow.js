@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { api } from "../../api";
-import { isSuccess } from "../../api/responseShim";
+import { isSuccess } from "../../api/httpStatus";
 import { AgGridReact } from 'ag-grid-react';
 import { handleGridCopy } from '../../utils/gridCopyHandler';
 import 'ag-grid-community/styles/ag-grid.css';

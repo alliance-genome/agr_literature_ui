@@ -3,7 +3,7 @@
 // import notGithubVariables from './notGithubVariables';
 
 import { api } from "../api";
-import { isSuccess, extractCreatedId } from "../api/responseShim";
+import { isSuccess } from "../api/httpStatus";
 
 export const changeCreateActionToggler = (e) => {
   console.log('action change create action toggler radio ' + e.target.id + ' to ' + e.target.value);
@@ -185,9 +185,7 @@ export const updateButtonCreate = (updateArrayData, pmidOrAlliance, modCurie) =>
           }
         }
         if (method === 'POST' && isSuccess(res.status)) {
-          // tolerates the legacy bare-string Alliance curie AND the new
-          // full-object response_model=ReferenceSchemaShow shape
-          newId = extractCreatedId(response, subField);
+          newId = response?.[subField] ?? null;
         }
         console.log('dispatch UPDATE_BUTTON_CREATE');
       }
@@ -276,7 +274,7 @@ export const createResource = (prefix, value) => dispatch => {
     try {
       const res = await api.post('/resource/add/', { curie: curie });
       if (isSuccess(res.status)) {
-        const newResourceId = extractCreatedId(res.data, 'curie');
+        const newResourceId = res.data.curie;
         dispatch({
           type: 'CREATE_RESOURCE_CREATED',
           payload: 'Resource created successfully: ' + newResourceId

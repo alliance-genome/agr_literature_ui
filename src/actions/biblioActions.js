@@ -4,7 +4,7 @@
 
 import axios from "axios";
 import { api } from "../api";
-import { isSuccess, extractCreatedId } from "../api/responseShim";
+import { isSuccess } from "../api/httpStatus";
 import { getTaxonData } from "../components/biblio/topic_entity_tag/TaxonUtils";
 
 // const port = 11223;
@@ -867,7 +867,7 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
           }
         }
         if (method === 'POST' && isSuccess(res.status)) {
-          newId = extractCreatedId(response, subField);
+          newId = response?.[subField] ?? null;
         }
         console.log('dispatch UPDATE_BUTTON_BIBLIO');
       }

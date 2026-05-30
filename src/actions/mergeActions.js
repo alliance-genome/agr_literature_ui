@@ -3,7 +3,7 @@
 // import notGithubVariables from './notGithubVariables';
 
 import { api } from "../api";
-import { isSuccess, extractCreatedId } from "../api/responseShim";
+import { isSuccess } from "../api/httpStatus";
 
 import { generateRelationsSimple } from './biblioActions';
 
@@ -283,7 +283,7 @@ export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
           }
         }
         if (method === 'POST' && isSuccess(res.status)) {
-          newId = extractCreatedId(response, subField);
+          newId = response?.[subField] ?? null;
         }
         console.log('dispatch MERGE_BUTTON_API_DISPATCH');
       }
