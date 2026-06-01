@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "../../../api";
+import { isSuccess } from "../../../api/httpStatus";
 import {
   getDescendantATPIds,
   changeFieldEntityEntityList,
@@ -580,10 +581,7 @@ const TopicEntityCreate = () => {
           data: json_data,
         })
         .then((res) => {
-          let isValid = false;
-          if (method === 'PATCH' && res.status === 202) isValid = true;
-          else if (method === 'POST' && res.status === 201) isValid = true;
-          else if (method === 'DELETE' && res.status === 204) isValid = true;
+          const isValid = isSuccess(res.status);
           if (!isValid) {
             const response_message = `error: ${subPath} : API status code ${res.status} for method ${method}`;
             reject(new Error(response_message));

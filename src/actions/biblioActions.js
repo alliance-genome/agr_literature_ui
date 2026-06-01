@@ -4,6 +4,7 @@
 
 import axios from "axios";
 import { api } from "../api";
+import { isSuccess } from "../api/httpStatus";
 import { getTaxonData } from "../components/biblio/topic_entity_tag/TaxonUtils";
 
 // const port = 11223;
@@ -165,7 +166,9 @@ export const getCuratorSourceId = async (mod) => {
   } catch (error) {
     if (error.response?.status === 404) {
       try {
-        const newSourceId = await api.post('/topic_entity_tag/source', {
+        // POST /topic_entity_tag/source returns the full TopicEntityTagSourceSchemaShow
+        // object on 201 — extract the id field, matching the GET above.
+        const res = await api.post('/topic_entity_tag/source', {
           "source_evidence_assertion": "ATP:0000036",
           "source_method": "abc_literature_system",
           "validation_type": "professional_curator",
@@ -175,7 +178,7 @@ export const getCuratorSourceId = async (mod) => {
           "created_by": "00u1mhf3mf28xjpPt5d7",
           "updated_by": "00u1mhf3mf28xjpPt5d7",
         });
-        return newSourceId;
+        return res.data.topic_entity_tag_source_id;
       } catch (error) {
         return undefined;
       }
@@ -276,9 +279,7 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
   })
     .then(res => {
       console.log(res);
-      if ( ((method === 'PATCH') && (res.status !== 202)) ||
-        ((method === 'DELETE') && (res.status !== 204)) ||
-        ((method === 'POST') && (res.status !== 201)) ) {
+      if (!isSuccess(res.status)) {
         response_message = 'error: ' + tetId + ' : API status code ' + res.status + ' for method ' + method; }
       dispatch({
         type: dispatchAction,
@@ -307,9 +308,7 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
         .then(res => {
           let response_message;
           //console.log('API Response:', res);
-          if (((method === 'PATCH') && (res.status !== 202)) ||
-            ((method === 'DELETE') && (res.status !== 204)) ||
-            ((method === 'POST') && (res.status !== 201))) {
+          if (!isSuccess(res.status)) {
             response_message = 'error: ' + subPath + ' : API status code ' + res.status + ' for method ' + method;
             reject(new Error(response_message));
           } else {
@@ -328,7 +327,11 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
             type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
             payload: { responseMessage: errorMessage, accessLevel: accessLevel }
           });
-          reject(new Error(errorMessage));
+          // Preserve axios response on the rejection so callers can read structured
+          // error bodies (e.g. 409 conflict detail). See checkForExistingTags.
+          const wrappedError = new Error(errorMessage);
+          wrappedError.response = err.response;
+          reject(wrappedError);
         });
     });
   };
@@ -853,9 +856,7 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
         // success of delete has no response body
       } else {
         const response = res.data;
-        if (((method === 'PATCH') && (res.status !== 202)) ||
-            ((method === 'DELETE') && (res.status !== 204)) ||
-            ((method === 'POST') && (res.status !== 201))) {
+        if (!isSuccess(res.status)) {
           console.log('updateButtonBiblio action response not updated');
           if (typeof(response.detail) !== 'object') {
             response_message = response.detail;
@@ -865,8 +866,8 @@ export const updateButtonBiblio = (updateArrayData) => dispatch => {
             response_message = 'error: ' + subPath + ' : API status code ' + res.status;
           }
         }
-        if ((method === 'POST') && (res.status === 201)) {
-          newId = typeof response === 'number' ? response : parseInt(response);
+        if (method === 'POST' && isSuccess(res.status)) {
+          newId = response?.[subField] ?? null;
         }
         console.log('dispatch UPDATE_BUTTON_BIBLIO');
       }
