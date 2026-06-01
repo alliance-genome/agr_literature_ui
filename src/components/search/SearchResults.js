@@ -15,6 +15,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilePdf, faPenSquare} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
+import { datasetXrefPrefixes } from '../biblio/BiblioEditor';
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -106,10 +107,13 @@ const SearchResultItem = ({ reference }) => {
       // if search is out of sync with database, return empty string to prevent UI crashing, but this should not happen on prod or stage
       return '';
   };
-    
+
+  const allXrefs = reference.cross_references || [];
+  const regularXrefs = allXrefs.filter(x => !datasetXrefPrefixes.includes(x.curie.split(':')[0]));
+
   return (
     <Row>
-      <Col className="Col-general Col-display Col-search" > 
+      <Col className="Col-general Col-display Col-search" >
         <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
           <Row><Col><div className="searchRow-xref">
               <ul>
@@ -122,26 +126,24 @@ const SearchResultItem = ({ reference }) => {
                           {reference.curie}
                       </Link>
                   </li>
-                  {reference.cross_references ? (
-                      reference.cross_references.map((xref, i) => (
-                          <li key={i}>
-			<span className="obsolete">
-			    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
-			</span>
-                              <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
-                                  {xref.curie}
-                              </a>
-                              {xref.curie.startsWith('PMID:') && (
-                                  <div>
-                                      <a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`}
-                                         rel="noreferrer noopener" target="_blank">
-                                          EuropePMC
-                                      </a>
-                                  </div>
-                              )}
-                          </li>
-                      ))
-                  ) : null}
+                  {regularXrefs.map((xref, i) => (
+                      <li key={i}>
+		<span className="obsolete">
+		    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
+		</span>
+                          <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
+                              {xref.curie}
+                          </a>
+                          {xref.curie.startsWith('PMID:') && (
+                              <div>
+                                  <a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`}
+                                     rel="noreferrer noopener" target="_blank">
+                                      EuropePMC
+                                  </a>
+                              </div>
+                          )}
+                      </li>
+                  ))}
               </ul>
               <TETRedirect curie={reference.curie}/>
             <FileDownloadIcon curie = {reference.curie}/>
