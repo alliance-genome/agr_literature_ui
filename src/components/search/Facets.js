@@ -76,6 +76,7 @@ export const RENAME_FACETS = {
     "manual_indexing": "Manual indexing",
     "curation_classification": "Curation classification",
     "community_curation": "Community curation",
+    "email_extraction": "Email extraction",
     "datePubmedAdded": {
         label: "Date Range: Added to PubMed",
         value: (state) => state.search.datePubmedAdded,
@@ -102,7 +103,7 @@ export const RENAME_FACETS = {
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
-    "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation"], 
+    "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation", "email_extraction"], 
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
     "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
@@ -402,7 +403,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 let key = facetToInclude.replaceAll(' ', '_');
                 if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty',
                         'file_workflow', 'manual_indexing', 'reference_classification',
-		                'entity_extraction', 'curation_classification', 'community_curation'].includes(key)) {
+		                'entity_extraction', 'curation_classification', 'community_curation', 'email_extraction'].includes(key)) {
                     key = key + '.keyword';
                 }
 
