@@ -668,7 +668,7 @@ const Facets = () => {
             {
                 Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
                     <div key={facetCategory} style={{textAlign: "left"}}>
-                        <Button variant="light" size="lg" eventkey="0" onClick={() => toggleFacetGroup(facetCategory)}>
+                        <Button variant="light" size="lg" eventkey="0" style={{textAlign: "left"}} onClick={() => toggleFacetGroup(facetCategory)}>
                             {openFacets.has(facetCategory) ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} {facetCategory}
                         </Button>
 			<Collapse in={openFacets.has(facetCategory)}>
