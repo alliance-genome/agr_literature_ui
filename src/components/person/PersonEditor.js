@@ -66,6 +66,16 @@ const PersonEditor = ({ person }) => {
             </Col>
           </Row>
           <Row className="mb-2">
+            <Col md={6}>
+              <Form.Check
+                type="checkbox"
+                id="person-editor-unsubscribe"
+                label="Unsubscribed from email"
+                defaultChecked={!!p.unsubscribe}
+              />
+            </Col>
+          </Row>
+          <Row className="mb-2">
             <Col>
               <Form.Label>Biography / Research interest</Form.Label>
               <Form.Control as="textarea" rows={4} defaultValue={p.biography_research_interest ?? ''} />
@@ -134,7 +144,12 @@ const PersonEditor = ({ person }) => {
         renderRow={(e) => (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Form.Control type="email" defaultValue={e.email_address ?? ''} />
-            <Form.Check type="checkbox" label="primary" defaultChecked={!!e.is_primary} style={{ whiteSpace: 'nowrap' }} />
+            <Form.Check
+              type="checkbox"
+              label="mark as old"
+              defaultChecked={!!e.date_made_old_email}
+              style={{ whiteSpace: 'nowrap' }}
+            />
             {trashBtn}
           </div>
         )}

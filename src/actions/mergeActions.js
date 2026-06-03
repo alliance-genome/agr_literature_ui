@@ -3,6 +3,7 @@
 // import notGithubVariables from './notGithubVariables';
 
 import { api } from "../api";
+import { isSuccess } from "../api/httpStatus";
 
 import { generateRelationsSimple } from './biblioActions';
 
@@ -271,9 +272,7 @@ export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
         // success of delete has no response body
       } else {
         const response = res.data;
-        if (((method === 'PATCH') && (res.status !== 202)) ||
-            ((method === 'DELETE') && (res.status !== 204)) ||
-            ((method === 'POST') && (res.status !== 201))) {
+        if (!isSuccess(res.status)) {
           console.log('mergeButtonApiDispatch action response not updated');
           if (typeof(response.detail) !== 'object') {
             response_message = response.detail;
@@ -283,8 +282,8 @@ export const mergeButtonApiDispatch = (updateArrayData) => dispatch => {
             response_message = 'error: ' + subPath + ' : API status code ' + res.status;
           }
         }
-        if ((method === 'POST') && (res.status === 201)) {
-          newId = typeof response === 'number' ? response : parseInt(response);
+        if (method === 'POST' && isSuccess(res.status)) {
+          newId = response?.[subField] ?? null;
         }
         console.log('dispatch MERGE_BUTTON_API_DISPATCH');
       }

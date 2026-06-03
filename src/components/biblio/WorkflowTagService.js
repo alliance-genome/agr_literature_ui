@@ -1,5 +1,6 @@
 // src/services/workflowTagService.js
 import { api } from '../../api';
+import { isSuccess } from '../../api/httpStatus';
 
 /**
  * Update an existing workflow tag.
@@ -8,7 +9,7 @@ import { api } from '../../api';
  */
 export async function patchWorkflowTag(id, data) {
   const res = await api.patch(`/workflow_tag/${id}`, data);
-  if (res.status !== 202) {
+  if (!isSuccess(res.status)) {
     throw new Error(`PATCH /workflow_tag/${id} failed with status ${res.status}`);
   }
   return res.data;
@@ -20,7 +21,7 @@ export async function patchWorkflowTag(id, data) {
  */
 export async function deleteWorkflowTag(id) {
   const res = await api.delete(`/workflow_tag/${id}`);
-  if (res.status !== 204) {
+  if (!isSuccess(res.status)) {
     throw new Error(`DELETE /workflow_tag/${id} failed with status ${res.status}`);
   }
   return res.data;
@@ -39,7 +40,7 @@ export async function transitionWorkflowTag(data) {
     transition_type: data.transition_type || 'manual'
   };
   const res = await api.post('/workflow_tag/transition_to_workflow_status', payload);
-  if (res.status !== 200) {
+  if (!isSuccess(res.status)) {
     throw new Error(`POST /workflow_tag/transition_to_workflow_status failed with status ${res.status}`);
   }
   return res.data;

@@ -82,8 +82,8 @@ const PersonWbDisplay = ({ person }) => {
   const statusVariant = status === 'active' ? 'success' : 'secondary';
 
   const emails = person.emails ?? [];
-  const activeEmails = emails.filter((e) => !e.date_invalidated);
-  const oldEmails = emails.filter((e) => !!e.date_invalidated);
+  const activeEmails = emails.filter((e) => !e.date_made_old_email);
+  const oldEmails = emails.filter((e) => !!e.date_made_old_email);
   const names = person.names ?? [];
   const xrefs = person.cross_references ?? [];
   const webpages = person.webpage ?? [];
@@ -107,7 +107,12 @@ const PersonWbDisplay = ({ person }) => {
               </h4>
               <div style={{ ...muted, fontSize: '0.9em' }}>{person.curie}</div>
             </div>
-            <Badge variant={statusVariant} style={{ fontSize: '0.95em' }}>{status}</Badge>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <Badge variant={statusVariant} style={{ fontSize: '0.95em' }}>{status}</Badge>
+              {person.unsubscribe && (
+                <Badge variant="warning" style={{ fontSize: '0.95em' }}>unsubscribed</Badge>
+              )}
+            </div>
           </div>
         </Card.Body>
       </Card>
@@ -137,20 +142,20 @@ const PersonWbDisplay = ({ person }) => {
           <>
             {activeEmails.map((e, i) => (
               <FieldRow
-                key={e.email_id ?? i}
-                label={e.is_primary ? 'email (primary)' : 'email'}
+                key={e.email_address ?? i}
+                label="email"
                 ts={tsLabel(e.updated_by, e.date_updated)}
               >
                 {e.email_address}
               </FieldRow>
             ))}
             {oldEmails.map((e, i) => {
-              const invalidatedNote = `invalidated ${formatTimestamp(e.date_invalidated)}`;
+              const oldNote = `old since ${formatTimestamp(e.date_made_old_email)}`;
               const editTs = tsLabel(e.updated_by, e.date_updated);
-              const ts = editTs ? `${invalidatedNote} · ${editTs}` : invalidatedNote;
+              const ts = editTs ? `${oldNote} · ${editTs}` : oldNote;
               return (
                 <FieldRow
-                  key={`old-${e.email_id ?? i}`}
+                  key={`old-${e.email_address ?? i}`}
                   label="old_email"
                   ts={ts}
                 >
