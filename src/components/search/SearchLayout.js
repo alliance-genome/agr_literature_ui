@@ -34,6 +34,15 @@ const SearchLayout = () => {
     const [view, setView] = useState('list'); // 'list' | 'grid'
     const [hasOpenedTopicGrid, setHasOpenedTopicGrid] = useState(false);
 
+    // Persisted topic-grid UI state — topic/source multiselects, the display
+    // checkboxes and the ID-prefix filter. The grid is torn down on every
+    // search (results are cleared while loading), which would otherwise reset
+    // every toolbar choice on each pagination/filter change. Holding the state
+    // in a ref here keeps it across searches without re-rendering SearchLayout;
+    // it resets only when the topic facet changes (handled inside the grid via
+    // the topics-prop key) or on a page refresh (this component remounts).
+    const gridStateRef = useRef({});
+
     const searchResults = useSelector((s) => s.search.searchResults);
     const searchFacetsValues = useSelector((s) => s.search.searchFacetsValues);
     const searchLoading = useSelector((s) => s.search.searchLoading);
@@ -272,6 +281,7 @@ const SearchLayout = () => {
                                         <TetValidationGrid
                                             referenceIds={referenceIds}
                                             topics={topicsForGrid}
+                                            persistRef={gridStateRef}
                                         />
                                     </div>
                                 )}
