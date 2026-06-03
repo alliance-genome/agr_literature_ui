@@ -104,6 +104,18 @@ export const RENAME_FACETS = {
 }
 
 
+// Per-facet relabeling of individual bucket values. Keyed by the resolved
+// facet key, then by the raw bucket value (bucket.key / bucket.name).
+// "no genetic data" in the manual indexing curation tag facet comes from the
+// predicted curation tag column, so display it as "predicted no genetic data"
+// to make clear it is a computed prediction, not a curator-added tag.
+export const RENAME_FACET_VALUES = {
+    "manual_indexing_curation_tag": {
+        "no genetic data": "predicted no genetic data"
+    }
+}
+
+
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation", "email_extraction"],
@@ -446,7 +458,10 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                             <div style={{ marginLeft: '20px' }}>
                                 {facetToInclude === 'authors.name' && <AuthorFilter />}
                                 {facetToInclude === 'confidence_scores' && <NumberRangeWidget/>}
-                                {facetToInclude !== 'confidence_scores' && searchFacets[key].buckets.map(bucket => (
+                                {facetToInclude !== 'confidence_scores' && searchFacets[key].buckets.map(bucket => {
+                                    const valueRenames = RENAME_FACET_VALUES[key];
+                                    const bucketLabel = (valueRenames && (valueRenames[bucket.key] || valueRenames[bucket.name])) || bucket.name || bucket.key;
+                                    return (
                                     <Container key={bucket.key}>
                                         <Row className="facet-item">
 
@@ -469,10 +484,10 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                             </Tooltip>
                                                         }
                                                     >
-                                                        <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
+                                                        <span dangerouslySetInnerHTML={{ __html: bucketLabel }} />
                                                     </OverlayTrigger>
                                                 ) : (
-                                                    <span dangerouslySetInnerHTML={{ __html: bucket.name || bucket.key }} />
+                                                    <span dangerouslySetInnerHTML={{ __html: bucketLabel }} />
                                                 )}                                                                                                                                                {isModRefTypeFacet && renderModIcons(bucket.key)}
                                             </Col>                                                                                                                    
                                             <Col xs={3} sm={3}>                                                                                                       
@@ -483,9 +498,10 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                         bucket.doc_count.toLocaleString()}                                                                            
                                                 </Badge>                                                                                                              
                                             </Col>                                                                                                                    
-                                        </Row>                                                                                                                        
+                                        </Row>
                                     </Container>
-                                ))}                                                                                                                                   
+                                    );
+                                })}
                                 <ShowMoreLessAllButtons facetLabel={key} facetValue={searchFacets[key]} />                                                            
                             </div>                                                                                                                                    
                         </Collapse>                                                                                                                                   
@@ -668,7 +684,7 @@ const Facets = () => {
             {
                 Object.entries(FACETS_CATEGORIES_WITH_FACETS).map(([facetCategory, facetsInCategory]) =>
                     <div key={facetCategory} style={{textAlign: "left"}}>
-                        <Button variant="light" size="lg" eventkey="0" style={{textAlign: "left"}} onClick={() => toggleFacetGroup(facetCategory)}>
+                        <Button variant="light" eventkey="0" style={{textAlign: "left", whiteSpace: "nowrap", fontSize: "1.15rem", fontWeight: 500, padding: "0.375rem 0.5rem"}} onClick={() => toggleFacetGroup(facetCategory)}>
                             {openFacets.has(facetCategory) ? <IoIosArrowDropdownCircle/> : <IoIosArrowDroprightCircle/>} {facetCategory}
                         </Button>
 			<Collapse in={openFacets.has(facetCategory)}>
