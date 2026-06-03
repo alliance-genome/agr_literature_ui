@@ -132,7 +132,48 @@ function estimateIdsColumnWidth(rows, selectedPrefixes) {
   );
 }
 
-export default function TetValidationGrid({ referenceIds, topics, mod }) {
+// useState whose value is mirrored into an external store object so it survives
+// the component being unmounted/remounted. On (re)mount the initial value is
+// read back from the store; an effect keeps the store in sync on every change.
+// Returns the same [state, setState] tuple as useState (setState supports
+// functional updates). Falls back to plain state when no store is provided.
+function usePersistentState(store, key, initial) {
+  const [state, setState] = useState(() => {
+    if (store && key in store) return store[key];
+    return typeof initial === 'function' ? initial() : initial;
+  });
+  useEffect(() => {
+    if (store) store[key] = state;
+  }, [store, key, state]);
+  return [state, setState];
+}
+
+// Ref counterpart of usePersistentState for imperative, render-free flags whose
+// value must also survive remounts (e.g. "user has touched the topic filter").
+// The returned handle reads/writes straight through to the store.
+function usePersistentRef(store, key, initialValue) {
+  const handleRef = useRef(null);
+  if (handleRef.current === null) {
+    handleRef.current = store
+      ? {
+          get current() {
+            return key in store ? store[key] : initialValue;
+          },
+          set current(value) {
+            store[key] = value;
+          },
+        }
+      : { current: initialValue };
+  }
+  return handleRef.current;
+}
+
+export default function TetValidationGrid({ referenceIds, topics, mod, persistRef }) {
+  // Optional external store (a plain object held in a parent ref) used to
+  // persist toolbar/filter state across the grid being unmounted and remounted
+  // on every search. When absent (standalone use) the persistence hooks fall
+  // back to ordinary component state/refs and behaviour is unchanged.
+  const persistStore = persistRef?.current;
   const dispatch = useDispatch();
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
   const testerMod = useSelector((s) => s.isLogged.testerMod);
@@ -299,17 +340,37 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     return [...s].sort();
   }, [rows]);
 
-  const [displayOptions, setDisplayOptions] = useState({
-    inlineNote: false,
-    showLevel: false,
-    showScore: false,
-    showAuthors: false,
-  });
-  const [hiddenTopicCuries, setHiddenTopicCuries] = useState(new Set());
-  const [sourceFilterModel, setSourceFilterModel] = useState(null);
+  // Toolbar/filter state persisted across searches via the parent store (see
+  // usePersistentState). Topic/source multiselects, the display checkboxes and
+  // the ID-prefix filter all survive the grid's unmount/remount on pagination
+  // and filter changes; they reset only on a topic-facet change or a refresh.
+  const [displayOptions, setDisplayOptions] = usePersistentState(
+    persistStore,
+    'displayOptions',
+    {
+      inlineNote: false,
+      showLevel: false,
+      showScore: false,
+      showAuthors: false,
+    }
+  );
+  const [hiddenTopicCuries, setHiddenTopicCuries] = usePersistentState(
+    persistStore,
+    'hiddenTopicCuries',
+    () => new Set()
+  );
+  const [sourceFilterModel, setSourceFilterModel] = usePersistentState(
+    persistStore,
+    'sourceFilterModel',
+    null
+  );
   // Mirrors the IdPrefixFilter's column model so IdsCell can hide the
   // corresponding curie/xref lines inside each cell as well as filtering rows.
-  const [selectedIdPrefixes, setSelectedIdPrefixes] = useState(null);
+  const [selectedIdPrefixes, setSelectedIdPrefixes] = usePersistentState(
+    persistStore,
+    'selectedIdPrefixes',
+    null
+  );
   // True while the autosize/fill-extra passes are running. Used to render a
   // light overlay so the curator knows the layout is still adjusting and
   // mid-resize column widths aren't a bug.
@@ -321,8 +382,21 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   const [selectedRefCuries, setSelectedRefCuries] = useState(() => new Set());
   const [bulkTopicCurie, setBulkTopicCurie] = useState(null);
   const [bulkPending, setBulkPending] = useState(null);
-  const userTouchedHiddenRef = useRef(false);
-  const idsFilterDefaultAppliedRef = useRef(false);
+  // Persisted across remounts: "did the curator touch the topic filter" and
+  // "have we already applied the one-time AGRKB id-prefix default this session".
+  const userTouchedHiddenRef = usePersistentRef(
+    persistStore,
+    'userTouchedHidden',
+    false
+  );
+  const idsFilterDefaultAppliedRef = usePersistentRef(
+    persistStore,
+    'idsFilterDefaultApplied',
+    false
+  );
+  // Per-mount guard: restore the persisted id-prefix filter onto the freshly
+  // created AgGrid instance exactly once after data has loaded.
+  const idsFilterRestoredRef = useRef(false);
 
   // Esc closes fullscreen. Listener is attached only while fullscreen is
   // active so we don't intercept Esc anywhere else in the app.
@@ -653,7 +727,9 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
   //   their choice — UNTIL the facet selection itself changes, at which point
   //   we re-apply the default so the new facet topic(s) become the only
   //   visible columns again.
-  const lastTopicsKeyRef = useRef('');
+  // Persisted so a remount mid-session doesn't look like a facet change and
+  // wrongly re-apply the defaults over the curator's preserved selection.
+  const lastTopicsKeyRef = usePersistentRef(persistStore, 'lastTopicsKey', '');
   useEffect(() => {
     const key = JSON.stringify(
       (topics || [])
@@ -674,12 +750,12 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
         .filter((c) => !requested.has(c))
     );
     setHiddenTopicCuries(next);
-  }, [topics, topicColumns]);
+  }, [topics, topicColumns, lastTopicsKeyRef, setHiddenTopicCuries, userTouchedHiddenRef]);
 
   const handleSetHiddenTopicCuries = useCallback((next) => {
     userTouchedHiddenRef.current = true;
     setHiddenTopicCuries(next);
-  }, []);
+  }, [setHiddenTopicCuries, userTouchedHiddenRef]);
 
   const visibleTopicColumns = useMemo(
     () => topicColumns.filter((t) => !hiddenTopicCuries.has(t.curie)),
@@ -790,19 +866,31 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
     );
   }, [gridApi, idsColumnWidth]);
 
-  // Default the ID-prefix filter to AGRKB-only on first load — applied once
-  // per mount and only when AGRKB is actually present in the loaded data.
+  // Restore the ID-prefix filter onto the freshly created AgGrid instance after
+  // data has loaded. On the very first load of the session there is no persisted
+  // selection yet, so we default to AGRKB-only when present. On later remounts
+  // (pagination/filter changes) we re-apply the curator's persisted selection
+  // verbatim — including prefixes absent from the current page — so the choice
+  // is retained and re-appears selected when those prefixes come back. Runs once
+  // per mount via idsFilterRestoredRef; setFilterModel triggers handleFilterChanged
+  // which keeps selectedIdPrefixes (and therefore the persisted value) in sync.
   useEffect(() => {
-    if (!gridApi || idsFilterDefaultAppliedRef.current) return;
-    if (!allIdPrefixes.includes('AGRKB')) return;
+    if (!gridApi || idsFilterRestoredRef.current) return;
+    if (allIdPrefixes.length === 0) return; // wait until data has loaded
     const currentModel = gridApi.getFilterModel?.() || {};
-    if (currentModel.__ids !== undefined) {
-      idsFilterDefaultAppliedRef.current = true;
-      return;
+
+    let desired = selectedIdPrefixes; // persisted across remounts; null === all
+    if (desired === null && !idsFilterDefaultAppliedRef.current) {
+      // First load this session: seed the AGRKB-only default when available.
+      if (allIdPrefixes.includes('AGRKB')) desired = ['AGRKB'];
     }
-    gridApi.setFilterModel({ ...currentModel, __ids: ['AGRKB'] });
     idsFilterDefaultAppliedRef.current = true;
-  }, [gridApi, allIdPrefixes]);
+    idsFilterRestoredRef.current = true;
+
+    if (currentModel.__ids !== undefined) return; // grid already has a filter
+    if (desired === null) return; // null === all selected → leave unfiltered
+    gridApi.setFilterModel({ ...currentModel, __ids: desired });
+  }, [gridApi, allIdPrefixes, selectedIdPrefixes, idsFilterDefaultAppliedRef]);
 
   const syncSingleInnerColumnState = useCallback(
     (preferredInnerColId, apiOverride = null) => {
@@ -946,7 +1034,7 @@ export default function TetValidationGrid({ referenceIds, topics, mod }) {
       prevFilterModelRef.current = apiInstance.getFilterModel?.() || {};
       prevSortModelRef.current = apiInstance.getSortModel?.() || [];
     },
-    [gridApi, allowedInnerColumnIds, syncSingleInnerColumnState]
+    [gridApi, allowedInnerColumnIds, syncSingleInnerColumnState, setSelectedIdPrefixes]
   );
 
   const handleSortChanged = useCallback(
