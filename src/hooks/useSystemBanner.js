@@ -3,8 +3,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 /**
  * Hook that surfaces a system-status banner whose content is controlled by an
  * externally-editable, same-origin file at /banner.json. The file is NOT part
- * of the build (see docs/superpowers/specs/2026-06-03-system-status-banner-design.md):
- * in deployment it is a runtime-mounted volume, locally it is public/banner.json.
+ * of the build (see banner/README.md): in deployment it is a runtime-mounted
+ * volume, locally it is public/banner.json.
  *
  * Polls on mount, on tab visibility, and on a periodic interval (mirrors
  * useVersionCheck). Returns { message, severity } when there is a banner to

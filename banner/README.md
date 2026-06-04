@@ -2,7 +2,7 @@
 
 Controls the warning banner shown at the top of the UI (above the navigation
 header) — used to warn curators about maintenance, slowness, or other system
-events. See `docs/superpowers/specs/2026-06-03-system-status-banner-design.md`.
+events.
 
 ## How it works
 
