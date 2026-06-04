@@ -29,6 +29,8 @@ import { DebeziumStatusAlert } from './DebeziumStatusAlert';
 import { useTokenSync } from '../hooks/useTokenSync';
 import { useVersionCheck } from '../hooks/useVersionCheck';
 import VersionUpdateBanner from './VersionUpdateBanner';
+import { useSystemBanner } from '../hooks/useSystemBanner';
+import SystemBanner from './SystemBanner';
 
 import { api } from '../api';
 
@@ -75,6 +77,9 @@ const AppWithRouterAccess = () => {
     // Check for new application versions on tab visibility change
     const { updateAvailable } = useVersionCheck();
 
+    // Externally-controlled system-status banner (maintenance / slowness, etc.)
+    const systemBanner = useSystemBanner();
+
     const devOrStageOrProd = process.env.REACT_APP_DEV_OR_STAGE_OR_PROD;
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
 
@@ -111,6 +116,7 @@ const AppWithRouterAccess = () => {
 
     return (
         <div className={className}>
+            {systemBanner && <SystemBanner message={systemBanner.message} severity={systemBanner.severity} />}
             {updateAvailable && <VersionUpdateBanner />}
             <ReAuthModal />
             <Switch>
