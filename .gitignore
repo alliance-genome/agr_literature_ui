@@ -21,6 +21,10 @@
 # generated at build time
 /public/version.json
 
+# system-status banner content (server-side / local config, never committed)
+/banner/banner.json
+/public/banner.json
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
