@@ -10,9 +10,11 @@ services:
     ports:
       - "${LIT_UI_PORT}:80"
     volumes:
-      # Externally-editable system-status banner content, served at /banner.json.
-      # The source file lives on the server (per-environment config, like .env);
-      # copy banner/banner.json.example to banner/banner.json once per server.
-      # Editing it updates the banner with no rebuild/redeploy. The file MUST
-      # exist before `up`, otherwise Docker creates a directory at this path.
-      - ./banner/banner.json:/var/www/banner.json:ro
+      # Externally-editable system-status banner content (served at /banner.json
+      # via nginx alias to banner-config/banner.json). A DIRECTORY is mounted (not
+      # the single file) so host edits -- including vim/sed save-by-rename -- are
+      # picked up live without a container restart. Source dir is set per-server
+      # via BANNER_DIR in the env file (a stable, server-managed location like
+      # /usr/share/agr_ui_files) so it survives the disposable Jenkins workspace;
+      # falls back to ./banner for local use.
+      - ${BANNER_DIR:-./banner}:/var/www/banner-config:ro
