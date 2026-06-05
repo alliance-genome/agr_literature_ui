@@ -11,6 +11,14 @@ focus, and every 5 minutes). The banner is shown only while that file contains a
 non-empty `message`. The file is **not** part of the build — it is supplied at
 run time as a mounted volume — so updating it requires **no rebuild or redeploy**.
 
+`docker-compose.yml` mounts a *directory* of banner content read-only into nginx
+at `/var/www/banner-config`, and nginx serves `/banner.json` from
+`banner-config/banner.json` via `alias`. A directory (rather than a single file)
+is mounted so that host edits — including `vim`/`sed` save-by-rename — are picked
+up live, with no container restart. The mounted directory is the `BANNER_DIR`
+variable from the env file (the one passed via `ENV_FILE=`), falling back to
+`./banner` when unset.
+
 File format:
 
 ```json
@@ -23,24 +31,40 @@ File format:
 
 ## Per-server setup (once)
 
-On each deployed server, in the directory where `docker-compose` runs:
+On deployed servers the docker-compose working directory is a **disposable
+Jenkins workspace**, so the banner content must live outside it — in a stable,
+server-managed directory (alongside how `.env` is handled). Set it up once per
+server:
 
 ```bash
-cp banner/banner.json.example banner/banner.json
+# 1. Create the banner directory + file in a stable location (survives redeploys):
+mkdir -p /usr/share/agr_ui_files
+echo '{ "message": "", "severity": "info" }' > /usr/share/agr_ui_files/banner.json
+
+# 2. Point the mount at that DIRECTORY via BANNER_DIR in the server's env file
+#    (e.g. /usr/share/agr_env_files/.env.dev_3001):
+BANNER_DIR=/usr/share/agr_ui_files
+
+# 3. Redeploy so the container binds the directory:
+make restart-ui ENV_FILE=/usr/share/agr_env_files/.env.dev_3001
 ```
 
-`docker-compose.yml` mounts `banner/banner.json` read-only into nginx at
-`/var/www/banner.json`. The file **must exist before `docker-compose up`**,
-otherwise Docker creates a directory at that path. The example starts with an
-empty `message`, so nothing shows until you set one.
+The directory must exist before `docker-compose up`. `banner.json` need not
+exist yet — if it's absent nginx returns 404 and the UI simply shows no banner;
+create it whenever you want a banner. Leaving `BANNER_DIR` unset falls back to
+`./banner` (only suitable for local Docker use, not a deployed server).
+
+To let anyone on the server edit the banner, make the directory and file
+writable as needed (e.g. `chmod 777 /usr/share/agr_ui_files` and `chmod 666
+/usr/share/agr_ui_files/banner.json`).
 
 ## Updating the banner
 
-Edit `banner/banner.json` on the server (this file is gitignored, so deploys
-never clobber it). Open browser tabs pick up the change on their next
-poll/tab-focus/refresh — no rebuild, redeploy, or container restart.
-
-To clear the banner, set `message` to `""`.
+Edit `banner.json` in the `BANNER_DIR` (e.g. `/usr/share/agr_ui_files/banner.json`)
+on the server — including with `vim`. Because a *directory* is mounted, the edit
+is picked up live; open browser tabs reflect it on their next poll/tab-focus/refresh,
+with no rebuild, redeploy, or container restart. To clear the banner, set
+`message` to `""` (or remove the file).
 
 ## Local development
 
