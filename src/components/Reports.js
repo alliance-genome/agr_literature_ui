@@ -640,6 +640,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
     { headerName: "Entity Type", field: "entity_type", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
     { headerName: "Entity Status", field: "entity_status", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
     { headerName: "Entity Curie", field: "entity_curie", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+    { headerName: "Species", field: "species", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
     { headerName: "Entity Name", field: "entity_name", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
     { headerName: "Reference Count", field: "reference_count", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
     { headerName: "Reference Curies", field: "reference_curies", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header',
@@ -674,6 +675,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
       entity_type: item.entity_type,
       entity_status: item.entity_status,
       entity_curie: item.entity_curie,
+      species: item.species || "",
       entity_name: item.entity_name || "N/A",
       reference_count: item.reference_count,
       reference_curies: item.reference_curies
