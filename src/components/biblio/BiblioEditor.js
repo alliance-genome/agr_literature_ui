@@ -56,7 +56,11 @@ import { faUndo } from '@fortawesome/free-solid-svg-icons'
 import { faTrashAlt } from '@fortawesome/free-solid-svg-icons'
 
 import DateRangePicker from '@wojtekmaj/react-daterange-picker'
-import {useEffect, useState} from "react";
+import {useEffect, useState, Fragment} from "react";
+
+import BiblioLayoutPreferenceModal from '../settings/BiblioLayoutPreferenceModal';
+import { SECTION_DEFS, sectionIdForFieldIndex, layoutToCssGrid } from './biblioEditorSections';
+import './biblioEditorSections.css';
 
 // http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
 
@@ -1580,12 +1584,18 @@ const BiblioEditor = () => {
       fetchXrefPattern().catch(console.error);
     }
   }, [xrefPatterns]);
+  const [activeLayout, setActiveLayout] = useState(null);
   if (!('date_created' in referenceJsonLive)) {
     let message = 'No AGR Reference Curie found';
     if ('detail' in referenceJsonLive) { message = referenceJsonLive['detail']; }
     return(<>{message}</>); }
-  const rowOrderedElements = []
+  const sectionRows = { vital: [], authors: [], additional: [] };
+  let currentSectionId = 'vital';
+  // Shim: existing rowOrderedElements.push(...) calls route into the section
+  // bucket for the field currently being processed (SCRUM-6046).
+  const rowOrderedElements = { push: (el) => { sectionRows[currentSectionId].push(el); } };
   for (const [fieldIndex, fieldName] of fieldsOrdered.entries()) {
+    currentSectionId = sectionIdForFieldIndex(fieldsOrdered, fieldIndex);
     if (fieldName === 'DIVIDER') {
         rowOrderedElements.push(<RowDivider key={fieldIndex} />); }
     else if (fieldName === 'retraction_status') {
@@ -1639,10 +1649,38 @@ const BiblioEditor = () => {
       rowOrderedElements.push(<RowDisplayReferencefiles key="referencefile" fieldName={fieldName} referenceJsonLive={referenceJsonLive} displayOrEditor="editor" />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
-  return (<Container>
-            <ModalGeneric showGenericModal={biblioEditorModalText !== '' ? true : false} genericModalHeader="Biblio Editor Error" 
+  const grid = layoutToCssGrid(activeLayout);
+  const wideLayout = !!(grid && grid.multiColumn);
+  const knownIds = SECTION_DEFS.map((s) => s.id);
+  const orderedIds = grid
+    ? [...grid.order, ...knownIds.filter((id) => !grid.order.includes(id))]
+    : knownIds;
+  const sectionsRender = grid ? (
+    <div
+      className={`biblio-editor-grid${wideLayout ? ' biblio-editor-grid--wide' : ''}`}
+      style={{ '--biblio-col-floor': `${grid.colFloor}px` }}
+    >
+      {orderedIds.map((id) => (
+        <div
+          key={id}
+          className="biblio-editor-section"
+          style={grid.styles[id] || { gridColumn: '1 / -1' }}
+        >
+          {sectionRows[id]}
+        </div>
+      ))}
+    </div>
+  ) : (
+    orderedIds.map((id) => <Fragment key={id}>{sectionRows[id]}</Fragment>)
+  );
+
+  return (<Container fluid={wideLayout}>
+            <ModalGeneric showGenericModal={biblioEditorModalText !== '' ? true : false} genericModalHeader="Biblio Editor Error"
                           genericModalBody={biblioEditorModalText} onHideAction={setBiblioEditorModalText('')} />
-            <Form><BiblioSubmitUpdateRouter />{rowOrderedElements}</Form>
+            <div className="d-flex justify-content-end mb-2">
+              <BiblioLayoutPreferenceModal onApplyLayout={setActiveLayout} />
+            </div>
+            <Form><BiblioSubmitUpdateRouter />{sectionsRender}</Form>
           </Container>);
 } // const BiblioEditor
 
