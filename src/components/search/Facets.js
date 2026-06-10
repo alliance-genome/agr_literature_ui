@@ -234,7 +234,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status"];
+    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status", "source_methods", "source_evidence_assertions"];
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});

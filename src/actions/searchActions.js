@@ -83,7 +83,7 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-function processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, negated_facets_values) {
+function processCombinedTETFacets(data, tetNestedFacetsValues) {
   const non_empty_facets = TET_FACETS_LIST.filter(tet_facet_label => data[tet_facet_label] &&
       data[tet_facet_label].length > 0)
   if (non_empty_facets.length > 0) {
@@ -94,15 +94,6 @@ function processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedF
                 tet_facet_label => [tet_facet_label === 'data_novelty' ? `topic_entity_tags.${tet_facet_label}.keyword`: `topic_entity_tags.${tet_facet_label.slice(0, -1)}.keyword`, data[tet_facet_label][0]]
             )
         )
-    );
-  }
-  const non_empty_negated_facets = TET_FACETS_LIST.filter(tet_facet_label => negated_facets_values[tet_facet_label] &&
-      negated_facets_values[tet_facet_label].length > 0)
-
-  //This can only be confidence level right now.
-  if (non_empty_negated_facets.length > 0) {
-    tetNestedNegatedFacetsValues.push(
-        {"topic_entity_tags.confidence_level.keyword" :negated_facets_values.confidence_levels}
     );
   }
 }
@@ -142,13 +133,21 @@ const getSearchParams = (state) => {
   }
   const data = state.search.searchFacetsValues;
   const negated_facets= state.search.searchExcludedFacetsValues;
-  const {confidence_levels, ...negated_facets_values} = negated_facets;
+  // TET (nested) negated facets are routed through tet_facets_negative_values below, not the
+  // flat negated_facets_values (which is only for non-nested facets).
+  const tetNegatedKeys = ["confidence_levels", "source_methods", "source_evidence_assertions"];
+  const negated_facets_values = {};
+  Object.keys(negated_facets).forEach(key => {
+    if (!tetNegatedKeys.includes(key)) {
+      negated_facets_values[key] = negated_facets[key];
+    }
+  });
   params.negated_facets_values  = negated_facets_values;
   const tetNestedFacetsValues = [];
   const tetNestedNegatedFacetsValues = [];
   const facetsValues = {};
   if (state.search.applyToSingleTag) {
-      processCombinedTETFacets(data, tetNestedFacetsValues, tetNestedNegatedFacetsValues, negated_facets);
+      processCombinedTETFacets(data, tetNestedFacetsValues);
   } else {
       TET_FACETS_LIST.forEach(key => {
 	  if (data[key]) {
@@ -157,6 +156,23 @@ const getSearchParams = (state) => {
 	      processSingleFacet(data[key], keyword, tetNestedFacetsValues);
 	  }
       });
+  }
+
+  // Negated TET facets. Source method / source evidence assertion exclusions use whole-reference
+  // semantics (drop a reference if ANY of its tags matches) and apply in both single- and
+  // multi-tag modes. Confidence level negation keeps its existing single-tag-only behavior.
+  const negatedTetEntry = {};
+  if (negated_facets.source_methods && negated_facets.source_methods.length > 0) {
+      negatedTetEntry["topic_entity_tags.source_method.keyword"] = negated_facets.source_methods;
+  }
+  if (negated_facets.source_evidence_assertions && negated_facets.source_evidence_assertions.length > 0) {
+      negatedTetEntry["topic_entity_tags.source_evidence_assertion.keyword"] = negated_facets.source_evidence_assertions;
+  }
+  if (state.search.applyToSingleTag && negated_facets.confidence_levels && negated_facets.confidence_levels.length > 0) {
+      negatedTetEntry["topic_entity_tags.confidence_level.keyword"] = negated_facets.confidence_levels;
+  }
+  if (Object.keys(negatedTetEntry).length > 0) {
+      tetNestedNegatedFacetsValues.push(negatedTetEntry);
   }
   Object.keys(data).forEach(key => {
       if (!TET_FACETS_LIST.includes(key)) {
