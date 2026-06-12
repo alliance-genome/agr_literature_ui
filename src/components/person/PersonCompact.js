@@ -27,6 +27,7 @@ const PersonCompact = ({ person }) => {
   const names = person.names ?? [];
   const xrefs = person.cross_references ?? [];
   const webpages = person.webpage ?? [];
+  const institutions = person.institution ?? [];
   const notes = person.notes ?? [];
   const roles = person.mod_roles ?? [];
 
@@ -52,6 +53,7 @@ const PersonCompact = ({ person }) => {
     `${names.length} name${names.length === 1 ? '' : 's'}`,
     `${xrefs.length} cross-reference${xrefs.length === 1 ? '' : 's'}`,
     `${webpages.length} webpage${webpages.length === 1 ? '' : 's'}`,
+    `${institutions.length} institution${institutions.length === 1 ? '' : 's'}`,
     `${notes.length} note${notes.length === 1 ? '' : 's'}`,
   ];
 

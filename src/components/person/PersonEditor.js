@@ -170,6 +170,18 @@ const PersonEditor = ({ person }) => {
       />
 
       <ListSection
+        title="Institutions"
+        rows={p.institution}
+        addLabel="Add institution"
+        renderRow={(inst) => (
+          <InputGroup>
+            <Form.Control defaultValue={inst ?? ''} />
+            {trashBtn}
+          </InputGroup>
+        )}
+      />
+
+      <ListSection
         title="Webpages"
         rows={p.webpage}
         addLabel="Add webpage"

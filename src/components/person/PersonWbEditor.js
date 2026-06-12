@@ -193,6 +193,12 @@ const PersonWbEditor = ({ person }) => {
   const initialUrls = (p.webpage ?? []).map((u) => ({ url: u ?? '' }));
   const [urls, updateUrl, removeUrl] = useAutoGrowList(initialUrls, emptyUrl, urlIsEmpty);
 
+  // Institutions — strings, no per-row timestamp, no who/when shown
+  const emptyInst = () => ({ value: '' });
+  const instIsEmpty = (it) => !it.value;
+  const initialInsts = (p.institution ?? []).map((it) => ({ value: it ?? '' }));
+  const [insts, updateInst, removeInst] = useAutoGrowList(initialInsts, emptyInst, instIsEmpty);
+
   // Cross references — page url is API-only, not editable, not shown
   const emptyXref = () => ({
     curie_prefix: '',
@@ -235,6 +241,8 @@ const PersonWbEditor = ({ person }) => {
   };
   const labelForUrl = (u, i) =>
     i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (new)' : 'webpage';
+  const labelForInst = (it, i) =>
+    i === insts.length - 1 && instIsEmpty(it) ? 'institution (new)' : 'institution';
   const labelForXref = (x, i) =>
     i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (new)' : x.curie_prefix || 'xref';
   const labelForNote = (n, i) =>
@@ -395,6 +403,25 @@ const PersonWbEditor = ({ person }) => {
           <FieldLine label="country">
             <Form.Control type="text" defaultValue={p.country ?? ''} style={{ maxWidth: 320 }} />
           </FieldLine>
+        </Card.Body>
+      </Card>
+
+      <Card className="mb-3">
+        <Card.Header>Institutions</Card.Header>
+        <Card.Body>
+          {insts.map((it, i) => (
+            <FieldLine
+              key={i}
+              label={labelForInst(it, i)}
+              ts={recordTs}
+              trail={<RemoveBtn onClick={() => removeInst(i)} />}
+            >
+              <Form.Control
+                value={it.value}
+                onChange={(ev) => updateInst(i, { value: ev.target.value })}
+              />
+            </FieldLine>
+          ))}
         </Card.Body>
       </Card>
 
