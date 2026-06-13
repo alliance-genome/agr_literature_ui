@@ -87,6 +87,7 @@ const PersonWbDisplay = ({ person }) => {
   const names = person.names ?? [];
   const xrefs = person.cross_references ?? [];
   const webpages = person.webpage ?? [];
+  const institutions = person.institution ?? [];
   const notes = person.notes ?? [];
 
   const recordTs = tsLabel(person.updated_by, person.date_updated);
@@ -185,6 +186,16 @@ const PersonWbDisplay = ({ person }) => {
             <FieldRow label="postal_code">{person.postal_code || null}</FieldRow>
             <FieldRow label="country">{person.country || null}</FieldRow>
           </>
+        )}
+      </Section>
+
+      <Section title="Institutions">
+        {institutions.length === 0 ? (
+          <FieldRow label="institution" />
+        ) : (
+          institutions.map((inst, i) => (
+            <FieldRow key={i} label="institution" ts={recordTs}>{inst}</FieldRow>
+          ))
         )}
       </Section>
 

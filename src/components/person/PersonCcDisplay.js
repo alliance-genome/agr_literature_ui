@@ -186,6 +186,26 @@ const WebpagesCard = ({ pages }) => {
   );
 };
 
+const InstitutionsCard = ({ list }) => {
+  const items = list ?? [];
+  return (
+    <Card className="mb-3">
+      <Card.Header>Institutions</Card.Header>
+      <Card.Body>
+        {items.length === 0 ? (
+          <span style={muted}>—</span>
+        ) : (
+          <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: 0 }}>
+            {items.map((inst, i) => (
+              <li key={i} style={{ padding: '2px 0' }}>{inst}</li>
+            ))}
+          </ul>
+        )}
+      </Card.Body>
+    </Card>
+  );
+};
+
 const NotesCard = ({ notes }) => {
   const list = notes ?? [];
   return (
@@ -256,6 +276,7 @@ const PersonCcDisplay = ({ person }) => {
         </Col>
         <Col md={6}>
           <BiographyCard bio={person.biography_research_interest} />
+          <InstitutionsCard list={person.institution} />
           <AddressCard person={person} />
           <WebpagesCard pages={person.webpage} />
           <NotesCard notes={person.notes} />
