@@ -37,7 +37,7 @@ const BreadCrumbs = () => {
         // For source evidence assertions, the human-readable label may be
         // unavailable when the value is excluded (its bucket drops out of the
         // current aggregation). Translate the ECO/ATP curie to its short label.
-        if (facet === 'source_evidence_assertions') return evidenceAssertionName(value);
+        if (facet === 'source_evidence_assertions' && value) return evidenceAssertionName(value);
         return value;
     };
 
