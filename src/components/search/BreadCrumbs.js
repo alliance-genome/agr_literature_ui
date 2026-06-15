@@ -16,6 +16,7 @@ import {
     downloadSearchReferences, setConfidenceScore
 } from "../../actions/searchActions";
 import { RENAME_FACETS } from "./Facets";
+import { evidenceAssertionName } from "../refs_tet_validation/helpers/buildEntries";
 import BreadcrumbItem from "./BreadCrumbItem";
 
 const BreadCrumbs = () => {
@@ -31,10 +32,13 @@ const BreadCrumbs = () => {
     const dispatch = useDispatch();
 
     const getDisplayName = (facet, value) => {
-        const facetData = searchFacets[facet];
-        if (!facetData?.buckets) return value;
-        const bucket = facetData.buckets.find(b => b.key === value);
-        return bucket?.name || value;
+        const bucket = searchFacets[facet]?.buckets?.find(b => b.key === value);
+        if (bucket?.name) return bucket.name;
+        // For source evidence assertions, the human-readable label may be
+        // unavailable when the value is excluded (its bucket drops out of the
+        // current aggregation). Translate the ECO/ATP curie to its short label.
+        if (facet === 'source_evidence_assertions') return evidenceAssertionName(value);
+        return value;
     };
 
     const isExceptionFacet = (facet) => {
