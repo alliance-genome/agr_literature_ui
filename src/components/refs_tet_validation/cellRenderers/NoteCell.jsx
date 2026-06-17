@@ -50,7 +50,7 @@ export default function NoteCell(params) {
         // entity-collapsed: list notes (one per entity that has one)
         const noted = e.tets
           .map((t) => ({
-            entity: t.entity_published_as || t.entity_name || t.entity,
+            entity: t.entity_name || t.entity,
             note: t.note,
           }))
           .filter((x) => x.note);
