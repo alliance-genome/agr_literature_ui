@@ -45,6 +45,31 @@ const GeneralCard = ({ lab }) => {
       <Card.Body style={{ textAlign: 'left' }}>
         <FieldRow label="name">{lab.name}</FieldRow>
         <FieldRow label="strain_designation">{lab.strain_designation}</FieldRow>
+        <FieldRow label={`email (${lab.email_visibility || 'not_shown'})`}>
+          <ListOrDash items={lab.email} render={(addr) => addr} />
+        </FieldRow>
+        <FieldRow label="institution">
+          <ListOrDash items={lab.institution} render={(inst) => inst} />
+        </FieldRow>
+        <FieldRow label="address">
+          {hasAddress ? (
+            <>
+              {lab.street_address && <div>{lab.street_address}</div>}
+              {cityZip && <div>{cityZip}</div>}
+              {lab.country && <div>{lab.country}</div>}
+            </>
+          ) : null}
+        </FieldRow>
+        <FieldRow label="webpage">
+          <ListOrDash
+            items={lab.webpage}
+            render={(url) => (
+              <a href={url} target="_blank" rel="noreferrer noopener">{url}</a>
+            )}
+          />
+        </FieldRow>
+        {/* lab_is_open = who may edit the lab: false -> no one, true -> anyone */}
+        <FieldRow label="lab_is_open">{lab.lab_is_open ? 'anyone' : 'no one'}</FieldRow>
         <FieldRow label="research_area">{lab.research_area}</FieldRow>
         <FieldRow label="short_research_description">
           {lab.short_research_description && (
@@ -58,29 +83,6 @@ const GeneralCard = ({ lab }) => {
         </FieldRow>
         <FieldRow label="private_note">
           {lab.private_note && <span style={{ whiteSpace: 'pre-wrap' }}>{lab.private_note}</span>}
-        </FieldRow>
-        <FieldRow label="institution">
-          <ListOrDash items={lab.institution} render={(inst) => inst} />
-        </FieldRow>
-        <FieldRow label="webpage">
-          <ListOrDash
-            items={lab.webpage}
-            render={(url) => (
-              <a href={url} target="_blank" rel="noreferrer noopener">{url}</a>
-            )}
-          />
-        </FieldRow>
-        <FieldRow label="address">
-          {hasAddress ? (
-            <>
-              {lab.street_address && <div>{lab.street_address}</div>}
-              {cityZip && <div>{cityZip}</div>}
-              {lab.country && <div>{lab.country}</div>}
-            </>
-          ) : null}
-        </FieldRow>
-        <FieldRow label={`email (${lab.email_visibility || 'not_shown'})`}>
-          <ListOrDash items={lab.email} render={(addr) => addr} />
         </FieldRow>
       </Card.Body>
     </Card>
@@ -203,18 +205,12 @@ const LaboratoryDisplay = ({ laboratory }) => {
                 {laboratory.name || <span style={muted}>(no name)</span>}
               </h3>
               {laboratory.strain_designation && (
-                <div style={muted}>strain: {laboratory.strain_designation}</div>
+                <div style={muted}>strain_designation: {laboratory.strain_designation}</div>
               )}
               <div style={{ ...muted, fontSize: '0.95em' }}>{laboratory.curie}</div>
             </Col>
             <Col xs="auto" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <Badge variant={statusVariant} style={{ fontSize: '0.95em' }}>{status}</Badge>
-              <Badge
-                variant={laboratory.lab_is_open ? 'success' : 'secondary'}
-                style={{ fontSize: '0.95em' }}
-              >
-                {laboratory.lab_is_open ? 'open' : 'closed'}
-              </Badge>
             </Col>
           </Row>
         </Card.Body>
