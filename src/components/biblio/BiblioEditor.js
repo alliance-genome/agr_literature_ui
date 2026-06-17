@@ -62,8 +62,6 @@ import BiblioLayoutPreferenceModal from '../settings/BiblioLayoutPreferenceModal
 import { SECTION_DEFS, sectionIdForFieldIndex, layoutToCssGrid } from './biblioEditorSections';
 import './biblioEditorSections.css';
 
-// http://dev.alliancegenome.org:49161/reference/AGR:AGR-Reference-0000000001
-
 
 // if passing an object with <Redirect push to={{ pathname: "/Biblio", state: { pie: "the pie" } }} />, would access new state with
 // const Biblio = ({ appState, someAction, location }) => {

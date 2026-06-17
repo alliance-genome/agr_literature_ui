@@ -27,7 +27,7 @@ const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
 const classifyInput = (raw) => {
   const trimmed = (raw || '').trim();
   if (!trimmed) return null;
-  if (trimmed.startsWith('AGRKB:') || trimmed.startsWith('AGR:')) {
+  if (trimmed.startsWith('AGRKB:')) {
     // Match the Biblio "Query exact ID" convention: do not encode curies (colon must stay literal).
     return { kind: 'curie', value: trimmed, urlParam: 'personCurie', endpoint: '/person/' + trimmed };
   }

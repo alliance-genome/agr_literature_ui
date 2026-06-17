@@ -579,7 +579,7 @@ const BiblioIdQuery = () => {
 
   const queryIdAndLoadReference = (refId) => {
     let url = '';
-    if (refId.startsWith('AGR:') || refId.startsWith('AGRKB:')) {
+    if (refId.startsWith('AGRKB:')) {
       url = '/reference/' + refId;
     } else {
       url = '/cross_reference/' + refId;
