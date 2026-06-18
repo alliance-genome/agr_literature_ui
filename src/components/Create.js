@@ -376,7 +376,7 @@ const MockupCreatePersonTitle = 'Mockup only — not wired to the API';
 const classifyPersonInput = (raw) => {
   const trimmed = (raw || '').trim();
   if (!trimmed) return null;
-  if (trimmed.startsWith('AGRKB:') || trimmed.startsWith('AGR:')) {
+  if (trimmed.startsWith('AGRKB:')) {
     return { endpoint: '/person/' + trimmed };
   }
   if (PERSON_XREF_PREFIXES.some((p) => trimmed.startsWith(p + ':'))) {

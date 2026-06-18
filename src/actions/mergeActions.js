@@ -155,14 +155,11 @@ export const mergeQueryReferences = (referenceInput1, referenceInput2, swapBool)
     let curieValue = '';
     let curieFound = false;
     // let successXref = false;
-    // const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
     const regexMatch = referenceInput.toLowerCase().match(/(AGRKB:101\d{12})/i);
     // console.log('regexMatch');
     // console.log( regexMatch);
     if (regexMatch !== null) {
       curieFound = true;
-      // const regexMatch = referenceInput.toLowerCase().match(/(AGR:AGR-Reference-\d{10})/i);
-      // curieValue = regexMatch[0].replace('agr:agr-reference', 'AGR:AGR-Reference');
       const regexMatch = referenceInput.toLowerCase().match(/(AGRKB:101\d{12})/i);
       curieValue = regexMatch[0].replace('agrkb:', 'AGRKB:'); }
     else {
