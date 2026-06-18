@@ -28,7 +28,7 @@ function PillEntityCount({ count, negated, entitiesText }) {
 }
 
 function entityLabel(t) {
-  return t.entity_published_as || t.entity_name || t.entity || '';
+  return t.entity_name || t.entity || '';
 }
 
 export default function TagsCell(params) {

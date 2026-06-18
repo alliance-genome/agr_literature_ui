@@ -40,7 +40,7 @@ const RawDataEntityTable = () => {
   }, [referenceCurie, biblioUpdatingEntityAdd, topicEntityTags]);
 
   // use the following code for the editor view table
-  // let headers = ['topic', 'entity_type', 'species', 'entity', 'entity_published_as', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
+  // let headers = ['topic', 'entity_type', 'species', 'entity', 'negated', 'confidence_level', 'created_by', 'note', 'entity_source', 'date_created', 'updated_by', 'date_updated', 'validation_value_author', 'validation_value_curator', 'validation_value_curation_tools', 'display_tag'];
   // let source_headers = ['mod_id', 'source_method', 'evidence', 'validation_type', 'source_type', 'description', 'created_by', 'date_updated', 'date_created'];
   // const headersWithSortability = new Set(['entity_type']);
   // const headersToEntityMap = new Set(['topic', 'entity_type', 'entity', 'display_tag']);

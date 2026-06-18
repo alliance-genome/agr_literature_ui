@@ -409,7 +409,6 @@ const TopicEntityTable = () => {
       { headerName: 'Entity Type', field: 'entity_type_name', id: 2, checked: true },
       { headerName: 'Species', field: 'species_name', id: 3, checked: true },
       { headerName: 'Entity', field: 'entity_name', id: 4, checked: true },
-      { headerName: 'Entity Published As', field: 'entity_published_as', id: 5, checked: false },
       { headerName: 'No Data', field: 'no_data', id: 6, checked: true },
       { headerName: 'Data', field: 'has_data', id: 32, checked: true },
       { headerName: 'Data Novelty', field: 'data_novelty', id: 7, checked: false },
@@ -447,7 +446,6 @@ const TopicEntityTable = () => {
       { headerName: 'Entity Type', field: 'entity_type_name', id: 2, checked: true },
       { headerName: 'Species', field: 'species_name', id: 3, checked: true },
       { headerName: 'Entity', field: 'entity_name', id: 4, checked: true },
-      { headerName: 'Entity Published As', field: 'entity_published_as', id: 5, checked: false },
       { headerName: 'No Data', field: 'no_data', id: 6, checked: false },
       { headerName: 'Data', field: 'has_data', id: 32, checked: false },
       { headerName: 'Data Novelty', field: 'data_novelty', id: 7, checked: false },
@@ -536,7 +534,6 @@ const TopicEntityTable = () => {
         filter: EntityFilter,
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.entity}`)
       },
-      { headerName: 'Entity Published As', field: 'entity_published_as', comparator: caseInsensitiveComparator, filter: true },
       {
         headerName: 'No Data',
         field: 'no_data',
