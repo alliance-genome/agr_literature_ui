@@ -227,6 +227,34 @@ const PersonWbEditor = ({ person }) => {
   }));
   const [notes, updateNote, removeNote] = useAutoGrowList(initialNotes, emptyNote, noteIsEmpty);
 
+  // Laboratory connections — editable, auto-growing like the other lists. The
+  // alum / is_pi / former_pi DateTime fields are shown as checkboxes; the stored
+  // timestamp (when set in the database) is displayed beside the box. Mockup-only.
+  const emptyLab = () => ({
+    lab: '',
+    alum: false,
+    is_pi: false,
+    former_pi: false,
+    _alum_ts: null,
+    _is_pi_ts: null,
+    _former_pi_ts: null,
+    _ts: null,
+    _by: null,
+  });
+  const labIsEmpty = (l) => !l.lab;
+  const initialLabs = (p.lab_persons ?? []).map((lp) => ({
+    lab: lp.laboratory_strain_designation || lp.laboratory_curie || '',
+    alum: !!lp.alum,
+    is_pi: !!lp.is_pi,
+    former_pi: !!lp.former_pi,
+    _alum_ts: lp.alum ?? null,
+    _is_pi_ts: lp.is_pi ?? null,
+    _former_pi_ts: lp.former_pi ?? null,
+    _ts: lp.date_updated ?? null,
+    _by: lp.updated_by ?? null,
+  }));
+  const [labs, updateLab, removeLab] = useAutoGrowList(initialLabs, emptyLab, labIsEmpty);
+
   const setNamePrimary = (idx) =>
     setNames((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
 
@@ -247,6 +275,8 @@ const PersonWbEditor = ({ person }) => {
     i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (new)' : x.curie_prefix || 'xref';
   const labelForNote = (n, i) =>
     i === notes.length - 1 && noteIsEmpty(n) ? 'comment (new)' : 'comment';
+  const labelForLab = (l, i) =>
+    i === labs.length - 1 && labIsEmpty(l) ? 'laboratory (new)' : 'laboratory';
 
   const recordTs = tsLabel(p.updated_by, p.date_updated);
 
@@ -442,6 +472,67 @@ const PersonWbEditor = ({ person }) => {
               />
             </FieldLine>
           ))}
+        </Card.Body>
+      </Card>
+
+      <Card className="mb-3">
+        <Card.Header>Laboratories</Card.Header>
+        <Card.Body>
+          {labs.map((lab, i) => {
+            const isNew = i === labs.length - 1 && labIsEmpty(lab);
+            const ts = isNew ? 'new' : tsLabel(lab._by, lab._ts);
+            const flags = [
+              { key: 'alum', tsKey: '_alum_ts' },
+              { key: 'is_pi', tsKey: '_is_pi_ts' },
+              { key: 'former_pi', tsKey: '_former_pi_ts' },
+            ];
+            return (
+              <FieldLine
+                key={i}
+                label={labelForLab(lab, i)}
+                ts={ts}
+                trail={<RemoveBtn onClick={() => removeLab(i)} />}
+              >
+                <div style={inlineRow}>
+                  <Form.Control
+                    placeholder="strain_designation (or lab curie)"
+                    value={lab.lab}
+                    onChange={(ev) => updateLab(i, { lab: ev.target.value })}
+                    style={{ width: 300, flexShrink: 0 }}
+                  />
+                  {flags.map(({ key, tsKey }) => {
+                    const stamp = lab[key] && lab[tsKey] ? formatTimestamp(lab[tsKey]) : null;
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          width: 230,
+                          flexShrink: 0,
+                          boxSizing: 'border-box',
+                          paddingLeft: 12,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Form.Check
+                          type="checkbox"
+                          id={`wb-labperson-${i}-${key}`}
+                          label={key}
+                          checked={lab[key]}
+                          onChange={(ev) => updateLab(i, { [key]: ev.target.checked })}
+                          style={{ whiteSpace: 'nowrap' }}
+                        />
+                        {stamp && <span style={tsStyle}>{stamp}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </FieldLine>
+            );
+          })}
         </Card.Body>
       </Card>
 

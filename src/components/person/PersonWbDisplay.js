@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import Card from 'react-bootstrap/Card';
 import Badge from 'react-bootstrap/Badge';
 
@@ -75,7 +76,24 @@ const xrefHref = (x) => {
   return null;
 };
 
+const labRoles = (lp) => {
+  const roles = [];
+  if (lp.lab_position) roles.push(lp.lab_position);
+  if (lp.is_pi) roles.push(`PI since ${formatTimestamp(lp.is_pi)}`);
+  if (lp.former_pi) roles.push(`former PI since ${formatTimestamp(lp.former_pi)}`);
+  if (lp.alum) roles.push(`alum since ${formatTimestamp(lp.alum)}`);
+  if (lp.is_lab_contact) roles.push('lab contact');
+  if (lp.can_edit_lab) roles.push('can edit');
+  return roles;
+};
+
 const PersonWbDisplay = ({ person }) => {
+  const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
+  const testerMod = useSelector((s) => s.isLogged.testerMod);
+  const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
+  const labHref = (curie) =>
+    '/lab?q=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=wbdisplay' : '');
+
   if (!person) return null;
 
   const status = person.active_status || 'unknown';
@@ -89,6 +107,7 @@ const PersonWbDisplay = ({ person }) => {
   const webpages = person.webpage ?? [];
   const institutions = person.institution ?? [];
   const notes = person.notes ?? [];
+  const labPersons = person.lab_persons ?? [];
 
   const recordTs = tsLabel(person.updated_by, person.date_updated);
 
@@ -235,6 +254,40 @@ const PersonWbDisplay = ({ person }) => {
                   </a>
                 ) : (
                   <span style={valStyle}>{value}</span>
+                )}
+              </FieldRow>
+            );
+          })
+        )}
+      </Section>
+
+      <Section title="Laboratories">
+        {labPersons.length === 0 ? (
+          <FieldRow label="laboratory" />
+        ) : (
+          labPersons.map((lp, i) => {
+            const label =
+              [lp.laboratory_name, lp.laboratory_strain_designation].filter(Boolean).join(' · ') ||
+              lp.laboratory_curie ||
+              '(unknown lab)';
+            const roles = labRoles(lp);
+            return (
+              <FieldRow
+                key={lp.laboratory_person_id ?? i}
+                label="laboratory"
+                ts={tsLabel(lp.updated_by, lp.date_updated)}
+              >
+                {lp.laboratory_curie ? (
+                  <a href={labHref(lp.laboratory_curie)}>{label}</a>
+                ) : (
+                  <span>{label}</span>
+                )}
+                {roles.length > 0 && (
+                  <span style={{ marginLeft: 8 }}>
+                    {roles.map((r, j) => (
+                      <Badge key={j} variant="info" style={{ marginRight: 4 }}>{r}</Badge>
+                    ))}
+                  </span>
                 )}
               </FieldRow>
             );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import Card from 'react-bootstrap/Card';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -231,7 +232,64 @@ const NotesCard = ({ notes }) => {
   );
 };
 
+const labRoles = (lp) => {
+  const roles = [];
+  if (lp.lab_position) roles.push(lp.lab_position);
+  if (lp.is_pi) roles.push(`PI since ${formatDate(lp.is_pi)}`);
+  if (lp.former_pi) roles.push(`former PI since ${formatDate(lp.former_pi)}`);
+  if (lp.alum) roles.push(`alum since ${formatDate(lp.alum)}`);
+  if (lp.is_lab_contact) roles.push('lab contact');
+  if (lp.can_edit_lab) roles.push('can edit');
+  return roles;
+};
+
+const LaboratoriesCard = ({ labs, effectiveMod }) => {
+  const list = labs ?? [];
+  const labHref = (curie) =>
+    '/lab?q=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=wbdisplay' : '');
+  return (
+    <Card className="mb-3">
+      <Card.Header>Laboratories</Card.Header>
+      <Card.Body>
+        {list.length === 0 ? (
+          <span style={muted}>—</span>
+        ) : (
+          <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: 0 }}>
+            {list.map((lp, i) => {
+              const label =
+                [lp.laboratory_name, lp.laboratory_strain_designation].filter(Boolean).join(' · ') ||
+                lp.laboratory_curie ||
+                '(unknown lab)';
+              const roles = labRoles(lp);
+              return (
+                <li key={lp.laboratory_person_id ?? i} style={{ padding: '2px 0' }}>
+                  {lp.laboratory_curie ? (
+                    <a href={labHref(lp.laboratory_curie)}>{label}</a>
+                  ) : (
+                    <span>{label}</span>
+                  )}
+                  {roles.length > 0 && (
+                    <span style={{ marginLeft: 8 }}>
+                      {roles.map((r, j) => (
+                        <Badge key={j} variant="info" style={{ marginRight: 4 }}>{r}</Badge>
+                      ))}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card.Body>
+    </Card>
+  );
+};
+
 const PersonCcDisplay = ({ person }) => {
+  const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
+  const testerMod = useSelector((s) => s.isLogged.testerMod);
+  const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
+
   if (!person) return null;
   const status = person.active_status || 'unknown';
   const statusVariant = status === 'active' ? 'success' : 'secondary';
@@ -277,6 +335,7 @@ const PersonCcDisplay = ({ person }) => {
         <Col md={6}>
           <BiographyCard bio={person.biography_research_interest} />
           <InstitutionsCard list={person.institution} />
+          <LaboratoriesCard labs={person.lab_persons} effectiveMod={effectiveMod} />
           <AddressCard person={person} />
           <WebpagesCard pages={person.webpage} />
           <NotesCard notes={person.notes} />
