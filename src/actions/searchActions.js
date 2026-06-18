@@ -193,7 +193,18 @@ const getSearchParams = (state) => {
 
   //If we still have the default values... don't add this.
   if(!(params.confidence_score[0] === 0 && params.confidence_score[1] === 1)){
-    params.tet_nested_facets_values.tet_facets_values.push({"topic_entity_tags.confidence_score": params.confidence_score});
+    const tetFacetsValues = params.tet_nested_facets_values.tet_facets_values;
+    if (state.search.applyToSingleTag && tetFacetsValues.length > 0) {
+      // SCRUM-6184: in single-tag mode the confidence score must apply to the SAME tag
+      // as the other selected TET facets (e.g. the chosen topic). The backend turns each
+      // object in tet_facets_values into its own nested query, so a separate confidence
+      // object would be matched by any other tag on the reference -- letting through tags
+      // whose own confidence score is outside the slider range. Merge it into the combined
+      // nested object instead so both conditions must hold on one tag.
+      tetFacetsValues[0]["topic_entity_tags.confidence_score"] = params.confidence_score;
+    } else {
+      tetFacetsValues.push({"topic_entity_tags.confidence_score": params.confidence_score});
+    }
   }
 
   if(state.search.datePubmedModified){
