@@ -173,6 +173,8 @@ export default function TetValidationGrid({
   topics,
   mod,
   excludedConfidenceLevels,
+  confidenceScore,
+  biblioByCurie,
   persistRef,
 }) {
   // Optional external store (a plain object held in a parent ref) used to
@@ -230,14 +232,20 @@ export default function TetValidationGrid({
   const effectiveMod = mod || accessLevel;
 
   const { rows: rawRows, unresolved, loading, refetchRow } = useReferenceTets(
-    referenceIds
+    referenceIds,
+    biblioByCurie
   );
 
-  // Honor the search's "Exclude NEG" filter in the grid. The grid fetches TETs
+  // Honor the search's confidence filters in the grid. The grid fetches TETs
   // independently of the search query (useReferenceTets), so without this it
-  // would still render negative data the search excluded. We drop any TET whose
-  // confidence_level matches an excluded level (e.g. 'NEG' = confidence <= 0.5),
-  // matching the backend search filter (confidence_level keyword must_not).
+  // would still render data the search excluded. Two filters apply:
+  //  - "Exclude NEG": drop any TET whose confidence_level matches an excluded
+  //    level (e.g. 'NEG' = confidence <= 0.5), matching the backend search
+  //    filter (confidence_level keyword must_not).
+  //  - confidence-score slider: drop any TET whose numeric confidence_score
+  //    falls outside the selected [min, max] range, matching the backend nested
+  //    range query. TETs without a numeric score (e.g. curator/author tags) are
+  //    kept, since the slider targets scored ML/automated predictions.
   // Filtering once here keeps every per-topic column (Sources / Data / Conf /
   // Note) consistent, since they all iterate row.tets.
   const excludedConfLevelSet = useMemo(
@@ -247,16 +255,34 @@ export default function TetValidationGrid({
       ),
     [excludedConfidenceLevels]
   );
+  const confMin = Array.isArray(confidenceScore) ? confidenceScore[0] : undefined;
+  const confMax = Array.isArray(confidenceScore) ? confidenceScore[1] : undefined;
+  // The default [0, 1] range means "no filter" — skip it (mirrors searchActions).
+  const confRangeActive =
+    typeof confMin === 'number' &&
+    typeof confMax === 'number' &&
+    !(confMin === 0 && confMax === 1);
   const rows = useMemo(() => {
-    if (excludedConfLevelSet.size === 0) return rawRows;
+    if (excludedConfLevelSet.size === 0 && !confRangeActive) return rawRows;
     return rawRows.map((r) => ({
       ...r,
-      tets: (r.tets || []).filter(
-        (t) =>
-          !excludedConfLevelSet.has(String(t.confidence_level || '').toUpperCase())
-      ),
+      tets: (r.tets || []).filter((t) => {
+        if (
+          excludedConfLevelSet.has(String(t.confidence_level || '').toUpperCase())
+        ) {
+          return false;
+        }
+        if (confRangeActive) {
+          const sc =
+            t.confidence_score == null ? null : Number(t.confidence_score);
+          if (sc != null && !Number.isNaN(sc) && (sc < confMin || sc > confMax)) {
+            return false;
+          }
+        }
+        return true;
+      }),
     }));
-  }, [rawRows, excludedConfLevelSet]);
+  }, [rawRows, excludedConfLevelSet, confRangeActive, confMin, confMax]);
 
   // Ensure curator source id is loaded so the validation strip can submit
   useEffect(() => {

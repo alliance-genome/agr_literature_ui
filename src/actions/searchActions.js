@@ -160,7 +160,10 @@ const getSearchParams = (state) => {
 
   // Negated TET facets. Source method / source evidence assertion exclusions use whole-reference
   // semantics (drop a reference if ANY of its tags matches) and apply in both single- and
-  // multi-tag modes. Confidence level negation keeps its existing single-tag-only behavior.
+  // multi-tag modes. Confidence level negation applies in both modes too: the backend attaches
+  // it as a must_not inside each positive nested tag query (add_nested_query), so it correctly
+  // excludes NEG tags per-tag whether one or many TET facets are selected (it just needs at
+  // least one positive TET facet, e.g. a chosen topic, for the exclusion to be consumed).
   // All negated TET keys are carried in ONE merged object: the backend reads only
   // tet_facets_negative_values[0] and turns each source/SEA key into its own independent
   // must_not nested clause, so splitting them into separate array entries would silently drop
@@ -172,7 +175,7 @@ const getSearchParams = (state) => {
   if (negated_facets.source_evidence_assertions && negated_facets.source_evidence_assertions.length > 0) {
       negatedTetEntry["topic_entity_tags.source_evidence_assertion.keyword"] = negated_facets.source_evidence_assertions;
   }
-  if (state.search.applyToSingleTag && negated_facets.confidence_levels && negated_facets.confidence_levels.length > 0) {
+  if (negated_facets.confidence_levels && negated_facets.confidence_levels.length > 0) {
       negatedTetEntry["topic_entity_tags.confidence_level.keyword"] = negated_facets.confidence_levels;
   }
   if (Object.keys(negatedTetEntry).length > 0) {
