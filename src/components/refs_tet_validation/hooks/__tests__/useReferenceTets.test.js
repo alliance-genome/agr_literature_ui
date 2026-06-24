@@ -1,12 +1,13 @@
-import { resolveOne, fetchTets } from '../useReferenceTets';
+import { resolveOne, fetchTets, fetchTetsBatch } from '../useReferenceTets';
 import { api } from '../../../../api';
 
 jest.mock('../../../../api', () => ({
-  api: { get: jest.fn() },
+  api: { get: jest.fn(), post: jest.fn() },
 }));
 
 beforeEach(() => {
   api.get.mockReset();
+  api.post.mockReset();
   // Make backoff sleeps no-ops in tests so retries run back-to-back.
   jest.spyOn(global, 'setTimeout').mockImplementation((fn) => {
     fn();
@@ -91,5 +92,53 @@ describe('fetchTets', () => {
     expect(tets).toEqual([]);
     // 1 initial + 5 backoff retries
     expect(api.get).toHaveBeenCalledTimes(6);
+  });
+});
+
+describe('fetchTetsBatch', () => {
+  test('no curies → no request, empty map', async () => {
+    const out = await fetchTetsBatch([]);
+    expect(out).toEqual({});
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  test('posts curies to /by_references and returns the map', async () => {
+    api.post.mockResolvedValueOnce({
+      data: {
+        'AGRKB:1': [{ topic_entity_tag_id: 1 }],
+        'AGRKB:2': [],
+      },
+    });
+    const out = await fetchTetsBatch(['AGRKB:1', 'AGRKB:2']);
+    expect(api.post).toHaveBeenCalledWith(
+      '/topic_entity_tag/by_references',
+      ['AGRKB:1', 'AGRKB:2']
+    );
+    expect(out['AGRKB:1']).toHaveLength(1);
+    expect(out['AGRKB:2']).toEqual([]);
+  });
+
+  test('dedupes curies and defaults missing keys to empty arrays', async () => {
+    api.post.mockResolvedValueOnce({ data: { 'AGRKB:1': [{ x: 1 }] } });
+    const out = await fetchTetsBatch(['AGRKB:1', 'AGRKB:1', 'AGRKB:3']);
+    expect(api.post).toHaveBeenCalledWith(
+      '/topic_entity_tag/by_references',
+      ['AGRKB:1', 'AGRKB:3']
+    );
+    expect(out['AGRKB:1']).toEqual([{ x: 1 }]);
+    expect(out['AGRKB:3']).toEqual([]); // present in request, absent in response
+  });
+
+  test('falls back to per-reference GET when batch endpoint fails', async () => {
+    api.post.mockRejectedValue({ response: { status: 404 } });
+    api.get
+      .mockResolvedValueOnce({ data: [{ topic_entity_tag_id: 11 }] })
+      .mockResolvedValueOnce({ data: [{ topic_entity_tag_id: 22 }] });
+    const out = await fetchTetsBatch(['AGRKB:1', 'AGRKB:2']);
+    expect(out['AGRKB:1']).toEqual([{ topic_entity_tag_id: 11 }]);
+    expect(out['AGRKB:2']).toEqual([{ topic_entity_tag_id: 22 }]);
+    expect(api.get).toHaveBeenCalledWith(
+      '/topic_entity_tag/by_reference/AGRKB:1?page=1&page_size=8000'
+    );
   });
 });

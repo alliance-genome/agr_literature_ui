@@ -20,6 +20,15 @@ const DEFAULT_BACKOFF_DELAYS = [500, 1500, 4500, 13500, 40500];
 const TETS_PAGE_SIZE = 8000;
 // How many references to resolve/fetch in parallel.
 const FETCH_CONCURRENCY = 10;
+// How many references' TETs to request per batch call. A search page is usually
+// tens of references, so this typically collapses to a single request.
+const TETS_BATCH_SIZE = 50;
+
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
 
 /**
  * Retry an axios call on 5xx / network errors with exponential backoff.
@@ -79,31 +88,70 @@ export async function fetchTets(curie) {
   }
 }
 
-export function useReferenceTets(referenceIds) {
+/**
+ * Fetch TETs for many references in one round-trip via POST
+ * /topic_entity_tag/by_references, which returns a { curie: tets[] } map.
+ * Chunked so a very large page doesn't become one huge request. Falls back to
+ * per-reference GETs if the batch endpoint is unavailable (e.g. older backend),
+ * so the grid keeps working either way.
+ */
+export async function fetchTetsBatch(curies) {
+  const result = {};
+  const unique = Array.from(new Set((curies || []).filter(Boolean)));
+  if (unique.length === 0) return result;
+  await Promise.all(
+    chunk(unique, TETS_BATCH_SIZE).map(async (group) => {
+      try {
+        const r = await withBackoff(() =>
+          api.post('/topic_entity_tag/by_references', group)
+        );
+        const data = r.data && typeof r.data === 'object' ? r.data : {};
+        for (const c of group) result[c] = data[c] || [];
+      } catch (e) {
+        debug.warn(
+          '[TetValidationGrid] batch fetchTets failed; falling back per-reference:',
+          e?.response?.status,
+          e?.response?.data?.detail || e?.message
+        );
+        await Promise.all(
+          group.map(async (c) => {
+            result[c] = await fetchTets(c);
+          })
+        );
+      }
+    })
+  );
+  return result;
+}
+
+export function useReferenceTets(referenceIds, biblioByCurie) {
   const [rows, setRows] = useState([]);
   const [unresolved, setUnresolved] = useState([]);
   const [loading, setLoading] = useState(true);
   const reqIdRef = useRef(0);
 
-  const loadRow = useCallback(async (input) => {
-    // AGRKB inputs are already canonical, so /reference/{id} and
-    // /topic_entity_tag/by_reference/{id} can be fired in parallel — that
-    // halves the per-row round-trip count for the common search-driven case
-    // where the grid is loaded with AGRKB curies. Non-AGRKB inputs still
-    // need the resolve step first because the TETs endpoint keys off the
-    // canonical AGRKB curie returned by /reference/by_cross_reference.
+  // Read the latest biblio map without making it an effect dependency: it is
+  // derived from the same search that produced referenceIds, so it changes in
+  // lockstep with them, and keying the effect on referenceIds alone avoids a
+  // redundant reload when only the map's identity changes.
+  const biblioMapRef = useRef(biblioByCurie);
+  biblioMapRef.current = biblioByCurie;
+
+  // Resolve one input to its canonical curie + biblio. When the caller already
+  // supplied biblio (search results), AGRKB inputs need NO network call — the
+  // curie is canonical and the biblio is in hand. Only non-AGRKB inputs, or
+  // AGRKB inputs without supplied biblio (standalone use), hit /reference.
+  const resolveBiblio = useCallback(async (input) => {
+    const supplied = biblioMapRef.current && biblioMapRef.current[input];
     if (input.startsWith('AGRKB:')) {
-      const [ref, tets] = await Promise.all([
-        resolveOne(input),
-        fetchTets(input),
-      ]);
-      if (!ref?.curie) return { input, ref: null };
-      return { input, ref, tets };
+      if (supplied) return { input, curie: input, biblio: supplied };
+      const ref = await resolveOne(input);
+      if (!ref?.curie) return { input, curie: null, biblio: null };
+      return { input, curie: ref.curie, biblio: ref };
     }
     const ref = await resolveOne(input);
-    if (!ref?.curie) return { input, ref: null };
-    const tets = await fetchTets(ref.curie);
-    return { input, ref, tets };
+    if (!ref?.curie) return { input, curie: null, biblio: null };
+    return { input, curie: ref.curie, biblio: ref };
   }, []);
 
   useEffect(() => {
@@ -117,31 +165,38 @@ export function useReferenceTets(referenceIds) {
       const ids = Array.from(
         new Set((referenceIds || []).map((s) => s.trim()).filter(Boolean))
       );
-      const newRows = [];
+      // Phase 1: resolve each input to its canonical curie + biblio (mostly
+      // free when search biblio is supplied), bounded by FETCH_CONCURRENCY.
+      const resolved = [];
       const newUnresolved = [];
       let cursor = 0;
       async function worker() {
         while (cursor < ids.length) {
           const i = cursor++;
-          const out = await loadRow(ids[i]);
+          const out = await resolveBiblio(ids[i]);
           if (cancelled || reqId !== reqIdRef.current) return;
-          if (!out.ref) {
-            newUnresolved.push(out.input);
-          } else {
-            newRows.push({
-              input: out.input,
-              curie: out.ref.curie,
-              biblio: out.ref,
-              tets: out.tets,
-            });
-          }
+          if (!out.curie || !out.biblio) newUnresolved.push(out.input);
+          else resolved.push(out);
         }
       }
       await Promise.all(
         Array.from({ length: Math.min(FETCH_CONCURRENCY, ids.length) }, worker)
       );
       if (cancelled || reqId !== reqIdRef.current) return;
-      setRows(newRows);
+
+      // Phase 2: fetch all TETs in one batched request (was one HTTP call per
+      // reference — the grid's main bottleneck).
+      const tetsByCurie = await fetchTetsBatch(resolved.map((r) => r.curie));
+      if (cancelled || reqId !== reqIdRef.current) return;
+
+      setRows(
+        resolved.map((r) => ({
+          input: r.input,
+          curie: r.curie,
+          biblio: r.biblio,
+          tets: tetsByCurie[r.curie] || [],
+        }))
+      );
       setUnresolved(newUnresolved);
       setLoading(false);
     })();
@@ -150,7 +205,7 @@ export function useReferenceTets(referenceIds) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(referenceIds || [])]);
+  }, [JSON.stringify(referenceIds || []), resolveBiblio]);
 
   const refetchRow = useCallback(async (curie) => {
     const tets = await fetchTets(curie);
