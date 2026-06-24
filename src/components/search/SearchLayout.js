@@ -45,6 +45,7 @@ const SearchLayout = () => {
 
     const searchResults = useSelector((s) => s.search.searchResults);
     const searchFacetsValues = useSelector((s) => s.search.searchFacetsValues);
+    const searchExcludedFacetsValues = useSelector((s) => s.search.searchExcludedFacetsValues);
     const searchLoading = useSelector((s) => s.search.searchLoading);
 
     const referenceIds = useMemo(
@@ -59,6 +60,13 @@ const SearchLayout = () => {
         // grid via /ontology/map_curie_to_name/atpterm/{curie}.
         return arr.map((curie) => ({ curie, name: undefined }));
     }, [searchFacetsValues]);
+    // Confidence levels the user excluded (e.g. ['NEG']). The Topic grid fetches
+    // TETs independently of the search query, so it must apply the same
+    // "Exclude NEG" filter itself to avoid showing negative data the search hid.
+    const excludedConfidenceLevels = useMemo(
+        () => searchExcludedFacetsValues?.confidence_levels || [],
+        [searchExcludedFacetsValues]
+    );
 
     // Handle window resize
     useEffect(() => {
@@ -281,6 +289,7 @@ const SearchLayout = () => {
                                         <TetValidationGrid
                                             referenceIds={referenceIds}
                                             topics={topicsForGrid}
+                                            excludedConfidenceLevels={excludedConfidenceLevels}
                                             persistRef={gridStateRef}
                                         />
                                     </div>
