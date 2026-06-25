@@ -848,6 +848,25 @@
   white-space: nowrap;
 }
 
+/* Loading veil shown while TET data is (re)fetched. Covers the live grid
+   instead of replacing it, so the AgGrid instance is never unmounted (which
+   would crash on teardown with domLayout="autoHeight"). Anchored to the grid
+   stack via position: relative on .tetv-grid-stack. */
+.tetv-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 24px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--tetv-accent-dark);
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 600;
+}
+
 /* Fullscreen toggle pill in the top-right of the grid wrapper. Sits above
    the sticky header (z-index 4) and the resize overlay (z-index 50). */
 .tetv-fullscreen-toggle {
