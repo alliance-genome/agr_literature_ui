@@ -305,15 +305,45 @@ export default function TetValidationGrid({
 
   const [topicNameMap, setTopicNameMap] = useState({});
 
-  // Resolve missing topic names
+  // Resolve topic names. Most names need NO network call: the search-supplied
+  // topics already carry their name, and every loaded TET includes topic_name
+  // (resolved server-side by /topic_entity_tag/by_references). Seeding from
+  // those avoids the per-curie /ontology/map_curie_to_name fan-out that used to
+  // fire one request per distinct topic. Only requested topics that have no
+  // name AND appear in no TET still need a lookup.
   useEffect(() => {
+    const known = {};
+    for (const t of topics || []) {
+      const c = normalizeCurie(t.curie);
+      if (c && t.name && known[c] === undefined) known[c] = t.name;
+    }
+    for (const r of rows) {
+      for (const t of r.tets || []) {
+        const c = normalizeCurie(t.topic);
+        if (c && t.topic_name && known[c] === undefined) known[c] = t.topic_name;
+      }
+    }
+
+    // Seed newly-known names so columns render immediately (skip identity
+    // "names" where the resolved value is just the curie itself).
+    const toSeed = Object.entries(known).filter(
+      ([c, n]) => n !== c && topicNameMap[c] === undefined
+    );
+    if (toSeed.length > 0) {
+      setTopicNameMap((prev) => ({ ...prev, ...Object.fromEntries(toSeed) }));
+    }
+
     const seen = new Set([
       ...(topics || []).map((t) => normalizeCurie(t.curie)),
       ...rows.flatMap((r) =>
         (r.tets || []).map((t) => normalizeCurie(t.topic))
       ),
     ]);
-    const missing = [...seen].filter((c) => c && !topicNameMap[c]);
+    // A curie still needs a server lookup only if neither the data nor a prior
+    // lookup has produced a name for it.
+    const missing = [...seen].filter(
+      (c) => c && topicNameMap[c] === undefined && known[c] === undefined
+    );
     if (missing.length === 0) return;
     let cancelled = false;
     Promise.all(
