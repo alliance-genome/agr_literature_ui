@@ -127,7 +127,7 @@ const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
         <strong style={{ display: 'block', margin: '20px 0 10px', textAlign: 'center' }}>
           Entity Counts by MOD
         </strong>
-        <table className="entity-counts-by-mod-table" style={tableStyle}>
+        <table style={tableStyle}>
           <thead>
             <tr>
               <th style={headerCellStyle}>MOD</th>

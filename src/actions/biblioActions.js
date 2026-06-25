@@ -1003,8 +1003,10 @@ export const fetchTopicEntityTags = (referenceCurie, forceRefresh = false) => {
       return Promise.resolve(topicEntityTags);
     }
 
-    // If already fetching the SAME curie, return the pending promise
-    if (pendingTopicEntityTagsRequest && pendingTopicEntityTagsCurie === referenceCurie) {
+    // If already fetching the SAME curie, return the pending promise — but not
+    // when forcing a refresh, so a post-edit forceRefresh never resolves to an
+    // older in-flight (non-forced) fetch that predates the edit.
+    if (!forceRefresh && pendingTopicEntityTagsRequest && pendingTopicEntityTagsCurie === referenceCurie) {
       return pendingTopicEntityTagsRequest;
     }
 
