@@ -303,6 +303,7 @@ const SearchLayout = () => {
                                             excludedConfidenceLevels={excludedConfidenceLevels}
                                             confidenceScore={confidenceScore}
                                             biblioByCurie={biblioByCurie}
+                                            active={view === 'grid'}
                                             persistRef={gridStateRef}
                                         />
                                     </div>

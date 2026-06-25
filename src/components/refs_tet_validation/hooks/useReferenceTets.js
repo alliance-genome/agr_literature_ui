@@ -102,8 +102,13 @@ export async function fetchTetsBatch(curies) {
   await Promise.all(
     chunk(unique, TETS_BATCH_SIZE).map(async (group) => {
       try {
-        const r = await withBackoff(() =>
-          api.post('/topic_entity_tag/by_references', group)
+        // Fail fast (one short retry) before falling back to per-reference
+        // GETs: a 4xx (older backend without this endpoint) isn't retried at
+        // all, and on persistent 5xx/timeout we'd rather fall back quickly than
+        // burn the full ~60s backoff. The fallback path keeps its own retries.
+        const r = await withBackoff(
+          () => api.post('/topic_entity_tag/by_references', group),
+          { delays: [500] }
         );
         const data = r.data && typeof r.data === 'object' ? r.data : {};
         for (const c of group) result[c] = data[c] || [];
@@ -124,7 +129,7 @@ export async function fetchTetsBatch(curies) {
   return result;
 }
 
-export function useReferenceTets(referenceIds, biblioByCurie) {
+export function useReferenceTets(referenceIds, biblioByCurie, active = true) {
   const [rows, setRows] = useState([]);
   const [unresolved, setUnresolved] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -155,6 +160,10 @@ export function useReferenceTets(referenceIds, biblioByCurie) {
   }, []);
 
   useEffect(() => {
+    // Skip fetching while the grid is hidden (e.g. the user is in List view
+    // but the grid stays mounted to preserve state). Otherwise every later
+    // search would trigger a batch fetch for a grid nobody is looking at.
+    if (!active) return undefined;
     const reqId = ++reqIdRef.current;
     let cancelled = false;
     setLoading(true);
@@ -205,7 +214,7 @@ export function useReferenceTets(referenceIds, biblioByCurie) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(referenceIds || []), resolveBiblio]);
+  }, [JSON.stringify(referenceIds || []), resolveBiblio, active]);
 
   const refetchRow = useCallback(async (curie) => {
     const tets = await fetchTets(curie);
