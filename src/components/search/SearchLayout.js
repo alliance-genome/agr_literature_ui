@@ -127,8 +127,18 @@ const SearchLayout = () => {
         setFacetsCollapsed(prev => !prev);
     }, []);
 
+    // Keep the grid mounted once it has been opened. referenceIds is derived
+    // from searchResults, which is cleared to [] while a new search loads, so
+    // gating the mount on referenceIds.length tore the grid down on every
+    // search. Remounting an autoHeight AgGrid crashes React's reconciler
+    // ("Failed to execute 'insertBefore'/'removeChild' ... not a child"),
+    // blanking the page on the 2nd visit. The grid handles an empty
+    // referenceIds itself (it shows its loading overlay and clears rows), so
+    // leaving it mounted across searches is safe. The second clause only
+    // covers the first render where view flips to 'grid' before the
+    // hasOpenedTopicGrid effect has run.
     const shouldRenderTopicGrid =
-        referenceIds.length > 0 && (view === 'grid' || hasOpenedTopicGrid);
+        hasOpenedTopicGrid || (view === 'grid' && referenceIds.length > 0);
 
     return (
         <div>
