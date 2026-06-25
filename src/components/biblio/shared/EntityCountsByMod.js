@@ -1,10 +1,49 @@
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
 
 import { fetchTopicEntityTags } from '../../../actions/biblioActions';
+
+// Centered panel, sized to match the workflow tables (which center an 80%-wide
+// grid). The card itself stays left-aligned inside so multiple MOD rows are easy
+// to scan.
+const panelWrapperStyle = { display: 'flex', justifyContent: 'center' };
+const panelStyle = { width: '80%', maxWidth: 900 };
+
+const cellBorder = '1px solid #dee2e6';
+const tableStyle = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  border: cellBorder,
+  fontSize: '0.9rem'
+};
+const headerCellStyle = {
+  backgroundColor: 'var(--light-blue)',
+  textAlign: 'left',
+  padding: '6px 12px',
+  borderBottom: cellBorder,
+  fontWeight: 'bold'
+};
+const modCellStyle = {
+  width: 80,
+  fontWeight: 'bold',
+  textAlign: 'left',
+  padding: '6px 12px',
+  borderBottom: cellBorder,
+  verticalAlign: 'top',
+  whiteSpace: 'nowrap'
+};
+const entitiesCellStyle = {
+  textAlign: 'left',
+  padding: '6px 12px',
+  borderBottom: cellBorder,
+  verticalAlign: 'top',
+  color: '#212529'
+};
+
+// API entity type names arrive lowercase (e.g. "gene"); show them with a leading
+// capital ("Gene") to match the rest of the editor chrome.
+const capitalizeFirst = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1) : str);
 
 /**
  * Reusable summary of the unique entities associated with a reference, grouped
@@ -67,11 +106,13 @@ const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
   // Loading the data for this reference for the first time
   if (topicEntityTagsLoading && topicEntityTagsCurie !== referenceCurie) {
     return (
-      <Row className="Row-general">
-        <Col className="Col-general" sm="12">
-          <Spinner animation="border" size="sm" />
-        </Col>
-      </Row>
+      <div style={panelWrapperStyle}>
+        <div style={panelStyle}>
+          <div className="text-center" style={{ padding: '10px' }}>
+            <Spinner animation="border" size="sm" />
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -81,31 +122,33 @@ const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
   }
 
   return (
-    <Row className="Row-general entity-counts-by-mod" style={{ margin: '10px 0' }}>
-      <Col sm="12">
-        <table className="entity-counts-by-mod-table" style={{ borderCollapse: 'collapse' }}>
+    <div style={panelWrapperStyle}>
+      <div style={panelStyle}>
+        <strong style={{ display: 'block', margin: '20px 0 10px', textAlign: 'center' }}>
+          Entity Counts by MOD
+        </strong>
+        <table className="entity-counts-by-mod-table" style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={headerCellStyle}>MOD</th>
+              <th style={headerCellStyle}>Entities</th>
+            </tr>
+          </thead>
           <tbody>
             {countsByMod.map(({ mod, entityTypes }) => (
               <tr key={mod}>
-                <td style={{ verticalAlign: 'top', fontWeight: 'bold', paddingRight: '1.5em', whiteSpace: 'nowrap' }}>
-                  {mod}
-                </td>
-                <td style={{ verticalAlign: 'top' }}>
-                  {'[ '}
-                  {entityTypes.map((entityType, idx) => (
-                    <span key={entityType.name}>
-                      {idx > 0 ? ', ' : ''}
-                      {entityType.name} ({entityType.count})
-                    </span>
-                  ))}
-                  {' ]'}
+                <td style={modCellStyle}>{mod}</td>
+                <td style={entitiesCellStyle}>
+                  {entityTypes
+                    .map((entityType) => `${capitalizeFirst(entityType.name)} (${entityType.count})`)
+                    .join(', ')}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </Col>
-    </Row>
+      </div>
+    </div>
   );
 };
 
