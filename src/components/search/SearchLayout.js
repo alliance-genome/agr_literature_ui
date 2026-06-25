@@ -45,12 +45,24 @@ const SearchLayout = () => {
 
     const searchResults = useSelector((s) => s.search.searchResults);
     const searchFacetsValues = useSelector((s) => s.search.searchFacetsValues);
+    const searchExcludedFacetsValues = useSelector((s) => s.search.searchExcludedFacetsValues);
+    const confidenceScore = useSelector((s) => s.search.confidenceScore);
     const searchLoading = useSelector((s) => s.search.searchLoading);
 
     const referenceIds = useMemo(
         () => (searchResults || []).map((r) => r.curie).filter(Boolean),
         [searchResults]
     );
+    // Reuse the biblio data the search already returned (curie/title/authors/
+    // cross_references/date_published) so the grid can skip the per-row
+    // /reference/{curie} fetch. Keyed by canonical AGRKB curie.
+    const biblioByCurie = useMemo(() => {
+        const map = {};
+        for (const r of searchResults || []) {
+            if (r?.curie) map[r.curie] = r;
+        }
+        return map;
+    }, [searchResults]);
     const topicsForGrid = useMemo(() => {
         const arr = searchFacetsValues?.topics;
         if (!Array.isArray(arr) || arr.length === 0) return undefined;
@@ -59,6 +71,13 @@ const SearchLayout = () => {
         // grid via /ontology/map_curie_to_name/atpterm/{curie}.
         return arr.map((curie) => ({ curie, name: undefined }));
     }, [searchFacetsValues]);
+    // Confidence levels the user excluded (e.g. ['NEG']). The Topic grid fetches
+    // TETs independently of the search query, so it must apply the same
+    // "Exclude NEG" filter itself to avoid showing negative data the search hid.
+    const excludedConfidenceLevels = useMemo(
+        () => searchExcludedFacetsValues?.confidence_levels || [],
+        [searchExcludedFacetsValues]
+    );
 
     // Handle window resize
     useEffect(() => {
@@ -281,6 +300,10 @@ const SearchLayout = () => {
                                         <TetValidationGrid
                                             referenceIds={referenceIds}
                                             topics={topicsForGrid}
+                                            excludedConfidenceLevels={excludedConfidenceLevels}
+                                            confidenceScore={confidenceScore}
+                                            biblioByCurie={biblioByCurie}
+                                            active={view === 'grid'}
                                             persistRef={gridStateRef}
                                         />
                                     </div>
