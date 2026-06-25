@@ -12,7 +12,6 @@ import {
   Row,
   Col
 } from 'react-bootstrap';
-import { api } from '../../../api';
 import { AgGridReact } from 'ag-grid-react';
 import { handleGridCopy } from '../../../utils/gridCopyHandler';
 
@@ -21,7 +20,8 @@ import {
   setAllEntities,
   setAllTopics,
   setAllEntityTypes,
-  fetchTaxonData
+  fetchTaxonData,
+  fetchTopicEntityTags
 } from '../../../actions/biblioActions';
 import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
 import ValidationByCurator from '../../AgGrid/ValidationByCurator.jsx';
@@ -296,8 +296,34 @@ const TopicEntityTable = () => {
   const filteredTags = useSelector((state) => state.biblio.filteredTags);
   const biblioUpdatingEntityAdd = useSelector((state) => state.biblio.biblioUpdatingEntityAdd);
 
-  const [topicEntityTags, setTopicEntityTags] = useState([]);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  // Topic entity tags are loaded into the redux store (shared with the entity
+  // counts summary and any other reference-based page). Consume them here
+  // rather than fetching a second copy.
+  const rawTopicEntityTags = useSelector((state) => state.biblio.topicEntityTags);
+  const isLoadingData = useSelector((state) => state.biblio.topicEntityTagsLoading);
+
+  // Apply the table's display transforms without mutating the redux state.
+  const topicEntityTags = useMemo(
+    () =>
+      (rawTopicEntityTags || []).map((orig) => {
+        const row = { ...orig };
+        if ('validation_by_author' in row) {
+          if (row.validation_by_author === 'validated_right_self') row.validation_by_author = '';
+          else if (row.validation_by_author === 'validated_right') row.validation_by_author = 'agree';
+          else if (row.validation_by_author === 'validated_wrong') row.validation_by_author = 'disagree';
+          else if (row.validation_by_author === 'not_validated') row.validation_by_author = 'no entry';
+        }
+        if ('validation_by_professional_biocurator' in row) {
+          if (row.validation_by_professional_biocurator === 'validated_right_self') {
+            row.validation_by_professional_biocurator = '';
+          }
+        }
+        row.no_data = row.negated === true ? 'no data' : '';
+        row.has_data = row.negated === true ? 'N' : 'Y';
+        return row;
+      }),
+    [rawTopicEntityTags]
+  );
 
   const [selectedCurie, setSelectedCurie] = useState(null);
   const [showCurieModal, setShowCurieModal] = useState(false);
@@ -333,52 +359,27 @@ const TopicEntityTable = () => {
 
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
 
-  const fetchTableData = useCallback(async () => {
-    const url = '/topic_entity_tag/by_reference/' + referenceCurie + '?page=1&page_size=8000';
-
-    setIsLoadingData(true);
-    try {
-      const result = await api.get(url);
-
-      (result.data || []).forEach((row) => {
-        if ('validation_by_author' in row) {
-          if (row.validation_by_author === 'validated_right_self') row.validation_by_author = '';
-          else if (row.validation_by_author === 'validated_right') row.validation_by_author = 'agree';
-          else if (row.validation_by_author === 'validated_wrong') row.validation_by_author = 'disagree';
-          else if (row.validation_by_author === 'not_validated') row.validation_by_author = 'no entry';
-        }
-        if ('validation_by_professional_biocurator' in row) {
-          if (row.validation_by_professional_biocurator === 'validated_right_self') {
-            row.validation_by_professional_biocurator = '';
-          }
-        }
-        row.no_data = row.negated === true ? 'no data' : '';
-        row.has_data = row.negated === true ? 'N' : 'Y';
-      });
-
-      setTopicEntityTags(result.data || []);
-
-      const uniqueSpecies = [...new Set((result.data || []).map((o) => o.species))];
-      const uniqueEntityTypes = [...new Set((result.data || []).map((o) => o.entity_type_name))];
-      const uniqueTopics = [...new Set((result.data || []).map((o) => o.topic_name))];
-      const uniqueEntities = [...new Set((result.data || []).map((o) => o.entity_name))];
-
-      dispatch(setAllSpecies(uniqueSpecies));
-      dispatch(setAllEntityTypes(uniqueEntityTypes));
-      dispatch(setAllTopics(uniqueTopics));
-      dispatch(setAllEntities(uniqueEntities));
-    } catch (err) {
-      console.error('Error fetching topic_entity_tag:', err);
-    } finally {
-      setIsLoadingData(false);
-    }
-  }, [dispatch, referenceCurie]);
-
+  // Ensure the store has the tags for this reference. On initial load this is a
+  // no-op when Biblio already populated the cache; force a refresh only after an
+  // add/edit completes (biblioUpdatingEntityAdd transitions back to 0).
+  const prevUpdatingRef = useRef(biblioUpdatingEntityAdd);
   useEffect(() => {
-    if (biblioUpdatingEntityAdd === 0) {
-      fetchTableData();
+    if (referenceCurie && biblioUpdatingEntityAdd === 0) {
+      const justFinishedUpdate = prevUpdatingRef.current > 0;
+      dispatch(fetchTopicEntityTags(referenceCurie, justFinishedUpdate));
     }
-  }, [fetchTableData, biblioUpdatingEntityAdd]);
+    prevUpdatingRef.current = biblioUpdatingEntityAdd;
+  }, [dispatch, referenceCurie, biblioUpdatingEntityAdd]);
+
+  // Keep the shared unique-value lists (used by the column filters) in sync with
+  // the loaded tags.
+  useEffect(() => {
+    const tags = rawTopicEntityTags || [];
+    dispatch(setAllSpecies([...new Set(tags.map((o) => o.species))]));
+    dispatch(setAllEntityTypes([...new Set(tags.map((o) => o.entity_type_name))]));
+    dispatch(setAllTopics([...new Set(tags.map((o) => o.topic_name))]));
+    dispatch(setAllEntities([...new Set(tags.map((o) => o.entity_name))]));
+  }, [dispatch, rawTopicEntityTags]);
 
   const handleCurieClick = (curie) => {
     if (hasTextSelection()) return;
