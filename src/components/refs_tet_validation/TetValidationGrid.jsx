@@ -1403,8 +1403,15 @@ export default function TetValidationGrid({
   ]);
 
   return (
+    // translate="no" / notranslate: DOM-mutating browser extensions (Google
+    // Translate above all) wrap this grid's text nodes in their own elements,
+    // which AgGrid + React 18 can't reconcile -- React then throws a
+    // commit-phase "insertBefore/removeChild ... not a child of this node" that
+    // blanks the grid (confirmed: it renders fine with extensions disabled).
+    // Marking the subtree non-translatable keeps those extensions out of it.
     <div
-      className={`ag-theme-quartz tetv-grid-wrapper${
+      translate="no"
+      className={`ag-theme-quartz tetv-grid-wrapper notranslate${
         isFullscreen ? ' tetv-fullscreen' : ''
       }`}
       style={{ width: '100%' }}
