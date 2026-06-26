@@ -13,6 +13,7 @@ import SearchOptions from "./SearchOptions";
 import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
 import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
+import TetGridErrorBoundary from '../refs_tet_validation/TetGridErrorBoundary';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faChevronLeft,
@@ -307,15 +308,17 @@ const SearchLayout = () => {
                                             display: view === 'grid' && !searchLoading ? 'block' : 'none',
                                         }}
                                     >
-                                        <TetValidationGrid
-                                            referenceIds={referenceIds}
-                                            topics={topicsForGrid}
-                                            excludedConfidenceLevels={excludedConfidenceLevels}
-                                            confidenceScore={confidenceScore}
-                                            biblioByCurie={biblioByCurie}
-                                            active={view === 'grid'}
-                                            persistRef={gridStateRef}
-                                        />
+                                        <TetGridErrorBoundary>
+                                            <TetValidationGrid
+                                                referenceIds={referenceIds}
+                                                topics={topicsForGrid}
+                                                excludedConfidenceLevels={excludedConfidenceLevels}
+                                                confidenceScore={confidenceScore}
+                                                biblioByCurie={biblioByCurie}
+                                                active={view === 'grid'}
+                                                persistRef={gridStateRef}
+                                            />
+                                        </TetGridErrorBoundary>
                                     </div>
                                 )}
                             </div>
