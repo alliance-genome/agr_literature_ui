@@ -30,6 +30,10 @@ function chunk(arr, size) {
   return out;
 }
 
+function elapsedMs(start) {
+  return `${Math.round(performance.now() - start)}ms`;
+}
+
 /**
  * Retry an axios call on 5xx / network errors with exponential backoff.
  * 4xx errors fail fast (a 404 should never be retried). Default 5 retries
@@ -96,11 +100,17 @@ export async function fetchTets(curie) {
  * so the grid keeps working either way.
  */
 export async function fetchTetsBatch(curies) {
+  const totalStart = performance.now();
   const result = {};
   const unique = Array.from(new Set((curies || []).filter(Boolean)));
   if (unique.length === 0) return result;
+  const groups = chunk(unique, TETS_BATCH_SIZE);
+  debug.log(
+    `[TetValidationGrid] TET batch fetch start: ${unique.length} references in ${groups.length} request(s)`
+  );
   await Promise.all(
-    chunk(unique, TETS_BATCH_SIZE).map(async (group) => {
+    groups.map(async (group, index) => {
+      const groupStart = performance.now();
       try {
         // Fail fast (one short retry) before falling back to per-reference
         // GETs: a 4xx (older backend without this endpoint) isn't retried at
@@ -112,6 +122,14 @@ export async function fetchTetsBatch(curies) {
         );
         const data = r.data && typeof r.data === 'object' ? r.data : {};
         for (const c of group) result[c] = data[c] || [];
+        const tetCount = Object.values(data).reduce(
+          (sum, tets) => sum + (Array.isArray(tets) ? tets.length : 0),
+          0
+        );
+        debug.log(
+          `[TetValidationGrid] TET batch request ${index + 1}/${groups.length}: ` +
+          `${group.length} references, ${tetCount} tags, ${elapsedMs(groupStart)}`
+        );
       } catch (e) {
         debug.warn(
           '[TetValidationGrid] batch fetchTets failed; falling back per-reference:',
@@ -123,8 +141,24 @@ export async function fetchTetsBatch(curies) {
             result[c] = await fetchTets(c);
           })
         );
+        const fallbackCount = group.reduce(
+          (sum, c) => sum + (Array.isArray(result[c]) ? result[c].length : 0),
+          0
+        );
+        debug.log(
+          `[TetValidationGrid] TET fallback request ${index + 1}/${groups.length}: ` +
+          `${group.length} references, ${fallbackCount} tags, ${elapsedMs(groupStart)}`
+        );
       }
     })
+  );
+  const totalTags = Object.values(result).reduce(
+    (sum, tets) => sum + (Array.isArray(tets) ? tets.length : 0),
+    0
+  );
+  debug.log(
+    `[TetValidationGrid] TET batch fetch done: ${unique.length} references, ` +
+    `${totalTags} tags, ${elapsedMs(totalStart)}`
   );
   return result;
 }
@@ -171,11 +205,16 @@ export function useReferenceTets(referenceIds, biblioByCurie, active = true) {
     setUnresolved([]);
 
     (async () => {
+      const loadStart = performance.now();
       const ids = Array.from(
         new Set((referenceIds || []).map((s) => s.trim()).filter(Boolean))
       );
+      debug.log(
+        `[TetValidationGrid] load start: ${ids.length} input references`
+      );
       // Phase 1: resolve each input to its canonical curie + biblio (mostly
       // free when search biblio is supplied), bounded by FETCH_CONCURRENCY.
+      const resolveStart = performance.now();
       const resolved = [];
       const newUnresolved = [];
       let cursor = 0;
@@ -192,22 +231,35 @@ export function useReferenceTets(referenceIds, biblioByCurie, active = true) {
         Array.from({ length: Math.min(FETCH_CONCURRENCY, ids.length) }, worker)
       );
       if (cancelled || reqId !== reqIdRef.current) return;
+      debug.log(
+        `[TetValidationGrid] resolve done: ${resolved.length} resolved, ` +
+        `${newUnresolved.length} unresolved, ${elapsedMs(resolveStart)}`
+      );
 
       // Phase 2: fetch all TETs in one batched request (was one HTTP call per
       // reference — the grid's main bottleneck).
+      const fetchStart = performance.now();
       const tetsByCurie = await fetchTetsBatch(resolved.map((r) => r.curie));
       if (cancelled || reqId !== reqIdRef.current) return;
+      debug.log(`[TetValidationGrid] fetch done: ${elapsedMs(fetchStart)}`);
 
-      setRows(
-        resolved.map((r) => ({
-          input: r.input,
-          curie: r.curie,
-          biblio: r.biblio,
-          tets: tetsByCurie[r.curie] || [],
-        }))
-      );
+      const nextRows = resolved.map((r) => ({
+        input: r.input,
+        curie: r.curie,
+        biblio: r.biblio,
+        tets: tetsByCurie[r.curie] || [],
+      }));
+      setRows(nextRows);
       setUnresolved(newUnresolved);
       setLoading(false);
+      const rowTagCount = nextRows.reduce(
+        (sum, row) => sum + (Array.isArray(row.tets) ? row.tets.length : 0),
+        0
+      );
+      debug.log(
+        `[TetValidationGrid] load done: ${nextRows.length} rows, ` +
+        `${rowTagCount} tags, ${elapsedMs(loadStart)}`
+      );
     })();
 
     return () => {
