@@ -39,6 +39,9 @@ const initialState = {
   referenceJsonHasChange: {},
   referenceFiles: [],
   referenceFilesLoading: false,
+  topicEntityTags: [],
+  topicEntityTagsLoading: false,
+  topicEntityTagsCurie: '',
   // loadingQuery: true,
   isLoading: true,
   queryFailure: false,
@@ -312,6 +315,20 @@ export default function(state = initialState, action) {
       return {
         ...state,
         referenceFilesLoading: action.payload
+      }
+
+    case 'SET_TOPIC_ENTITY_TAGS':
+      return {
+        ...state,
+        topicEntityTags: action.payload.tags,
+        topicEntityTagsCurie: action.payload.referenceCurie,
+        topicEntityTagsLoading: false
+      }
+
+    case 'SET_TOPIC_ENTITY_TAGS_LOADING':
+      return {
+        ...state,
+        topicEntityTagsLoading: action.payload
       }
 
     case 'SET_BIBLIO_EDITOR_MODAL_TEXT':
@@ -947,6 +964,9 @@ export default function(state = initialState, action) {
         referenceCurie: action.payload,
         referenceFiles: [],
         referenceFilesLoading: false,
+        topicEntityTags: [],
+        topicEntityTagsLoading: false,
+        topicEntityTagsCurie: '',
         tetPageSize: defaultTetPageSize,
         allSpecies: [],
         allEntities: [],

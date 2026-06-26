@@ -21,7 +21,8 @@ import { usePersonSettings } from './settings/usePersonSettings';
 import {
   downloadReferencefile,
   setReferenceCurie,
-  fetchReferenceFiles
+  fetchReferenceFiles,
+  fetchTopicEntityTags
 } from '../actions/biblioActions';
 import { setBiblioAction } from '../actions/biblioActions';
 import { biblioQueryReferenceCurie } from '../actions/biblioActions';
@@ -669,6 +670,14 @@ const Biblio = () => {
     if (paramAction !== null) { dispatch(setBiblioAction(paramAction)); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, location.pathname]);
+
+  // Load the topic entity tags into the redux store on any reference-based
+  // (Biblio) page so the entity counts summary and future consumers can reuse
+  // them without re-fetching.
+  useEffect(() => {
+    if (referenceCurie !== '') { dispatch(fetchTopicEntityTags(referenceCurie)); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referenceCurie]);
 
   // citation needs to be updated after processing separate biblio api calls. update citation and make flag false
   // 2023 04 11 citation now updates from database triggers

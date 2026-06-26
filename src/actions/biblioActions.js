@@ -976,6 +976,70 @@ export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
   };
 };
 
+export const setTopicEntityTags = (tags, referenceCurie) => {
+  return {
+    type: 'SET_TOPIC_ENTITY_TAGS',
+    payload: { tags, referenceCurie }
+  };
+};
+
+// Module-level cache to prevent concurrent duplicate fetches
+let pendingTopicEntityTagsRequest = null;
+let pendingTopicEntityTagsCurie = null;
+
+// Load all topic entity tags for a reference into the redux store so that any
+// reference-based (Biblio) page can reuse them (e.g. the entity counts summary)
+// without each component issuing its own request.
+export const fetchTopicEntityTags = (referenceCurie, forceRefresh = false) => {
+  return (dispatch, getState) => {
+    if (!referenceCurie) {
+      return Promise.resolve([]);
+    }
+
+    const { topicEntityTags, topicEntityTagsCurie } = getState().biblio;
+
+    // If data already loaded for this reference and not forcing a refresh, reuse it
+    if (!forceRefresh && topicEntityTagsCurie === referenceCurie) {
+      return Promise.resolve(topicEntityTags);
+    }
+
+    // If already fetching the SAME curie, return the pending promise — but not
+    // when forcing a refresh, so a post-edit forceRefresh never resolves to an
+    // older in-flight (non-forced) fetch that predates the edit.
+    if (!forceRefresh && pendingTopicEntityTagsRequest && pendingTopicEntityTagsCurie === referenceCurie) {
+      return pendingTopicEntityTagsRequest;
+    }
+
+    dispatch({ type: 'SET_TOPIC_ENTITY_TAGS_LOADING', payload: true });
+
+    pendingTopicEntityTagsCurie = referenceCurie;
+
+    pendingTopicEntityTagsRequest = (async () => {
+      try {
+        const url = '/topic_entity_tag/by_reference/' + referenceCurie + '?page=1&page_size=8000';
+        const response = await api.get(url);
+        const tags = response.data || [];
+        // Only dispatch if this is still the curie we want
+        if (getState().biblio.referenceCurie === referenceCurie) {
+          dispatch(setTopicEntityTags(tags, referenceCurie));
+        }
+        return tags;
+      } catch (error) {
+        console.error('Error fetching topic_entity_tag by_reference:', error);
+        dispatch({ type: 'SET_TOPIC_ENTITY_TAGS_LOADING', payload: false });
+        return [];
+      } finally {
+        if (pendingTopicEntityTagsCurie === referenceCurie) {
+          pendingTopicEntityTagsRequest = null;
+          pendingTopicEntityTagsCurie = null;
+        }
+      }
+    })();
+
+    return pendingTopicEntityTagsRequest;
+  };
+};
+
 export const setBiblioEditorModalText = (payload) => {
   return {
     type: 'SET_BIBLIO_EDITOR_MODAL_TEXT',

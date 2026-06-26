@@ -13,6 +13,7 @@ import { patchWorkflowTag, deleteWorkflowTag, transitionWorkflowTag } from './Wo
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
 import TopicFilter from '../AgGrid/TopicFilter';
+import EntityCountsByMod from './shared/EntityCountsByMod';
 
 import { setAllTopics } from '../../actions/biblioActions';
 
@@ -1504,6 +1505,7 @@ const BiblioWorkflow = () => {
 
   return (
     <div>
+      <EntityCountsByMod />
       {/* Pre-curation Workflow Section */}
       <strong style={{ display: 'block', margin: '20px 0 10px', textAlign: 'center' }}>
         Pre-curation Workflow
