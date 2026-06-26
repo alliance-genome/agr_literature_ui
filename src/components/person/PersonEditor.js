@@ -321,9 +321,9 @@ const PersonEditor = ({ person }) => {
   // ---- build the section cards, keyed by section id (placed by the layout grid) ----
   const sectionRows = {};
 
-  sectionRows.personal_identification = (
+  sectionRows.profile = (
     <Card className="mb-3">
-      <Card.Header>Personal Identification</Card.Header>
+      <Card.Header>Profile</Card.Header>
       <Card.Body>
         <FieldLine label="display_name" ts={recordTs}>
           <Form.Control type="text" defaultValue={p.display_name ?? ''} style={{ maxWidth: 480 }} />

@@ -17,7 +17,7 @@
 // pushes a loaded layout's full preferences (layout + visibility + toggles) back
 // to the editor.
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Button, Form, Spinner, Alert } from 'react-bootstrap';
 import { FaGear } from 'react-icons/fa6';
 import { useSelector } from 'react-redux';
@@ -72,6 +72,10 @@ const PersonEditorLayoutModal = ({
 
   const [showModal, setShowModal] = useState(false);
   const [workingLayout, setWorkingLayout] = useState(DEFAULT_LAYOUT);
+  // Mirror of workingLayout so drag/resize-stop handlers can read the latest full
+  // layout (including hidden sections' coords) without waiting for a state flush.
+  const workingRef = useRef(DEFAULT_LAYOUT);
+  useEffect(() => { workingRef.current = workingLayout; }, [workingLayout]);
   const [newName, setNewName] = useState('');
   const [nameEdits, setNameEdits] = useState({});
   const [message, setMessage] = useState(null); // { variant, text }
@@ -261,24 +265,45 @@ const PersonEditorLayoutModal = ({
     [nameEdits, rename, load, notify]
   );
 
+  /* ---------- live apply ---------- */
+
+  // Push a layout to the editor immediately, keeping the current visibility/toggles.
+  // Merges the just-finished visible boxes over the previous full layout so hidden
+  // sections keep their saved coordinates.
+  const applyLayoutLive = useCallback(
+    (l) => {
+      if (typeof onApplyPrefs !== 'function') return;
+      const changed = {};
+      for (const it of normalizeLayout(l || [])) changed[it.i] = it;
+      const prev = workingRef.current || [];
+      const merged = prev.map((it) => changed[it.i] || it);
+      for (const it of Object.values(changed)) {
+        if (!prev.some((p) => p.i === it.i)) merged.push(it);
+      }
+      onApplyPrefs({
+        layout: merged,
+        hidden: Array.isArray(current?.hidden) ? current.hidden : [],
+        showTimestamps: current?.showTimestamps !== false,
+        showCurator: current?.showCurator !== false,
+      });
+    },
+    [onApplyPrefs, current]
+  );
+
   /* ---------- footer ---------- */
 
-  const handleApplyToEditor = useCallback(() => {
+  const handleResetCanvas = useCallback(() => {
+    setWorkingLayout(DEFAULT_LAYOUT);
     if (typeof onApplyPrefs === 'function') {
       onApplyPrefs({
-        layout: normalizeLayout(workingLayout),
+        layout: DEFAULT_LAYOUT,
         hidden: Array.isArray(current?.hidden) ? current.hidden : [],
         showTimestamps: current?.showTimestamps !== false,
         showCurator: current?.showCurator !== false,
       });
     }
-    notify('Settings applied to the editor for this session.', 'info');
-  }, [onApplyPrefs, workingLayout, current, notify]);
-
-  const handleResetCanvas = useCallback(() => {
-    setWorkingLayout(DEFAULT_LAYOUT);
-    notify('Canvas reset to the default stacked arrangement.', 'info');
-  }, [notify]);
+    notify('Layout reset to the default stacked arrangement.', 'info');
+  }, [onApplyPrefs, current, notify]);
 
   const hasSettings = (settings || []).length > 0;
 
@@ -332,8 +357,8 @@ const PersonEditorLayoutModal = ({
 
           <p className="text-muted">
             Drag and resize the sections to arrange them, choose which sections are visible, and set
-            the timestamp / curator display. Save these settings as a named layout below; your
-            default layout is applied to the editor.
+            the timestamp / curator display. Changes apply to the editor as you make them. Save them
+            as a named entry below to reuse later; your default is applied automatically.
           </p>
 
           {/* Graphical canvas */}
@@ -353,6 +378,8 @@ const PersonEditorLayoutModal = ({
               isDraggable
               isResizable
               onLayoutChange={handleLayoutChange}
+              onDragStop={applyLayoutLive}
+              onResizeStop={applyLayoutLive}
             >
               {visibleSectionDefs.map((s) => (
                 <div
@@ -532,14 +559,9 @@ const PersonEditorLayoutModal = ({
         </Modal.Body>
 
         <Modal.Footer className="justify-content-between">
-          <div className="d-flex gap-2">
-            <Button variant="outline-secondary" onClick={handleResetCanvas} disabled={busy}>
-              Reset Canvas
-            </Button>
-            <Button variant="success" onClick={handleApplyToEditor} disabled={busy}>
-              Apply to Editor
-            </Button>
-          </div>
+          <Button variant="outline-secondary" onClick={handleResetCanvas} disabled={busy}>
+            Reset Layout
+          </Button>
           <Button variant="secondary" onClick={() => setShowModal(false)} disabled={busy}>
             Close
           </Button>

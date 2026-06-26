@@ -295,7 +295,7 @@ const PersonWbEditor = ({ person }) => {
       </Alert>
 
       <Card className="mb-3">
-        <Card.Header>Personal Identification</Card.Header>
+        <Card.Header>Profile</Card.Header>
         <Card.Body>
           <FieldLine label="display_name" ts={recordTs}>
             <Form.Control type="text" defaultValue={p.display_name ?? ''} style={{ maxWidth: 480 }} />

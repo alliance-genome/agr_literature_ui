@@ -28,7 +28,7 @@ export const PERSON_EDITOR_LAYOUT_COMPONENT_NAME = 'person_editor_layout';
 // used both as react-grid-layout keys and as the keys of the editor's
 // `sectionRows` bucket; the labels appear on the canvas boxes and the checklist.
 export const SECTION_DEFS = [
-  { id: 'personal_identification', label: 'Personal Identification' },
+  { id: 'profile', label: 'Profile' },
   { id: 'names', label: 'Names' },
   { id: 'email', label: 'Email' },
   { id: 'address', label: 'Address' },
