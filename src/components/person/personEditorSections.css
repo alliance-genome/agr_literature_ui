@@ -1,0 +1,43 @@
+/* Layout grid for the section-arranged Person Editor.
+   The per-section `grid-column` is applied inline from the saved layout;
+   here we set the shared grid track and the responsive collapse.
+   Mirrors biblioEditorSections.css. */
+
+.person-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: 1rem;
+  row-gap: 0.5rem;
+  grid-auto-flow: row dense;
+  align-items: start;
+}
+
+.person-editor-section {
+  min-width: 0; /* allow field rows to shrink/reflow in narrow columns */
+}
+
+/* Side-by-side arrangement: switch to a full-width (fluid) container so columns
+   get real estate instead of being squished inside the capped container. Each of
+   the 12 tracks has a minimum width (supplied per-arrangement via the
+   --person-col-floor custom property), so a section's minimum scales with its
+   span. We intentionally do NOT use overflow-x:auto on the grid -- that would clip
+   inline dropdown menus -- and let the browser scroll the page instead. */
+.person-editor-grid--wide {
+  grid-template-columns: repeat(12, minmax(var(--person-col-floor, 120px), 1fr));
+}
+
+/* Bootstrap field rows carry negative gutters that can spill past a bare
+   container; mirror a column's 15px padding on each side-by-side section so those
+   gutters are absorbed within the section instead of overflowing the grid. */
+.person-editor-grid--wide .person-editor-section {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* On narrow screens, drop the grid and stack sections full-width in source order
+   so labels/inputs stay readable. */
+@media (max-width: 768px) {
+  .person-editor-grid {
+    display: block;
+  }
+}

@@ -13,14 +13,15 @@ import Tab from 'react-bootstrap/Tab';
 import { api } from '../api';
 import PersonCcDisplay from './person/PersonCcDisplay';
 import PersonEditor from './person/PersonEditor';
+import PersonCcEditor from './person/PersonCcEditor';
 import PersonJson from './person/PersonJson';
 import PersonCompact from './person/PersonCompact';
 import PersonTree from './person/PersonTree';
 import PersonWbDisplay from './person/PersonWbDisplay';
 import PersonWbEditor from './person/PersonWbEditor';
 
-const VALID_TABS = ['ccdisplay', 'editor', 'json', 'compact', 'tree', 'wbdisplay', 'wbeditor'];
-const DEFAULT_TAB = 'ccdisplay';
+const VALID_TABS = ['editor', 'ccdisplay', 'cceditor', 'json', 'compact', 'tree', 'wbdisplay', 'wbeditor'];
+const DEFAULT_TAB = 'editor';
 
 const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
 
@@ -261,12 +262,17 @@ const Person = () => {
                 id="person-view-tabs"
                 className="mb-3"
               >
-                <Tab eventKey="ccdisplay" title="CC Display">
-                  {activeTab === 'ccdisplay' && <PersonCcDisplay person={personData} />}
-                </Tab>
                 <Tab eventKey="editor" title="Editor">
                   {activeTab === 'editor' && (
                     <PersonEditor key={personData.curie} person={personData} />
+                  )}
+                </Tab>
+                <Tab eventKey="ccdisplay" title="CC Display">
+                  {activeTab === 'ccdisplay' && <PersonCcDisplay person={personData} />}
+                </Tab>
+                <Tab eventKey="cceditor" title="CC Editor">
+                  {activeTab === 'cceditor' && (
+                    <PersonCcEditor key={personData.curie} person={personData} />
                   )}
                 </Tab>
                 <Tab eventKey="json" title="JSON">

@@ -153,6 +153,7 @@ const PersonWbDisplay = ({ person }) => {
           ))
         )}
         <FieldRow label="status" ts={recordTs}>{status}</FieldRow>
+        <FieldRow label="privacy" ts={recordTs}>{person.privacy || 'hide_email'}</FieldRow>
       </Section>
 
       <Section title="Email">
