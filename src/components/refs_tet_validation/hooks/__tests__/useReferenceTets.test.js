@@ -96,37 +96,75 @@ describe('fetchTets', () => {
 });
 
 describe('fetchTetsBatch', () => {
-  test('no curies → no request, empty map', async () => {
+  test('no curies → no request, empty tags/counts', async () => {
     const out = await fetchTetsBatch([]);
-    expect(out).toEqual({});
+    expect(out).toEqual({ tags: {}, counts: {} });
     expect(api.post).not.toHaveBeenCalled();
   });
 
-  test('posts curies to /by_references and returns the map', async () => {
+  test('posts curies (no filters) to /by_references and returns tags + counts', async () => {
     api.post.mockResolvedValueOnce({
       data: {
-        'AGRKB:1': [{ topic_entity_tag_id: 1 }],
-        'AGRKB:2': [],
+        tags: {
+          'AGRKB:1': [{ topic_entity_tag_id: 1 }],
+          'AGRKB:2': [],
+        },
+        counts: {
+          'AGRKB:1': { 'ATP:1': { entity_pos: 1, total: 1 } },
+          'AGRKB:2': {},
+        },
       },
     });
     const out = await fetchTetsBatch(['AGRKB:1', 'AGRKB:2']);
-    expect(api.post).toHaveBeenCalledWith(
-      '/topic_entity_tag/by_references',
-      ['AGRKB:1', 'AGRKB:2']
-    );
-    expect(out['AGRKB:1']).toHaveLength(1);
-    expect(out['AGRKB:2']).toEqual([]);
+    expect(api.post).toHaveBeenCalledWith('/topic_entity_tag/by_references', {
+      curies_or_reference_ids: ['AGRKB:1', 'AGRKB:2'],
+    });
+    expect(out.tags['AGRKB:1']).toHaveLength(1);
+    expect(out.tags['AGRKB:2']).toEqual([]);
+    expect(out.counts['AGRKB:1']).toEqual({ 'ATP:1': { entity_pos: 1, total: 1 } });
+    expect(out.counts['AGRKB:2']).toEqual({});
+  });
+
+  test('sends only non-empty filters in the request body', async () => {
+    api.post.mockResolvedValueOnce({ data: { tags: {}, counts: {} } });
+    await fetchTetsBatch(['AGRKB:1'], {
+      topics: ['ATP:0000122'],
+      confidence_levels: [],
+      negated_confidence_levels: ['NEG'],
+      confidence_score_min: 0.5,
+      confidence_score_max: 1,
+      data_novelty: null,
+    });
+    expect(api.post).toHaveBeenCalledWith('/topic_entity_tag/by_references', {
+      curies_or_reference_ids: ['AGRKB:1'],
+      filters: {
+        topics: ['ATP:0000122'],
+        negated_confidence_levels: ['NEG'],
+        confidence_score_min: 0.5,
+        confidence_score_max: 1,
+      },
+    });
+  });
+
+  test('tolerates an older backend returning a bare { curie: tets[] } map', async () => {
+    api.post.mockResolvedValueOnce({
+      data: { 'AGRKB:1': [{ topic_entity_tag_id: 1 }] },
+    });
+    const out = await fetchTetsBatch(['AGRKB:1']);
+    expect(out.tags['AGRKB:1']).toEqual([{ topic_entity_tag_id: 1 }]);
+    expect(out.counts['AGRKB:1']).toEqual({});
   });
 
   test('dedupes curies and defaults missing keys to empty arrays', async () => {
-    api.post.mockResolvedValueOnce({ data: { 'AGRKB:1': [{ x: 1 }] } });
+    api.post.mockResolvedValueOnce({
+      data: { tags: { 'AGRKB:1': [{ x: 1 }] }, counts: {} },
+    });
     const out = await fetchTetsBatch(['AGRKB:1', 'AGRKB:1', 'AGRKB:3']);
-    expect(api.post).toHaveBeenCalledWith(
-      '/topic_entity_tag/by_references',
-      ['AGRKB:1', 'AGRKB:3']
-    );
-    expect(out['AGRKB:1']).toEqual([{ x: 1 }]);
-    expect(out['AGRKB:3']).toEqual([]); // present in request, absent in response
+    expect(api.post).toHaveBeenCalledWith('/topic_entity_tag/by_references', {
+      curies_or_reference_ids: ['AGRKB:1', 'AGRKB:3'],
+    });
+    expect(out.tags['AGRKB:1']).toEqual([{ x: 1 }]);
+    expect(out.tags['AGRKB:3']).toEqual([]); // present in request, absent in response
   });
 
   test('falls back to per-reference GET when batch endpoint fails', async () => {
@@ -135,8 +173,9 @@ describe('fetchTetsBatch', () => {
       .mockResolvedValueOnce({ data: [{ topic_entity_tag_id: 11 }] })
       .mockResolvedValueOnce({ data: [{ topic_entity_tag_id: 22 }] });
     const out = await fetchTetsBatch(['AGRKB:1', 'AGRKB:2']);
-    expect(out['AGRKB:1']).toEqual([{ topic_entity_tag_id: 11 }]);
-    expect(out['AGRKB:2']).toEqual([{ topic_entity_tag_id: 22 }]);
+    expect(out.tags['AGRKB:1']).toEqual([{ topic_entity_tag_id: 11 }]);
+    expect(out.tags['AGRKB:2']).toEqual([{ topic_entity_tag_id: 22 }]);
+    expect(out.counts['AGRKB:1']).toEqual({});
     expect(api.get).toHaveBeenCalledWith(
       '/topic_entity_tag/by_reference/AGRKB:1?page=1&page_size=8000'
     );

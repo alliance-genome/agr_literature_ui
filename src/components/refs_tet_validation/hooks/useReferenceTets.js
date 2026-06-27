@@ -92,18 +92,42 @@ export async function fetchTets(curie) {
   }
 }
 
+// Drop empty arrays/objects so we don't send "topics: []" etc. — the API treats
+// an omitted/empty field as "no restriction", but keeping the payload lean also
+// avoids re-fetches keyed on noise.
+function compactFilters(filters) {
+  if (!filters || typeof filters !== 'object') return undefined;
+  const out = {};
+  for (const [k, v] of Object.entries(filters)) {
+    if (v == null) continue;
+    if (Array.isArray(v)) {
+      if (v.length > 0) out[k] = v;
+    } else {
+      out[k] = v;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 /**
  * Fetch TETs for many references in one round-trip via POST
- * /topic_entity_tag/by_references, which returns a { curie: tets[] } map.
- * Chunked so a very large page doesn't become one huge request. Falls back to
- * per-reference GETs if the batch endpoint is unavailable (e.g. older backend),
- * so the grid keeps working either way.
+ * /topic_entity_tag/by_references, which returns { tags: {curie: tets[]},
+ * counts: {curie: {topic: {...}}} }. `filters` carries the initial search's TET
+ * facet criteria so the API returns ONLY the tags the search asked for (the main
+ * fix for the slow grid load). Chunked so a very large page doesn't become one
+ * huge request. Falls back to per-reference GETs if the batch endpoint is
+ * unavailable (e.g. older backend) — the fallback can't filter server-side, so
+ * the grid's own client-side filters still apply on that path.
+ *
+ * Returns { tags: {curie: tets[]}, counts: {curie: {topic: {...}}} }.
  */
-export async function fetchTetsBatch(curies) {
+export async function fetchTetsBatch(curies, filters) {
   const totalStart = performance.now();
-  const result = {};
+  const tags = {};
+  const counts = {};
   const unique = Array.from(new Set((curies || []).filter(Boolean)));
-  if (unique.length === 0) return result;
+  if (unique.length === 0) return { tags, counts };
+  const compactedFilters = compactFilters(filters);
   const groups = chunk(unique, TETS_BATCH_SIZE);
   debug.log(
     `[TetValidationGrid] TET batch fetch start: ${unique.length} references in ${groups.length} request(s)`
@@ -117,13 +141,27 @@ export async function fetchTetsBatch(curies) {
         // all, and on persistent 5xx/timeout we'd rather fall back quickly than
         // burn the full ~60s backoff. The fallback path keeps its own retries.
         const r = await withBackoff(
-          () => api.post('/topic_entity_tag/by_references', group),
+          () =>
+            api.post('/topic_entity_tag/by_references', {
+              curies_or_reference_ids: group,
+              ...(compactedFilters ? { filters: compactedFilters } : {}),
+            }),
           { delays: [500] }
         );
-        const data = r.data && typeof r.data === 'object' ? r.data : {};
-        for (const c of group) result[c] = data[c] || [];
-        const tetCount = Object.values(data).reduce(
-          (sum, tets) => sum + (Array.isArray(tets) ? tets.length : 0),
+        // New shape: { tags, counts }. Tolerate an older backend that returns a
+        // bare { curie: tets[] } map so a deploy-order mismatch degrades to
+        // "tags only" rather than an error.
+        const body = r.data && typeof r.data === 'object' ? r.data : {};
+        const tagMap =
+          body.tags && typeof body.tags === 'object' ? body.tags : body;
+        const countMap =
+          body.counts && typeof body.counts === 'object' ? body.counts : {};
+        for (const c of group) {
+          tags[c] = tagMap[c] || [];
+          counts[c] = countMap[c] || {};
+        }
+        const tetCount = group.reduce(
+          (sum, c) => sum + (Array.isArray(tags[c]) ? tags[c].length : 0),
           0
         );
         debug.log(
@@ -138,11 +176,12 @@ export async function fetchTetsBatch(curies) {
         );
         await Promise.all(
           group.map(async (c) => {
-            result[c] = await fetchTets(c);
+            tags[c] = await fetchTets(c);
+            counts[c] = {};
           })
         );
         const fallbackCount = group.reduce(
-          (sum, c) => sum + (Array.isArray(result[c]) ? result[c].length : 0),
+          (sum, c) => sum + (Array.isArray(tags[c]) ? tags[c].length : 0),
           0
         );
         debug.log(
@@ -152,18 +191,23 @@ export async function fetchTetsBatch(curies) {
       }
     })
   );
-  const totalTags = Object.values(result).reduce(
-    (sum, tets) => sum + (Array.isArray(tets) ? tets.length : 0),
+  const totalTags = Object.values(tags).reduce(
+    (sum, t) => sum + (Array.isArray(t) ? t.length : 0),
     0
   );
   debug.log(
     `[TetValidationGrid] TET batch fetch done: ${unique.length} references, ` +
     `${totalTags} tags, ${elapsedMs(totalStart)}`
   );
-  return result;
+  return { tags, counts };
 }
 
-export function useReferenceTets(referenceIds, biblioByCurie, active = true) {
+export function useReferenceTets(
+  referenceIds,
+  biblioByCurie,
+  active = true,
+  filters = null
+) {
   const [rows, setRows] = useState([]);
   const [unresolved, setUnresolved] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -175,6 +219,14 @@ export function useReferenceTets(referenceIds, biblioByCurie, active = true) {
   // redundant reload when only the map's identity changes.
   const biblioMapRef = useRef(biblioByCurie);
   biblioMapRef.current = biblioByCurie;
+
+  // Same idea for the search filters: read the latest value from a ref, but key
+  // the effect on the filters' *value* (stringified) below so a real change to
+  // the search criteria triggers a re-fetch while an identity-only change does
+  // not.
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+  const filtersKey = JSON.stringify(filters || null);
 
   // Resolve one input to its canonical curie + biblio. When the caller already
   // supplied biblio (search results), AGRKB inputs need NO network call — the
@@ -237,9 +289,13 @@ export function useReferenceTets(referenceIds, biblioByCurie, active = true) {
       );
 
       // Phase 2: fetch all TETs in one batched request (was one HTTP call per
-      // reference — the grid's main bottleneck).
+      // reference — the grid's main bottleneck), restricted to the tags the
+      // search asked for.
       const fetchStart = performance.now();
-      const tetsByCurie = await fetchTetsBatch(resolved.map((r) => r.curie));
+      const { tags: tetsByCurie, counts: countsByCurie } = await fetchTetsBatch(
+        resolved.map((r) => r.curie),
+        filtersRef.current
+      );
       if (cancelled || reqId !== reqIdRef.current) return;
       debug.log(`[TetValidationGrid] fetch done: ${elapsedMs(fetchStart)}`);
 
@@ -248,6 +304,7 @@ export function useReferenceTets(referenceIds, biblioByCurie, active = true) {
         curie: r.curie,
         biblio: r.biblio,
         tets: tetsByCurie[r.curie] || [],
+        counts: countsByCurie[r.curie] || {},
       }));
       setRows(nextRows);
       setUnresolved(newUnresolved);
@@ -266,7 +323,7 @@ export function useReferenceTets(referenceIds, biblioByCurie, active = true) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(referenceIds || []), resolveBiblio, active]);
+  }, [JSON.stringify(referenceIds || []), resolveBiblio, active, filtersKey]);
 
   const refetchRow = useCallback(async (curie) => {
     const tets = await fetchTets(curie);

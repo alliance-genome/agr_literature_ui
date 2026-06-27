@@ -175,6 +175,7 @@ export default function TetValidationGrid({
   excludedConfidenceLevels,
   confidenceScore,
   biblioByCurie,
+  searchFilters,
   active = true,
   persistRef,
 }) {
@@ -235,7 +236,8 @@ export default function TetValidationGrid({
   const { rows: rawRows, unresolved, loading, refetchRow } = useReferenceTets(
     referenceIds,
     biblioByCurie,
-    active
+    active,
+    searchFilters
   );
 
   // Honor the search's confidence filters in the grid. The grid fetches TETs
