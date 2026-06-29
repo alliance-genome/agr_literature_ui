@@ -109,8 +109,11 @@ const SearchLayout = () => {
         // positive nested-TET facets the same way: single-tag => one tag must
         // satisfy all of them; multi-tag => the search matched them across
         // different tags, so the grid must OR them or a genuine search hit would
-        // show an empty row. Default true matches the search reducer default.
-        f.apply_to_single_tag = applyToSingleTag !== false;
+        // show an empty row. Use the SAME truthiness test searchActions.js uses
+        // to pick processCombinedTETFacets (truthy) vs processSingleFacet
+        // (falsy), so the flag always matches the ES query path actually taken
+        // (the reducer defaults applyToSingleTag to true).
+        f.apply_to_single_tag = !!applyToSingleTag;
         return f;
     }, [searchFacetsValues, searchExcludedFacetsValues, confidenceScore, applyToSingleTag]);
 
