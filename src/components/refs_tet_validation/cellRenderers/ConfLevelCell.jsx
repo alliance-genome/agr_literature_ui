@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { buildEntries } from '../helpers/buildEntries';
+import { cellEntries } from '../helpers/buildEntries';
 import EvidencePanels from './EvidencePanels';
 
 function renderConfLevelEntry(e) {
@@ -7,7 +7,24 @@ function renderConfLevelEntry(e) {
     return (
       <div className="tetv-mini-row" key={e.key}>
         <span className="tetv-attr-value">
-          {e.tets[0].confidence_level || '–'}
+          {e.tets?.[0]?.confidence_level || e.confidence_level || '–'}
+        </span>
+      </div>
+    );
+  }
+  if (e.aggregated) {
+    const levels = e.confidence_levels || [];
+    if (levels.length === 0) {
+      return (
+        <div className="tetv-mini-row" key={e.key}>
+          <span className="tetv-attr-value">–</span>
+        </div>
+      );
+    }
+    return (
+      <div className="tetv-mini-row" key={e.key}>
+        <span className="tetv-attr-value" title={levels.join(', ')}>
+          {levels.length === 1 ? levels[0] : `(${levels.length} levels)`}
         </span>
       </div>
     );
@@ -37,11 +54,10 @@ function renderConfLevelEntry(e) {
 }
 
 export default function ConfLevelCell(params) {
-  const tets = params.value || [];
   const { sourceFilterModel } = params.colDef.cellRendererParams || {};
   const entries = useMemo(
-    () => buildEntries(tets, sourceFilterModel),
-    [tets, sourceFilterModel]
+    () => cellEntries(params.value, sourceFilterModel),
+    [params.value, sourceFilterModel]
   );
   return (
     <div className="tetv-attr-cell">

@@ -24,11 +24,29 @@ export function groupEntriesByEvidence(entries) {
   const m = new Map();
   for (const e of entries || []) {
     const key =
-      e.tets?.[0]?.topic_entity_tag_source?.source_evidence_assertion || '';
+      e.source_evidence_assertion ||
+      e.tets?.[0]?.topic_entity_tag_source?.source_evidence_assertion ||
+      '';
     if (!m.has(key)) m.set(key, []);
     m.get(key).push(e);
   }
   return m;
+}
+
+export function cellTets(value) {
+  if (Array.isArray(value)) return value;
+  return value?.tets || [];
+}
+
+export function cellEntries(value, sourceFilterModel) {
+  const prebuilt = Array.isArray(value?.entries) ? value.entries : null;
+  if (prebuilt) {
+    if (!Array.isArray(sourceFilterModel)) return prebuilt;
+    return prebuilt.filter((entry) =>
+      sourceFilterModel.includes(entry.sourceLabel || entry.source_label)
+    );
+  }
+  return buildEntries(cellTets(value), sourceFilterModel);
 }
 
 /**

@@ -96,13 +96,13 @@ describe('fetchTets', () => {
 });
 
 describe('fetchTetsBatch', () => {
-  test('no curies → no request, empty tags/counts', async () => {
+  test('no curies → no request, empty tags/counts/entries', async () => {
     const out = await fetchTetsBatch([]);
-    expect(out).toEqual({ tags: {}, counts: {} });
+    expect(out).toEqual({ tags: {}, counts: {}, entries: {} });
     expect(api.post).not.toHaveBeenCalled();
   });
 
-  test('posts curies (no filters) to /by_references and returns tags + counts', async () => {
+  test('posts curies (no filters) to /by_references and returns tags + counts + entries', async () => {
     api.post.mockResolvedValueOnce({
       data: {
         tags: {
@@ -111,6 +111,10 @@ describe('fetchTetsBatch', () => {
         },
         counts: {
           'AGRKB:1': { 'ATP:1': { entity_pos: 1, total: 1 } },
+          'AGRKB:2': {},
+        },
+        entries: {
+          'AGRKB:1': { 'ATP:1': [{ kind: 'entity-pos', count: 1 }] },
           'AGRKB:2': {},
         },
       },
@@ -123,6 +127,8 @@ describe('fetchTetsBatch', () => {
     expect(out.tags['AGRKB:2']).toEqual([]);
     expect(out.counts['AGRKB:1']).toEqual({ 'ATP:1': { entity_pos: 1, total: 1 } });
     expect(out.counts['AGRKB:2']).toEqual({});
+    expect(out.entries['AGRKB:1']).toEqual({ 'ATP:1': [{ kind: 'entity-pos', count: 1 }] });
+    expect(out.entries['AGRKB:2']).toEqual({});
   });
 
   test('sends only non-empty filters in the request body', async () => {
@@ -133,6 +139,8 @@ describe('fetchTetsBatch', () => {
       negated_confidence_levels: ['NEG'],
       confidence_score_min: 0.5,
       confidence_score_max: 1,
+      entity_types: ['ATP:0000005'],
+      entities: [],
       data_novelty: null,
     });
     expect(api.post).toHaveBeenCalledWith('/topic_entity_tag/by_references', {
@@ -142,6 +150,7 @@ describe('fetchTetsBatch', () => {
         negated_confidence_levels: ['NEG'],
         confidence_score_min: 0.5,
         confidence_score_max: 1,
+        entity_types: ['ATP:0000005'],
       },
     });
   });
@@ -153,6 +162,7 @@ describe('fetchTetsBatch', () => {
     const out = await fetchTetsBatch(['AGRKB:1']);
     expect(out.tags['AGRKB:1']).toEqual([{ topic_entity_tag_id: 1 }]);
     expect(out.counts['AGRKB:1']).toEqual({});
+    expect(out.entries['AGRKB:1']).toBeNull();
   });
 
   test('dedupes curies and defaults missing keys to empty arrays', async () => {
@@ -165,6 +175,7 @@ describe('fetchTetsBatch', () => {
     });
     expect(out.tags['AGRKB:1']).toEqual([{ x: 1 }]);
     expect(out.tags['AGRKB:3']).toEqual([]); // present in request, absent in response
+    expect(out.entries['AGRKB:3']).toEqual({});
   });
 
   test('falls back to per-reference GET when batch endpoint fails', async () => {
@@ -176,6 +187,7 @@ describe('fetchTetsBatch', () => {
     expect(out.tags['AGRKB:1']).toEqual([{ topic_entity_tag_id: 11 }]);
     expect(out.tags['AGRKB:2']).toEqual([{ topic_entity_tag_id: 22 }]);
     expect(out.counts['AGRKB:1']).toEqual({});
+    expect(out.entries['AGRKB:1']).toBeNull();
     expect(api.get).toHaveBeenCalledWith(
       '/topic_entity_tag/by_reference/AGRKB:1?page=1&page_size=8000'
     );

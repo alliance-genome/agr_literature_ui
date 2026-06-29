@@ -94,6 +94,8 @@ const SearchLayout = () => {
         if (nonEmpty(fv.source_methods)) f.source_methods = fv.source_methods;
         if (nonEmpty(fv.source_evidence_assertions)) f.source_evidence_assertions = fv.source_evidence_assertions;
         if (nonEmpty(fv.data_novelty)) f.data_novelty = fv.data_novelty;
+        if (nonEmpty(fv.entity_types)) f.entity_types = fv.entity_types;
+        if (nonEmpty(fv.entities)) f.entities = fv.entities;
         if (nonEmpty(neg.confidence_levels)) f.negated_confidence_levels = neg.confidence_levels;
         if (nonEmpty(neg.source_methods)) f.negated_source_methods = neg.source_methods;
         if (nonEmpty(neg.source_evidence_assertions)) f.negated_source_evidence_assertions = neg.source_evidence_assertions;

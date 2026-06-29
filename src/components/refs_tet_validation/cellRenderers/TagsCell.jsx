@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { buildEntries } from '../helpers/buildEntries';
+import { cellEntries } from '../helpers/buildEntries';
 import EvidencePanels from './EvidencePanels';
 
 function PillTopic({ tet }) {
@@ -32,11 +32,10 @@ function entityLabel(t) {
 }
 
 export default function TagsCell(params) {
-  const tets = params.value;
   const { sourceFilterModel } = params.colDef.cellRendererParams || {};
   const entries = useMemo(
-    () => buildEntries(tets || [], sourceFilterModel),
-    [tets, sourceFilterModel]
+    () => cellEntries(params.value, sourceFilterModel),
+    [params.value, sourceFilterModel]
   );
 
   return (
@@ -46,20 +45,21 @@ export default function TagsCell(params) {
         renderEntry={(e) => (
           <div className="tetv-mini-row tetv-tag-row" key={e.key}>
             {e.kind === 'topic' ? (
-              <PillTopic tet={e.tets[0]} />
+              <PillTopic tet={e.tets?.[0] || e} />
             ) : (
               <PillEntityCount
-                count={e.tets.length}
+                count={e.count || (e.tets || []).length}
                 negated={e.kind === 'entity-neg'}
                 entitiesText={
-                  e.tets
+                  e.entities_text ||
+                  ((e.tets || [])
                     .slice(0, 20)
                     .map(entityLabel)
                     .filter(Boolean)
                     .join(', ') +
-                  (e.tets.length > 20
-                    ? `, ... (+${e.tets.length - 20} more)`
-                    : '')
+                    ((e.tets || []).length > 20
+                      ? `, ... (+${(e.tets || []).length - 20} more)`
+                      : ''))
                 }
               />
             )}
