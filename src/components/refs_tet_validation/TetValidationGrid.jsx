@@ -175,6 +175,7 @@ export default function TetValidationGrid({
   excludedConfidenceLevels,
   confidenceScore,
   biblioByCurie,
+  searchFilters,
   active = true,
   persistRef,
 }) {
@@ -235,7 +236,8 @@ export default function TetValidationGrid({
   const { rows: rawRows, unresolved, loading, refetchRow } = useReferenceTets(
     referenceIds,
     biblioByCurie,
-    active
+    active,
+    searchFilters
   );
 
   // Honor the search's confidence filters in the grid. The grid fetches TETs
@@ -248,8 +250,13 @@ export default function TetValidationGrid({
   //    falls outside the selected [min, max] range, matching the backend nested
   //    range query. TETs without a numeric score (e.g. curator/author tags) are
   //    kept, since the slider targets scored ML/automated predictions.
-  // Filtering once here keeps every per-topic column (Sources / Data / Conf /
-  // Note) consistent, since they all iterate row.tets.
+  // This filters row.tets, which backs the Validation column and -- on the
+  // older-backend fallback path -- the per-topic cells too (they rebuild their
+  // mini-rows from row.tets via buildEntries). On the server-aggregated path the
+  // per-topic columns render row.entries instead, which the batch endpoint has
+  // already filtered with the SAME criteria (negated_confidence_levels +
+  // confidence_score range, both keeping unscored tags), so entries stay
+  // consistent with the filtered row.tets without re-filtering here.
   const excludedConfLevelSet = useMemo(
     () =>
       new Set(
@@ -375,8 +382,17 @@ export default function TetValidationGrid({
 
   const allSources = useMemo(() => {
     const s = new Set();
-    for (const r of rows)
-      for (const t of r.tets || []) s.add(sourceLabel(t.topic_entity_tag_source));
+    for (const r of rows) {
+      const entries = r.entries ? Object.values(r.entries).flat() : [];
+      if (entries.length > 0) {
+        entries.forEach((entry) => {
+          const label = entry.sourceLabel || entry.source_label;
+          if (label) s.add(label);
+        });
+      } else {
+        for (const t of r.tets || []) s.add(sourceLabel(t.topic_entity_tag_source));
+      }
+    }
     return [...s].sort();
   }, [rows]);
 
@@ -872,14 +888,16 @@ export default function TetValidationGrid({
     const confidenceLevels = new Set();
 
     for (const row of rows) {
+      const rowEntries = row.entries ? Object.values(row.entries).flat() : null;
+      const rowCellValue = { tets: row.tets || [], entries: rowEntries };
       innerColumnFilterValues(
         INNER_COLUMN_TYPES.SOURCES,
-        row.tets || [],
+        rowCellValue,
         sourceFilterModel
       ).forEach((value) => sources.add(value));
       innerColumnFilterValues(
         INNER_COLUMN_TYPES.CONF_LEVEL,
-        row.tets || [],
+        rowCellValue,
         sourceFilterModel
       ).forEach((value) => confidenceLevels.add(value));
     }
@@ -900,7 +918,13 @@ export default function TetValidationGrid({
           const flat = [];
           const bySrc = grouped.get(t.curie);
           if (bySrc) for (const arr of bySrc.values()) flat.push(...arr);
-          cells[`__topic_${t.curie}`] = flat;
+          const hasServerEntries = !!r.entries &&
+            Object.prototype.hasOwnProperty.call(r.entries, t.curie);
+          cells[`__topic_${t.curie}`] = {
+            tets: flat,
+            entries: hasServerEntries ? (r.entries[t.curie] || []) : null,
+            counts: r.counts?.[t.curie] || {},
+          };
         }
         return {
           input: r.input,

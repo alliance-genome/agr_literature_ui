@@ -47,6 +47,7 @@ const SearchLayout = () => {
     const searchFacetsValues = useSelector((s) => s.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector((s) => s.search.searchExcludedFacetsValues);
     const confidenceScore = useSelector((s) => s.search.confidenceScore);
+    const applyToSingleTag = useSelector((s) => s.search.applyToSingleTag);
     const searchLoading = useSelector((s) => s.search.searchLoading);
 
     const referenceIds = useMemo(
@@ -78,6 +79,43 @@ const SearchLayout = () => {
         () => searchExcludedFacetsValues?.confidence_levels || [],
         [searchExcludedFacetsValues]
     );
+    // The TET facet criteria from the current search, forwarded to the grid's
+    // batch fetch so the API returns ONLY the tags the search asked for (e.g.
+    // when a curator selects a topic/entity) instead of every tag on every
+    // reference. This is the main fix for the slow grid load. Mirrors the TET
+    // facets the search itself sends in searchActions.js. Confidence-score is
+    // sent only when it differs from the default full range [0, 1].
+    const searchFilters = useMemo(() => {
+        const fv = searchFacetsValues || {};
+        const neg = searchExcludedFacetsValues || {};
+        const nonEmpty = (a) => Array.isArray(a) && a.length > 0;
+        const f = {};
+        if (nonEmpty(fv.topics)) f.topics = fv.topics;
+        if (nonEmpty(fv.confidence_levels)) f.confidence_levels = fv.confidence_levels;
+        if (nonEmpty(fv.source_methods)) f.source_methods = fv.source_methods;
+        if (nonEmpty(fv.source_evidence_assertions)) f.source_evidence_assertions = fv.source_evidence_assertions;
+        if (nonEmpty(fv.data_novelty)) f.data_novelty = fv.data_novelty;
+        if (nonEmpty(fv.entity_types)) f.entity_types = fv.entity_types;
+        if (nonEmpty(fv.entities)) f.entities = fv.entities;
+        if (nonEmpty(neg.confidence_levels)) f.negated_confidence_levels = neg.confidence_levels;
+        if (nonEmpty(neg.source_methods)) f.negated_source_methods = neg.source_methods;
+        if (nonEmpty(neg.source_evidence_assertions)) f.negated_source_evidence_assertions = neg.source_evidence_assertions;
+        if (Array.isArray(confidenceScore) && !(confidenceScore[0] === 0 && confidenceScore[1] === 1)) {
+            f.confidence_score_min = confidenceScore[0];
+            f.confidence_score_max = confidenceScore[1];
+        }
+        if (Object.keys(f).length === 0) return undefined;
+        // Mirror the search's single/multi-tag mode so the API combines the
+        // positive nested-TET facets the same way: single-tag => one tag must
+        // satisfy all of them; multi-tag => the search matched them across
+        // different tags, so the grid must OR them or a genuine search hit would
+        // show an empty row. Use the SAME truthiness test searchActions.js uses
+        // to pick processCombinedTETFacets (truthy) vs processSingleFacet
+        // (falsy), so the flag always matches the ES query path actually taken
+        // (the reducer defaults applyToSingleTag to true).
+        f.apply_to_single_tag = !!applyToSingleTag;
+        return f;
+    }, [searchFacetsValues, searchExcludedFacetsValues, confidenceScore, applyToSingleTag]);
 
     // Handle window resize
     useEffect(() => {
@@ -303,6 +341,7 @@ const SearchLayout = () => {
                                             excludedConfidenceLevels={excludedConfidenceLevels}
                                             confidenceScore={confidenceScore}
                                             biblioByCurie={biblioByCurie}
+                                            searchFilters={searchFilters}
                                             active={view === 'grid'}
                                             persistRef={gridStateRef}
                                         />

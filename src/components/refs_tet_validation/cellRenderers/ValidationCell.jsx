@@ -7,11 +7,14 @@ import { speciesBadgeLetter, speciesName } from '../helpers/speciesUtils';
 /** TETs from this cell that are *topic-level* and authored by a professional
  *  biocurator (i.e. count as a curator validation). */
 function professionalBiocuratorTopicTets(tets) {
-  return (tets || []).filter(isCuratorValidationTet);
+  const arr = Array.isArray(tets) ? tets : (tets?.tets || []);
+  return arr.filter(isCuratorValidationTet);
 }
 
 export default function ValidationCell(params) {
-  const tets = params.value || [];
+  const tets = Array.isArray(params.value)
+    ? params.value
+    : (params.value?.tets || []);
   const {
     topicCurie,
     topicName,

@@ -1,13 +1,12 @@
 import React, { useMemo } from 'react';
-import { buildEntries } from '../helpers/buildEntries';
+import { cellEntries } from '../helpers/buildEntries';
 import EvidencePanels from './EvidencePanels';
 
 export default function SourcesCell(params) {
-  const tets = params.value;
   const { sourceFilterModel } = params.colDef.cellRendererParams || {};
   const entries = useMemo(
-    () => buildEntries(tets || [], sourceFilterModel),
-    [tets, sourceFilterModel]
+    () => cellEntries(params.value, sourceFilterModel),
+    [params.value, sourceFilterModel]
   );
 
   return (
@@ -17,17 +16,20 @@ export default function SourcesCell(params) {
         showTitles
         renderEntry={(e) => {
           const description =
-            e.tets?.[0]?.topic_entity_tag_source?.description || null;
+            e.source_description ||
+            e.tets?.[0]?.topic_entity_tag_source?.description ||
+            null;
+          const label = e.sourceLabel || e.source_label;
           return (
             <div className="tetv-mini-row" key={e.key}>
               <span
                 className="tetv-source-label"
                 title={
                   description ||
-                  `${e.sourceLabel} — no description provided for this source`
+                  `${label} — no description provided for this source`
                 }
               >
-                {e.sourceLabel}
+                {label}
               </span>
             </div>
           );

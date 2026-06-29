@@ -1,4 +1,4 @@
-import { buildEntries } from './buildEntries';
+import { cellEntries, cellTets } from './buildEntries';
 import {
   VALIDATION_FILTER_KEYS,
   validationSortRank,
@@ -18,8 +18,8 @@ export const CONF_SCORE_FILTER_KEYS = ['has score', 'missing score'];
 export const NOTE_FILTER_KEYS = ['has note', 'empty'];
 export const TAG_FILTER_KEYS = ['Y', 'N', 'entity', 'entity negated', 'empty'];
 
-function visibleEntries(tets, sourceFilterModel) {
-  return buildEntries(tets, sourceFilterModel);
+function visibleEntries(value, sourceFilterModel) {
+  return cellEntries(value, sourceFilterModel);
 }
 
 function nonEmptyString(value) {
@@ -31,14 +31,21 @@ function uniqueValues(values) {
 }
 
 function visibleSourceLabels(entries) {
-  const labels = entries.map((entry) => entry.sourceLabel);
+  const labels = entries.map((entry) => entry.sourceLabel || entry.source_label);
   if (labels.length === 0) return ['empty'];
   return labels;
 }
 
 function visibleConfidenceScores(entries) {
   return entries
-    .flatMap((entry) => entry.tets.map((tet) => tet.confidence_score))
+    .flatMap((entry) => {
+      if (entry.aggregated) {
+        return entry.kind === 'topic'
+          ? [entry.confidence_score]
+          : [entry.confidence_score_min, entry.confidence_score_max];
+      }
+      return entry.tets.map((tet) => tet.confidence_score);
+    })
     .filter((value) => value !== null && value !== undefined && value !== '')
     .map(Number)
     .filter((value) => Number.isFinite(value));
@@ -46,7 +53,14 @@ function visibleConfidenceScores(entries) {
 
 function visibleConfidenceLevels(entries) {
   const levels = uniqueValues(
-    entries.flatMap((entry) => entry.tets.map((tet) => tet.confidence_level))
+    entries.flatMap((entry) => {
+      if (entry.aggregated) {
+        return entry.kind === 'topic'
+          ? [entry.confidence_level]
+          : (entry.confidence_levels || []);
+      }
+      return entry.tets.map((tet) => tet.confidence_level);
+    })
   );
   if (levels.length === 0) return ['empty'];
   return levels;
@@ -55,7 +69,10 @@ function visibleConfidenceLevels(entries) {
 function visibleTagLabels(entries) {
   const labels = entries.map((entry) => {
     if (entry.kind === 'topic') {
-      return entry.tets[0]?.negated === true ? 'N' : 'Y';
+      const negated = entry.aggregated
+        ? entry.negated
+        : entry.tets[0]?.negated;
+      return negated === true ? 'N' : 'Y';
     }
     return entry.kind === 'entity-neg' ? 'entity negated' : 'entity';
   });
@@ -65,7 +82,14 @@ function visibleTagLabels(entries) {
 
 function visibleNotes(entries) {
   return uniqueValues(
-    entries.flatMap((entry) => entry.tets.map((tet) => tet.note))
+    entries.flatMap((entry) => {
+      if (entry.aggregated) {
+        return entry.kind === 'topic'
+          ? [entry.note]
+          : (entry.notes || []).map((note) => note.note);
+      }
+      return entry.tets.map((tet) => tet.note);
+    })
   );
 }
 
@@ -82,10 +106,11 @@ function compareNullableStrings(a, b) {
 
 export function innerColumnFilterValues(kind, tets, sourceFilterModel) {
   const entries = visibleEntries(tets, sourceFilterModel);
+  const rawTets = cellTets(tets);
 
   switch (kind) {
     case INNER_COLUMN_TYPES.VALIDATION:
-      return [validationState(tets)];
+      return [validationState(rawTets)];
     case INNER_COLUMN_TYPES.TAG:
       return uniqueValues(visibleTagLabels(entries));
     case INNER_COLUMN_TYPES.SOURCES:
@@ -120,12 +145,13 @@ export function innerColumnPassesFilter(
 
 export function innerColumnSortMeta(kind, tets, sourceFilterModel) {
   const entries = visibleEntries(tets, sourceFilterModel);
+  const rawTets = cellTets(tets);
 
   switch (kind) {
     case INNER_COLUMN_TYPES.VALIDATION: {
-      const state = validationState(tets);
+      const state = validationState(rawTets);
       return {
-        rank: validationSortRank(tets),
+        rank: validationSortRank(rawTets),
         text: state,
       };
     }

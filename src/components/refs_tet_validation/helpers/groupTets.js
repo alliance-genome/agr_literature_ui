@@ -15,9 +15,14 @@ export function normalizeCurie(curie) {
   return String(curie).toUpperCase();
 }
 
+function asTets(value) {
+  if (Array.isArray(value)) return value;
+  return value?.tets || [];
+}
+
 export function groupTetsByTopicAndSource(tets) {
   const byTopic = new Map();
-  for (const tet of tets || []) {
+  for (const tet of asTets(tets)) {
     const topicKey = normalizeCurie(tet.topic);
     const label = sourceLabel(tet.topic_entity_tag_source);
     if (!byTopic.has(topicKey)) byTopic.set(topicKey, new Map());
@@ -56,7 +61,7 @@ export function isCuratorValidationTet(tet) {
 }
 
 export function cellSortRank(tets) {
-  const arr = tets || [];
+  const arr = asTets(tets);
   if (arr.length === 0) return 0;
   if (arr.some((t) => t.negated === false)) return 2;
   return 1;
@@ -66,7 +71,7 @@ export function cellSortRank(tets) {
  *  professional-biocurator topic-level TETs.
  *  Returns one of: 'unvalidated' | 'positive' | 'negative' | 'conflict'. */
 export function validationState(tets) {
-  const validations = (tets || []).filter(isCuratorValidationTet);
+  const validations = asTets(tets).filter(isCuratorValidationTet);
   if (validations.length === 0) return 'unvalidated';
   const hasPos = validations.some((t) => !t.negated);
   const hasNeg = validations.some((t) => t.negated);
@@ -99,7 +104,7 @@ export const TOPIC_CELL_FILTER_KEYS = [
 
 export function cellPredicate(tets, currentUid, model) {
   if (!Array.isArray(model) || model.length === 0) return true;
-  const arr = tets || [];
+  const arr = asTets(tets);
   return model.some((key) => {
     switch (key) {
       case 'empty':
