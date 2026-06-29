@@ -47,6 +47,7 @@ const SearchLayout = () => {
     const searchFacetsValues = useSelector((s) => s.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector((s) => s.search.searchExcludedFacetsValues);
     const confidenceScore = useSelector((s) => s.search.confidenceScore);
+    const applyToSingleTag = useSelector((s) => s.search.applyToSingleTag);
     const searchLoading = useSelector((s) => s.search.searchLoading);
 
     const referenceIds = useMemo(
@@ -103,8 +104,15 @@ const SearchLayout = () => {
             f.confidence_score_min = confidenceScore[0];
             f.confidence_score_max = confidenceScore[1];
         }
-        return Object.keys(f).length > 0 ? f : undefined;
-    }, [searchFacetsValues, searchExcludedFacetsValues, confidenceScore]);
+        if (Object.keys(f).length === 0) return undefined;
+        // Mirror the search's single/multi-tag mode so the API combines the
+        // positive nested-TET facets the same way: single-tag => one tag must
+        // satisfy all of them; multi-tag => the search matched them across
+        // different tags, so the grid must OR them or a genuine search hit would
+        // show an empty row. Default true matches the search reducer default.
+        f.apply_to_single_tag = applyToSingleTag !== false;
+        return f;
+    }, [searchFacetsValues, searchExcludedFacetsValues, confidenceScore, applyToSingleTag]);
 
     // Handle window resize
     useEffect(() => {

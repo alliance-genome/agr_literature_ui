@@ -250,8 +250,13 @@ export default function TetValidationGrid({
   //    falls outside the selected [min, max] range, matching the backend nested
   //    range query. TETs without a numeric score (e.g. curator/author tags) are
   //    kept, since the slider targets scored ML/automated predictions.
-  // Filtering once here keeps every per-topic column (Sources / Data / Conf /
-  // Note) consistent, since they all iterate row.tets.
+  // This filters row.tets, which backs the Validation column and -- on the
+  // older-backend fallback path -- the per-topic cells too (they rebuild their
+  // mini-rows from row.tets via buildEntries). On the server-aggregated path the
+  // per-topic columns render row.entries instead, which the batch endpoint has
+  // already filtered with the SAME criteria (negated_confidence_levels +
+  // confidence_score range, both keeping unscored tags), so entries stay
+  // consistent with the filtered row.tets without re-filtering here.
   const excludedConfLevelSet = useMemo(
     () =>
       new Set(

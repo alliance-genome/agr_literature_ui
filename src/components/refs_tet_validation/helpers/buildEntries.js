@@ -38,11 +38,28 @@ export function cellTets(value) {
   return value?.tets || [];
 }
 
+/** Every mini-row is keyed on entry.key (React reconciliation across the
+ *  lockstep per-topic columns). buildEntries always sets key, but server-
+ *  supplied entries are passed through verbatim and an older/partial backend
+ *  could omit it, which would render sibling rows with key={undefined}. Derive a
+ *  stable fallback from the entry's own fields (kind + source + tag id), falling
+ *  back to the cell-local index only as a last resort. */
+function entryKey(entry, idx) {
+  if (entry.key != null) return entry.key;
+  const label = entry.sourceLabel || entry.source_label || '';
+  const id = entry.topic_entity_tag_id != null ? entry.topic_entity_tag_id : idx;
+  return `${entry.kind || 'entry'}-${label}-${id}`;
+}
+
 export function cellEntries(value, sourceFilterModel) {
   const prebuilt = Array.isArray(value?.entries) ? value.entries : null;
   if (prebuilt) {
-    if (!Array.isArray(sourceFilterModel)) return prebuilt;
-    return prebuilt.filter((entry) =>
+    // Guarantee a key on every server entry before any cell renders it.
+    const keyed = prebuilt.map((entry, idx) =>
+      entry.key != null ? entry : { ...entry, key: entryKey(entry, idx) }
+    );
+    if (!Array.isArray(sourceFilterModel)) return keyed;
+    return keyed.filter((entry) =>
       sourceFilterModel.includes(entry.sourceLabel || entry.source_label)
     );
   }
