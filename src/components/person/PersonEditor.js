@@ -131,12 +131,17 @@ const fieldChanged = (cur, saved) =>
   typeof cur === 'boolean' || typeof saved === 'boolean'
     ? !!cur !== !!saved
     : String(cur ?? '') !== String(saved ?? '');
-const hlOutline = (color) => ({ outline: `2px solid ${color}`, outlineOffset: 1, borderRadius: 4 });
+// Unsaved/edited field → the Biblio editor's purple background (consistency);
+// a failed save → a red outline so it's distinct from a normal pending edit.
+const hlStyle = (error) =>
+  error
+    ? { outline: '2px solid #cc6666', outlineOffset: 1, borderRadius: 4 }
+    : { backgroundColor: 'var(--updated-purple, #e6deff)' };
 const HlControl = ({ savedValue, ...props }) => {
   const { focused, error } = React.useContext(FieldHlContext);
   const dirty = savedValue !== undefined && fieldChanged(props.value, savedValue);
   const show = dirty && (error || !focused);
-  const style = show ? { ...(props.style || {}), ...hlOutline(error ? '#e0a0a0' : '#ecd25a') } : props.style;
+  const style = show ? { ...(props.style || {}), ...hlStyle(error) } : props.style;
   return <BaseControl {...props} style={style} />;
 };
 const HlCheck = ({ savedValue, ...props }) => {
@@ -145,7 +150,7 @@ const HlCheck = ({ savedValue, ...props }) => {
   const show = dirty && (error || !focused);
   // Only add the outline — don't change display/padding, which would break
   // Bootstrap's .form-check layout (input sits in its left padding).
-  const style = show ? { ...(props.style || {}), ...hlOutline(error ? '#e0a0a0' : '#ecd25a') } : props.style;
+  const style = show ? { ...(props.style || {}), ...hlStyle(error) } : props.style;
   return <BaseCheck {...props} style={style} />;
 };
 
