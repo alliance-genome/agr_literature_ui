@@ -1,4 +1,4 @@
-import { cellEntries, cellTets } from './buildEntries';
+import { cellEntries } from './buildEntries';
 import {
   VALIDATION_FILTER_KEYS,
   validationSortRank,
@@ -106,11 +106,12 @@ function compareNullableStrings(a, b) {
 
 export function innerColumnFilterValues(kind, tets, sourceFilterModel) {
   const entries = visibleEntries(tets, sourceFilterModel);
-  const rawTets = cellTets(tets);
 
   switch (kind) {
     case INNER_COLUMN_TYPES.VALIDATION:
-      return [validationState(rawTets)];
+      // Pass the whole cell value (not extracted rawTets) so validationState
+      // uses the server-aggregated state when present.
+      return [validationState(tets)];
     case INNER_COLUMN_TYPES.TAG:
       return uniqueValues(visibleTagLabels(entries));
     case INNER_COLUMN_TYPES.SOURCES:
@@ -145,13 +146,13 @@ export function innerColumnPassesFilter(
 
 export function innerColumnSortMeta(kind, tets, sourceFilterModel) {
   const entries = visibleEntries(tets, sourceFilterModel);
-  const rawTets = cellTets(tets);
 
   switch (kind) {
     case INNER_COLUMN_TYPES.VALIDATION: {
-      const state = validationState(rawTets);
+      // Pass the whole cell value so the server-aggregated state/rank is used.
+      const state = validationState(tets);
       return {
-        rank: validationSortRank(rawTets),
+        rank: validationSortRank(tets),
         text: state,
       };
     }

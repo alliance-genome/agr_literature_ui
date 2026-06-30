@@ -74,25 +74,23 @@ export default function CellValidationStrip({
     setPending((s) => ({ ...s, status: 'submitting' }));
     const negated = pending.kind === 'negative';
     const note = pending.note?.trim() || null;
-    const tetPayload = {
+    // Thin validate payload: the server resolves the curator source and all the
+    // other tag fields (entity=null, data_novelty, force_insertion, …) and
+    // returns the single recomputed cell so the grid updates in place without
+    // re-fetching/re-aggregating the whole batch.
+    const validatePayload = {
       reference_curie: referenceCurie,
       topic: topicCurie,
+      mod_abbreviation: accessLevelMod,
       negated,
-      topic_entity_tag_source_id: topicEntitySourceId,
-      force_insertion: true,
-      entity: null,
-      entity_type: null,
-      species: pending.species?.curie || null,
-      data_novelty: 'ATP:0000335',
-      confidence_score: null,
-      confidence_level: null,
       note,
+      species: pending.species?.curie || null,
     };
     try {
-      // 1) always create the validation TET tag
-      debug.log('[CellValidationStrip] submit TET', tetPayload);
-      const res = await api.post('/topic_entity_tag/', tetPayload);
-      debug.log('[CellValidationStrip] TET OK', res?.status, res?.data);
+      // 1) always create the validation TET tag (server-resolved source)
+      debug.log('[CellValidationStrip] submit validate', validatePayload);
+      const res = await api.post('/topic_entity_tag/validate', validatePayload);
+      debug.log('[CellValidationStrip] validate OK', res?.status, res?.data);
 
       // 2) optionally create / update a curation status entry for this
       //    (reference, mod, topic) — only if the user toggled the section on
@@ -119,7 +117,8 @@ export default function CellValidationStrip({
         );
       }
 
-      if (onValidated) await onValidated(referenceCurie);
+      // Hand the recomputed cell back so the grid can update just this cell.
+      if (onValidated) await onValidated(referenceCurie, topicCurie, res?.data);
       setPending((s) => ({ ...s, status: 'success' }));
       setTimeout(closeConfirm, SUCCESS_CLOSE_DELAY_MS);
     } catch (e) {

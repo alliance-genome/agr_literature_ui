@@ -98,7 +98,13 @@ describe('fetchTets', () => {
 describe('fetchTetsBatch', () => {
   test('no curies → no request, empty tags/counts/entries', async () => {
     const out = await fetchTetsBatch([]);
-    expect(out).toEqual({ tags: {}, counts: {}, entries: {} });
+    expect(out).toEqual({
+      tags: {},
+      counts: {},
+      entries: {},
+      validation: {},
+      filterFlags: {},
+    });
     expect(api.post).not.toHaveBeenCalled();
   });
 
@@ -175,7 +181,9 @@ describe('fetchTetsBatch', () => {
     });
     expect(out.tags['AGRKB:1']).toEqual([{ x: 1 }]);
     expect(out.tags['AGRKB:3']).toEqual([]); // present in request, absent in response
-    expect(out.entries['AGRKB:3']).toEqual({});
+    // The response carried no entries map, so entries are null (derive from raw
+    // tags), consistent with the "older backend" case above.
+    expect(out.entries['AGRKB:3']).toBeNull();
   });
 
   test('falls back to per-reference GET when batch endpoint fails', async () => {

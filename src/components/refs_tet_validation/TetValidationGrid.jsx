@@ -49,6 +49,16 @@ import {
 import { debug } from './helpers/debug';
 import './TetValidationGrid.css';
 
+// Per-cell filter flags for a topic that is a column but carries no tags on a
+// given (server-aggregated) reference — the server omits such topics from its
+// filter_flags map, so "absent" means all-false.
+const EMPTY_CELL_FILTER_FLAGS = Object.freeze({
+  has_any: false,
+  has_y: false,
+  has_n: false,
+  has_note: false,
+});
+
 const INNER_COLUMN_FILTER_LABELS = {
   [INNER_COLUMN_TYPES.VALIDATION]: 'Validation status',
   [INNER_COLUMN_TYPES.TAG]: 'Data',
@@ -233,12 +243,13 @@ export default function TetValidationGrid({
   );
   const effectiveMod = mod || accessLevel;
 
-  const { rows: rawRows, unresolved, loading, refetchRow } = useReferenceTets(
-    referenceIds,
-    biblioByCurie,
-    active,
-    searchFilters
-  );
+  const {
+    rows: rawRows,
+    unresolved,
+    loading,
+    refetchRow,
+    applyValidatedCell,
+  } = useReferenceTets(referenceIds, biblioByCurie, active, searchFilters);
 
   // Honor the search's confidence filters in the grid. The grid fetches TETs
   // independently of the search query (useReferenceTets), so without this it
@@ -292,6 +303,25 @@ export default function TetValidationGrid({
       }),
     }));
   }, [rawRows, excludedConfLevelSet, confRangeActive, confMin, confMax]);
+
+  // Keep a ref to the current rows so handleValidated can decide — without being
+  // a memo/callback dependency — whether a row is on the server-aggregate path.
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
+
+  // After a curator validation, apply the single recomputed cell returned by
+  // POST /topic_entity_tag/validate when the row is server-aggregated; otherwise
+  // fall back to a full per-reference raw refetch (older backend / fallback).
+  const handleValidated = useCallback(
+    async (curie, topic, cell) => {
+      const row = rowsRef.current.find((r) => r.curie === curie);
+      const onServerPath =
+        row && row.validation != null && row.filterFlags != null && cell;
+      if (onServerPath) applyValidatedCell(curie, topic, cell);
+      else await refetchRow(curie);
+    },
+    [applyValidatedCell, refetchRow]
+  );
 
   // Ensure curator source id is loaded so the validation strip can submit
   useEffect(() => {
@@ -924,6 +954,17 @@ export default function TetValidationGrid({
             tets: flat,
             entries: hasServerEntries ? (r.entries[t.curie] || []) : null,
             counts: r.counts?.[t.curie] || {},
+            // Server-aggregated per-cell validation/flags. `undefined` => the row
+            // was not server-aggregated (older backend / per-ref fallback), so
+            // consumers derive from raw tets. For an aggregated row a topic
+            // absent from the map means "no curator validation" (null) / "no
+            // tags" (all-false flags), respectively.
+            validation:
+              r.validation == null ? undefined : (r.validation[t.curie] ?? null),
+            filterFlags:
+              r.filterFlags == null
+                ? undefined
+                : (r.filterFlags[t.curie] ?? EMPTY_CELL_FILTER_FLAGS),
           };
         }
         return {
@@ -1290,7 +1331,7 @@ export default function TetValidationGrid({
             cellRendererParams: {
               topicCurie: t.curie,
               topicName: t.name || t.curie,
-              refetchRow,
+              onValidated: handleValidated,
               curationStatusOptions,
               curationTagOptions,
             },
@@ -1386,7 +1427,7 @@ export default function TetValidationGrid({
   }, [
     visibleTopicColumns,
     displayOptions,
-    refetchRow,
+    handleValidated,
     sourceFilterModel,
     allIdPrefixes,
     selectedIdPrefixes,

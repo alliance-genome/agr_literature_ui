@@ -14,6 +14,15 @@ import { debug } from '../helpers/debug';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Default per-cell filter flags for a topic with no tags (used when applying a
+// recomputed validate cell that carries no filter_flags for the topic).
+const EMPTY_FILTER_FLAGS = Object.freeze({
+  has_any: false,
+  has_y: false,
+  has_n: false,
+  has_note: false,
+});
+
 // Exponential-backoff delays (ms) between retries — 5 retries total.
 const DEFAULT_BACKOFF_DELAYS = [500, 1500, 4500, 13500, 40500];
 // Pull every TET for a reference in one request; references rarely exceed this.
@@ -127,8 +136,10 @@ export async function fetchTetsBatch(curies, filters) {
   const tags = {};
   const counts = {};
   const entries = {};
+  const validation = {};
+  const filterFlags = {};
   const unique = Array.from(new Set((curies || []).filter(Boolean)));
-  if (unique.length === 0) return { tags, counts, entries };
+  if (unique.length === 0) return { tags, counts, entries, validation, filterFlags };
   const compactedFilters = compactFilters(filters);
   const groups = chunk(unique, TETS_BATCH_SIZE);
   debug.log(
@@ -160,10 +171,20 @@ export async function fetchTetsBatch(curies, filters) {
           body.counts && typeof body.counts === 'object' ? body.counts : {};
         const hasEntryMap = body.entries && typeof body.entries === 'object';
         const entryMap = hasEntryMap ? body.entries : {};
+        // validation + filter_flags are aggregated server-side (newer backend).
+        // Null when absent so consumers fall back to deriving from raw tags.
+        const hasValidationMap =
+          body.validation && typeof body.validation === 'object';
+        const validationMap = hasValidationMap ? body.validation : {};
+        const hasFlagMap =
+          body.filter_flags && typeof body.filter_flags === 'object';
+        const flagMap = hasFlagMap ? body.filter_flags : {};
         for (const c of group) {
           tags[c] = tagMap[c] || [];
           counts[c] = countMap[c] || {};
           entries[c] = hasEntryMap ? (entryMap[c] || {}) : null;
+          validation[c] = hasValidationMap ? (validationMap[c] || {}) : null;
+          filterFlags[c] = hasFlagMap ? (flagMap[c] || {}) : null;
         }
         const tetCount = group.reduce(
           (sum, c) => sum + (Array.isArray(tags[c]) ? tags[c].length : 0),
@@ -184,6 +205,8 @@ export async function fetchTetsBatch(curies, filters) {
             tags[c] = await fetchTets(c);
             counts[c] = {};
             entries[c] = null;
+            validation[c] = null;
+            filterFlags[c] = null;
           })
         );
         const fallbackCount = group.reduce(
@@ -205,7 +228,7 @@ export async function fetchTetsBatch(curies, filters) {
     `[TetValidationGrid] TET batch fetch done: ${unique.length} references, ` +
     `${totalTags} tags, ${elapsedMs(totalStart)}`
   );
-  return { tags, counts, entries };
+  return { tags, counts, entries, validation, filterFlags };
 }
 
 export function useReferenceTets(
@@ -302,6 +325,8 @@ export function useReferenceTets(
         tags: tetsByCurie,
         counts: countsByCurie,
         entries: entriesByCurie,
+        validation: validationByCurie,
+        filterFlags: filterFlagsByCurie,
       } = await fetchTetsBatch(
         resolved.map((r) => r.curie),
         filtersRef.current
@@ -318,6 +343,14 @@ export function useReferenceTets(
         entries: entriesByCurie[r.curie] === null
           ? null
           : (entriesByCurie[r.curie] || {}),
+        // null => server didn't aggregate it (older backend / fallback);
+        // consumers then derive validation/flags from raw tets.
+        validation: validationByCurie?.[r.curie] == null
+          ? null
+          : validationByCurie[r.curie],
+        filterFlags: filterFlagsByCurie?.[r.curie] == null
+          ? null
+          : filterFlagsByCurie[r.curie],
       }));
       setRows(nextRows);
       setUnresolved(newUnresolved);
@@ -339,11 +372,43 @@ export function useReferenceTets(
   }, [JSON.stringify(referenceIds || []), resolveBiblio, active, filtersKey]);
 
   const refetchRow = useCallback(async (curie) => {
+    // Per-reference refresh after an edit returns raw tags only, not the
+    // server aggregates. Null them so the row re-derives validation/flags from
+    // the fresh tets and stays consistent until the next batch load.
     const tets = await fetchTets(curie);
     setRows((prev) =>
-      prev.map((r) => (r.curie === curie ? { ...r, tets } : r))
+      prev.map((r) =>
+        r.curie === curie
+          ? { ...r, tets, validation: null, filterFlags: null }
+          : r
+      )
     );
   }, []);
 
-  return { rows, unresolved, loading, refetchRow };
+  // Apply the single recomputed cell returned by POST /topic_entity_tag/validate
+  // ({ topic, validation, filter_flags }) to one row's per-topic aggregates,
+  // so a validation updates that cell without re-fetching/re-aggregating the
+  // whole batch. Only merges when the row is already on the server-aggregate
+  // path (validation/filterFlags are objects); for the fallback path the caller
+  // refetches instead (see handleValidated in TetValidationGrid).
+  const applyValidatedCell = useCallback((curie, topic, cell) => {
+    if (!cell) return;
+    const tkey = String(cell.topic || topic || '').toUpperCase();
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.curie !== curie) return r;
+        const validation =
+          r.validation && typeof r.validation === 'object'
+            ? { ...r.validation, [tkey]: cell.validation ?? null }
+            : r.validation;
+        const filterFlags =
+          r.filterFlags && typeof r.filterFlags === 'object'
+            ? { ...r.filterFlags, [tkey]: cell.filter_flags || EMPTY_FILTER_FLAGS }
+            : r.filterFlags;
+        return { ...r, validation, filterFlags };
+      })
+    );
+  }, []);
+
+  return { rows, unresolved, loading, refetchRow, applyValidatedCell };
 }
