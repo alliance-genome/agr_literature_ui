@@ -24,9 +24,16 @@ export { LAYOUT_COLS, layoutToCssGrid, columnFloorForLayout, maxColumnsPerRow };
 // componentName namespace used with usePersonSettings / the /person_setting API.
 export const PERSON_EDITOR_LAYOUT_COMPONENT_NAME = 'person_editor_layout';
 
-// The ten sections, in their natural (default) top-to-bottom order. The ids are
-// used both as react-grid-layout keys and as the keys of the editor's
-// `sectionRows` bucket; the labels appear on the canvas boxes and the checklist.
+// The sections, in their natural (default) top-to-bottom order. The ids are used
+// both as react-grid-layout keys and as the keys of the editor's `sectionRows`
+// bucket; the labels appear on the canvas boxes and the checklist.
+//
+// An optional `mods` array gates a section's DEFAULT visibility to specific MOD
+// abbreviations (effective MOD = testerMod, else cognitoMod): the section is shown
+// by default only for those MODs and hidden by default for everyone else. It is
+// still listed in the Settings checklist, so any curator can enable it, and a
+// loaded/saved setting takes precedence over the default. Sections without `mods`
+// are shown by default for all MODs.
 export const SECTION_DEFS = [
   { id: 'profile', label: 'Profile' },
   { id: 'names', label: 'Names' },
@@ -38,7 +45,22 @@ export const SECTION_DEFS = [
   { id: 'cross_references', label: 'Cross references' },
   { id: 'research_interest', label: 'Research interest' },
   { id: 'comments', label: 'Comments' },
+  { id: 'lineage', label: 'Lineage', mods: ['WB'] },
 ];
+
+/**
+ * The set of section ids hidden by default for the given effective MOD: every
+ * section whose `mods` gate excludes that MOD. Sections without a `mods` gate are
+ * never in the set (shown for all). Used as the editor's initial visibility and as
+ * the reactive default when the MOD changes (until the user/a saved setting makes
+ * an explicit choice).
+ */
+export const defaultHiddenSections = (effectiveMod) =>
+  new Set(
+    SECTION_DEFS
+      .filter((s) => Array.isArray(s.mods) && !s.mods.includes(effectiveMod))
+      .map((s) => s.id),
+  );
 
 // Default arrangement: the ten sections stacked full-width, preserving the
 // editor's original single-column appearance. Used when the user has no saved

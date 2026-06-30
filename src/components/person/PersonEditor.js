@@ -1,18 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import Form from 'react-bootstrap/Form';
 import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
+import Badge from 'react-bootstrap/Badge';
 import Container from 'react-bootstrap/Container';
 
+import { api } from '../../api';
+import PersonCuriePicker from './PersonCuriePicker';
 import PersonEditorLayoutModal from '../settings/PersonEditorLayoutModal';
-import { SECTION_DEFS, layoutToCssGrid } from './personEditorSections';
+import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './personEditorSections';
 import './personEditorSections.css';
 
 const MockupTitle = 'Mockup only — not wired to the API';
 const STATUS_OPTIONS = ['active', 'retired', 'deceased'];
 const PRIVACY_OPTIONS = ['show_all', 'logged_in_only', 'fully_hidden', 'hide_email'];
 const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
+// PersonPersonRole controlled vocabulary (person_lineage.relationship).
+const PERSON_PERSON_ROLES = [
+  'phd_supervisor_of',
+  'postdoc_supervisor_of',
+  'masters_supervisor_of',
+  'undergrad_supervisor_of',
+  'highschool_supervisor_of',
+  'sabbatical_supervisor_of',
+  'lab_visitor_supervisor_of',
+  'research_staff_supervisor_of',
+  'assistant_professor_supervisor_of',
+  'unknown_supervisor_of',
+  'collaborator_of',
+];
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -132,30 +150,123 @@ const inlineRow = {
   flexWrap: 'wrap',
 };
 
+// Start/end dates as two independent native date inputs. `start`/`end` are
+// 'YYYY-MM-DD' strings (or ''); onChange(start, end) reports the same. Each input
+// is editable on its own (so an end-only edit doesn't disturb the start), keyboard
+// entry works (full year, month/day), and either can be cleared since lineage
+// dates are optional. End-only / open-ended ("still at that position") is fine —
+// just leave the end blank.
+const DATES_COL_WIDTH = 330;
+const LineageDateRange = ({ start, end, onChange, disabled }) => (
+  <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', width: DATES_COL_WIDTH, flexShrink: 0 }}>
+    <Form.Control
+      type="date"
+      value={start || ''}
+      onChange={(ev) => onChange(ev.target.value, end || '')}
+      disabled={disabled}
+      style={{ flex: 1, minWidth: 0 }}
+      title="start date"
+    />
+    <span style={{ color: '#888' }}>–</span>
+    <Form.Control
+      type="date"
+      value={end || ''}
+      onChange={(ev) => onChange(start || '', ev.target.value)}
+      disabled={disabled}
+      style={{ flex: 1, minWidth: 0 }}
+      title="end date"
+    />
+  </span>
+);
+
+// Read-only claim cell, sized to sit directly above/under the matching editable
+// input so claim rows line up with the editable rows.
+const claimCellBase = {
+  fontSize: '0.85em',
+  color: '#555',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  boxSizing: 'border-box',
+  alignSelf: 'center',
+};
+const dateRange = (a, b) =>
+  [a, b].some(Boolean)
+    ? `${a ? String(a).slice(0, 10) : '?'}${b ? `–${String(b).slice(0, 10)}` : ''}`
+    : '';
+
+// A submitted person_lineage_submission rendered as column-aligned, read-only
+// cells (subject · relationship · object · dates · who). Used for the claim above
+// an unvalidated submission and for the submissions linked beneath a canonical.
+// `lead` is an optional marker on the first cell (e.g. '↳ '); `showStatus` appends
+// the status badge to the trailing cell.
+const LineageClaimRow = ({ submission, lead = '', showStatus = false, style }) => (
+  <div style={{ ...inlineRow, ...style }}>
+    <span style={{ ...claimCellBase, width: 240 }} title={submission.person_subject_name}>
+      {lead}{submission.person_subject_name}
+    </span>
+    <span style={{ ...claimCellBase, width: 260 }} title={submission.relationship}>{submission.relationship}</span>
+    <span style={{ ...claimCellBase, width: 240 }} title={submission.person_object_name}>{submission.person_object_name}</span>
+    <span style={{ ...claimCellBase, width: DATES_COL_WIDTH }}>{dateRange(submission.start_date, submission.end_date)}</span>
+    <span style={{ ...claimCellBase, width: 'auto' }}>
+      by {submission.who_sent_this}
+      {showStatus && <>{' '}<Badge variant="secondary">{submission.status}</Badge></>}
+    </span>
+  </div>
+);
+
 const PersonEditor = ({ person }) => {
   const p = person ?? {};
 
+  // Effective MOD (testerMod overrides cognitoMod) drives per-section default
+  // visibility — see SECTION_DEFS `mods` gating in personEditorSections.js.
+  const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
+  const testerMod = useSelector((s) => s.isLogged.testerMod);
+  const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
+
   // ---- layout / visibility / metadata-toggle state (restored from saved prefs) ----
   const [activeLayout, setActiveLayout] = useState(null);
-  const [hiddenSections, setHiddenSections] = useState(() => new Set());
+  const [hiddenSections, setHiddenSections] = useState(() =>
+    defaultHiddenSections(effectiveMod),
+  );
   const [showTimestamps, setShowTimestamps] = useState(true);
   const [showCurator, setShowCurator] = useState(true);
+
+  // Once the user (or a loaded setting) explicitly decides section visibility, stop
+  // letting the MOD default override it.
+  const visibilityDecidedRef = useRef(false);
+
+  // Keep MOD-gated sections in sync with the effective MOD until an explicit choice
+  // is made. The useState initializer above only runs on first mount, and the
+  // editor is keyed by curie, so without this a mid-session role change (or Redux
+  // populating the MOD after mount) would not re-evaluate the defaults.
+  useEffect(() => {
+    if (visibilityDecidedRef.current) return;
+    setHiddenSections(defaultHiddenSections(effectiveMod));
+  }, [effectiveMod]);
 
   const applyPrefs = (prefs) => {
     if (!prefs) return;
     if (Array.isArray(prefs.layout)) setActiveLayout(prefs.layout);
-    if (Array.isArray(prefs.hidden)) setHiddenSections(new Set(prefs.hidden));
+    if (Array.isArray(prefs.hidden)) {
+      setHiddenSections(new Set(prefs.hidden));
+      // A loaded setting is an explicit visibility decision.
+      visibilityDecidedRef.current = true;
+    }
     if (typeof prefs.showTimestamps === 'boolean') setShowTimestamps(prefs.showTimestamps);
     if (typeof prefs.showCurator === 'boolean') setShowCurator(prefs.showCurator);
   };
 
-  const toggleSection = (id) =>
+  const toggleSection = (id) => {
+    // Any manual toggle is an explicit decision; freeze the MOD default.
+    visibilityDecidedRef.current = true;
     setHiddenSections((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
 
   // Compose the per-field metadata string honoring the two toggles independently.
   const metaLabel = (by, date) => {
@@ -290,6 +401,194 @@ const PersonEditor = ({ person }) => {
     _by: lp.updated_by ?? null,
   }));
   const [labs, updateLab, removeLab] = useAutoGrowList(initialLabs, emptyLab, labIsEmpty);
+
+  // ---- Lineage (person_lineage + person_lineage_submission) — WIRED ----
+  // Neither is nested in the person record; both are fetched from their by-person
+  // endpoints when the section is visible. The loaded person (p.curie) is always
+  // one resolved side of every submission shown, so that side is locked and the
+  // curator only resolves the other side. Validated submissions are grouped under
+  // their canonical via person_lineage_id.
+  const lineageVisible = !hiddenSections.has('lineage');
+  const [submissions, setSubmissions] = useState([]);
+  const [canonicals, setCanonicals] = useState([]);
+  const [subEdits, setSubEdits] = useState({}); // submissionId -> {otherCurie, otherName, relationship, start, end}
+  const [canonEdits, setCanonEdits] = useState({}); // person_lineage_id -> {relationship, start, end}
+  // anchor = which side the curator picked first (the "other" person, editable);
+  // the opposite side auto-fills the loaded person and locks until anchor is cleared.
+  const [newCanon, setNewCanon] = useState({
+    anchor: null, subjectCurie: '', subjectName: '', objectCurie: '', objectName: '',
+    relationship: '', start: '', end: '',
+  });
+  const [lineageBusy, setLineageBusy] = useState(false);
+  const [lineageError, setLineageError] = useState('');
+
+  const errDetail = (err) => {
+    const d = err?.response?.data?.detail;
+    return typeof d === 'string' ? d : err?.message || 'Request failed';
+  };
+
+  const loadLineage = () => {
+    if (!p.curie) return Promise.resolve();
+    return Promise.all([
+      api.get('/person_lineage_submission/person/' + p.curie)
+        .then((r) => (Array.isArray(r.data) ? r.data : [])).catch(() => []),
+      api.get('/person_lineage/person/' + p.curie)
+        .then((r) => (Array.isArray(r.data) ? r.data : [])).catch(() => []),
+    ]).then(([subs, canons]) => {
+      setSubmissions(subs);
+      setCanonicals(canons);
+    });
+  };
+
+  // Drop a single row's edit draft so it re-derives from fresh server data on the
+  // next render (e.g. a validated submission that later returns to the unvalidated
+  // pool must show its original claim again, not the curator's pre-validation edit).
+  const clearSubEdit = (id) =>
+    setSubEdits((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  const clearCanonEdit = (id) =>
+    setCanonEdits((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+
+  useEffect(() => {
+    if (!lineageVisible || !p.curie) return;
+    loadLineage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.curie, lineageVisible]);
+
+  // Which side of a submission is the loaded person (locked); the other is editable.
+  const lockedSide = (s) =>
+    s.person_subject_curie === p.curie ? 'subject'
+      : s.person_object_curie === p.curie ? 'object'
+      : 'subject';
+
+  const subEdit = (s) => {
+    const existing = subEdits[s.person_lineage_submission_id];
+    if (existing) return existing;
+    const side = lockedSide(s);
+    return {
+      otherCurie: (side === 'subject' ? s.person_object_curie : s.person_subject_curie) || '',
+      otherName: (side === 'subject' ? s.person_object_name : s.person_subject_name) || '',
+      relationship: s.relationship || '',
+      start: s.start_date ? String(s.start_date).slice(0, 10) : '',
+      end: s.end_date ? String(s.end_date).slice(0, 10) : '',
+    };
+  };
+  const patchSubEdit = (s, patch) =>
+    setSubEdits((prev) => ({
+      ...prev,
+      [s.person_lineage_submission_id]: { ...subEdit(s), ...patch },
+    }));
+
+  const handleValidate = (s) => {
+    const e = subEdit(s);
+    const side = lockedSide(s);
+    const body = { relationship: e.relationship || undefined };
+    if (e.start) body.start_date = e.start;
+    if (e.end) body.end_date = e.end;
+    // The locked (loaded-person) side is omitted, so validate falls back to the
+    // submission's stored id; we only send the curator-resolved other side.
+    if (side === 'subject') body.person_object_curie_or_id = e.otherCurie || undefined;
+    else body.person_subject_curie_or_id = e.otherCurie || undefined;
+    setLineageBusy(true); setLineageError('');
+    api.post('/person_lineage_submission/' + s.person_lineage_submission_id + '/validate', body)
+      .then(() => { clearSubEdit(s.person_lineage_submission_id); return loadLineage(); })
+      .catch((err) => setLineageError(errDetail(err)))
+      .finally(() => setLineageBusy(false));
+  };
+
+  // For a canonical on this person's page, which side is the loaded person (locked);
+  // the other side's person is editable (corrects a mis-resolution).
+  const canonLockedSide = (c) => (c.person_subject_curie === p.curie ? 'subject' : 'object');
+  const canonEdit = (c) => {
+    const existing = canonEdits[c.person_lineage_id];
+    if (existing) return existing;
+    const side = canonLockedSide(c);
+    return {
+      relationship: c.relationship || '',
+      start: c.start_date ? String(c.start_date).slice(0, 10) : '',
+      end: c.end_date ? String(c.end_date).slice(0, 10) : '',
+      otherCurie: (side === 'subject' ? c.person_object_curie : c.person_subject_curie) || '',
+      otherName: (side === 'subject' ? c.person_object_name : c.person_subject_name) || '',
+    };
+  };
+  const patchCanonEdit = (c, patch) =>
+    setCanonEdits((prev) => ({ ...prev, [c.person_lineage_id]: { ...canonEdit(c), ...patch } }));
+
+  const handleSaveCanonical = (c) => {
+    const e = canonEdit(c);
+    const side = canonLockedSide(c);
+    const body = {
+      relationship: e.relationship || undefined,
+      start_date: e.start || null,
+      end_date: e.end || null,
+    };
+    // Only the non-loaded side's person can change; the loaded side stays put.
+    if (side === 'subject') body.person_object_curie_or_id = e.otherCurie || undefined;
+    else body.person_subject_curie_or_id = e.otherCurie || undefined;
+    setLineageBusy(true); setLineageError('');
+    api.patch('/person_lineage/' + c.person_lineage_id, body)
+      .then(() => { clearCanonEdit(c.person_lineage_id); return loadLineage(); })
+      .catch((err) => setLineageError(errDetail(err)))
+      .finally(() => setLineageBusy(false));
+  };
+
+  const handleDeleteCanonical = (c) => {
+    setLineageBusy(true); setLineageError('');
+    api.delete('/person_lineage/' + c.person_lineage_id)
+      .then(() => {
+        clearCanonEdit(c.person_lineage_id);
+        // Submissions linked to this canonical return to the unvalidated pool — drop
+        // their stale drafts so they show their original claim, not the prior edit.
+        submissions
+          .filter((s) => s.person_lineage_id === c.person_lineage_id)
+          .forEach((s) => clearSubEdit(s.person_lineage_submission_id));
+        return loadLineage();
+      })
+      .catch((err) => setLineageError(errDetail(err)))
+      .finally(() => setLineageBusy(false));
+  };
+
+  const handleAddCanonical = () => {
+    if (!newCanon.subjectCurie || !newCanon.objectCurie || !newCanon.relationship) {
+      setLineageError('Subject, object and relationship are required.');
+      return;
+    }
+    if (newCanon.subjectCurie !== p.curie && newCanon.objectCurie !== p.curie) {
+      setLineageError(`One side must be the loaded person (${p.curie}).`);
+      return;
+    }
+    setLineageBusy(true); setLineageError('');
+    api.post('/person_lineage/', {
+      person_subject_curie_or_id: newCanon.subjectCurie,
+      person_object_curie_or_id: newCanon.objectCurie,
+      relationship: newCanon.relationship,
+      start_date: newCanon.start || undefined,
+      end_date: newCanon.end || undefined,
+    })
+      .then(() => {
+        setNewCanon({
+          anchor: null, subjectCurie: '', subjectName: '', objectCurie: '', objectName: '',
+          relationship: '', start: '', end: '',
+        });
+        return loadLineage();
+      })
+      .catch((err) => setLineageError(errDetail(err)))
+      .finally(() => setLineageBusy(false));
+  };
+
+  const relOptionsFor = (current) =>
+    PERSON_PERSON_ROLES.includes(current) || !current
+      ? PERSON_PERSON_ROLES
+      : [...PERSON_PERSON_ROLES, current];
 
   const setNamePrimary = (idx) =>
     setNames((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
@@ -683,6 +982,296 @@ const PersonEditor = ({ person }) => {
             </FieldLine>
           );
         })}
+      </Card.Body>
+    </Card>
+  );
+
+  const lockedPill = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '6px 10px',
+    background: '#eef2f7',
+    border: '1px solid #d4dce6',
+    borderRadius: 4,
+    fontSize: '0.85em',
+    color: '#37485b',
+    whiteSpace: 'nowrap',
+  };
+  // Locked-person pill sized to match a PersonCuriePicker slot, so toggling between
+  // the picker and the locked pill doesn't resize the row.
+  const lockedSlot = {
+    ...lockedPill,
+    width: '100%',
+    minHeight: 38,
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  };
+  const personLabel = (name, curie) => (name ? `${name} (${curie})` : curie || '');
+  // Fixed-width person pill so the validated rows' columns (subject · relationship ·
+  // object · dates) line up regardless of name length; long labels clip with ellipsis.
+  const canonPersonStyle = {
+    ...lockedPill,
+    width: 240,
+    flexShrink: 0,
+    boxSizing: 'border-box',
+    minHeight: 38,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  };
+  // Shared fixed sizes so all three Lineage sub-blocks line up evenly.
+  const personSlot = { width: 240, flexShrink: 0 };
+  const relSelectStyle = { width: 260, flexShrink: 0 };
+
+  const unvalidatedSubs = submissions.filter((s) => !s.person_lineage_id);
+  const subsForCanonical = (cid) => submissions.filter((s) => s.person_lineage_id === cid);
+
+  sectionRows.lineage = (
+    <Card className="mb-3">
+      <Card.Header>Lineage</Card.Header>
+      <Card.Body>
+        <div style={{ color: '#888', fontSize: '0.85em', marginBottom: 12 }}>
+          Person-to-person relationships for <code>{p.curie}</code>. Submissions are
+          claims; a curator resolves the other person + relationship/dates and
+          promotes them to canonical connections.
+        </div>
+
+        {lineageError && (
+          <Alert variant="danger" dismissible onClose={() => setLineageError('')}>
+            {lineageError}
+          </Alert>
+        )}
+
+        {/* 1. Unvalidated submissions */}
+        <h6 className="text-muted">Unvalidated submissions</h6>
+        {unvalidatedSubs.length === 0 && (
+          <div style={{ color: '#888', marginBottom: 12 }}>(none)</div>
+        )}
+        {unvalidatedSubs.map((s, si) => {
+          const side = lockedSide(s);
+          const e = subEdit(s);
+          const lockedCurie = side === 'subject' ? s.person_subject_curie : s.person_object_curie;
+          const rejected = s.status === 'rejected';
+          const claimedOther = side === 'subject' ? s.person_object_name : s.person_subject_name;
+          const lockedCell = (
+            <span style={canonPersonStyle} title={`${lockedCurie} · this person`}>
+              {lockedCurie} · this person
+            </span>
+          );
+          const otherPicker = (
+            <div style={personSlot}>
+              <PersonCuriePicker
+                id={`sub-other-${s.person_lineage_submission_id}`}
+                value={e.otherCurie}
+                valueName={e.otherName}
+                disabled={lineageBusy}
+                placeholder={claimedOther ? `resolve: ${claimedOther}` : (side === 'subject' ? 'object (search name)' : 'subject (search name)')}
+                onChange={(o) => patchSubEdit(s, { otherCurie: o?.curie || '', otherName: o?.name || '' })}
+              />
+            </div>
+          );
+          return (
+            <div key={s.person_lineage_submission_id}>
+              {si > 0 && <hr style={{ borderTop: '1px dashed #e0e0e0', margin: '12px 0' }} />}
+              {/* Claim row — submitted values, each column aligned above its input. */}
+              <LineageClaimRow submission={s} style={{ marginBottom: 4 }} />
+              {/* Validation row — editable inputs + status/Validate below the submitter. */}
+              <div style={inlineRow}>
+                {side === 'subject' ? lockedCell : otherPicker}
+                <Form.Control
+                  as="select"
+                  value={e.relationship}
+                  onChange={(ev) => patchSubEdit(s, { relationship: ev.target.value })}
+                  style={relSelectStyle}
+                  disabled={lineageBusy}
+                >
+                  <option value=""></option>
+                  {relOptionsFor(e.relationship).map((o) => <option key={o} value={o}>{o}</option>)}
+                </Form.Control>
+                {side === 'object' ? lockedCell : otherPicker}
+                <LineageDateRange
+                  start={e.start}
+                  end={e.end}
+                  disabled={lineageBusy}
+                  onChange={(st, en) => patchSubEdit(s, { start: st, end: en })}
+                />
+                <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                  <Badge variant={rejected ? 'danger' : 'secondary'}>{s.status}</Badge>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    disabled={lineageBusy || rejected || !e.otherCurie || !e.relationship}
+                    onClick={() => handleValidate(s)}
+                    title={rejected ? 'Rejected submissions cannot be validated' : 'Promote to a canonical connection'}
+                  >
+                    Validate
+                  </Button>
+                </span>
+              </div>
+            </div>
+          );
+        })}
+
+        <hr />
+
+        {/* 2. Validated canonical connections (primary), with linked submissions */}
+        <h6 className="text-muted">Validated relationships</h6>
+        {canonicals.length === 0 && (
+          <div style={{ color: '#888', marginBottom: 12 }}>(none)</div>
+        )}
+        {canonicals.map((c, ci) => {
+          const e = canonEdit(c);
+          const linked = subsForCanonical(c.person_lineage_id);
+          return (
+            <div key={c.person_lineage_id}>
+              {ci > 0 && <hr style={{ borderTop: '1px dashed #e0e0e0', margin: '12px 0' }} />}
+              {(() => {
+                const cside = canonLockedSide(c);
+                const otherPicker = (
+                  <div style={personSlot}>
+                    <PersonCuriePicker
+                      id={`canon-other-${c.person_lineage_id}`}
+                      value={e.otherCurie}
+                      valueName={e.otherName}
+                      disabled={lineageBusy}
+                      placeholder={cside === 'subject' ? 'object (search name)' : 'subject (search name)'}
+                      onChange={(o) => patchCanonEdit(c, { otherCurie: o?.curie || '', otherName: o?.name || '' })}
+                    />
+                  </div>
+                );
+                const subjectCell = cside === 'subject'
+                  ? <span style={canonPersonStyle} title={personLabel(c.person_subject_name, c.person_subject_curie)}>{personLabel(c.person_subject_name, c.person_subject_curie)}</span>
+                  : otherPicker;
+                const objectCell = cside === 'object'
+                  ? <span style={canonPersonStyle} title={personLabel(c.person_object_name, c.person_object_curie)}>{personLabel(c.person_object_name, c.person_object_curie)}</span>
+                  : otherPicker;
+                return (
+              <div style={inlineRow}>
+                {subjectCell}
+                <Form.Control
+                  as="select"
+                  value={e.relationship}
+                  onChange={(ev) => patchCanonEdit(c, { relationship: ev.target.value })}
+                  style={relSelectStyle}
+                  disabled={lineageBusy}
+                >
+                  {relOptionsFor(e.relationship).map((o) => <option key={o} value={o}>{o}</option>)}
+                </Form.Control>
+                {objectCell}
+                <LineageDateRange
+                  start={e.start}
+                  end={e.end}
+                  disabled={lineageBusy}
+                  onChange={(st, en) => patchCanonEdit(c, { start: st, end: en })}
+                />
+                <Button size="sm" variant="outline-primary" disabled={lineageBusy} onClick={() => handleSaveCanonical(c)}>
+                  Save
+                </Button>
+                <Button size="sm" variant="outline-danger" disabled={lineageBusy} onClick={() => handleDeleteCanonical(c)}>
+                  Delete
+                </Button>
+              </div>
+                );
+              })()}
+              {linked.map((s) => (
+                <LineageClaimRow
+                  key={s.person_lineage_submission_id}
+                  submission={s}
+                  lead="↳ "
+                  showStatus
+                  style={{ marginTop: 2 }}
+                />
+              ))}
+            </div>
+          );
+        })}
+
+        <hr />
+
+        {/* 3. Add a brand-new canonical connection directly */}
+        <h6 className="text-muted">Add a new connection</h6>
+        <div style={inlineRow}>
+          {newCanon.anchor === 'object' ? (
+            <div style={personSlot}>
+              <span style={lockedSlot}>{newCanon.subjectCurie} · this person</span>
+            </div>
+          ) : (
+            <div style={personSlot}>
+              <PersonCuriePicker
+                id="newcanon-subject"
+                value={newCanon.subjectCurie}
+                valueName={newCanon.subjectName}
+                disabled={lineageBusy}
+                placeholder="subject (search name)"
+                onChange={(o) => setNewCanon((n) => {
+                  if (!o?.curie) {
+                    // Clearing the anchor side resets the pair (keep relationship/dates).
+                    return n.anchor === 'subject'
+                      ? { ...n, anchor: null, subjectCurie: '', subjectName: '', objectCurie: '', objectName: '' }
+                      : { ...n, subjectCurie: '', subjectName: '' };
+                  }
+                  // Picking subject anchors it and locks the object to the loaded person.
+                  return {
+                    ...n, anchor: 'subject',
+                    subjectCurie: o.curie, subjectName: o.name || '',
+                    objectCurie: p.curie, objectName: p.display_name || '',
+                  };
+                })}
+              />
+            </div>
+          )}
+          <Form.Control
+            as="select"
+            value={newCanon.relationship}
+            onChange={(ev) => setNewCanon((n) => ({ ...n, relationship: ev.target.value }))}
+            style={relSelectStyle}
+            disabled={lineageBusy}
+          >
+            <option value=""></option>
+            {PERSON_PERSON_ROLES.map((o) => <option key={o} value={o}>{o}</option>)}
+          </Form.Control>
+          {newCanon.anchor === 'subject' ? (
+            <div style={personSlot}>
+              <span style={lockedSlot}>{newCanon.objectCurie} · this person</span>
+            </div>
+          ) : (
+            <div style={personSlot}>
+              <PersonCuriePicker
+                id="newcanon-object"
+                value={newCanon.objectCurie}
+                valueName={newCanon.objectName}
+                disabled={lineageBusy}
+                placeholder="object (search name)"
+                onChange={(o) => setNewCanon((n) => {
+                  if (!o?.curie) {
+                    return n.anchor === 'object'
+                      ? { ...n, anchor: null, subjectCurie: '', subjectName: '', objectCurie: '', objectName: '' }
+                      : { ...n, objectCurie: '', objectName: '' };
+                  }
+                  return {
+                    ...n, anchor: 'object',
+                    objectCurie: o.curie, objectName: o.name || '',
+                    subjectCurie: p.curie, subjectName: p.display_name || '',
+                  };
+                })}
+              />
+            </div>
+          )}
+          <LineageDateRange
+            start={newCanon.start}
+            end={newCanon.end}
+            disabled={lineageBusy}
+            onChange={(st, en) => setNewCanon((n) => ({ ...n, start: st, end: en }))}
+          />
+          <Button
+            size="sm"
+            variant="success"
+            disabled={lineageBusy || !newCanon.subjectCurie || !newCanon.objectCurie || !newCanon.relationship}
+            onClick={handleAddCanonical}
+          >
+            Add
+          </Button>
+        </div>
       </Card.Body>
     </Card>
   );
