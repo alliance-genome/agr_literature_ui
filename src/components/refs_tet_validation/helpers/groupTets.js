@@ -120,11 +120,14 @@ export const TOPIC_CELL_FILTER_KEYS = [
 export function cellPredicate(tets, currentUid, model) {
   if (!Array.isArray(model) || model.length === 0) return true;
   const arr = asTets(tets);
-  // Prefer the server-aggregated per-cell flags (has_any/has_y/has_n/has_note)
-  // when present so filtering doesn't scan raw tags. `null`/`undefined` => no
-  // server aggregate, derive from raw tets. 'my validation present' is never
-  // server-provided (it needs the curator's identity, which the serialized
-  // created_by is a display name for), so it always derives from raw tets.
+  // Prefer the server-aggregated per-cell flags (has_any/has_y/has_n/has_note/
+  // my_validation_present) when present so filtering doesn't scan raw tags.
+  // `null`/`undefined` => no server aggregate, derive from raw tets. The server
+  // computes my_validation_present by comparing each tag's created_by against
+  // the authenticated user's internal users.id -- the comparison the client
+  // cannot do reliably, since its uid is an Okta subject id and the serialized
+  // created_by is a display name. The raw-tets fallback keeps the older-backend
+  // path working.
   const flags =
     tets && !Array.isArray(tets) ? tets.filterFlags : undefined;
   const server = flags != null;
@@ -143,7 +146,9 @@ export function cellPredicate(tets, currentUid, model) {
           ? !!flags.has_note
           : arr.some((t) => t.note != null && t.note !== '');
       case 'my validation present':
-        return arr.some((t) => t.created_by === currentUid);
+        return server
+          ? !!flags.my_validation_present
+          : arr.some((t) => t.created_by === currentUid);
       default:
         return false;
     }

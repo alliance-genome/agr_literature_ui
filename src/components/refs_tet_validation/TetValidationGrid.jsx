@@ -57,6 +57,7 @@ const EMPTY_CELL_FILTER_FLAGS = Object.freeze({
   has_y: false,
   has_n: false,
   has_note: false,
+  my_validation_present: false,
 });
 
 const INNER_COLUMN_FILTER_LABELS = {
@@ -247,6 +248,7 @@ export default function TetValidationGrid({
     rows: rawRows,
     unresolved,
     loading,
+    discovery,
     refetchRow,
     applyValidatedCell,
   } = useReferenceTets(referenceIds, biblioByCurie, active, searchFilters);
@@ -378,13 +380,25 @@ export default function TetValidationGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topics, rows]);
 
-  // Data-driven topic curies (whatever actually appears in the loaded TETs)
-  const dataDrivenTopicCuries = useMemo(() => {
+  // Topics actually present in the batch. Prefer the server `discovery` aggregate
+  // (the distinct topic columns over the whole post-filter batch, carrying
+  // names) so the column set isn't derived from raw tags; fall back to scanning
+  // raw tets on an older backend that sent no discovery.
+  const presentTopicColumns = useMemo(() => {
+    if (discovery && Array.isArray(discovery.topics)) {
+      return discovery.topics.map((t) => {
+        const curie = normalizeCurie(t.curie);
+        return { curie, name: t.name || topicNameMap[curie] || curie };
+      });
+    }
     const present = new Set();
     for (const r of rows)
       for (const t of r.tets || []) present.add(normalizeCurie(t.topic));
-    return [...present];
-  }, [rows]);
+    return [...present].map((curie) => ({
+      curie,
+      name: topicNameMap[curie] || curie,
+    }));
+  }, [discovery, rows, topicNameMap]);
 
   // Final topic column set: ALWAYS includes both the requested topics (if any)
   // and the topics actually present in the data. Data-driven topics not in the
@@ -396,10 +410,7 @@ export default function TetValidationGrid({
       const curie = normalizeCurie(t.curie);
       return { curie, name: t.name || topicNameMap[curie] || curie };
     });
-    const fromData = dataDrivenTopicCuries.map((curie) => ({
-      curie,
-      name: topicNameMap[curie] || curie,
-    }));
+    const fromData = presentTopicColumns;
     const seen = new Set();
     return [...requested, ...fromData]
       .filter((t) => {
@@ -408,9 +419,18 @@ export default function TetValidationGrid({
         return true;
       })
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [topics, dataDrivenTopicCuries, topicNameMap]);
+  }, [topics, presentTopicColumns, topicNameMap]);
 
   const allSources = useMemo(() => {
+    // Prefer the server `discovery` aggregate (distinct source labels over the
+    // non-curator tags of the whole post-filter batch) so the source filter
+    // isn't derived from raw tags; fall back to server entries, then raw tets,
+    // on an older backend that sent no discovery.
+    if (discovery && Array.isArray(discovery.sources)) {
+      return [
+        ...new Set(discovery.sources.map((s) => s.label).filter(Boolean)),
+      ].sort();
+    }
     const s = new Set();
     for (const r of rows) {
       const entries = r.entries ? Object.values(r.entries).flat() : [];
@@ -424,7 +444,7 @@ export default function TetValidationGrid({
       }
     }
     return [...s].sort();
-  }, [rows]);
+  }, [discovery, rows]);
 
   // Distinct curie prefixes across all loaded references — fed to IdPrefixFilter.
   const allIdPrefixes = useMemo(() => {

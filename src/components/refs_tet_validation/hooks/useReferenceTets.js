@@ -21,6 +21,7 @@ const EMPTY_FILTER_FLAGS = Object.freeze({
   has_y: false,
   has_n: false,
   has_note: false,
+  my_validation_present: false,
 });
 
 // Exponential-backoff delays (ms) between retries — 5 retries total.
@@ -121,7 +122,8 @@ function compactFilters(filters) {
 /**
  * Fetch TETs for many references in one round-trip via POST
  * /topic_entity_tag/by_references, which returns { tags: {curie: tets[]},
- * counts: {curie: {topic: {...}}}, entries: {curie: {topic: entries[]}} }.
+ * counts: {curie: {topic: {...}}}, entries: {curie: {topic: entries[]}},
+ * discovery: {topics:[{curie,name}], sources:[{label,...}]} }.
  * `filters` carries the initial search's TET facet criteria so the API returns
  * ONLY the tags the search asked for (the main fix for the slow grid load).
  * Chunked so a very large page doesn't become one huge request. Falls back to
@@ -129,7 +131,12 @@ function compactFilters(filters) {
  * — the fallback can't filter/aggregate server-side, so the grid's own
  * client-side filters still apply on that path.
  *
- * Returns { tags, counts, entries } keyed by curie.
+ * `discovery` is batch-global (the distinct topic columns + source labels across
+ * the whole post-filter batch), so it is merged across chunks and returned once,
+ * NOT keyed per curie. It is null when NO chunk's backend returned it (older
+ * backend), so consumers fall back to deriving columns/sources from raw tags.
+ *
+ * Returns { tags, counts, entries, validation, filterFlags, discovery }.
  */
 export async function fetchTetsBatch(curies, filters) {
   const totalStart = performance.now();
@@ -138,8 +145,36 @@ export async function fetchTetsBatch(curies, filters) {
   const entries = {};
   const validation = {};
   const filterFlags = {};
+  // Batch-global discovery merged across chunks. Keyed maps dedupe (topics by
+  // uppercased curie, sources by label); `sawDiscovery` distinguishes an
+  // empty-but-present aggregate from an older backend that never sent one.
+  const discoveryTopics = new Map();
+  const discoverySources = new Map();
+  let sawDiscovery = false;
+  const mergeDiscovery = (d) => {
+    if (!d || typeof d !== 'object') return;
+    sawDiscovery = true;
+    for (const t of Array.isArray(d.topics) ? d.topics : []) {
+      const key = t?.curie ? String(t.curie).toUpperCase() : null;
+      if (key && !discoveryTopics.has(key)) {
+        discoveryTopics.set(key, { curie: key, name: t.name || key });
+      }
+    }
+    for (const s of Array.isArray(d.sources) ? d.sources : []) {
+      if (s?.label && !discoverySources.has(s.label)) discoverySources.set(s.label, s);
+    }
+  };
+  const buildDiscovery = () =>
+    sawDiscovery
+      ? {
+          topics: Array.from(discoveryTopics.values()),
+          sources: Array.from(discoverySources.values()),
+        }
+      : null;
   const unique = Array.from(new Set((curies || []).filter(Boolean)));
-  if (unique.length === 0) return { tags, counts, entries, validation, filterFlags };
+  if (unique.length === 0) {
+    return { tags, counts, entries, validation, filterFlags, discovery: null };
+  }
   const compactedFilters = compactFilters(filters);
   const groups = chunk(unique, TETS_BATCH_SIZE);
   debug.log(
@@ -179,6 +214,7 @@ export async function fetchTetsBatch(curies, filters) {
         const hasFlagMap =
           body.filter_flags && typeof body.filter_flags === 'object';
         const flagMap = hasFlagMap ? body.filter_flags : {};
+        mergeDiscovery(body.discovery);
         for (const c of group) {
           tags[c] = tagMap[c] || [];
           counts[c] = countMap[c] || {};
@@ -228,7 +264,7 @@ export async function fetchTetsBatch(curies, filters) {
     `[TetValidationGrid] TET batch fetch done: ${unique.length} references, ` +
     `${totalTags} tags, ${elapsedMs(totalStart)}`
   );
-  return { tags, counts, entries, validation, filterFlags };
+  return { tags, counts, entries, validation, filterFlags, discovery: buildDiscovery() };
 }
 
 export function useReferenceTets(
@@ -240,6 +276,10 @@ export function useReferenceTets(
   const [rows, setRows] = useState([]);
   const [unresolved, setUnresolved] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Batch-global discovery aggregate ({topics, sources}) or null on an older
+  // backend that didn't send it — lets the grid build its column set + source
+  // filter without deriving them from raw tags.
+  const [discovery, setDiscovery] = useState(null);
   const reqIdRef = useRef(0);
 
   // Read the latest biblio map without making it an effect dependency: it is
@@ -284,6 +324,7 @@ export function useReferenceTets(
     setLoading(true);
     setRows([]);
     setUnresolved([]);
+    setDiscovery(null);
 
     (async () => {
       const loadStart = performance.now();
@@ -327,6 +368,7 @@ export function useReferenceTets(
         entries: entriesByCurie,
         validation: validationByCurie,
         filterFlags: filterFlagsByCurie,
+        discovery: discoveryResult,
       } = await fetchTetsBatch(
         resolved.map((r) => r.curie),
         filtersRef.current
@@ -354,6 +396,7 @@ export function useReferenceTets(
       }));
       setRows(nextRows);
       setUnresolved(newUnresolved);
+      setDiscovery(discoveryResult);
       setLoading(false);
       const rowTagCount = nextRows.reduce(
         (sum, row) => sum + (Array.isArray(row.tets) ? row.tets.length : 0),
@@ -410,5 +453,5 @@ export function useReferenceTets(
     );
   }, []);
 
-  return { rows, unresolved, loading, refetchRow, applyValidatedCell };
+  return { rows, unresolved, loading, discovery, refetchRow, applyValidatedCell };
 }

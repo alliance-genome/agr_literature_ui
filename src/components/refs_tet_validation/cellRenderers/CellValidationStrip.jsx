@@ -29,7 +29,6 @@ export default function CellValidationStrip({
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const accessLevelMod =
     testerMod && testerMod !== 'No' ? testerMod : cognitoMod;
-  const topicEntitySourceId = useSelector((s) => s.biblio.topicEntitySourceId);
   const modToTaxon = useSelector((s) => s.biblio.modToTaxon);
   const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
   // pending = null | { kind, note, status, errorMessage?,
@@ -41,13 +40,7 @@ export default function CellValidationStrip({
   const greyPositive = myExisting && myExisting.negated === false;
   const greyNegative = myExisting && myExisting.negated === true;
 
-  const noSource = !topicEntitySourceId;
-  const disabledReason = noSource
-    ? 'Curator source not yet loaded — the grid is still resolving your MOD-specific TET source.'
-    : null;
-
   const openConfirm = (kind) => {
-    if (noSource) return;
     // Pre-fill the species from the MOD-to-taxon mapping when the MOD has a
     // single taxon (WB → C. elegans, ZFIN → D. rerio, …). Multi-taxon MODs
     // (XB) start blank so the curator picks. The curator can still clear or
@@ -140,13 +133,12 @@ export default function CellValidationStrip({
 
   return (
     <>
-      <div className="tetv-strip" title={disabledReason || undefined}>
+      <div className="tetv-strip">
         <button
           type="button"
           className={`tetv-strip-btn tetv-strip-pos ${greyPositive ? 'tetv-strip-active' : ''}`}
           onClick={() => openConfirm('positive')}
-          disabled={noSource}
-          title={disabledReason || 'positive (topic present)'}
+          title="positive (topic present)"
           aria-label="positive (topic present)"
         >
           <FontAwesomeIcon icon={faCheckCircle} />
@@ -155,8 +147,7 @@ export default function CellValidationStrip({
           type="button"
           className={`tetv-strip-btn tetv-strip-neg ${greyNegative ? 'tetv-strip-active' : ''}`}
           onClick={() => openConfirm('negative')}
-          disabled={noSource}
-          title={disabledReason || 'negative (topic not present)'}
+          title="negative (topic not present)"
           aria-label="negative (topic not present)"
         >
           <FontAwesomeIcon icon={faTimesCircle} />
@@ -317,11 +308,8 @@ export default function CellValidationStrip({
                     <dt>Source</dt>
                     <dd>
                       professional biocurator (
-                      {accessLevelMod || 'your MOD'} via abc_literature_system
-                      {topicEntitySourceId
-                        ? `, source id #${topicEntitySourceId}`
-                        : ''}
-                      )
+                      {accessLevelMod || 'your MOD'} via abc_literature_system,
+                      resolved server-side)
                     </dd>
 
                     <dt>Data novelty</dt>

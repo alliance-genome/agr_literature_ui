@@ -104,6 +104,7 @@ describe('fetchTetsBatch', () => {
       entries: {},
       validation: {},
       filterFlags: {},
+      discovery: null,
     });
     expect(api.post).not.toHaveBeenCalled();
   });
@@ -169,6 +170,94 @@ describe('fetchTetsBatch', () => {
     expect(out.tags['AGRKB:1']).toEqual([{ topic_entity_tag_id: 1 }]);
     expect(out.counts['AGRKB:1']).toEqual({});
     expect(out.entries['AGRKB:1']).toBeNull();
+    // No discovery key from an older backend => null (derive columns/sources
+    // from raw tags).
+    expect(out.discovery).toBeNull();
+  });
+
+  test('returns the batch-global discovery aggregate when present', async () => {
+    api.post.mockResolvedValueOnce({
+      data: {
+        tags: { 'AGRKB:1': [] },
+        counts: {},
+        discovery: {
+          topics: [{ curie: 'ATP:0000122', name: 'phenotype' }],
+          sources: [
+            {
+              label: 'phenotype neural network / WB',
+              method: 'phenotype neural network',
+            },
+          ],
+        },
+      },
+    });
+    const out = await fetchTetsBatch(['AGRKB:1']);
+    expect(out.discovery).toEqual({
+      topics: [{ curie: 'ATP:0000122', name: 'phenotype' }],
+      sources: [
+        {
+          label: 'phenotype neural network / WB',
+          method: 'phenotype neural network',
+        },
+      ],
+    });
+  });
+
+  test('merges + dedupes discovery across chunks (topics by curie, sources by label)', async () => {
+    // TETS_BATCH_SIZE is 50, so 60 curies split into two chunks -> two POSTs,
+    // each returning its own (overlapping) discovery. The merge unions them and
+    // uppercases topic curies for dedupe.
+    const many = Array.from({ length: 60 }, (_, i) => `AGRKB:${i + 1}`);
+    api.post
+      .mockResolvedValueOnce({
+        data: {
+          tags: {},
+          discovery: {
+            topics: [{ curie: 'atp:0000122', name: 'phenotype' }],
+            sources: [{ label: 'src A' }],
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          tags: {},
+          discovery: {
+            topics: [
+              { curie: 'ATP:0000122', name: 'phenotype' },
+              { curie: 'ATP:0000005', name: 'gene' },
+            ],
+            sources: [{ label: 'src A' }, { label: 'src B' }],
+          },
+        },
+      });
+    const out = await fetchTetsBatch(many);
+    expect(api.post).toHaveBeenCalledTimes(2);
+    const curies = out.discovery.topics.map((t) => t.curie).sort();
+    expect(curies).toEqual(['ATP:0000005', 'ATP:0000122']);
+    expect(out.discovery.sources.map((s) => s.label).sort()).toEqual([
+      'src A',
+      'src B',
+    ]);
+  });
+
+  test('plumbs server validation + filter_flags maps (null on older backend)', async () => {
+    api.post.mockResolvedValueOnce({
+      data: {
+        tags: { 'AGRKB:1': [], 'AGRKB:2': [] },
+        counts: {},
+        validation: { 'AGRKB:1': { 'ATP:1': { state: 'positive' } } },
+        filter_flags: {
+          'AGRKB:1': { 'ATP:1': { has_any: true, my_validation_present: true } },
+        },
+      },
+    });
+    const out = await fetchTetsBatch(['AGRKB:1', 'AGRKB:2']);
+    expect(out.validation['AGRKB:1']).toEqual({ 'ATP:1': { state: 'positive' } });
+    expect(out.filterFlags['AGRKB:1']['ATP:1'].my_validation_present).toBe(true);
+    // present in request, absent in the server maps => empty object (aggregated,
+    // just no rows), not null.
+    expect(out.validation['AGRKB:2']).toEqual({});
+    expect(out.filterFlags['AGRKB:2']).toEqual({});
   });
 
   test('dedupes curies and defaults missing keys to empty arrays', async () => {
