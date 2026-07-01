@@ -6,6 +6,7 @@ import Alert from 'react-bootstrap/Alert';
 
 const MockupTitle = 'Mockup only — not wired to the API';
 const STATUS_OPTIONS = ['active', 'retired', 'deceased'];
+const PRIVACY_OPTIONS = ['show_all', 'logged_in_only', 'fully_hidden', 'hide_email'];
 const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
 
 const formatTimestamp = (s) => {
@@ -138,6 +139,11 @@ const PersonWbEditor = ({ person }) => {
   const statusOptions = STATUS_OPTIONS.includes(currentStatus)
     ? STATUS_OPTIONS
     : [...STATUS_OPTIONS, currentStatus];
+
+  const currentPrivacy = p.privacy || 'hide_email';
+  const privacyOptions = PRIVACY_OPTIONS.includes(currentPrivacy)
+    ? PRIVACY_OPTIONS
+    : [...PRIVACY_OPTIONS, currentPrivacy];
 
   // Names
   const emptyName = () => ({
@@ -289,7 +295,7 @@ const PersonWbEditor = ({ person }) => {
       </Alert>
 
       <Card className="mb-3">
-        <Card.Header>Personal Identification</Card.Header>
+        <Card.Header>Profile</Card.Header>
         <Card.Body>
           <FieldLine label="display_name" ts={recordTs}>
             <Form.Control type="text" defaultValue={p.display_name ?? ''} style={{ maxWidth: 480 }} />
@@ -297,6 +303,13 @@ const PersonWbEditor = ({ person }) => {
           <FieldLine label="status" ts={recordTs}>
             <Form.Control as="select" defaultValue={currentStatus} style={{ maxWidth: 240 }}>
               {statusOptions.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </Form.Control>
+          </FieldLine>
+          <FieldLine label="privacy" ts={recordTs}>
+            <Form.Control as="select" defaultValue={currentPrivacy} style={{ maxWidth: 240 }}>
+              {privacyOptions.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </Form.Control>

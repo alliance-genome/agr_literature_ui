@@ -293,6 +293,7 @@ const PersonCcDisplay = ({ person }) => {
   if (!person) return null;
   const status = person.active_status || 'unknown';
   const statusVariant = status === 'active' ? 'success' : 'secondary';
+  const privacy = person.privacy || 'hide_email';
   const roles = person.mod_roles ?? [];
 
   return (
@@ -318,6 +319,7 @@ const PersonCcDisplay = ({ person }) => {
             </Col>
             <Col xs="auto" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <Badge variant={statusVariant} style={{ fontSize: '0.95em' }}>{status}</Badge>
+              <Badge variant="info" style={{ fontSize: '0.95em' }}>{privacy}</Badge>
               {person.unsubscribe && (
                 <Badge variant="warning" style={{ fontSize: '0.95em' }}>unsubscribed</Badge>
               )}

@@ -137,7 +137,7 @@ const PersonWbDisplay = ({ person }) => {
         </Card.Body>
       </Card>
 
-      <Section title="Personal Identification">
+      <Section title="Profile">
         <FieldRow label="display_name" ts={recordTs}>{person.display_name}</FieldRow>
         {names.length === 0 ? (
           <FieldRow label="name" />
@@ -153,6 +153,7 @@ const PersonWbDisplay = ({ person }) => {
           ))
         )}
         <FieldRow label="status" ts={recordTs}>{status}</FieldRow>
+        <FieldRow label="privacy" ts={recordTs}>{person.privacy || 'hide_email'}</FieldRow>
       </Section>
 
       <Section title="Email">
