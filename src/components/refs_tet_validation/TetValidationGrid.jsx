@@ -1337,9 +1337,9 @@ export default function TetValidationGrid({
         });
         const children = [
           makeInnerColumn({
-            headerName: 'Validation by professional biocurator',
+            headerName: 'Assessment by Biocurator',
             headerTooltip:
-              'Validation by professional biocurators. When at least one curator has submitted a topic-level tag, the cell shows the validation status (validated positive / validated negative / validation conflict). Otherwise, ✓ and ✗ buttons let the curator submit one.',
+              'Assessment by Biocurator. When at least one curator has submitted a topic-level tag, the cell shows the validation status (validated positive / validated negative / validation conflict). Otherwise, ✓ and ✗ buttons let the curator submit one.',
             colId: `${t.curie}__val`,
             kind: INNER_COLUMN_TYPES.VALIDATION,
             width: 90,
