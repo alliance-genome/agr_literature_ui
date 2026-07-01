@@ -873,6 +873,10 @@ const PersonEditor = ({ person }) => {
   // the row itself. `after` runs on success (e.g. refetch a collection).
   const persistChild = ({ list, update, i, idKey, endpoint, createPath, completeFn, bodyFn, snap, savedOf, after, override, applyResp }) => {
     const row = { ...list[i], ...(override || {}) };
+    // Guard against a second save firing while one is in flight — otherwise a
+    // brand-new row (no _id yet) could POST twice in one interaction (e.g. input
+    // blur + checkbox change) and create duplicate rows.
+    if (row._status === 'saving') return;
     if (!completeFn(row)) return; // not enough to save yet
     const key = snap(row);
     if (row._id && key === row._savedKey) return; // saved & unchanged
