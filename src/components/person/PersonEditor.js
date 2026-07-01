@@ -324,7 +324,7 @@ const dateRange = (a, b) =>
 // an unvalidated submission and for the submissions linked beneath a canonical.
 // `lead` is an optional marker on the first cell (e.g. '↳ '); `showStatus` appends
 // the status badge to the trailing cell.
-const LineageClaimRow = ({ submission, lead = '', showStatus = false, style }) => (
+const LineageClaimRow = ({ submission, lead = '', showStatus = false, style, trailing }) => (
   <div style={{ ...inlineRow, ...style }}>
     <span style={{ ...claimCellBase, width: 240 }} title={submission.person_subject_name}>
       {lead}{submission.person_subject_name}
@@ -336,6 +336,7 @@ const LineageClaimRow = ({ submission, lead = '', showStatus = false, style }) =
       by {submission.who_sent_this}
       {showStatus && <>{' '}<Badge variant="secondary">{submission.status}</Badge></>}
     </span>
+    {trailing}
   </div>
 );
 
@@ -684,6 +685,7 @@ const PersonEditor = ({ person }) => {
   });
   const [lineageBusy, setLineageBusy] = useState(false);
   const [lineageError, setLineageError] = useState('');
+  const [showRejected, setShowRejected] = useState(false);
 
   const loadLineage = () => {
     if (!p.curie) return Promise.resolve();
@@ -758,6 +760,15 @@ const PersonEditor = ({ person }) => {
     else body.person_subject_curie_or_id = e.otherCurie || undefined;
     setLineageBusy(true); setLineageError('');
     api.post('/person_lineage_submission/' + s.person_lineage_submission_id + '/validate', body)
+      .then(() => { clearSubEdit(s.person_lineage_submission_id); return loadLineage(); })
+      .catch((err) => setLineageError(errDetail(err)))
+      .finally(() => setLineageBusy(false));
+  };
+
+  // Reject an unvalidated submission / send a rejected one back to the pool.
+  const setSubmissionStatus = (s, status) => {
+    setLineageBusy(true); setLineageError('');
+    api.patch('/person_lineage_submission/' + s.person_lineage_submission_id, { status })
       .then(() => { clearSubEdit(s.person_lineage_submission_id); return loadLineage(); })
       .catch((err) => setLineageError(errDetail(err)))
       .finally(() => setLineageBusy(false));
@@ -1579,7 +1590,8 @@ const PersonEditor = ({ person }) => {
   const personSlot = { width: 240, flexShrink: 0 };
   const relSelectStyle = { width: 260, flexShrink: 0 };
 
-  const unvalidatedSubs = submissions.filter((s) => !s.person_lineage_id);
+  const unvalidatedSubs = submissions.filter((s) => !s.person_lineage_id && s.status !== 'rejected');
+  const rejectedSubs = submissions.filter((s) => s.status === 'rejected');
   const subsForCanonical = (cid) => submissions.filter((s) => s.person_lineage_id === cid);
 
   sectionRows.lineage = (
@@ -1587,9 +1599,8 @@ const PersonEditor = ({ person }) => {
       <Card.Header>Lineage</Card.Header>
       <Card.Body>
         <div style={{ color: '#888', fontSize: '0.85em', marginBottom: 12 }}>
-          Person-to-person relationships for <code>{p.curie}</code>. Submissions are
-          claims; a curator resolves the other person + relationship/dates and
-          promotes them to canonical connections.
+          Submissions are claims; a curator resolves the other person +
+          relationship/dates and promotes them to canonical connections.
         </div>
 
         {lineageError && (
@@ -1607,7 +1618,6 @@ const PersonEditor = ({ person }) => {
           const side = lockedSide(s);
           const e = subEdit(s);
           const lockedCurie = side === 'subject' ? s.person_subject_curie : s.person_object_curie;
-          const rejected = s.status === 'rejected';
           const claimedOther = side === 'subject' ? s.person_object_name : s.person_subject_name;
           const lockedCell = (
             <span style={canonPersonStyle} title={`${lockedCurie} · this person`}>
@@ -1652,15 +1662,24 @@ const PersonEditor = ({ person }) => {
                   onChange={(st, en) => patchSubEdit(s, { start: st, end: en })}
                 />
                 <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-                  <Badge variant={rejected ? 'danger' : 'secondary'}>{s.status}</Badge>
+                  <Badge variant="secondary">{s.status}</Badge>
                   <Button
                     size="sm"
                     variant="primary"
-                    disabled={lineageBusy || rejected || !e.otherCurie || !e.relationship}
+                    disabled={lineageBusy || !e.otherCurie || !e.relationship}
                     onClick={() => handleValidate(s)}
-                    title={rejected ? 'Rejected submissions cannot be validated' : 'Promote to a canonical connection'}
+                    title="Promote to a canonical connection"
                   >
                     Validate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline-danger"
+                    disabled={lineageBusy}
+                    onClick={() => setSubmissionStatus(s, 'rejected')}
+                    title="Reject this submission"
+                  >
+                    Reject
                   </Button>
                 </span>
               </div>
@@ -1828,6 +1847,39 @@ const PersonEditor = ({ person }) => {
             Add
           </Button>
         </div>
+
+        {/* 4. Rejected submissions — collapsed by default, count + toggle. */}
+        {rejectedSubs.length > 0 && (
+          <>
+            <hr />
+            <Button
+              size="sm"
+              variant="link"
+              className="p-0"
+              onClick={() => setShowRejected((v) => !v)}
+            >
+              {showRejected ? '▾' : '▸'} Rejected submissions ({rejectedSubs.length})
+            </Button>
+            {showRejected && rejectedSubs.map((s) => (
+              <LineageClaimRow
+                key={s.person_lineage_submission_id}
+                submission={s}
+                style={{ marginTop: 4 }}
+                trailing={(
+                  <Button
+                    size="sm"
+                    variant="outline-secondary"
+                    disabled={lineageBusy}
+                    onClick={() => setSubmissionStatus(s, 'pending')}
+                    title="Return this submission to the unvalidated list"
+                  >
+                    Set Pending
+                  </Button>
+                )}
+              />
+            ))}
+          </>
+        )}
       </Card.Body>
     </Card>
   );
