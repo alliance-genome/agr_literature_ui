@@ -552,7 +552,7 @@ const PersonEditor = ({ person }) => {
   const emptyEmail = () => {
     const r = {
       email_address: '', invalidated: false, _origOldDate: null,
-      _ts: null, _by: null, _id: null, _status: null, _error: null,
+      _ts: null, _by: null, _created: null, _id: null, _status: null, _error: null,
     };
     return { ...r, _saved: emailFields(r), _savedKey: emailSnap(r) };
   };
@@ -564,6 +564,7 @@ const PersonEditor = ({ person }) => {
       _origOldDate: e.date_made_old_email ?? null,
       _ts: e.date_updated ?? null,
       _by: e.updated_by ?? null,
+      _created: e.date_created ?? null,
       _id: e.person_email_id ?? null,
       _status: null,
       _error: null,
@@ -1189,16 +1190,16 @@ const PersonEditor = ({ person }) => {
       <Card.Header>Email</Card.Header>
       <Card.Body>
         {emails.map((e, i) => {
-          const editTs = metaLabel(e._by, e._ts);
-          const oldNote = showTimestamps && e._origOldDate
-            ? `old since ${formatTimestamp(e._origOldDate)}`
-            : null;
-          const ts = [oldNote, editTs].filter(Boolean).join(' · ') || null;
+          // Show created + old-since only for an email that's old with dates from the
+          // DB. The input flexes to fill the space; created/old are fixed-width
+          // columns right before the checkbox, so checkboxes line up across rows.
+          const showDates = showTimestamps && e.invalidated && !!(e._created || e._origOldDate);
+          const dateSlotBase = { ...tsStyle, flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
           return (
             <FieldLine
               key={i}
               label={labelForEmail(e, i)}
-              ts={ts}
+              ts={metaLabel(e._by, e._ts)}
               status={childStatus(e, emailSnap)}
               error={e._error}
               onDismissError={() => updateEmail(i, { _error: null })}
@@ -1212,8 +1213,16 @@ const PersonEditor = ({ person }) => {
                   savedValue={e._saved?.email_address}
                   onChange={(ev) => updateEmail(i, { email_address: ev.target.value })}
                   onBlur={() => handleEmailBlur(i)}
-                  style={{ flex: '1 1 240px', minWidth: 200 }}
+                  style={{ flex: '1 1 200px', minWidth: 200 }}
                 />
+                {showDates && (
+                  <span style={{ ...dateSlotBase, fontSize: '0.75em', width: 340 }}>
+                    {[
+                      e._created ? `created ${formatTimestamp(e._created)}` : null,
+                      e._origOldDate ? `old since ${formatTimestamp(e._origOldDate)}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </span>
+                )}
                 <HlCheck
                   type="checkbox"
                   id={`person-email-old-${i}`}
