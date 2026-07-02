@@ -29,7 +29,6 @@ export default function CellValidationStrip({
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const accessLevelMod =
     testerMod && testerMod !== 'No' ? testerMod : cognitoMod;
-  const topicEntitySourceId = useSelector((s) => s.biblio.topicEntitySourceId);
   const modToTaxon = useSelector((s) => s.biblio.modToTaxon);
   const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
   // pending = null | { kind, note, status, errorMessage?,
@@ -41,13 +40,7 @@ export default function CellValidationStrip({
   const greyPositive = myExisting && myExisting.negated === false;
   const greyNegative = myExisting && myExisting.negated === true;
 
-  const noSource = !topicEntitySourceId;
-  const disabledReason = noSource
-    ? 'Curator source not yet loaded — the grid is still resolving your MOD-specific TET source.'
-    : null;
-
   const openConfirm = (kind) => {
-    if (noSource) return;
     // Pre-fill the species from the MOD-to-taxon mapping when the MOD has a
     // single taxon (WB → C. elegans, ZFIN → D. rerio, …). Multi-taxon MODs
     // (XB) start blank so the curator picks. The curator can still clear or
@@ -74,25 +67,23 @@ export default function CellValidationStrip({
     setPending((s) => ({ ...s, status: 'submitting' }));
     const negated = pending.kind === 'negative';
     const note = pending.note?.trim() || null;
-    const tetPayload = {
+    // Thin validate payload: the server resolves the curator source and all the
+    // other tag fields (entity=null, data_novelty, force_insertion, …) and
+    // returns the single recomputed cell so the grid updates in place without
+    // re-fetching/re-aggregating the whole batch.
+    const validatePayload = {
       reference_curie: referenceCurie,
       topic: topicCurie,
+      mod_abbreviation: accessLevelMod,
       negated,
-      topic_entity_tag_source_id: topicEntitySourceId,
-      force_insertion: true,
-      entity: null,
-      entity_type: null,
-      species: pending.species?.curie || null,
-      data_novelty: 'ATP:0000335',
-      confidence_score: null,
-      confidence_level: null,
       note,
+      species: pending.species?.curie || null,
     };
     try {
-      // 1) always create the validation TET tag
-      debug.log('[CellValidationStrip] submit TET', tetPayload);
-      const res = await api.post('/topic_entity_tag/', tetPayload);
-      debug.log('[CellValidationStrip] TET OK', res?.status, res?.data);
+      // 1) always create the validation TET tag (server-resolved source)
+      debug.log('[CellValidationStrip] submit validate', validatePayload);
+      const res = await api.post('/topic_entity_tag/validate', validatePayload);
+      debug.log('[CellValidationStrip] validate OK', res?.status, res?.data);
 
       // 2) optionally create / update a curation status entry for this
       //    (reference, mod, topic) — only if the user toggled the section on
@@ -119,7 +110,8 @@ export default function CellValidationStrip({
         );
       }
 
-      if (onValidated) await onValidated(referenceCurie);
+      // Hand the recomputed cell back so the grid can update just this cell.
+      if (onValidated) await onValidated(referenceCurie, topicCurie, res?.data);
       setPending((s) => ({ ...s, status: 'success' }));
       setTimeout(closeConfirm, SUCCESS_CLOSE_DELAY_MS);
     } catch (e) {
@@ -141,13 +133,12 @@ export default function CellValidationStrip({
 
   return (
     <>
-      <div className="tetv-strip" title={disabledReason || undefined}>
+      <div className="tetv-strip">
         <button
           type="button"
           className={`tetv-strip-btn tetv-strip-pos ${greyPositive ? 'tetv-strip-active' : ''}`}
           onClick={() => openConfirm('positive')}
-          disabled={noSource}
-          title={disabledReason || 'positive (topic present)'}
+          title="positive (topic present)"
           aria-label="positive (topic present)"
         >
           <FontAwesomeIcon icon={faCheckCircle} />
@@ -156,8 +147,7 @@ export default function CellValidationStrip({
           type="button"
           className={`tetv-strip-btn tetv-strip-neg ${greyNegative ? 'tetv-strip-active' : ''}`}
           onClick={() => openConfirm('negative')}
-          disabled={noSource}
-          title={disabledReason || 'negative (topic not present)'}
+          title="negative (topic not present)"
           aria-label="negative (topic not present)"
         >
           <FontAwesomeIcon icon={faTimesCircle} />
@@ -318,11 +308,8 @@ export default function CellValidationStrip({
                     <dt>Source</dt>
                     <dd>
                       professional biocurator (
-                      {accessLevelMod || 'your MOD'} via abc_literature_system
-                      {topicEntitySourceId
-                        ? `, source id #${topicEntitySourceId}`
-                        : ''}
-                      )
+                      {accessLevelMod || 'your MOD'} via abc_literature_system,
+                      resolved server-side)
                     </dd>
 
                     <dt>Data novelty</dt>

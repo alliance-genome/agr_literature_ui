@@ -132,7 +132,7 @@ describe('cellPredicate', () => {
     expect(cellPredicate(tets, uid, ['has note'])).toBe(true);
     expect(cellPredicate([{ note: null }], uid, ['has note'])).toBe(false);
   });
-  test('"my validation present" matches when any TET created_by current uid', () => {
+  test('"my validation present" (raw fallback) matches when any TET created_by current uid', () => {
     expect(cellPredicate(tets, uid, ['my validation present'])).toBe(false);
     expect(
       cellPredicate(
@@ -141,6 +141,38 @@ describe('cellPredicate', () => {
         ['my validation present']
       )
     ).toBe(true);
+  });
+  test('prefers server filter_flags (incl. my_validation_present) over raw tets', () => {
+    // The cell value carries a server filterFlags object -> it is authoritative,
+    // even where it disagrees with the raw tets. my_validation_present is now
+    // server-provided (compared against the user's internal users.id).
+    const cell = {
+      tets: [{ negated: false, note: null, created_by: 'someone-else' }],
+      filterFlags: {
+        has_any: true,
+        has_y: false,
+        has_n: true,
+        has_note: true,
+        my_validation_present: true,
+      },
+    };
+    expect(cellPredicate(cell, uid, ['my validation present'])).toBe(true);
+    expect(cellPredicate(cell, uid, ['has N'])).toBe(true);
+    expect(cellPredicate(cell, uid, ['has Y'])).toBe(false);
+    expect(cellPredicate(cell, uid, ['has note'])).toBe(true);
+  });
+  test('server my_validation_present=false wins over a raw-tet uid match', () => {
+    const cell = {
+      tets: [{ created_by: uid }],
+      filterFlags: {
+        has_any: true,
+        has_y: false,
+        has_n: false,
+        has_note: false,
+        my_validation_present: false,
+      },
+    };
+    expect(cellPredicate(cell, uid, ['my validation present'])).toBe(false);
   });
   test('multiple selections combine with OR', () => {
     expect(cellPredicate([{ negated: false }], uid, ['has N', 'has Y'])).toBe(

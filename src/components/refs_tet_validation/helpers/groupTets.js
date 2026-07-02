@@ -67,10 +67,25 @@ export function cellSortRank(tets) {
   return 1;
 }
 
+/** Server-aggregated validation carried on a cell value object, or `undefined`
+ *  when the value is a bare tets array / the row was not server-aggregated (older
+ *  backend or per-reference fallback) and the state must be derived from raw
+ *  tets. A value of `null` means the server DID aggregate the row but found no
+ *  curator validation for this topic (=> 'unvalidated'). */
+function cellServerValidation(value) {
+  if (!value || Array.isArray(value)) return undefined;
+  return value.validation;
+}
+
 /** Validation state of a (reference, topic) cell, considering only
  *  professional-biocurator topic-level TETs.
- *  Returns one of: 'unvalidated' | 'positive' | 'negative' | 'conflict'. */
+ *  Returns one of: 'unvalidated' | 'positive' | 'negative' | 'conflict'.
+ *  Prefers the server aggregate (value.validation.state) when present so the
+ *  grid sorts/filters without re-deriving from raw tags; falls back to deriving
+ *  from raw tets when the value carries no aggregate. */
 export function validationState(tets) {
+  const sv = cellServerValidation(tets);
+  if (sv !== undefined) return sv && sv.state ? sv.state : 'unvalidated';
   const validations = asTets(tets).filter(isCuratorValidationTet);
   if (validations.length === 0) return 'unvalidated';
   const hasPos = validations.some((t) => !t.negated);
@@ -105,20 +120,35 @@ export const TOPIC_CELL_FILTER_KEYS = [
 export function cellPredicate(tets, currentUid, model) {
   if (!Array.isArray(model) || model.length === 0) return true;
   const arr = asTets(tets);
+  // Prefer the server-aggregated per-cell flags (has_any/has_y/has_n/has_note/
+  // my_validation_present) when present so filtering doesn't scan raw tags.
+  // `null`/`undefined` => no server aggregate, derive from raw tets. The server
+  // computes my_validation_present by comparing each tag's created_by against
+  // the authenticated user's internal users.id -- the comparison the client
+  // cannot do reliably, since its uid is an Okta subject id and the serialized
+  // created_by is a display name. The raw-tets fallback keeps the older-backend
+  // path working.
+  const flags =
+    tets && !Array.isArray(tets) ? tets.filterFlags : undefined;
+  const server = flags != null;
   return model.some((key) => {
     switch (key) {
       case 'empty':
-        return arr.length === 0;
+        return server ? !flags.has_any : arr.length === 0;
       case 'has any tag':
-        return arr.length > 0;
+        return server ? !!flags.has_any : arr.length > 0;
       case 'has Y':
-        return arr.some((t) => t.negated === false);
+        return server ? !!flags.has_y : arr.some((t) => t.negated === false);
       case 'has N':
-        return arr.some((t) => t.negated === true);
+        return server ? !!flags.has_n : arr.some((t) => t.negated === true);
       case 'has note':
-        return arr.some((t) => t.note != null && t.note !== '');
+        return server
+          ? !!flags.has_note
+          : arr.some((t) => t.note != null && t.note !== '');
       case 'my validation present':
-        return arr.some((t) => t.created_by === currentUid);
+        return server
+          ? !!flags.my_validation_present
+          : arr.some((t) => t.created_by === currentUid);
       default:
         return false;
     }

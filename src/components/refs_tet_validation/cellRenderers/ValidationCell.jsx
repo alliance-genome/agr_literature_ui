@@ -11,6 +11,77 @@ function professionalBiocuratorTopicTets(tets) {
   return arr.filter(isCuratorValidationTet);
 }
 
+/** Derive the validation summary for a cell from its raw tets (the fallback
+ *  path used when the batch endpoint did not aggregate validation server-side).
+ *  Returns null when the cell has no curator validation.
+ *
+ *  Shape mirrors the server `validation` aggregate exactly so the renderer is
+ *  agnostic to where the summary came from:
+ *    { positives, negatives, byCurator: [{ name, negated,
+ *        sources: [{ method, label }], species: [curie] }] } */
+function deriveValidationSummary(tets) {
+  const validations = professionalBiocuratorTopicTets(tets);
+  if (validations.length === 0) return null;
+  const positives = validations.filter((t) => !t.negated).length;
+  const negatives = validations.filter((t) => t.negated).length;
+
+  // Group validations by (curator, polarity) and collect the source methods
+  // each (curator, polarity) combination used. If Curator A submitted both
+  // a positive and a negative tag they appear on both rows; multiple
+  // positives from the same curator collapse into one row but the source
+  // icons accumulate. We never drop a name even if created_by is missing —
+  // render as "(unknown curator)" instead, so every validation TET is
+  // accounted for.
+  const groups = new Map();
+  for (const t of validations) {
+    const name = t.created_by || '(unknown curator)';
+    const negated = !!t.negated;
+    const key = `${name}|${negated ? 'N' : 'Y'}`;
+    if (!groups.has(key)) {
+      groups.set(key, { name, negated, sources: new Map(), species: new Set() });
+    }
+    const src = t.topic_entity_tag_source?.source_method;
+    if (src) {
+      // Keep a Map source_method → label so the tooltip shows the full
+      // source label (method / data-provider) while the icon shows just
+      // the first letter.
+      const lab = `${src}${
+        t.topic_entity_tag_source?.secondary_data_provider_abbreviation
+          ? ` / ${t.topic_entity_tag_source.secondary_data_provider_abbreviation}`
+          : ''
+      }`;
+      groups.get(key).sources.set(src, lab);
+    }
+    if (t.species) groups.get(key).species.add(t.species);
+  }
+  const byCurator = [...groups.values()].map((g) => ({
+    name: g.name,
+    negated: g.negated,
+    sources: [...g.sources.entries()].map(([method, label]) => ({
+      method,
+      label,
+    })),
+    species: [...g.species],
+  }));
+  return { positives, negatives, byCurator };
+}
+
+/** Normalize the server `validation` aggregate into the renderer's summary
+ *  shape. Returns null when the server reports no curator validation. */
+function serverValidationSummary(cell) {
+  if (!cell) return null;
+  return {
+    positives: cell.positives || 0,
+    negatives: cell.negatives || 0,
+    byCurator: (cell.by_curator || []).map((g) => ({
+      name: g.name || '(unknown curator)',
+      negated: !!g.negated,
+      sources: Array.isArray(g.sources) ? g.sources : [],
+      species: Array.isArray(g.species) ? g.species : [],
+    })),
+  };
+}
+
 export default function ValidationCell(params) {
   const tets = Array.isArray(params.value)
     ? params.value
@@ -18,7 +89,7 @@ export default function ValidationCell(params) {
   const {
     topicCurie,
     topicName,
-    refetchRow,
+    onValidated,
     curationStatusOptions,
     curationTagOptions,
   } = params.colDef.cellRendererParams || {};
@@ -27,66 +98,20 @@ export default function ValidationCell(params) {
     (s) => s.biblio.curieToNameTaxon
   );
 
-  const validations = professionalBiocuratorTopicTets(tets);
-  if (validations.length > 0) {
-    const positives = validations.filter((t) => !t.negated).length;
-    const negatives = validations.filter((t) => t.negated).length;
+  // Prefer the server-aggregated validation cell when present so this column
+  // renders without re-deriving from raw tags. `undefined` => the row was not
+  // server-aggregated (older backend / per-ref fallback), derive from tets;
+  // `null` => the server aggregated the row and found no curator validation.
+  const serverCell = Array.isArray(params.value)
+    ? undefined
+    : params.value?.validation;
+  const summary =
+    serverCell !== undefined
+      ? serverValidationSummary(serverCell)
+      : deriveValidationSummary(tets);
 
-    // Group validations by (curator, polarity) and collect the source methods
-    // each (curator, polarity) combination used. If Curator A submitted both
-    // a positive and a negative tag they appear on both rows; multiple
-    // positives from the same curator collapse into one row but the source
-    // icons accumulate. We never drop a name even if created_by is missing —
-    // render as "(unknown curator)" instead, so every validation TET is
-    // accounted for.
-    const uniquePairs = (() => {
-      const groups = new Map();
-      for (const t of validations) {
-        const name = t.created_by || '(unknown curator)';
-        const negated = !!t.negated;
-        const key = `${name}|${negated ? 'N' : 'Y'}`;
-        if (!groups.has(key)) {
-          groups.set(key, {
-            name,
-            negated,
-            sources: new Map(),
-            species: new Set(),
-          });
-        }
-        const src = t.topic_entity_tag_source?.source_method;
-        if (src) {
-          // Keep a Map source_method → label so the tooltip shows the full
-          // source label (method / data-provider) while the icon shows just
-          // the first letter.
-          const lab = `${src}${
-            t.topic_entity_tag_source?.secondary_data_provider_abbreviation
-              ? ` / ${t.topic_entity_tag_source.secondary_data_provider_abbreviation}`
-              : ''
-          }`;
-          groups.get(key).sources.set(src, lab);
-        }
-        if (t.species) groups.get(key).species.add(t.species);
-      }
-      return [...groups.values()].map((g) => ({
-        ...g,
-        sources: [...g.sources.entries()].map(([method, label]) => ({
-          method,
-          label,
-        })),
-        species: [...g.species],
-      }));
-    })();
-    const uniqueNames = (() => {
-      const seen = new Set();
-      const out = [];
-      for (const p of uniquePairs) {
-        if (!seen.has(p.name)) {
-          seen.add(p.name);
-          out.push(p.name);
-        }
-      }
-      return out;
-    })();
+  if (summary) {
+    const { positives, negatives, byCurator: uniquePairs } = summary;
 
     const firstWord = (s) => String(s || '').split(/[_\s/]/)[0];
     const SourceIcons = ({ sources }) => (
@@ -197,7 +222,7 @@ export default function ValidationCell(params) {
         topicCurie={topicCurie}
         topicName={topicName}
         cellTets={tets}
-        onValidated={refetchRow}
+        onValidated={onValidated}
         curationStatusOptions={curationStatusOptions}
         curationTagOptions={curationTagOptions}
       />

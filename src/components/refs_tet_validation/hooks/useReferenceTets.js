@@ -14,6 +14,16 @@ import { debug } from '../helpers/debug';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Default per-cell filter flags for a topic with no tags (used when applying a
+// recomputed validate cell that carries no filter_flags for the topic).
+const EMPTY_FILTER_FLAGS = Object.freeze({
+  has_any: false,
+  has_y: false,
+  has_n: false,
+  has_note: false,
+  my_validation_present: false,
+});
+
 // Exponential-backoff delays (ms) between retries — 5 retries total.
 const DEFAULT_BACKOFF_DELAYS = [500, 1500, 4500, 13500, 40500];
 // Pull every TET for a reference in one request; references rarely exceed this.
@@ -112,7 +122,8 @@ function compactFilters(filters) {
 /**
  * Fetch TETs for many references in one round-trip via POST
  * /topic_entity_tag/by_references, which returns { tags: {curie: tets[]},
- * counts: {curie: {topic: {...}}}, entries: {curie: {topic: entries[]}} }.
+ * counts: {curie: {topic: {...}}}, entries: {curie: {topic: entries[]}},
+ * discovery: {topics:[{curie,name}], sources:[{label,...}]} }.
  * `filters` carries the initial search's TET facet criteria so the API returns
  * ONLY the tags the search asked for (the main fix for the slow grid load).
  * Chunked so a very large page doesn't become one huge request. Falls back to
@@ -120,15 +131,63 @@ function compactFilters(filters) {
  * — the fallback can't filter/aggregate server-side, so the grid's own
  * client-side filters still apply on that path.
  *
- * Returns { tags, counts, entries } keyed by curie.
+ * `discovery` is batch-global (the distinct topic columns + source labels across
+ * the whole post-filter batch), so it is merged across chunks and returned once,
+ * NOT keyed per curie. It is null unless EVERY chunk contributed a discovery
+ * aggregate -- if any chunk hit an older backend or fell back to per-reference
+ * GETs, the merged result would be incomplete, so it is discarded and consumers
+ * derive columns/sources from raw tags (which cover every loaded reference).
+ *
+ * Returns { tags, counts, entries, validation, filterFlags, discovery }.
  */
 export async function fetchTetsBatch(curies, filters) {
   const totalStart = performance.now();
   const tags = {};
   const counts = {};
   const entries = {};
+  const validation = {};
+  const filterFlags = {};
+  // Batch-global discovery merged across chunks. Keyed maps dedupe (topics by
+  // uppercased curie, sources by label). `sawDiscovery` distinguishes an
+  // empty-but-present aggregate from an older backend that never sent one.
+  // `discoveryComplete` guards against a PARTIAL aggregate: discovery covers only
+  // the chunks whose batch POST succeeded AND returned it, but the grid uses it
+  // exclusively (no raw-tet scan). So if ANY chunk contributed no discovery -- an
+  // older-backend chunk, or one that fell back to per-reference GETs -- the merged
+  // result would silently omit topics/sources that live only in those references.
+  // In that case we return null so consumers derive columns/sources from raw tets,
+  // which always cover every loaded reference.
+  const discoveryTopics = new Map();
+  const discoverySources = new Map();
+  let sawDiscovery = false;
+  let discoveryComplete = true;
+  const mergeDiscovery = (d) => {
+    if (!d || typeof d !== 'object') {
+      discoveryComplete = false;
+      return;
+    }
+    sawDiscovery = true;
+    for (const t of Array.isArray(d.topics) ? d.topics : []) {
+      const key = t?.curie ? String(t.curie).toUpperCase() : null;
+      if (key && !discoveryTopics.has(key)) {
+        discoveryTopics.set(key, { curie: key, name: t.name || key });
+      }
+    }
+    for (const s of Array.isArray(d.sources) ? d.sources : []) {
+      if (s?.label && !discoverySources.has(s.label)) discoverySources.set(s.label, s);
+    }
+  };
+  const buildDiscovery = () =>
+    sawDiscovery && discoveryComplete
+      ? {
+          topics: Array.from(discoveryTopics.values()),
+          sources: Array.from(discoverySources.values()),
+        }
+      : null;
   const unique = Array.from(new Set((curies || []).filter(Boolean)));
-  if (unique.length === 0) return { tags, counts, entries };
+  if (unique.length === 0) {
+    return { tags, counts, entries, validation, filterFlags, discovery: null };
+  }
   const compactedFilters = compactFilters(filters);
   const groups = chunk(unique, TETS_BATCH_SIZE);
   debug.log(
@@ -160,10 +219,21 @@ export async function fetchTetsBatch(curies, filters) {
           body.counts && typeof body.counts === 'object' ? body.counts : {};
         const hasEntryMap = body.entries && typeof body.entries === 'object';
         const entryMap = hasEntryMap ? body.entries : {};
+        // validation + filter_flags are aggregated server-side (newer backend).
+        // Null when absent so consumers fall back to deriving from raw tags.
+        const hasValidationMap =
+          body.validation && typeof body.validation === 'object';
+        const validationMap = hasValidationMap ? body.validation : {};
+        const hasFlagMap =
+          body.filter_flags && typeof body.filter_flags === 'object';
+        const flagMap = hasFlagMap ? body.filter_flags : {};
+        mergeDiscovery(body.discovery);
         for (const c of group) {
           tags[c] = tagMap[c] || [];
           counts[c] = countMap[c] || {};
           entries[c] = hasEntryMap ? (entryMap[c] || {}) : null;
+          validation[c] = hasValidationMap ? (validationMap[c] || {}) : null;
+          filterFlags[c] = hasFlagMap ? (flagMap[c] || {}) : null;
         }
         const tetCount = group.reduce(
           (sum, c) => sum + (Array.isArray(tags[c]) ? tags[c].length : 0),
@@ -179,11 +249,16 @@ export async function fetchTetsBatch(curies, filters) {
           e?.response?.status,
           e?.response?.data?.detail || e?.message
         );
+        // This chunk contributed no discovery, so any merged discovery is now
+        // incomplete -- force the whole result back to raw-tet derivation.
+        discoveryComplete = false;
         await Promise.all(
           group.map(async (c) => {
             tags[c] = await fetchTets(c);
             counts[c] = {};
             entries[c] = null;
+            validation[c] = null;
+            filterFlags[c] = null;
           })
         );
         const fallbackCount = group.reduce(
@@ -205,7 +280,7 @@ export async function fetchTetsBatch(curies, filters) {
     `[TetValidationGrid] TET batch fetch done: ${unique.length} references, ` +
     `${totalTags} tags, ${elapsedMs(totalStart)}`
   );
-  return { tags, counts, entries };
+  return { tags, counts, entries, validation, filterFlags, discovery: buildDiscovery() };
 }
 
 export function useReferenceTets(
@@ -217,6 +292,10 @@ export function useReferenceTets(
   const [rows, setRows] = useState([]);
   const [unresolved, setUnresolved] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Batch-global discovery aggregate ({topics, sources}) or null on an older
+  // backend that didn't send it — lets the grid build its column set + source
+  // filter without deriving them from raw tags.
+  const [discovery, setDiscovery] = useState(null);
   const reqIdRef = useRef(0);
 
   // Read the latest biblio map without making it an effect dependency: it is
@@ -261,6 +340,7 @@ export function useReferenceTets(
     setLoading(true);
     setRows([]);
     setUnresolved([]);
+    setDiscovery(null);
 
     (async () => {
       const loadStart = performance.now();
@@ -302,6 +382,9 @@ export function useReferenceTets(
         tags: tetsByCurie,
         counts: countsByCurie,
         entries: entriesByCurie,
+        validation: validationByCurie,
+        filterFlags: filterFlagsByCurie,
+        discovery: discoveryResult,
       } = await fetchTetsBatch(
         resolved.map((r) => r.curie),
         filtersRef.current
@@ -318,9 +401,18 @@ export function useReferenceTets(
         entries: entriesByCurie[r.curie] === null
           ? null
           : (entriesByCurie[r.curie] || {}),
+        // null => server didn't aggregate it (older backend / fallback);
+        // consumers then derive validation/flags from raw tets.
+        validation: validationByCurie?.[r.curie] == null
+          ? null
+          : validationByCurie[r.curie],
+        filterFlags: filterFlagsByCurie?.[r.curie] == null
+          ? null
+          : filterFlagsByCurie[r.curie],
       }));
       setRows(nextRows);
       setUnresolved(newUnresolved);
+      setDiscovery(discoveryResult);
       setLoading(false);
       const rowTagCount = nextRows.reduce(
         (sum, row) => sum + (Array.isArray(row.tets) ? row.tets.length : 0),
@@ -339,11 +431,43 @@ export function useReferenceTets(
   }, [JSON.stringify(referenceIds || []), resolveBiblio, active, filtersKey]);
 
   const refetchRow = useCallback(async (curie) => {
+    // Per-reference refresh after an edit returns raw tags only, not the
+    // server aggregates. Null them so the row re-derives validation/flags from
+    // the fresh tets and stays consistent until the next batch load.
     const tets = await fetchTets(curie);
     setRows((prev) =>
-      prev.map((r) => (r.curie === curie ? { ...r, tets } : r))
+      prev.map((r) =>
+        r.curie === curie
+          ? { ...r, tets, validation: null, filterFlags: null }
+          : r
+      )
     );
   }, []);
 
-  return { rows, unresolved, loading, refetchRow };
+  // Apply the single recomputed cell returned by POST /topic_entity_tag/validate
+  // ({ topic, validation, filter_flags }) to one row's per-topic aggregates,
+  // so a validation updates that cell without re-fetching/re-aggregating the
+  // whole batch. Only merges when the row is already on the server-aggregate
+  // path (validation/filterFlags are objects); for the fallback path the caller
+  // refetches instead (see handleValidated in TetValidationGrid).
+  const applyValidatedCell = useCallback((curie, topic, cell) => {
+    if (!cell) return;
+    const tkey = String(cell.topic || topic || '').toUpperCase();
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.curie !== curie) return r;
+        const validation =
+          r.validation && typeof r.validation === 'object'
+            ? { ...r.validation, [tkey]: cell.validation ?? null }
+            : r.validation;
+        const filterFlags =
+          r.filterFlags && typeof r.filterFlags === 'object'
+            ? { ...r.filterFlags, [tkey]: cell.filter_flags || EMPTY_FILTER_FLAGS }
+            : r.filterFlags;
+        return { ...r, validation, filterFlags };
+      })
+    );
+  }, []);
+
+  return { rows, unresolved, loading, discovery, refetchRow, applyValidatedCell };
 }

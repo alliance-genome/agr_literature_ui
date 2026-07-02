@@ -100,6 +100,17 @@ const SearchLayout = () => {
         if (nonEmpty(neg.confidence_levels)) f.negated_confidence_levels = neg.confidence_levels;
         if (nonEmpty(neg.source_methods)) f.negated_source_methods = neg.source_methods;
         if (nonEmpty(neg.source_evidence_assertions)) f.negated_source_evidence_assertions = neg.source_evidence_assertions;
+        // MOD scope: the corpus facet selection (in-corpus / needs-review /
+        // in-corpus-or-needs-review). The grid shows only the selected MOD's tags,
+        // so a shared reference doesn't surface another MOD's tags (e.g. an
+        // fb_svm_classifier / FB source when only WB is selected). Union across the
+        // three corpus facets; when none is selected, no MOD restriction is sent.
+        const corpusMods = Array.from(new Set([
+            ...(fv['mods_in_corpus.keyword'] || []),
+            ...(fv['mods_needs_review.keyword'] || []),
+            ...(fv['mods_in_corpus_or_needs_review.keyword'] || []),
+        ]));
+        if (corpusMods.length > 0) f.mods = corpusMods;
         if (Array.isArray(confidenceScore) && !(confidenceScore[0] === 0 && confidenceScore[1] === 1)) {
             f.confidence_score_min = confidenceScore[0];
             f.confidence_score_max = confidenceScore[1];
