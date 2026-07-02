@@ -133,8 +133,10 @@ function compactFilters(filters) {
  *
  * `discovery` is batch-global (the distinct topic columns + source labels across
  * the whole post-filter batch), so it is merged across chunks and returned once,
- * NOT keyed per curie. It is null when NO chunk's backend returned it (older
- * backend), so consumers fall back to deriving columns/sources from raw tags.
+ * NOT keyed per curie. It is null unless EVERY chunk contributed a discovery
+ * aggregate -- if any chunk hit an older backend or fell back to per-reference
+ * GETs, the merged result would be incomplete, so it is discarded and consumers
+ * derive columns/sources from raw tags (which cover every loaded reference).
  *
  * Returns { tags, counts, entries, validation, filterFlags, discovery }.
  */
@@ -146,13 +148,24 @@ export async function fetchTetsBatch(curies, filters) {
   const validation = {};
   const filterFlags = {};
   // Batch-global discovery merged across chunks. Keyed maps dedupe (topics by
-  // uppercased curie, sources by label); `sawDiscovery` distinguishes an
+  // uppercased curie, sources by label). `sawDiscovery` distinguishes an
   // empty-but-present aggregate from an older backend that never sent one.
+  // `discoveryComplete` guards against a PARTIAL aggregate: discovery covers only
+  // the chunks whose batch POST succeeded AND returned it, but the grid uses it
+  // exclusively (no raw-tet scan). So if ANY chunk contributed no discovery -- an
+  // older-backend chunk, or one that fell back to per-reference GETs -- the merged
+  // result would silently omit topics/sources that live only in those references.
+  // In that case we return null so consumers derive columns/sources from raw tets,
+  // which always cover every loaded reference.
   const discoveryTopics = new Map();
   const discoverySources = new Map();
   let sawDiscovery = false;
+  let discoveryComplete = true;
   const mergeDiscovery = (d) => {
-    if (!d || typeof d !== 'object') return;
+    if (!d || typeof d !== 'object') {
+      discoveryComplete = false;
+      return;
+    }
     sawDiscovery = true;
     for (const t of Array.isArray(d.topics) ? d.topics : []) {
       const key = t?.curie ? String(t.curie).toUpperCase() : null;
@@ -165,7 +178,7 @@ export async function fetchTetsBatch(curies, filters) {
     }
   };
   const buildDiscovery = () =>
-    sawDiscovery
+    sawDiscovery && discoveryComplete
       ? {
           topics: Array.from(discoveryTopics.values()),
           sources: Array.from(discoverySources.values()),
@@ -236,6 +249,9 @@ export async function fetchTetsBatch(curies, filters) {
           e?.response?.status,
           e?.response?.data?.detail || e?.message
         );
+        // This chunk contributed no discovery, so any merged discovery is now
+        // incomplete -- force the whole result back to raw-tet derivation.
+        discoveryComplete = false;
         await Promise.all(
           group.map(async (c) => {
             tags[c] = await fetchTets(c);

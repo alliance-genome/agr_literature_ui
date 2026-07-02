@@ -240,6 +240,30 @@ describe('fetchTetsBatch', () => {
     ]);
   });
 
+  test('discards discovery (null) when a chunk falls back to per-reference GETs', async () => {
+    // 60 curies -> two chunks. First chunk returns discovery; the second chunk's
+    // POST fails and drops to per-reference GETs, contributing no discovery. A
+    // merged discovery would then cover only the first chunk and silently hide
+    // topics/sources that live only in the fallback references, so it must be
+    // discarded (null) -- consumers re-derive from raw tets, which cover all refs.
+    const many = Array.from({ length: 60 }, (_, i) => `AGRKB:${i + 1}`);
+    api.post
+      .mockResolvedValueOnce({
+        data: {
+          tags: {},
+          discovery: {
+            topics: [{ curie: 'ATP:0000122', name: 'phenotype' }],
+            sources: [{ label: 'src A' }],
+          },
+        },
+      })
+      .mockRejectedValueOnce({ response: { status: 404 } });
+    api.get.mockResolvedValue({ data: [] }); // per-reference fallback GETs
+    const out = await fetchTetsBatch(many);
+    expect(api.post).toHaveBeenCalledTimes(2);
+    expect(out.discovery).toBeNull();
+  });
+
   test('plumbs server validation + filter_flags maps (null on older backend)', async () => {
     api.post.mockResolvedValueOnce({
       data: {
