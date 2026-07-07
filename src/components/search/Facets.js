@@ -31,9 +31,6 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import InputGroup from 'react-bootstrap/InputGroup';
 import _ from "lodash";
-import DateRangePicker from '@wojtekmaj/react-daterange-picker'
-import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
-import 'react-calendar/dist/Calendar.css';
 import LoadingOverlay from "../LoadingOverlay";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheckSquare, faMinusSquare} from "@fortawesome/free-solid-svg-icons";
@@ -134,7 +131,7 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     const [endInput, setEndInput] = useState('');
 
     // Keep the typed inputs in sync with the stored range so the Day/Week/
-    // Month/Year buttons, the calendar picker, and the clear (X) all reflect here.
+    // Month/Year buttons and the clear (x) button are reflected here too.
     useEffect(() => {
         if (Array.isArray(currentValue) && currentValue.length === 2){
             setStartInput(currentValue[0] || '');
@@ -176,18 +173,6 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
             return [dateStart,dateEnd];
     }
 
-    function formatToUTCString(dateRange){
-        if (dateRange !== ''){
-            let dateStart = new Date (dateRange[0]);
-            let offset = dateStart.getTimezoneOffset();
-            let parsedDateStart = new Date(Date.parse(dateRange[0])  + (offset * 60000));
-            let parsedDateEnd = new Date(Date.parse(dateRange[1]) + (offset * 60000));
-            return [parsedDateStart, parsedDateEnd];
-        }else{
-            return '';
-        }
-    }
-
     function handleFixedTimeClick(timeframe){
         var today = new Date();
         let newDate = ['',''];
@@ -210,19 +195,6 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         dispatch(searchReferences());
     }
 
-    function handleDateChange(newDateRangeArr){
-        if (newDateRangeArr === null) {
-            dispatch(setValueFunction(''));
-            dispatch(setSearchResultsPage(1));
-            dispatch(searchReferences());
-        }
-        else if(!isNaN(Date.parse(newDateRangeArr[0])) && !isNaN(Date.parse(newDateRangeArr[1]))){
-            dispatch(setValueFunction(formatDateRange(newDateRangeArr)));
-            dispatch(setSearchResultsPage(1));
-            dispatch(searchReferences());
-        }
-    }
-
     return(
         <div key={facetName} style={{textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em"}}>
             <h5>{facetName}</h5>
@@ -232,7 +204,6 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                 <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
                 <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
             </ButtonGroup>
-            <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
             <div style={{marginTop: "0.4em"}}>
                 <InputGroup size="sm">
                     <Form.Control
