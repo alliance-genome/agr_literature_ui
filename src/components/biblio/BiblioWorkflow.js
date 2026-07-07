@@ -1421,7 +1421,15 @@ const BiblioWorkflow = () => {
       // Refresh data after successful update
       fetchIndexingWorkflowOverview();
     } catch (error) {
-      const errorMessage = `API error: ${error.message}`;
+      const backendDetail = error.response?.data?.detail;
+      let errorMessage;
+      if (rowData?.section === 'First Pass Curation' && error.response?.status === 422) {
+        // Blank-start / illegal First Pass Curation transitions come back as a 422
+        // ("not allowed as not initial state"); show a curator-friendly message instead.
+        errorMessage = 'Unable to set First Pass Curation until entity extraction, reference classification and curation classification are all complete.';
+      } else {
+        errorMessage = `API error: ${backendDetail || error.message}`;
+      }
       setApiErrorMessage(errorMessage);
       setShowApiErrorModal(true);
       console.error('Error updating workflow/indexing priority:', error);
