@@ -230,10 +230,12 @@ const BiblioWorkflow = () => {
 
         const sectionOrder = [
           'community curation',
+          'first pass curation',
           'manual indexing'
         ];
         const sectionDisplayNames = {
           'community curation': 'Community Curation',
+          'first pass curation': 'First Pass Curation',
           'manual indexing': 'Manual Indexing',
         };
 
@@ -1616,7 +1618,9 @@ const BiblioWorkflow = () => {
       {['WB', 'SGD', 'FB', 'ZFIN'].includes(accessLevel) && (
         <>
           <strong style={{ display: 'block', margin: '20px 0 10px' }}>
-            Manual Indexing and Community Curation
+            {accessLevel === 'FB'
+              ? 'Manual Indexing, First Pass Curation and Community Curation'
+              : 'Manual Indexing and Community Curation'}
           </strong>
           <div style={containerStyle}>
             <div
