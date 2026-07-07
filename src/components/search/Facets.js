@@ -128,6 +128,48 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
 const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     const dispatch = useDispatch();
 
+    // Local state backing the two native <input type="date"> fields so the
+    // curator can type freely; the range is only committed on Enter/blur.
+    const [startInput, setStartInput] = useState('');
+    const [endInput, setEndInput] = useState('');
+
+    // Keep the typed inputs in sync with the stored range so the Day/Week/
+    // Month/Year buttons, the calendar picker, and the clear (X) all reflect here.
+    useEffect(() => {
+        if (Array.isArray(currentValue) && currentValue.length === 2){
+            setStartInput(currentValue[0] || '');
+            setEndInput(currentValue[1] || '');
+        } else {
+            setStartInput('');
+            setEndInput('');
+        }
+    }, [currentValue]);
+
+    function commitTypedRange(startStr, endStr){
+        // Both cleared -> remove the filter entirely.
+        if (!startStr && !endStr){
+            dispatch(setValueFunction(''));
+            dispatch(setSearchResultsPage(1));
+            dispatch(searchReferences());
+            return;
+        }
+        // Need both ends present and valid to form a range; otherwise wait.
+        if (startStr && endStr && !isNaN(Date.parse(startStr)) && !isNaN(Date.parse(endStr))){
+            // YYYY-MM-DD sorts lexicographically, so swap if entered out of order.
+            const [normStart, normEnd] = startStr <= endStr ? [startStr, endStr] : [endStr, startStr];
+            dispatch(setValueFunction([normStart, normEnd]));
+            dispatch(setSearchResultsPage(1));
+            dispatch(searchReferences());
+        }
+    }
+
+    function handleInputKeyDown(e){
+        if (e.key === 'Enter'){
+            e.preventDefault();
+            e.target.blur(); // blur handler performs the commit
+        }
+    }
+
     function formatDateRange(dateRange){
             let dateStart=dateRange[0].getFullYear()+"-"+parseInt(dateRange[0].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[0].getDate().toString().padStart(2,'0');
             let dateEnd=dateRange[1].getFullYear()+"-"+parseInt(dateRange[1].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[1].getDate().toString().padStart(2,'0');
@@ -191,6 +233,27 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                 <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
             </ButtonGroup>
             <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
+            <div style={{marginTop: "0.4em"}}>
+                <InputGroup size="sm">
+                    <Form.Control
+                        type="date"
+                        aria-label={`${facetName} start date`}
+                        value={startInput}
+                        onChange={(e) => setStartInput(e.target.value)}
+                        onBlur={() => commitTypedRange(startInput, endInput)}
+                        onKeyDown={handleInputKeyDown}
+                    />
+                    <InputGroup.Text>to</InputGroup.Text>
+                    <Form.Control
+                        type="date"
+                        aria-label={`${facetName} end date`}
+                        value={endInput}
+                        onChange={(e) => setEndInput(e.target.value)}
+                        onBlur={() => commitTypedRange(startInput, endInput)}
+                        onKeyDown={handleInputKeyDown}
+                    />
+                </InputGroup>
+            </div>
         </div>
     )
 }
