@@ -252,6 +252,18 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
                     />
+                    <Button
+                        variant="outline-secondary"
+                        aria-label={`Clear ${facetName} date range`}
+                        title="Clear dates"
+                        onClick={() => {
+                            setStartInput('');
+                            setEndInput('');
+                            commitTypedRange('', '');
+                        }}
+                    >
+                        &times;
+                    </Button>
                 </InputGroup>
             </div>
         </div>
