@@ -230,10 +230,12 @@ const BiblioWorkflow = () => {
 
         const sectionOrder = [
           'community curation',
+          'first pass curation',
           'manual indexing'
         ];
         const sectionDisplayNames = {
           'community curation': 'Community Curation',
+          'first pass curation': 'First Pass Curation',
           'manual indexing': 'Manual Indexing',
         };
 
@@ -1419,7 +1421,15 @@ const BiblioWorkflow = () => {
       // Refresh data after successful update
       fetchIndexingWorkflowOverview();
     } catch (error) {
-      const errorMessage = `API error: ${error.message}`;
+      const backendDetail = error.response?.data?.detail;
+      let errorMessage;
+      if (rowData?.section === 'First Pass Curation' && error.response?.status === 422) {
+        // Blank-start / illegal First Pass Curation transitions come back as a 422
+        // ("not allowed as not initial state"); show a curator-friendly message instead.
+        errorMessage = 'Unable to set First Pass Curation until entity extraction, reference classification and curation classification are all complete.';
+      } else {
+        errorMessage = `API error: ${backendDetail || error.message}`;
+      }
       setApiErrorMessage(errorMessage);
       setShowApiErrorModal(true);
       console.error('Error updating workflow/indexing priority:', error);
@@ -1616,7 +1626,9 @@ const BiblioWorkflow = () => {
       {['WB', 'SGD', 'FB', 'ZFIN'].includes(accessLevel) && (
         <>
           <strong style={{ display: 'block', margin: '20px 0 10px' }}>
-            Manual Indexing and Community Curation
+            {accessLevel === 'FB'
+              ? 'Manual Indexing, First Pass Curation and Community Curation'
+              : 'Manual Indexing and Community Curation'}
           </strong>
           <div style={containerStyle}>
             <div
