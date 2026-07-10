@@ -1458,8 +1458,16 @@ export default function TetValidationGrid({
   ]);
 
   return (
+    // translate="no" / notranslate: DOM-mutating browser extensions (Google
+    // Translate above all) wrap this grid's text nodes in their own elements,
+    // which AgGrid + React 18 can't reconcile — React then throws a
+    // commit-phase "insertBefore/removeChild ... not a child of this node"
+    // that blanks the grid (confirmed: it renders fine with extensions
+    // disabled). Marking the subtree non-translatable keeps those extensions
+    // out of it. Ported from SCRUM-6229 (282675bc).
     <div
-      className={`ag-theme-quartz tetv-grid-wrapper${
+      translate="no"
+      className={`ag-theme-quartz tetv-grid-wrapper notranslate${
         isFullscreen ? ' tetv-fullscreen' : ''
       }`}
       style={{ width: '100%' }}
@@ -1505,95 +1513,102 @@ export default function TetValidationGrid({
           gridApi?.deselectAll?.();
         }}
       />
-      {/* The two branches MUST have distinct keys: the top-scroll div gets
-          DOM-moved into AgGrid's .ag-root (see the sticky-scrollbar effect),
-          so React must never reconcile these divs in place and delete that
-          child individually — removeChild on its original parent would throw.
-          Distinct keys make React swap the whole subtree instead. */}
-      {loading ? (
-        <div key="tetv-loading" style={{ padding: 16 }}>
-          <Spinner animation="border" size="sm" /> Loading TET data
-        </div>
-      ) : (
-        <div key="tetv-grid-stack" className="tetv-grid-stack">
+      {/* The AgGridReact below stays mounted at all times. Conditionally
+          rendering it (`loading ? spinner : grid`) tears the grid down on
+          every reload: with domLayout="autoHeight" that teardown triggers
+          React's "removeChild ... not a child of this node" crash (AgGrid
+          owns DOM nodes React's reconciler then can't find), and it would
+          also delete the DOM-moved top-scroll div from a parent React no
+          longer tracks. The loading state is an overlay veil on top of the
+          live grid instead. Ported from the SCRUM-6229 branch (7a957038). */}
+      <div className="tetv-grid-stack">
+        {loading && (
           <div
-            className="tetv-top-scroll"
-            ref={topScrollRef}
-            onScroll={onTopScroll}
-            style={{ marginLeft: pinnedLeftWidth, top: headerHeight }}
+            className="tetv-loading-overlay"
+            role="status"
+            aria-live="polite"
           >
-            <div
-              className="tetv-top-scroll-inner"
-              style={{ width: scrollContentWidth }}
-            />
+            <Spinner animation="border" size="sm" />
+            <span>Loading TET data…</span>
           </div>
-          {isResizing && (
-            <div
-              className="tetv-resize-overlay"
-              role="status"
-              aria-live="polite"
-            >
-              <Spinner animation="border" size="sm" />
-              <span>Adjusting columns…</span>
-            </div>
-          )}
-          <AgGridReact
-            rowData={rowData}
-            columnDefs={columnDefs}
-            domLayout="autoHeight"
-            animateRows={false}
-            suppressRowClickSelection
-            suppressColumnVirtualisation
-            reactiveCustomComponents
-            enableCellTextSelection
-            ensureDomOrder
-            enableBrowserTooltips
-            rowSelection="multiple"
-            getRowId={(p) => p.data?.curie || p.data?.input}
-            onSelectionChanged={(ev) => {
-              const next = new Set(
-                (ev.api.getSelectedRows?.() || [])
-                  .map((r) => r?.curie)
-                  .filter(Boolean)
-              );
-              setSelectedRefCuries(next);
-            }}
-            onGridReady={onGridReady}
-            onFirstDataRendered={() => {
-              // AgGrid signals first paint complete — run autosize on the
-              // next frame so we measure cells that are now in the DOM.
-              // With ~50 rows this is the only reliable signal that all
-              // cells have laid out; the row-count-scaled fallback in the
-              // useEffect above still runs as a safety net. We keep the
-              // resizing overlay on until autosize has flushed.
-              setIsResizing(true);
-              requestAnimationFrame(() => {
-                autoSizeAndFill();
-                requestAnimationFrame(() => setIsResizing(false));
-              });
-            }}
-            onBodyScroll={onBodyScroll}
-            onFilterChanged={handleFilterChanged}
-            onSortChanged={handleSortChanged}
-            getRowClass={(p) => {
-              if (!p?.data) return '';
-              // Only consider topics currently visible. A validation on a
-              // hidden topic shouldn't paint the row, because the curator
-              // can't see the corresponding "validated …" status anywhere.
-              for (const t of topicColumns) {
-                if (hiddenTopicCuries.has(t.curie)) continue;
-                const tets = p.data[`__topic_${t.curie}`];
-                if (
-                  professionalBiocuratorTopicTets(tets).length > 0
-                ) {
-                  return 'tetv-row-validated';
-                }
-              }
-              return '';
-            }}
+        )}
+        <div
+          className="tetv-top-scroll"
+          ref={topScrollRef}
+          onScroll={onTopScroll}
+          style={{ marginLeft: pinnedLeftWidth, top: headerHeight }}
+        >
+          <div
+            className="tetv-top-scroll-inner"
+            style={{ width: scrollContentWidth }}
           />
         </div>
-      )}
+        {isResizing && (
+          <div
+            className="tetv-resize-overlay"
+            role="status"
+            aria-live="polite"
+          >
+            <Spinner animation="border" size="sm" />
+            <span>Adjusting columns…</span>
+          </div>
+        )}
+        <AgGridReact
+          rowData={rowData}
+          columnDefs={columnDefs}
+          domLayout="autoHeight"
+          animateRows={false}
+          suppressRowClickSelection
+          suppressColumnVirtualisation
+          reactiveCustomComponents
+          enableCellTextSelection
+          ensureDomOrder
+          enableBrowserTooltips
+          rowSelection="multiple"
+          getRowId={(p) => p.data?.curie || p.data?.input}
+          onSelectionChanged={(ev) => {
+            const next = new Set(
+              (ev.api.getSelectedRows?.() || [])
+                .map((r) => r?.curie)
+                .filter(Boolean)
+            );
+            setSelectedRefCuries(next);
+          }}
+          onGridReady={onGridReady}
+          onFirstDataRendered={() => {
+            // AgGrid signals first paint complete — run autosize on the
+            // next frame so we measure cells that are now in the DOM.
+            // With ~50 rows this is the only reliable signal that all
+            // cells have laid out; the row-count-scaled fallback in the
+            // useEffect above still runs as a safety net. We keep the
+            // resizing overlay on until autosize has flushed.
+            setIsResizing(true);
+            requestAnimationFrame(() => {
+              autoSizeAndFill();
+              requestAnimationFrame(() => setIsResizing(false));
+            });
+          }}
+          onBodyScroll={onBodyScroll}
+          onFilterChanged={handleFilterChanged}
+          onSortChanged={handleSortChanged}
+          getRowClass={(p) => {
+            if (!p?.data) return '';
+            // Only consider topics currently visible. A validation on a
+            // hidden topic shouldn't paint the row, because the curator
+            // can't see the corresponding "validated …" status anywhere.
+            for (const t of topicColumns) {
+              if (hiddenTopicCuries.has(t.curie)) continue;
+              const tets = p.data[`__topic_${t.curie}`];
+              if (
+                professionalBiocuratorTopicTets(tets).length > 0
+              ) {
+                return 'tetv-row-validated';
+              }
+            }
+            return '';
+          }}
+        />
+      </div>
       {bulkPending && (
         <BulkValidationModal
           show={!!bulkPending}

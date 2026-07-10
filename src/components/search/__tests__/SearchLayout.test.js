@@ -16,10 +16,11 @@ jest.mock('react-redux', () => ({
   useSelector: (fn) => fn(mockState),
 }));
 
-// The grid unmounts on every search (results are cleared while loading). This
-// mock records how the persistRef store behaves across that remount: it writes
-// a marker on first mount and reads it back on the next mount. If SearchLayout
-// holds the store in a stable ref, the marker survives the remount.
+// Once opened, the grid must stay mounted across searches (remounting an
+// autoHeight AgGrid crashes React's reconciler — see SCRUM-6229). This mock
+// records mount/unmount counts to assert that, and still exercises the
+// persistRef store: it writes a marker on first mount and would read it back
+// on any later remount (e.g. leaving and revisiting the search page).
 const mockGrid = { mounts: 0, unmounts: 0, sawOnRemount: undefined };
 
 jest.mock('../../refs_tet_validation/TetValidationGrid', () => {
@@ -64,7 +65,7 @@ beforeEach(() => {
   });
 });
 
-test('grid persistence store survives the unmount/remount of a new search', () => {
+test('grid stays mounted across a new search once opened', () => {
   const { rerender } = render(<SearchLayout />);
 
   // Switch to the topic grid view; this mounts the grid once.
@@ -72,21 +73,23 @@ test('grid persistence store survives the unmount/remount of a new search', () =
   expect(screen.getByTestId('tet-grid')).toBeInTheDocument();
   expect(mockGrid.mounts).toBe(1);
 
-  // A new search (pagination/filter change) clears results while loading —
-  // referenceIds becomes empty so the grid unmounts.
+  // A new search (pagination/filter change) clears results while loading.
+  // The grid must NOT unmount — remounting an autoHeight AgGrid crashes
+  // React's reconciler ("removeChild/insertBefore ... not a child of this
+  // node") — it is only hidden while the search loads.
   setSearchState({ searchResults: [], searchLoading: true });
   rerender(<SearchLayout />);
-  expect(screen.queryByTestId('tet-grid')).not.toBeInTheDocument();
-  expect(mockGrid.unmounts).toBe(1);
+  expect(screen.getByTestId('tet-grid')).toBeInTheDocument();
+  expect(mockGrid.unmounts).toBe(0);
 
-  // Results return — the grid remounts and must read back the marker it stored
-  // before the unmount, proving the persistence container is stable.
+  // Results return — still the same grid instance, no remount, so the
+  // persistence store trivially survives the search.
   setSearchState({
     searchResults: [{ curie: 'AGRKB:101000000000002' }],
     searchLoading: false,
   });
   rerender(<SearchLayout />);
   expect(screen.getByTestId('tet-grid')).toBeInTheDocument();
-  expect(mockGrid.mounts).toBe(2);
-  expect(mockGrid.sawOnRemount).toBe('kept-selection');
+  expect(mockGrid.mounts).toBe(1);
+  expect(mockGrid.unmounts).toBe(0);
 });
