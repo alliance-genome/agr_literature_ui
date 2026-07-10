@@ -220,7 +220,7 @@ export default function BulkValidationModal({
         {status === 'editing' && (
           <>
             <p style={{ marginBottom: 10 }}>
-              This will create one <strong>assessment TET tag</strong>{' '}
+              This will create one <strong>{kind}</strong> topic tag{' '}
               per selected reference attributed to{' '}
               <strong>{userEmail || uid || '(unknown user)'}</strong>.
             </p>

@@ -169,8 +169,8 @@ export default function CellValidationStrip({
             (pending.status === 'editing' || pending.status === 'submitting') && (
               <>
                 <p style={{ marginBottom: 12 }}>
-                  This will create a new <strong>assessment TET tag</strong>{' '}
-                  attributed to{' '}
+                  This will create a new <strong>{pending.kind}</strong>{' '}
+                  topic tag attributed to{' '}
                   <strong>{userEmail || uid || '(unknown user)'}</strong>.
                 </p>
 
