@@ -65,6 +65,20 @@ const SearchResultItem = ({ reference }) => {
     );
   };
 
+  const ImageIndicator = ({ curie, imageCount }) => {
+    const history = useHistory();
+    const goToFileManagement = () => {
+        history.push(`/Biblio/?action=filemanagement&referenceCurie=${curie}`);
+    };
+    return (
+        <Button className="image-indicator"
+                title={`${imageCount} image${imageCount === 1 ? '' : 's'} uploaded - click to manage files`}
+                onClick={goToFileManagement}>
+            <FontAwesomeIcon icon={faImage} size='2x'/>
+        </Button>
+    );
+  };
+
   function toggleAbstract() {
     setIsExpanded(!isExpanded);
   }
@@ -148,11 +162,7 @@ const SearchResultItem = ({ reference }) => {
               <TETRedirect curie={reference.curie}/>
             <FileDownloadIcon curie = {reference.curie}/>
             {reference.image_count > 0 && (
-                <span className="image-indicator"
-                      title={`${reference.image_count} image${reference.image_count === 1 ? '' : 's'} uploaded`}
-                      style={{marginLeft: '8px', color: '#28a745'}}>
-                    <FontAwesomeIcon icon={faImage} size='2x'/>
-                </span>
+                <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
             )}
 
           </div></Col></Row>
