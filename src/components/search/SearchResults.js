@@ -74,7 +74,7 @@ const SearchResultItem = ({ reference }) => {
         <Button className="image-indicator"
                 title={`${imageCount} image${imageCount === 1 ? '' : 's'} uploaded - click to manage files`}
                 onClick={goToFileManagement}>
-            <FontAwesomeIcon icon={faImage} size='2x'/>
+            <FontAwesomeIcon icon={faImage} size='3x'/>
         </Button>
     );
   };
