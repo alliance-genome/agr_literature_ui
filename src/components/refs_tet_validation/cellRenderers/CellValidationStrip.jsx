@@ -192,7 +192,7 @@ export default function CellValidationStrip({
                   <Form.Control
                     as="textarea"
                     rows={3}
-                    placeholder="Optional note for this assessment…"
+                    placeholder="Optional note for this tag…"
                     value={pending.note}
                     onChange={(e) =>
                       setPending((s) => ({ ...s, note: e.target.value }))

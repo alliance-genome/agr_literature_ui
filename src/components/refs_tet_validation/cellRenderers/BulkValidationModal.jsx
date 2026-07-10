@@ -262,7 +262,7 @@ export default function BulkValidationModal({
               <Form.Control
                 as="textarea"
                 rows={3}
-                placeholder="Optional note applied to every assessment in this batch…"
+                placeholder="Optional note applied to every tag in this batch…"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 disabled={isSubmitting}
