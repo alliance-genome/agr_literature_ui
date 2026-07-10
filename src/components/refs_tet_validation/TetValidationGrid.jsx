@@ -1505,12 +1505,17 @@ export default function TetValidationGrid({
           gridApi?.deselectAll?.();
         }}
       />
+      {/* The two branches MUST have distinct keys: the top-scroll div gets
+          DOM-moved into AgGrid's .ag-root (see the sticky-scrollbar effect),
+          so React must never reconcile these divs in place and delete that
+          child individually — removeChild on its original parent would throw.
+          Distinct keys make React swap the whole subtree instead. */}
       {loading ? (
-        <div style={{ padding: 16 }}>
+        <div key="tetv-loading" style={{ padding: 16 }}>
           <Spinner animation="border" size="sm" /> Loading TET data
         </div>
       ) : (
-        <div className="tetv-grid-stack">
+        <div key="tetv-grid-stack" className="tetv-grid-stack">
           <div
             className="tetv-top-scroll"
             ref={topScrollRef}
