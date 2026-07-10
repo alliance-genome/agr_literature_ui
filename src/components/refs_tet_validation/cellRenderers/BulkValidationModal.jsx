@@ -192,7 +192,7 @@ export default function BulkValidationModal({
   const disabledReason = noSource
     ? 'Curator source not yet loaded — the grid is still resolving your MOD-specific TET source.'
     : noEligible
-    ? 'All selected references already have a professional-biocurator validation for this topic.'
+    ? 'All selected references already have a professional-biocurator assessment for this topic.'
     : null;
 
   return (
@@ -205,7 +205,7 @@ export default function BulkValidationModal({
     >
       <Modal.Header closeButton={!isSubmitting}>
         <Modal.Title>
-          Bulk topic validation —{' '}
+          Bulk topic assessment —{' '}
           <span
             className={`tetv-validation-status ${
               kind === 'negative' ? 'tetv-validated-neg' : 'tetv-validated-pos'
@@ -220,7 +220,7 @@ export default function BulkValidationModal({
         {status === 'editing' && (
           <>
             <p style={{ marginBottom: 10 }}>
-              This will create one <strong>validation TET tag</strong>{' '}
+              This will create one <strong>assessment TET tag</strong>{' '}
               per selected reference attributed to{' '}
               <strong>{userEmail || uid || '(unknown user)'}</strong>.
             </p>
@@ -234,9 +234,9 @@ export default function BulkValidationModal({
               <dl className="tetv-validation-fields-list">
                 <dt>Selected references</dt>
                 <dd>{references.length}</dd>
-                <dt>To be validated</dt>
+                <dt>To be assessed</dt>
                 <dd>{eligible.length}</dd>
-                <dt>Already validated (will be skipped)</dt>
+                <dt>Already assessed (will be skipped)</dt>
                 <dd style={skipped.length === 0 ? noneStyle : undefined}>
                   {skipped.length === 0 ? 'none' : skipped.length}
                 </dd>
@@ -262,7 +262,7 @@ export default function BulkValidationModal({
               <Form.Control
                 as="textarea"
                 rows={3}
-                placeholder="Optional note applied to every validation in this batch…"
+                placeholder="Optional note applied to every assessment in this batch…"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 disabled={isSubmitting}
@@ -344,13 +344,13 @@ export default function BulkValidationModal({
               {status === 'submitting' && (
                 <>
                   <Spinner animation="border" size="sm" /> Submitting{' '}
-                  validations…
+                  assessments…
                 </>
               )}
               {status === 'done' && (
                 <span style={{ color: '#1e7d3a', fontWeight: 600 }}>
                   <FontAwesomeIcon icon={faCheckCircle} /> All{' '}
-                  {successes.length} validation tag(s) created.
+                  {successes.length} assessment tag(s) created.
                 </span>
               )}
               {status === 'partial' && (
@@ -414,7 +414,7 @@ export default function BulkValidationModal({
               <FontAwesomeIcon
                 icon={kind === 'negative' ? faTimesCircle : faCheckCircle}
               />{' '}
-              Validate {eligible.length} reference
+              Assess {eligible.length} reference
               {eligible.length === 1 ? '' : 's'} {kind}
             </Button>
           </>

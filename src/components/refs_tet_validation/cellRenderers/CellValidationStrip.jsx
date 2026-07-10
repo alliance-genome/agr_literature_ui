@@ -162,14 +162,14 @@ export default function CellValidationStrip({
         size="lg"
       >
         <Modal.Header closeButton={!isSubmitting}>
-          <Modal.Title>Topic validation</Modal.Title>
+          <Modal.Title>Topic assessment</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {pending &&
             (pending.status === 'editing' || pending.status === 'submitting') && (
               <>
                 <p style={{ marginBottom: 12 }}>
-                  This will create a new <strong>validation TET tag</strong>{' '}
+                  This will create a new <strong>assessment TET tag</strong>{' '}
                   attributed to{' '}
                   <strong>{userEmail || uid || '(unknown user)'}</strong>.
                 </p>
@@ -192,7 +192,7 @@ export default function CellValidationStrip({
                   <Form.Control
                     as="textarea"
                     rows={3}
-                    placeholder="Optional note for this validation…"
+                    placeholder="Optional note for this assessment…"
                     value={pending.note}
                     onChange={(e) =>
                       setPending((s) => ({ ...s, note: e.target.value }))
@@ -397,7 +397,7 @@ export default function CellValidationStrip({
           {pending?.status === 'error' && (
             <>
               <p style={{ color: '#b03a2e' }}>
-                Could not create the validation tag.
+                Could not create the assessment tag.
               </p>
               <pre
                 style={{

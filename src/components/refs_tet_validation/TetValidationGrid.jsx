@@ -61,7 +61,7 @@ const EMPTY_CELL_FILTER_FLAGS = Object.freeze({
 });
 
 const INNER_COLUMN_FILTER_LABELS = {
-  [INNER_COLUMN_TYPES.VALIDATION]: 'Validation status',
+  [INNER_COLUMN_TYPES.VALIDATION]: 'Assessment status',
   [INNER_COLUMN_TYPES.TAG]: 'Data',
   [INNER_COLUMN_TYPES.SOURCES]: 'Sources',
   [INNER_COLUMN_TYPES.CONF_SCORE]: 'Confidence score',
@@ -1339,7 +1339,7 @@ export default function TetValidationGrid({
           makeInnerColumn({
             headerName: 'Assessment by Biocurator',
             headerTooltip:
-              'Assessment by Biocurator. When at least one curator has submitted a topic-level tag, the cell shows the validation status (validated positive / validated negative / validation conflict). Otherwise, ✓ and ✗ buttons let the curator submit one.',
+              'Assessment by Biocurator. When at least one curator has submitted a topic-level tag, the cell shows the assessment status (positive / negative / assessment conflict). Otherwise, ✓ and ✗ buttons let the curator submit one.',
             colId: `${t.curie}__val`,
             kind: INNER_COLUMN_TYPES.VALIDATION,
             width: 90,
@@ -1429,7 +1429,7 @@ export default function TetValidationGrid({
           headerGroupComponent: HeaderGroupWithHelp,
           headerTooltip:
             `Topic "${t.name || t.curie}" (${t.curie}) — a topic from the MOD's ATP subset. ` +
-            'Sub-columns show the validation status, per-source TET data, a compact tag summary, and (optionally) confidence and notes for this topic on each reference.',
+            'Sub-columns show the assessment status, per-source TET data, a compact tag summary, and (optionally) confidence and notes for this topic on each reference.',
           groupId: `tg-${t.curie}`,
           marryChildren: true,
           // Allow long topic names to wrap inside the group header instead of
