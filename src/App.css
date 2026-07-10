@@ -746,6 +746,15 @@ em {
 #TET_icon_id {width: 100%; }
 #TET_text_id{font-size: 10px;}
 
+/* image indicator sits in the top-right icon cluster, just left of the TET button;
+   sized to match the TET/PDF buttons */
+.image-indicator{
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  margin-right: 150px;
+}
+
 .sort-loading-indicator {
   position: fixed;
   top: 1rem;
