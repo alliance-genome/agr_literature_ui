@@ -65,6 +65,8 @@ export const RENAME_FACETS = {
     "authors.name.keyword": "Authors",
     "mod_reference_types.keyword": "MOD reference type",
     "retraction_status.keyword": "Retraction Status",
+    "can_display_image": "Image permission",
+    "has_image": "Has images",
     "topics": "Topic",
     "confidence_levels": "Confidence level",
     "source_methods": "Source method",
@@ -112,6 +114,14 @@ export const RENAME_FACETS = {
 export const RENAME_FACET_VALUES = {
     "manual_indexing_curation_tag": {
         "no genetic data": "predicted no genetic data"
+    },
+    "can_display_image": {
+        "true": "Yes",
+        "false": "No"
+    },
+    "has_image": {
+        "true": "Yes",
+        "false": "No"
     }
 }
 
@@ -121,6 +131,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation", "email_extraction"],
     "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
+    "Images": ["can display image", "has image"],
     "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
@@ -420,7 +431,8 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty',
                         'file_workflow', 'manual_indexing', 'reference_classification',
 		                'entity_extraction', 'curation_classification', 'community_curation', 'email_extraction',
-                        'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag'].includes(key)) {
+                        'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag',
+                        'can_display_image', 'has_image'].includes(key)) {
                     key = key + '.keyword';
                 }
 

@@ -12,10 +12,9 @@ import {Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFilePdf, faPenSquare} from "@fortawesome/free-solid-svg-icons";
+import {faFilePdf, faPenSquare, faImage} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
-import { datasetXrefPrefixes } from '../biblio/BiblioEditor';
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -108,8 +107,9 @@ const SearchResultItem = ({ reference }) => {
       return '';
   };
 
-  const allXrefs = reference.cross_references || [];
-  const regularXrefs = allXrefs.filter(x => !datasetXrefPrefixes.includes(x.curie.split(':')[0]));
+  // Show every cross-reference, including dataset xrefs (PDB, GEO, ...), so curators
+  // can see the xref that matched their search.
+  const displayedXrefs = reference.cross_references || [];
 
   return (
     <Row>
@@ -126,7 +126,7 @@ const SearchResultItem = ({ reference }) => {
                           {reference.curie}
                       </Link>
                   </li>
-                  {regularXrefs.map((xref, i) => (
+                  {displayedXrefs.map((xref, i) => (
                       <li key={i}>
 		<span className="obsolete">
 		    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
@@ -147,6 +147,13 @@ const SearchResultItem = ({ reference }) => {
               </ul>
               <TETRedirect curie={reference.curie}/>
             <FileDownloadIcon curie = {reference.curie}/>
+            {reference.image_count > 0 && (
+                <span className="image-indicator"
+                      title={`${reference.image_count} image${reference.image_count === 1 ? '' : 's'} uploaded`}
+                      style={{marginLeft: '8px', color: '#28a745'}}>
+                    <FontAwesomeIcon icon={faImage} size='2x'/>
+                </span>
+            )}
 
           </div></Col></Row>
           <div className="searchRow-other">Authors : <span dangerouslySetInnerHTML={{__html: reference.authors ? reference.authors.map((author, i) => ((i ? ' ' : '') + author.name)) : ''}} /></div>
