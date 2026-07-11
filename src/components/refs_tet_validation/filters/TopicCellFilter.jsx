@@ -3,6 +3,12 @@ import { useGridFilter } from 'ag-grid-react';
 import { useSelector } from 'react-redux';
 import { TOPIC_CELL_FILTER_KEYS, cellPredicate } from '../helpers/groupTets';
 
+// Display labels for the (persisted) filter-model keys — the keys themselves
+// stay unchanged so saved filter models keep working (SCRUM-6291).
+const FILTER_KEY_LABELS = {
+  'my validation present': 'my assessment present',
+};
+
 const TopicCellFilter = ({ model: rawModel, onModelChange }) => {
   const model = Array.isArray(rawModel) ? rawModel : null;
   const uid = useSelector((s) => s.isLogged.uid);
@@ -49,7 +55,7 @@ const TopicCellFilter = ({ model: rawModel, onModelChange }) => {
             checked={!!(unappliedModel && unappliedModel.includes(k))}
             onChange={(e) => onChange(k, e.target.checked)}
           />
-          <label htmlFor={`tcf-${k}`}> {k}</label>
+          <label htmlFor={`tcf-${k}`}> {FILTER_KEY_LABELS[k] || k}</label>
         </div>
       ))}
       <hr />

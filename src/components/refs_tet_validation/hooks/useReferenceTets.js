@@ -297,6 +297,13 @@ export function useReferenceTets(
   // filter without deriving them from raw tags.
   const [discovery, setDiscovery] = useState(null);
   const reqIdRef = useRef(0);
+  // Key (ids + filters) of the last fetch that ran to completion. When the
+  // grid is merely re-activated (List view → Topic grid) with unchanged
+  // inputs, the rows already in state are still valid — skip the refetch
+  // instead of reloading the whole batch on every view toggle. A cancelled
+  // fetch never records its key, so re-activation after an aborted load
+  // still refetches.
+  const lastLoadedKeyRef = useRef(null);
 
   // Read the latest biblio map without making it an effect dependency: it is
   // derived from the same search that produced referenceIds, so it changes in
@@ -335,6 +342,8 @@ export function useReferenceTets(
     // but the grid stays mounted to preserve state). Otherwise every later
     // search would trigger a batch fetch for a grid nobody is looking at.
     if (!active) return undefined;
+    const fetchKey = `${JSON.stringify(referenceIds || [])}|${filtersKey}`;
+    if (lastLoadedKeyRef.current === fetchKey) return undefined;
     const reqId = ++reqIdRef.current;
     let cancelled = false;
     setLoading(true);
@@ -414,6 +423,7 @@ export function useReferenceTets(
       setUnresolved(newUnresolved);
       setDiscovery(discoveryResult);
       setLoading(false);
+      lastLoadedKeyRef.current = fetchKey;
       const rowTagCount = nextRows.reduce(
         (sum, row) => sum + (Array.isArray(row.tets) ? row.tets.length : 0),
         0

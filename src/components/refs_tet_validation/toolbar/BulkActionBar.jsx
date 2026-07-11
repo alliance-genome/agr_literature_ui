@@ -46,7 +46,7 @@ export default function BulkActionBar({
   const disabled = noTopics || needsTopicPick;
 
   return (
-    <div className="tetv-bulk-bar" role="region" aria-label="Bulk validation">
+    <div className="tetv-bulk-bar" role="region" aria-label="Bulk assessment">
       <span className="tetv-bulk-count">
         <strong>{selectedCount}</strong> reference
         {selectedCount === 1 ? '' : 's'} selected
@@ -54,7 +54,7 @@ export default function BulkActionBar({
 
       {noTopics ? (
         <span className="tetv-bulk-msg">
-          Enable at least one topic column to validate.
+          Enable at least one topic column to assess.
         </span>
       ) : onlyOneTopic ? (
         <span className="tetv-bulk-msg">
@@ -97,11 +97,11 @@ export default function BulkActionBar({
           disabled={disabled}
           title={
             disabled
-              ? 'Pick a topic to validate first'
-              : `Validate ${selectedCount} reference(s) positive`
+              ? 'Pick a topic to assess first'
+              : `Assess ${selectedCount} reference(s) positive`
           }
         >
-          <FontAwesomeIcon icon={faCheckCircle} /> Validate positive
+          <FontAwesomeIcon icon={faCheckCircle} /> Positive
         </Button>
         <Button
           size="sm"
@@ -110,11 +110,11 @@ export default function BulkActionBar({
           disabled={disabled}
           title={
             disabled
-              ? 'Pick a topic to validate first'
-              : `Validate ${selectedCount} reference(s) negative`
+              ? 'Pick a topic to assess first'
+              : `Assess ${selectedCount} reference(s) negative`
           }
         >
-          <FontAwesomeIcon icon={faTimesCircle} /> Validate negative
+          <FontAwesomeIcon icon={faTimesCircle} /> Negative
         </Button>
         <Button
           size="sm"

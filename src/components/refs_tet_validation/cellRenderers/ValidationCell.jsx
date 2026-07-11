@@ -148,7 +148,7 @@ export default function ValidationCell(params) {
 
     let label, cls, tooltip, attribution;
     if (positives > 0 && negatives > 0) {
-      label = 'validation conflict';
+      label = 'assessment conflict';
       cls = 'tetv-validation-status tetv-validated-conflict';
       tooltip =
         `${positives} positive + ${negatives} negative professional ` +
