@@ -820,7 +820,9 @@ const CONVERTED_FILE_CLASSES = {
   ]
 };
 
-// All converted file classes (for filtering)
+// All converted file classes (for filtering). 'tei' stays listed so tei files
+// are kept out of the file table, even though tei links are no longer rendered
+// in the Converted Files column.
 const ALL_CONVERTED_FILE_CLASSES = [
   ...CONVERTED_FILE_CLASSES.main,
   ...CONVERTED_FILE_CLASSES.supplement,
@@ -837,6 +839,73 @@ const CONVERTED_FILE_LABELS = {
   'converted_grobid_supplement': 'grobid',
   'converted_docling_supplement': 'docling',
   'converted_marker_supplement': 'marker'
+};
+
+// Method suffixes used in converted file display names.
+// PDFX outputs use _grobid/_docling/_marker/_merged; XML-derived outputs use
+// _nxml (from nXML sources) and _tei (from TEI sources). Stripping any of
+// these yields the source display_name used as the grouping key.
+const METHOD_SUFFIXES = ['_grobid', '_docling', '_marker', '_merged', '_nxml', '_tei'];
+
+// Create a mapping of base display_name to converted files (markdown and TEI)
+// Converted files have names like "PMC123_grobid" but we need to map to "PMC123"
+export const getConvertedFilesMap = (referenceFiles) => {
+  const map = {};
+  referenceFiles.forEach(file => {
+    if (ALL_CONVERTED_FILE_CLASSES.includes(file.file_class)) {
+      // Strip method suffix to get base display_name
+      let baseDisplayName = file.display_name;
+      for (const suffix of METHOD_SUFFIXES) {
+        if (baseDisplayName.endsWith(suffix)) {
+          baseDisplayName = baseDisplayName.slice(0, -suffix.length);
+          break;
+        }
+      }
+      if (!map[baseDisplayName]) {
+        map[baseDisplayName] = {};
+      }
+      map[baseDisplayName][file.file_class] = file;
+    }
+  });
+  return map;
+};
+
+// Get the appropriate file class list based on the reference file class.
+// nXML sources are treated like main files because their markdown conversions
+// carry main converted classes (e.g. converted_merged_main).
+export const getConvertedFileClasses = (fileClass) => {
+  if (fileClass === 'main' || fileClass === 'nXML') {
+    return CONVERTED_FILE_CLASSES.main;
+  } else if (fileClass === 'supplement') {
+    return CONVERTED_FILE_CLASSES.supplement;
+  }
+  return [];
+};
+
+// Display-name method suffix of a converted file, or null when none matches.
+const getMethodSuffix = (displayName) =>
+  METHOD_SUFFIXES.find((suffix) => displayName.endsWith(suffix)) || null;
+
+// Ordered {file, label} entries for the Converted Files column of a row,
+// in merged, grobid, docling, marker order. Raw tei files are never included,
+// but tei-derived markdown (_tei suffix) is, on main/supplement rows.
+// A main PDF and an nXML file often share the same display_name, so the class
+// lists alone would show the same conversion on both rows; the _nxml suffix
+// pins nXML-derived markdown to its nXML source row and keeps it off the
+// main/supplement rows (and vice versa for the other suffixes).
+export const getConvertedFileEntries = (referenceFile, convertedFilesMap) => {
+  const convertedFiles = convertedFilesMap[referenceFile.display_name] || {};
+  const wantNxmlDerived = referenceFile.file_class === 'nXML';
+  return getConvertedFileClasses(referenceFile.file_class)
+    .filter((fileClass) => convertedFiles[fileClass])
+    .filter((fileClass) => {
+      const isNxmlDerived = getMethodSuffix(convertedFiles[fileClass].display_name) === '_nxml';
+      return isNxmlDerived === wantNxmlDerived;
+    })
+    .map((fileClass) => ({
+      file: convertedFiles[fileClass],
+      label: CONVERTED_FILE_LABELS[fileClass]
+    }));
 };
 
 const FileEditor = ({ onFileStatusChange }) => {
@@ -968,36 +1037,7 @@ const FileEditor = ({ onFileStatusChange }) => {
     }
   };
 
-  // Method suffixes used in converted file display names.
-  // PDFX outputs use _grobid/_docling/_marker/_merged; XML-derived outputs use
-  // _nxml (from nXML sources) and _tei (from TEI sources). Stripping any of
-  // these yields the source display_name used as the grouping key.
-  const METHOD_SUFFIXES = ['_grobid', '_docling', '_marker', '_merged', '_nxml', '_tei'];
-
-  // Create a mapping of base display_name to converted files (markdown and TEI)
-  // Converted files have names like "PMC123_grobid" but we need to map to "PMC123"
-  const getConvertedFilesMap = () => {
-    const map = {};
-    referenceFiles.forEach(file => {
-      if (ALL_CONVERTED_FILE_CLASSES.includes(file.file_class)) {
-        // Strip method suffix to get base display_name
-        let baseDisplayName = file.display_name;
-        for (const suffix of METHOD_SUFFIXES) {
-          if (baseDisplayName.endsWith(suffix)) {
-            baseDisplayName = baseDisplayName.slice(0, -suffix.length);
-            break;
-          }
-        }
-        if (!map[baseDisplayName]) {
-          map[baseDisplayName] = {};
-        }
-        map[baseDisplayName][file.file_class] = file;
-      }
-    });
-    return map;
-  };
-
-  const convertedFilesMap = getConvertedFilesMap();
+  const convertedFilesMap = getConvertedFilesMap(referenceFiles);
 
   // Helper to render a single converted file link
   const renderConvertedFileLink = (file, label, hasAccess) => {
@@ -1018,16 +1058,6 @@ const FileEditor = ({ onFileStatusChange }) => {
       );
     }
     return <span key={file.referencefile_id} style={{ marginRight: '8px' }} title={filename}>{label}</span>;
-  };
-
-  // Get the appropriate file class list based on the reference file class
-  const getConvertedFileClasses = (fileClass) => {
-    if (fileClass === 'main') {
-      return CONVERTED_FILE_CLASSES.main;
-    } else if (fileClass === 'supplement') {
-      return CONVERTED_FILE_CLASSES.supplement;
-    }
-    return [];
   };
 
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
@@ -1053,37 +1083,15 @@ const FileEditor = ({ onFileStatusChange }) => {
         );
       }
 
-      // Get converted files for this reference file (merged, grobid, docling, marker order)
-      const convertedFiles = convertedFilesMap[referenceFile.display_name] || {};
-      const convertedFileClasses = getConvertedFileClasses(referenceFile.file_class);
-
-      // Also check for TEI file (legacy support)
-      const teiFile = convertedFiles['tei'];
-
-      // Build converted files display in order: merged, grobid, docling, marker
+      // Converted markdown files for this reference file (merged, grobid, docling, marker order)
+      const convertedFileEntries = getConvertedFileEntries(referenceFile, convertedFilesMap);
       let convertedFilesDisplay = null;
-      if (convertedFileClasses.length > 0 || teiFile) {
-        const fileLinks = [];
-
-        // Add markdown files in order: merged, grobid, docling, marker
-        convertedFileClasses.forEach(fileClass => {
-          const file = convertedFiles[fileClass];
-          if (file) {
-            const label = CONVERTED_FILE_LABELS[fileClass];
-            fileLinks.push(renderConvertedFileLink(file, label, hasAccess));
-          }
-        });
-
-        // Add TEI file if present (legacy)
-        if (teiFile) {
-          fileLinks.push(renderConvertedFileLink(teiFile, 'tei', hasAccess));
-        }
-
-        if (fileLinks.length > 0) {
-          convertedFilesDisplay = (
-            <div style={{ display: 'flex', flexWrap: 'wrap' }}>{fileLinks}</div>
-          );
-        }
+      if (convertedFileEntries.length > 0) {
+        convertedFilesDisplay = (
+          <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+            {convertedFileEntries.map(({ file, label }) => renderConvertedFileLink(file, label, hasAccess))}
+          </div>
+        );
       }
 
       return (
