@@ -15,7 +15,7 @@ import {
     removeDateCreated,
     downloadSearchReferences, setConfidenceScore
 } from "../../actions/searchActions";
-import { RENAME_FACETS } from "./Facets";
+import { RENAME_FACETS, RENAME_FACET_VALUES } from "./Facets";
 import { evidenceAssertionName } from "../refs_tet_validation/helpers/buildEntries";
 import BreadcrumbItem from "./BreadCrumbItem";
 
@@ -32,6 +32,8 @@ const BreadCrumbs = () => {
     const dispatch = useDispatch();
 
     const getDisplayName = (facet, value) => {
+        const valueRename = RENAME_FACET_VALUES[facet]?.[value];
+        if (valueRename) return valueRename;
         const bucket = searchFacets[facet]?.buckets?.find(b => b.key === value);
         if (bucket?.name) return bucket.name;
         // For source evidence assertions, the human-readable label may be
@@ -46,7 +48,9 @@ const BreadCrumbs = () => {
 	// 1. language.keyword (Bibliographic Data's language)
 	// 2. retraction_status.keyword (Bibliographic Data's retraction status)
 	// 3. Any Alliance Metadata facets
-       return facet === 'language.keyword' || facet === 'retraction_status.keyword' || facet.startsWith('mods_');
+	// 4. The boolean Images facets, whose values (Yes/No) are meaningless without the facet name
+       return facet === 'language.keyword' || facet === 'retraction_status.keyword' || facet.startsWith('mods_') ||
+           facet === 'can_display_image' || facet === 'has_image';
     };
     
     const getFacetLabel = (facet, value) => {
