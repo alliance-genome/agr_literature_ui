@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
@@ -34,7 +34,6 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner'
 import Alert from 'react-bootstrap/Alert'
-import InputGroup from 'react-bootstrap/InputGroup';
 
 
 function useGetAccessLevel() {
@@ -434,22 +433,29 @@ const CreatePerson = () => {
     }
   };
 
+  const generalClassName = 'Col-general';
+
   return (
     <Container>
-      <div style={{ maxWidth: '40em', marginBottom: '1em' }}>
-        <InputGroup>
-          <Form.Control
+      <Form.Group as={Row} key="PersonLookup" >
+        {/* Empty column to align the input/button with the Resource and Lab
+            sections, which have a lookup-field dropdown here. */}
+        <Form.Label column sm="2" className={`${generalClassName}`} ></Form.Label>
+        <Col sm="6" className={`${generalClassName}`}>
+          <Form.Control as="input" name="personLookupValue" id="personLookupValue" type="input"
+            value={inputValue} className={`form-control`}
             placeholder="e.g., AGRKB:103000000000001, ORCID:0000-0001-2345-6789, WB:WBPerson12345, jane.doe@example.org, or Jane Doe"
-            type="text"
-            value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={(e) => { if (e.charCode === 13) handleQuery(); }}
-          />
-          <Button onClick={handleQuery} disabled={isLoading} variant="outline-secondary">
+            onKeyPress={(e) => { if (e.charCode === 13) handleQuery(); }} />
+        </Col>
+        <Col sm="4" className={`${generalClassName}`}>
+          <Button id="button-query-person" variant="outline-secondary"
+            disabled={isLoading}
+            onClick={handleQuery} >
             {isLoading ? <Spinner animation="border" size="sm" /> : <span>Query Person</span>}
           </Button>
-        </InputGroup>
-      </div>
+        </Col>
+      </Form.Group>
 
       {searchError && (
         <Alert variant="danger" onClose={() => setSearchError('')} dismissible>
@@ -549,6 +555,176 @@ const CreatePerson = () => {
   );
 };
 
+const LAB_LOOKUP_OPTIONS = [
+  { value: 'name', label: 'Lab Name' },
+  { value: 'strain_designation', label: 'Strain Designation' },
+];
+
+const CreateLab = () => {
+  const history = useHistory();
+  const accessLevel = useGetAccessLevel();
+  const [lookupKey, setLookupKey] = useState('name');
+  // Once the curator picks a lookup field themselves, stop auto-defaulting it.
+  const lookupKeyTouched = useRef(false);
+  const [lookupValue, setLookupValue] = useState('');
+  const [matches, setMatches] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
+
+  const [createdMessage, setCreatedMessage] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+
+  const generalClassName = 'Col-general';
+
+  // WormBase curators look labs up by strain designation by default. Only apply
+  // this until the curator changes the dropdown themselves. accessLevel can
+  // resolve after mount, so key the effect on it (as CreateActionRouter does).
+  useEffect(() => {
+    if (!lookupKeyTouched.current) {
+      setLookupKey(accessLevel === 'WB' ? 'strain_designation' : 'name');
+    }
+  }, [accessLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleQuery = async () => {
+    const trimmed = lookupValue.trim();
+    if (!trimmed) return;
+    setIsLoading(true);
+    setSearchError('');
+    setMatches(null);
+    setHasSearched(false);
+    setCreatedMessage('');
+    setCreateError('');
+    try {
+      // lookupKey ('name' | 'strain_designation') selects the matching endpoint.
+      const res = await api.get('/laboratory/by_' + lookupKey + '?query=' + encodeURIComponent(trimmed));
+      let list = [];
+      if (Array.isArray(res.data)) {
+        list = res.data;
+      } else if (res.data && typeof res.data === 'object' && (res.data.curie || res.data.laboratory_id)) {
+        list = [res.data];
+      }
+      setMatches(list);
+      setHasSearched(true);
+    } catch (err) {
+      const status404 = err?.response?.status === 404;
+      if (status404) {
+        setMatches([]);
+        setHasSearched(true);
+      } else {
+        const detail = err?.response?.data?.detail;
+        setSearchError(typeof detail === 'string' ? detail : 'An unexpected error occurred.');
+        setMatches([]);
+        setHasSearched(true);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    setIsCreating(true);
+    setCreateError('');
+    setCreatedMessage('');
+    // The lookup field the curator queried is what creates the lab.
+    const body = { [lookupKey]: lookupValue.trim() };
+    try {
+      const res = await api.post('/laboratory/', body);
+      const curie = (res.data && typeof res.data === 'object') ? (res.data.curie ?? '') : (res.data ?? '');
+      const newCurie = typeof curie === 'string' ? curie : '';
+      if (newCurie) {
+        // Redirect to the newly-created lab on the Laboratory page.
+        history.push('/lab?q=' + encodeURIComponent(newCurie));
+        return;
+      }
+      // No curie came back — fall back to an on-page success message.
+      setCreatedMessage('Laboratory created.');
+      setMatches(null);
+      setHasSearched(false);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setCreateError(typeof detail === 'string' ? detail : 'An unexpected error occurred.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <Container>
+    <Form.Group as={Row} key="LabLookup" >
+      <Form.Label column sm="2" className={`${generalClassName}`} >
+        <Form.Control as="select" value={lookupKey}
+          onChange={(e) => { lookupKeyTouched.current = true; setLookupKey(e.target.value); }} >
+          {LAB_LOOKUP_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </Form.Control>
+      </Form.Label>
+      <Col sm="6" className={`${generalClassName}`}>
+        <Form.Control as="input" name="labLookupValue" id="labLookupValue" type="input"
+          value={lookupValue} className={`form-control`}
+          placeholder="Pick a lookup field and enter a value"
+          onChange={(e) => setLookupValue(e.target.value)}
+          onKeyPress={(e) => { if (e.charCode === 13) handleQuery(); }} />
+      </Col>
+      <Col sm="4" className={`${generalClassName}`}>
+        <Button id="button-query-lab" variant="outline-secondary"
+          disabled={isLoading}
+          onClick={handleQuery} >
+          {isLoading ? <Spinner animation="border" size="sm"/> : <span>Query Lab</span> }
+        </Button>
+      </Col>
+    </Form.Group>
+
+    {searchError && (
+      <Alert variant="danger" onClose={() => setSearchError('')} dismissible>{searchError}</Alert>
+    )}
+
+    { matches && matches.length > 0 && (
+      <Form.Group as={Row} key="LabExists" >
+        <Form.Label column sm="2" className={`${generalClassName}`} >Existing Labs</Form.Label>
+        <Col sm="10" className={`${generalClassName}`}>
+          <ul style={{ listStyle: 'none', paddingLeft: 0, marginBottom: 0 }}>
+            {matches.map((m, i) => {
+              const label = [m.name, m.strain_designation].filter(Boolean).join(' · ');
+              return (
+                <li key={m.curie ?? m.laboratory_id ?? i} style={{ padding: '4px 0' }}>
+                  <Link to={`/lab?q=${encodeURIComponent(m.curie ?? '')}`}>
+                    {label || '(no name)'}
+                  </Link>
+                  <span style={{ color: '#888', marginLeft: 8, fontSize: '0.9em' }}>{m.curie}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </Col>
+      </Form.Group>
+    ) }
+
+    { hasSearched && matches && matches.length === 0 && !searchError && (
+      <>
+        <div style={{ marginBottom: '1em', color: '#888' }}>
+          No existing labs found for {LAB_LOOKUP_OPTIONS.find(o => o.value === lookupKey)?.label} "{lookupValue.trim()}".
+        </div>
+        <Button id="button-create-lab" variant="outline-secondary"
+          disabled={isCreating || !lookupValue.trim()}
+          onClick={handleCreate} >
+          {isCreating ? <Spinner animation="border" size="sm"/> : <span>Create Lab</span> }
+        </Button>
+      </>
+    ) }
+
+    { createdMessage && (
+      <Alert variant="success" className="mt-2">{createdMessage}</Alert>
+    ) }
+    { createError && (
+      <Alert variant="danger" className="mt-2">{createError}</Alert>
+    ) }
+    </Container>);
+} // const CreateLab
+
+
 const Create = () => {
   const createRedirectToBiblio = useSelector(state => state.create.redirectToBiblio);
   const createRedirectCurie = useSelector(state => state.create.redirectCurie);
@@ -587,10 +763,6 @@ const Create = () => {
           <div key={`message ${index}`}><span style={{color:'red'}}>{message}</span></div> ))
       }
       <CreateActionRouter />
-      <hr style={{marginTop: '2em', marginBottom: '2em'}} />
-      <h4>Create a new Resource</h4>
-      <p>Create a new resource from NLM or ISSN curie</p>
-      <CreateResource />
       {process.env.REACT_APP_DEV_OR_STAGE_OR_PROD !== 'prod' && (
         <>
           <hr style={{marginTop: '2em', marginBottom: '2em'}} />
@@ -599,6 +771,14 @@ const Create = () => {
           <CreatePerson />
         </>
       )}
+      <hr style={{marginTop: '2em', marginBottom: '2em'}} />
+      <h4>Create a new Lab</h4>
+      <p>Look up a lab by name or strain designation, then create it if none exists.</p>
+      <CreateLab />
+      <hr style={{marginTop: '2em', marginBottom: '2em'}} />
+      <h4>Create a new Resource</h4>
+      <p>Create a new resource from NLM or ISSN curie</p>
+      <CreateResource />
     </div>
   )
 }

@@ -1,0 +1,36 @@
+/* Layout grid for the section-arranged Laboratory Editor.
+   The per-section `grid-column` is applied inline from the saved layout;
+   here we set the shared grid track and the responsive collapse.
+   Mirrors personEditorSections.css. */
+
+.laboratory-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: 1rem;
+  row-gap: 0.5rem;
+  grid-auto-flow: row dense;
+  align-items: start;
+}
+
+.laboratory-editor-section {
+  min-width: 0; /* allow field rows to shrink/reflow in narrow columns */
+}
+
+/* Side-by-side arrangement: switch to full-width columns with a per-track minimum
+   (supplied via --laboratory-col-floor) so a section's minimum scales with its
+   span. */
+.laboratory-editor-grid--wide {
+  grid-template-columns: repeat(12, minmax(var(--laboratory-col-floor, 120px), 1fr));
+}
+
+.laboratory-editor-grid--wide .laboratory-editor-section {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* On narrow screens, stack sections full-width in source order. */
+@media (max-width: 768px) {
+  .laboratory-editor-grid {
+    display: block;
+  }
+}
