@@ -72,6 +72,7 @@ export const RENAME_FACETS = {
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
     "data_novelty": "Data Novelty",
+    "data_existence": "Data Existence",
     "file_workflow": "File workflow",
     "reference_classification": "Reference classification",
     "entity_extraction": "Entity extraction",
@@ -122,6 +123,10 @@ export const RENAME_FACET_VALUES = {
     "has_image": {
         "true": "Yes",
         "false": "No"
+    },
+    "data_existence": {
+        "has_data": "Has data",
+        "no_data": "No data"
     }
 }
 
@@ -132,7 +137,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
     "Images": ["can display image", "has image"],
-    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
+    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty", "data_existence"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
@@ -245,7 +250,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status", "source_methods", "source_evidence_assertions"];
+    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status", "source_methods", "source_evidence_assertions", "data_existence"];
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
@@ -428,7 +433,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
                 let key = facetToInclude.replaceAll(' ', '_');
-                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty',
+                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'data_existence',
                         'file_workflow', 'manual_indexing', 'reference_classification',
 		                'entity_extraction', 'curation_classification', 'community_curation', 'email_extraction',
                         'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag',
