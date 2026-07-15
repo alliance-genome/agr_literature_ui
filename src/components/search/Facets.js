@@ -78,6 +78,7 @@ export const RENAME_FACETS = {
     "manual_indexing": "Manual indexing",
     "curation_classification": "Curation classification",
     "community_curation": "Community curation",
+    "first_pass_curation": "First pass curation",
     "email_extraction": "Email extraction",
     "predicted_indexing_priority": "Predicted indexing priority",
     "indexing_priority": "Indexing priority",
@@ -128,7 +129,7 @@ export const RENAME_FACET_VALUES = {
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
-    "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation", "email_extraction"],
+    "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation", "first_pass_curation", "email_extraction"],
     "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
     "Images": ["can display image", "has image"],
@@ -430,7 +431,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 let key = facetToInclude.replaceAll(' ', '_');
                 if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty',
                         'file_workflow', 'manual_indexing', 'reference_classification',
-		                'entity_extraction', 'curation_classification', 'community_curation', 'email_extraction',
+		                'entity_extraction', 'curation_classification', 'community_curation', 'first_pass_curation', 'email_extraction',
                         'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag',
                         'can_display_image', 'has_image'].includes(key)) {
                     key = key + '.keyword';
