@@ -308,9 +308,17 @@ const LaboratoryEditor = ({ laboratory }) => {
   const saveScalar = (field, valueArg) => {
     const value = valueArg !== undefined ? valueArg : live[field];
     if (value === savedScalars[field]) return; // unchanged — nothing to do
+    // name / strain_designation: send NULL (not '') for empty/whitespace-only
+    // input, so the DB's ck_laboratory_name_or_strain (IS NOT NULL) rejects
+    // clearing both — the resulting 422 surfaces inline as this field's error.
+    const payloadValue =
+      (field === 'name' || field === 'strain_designation') &&
+      typeof value === 'string' && value.trim() === ''
+        ? null
+        : value;
     setFieldStatus((s) => ({ ...s, [field]: 'saving' }));
     setFieldError((e) => dropKey(e, field));
-    api.patch('/laboratory/' + curie, { [field]: value })
+    api.patch('/laboratory/' + curie, { [field]: payloadValue })
       .then((res) => {
         setSavedScalars((sv) => ({ ...sv, [field]: value }));
         const d = res?.data || {};
