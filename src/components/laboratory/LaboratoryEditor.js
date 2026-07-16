@@ -61,7 +61,7 @@ const errDetail = (err) => {
 // Each child collection has a `*Fields` extractor (the editable field values, used
 // for the per-field `_saved` baseline) and a `*Snap` string (row-level dirty, for
 // the meta pencil). Snap = JSON of the fields.
-const xrefFields = (r) => ({ curie: r.curie || '', pages: (r.pages || '').trim(), is_obsolete: !!r.is_obsolete });
+const xrefFields = (r) => ({ curie_prefix: r.curie_prefix || '', curie: r.curie || '', is_obsolete: !!r.is_obsolete });
 const alleleFields = (r) => ({ mod_abbreviation: r.mod_abbreviation || '', allele_designation: r.allele_designation || '' });
 const memberFields = (r) => ({
   personCurie: r.personCurie || '',
@@ -73,11 +73,15 @@ const xrefSnap = (r) => JSON.stringify(xrefFields(r));
 const alleleSnap = (r) => JSON.stringify(alleleFields(r));
 const memberSnap = (r) => JSON.stringify(memberFields(r));
 
-// A cross-reference curie must be exactly PREFIX:ID (one colon), matching the API
-// validator. Empty rows just don't save.
-const XREF_RE = /^[^:\s]+:[^:\s]+/;
-// Pages are stored as an array; the editor edits them as a comma-separated string.
-const splitPages = (s) => (s || '').split(',').map((x) => x.trim()).filter(Boolean);
+// Allowed cross-reference prefixes. The API stores a single curie "PREFIX:ID";
+// the editor edits prefix + id separately (like the Person editor).
+const LAB_XREF_PREFIXES = ['ZFIN', 'XenBase', 'WB', 'SGD'];
+const xrefIdPart = (fullCurie, prefix) => {
+  const s = fullCurie || '';
+  if (prefix && s.startsWith(prefix + ':')) return s.slice(prefix.length + 1);
+  const idx = s.indexOf(':');
+  return idx >= 0 ? s.slice(idx + 1) : s;
+};
 
 const useAutoGrowList = (initial, makeEmpty, isEmpty) => {
   const [items, setItems] = useState(() => [...initial, makeEmpty()]);
@@ -427,16 +431,17 @@ const LaboratoryEditor = ({ laboratory }) => {
       .catch((err) => update(i, { _status: null, _error: errDetail(err) }));
   };
 
-  // Cross references
+  // Cross references — prefix + id edited separately, recombined to PREFIX:ID on save.
   const emptyXref = () => {
-    const r = { curie: '', pages: '', is_obsolete: false, _ts: null, _by: null, _id: null, _status: null, _error: null };
+    const r = { curie_prefix: '', curie: '', is_obsolete: false, _ts: null, _by: null, _id: null, _status: null, _error: null };
     return { ...r, _saved: xrefFields(r), _savedKey: xrefSnap(r) };
   };
-  const xrefIsEmpty = (x) => !x.curie;
+  const xrefIsEmpty = (x) => !x.curie_prefix && !x.curie;
   const initialXrefs = (lab.cross_references ?? []).map((x) => {
     const r = {
-      curie: x.curie ?? '',
-      pages: Array.isArray(x.pages) ? x.pages.join(', ') : (x.pages ?? ''),
+      curie_prefix: x.curie_prefix ?? '',
+      // store just the id part for editing; recombined to PREFIX:ID on save
+      curie: xrefIdPart(x.curie, x.curie_prefix),
       is_obsolete: !!x.is_obsolete,
       _ts: x.date_updated ?? null, _by: x.updated_by ?? null,
       _id: x.laboratory_cross_reference_id ?? null, _status: null, _error: null,
@@ -447,9 +452,9 @@ const LaboratoryEditor = ({ laboratory }) => {
   const saveXref = (i, override) => persistChild({
     list: xrefs, update: updateXref, i, override,
     idKey: 'laboratory_cross_reference_id', endpoint: '/laboratory_cross_reference', createPath: '/laboratory_cross_reference/',
-    completeFn: (r) => XREF_RE.test((r.curie || '').trim()),
+    completeFn: (r) => !!((r.curie_prefix || '').trim() && (r.curie || '').trim()),
     bodyFn: (r, isCreate) => {
-      const body = { curie: (r.curie || '').trim(), pages: splitPages(r.pages), is_obsolete: !!r.is_obsolete };
+      const body = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
       return isCreate ? { ...body, laboratory_curie: curie } : body;
     },
     snap: xrefSnap, savedOf: xrefFields,
@@ -793,10 +798,14 @@ const LaboratoryEditor = ({ laboratory }) => {
         <Card className="mb-3">
           <Card.Header>Cross references</Card.Header>
           <Card.Body>
-            {xrefs.map((x, i) => (
+            {xrefs.map((x, i) => {
+              const prefixOptions = LAB_XREF_PREFIXES.includes(x.curie_prefix) || !x.curie_prefix
+                ? LAB_XREF_PREFIXES
+                : [...LAB_XREF_PREFIXES, x.curie_prefix];
+              return (
               <FieldLine
                 key={i}
-                label={rowLabel(xrefs, i, 'xref')}
+                label={i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (new)' : (x.curie_prefix || 'xref')}
                 ts={metaLabel(x._by, x._ts)}
                 status={childStatus(x, xrefSnap)}
                 error={x._error}
@@ -805,20 +814,25 @@ const LaboratoryEditor = ({ laboratory }) => {
               >
                 <div style={inlineRow}>
                   <HlControl
-                    placeholder="PREFIX:ID (required)"
+                    as="select"
+                    value={x.curie_prefix}
+                    savedValue={x._saved?.curie_prefix}
+                    onChange={(ev) => updateXref(i, { curie_prefix: ev.target.value })}
+                    onBlur={() => saveXref(i)}
+                    style={{ maxWidth: 140 }}
+                  >
+                    <option value="">prefix (required)</option>
+                    {prefixOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </HlControl>
+                  <HlControl
+                    placeholder="id (required)"
                     value={x.curie}
                     savedValue={x._saved?.curie}
                     onChange={(ev) => updateXref(i, { curie: ev.target.value })}
                     onBlur={() => saveXref(i)}
                     style={{ flex: '1 1 240px', minWidth: 200 }}
-                  />
-                  <HlControl
-                    placeholder="pages (comma-separated)"
-                    value={x.pages}
-                    savedValue={x._saved?.pages}
-                    onChange={(ev) => updateXref(i, { pages: ev.target.value })}
-                    onBlur={() => saveXref(i)}
-                    style={{ flex: '1 1 200px', minWidth: 160 }}
                   />
                   <HlCheck
                     type="checkbox"
@@ -831,7 +845,8 @@ const LaboratoryEditor = ({ laboratory }) => {
                   />
                 </div>
               </FieldLine>
-            ))}
+              );
+            })}
           </Card.Body>
         </Card>
   );
