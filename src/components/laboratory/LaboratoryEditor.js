@@ -62,7 +62,7 @@ const errDetail = (err) => {
 // for the per-field `_saved` baseline) and a `*Snap` string (row-level dirty, for
 // the meta pencil). Snap = JSON of the fields.
 const xrefFields = (r) => ({ curie_prefix: r.curie_prefix || '', curie: r.curie || '', is_obsolete: !!r.is_obsolete });
-const alleleFields = (r) => ({ mod_abbreviation: r.mod_abbreviation || '', allele_designation: r.allele_designation || '' });
+const alleleFields = (r) => ({ mod_abbreviation: r.mod_abbreviation || '', allele_designation: r.allele_designation || '', is_obsolete: !!r.is_obsolete });
 const memberFields = (r) => ({
   personCurie: r.personCurie || '',
   is_pi: !!r.is_pi, former_pi: !!r.former_pi, alum: !!r.alum,
@@ -471,7 +471,7 @@ const LaboratoryEditor = ({ laboratory }) => {
 
   // Allele designations
   const emptyAllele = () => {
-    const r = { mod_abbreviation: '', allele_designation: '', _ts: null, _by: null, _id: null, _status: null, _error: null };
+    const r = { mod_abbreviation: '', allele_designation: '', is_obsolete: false, _ts: null, _by: null, _id: null, _status: null, _error: null };
     return { ...r, _saved: alleleFields(r), _savedKey: alleleSnap(r) };
   };
   const alleleIsEmpty = (a) => !a.mod_abbreviation && !a.allele_designation;
@@ -479,6 +479,7 @@ const LaboratoryEditor = ({ laboratory }) => {
     const r = {
       mod_abbreviation: a.mod_abbreviation ?? '',
       allele_designation: a.allele_designation ?? '',
+      is_obsolete: !!a.is_obsolete,
       _ts: a.date_updated ?? null, _by: a.updated_by ?? null,
       _id: a.laboratory_allele_designation_id ?? null, _status: null, _error: null,
     };
@@ -490,7 +491,7 @@ const LaboratoryEditor = ({ laboratory }) => {
     idKey: 'laboratory_allele_designation_id', endpoint: '/laboratory_allele_designation', createPath: '/laboratory_allele_designation/',
     completeFn: (r) => !!((r.mod_abbreviation || '').trim() && (r.allele_designation || '').trim()),
     bodyFn: (r, isCreate) => {
-      const body = { mod_abbreviation: r.mod_abbreviation, allele_designation: (r.allele_designation || '').trim() };
+      const body = { mod_abbreviation: r.mod_abbreviation, allele_designation: (r.allele_designation || '').trim(), is_obsolete: !!r.is_obsolete };
       return isCreate ? { ...body, laboratory_curie: curie } : body;
     },
     snap: alleleSnap, savedOf: alleleFields,
@@ -866,7 +867,7 @@ const LaboratoryEditor = ({ laboratory }) => {
             {alleles.map((a, i) => (
               <FieldLine
                 key={i}
-                label={rowLabel(alleles, i, 'designation')}
+                label={i === alleles.length - 1 && alleleIsEmpty(a) ? 'designation (new)' : (a.mod_abbreviation || 'designation')}
                 ts={metaLabel(a._by, a._ts)}
                 status={childStatus(a, alleleSnap)}
                 error={a._error}
@@ -892,6 +893,15 @@ const LaboratoryEditor = ({ laboratory }) => {
                     onChange={(ev) => updateAllele(i, { allele_designation: ev.target.value })}
                     onBlur={() => saveAllele(i)}
                     style={{ flex: '1 1 240px', minWidth: 200 }}
+                  />
+                  <HlCheck
+                    type="checkbox"
+                    id={`lab-allele-obsolete-${i}`}
+                    label="is_obsolete"
+                    checked={a.is_obsolete}
+                    savedValue={a._saved?.is_obsolete}
+                    onChange={(ev) => { updateAllele(i, { is_obsolete: ev.target.checked }); saveAllele(i, { is_obsolete: ev.target.checked }); }}
+                    style={{ whiteSpace: 'nowrap' }}
                   />
                 </div>
               </FieldLine>
