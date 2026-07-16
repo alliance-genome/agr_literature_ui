@@ -171,7 +171,7 @@ export const getCuratorSourceId = async (mod) => {
         const res = await api.post('/topic_entity_tag/source', {
           "source_evidence_assertion": "ATP:0000036",
           "source_method": "abc_literature_system",
-          "validation_type": "professional_curator",
+          "validation_type": "professional_biocurator",
           "description": "Trained professional biocurator specializing in curation of model organism data using the ABC data entry form.",
           "secondary_data_provider_abbreviation": mod,
           "data_provider": mod,
