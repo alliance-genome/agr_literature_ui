@@ -1,27 +1,33 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
-import InputGroup from 'react-bootstrap/InputGroup';
 import Alert from 'react-bootstrap/Alert';
 import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 
 import { api } from '../api';
+import LaboratoryEditor from './laboratory/LaboratoryEditor';
 import LaboratoryDisplay from './laboratory/LaboratoryDisplay';
 import LaboratoryWbDisplay from './laboratory/LaboratoryWbDisplay';
 
-const VALID_TABS = ['ccdisplay', 'wbdisplay'];
-const DEFAULT_TAB = 'ccdisplay';
+const VALID_TABS = ['editor', 'ccdisplay', 'wbdisplay'];
+const DEFAULT_TAB = 'editor';
+
+const LAB_LOOKUP_OPTIONS = [
+  { value: 'name', label: 'Lab Name' },
+  { value: 'strain_designation', label: 'Strain Designation' },
+];
 
 // Route a single free-text input to the right endpoint by its shape:
 //   - a laboratory curie (AGRKB:704…) or a bare numeric id  → fetch one lab
 //   - any other PREFIX:ID                                    → laboratory_cross_reference lookup
-//   - otherwise (name or strain designation)                → server-side name/strain search
-const classifyInput = (raw) => {
+//   - otherwise → the endpoint chosen by the lookup dropdown (by_name or by_strain_designation)
+const classifyInput = (raw, lookupKey) => {
   const trimmed = (raw || '').trim();
   if (!trimmed) return null;
   if (trimmed.startsWith('AGRKB:') || /^\d+$/.test(trimmed)) {
@@ -31,7 +37,7 @@ const classifyInput = (raw) => {
     return { endpoint: '/laboratory/by_laboratory_cross_reference/' + trimmed };
   }
   return {
-    endpoint: '/laboratory/by_name_or_strain_designation?query=' + encodeURIComponent(trimmed),
+    endpoint: '/laboratory/by_' + lookupKey + '?query=' + encodeURIComponent(trimmed),
   };
 };
 
@@ -46,6 +52,25 @@ const Laboratory = () => {
   const location = useLocation();
   const history = useHistory();
 
+  const cognitoMod = useSelector((state) => state.isLogged.cognitoMod);
+  const testerMod = useSelector((state) => state.isLogged.testerMod);
+  const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
+
+  // Lookup field for free-text queries. WormBase curators default to strain
+  // designation; everyone else to lab name. Initialized synchronously so the
+  // mount-time URL-sync auto-load (e.g. a WB deep-link) uses the right field on
+  // first render; the effect below still covers a late-resolving accessLevel.
+  // Stop auto-defaulting once the curator picks a field themselves.
+  const [lookupKey, setLookupKey] = useState(() => (accessLevel === 'WB' ? 'strain_designation' : 'name'));
+  const lookupKeyTouched = useRef(false);
+  useEffect(() => {
+    if (!lookupKeyTouched.current) {
+      setLookupKey(accessLevel === 'WB' ? 'strain_designation' : 'name');
+    }
+  }, [accessLevel]);
+
+  const generalClassName = 'Col-general';
+
   const [inputValue, setInputValue] = useState('');
   const [laboratoryData, setLaboratoryData] = useState(null);
   const [matches, setMatches] = useState(null);
@@ -58,7 +83,7 @@ const Laboratory = () => {
   const currentQueryRef = useRef(null);
 
   const runQuery = useCallback(async (rawValue, tabForUrl) => {
-    const classified = classifyInput(rawValue);
+    const classified = classifyInput(rawValue, lookupKey);
     if (!classified) return;
     setIsLoading(true);
     setShowAlert(false);
@@ -108,7 +133,7 @@ const Laboratory = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, history, location.search]);
+  }, [activeTab, history, location.search, lookupKey]);
 
   // Sync from the ?q=/?tab= URL params on mount and when they change externally.
   useEffect(() => {
@@ -156,27 +181,35 @@ const Laboratory = () => {
         <Col>
           <h3 style={{ textAlign: 'center' }}>Laboratory</h3>
 
-          <div style={{ maxWidth: '40em', margin: '0 auto 16px' }}>
-            {showAlert && (
-              <Alert variant="danger" onClose={() => setShowAlert(false)} dismissible>
-                {error}
-              </Alert>
-            )}
-            <InputGroup>
-              <Form.Control
-                placeholder="e.g., AGRKB:704000000000001, WB:WBlab0001, a lab name, or a strain designation"
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.charCode === 13) handleSubmit();
-                }}
-              />
-              <Button onClick={handleSubmit} disabled={isLoading}>
-                {isLoading ? 'Loading…' : 'Query Laboratory'}
-              </Button>
-            </InputGroup>
-          </div>
+          {showAlert && (
+            <Alert variant="danger" onClose={() => setShowAlert(false)} dismissible>
+              {error}
+            </Alert>
+          )}
+          <Container>
+            <Form.Group as={Row} key="LabLookup" >
+              <Form.Label column sm="2" className={`${generalClassName}`} >
+                <Form.Control as="select" value={lookupKey}
+                  onChange={(e) => { lookupKeyTouched.current = true; setLookupKey(e.target.value); }} >
+                  {LAB_LOOKUP_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </Form.Control>
+              </Form.Label>
+              <Col sm="6" className={`${generalClassName}`}>
+                <Form.Control as="input" name="labLookupValue" id="labLookupValue" type="input"
+                  value={inputValue} className={`form-control`}
+                  placeholder="Pick a lookup field and enter a value"
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={(e) => { if (e.charCode === 13) handleSubmit(); }} />
+              </Col>
+              <Col sm="4" className={`${generalClassName}`}>
+                <Button onClick={handleSubmit} disabled={isLoading}>
+                  {isLoading ? 'Loading…' : 'Query Laboratory'}
+                </Button>
+              </Col>
+            </Form.Group>
+          </Container>
 
           {matches && matches.length > 1 && !laboratoryData && (
             <div style={{ maxWidth: '40em', margin: '0 auto' }}>
@@ -216,6 +249,11 @@ const Laboratory = () => {
               id="laboratory-view-tabs"
               className="mb-3"
             >
+              <Tab eventKey="editor" title="Editor">
+                {activeTab === 'editor' && (
+                  <LaboratoryEditor key={laboratoryData.curie} laboratory={laboratoryData} />
+                )}
+              </Tab>
               <Tab eventKey="ccdisplay" title="CC Display">
                 {activeTab === 'ccdisplay' && <LaboratoryDisplay laboratory={laboratoryData} />}
               </Tab>
