@@ -13,25 +13,34 @@ const SearchPagination = () => {
 
     const dispatch = useDispatch();
 
+    const lastPage = Math.ceil(searchResultsCount/searchSizeResultsCount);
+
     const pagination_elements = searchResultsCount ? (
       <Pagination>
         <Pagination.First  onClick={() => changePage('First')} />
+        <Pagination.Item   disabled={searchResultsPage - 5 < 1} onClick={() => changePage('Back5')}>-5</Pagination.Item>
         <Pagination.Prev   onClick={() => changePage('Prev')} />
-        <Pagination.Item  disabled>{"Page " + (searchResultsPage) + " of " + Math.ceil(searchResultsCount/searchSizeResultsCount).toLocaleString()}</Pagination.Item>
+        <Pagination.Item  disabled>{"Page " + (searchResultsPage) + " of " + lastPage.toLocaleString()}</Pagination.Item>
         <Pagination.Next   onClick={() => changePage('Next')} />
+        <Pagination.Item   disabled={searchResultsPage + 5 > lastPage} onClick={() => changePage('Forward5')}>+5</Pagination.Item>
         <Pagination.Last   onClick={() => changePage('Last')} />
       </Pagination>
     ) : null
 
     function changePage(action){
       let page = searchResultsPage;
-      let lastPage= Math.ceil(searchResultsCount/searchSizeResultsCount);
       switch (action){
         case 'Next':
           page=Math.min(lastPage,page+1);
           break;
         case 'Prev':
           page=Math.max(1,page-1);
+          break;
+        case 'Back5':
+          page=Math.max(1,page-5);
+          break;
+        case 'Forward5':
+          page=Math.min(lastPage,page+5);
           break;
         case 'First':
           page=1;
