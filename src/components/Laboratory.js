@@ -57,9 +57,11 @@ const Laboratory = () => {
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
 
   // Lookup field for free-text queries. WormBase curators default to strain
-  // designation; everyone else to lab name. Stop auto-defaulting once the
-  // curator picks a field themselves. accessLevel can resolve after mount.
-  const [lookupKey, setLookupKey] = useState('name');
+  // designation; everyone else to lab name. Initialized synchronously so the
+  // mount-time URL-sync auto-load (e.g. a WB deep-link) uses the right field on
+  // first render; the effect below still covers a late-resolving accessLevel.
+  // Stop auto-defaulting once the curator picks a field themselves.
+  const [lookupKey, setLookupKey] = useState(() => (accessLevel === 'WB' ? 'strain_designation' : 'name'));
   const lookupKeyTouched = useRef(false);
   useEffect(() => {
     if (!lookupKeyTouched.current) {
