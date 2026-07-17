@@ -16,6 +16,7 @@ import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
 import TetGridErrorBoundary from '../refs_tet_validation/TetGridErrorBoundary';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+    faArrowUp,
     faChevronLeft,
     faChevronRight,
     faListUl,
@@ -34,6 +35,7 @@ const SearchLayout = () => {
     const [facetsCollapsed, setFacetsCollapsed] = useState(window.innerWidth < MOBILE_BREAKPOINT);
     const [view, setView] = useState('list'); // 'list' | 'grid'
     const [hasOpenedTopicGrid, setHasOpenedTopicGrid] = useState(false);
+    const [showBackToTop, setShowBackToTop] = useState(false);
 
     // Persisted topic-grid UI state — topic/source multiselects, the display
     // checkboxes and the ID-prefix filter. The grid is torn down on every
@@ -172,6 +174,15 @@ const SearchLayout = () => {
             setHasOpenedTopicGrid(true);
         }
     }, [view]);
+
+    // Show the back-to-top button once the search bar / sort options have
+    // scrolled out of view.
+    useEffect(() => {
+        const handleScroll = () => setShowBackToTop(window.scrollY > 300);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const toggleFacets = useCallback(() => {
         setFacetsCollapsed(prev => !prev);
@@ -380,6 +391,28 @@ const SearchLayout = () => {
                     <Col sm={4}><SearchPagination/></Col>
                 </Row>
             </Container>
+            {showBackToTop && (
+                <Button
+                    variant="secondary"
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    title="Back to top"
+                    aria-label="Back to top"
+                    style={{
+                        position: 'fixed',
+                        bottom: '24px',
+                        right: '24px',
+                        zIndex: 998,
+                        borderRadius: '50%',
+                        width: '44px',
+                        height: '44px',
+                        padding: 0,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                        opacity: 0.85,
+                    }}
+                >
+                    <FontAwesomeIcon icon={faArrowUp} />
+                </Button>
+            )}
         </div>
     )
 }
