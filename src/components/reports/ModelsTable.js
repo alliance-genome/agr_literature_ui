@@ -107,6 +107,8 @@ const ITEMS_INIT = [
   { headerName: 'File Classes', field: 'file_classes', id: 15, checked: true },
   { headerName: 'Description', field: 'description', id: 16, checked: true },
   { headerName: 'Parameters', field: 'parameters', id: 17, checked: true },
+  { headerName: 'Embedding Profile', field: 'embedding_profile', id: 19, checked: true },
+  { headerName: 'Embedding Version', field: 'embedding_version', id: 20, checked: true },
   { headerName: 'ID', field: 'ml_model_id', id: 18, checked: false }
 ];
 
@@ -257,6 +259,8 @@ const ModelsTable = ({ modSection }) => {
         tooltipField: 'parameters',
         onCellClicked: (p) => handleParametersClick(p.value)
       },
+      { headerName: 'Embedding Profile', field: 'embedding_profile', filter: true, comparator: caseInsensitiveComparator, tooltipField: 'embedding_profile' },
+      { headerName: 'Embedding Version', field: 'embedding_version', filter: 'agNumberColumnFilter' },
       { headerName: 'ID', field: 'ml_model_id', filter: 'agNumberColumnFilter' }
     ],
     [caseInsensitiveComparator, numericFormatter]
