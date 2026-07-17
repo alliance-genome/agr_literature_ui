@@ -158,12 +158,10 @@ const getSearchParams = (state) => {
       });
   }
 
-  // Negated TET facets. Source method / source evidence assertion exclusions use whole-reference
-  // semantics (drop a reference if ANY of its tags matches) and apply in both single- and
-  // multi-tag modes. Confidence level negation applies in both modes too: the backend attaches
-  // it as a must_not inside each positive nested tag query (add_nested_query), so it correctly
-  // excludes NEG tags per-tag whether one or many TET facets are selected (it just needs at
-  // least one positive TET facet, e.g. a chosen topic, for the exclusion to be consumed).
+  // Negated TET facets. Confidence level, source method and source evidence assertion
+  // exclusions all use whole-reference semantics on the backend (drop a reference if ANY of
+  // its tags matches an excluded value) and apply in both single- and multi-tag modes,
+  // whether or not a positive TET facet is also selected.
   // All negated TET keys are carried in ONE merged object: the backend reads only
   // tet_facets_negative_values[0] and turns each source/SEA key into its own independent
   // must_not nested clause, so splitting them into separate array entries would silently drop
