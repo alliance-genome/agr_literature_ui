@@ -16,7 +16,9 @@ import {
   SEARCH_REMOVE_DATE_PUBMED_MODIFIED, SEARCH_REMOVE_DATE_PUBLISHED,
   SEARCH_REMOVE_DATE_CREATED, SEARCH_SET_CURIE_MAIN_PDF_IDS_MAP_RESULTS,
   SEARCH_SET_CURRENT_ABORT_CONTROLLER,
-  SEARCH_LOAD_SAVED_SEARCH_STATE
+  SEARCH_LOAD_SAVED_SEARCH_STATE,
+  SEARCH_SET_SEARCH_MODE,
+  SEARCH_SET_ADVANCED_TOPIC_QUERY
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -66,7 +68,12 @@ const initialState = {
   applyToSingleTag: true,
   curiePDFIDsMap: {},
   currentAbortController: null,
-  confidenceScore: [0,1]
+  confidenceScore: [0,1],
+  // Advanced Topic query builder (SCRUM-6228): 'facet' (default) uses the facet
+  // panel; 'advanced' uses the query builder. advancedTopicQuery holds the
+  // builder's UI tree (null until the builder seeds a default).
+  searchMode: 'facet',
+  advancedTopicQuery: null
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -289,6 +296,18 @@ export default function(state = initialState, action) {
         applyToSingleTag: action.payload
       }
 
+    case SEARCH_SET_SEARCH_MODE:
+      return {
+        ...state,
+        searchMode: action.payload
+      }
+
+    case SEARCH_SET_ADVANCED_TOPIC_QUERY:
+      return {
+        ...state,
+        advancedTopicQuery: action.payload
+      }
+
         case 'SEARCH_SET_DATE_PUBMED_ADDED':
             return {
                 ...state,
@@ -375,6 +394,10 @@ export default function(state = initialState, action) {
             sortByPublishedDate: p.sortByPublishedDate ?? state.sortByPublishedDate,
             partialMatch: (typeof p.partialMatch !== 'undefined') ? p.partialMatch : state.partialMatch,
 	    applyToSingleTag: (typeof p.applyToSingleTag !== 'undefined') ? p.applyToSingleTag : state.applyToSingleTag,
+
+            // advanced Topic query builder (SCRUM-6228)
+            searchMode: p.searchMode ?? state.searchMode,
+            advancedTopicQuery: (typeof p.advancedTopicQuery !== 'undefined') ? p.advancedTopicQuery : state.advancedTopicQuery,
           };
     default:
       return state;

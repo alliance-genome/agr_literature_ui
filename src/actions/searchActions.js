@@ -1,5 +1,6 @@
 import axios from "axios";
 import { api } from "../api";
+import { compileAdvancedQuery } from "../components/search/advanced/advancedQueryModel";
 //import {useDispatch, useSelector} from 'react-redux';
 
 export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
@@ -38,6 +39,8 @@ export const SEARCH_REMOVE_DATE_PUBLISHED = "SEARCH_REMOVE_DATE_PUBLISHED"
 export const SEARCH_REMOVE_DATE_CREATED = "SEARCH_REMOVE_DATE_CREATED"
 export const SEARCH_SET_CURRENT_ABORT_CONTROLLER = 'SEARCH_SET_CURRENT_ABORT_CONTROLLER';
 export const SEARCH_LOAD_SAVED_SEARCH_STATE = 'SEARCH_LOAD_SAVED_SEARCH_STATE';
+export const SEARCH_SET_SEARCH_MODE = 'SEARCH_SET_SEARCH_MODE';
+export const SEARCH_SET_ADVANCED_TOPIC_QUERY = 'SEARCH_SET_ADVANCED_TOPIC_QUERY';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions","data_novelty"];
 
@@ -230,7 +233,19 @@ const getSearchParams = (state) => {
         facetsValues[key] = data[key];
     }
   });
-  console.log('POST /search/references payload', params);    
+
+  // Advanced Topic search (SCRUM-6228): when the query builder is active, replace
+  // the flat TET nested-facet mechanism with the compiled AND/OR tree. Non-TET
+  // facets (category, corpus/MOD, dates, workflow) still flow through unchanged.
+  if (state.search.searchMode === 'advanced') {
+    const compiled = compileAdvancedQuery(state.search.advancedTopicQuery);
+    delete params.tet_nested_facets_values;
+    if (compiled) {
+      params.tet_advanced_query = compiled;
+    }
+  }
+
+  console.log('POST /search/references payload', params);
   return params;
 }
 
@@ -593,4 +608,17 @@ export const removeDateCreated = () => ({
 export const setCurrentAbortController = (cancelSource) => ({
   type: SEARCH_SET_CURRENT_ABORT_CONTROLLER,
   payload: cancelSource
+});
+
+// Advanced Topic query builder (SCRUM-6228). searchMode toggles between the
+// facet panel ('facet') and the query builder ('advanced'); advancedTopicQuery
+// holds the builder's UI tree (compiled to tet_advanced_query at search time).
+export const setSearchMode = (mode) => ({
+  type: SEARCH_SET_SEARCH_MODE,
+  payload: mode
+});
+
+export const setAdvancedTopicQuery = (tree) => ({
+  type: SEARCH_SET_ADVANCED_TOPIC_QUERY,
+  payload: tree
 });

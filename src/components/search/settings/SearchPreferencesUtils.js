@@ -15,6 +15,8 @@ import {
   setDatePubmedModified,
   setDatePublished,
   setDateCreated,
+  setSearchMode,
+  setAdvancedTopicQuery,
   searchReferences,
 } from '../../../actions/searchActions';
 
@@ -50,6 +52,11 @@ export const buildSearchSettingsState = (reduxState) => {
     excludedFacetsValues: s.searchExcludedFacetsValues || {},
 
     applyToSingleTag: s.applyToSingleTag ?? true,
+
+    // Advanced Topic query builder (SCRUM-6228)
+    searchMode: s.searchMode || 'facet',
+    advancedTopicQuery: s.advancedTopicQuery ?? null,
+
     mod_abbreviation,
   };
 };
@@ -96,6 +103,8 @@ export const applySearchSettingsFromJson = (
     facetsValues = {},
     excludedFacetsValues = {},
     applyToSingleTag = true,
+    searchMode = 'facet',
+    advancedTopicQuery = null,
   } = state;
 
   // 1) basic fields
@@ -140,7 +149,11 @@ export const applySearchSettingsFromJson = (
   // 5) topic-entity-tag flag
   dispatch(setApplyToSingleTag(Boolean(applyToSingleTag)));
 
-  // 6) trigger the search (optional)
+  // 6) advanced Topic query builder (SCRUM-6228): restore mode + tree
+  dispatch(setSearchMode(searchMode === 'advanced' ? 'advanced' : 'facet'));
+  dispatch(setAdvancedTopicQuery(advancedTopicQuery ?? null));
+
+  // 7) trigger the search (optional)
   if (runSearch) {
     dispatch(searchReferences());
   }
