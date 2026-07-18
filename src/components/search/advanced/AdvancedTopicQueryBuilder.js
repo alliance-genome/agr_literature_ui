@@ -83,7 +83,8 @@ const FieldRow = ({ row, onChange, onRemove, canRemove }) => {
   const options = useFieldOptions(row.field);
   return (
     <InputGroup size="sm" style={cellStyle}>
-      <Form.Select
+      <Form.Control
+        as="select"
         aria-label="sub-facet field"
         style={{ maxWidth: '11rem' }}
         value={row.field}
@@ -92,7 +93,7 @@ const FieldRow = ({ row, onChange, onRemove, canRemove }) => {
         {TET_FIELD_DEFS.map((def) => (
           <option key={def.key} value={def.key}>{def.label}</option>
         ))}
-      </Form.Select>
+      </Form.Control>
       {isRangeField(row.field) ? (
         <>
           <Form.Control
@@ -110,7 +111,8 @@ const FieldRow = ({ row, onChange, onRemove, canRemove }) => {
           />
         </>
       ) : options ? (
-        <Form.Select
+        <Form.Control
+          as="select"
           aria-label="value"
           value={row.value}
           onChange={(e) => onChange({ ...row, value: e.target.value })}
@@ -119,7 +121,7 @@ const FieldRow = ({ row, onChange, onRemove, canRemove }) => {
           {options.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
-        </Form.Select>
+        </Form.Control>
       ) : (
         <Form.Control
           type="text"
@@ -203,7 +205,8 @@ const QueryGroup = ({ group, onChange, onRemove, canRemove, depth = 0 }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <InputGroup size="sm" style={{ width: 'auto' }}>
           <InputGroup.Text>combine with</InputGroup.Text>
-          <Form.Select
+          <Form.Control
+            as="select"
             aria-label="group operator"
             style={{ maxWidth: '6rem' }}
             value={group.operator}
@@ -211,7 +214,7 @@ const QueryGroup = ({ group, onChange, onRemove, canRemove, depth = 0 }) => {
           >
             <option value="AND">AND</option>
             <option value="OR">OR</option>
-          </Form.Select>
+          </Form.Control>
         </InputGroup>
         <Button
           variant="outline-danger" size="sm"
@@ -281,7 +284,8 @@ const AdvancedTopicQueryBuilder = () => {
       </div>
       <InputGroup size="sm" style={{ width: 'auto', marginBottom: '4px' }}>
         <InputGroup.Text>combine groups with</InputGroup.Text>
-        <Form.Select
+        <Form.Control
+          as="select"
           aria-label="top-level operator"
           style={{ maxWidth: '6rem' }}
           value={tree.operator}
@@ -289,7 +293,7 @@ const AdvancedTopicQueryBuilder = () => {
         >
           <option value="AND">AND</option>
           <option value="OR">OR</option>
-        </Form.Select>
+        </Form.Control>
       </InputGroup>
       {tree.children.map((group, idx) => (
         <QueryGroup
