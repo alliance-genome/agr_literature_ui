@@ -41,8 +41,15 @@ export const SEARCH_SET_CURRENT_ABORT_CONTROLLER = 'SEARCH_SET_CURRENT_ABORT_CON
 export const SEARCH_LOAD_SAVED_SEARCH_STATE = 'SEARCH_LOAD_SAVED_SEARCH_STATE';
 export const SEARCH_SET_SEARCH_MODE = 'SEARCH_SET_SEARCH_MODE';
 export const SEARCH_SET_ADVANCED_TOPIC_QUERY = 'SEARCH_SET_ADVANCED_TOPIC_QUERY';
+export const SEARCH_SET_ADVANCED_FACETS_VOCAB = 'SEARCH_SET_ADVANCED_FACETS_VOCAB';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions","data_novelty"];
+
+// Upper bound for the Advanced query builder's value dropdowns. The facet panel
+// paginates (INITIAL_FACETS_LIMIT with Show More/All), and every search overwrites
+// searchFacets with result-scoped, limited buckets — so the builder can't rely on
+// it for a complete list. Mirrors the facet panel's "Show All" limit (1000).
+const ADVANCED_VOCAB_LIMIT = 1000;
 
 export const loadSavedSearchState = (saved) => ({
   type: SEARCH_LOAD_SAVED_SEARCH_STATE,
@@ -83,6 +90,34 @@ export const fetchInitialFacets = (facetsLimits) => {
           // dispatch(setSearchFacets(res.data.aggregations));
         })
         .catch();
+  }
+}
+
+// Fetch the COMPLETE, unfiltered TET sub-facet vocabulary for the Advanced query
+// builder (SCRUM-6228). Uses query:null / facets_values:null so the buckets are the
+// full ontology set (not scoped to the current result set), with a high per-facet
+// limit so the builder's Topic (and other) dropdowns aren't truncated to the facet
+// panel's INITIAL_FACETS_LIMIT. Stored separately from searchFacets so a later
+// search's result-scoped aggregations don't overwrite it. Fetched once (callers
+// guard on an already-populated vocab).
+export const fetchAdvancedFacetsVocab = () => {
+  return dispatch => {
+    const facets_limits = TET_FACETS_LIST.reduce((acc, key) => {
+      acc[key] = ADVANCED_VOCAB_LIMIT;
+      return acc;
+    }, {});
+    api.post('/search/references/', {
+      query: null,
+      facets_values: null,
+      facets_limits: facets_limits,
+      return_facets_only: true
+    })
+      .then(res => {
+        if (res.data && res.data.aggregations) {
+          dispatch(setAdvancedFacetsVocab(res.data.aggregations));
+        }
+      })
+      .catch(() => { /* best-effort: builder falls back to searchFacets buckets */ });
   }
 }
 
@@ -473,6 +508,13 @@ export const setCuriePDFIDsMap = (curiePDFIDsMap) => ({
 
 export const setSearchFacets = (facets) => ({
   type: SEARCH_SET_SEARCH_FACETS,
+  payload: {
+    facets: facets
+  }
+});
+
+export const setAdvancedFacetsVocab = (facets) => ({
+  type: SEARCH_SET_ADVANCED_FACETS_VOCAB,
   payload: {
     facets: facets
   }

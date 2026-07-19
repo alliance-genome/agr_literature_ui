@@ -18,7 +18,8 @@ import {
   SEARCH_SET_CURRENT_ABORT_CONTROLLER,
   SEARCH_LOAD_SAVED_SEARCH_STATE,
   SEARCH_SET_SEARCH_MODE,
-  SEARCH_SET_ADVANCED_TOPIC_QUERY
+  SEARCH_SET_ADVANCED_TOPIC_QUERY,
+  SEARCH_SET_ADVANCED_FACETS_VOCAB
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -37,6 +38,11 @@ const initialState = {
   facetsLoading: false,
   searchSuccess: false,
   searchFacets: {},
+  // Complete, unfiltered TET sub-facet vocabulary for the Advanced query builder
+  // (SCRUM-6228). Populated once by fetchAdvancedFacetsVocab and never overwritten
+  // by per-search result-scoped aggregations, so the builder's value dropdowns show
+  // the full list instead of the facet panel's paginated top-N.
+  advancedFacetsVocab: {},
   searchFacetsValues: {},
   searchExcludedFacetsValues: {},
   searchFacetsLimits: {
@@ -198,6 +204,12 @@ export default function(state = initialState, action) {
         ...state,
         searchFacets: action.payload.facets,
         facetsLoading: false
+      }
+
+    case SEARCH_SET_ADVANCED_FACETS_VOCAB:
+      return {
+        ...state,
+        advancedFacetsVocab: action.payload.facets
       }
 
     case SEARCH_SET_SEARCH_FACETS_VALUES:

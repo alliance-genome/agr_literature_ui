@@ -6,6 +6,7 @@ import {
   setAdvancedTopicQuery,
   setSearchResultsPage,
   searchReferences,
+  fetchAdvancedFacetsVocab,
 } from '../../../actions/searchActions';
 import {
   TET_FIELD_DEFS,
@@ -37,9 +38,16 @@ const MAX_NAME_LOOKUPS = 300;
 // facet panel instead of showing bare curies.
 const useFieldOptions = (fieldKey) => {
   const def = FIELD_DEF_BY_KEY[fieldKey];
-  const buckets = useSelector((s) =>
-    def && def.facetKey ? s.search.searchFacets?.[def.facetKey]?.buckets : null
-  );
+  // Prefer the complete, unfiltered vocab fetched for the builder; fall back to the
+  // facet panel's searchFacets buckets only until that vocab loads. searchFacets is
+  // paginated (top-N) and overwritten by each search's result-scoped aggregation, so
+  // relying on it truncates or empties the dropdowns (SCRUM-6228).
+  const buckets = useSelector((s) => {
+    if (!def || !def.facetKey) return null;
+    const vocab = s.search.advancedFacetsVocab?.[def.facetKey]?.buckets;
+    if (Array.isArray(vocab) && vocab.length > 0) return vocab;
+    return s.search.searchFacets?.[def.facetKey]?.buckets ?? null;
+  });
   const [, bumpNames] = useState(0);
 
   useEffect(() => {
@@ -273,6 +281,17 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
 const AdvancedTopicQueryBuilder = () => {
   const dispatch = useDispatch();
   const tree = useSelector((s) => s.search.advancedTopicQuery);
+  const hasVocab = useSelector(
+    (s) => Object.keys(s.search.advancedFacetsVocab || {}).length > 0
+  );
+
+  // Load the complete TET sub-facet vocabulary once so the value dropdowns show the
+  // full list (not the facet panel's paginated top-N, and unaffected by result-scoped
+  // search aggregations). Best-effort; the dropdowns fall back to searchFacets until
+  // it arrives (SCRUM-6228).
+  useEffect(() => {
+    if (!hasVocab) dispatch(fetchAdvancedFacetsVocab());
+  }, [hasVocab, dispatch]);
 
   // Corpus/MOD scope is a non-TET facet that still applies in advanced mode; show
   // it read-only so the preview reflects the full search without duplicating the
