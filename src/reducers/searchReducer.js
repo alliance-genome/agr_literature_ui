@@ -38,10 +38,11 @@ const initialState = {
   facetsLoading: false,
   searchSuccess: false,
   searchFacets: {},
-  // Complete, unfiltered TET sub-facet vocabulary for the Advanced query builder
-  // (SCRUM-6228). Populated once by fetchAdvancedFacetsVocab and never overwritten
-  // by per-search result-scoped aggregations, so the builder's value dropdowns show
-  // the full list instead of the facet panel's paginated top-N.
+  // TET sub-facet vocabulary for the Advanced query builder (SCRUM-6228), scoped to
+  // the selected corpus/MOD. Populated by fetchAdvancedFacetsVocab and never
+  // overwritten by per-search result-scoped aggregations, so the builder's value
+  // dropdowns show the full MOD-relevant list instead of the facet panel's paginated
+  // top-N.
   advancedFacetsVocab: {},
   searchFacetsValues: {},
   searchExcludedFacetsValues: {},

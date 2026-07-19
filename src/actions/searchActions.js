@@ -93,31 +93,73 @@ export const fetchInitialFacets = (facetsLimits) => {
   }
 }
 
-// Fetch the COMPLETE, unfiltered TET sub-facet vocabulary for the Advanced query
-// builder (SCRUM-6228). Uses query:null / facets_values:null so the buckets are the
-// full ontology set (not scoped to the current result set), with a high per-facet
-// limit so the builder's Topic (and other) dropdowns aren't truncated to the facet
-// panel's INITIAL_FACETS_LIMIT. Stored separately from searchFacets so a later
-// search's result-scoped aggregations don't overwrite it. Fetched once (callers
-// guard on an already-populated vocab).
+// Fetch the TET sub-facet vocabulary for the Advanced query builder (SCRUM-6228),
+// scoped to the currently selected corpus/MOD so the dropdowns list only the topics
+// (and sources) relevant to that MOD rather than the whole ontology. Uses query:null
+// with the MOD facet keys as facets_values and a high per-facet limit so the lists
+// aren't truncated to the facet panel's INITIAL_FACETS_LIMIT. Stored separately from
+// searchFacets so a later search's result-scoped aggregations don't overwrite it, and
+// re-fetched when the MOD selection changes. When no MOD is selected, falls back to
+// the global list.
 export const fetchAdvancedFacetsVocab = () => {
-  return dispatch => {
+  return (dispatch, getState) => {
+    const fv = (getState().search && getState().search.searchFacetsValues) || {};
+    // Mirror the corpus/MOD facet keys the search itself uses to scope aggregations.
+    const facets_values = {};
+    ['mods_in_corpus.keyword', 'mods_needs_review.keyword', 'mods_in_corpus_or_needs_review.keyword']
+      .forEach((k) => {
+        if (Array.isArray(fv[k]) && fv[k].length > 0) facets_values[k] = fv[k];
+      });
+    const mods = Array.from(new Set(Object.values(facets_values).flat()));
+    const hasMod = mods.length > 0;
+
     const facets_limits = TET_FACETS_LIST.reduce((acc, key) => {
       acc[key] = ADVANCED_VOCAB_LIMIT;
       return acc;
     }, {});
-    api.post('/search/references/', {
-      query: null,
-      facets_values: null,
-      facets_limits: facets_limits,
-      return_facets_only: true
-    })
-      .then(res => {
-        if (res.data && res.data.aggregations) {
-          dispatch(setAdvancedFacetsVocab(res.data.aggregations));
-        }
+    // Source methods are aggregated only within a corpus/MOD scope, so the aggregation
+    // returns them only when a MOD is selected. The dedicated endpoint carries the full
+    // list with its owning MOD, so use it to fill/scope source methods when the
+    // aggregation doesn't.
+    Promise.all([
+      api.post('/search/references/', {
+        query: null,
+        facets_values: hasMod ? facets_values : null,
+        facets_limits: facets_limits,
+        return_facets_only: true
       })
-      .catch(() => { /* best-effort: builder falls back to searchFacets buckets */ });
+        .then(res => (res.data && res.data.aggregations) ? res.data.aggregations : {})
+        .catch(() => ({})),
+      api.get('/topic_entity_tag/source/all')
+        .then(res => Array.isArray(res.data) ? res.data : [])
+        .catch(() => [])
+    ]).then(([aggregations, sources]) => {
+      const vocab = { ...aggregations };
+      const aggSources = (vocab.source_methods && Array.isArray(vocab.source_methods.buckets))
+        ? vocab.source_methods.buckets : [];
+      // Prefer the MOD-scoped aggregation's source methods; otherwise derive them from
+      // the endpoint, filtered to the selected MOD(s) when one is chosen. The endpoint
+      // returns one row per MOD, so dedupe by name; bucket.key is the source_method
+      // string, matching the value the search filter expects.
+      if (aggSources.length === 0) {
+        const modSet = new Set(mods);
+        const seen = new Set();
+        const sourceBuckets = [];
+        for (const item of sources) {
+          const key = item && item.source_method ? String(item.source_method) : '';
+          if (!key || seen.has(key)) continue;
+          if (hasMod) {
+            const provider = item.data_provider || item.secondary_data_provider_abbreviation;
+            if (!modSet.has(provider)) continue;
+          }
+          seen.add(key);
+          sourceBuckets.push({ key });
+        }
+        sourceBuckets.sort((a, b) => a.key.localeCompare(b.key));
+        if (sourceBuckets.length > 0) vocab.source_methods = { buckets: sourceBuckets };
+      }
+      if (Object.keys(vocab).length > 0) dispatch(setAdvancedFacetsVocab(vocab));
+    });
   }
 }
 

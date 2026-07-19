@@ -38,10 +38,10 @@ const MAX_NAME_LOOKUPS = 300;
 // facet panel instead of showing bare curies.
 const useFieldOptions = (fieldKey) => {
   const def = FIELD_DEF_BY_KEY[fieldKey];
-  // Prefer the complete, unfiltered vocab fetched for the builder; fall back to the
-  // facet panel's searchFacets buckets only until that vocab loads. searchFacets is
-  // paginated (top-N) and overwritten by each search's result-scoped aggregation, so
-  // relying on it truncates or empties the dropdowns (SCRUM-6228).
+  // Prefer the MOD-scoped vocab fetched for the builder; fall back to the facet panel's
+  // searchFacets buckets only until that vocab loads. searchFacets is paginated (top-N)
+  // and overwritten by each search's result-scoped aggregation, so relying on it
+  // truncates or empties the dropdowns (SCRUM-6228).
   const buckets = useSelector((s) => {
     if (!def || !def.facetKey) return null;
     const vocab = s.search.advancedFacetsVocab?.[def.facetKey]?.buckets;
@@ -107,6 +107,7 @@ const ValueChip = ({ chip, onRemove }) => (
 // The value editor for one field row: a chip list (OR) plus an adder. Range fields
 // (confidence score) use a min/max pair instead of chips.
 const ValueEditor = ({ row, onChange }) => {
+  const dispatch = useDispatch();
   const options = useFieldOptions(row.field);
   const [text, setText] = useState('');
   const values = Array.isArray(row.values) ? row.values : [];
@@ -136,8 +137,12 @@ const ValueEditor = ({ row, onChange }) => {
     if (!v || values.some((c) => c.value === v)) return;
     onChange({ ...row, values: [...values, { value: v, label: label || v }] });
   };
-  const removeChip = (idx) =>
+  const removeChip = (idx) => {
     onChange({ ...row, values: values.filter((_c, i) => i !== idx) });
+    // Re-pull the complete vocabulary so the removed value returns to a full,
+    // fresh dropdown on reselection (guards against a stale/partial earlier fetch).
+    dispatch(fetchAdvancedFacetsVocab());
+  };
 
   // The adder sits inline immediately after the chips (a leading "or" pill when the
   // field already has a value) so it reads as "add another value to THIS field"
@@ -226,11 +231,16 @@ const FieldRow = ({ row, onChange, onRemove, canRemove }) => (
 // inside AND on the SAME tag; multiple values on a field OR. A second Tag card is a
 // DIFFERENT tag on the same paper.
 const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
+  const dispatch = useDispatch();
   const setField = (idx, newRow) =>
     onChange({ ...leaf, fields: leaf.fields.map((f, i) => (i === idx ? newRow : f)) });
   const addField = () => onChange({ ...leaf, fields: [...leaf.fields, createFieldRow()] });
-  const removeField = (idx) =>
+  const removeField = (idx) => {
     onChange({ ...leaf, fields: leaf.fields.filter((_f, i) => i !== idx) });
+    // Re-pull the vocabulary so the dropdowns are full and fresh when a replacement
+    // field is added after this removal.
+    dispatch(fetchAdvancedFacetsVocab());
+  };
 
   const scope = index === 0
     ? 'one tag must match all of these (same tag)'
@@ -281,17 +291,6 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
 const AdvancedTopicQueryBuilder = () => {
   const dispatch = useDispatch();
   const tree = useSelector((s) => s.search.advancedTopicQuery);
-  const hasVocab = useSelector(
-    (s) => Object.keys(s.search.advancedFacetsVocab || {}).length > 0
-  );
-
-  // Load the complete TET sub-facet vocabulary once so the value dropdowns show the
-  // full list (not the facet panel's paginated top-N, and unaffected by result-scoped
-  // search aggregations). Best-effort; the dropdowns fall back to searchFacets until
-  // it arrives (SCRUM-6228).
-  useEffect(() => {
-    if (!hasVocab) dispatch(fetchAdvancedFacetsVocab());
-  }, [hasVocab, dispatch]);
 
   // Corpus/MOD scope is a non-TET facet that still applies in advanced mode; show
   // it read-only so the preview reflects the full search without duplicating the
@@ -304,6 +303,17 @@ const AdvancedTopicQueryBuilder = () => {
       ...(fv['mods_in_corpus_or_needs_review.keyword'] || []),
     ]));
   });
+  // Stable dependency key so the vocab refetch fires only when the MOD set changes.
+  const corpusModsKey = corpusMods.slice().sort().join('|');
+
+  // Load the TET sub-facet vocabulary so the value dropdowns show the full list (not
+  // the facet panel's paginated top-N, and unaffected by result-scoped search
+  // aggregations). Re-fetch when the selected MOD changes so topics/sources are scoped
+  // to that MOD. Best-effort; the dropdowns fall back to searchFacets until it arrives
+  // (SCRUM-6228).
+  useEffect(() => {
+    dispatch(fetchAdvancedFacetsVocab());
+  }, [corpusModsKey, dispatch]);
 
   // Seed a default flat tree the first time the builder is shown; normalize a
   // legacy/nested saved tree into flat Tag cards so it renders without crashing.
