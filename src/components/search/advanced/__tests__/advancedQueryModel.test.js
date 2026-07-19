@@ -3,6 +3,9 @@ import {
   isAdvancedQueryEmpty,
   createEmptyTree,
   flattenAdvancedForGrid,
+  normalizeToFlatTree,
+  describeCompiledQuery,
+  isLeaf,
 } from '../advancedQueryModel';
 
 // Build a UI leaf from a compact {field: value|[min,max]} map for terse tests.
@@ -137,6 +140,97 @@ describe('compileAdvancedQuery', () => {
     expect(compileAdvancedQuery(createEmptyTree())).toBeNull();
     expect(isAdvancedQueryEmpty(createEmptyTree())).toBe(true);
     expect(compileAdvancedQuery(null)).toBeNull();
+  });
+});
+
+describe('field-row chip shape (multi-value OR, SCRUM-6228)', () => {
+  // The Tag-card UI stores values as [{ value, label }] chips; multiple chips on a
+  // field OR. Legacy scalar `value` rows must still compile.
+  const chipLeaf = (fieldMap, negate = false) => ({
+    type: 'tet',
+    negate,
+    fields: Object.entries(fieldMap).map(([field, chips]) => ({
+      field,
+      values: chips.map((c) => ({ value: c, label: `${c}-name` })),
+    })),
+  });
+
+  test('multiple chips on one field compile to an OR value list', () => {
+    const out = compileAdvancedQuery(chipLeaf({ source_method: ['acknowledge_form', 'abc_document_classifier'] }));
+    expect(out.match).toEqual({
+      source_method: ['acknowledge_form', 'abc_document_classifier'],
+    });
+  });
+
+  test('distinct chip fields AND on the same tag', () => {
+    const out = compileAdvancedQuery(chipLeaf({ topic: ['ATP:1'], entity_type: ['ATP:2'] }));
+    expect(out.match).toEqual({ topic: ['ATP:1'], entity_type: ['ATP:2'] });
+  });
+
+  test('empty chip list drops the field (and an all-empty leaf compiles to null)', () => {
+    expect(compileAdvancedQuery(chipLeaf({ topic: [] }))).toBeNull();
+  });
+});
+
+describe('normalizeToFlatTree (legacy/nested -> flat Tag cards, SCRUM-6228)', () => {
+  test('collapses a nested tree into a flat list of leaves', () => {
+    const nested = {
+      operator: 'AND',
+      children: [
+        { operator: 'OR', children: [
+          { type: 'tet', negate: false, fields: [{ field: 'topic', value: 'ATP:1' }] },
+          { type: 'tet', negate: false, fields: [{ field: 'topic', value: 'ATP:2' }] },
+        ] },
+        { type: 'tet', negate: true, fields: [{ field: 'confidence_level', value: 'NEG' }] },
+      ],
+    };
+    const flat = normalizeToFlatTree(nested);
+    expect(flat.operator).toBe('AND');
+    expect(flat.children).toHaveLength(3);
+    expect(flat.children.every(isLeaf)).toBe(true);
+  });
+
+  test('empty/undefined input yields a seed tree', () => {
+    expect(normalizeToFlatTree(undefined).children).toHaveLength(1);
+    expect(isAdvancedQueryEmpty(normalizeToFlatTree(undefined))).toBe(true);
+  });
+});
+
+describe('describeCompiledQuery (preview, SCRUM-6228)', () => {
+  const leaf = (fieldMap, negate = false) => ({
+    type: 'tet',
+    negate,
+    fields: Object.entries(fieldMap).map(([field, value]) =>
+      field === 'confidence_score'
+        ? { field, value: '', min: value[0], max: value[1] }
+        : { field, value }
+    ),
+  });
+
+  test('single value renders with = and applies labelFor', () => {
+    const compiled = compileAdvancedQuery(leaf({ topic: 'ATP:0000018' }));
+    const label = (f, v) => (v === 'ATP:0000018' ? 'disease model' : v);
+    expect(describeCompiledQuery(compiled, label)).toBe('(topic = "disease model")');
+  });
+
+  test('multi value renders with in (...) and NOT wraps a negated tag', () => {
+    const compiled = compileAdvancedQuery(leaf({ source_method: 'a, b' }, true));
+    expect(describeCompiledQuery(compiled)).toBe('NOT (source_method in ("a", "b"))');
+  });
+
+  test('AND of two tags joins with the top operator', () => {
+    const tree = { operator: 'AND', children: [leaf({ topic: 'ATP:1' }), leaf({ entity_type: 'ATP:2' })] };
+    expect(describeCompiledQuery(compileAdvancedQuery(tree)))
+      .toBe('((topic = "ATP:1") AND (entity_type = "ATP:2"))');
+  });
+
+  test('confidence_score renders as a range', () => {
+    const compiled = compileAdvancedQuery(leaf({ confidence_score: [0.5, 1] }));
+    expect(describeCompiledQuery(compiled)).toBe('(confidence_score in [0.5, 1])');
+  });
+
+  test('null compiled query renders empty', () => {
+    expect(describeCompiledQuery(null)).toBe('');
   });
 });
 

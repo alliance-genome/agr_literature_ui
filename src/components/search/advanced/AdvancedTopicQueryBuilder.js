@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Button, ButtonGroup, Form, InputGroup } from 'react-bootstrap';
+import { Badge, Button, ButtonGroup, Form, InputGroup } from 'react-bootstrap';
 import { api } from '../../../api';
 import {
   setAdvancedTopicQuery,
@@ -11,17 +11,15 @@ import {
   TET_FIELD_DEFS,
   FIELD_DEF_BY_KEY,
   isRangeField,
-  isLeaf,
   createFieldRow,
   createLeaf,
-  createGroup,
   createEmptyTree,
+  normalizeToFlatTree,
+  isLeaf,
   isAdvancedQueryEmpty,
+  compileAdvancedQuery,
+  describeCompiledQuery,
 } from './advancedQueryModel';
-
-// Deepest group nesting the UI exposes. The backend query builder is unbounded,
-// but curators rarely need more than a few levels and deep trees get unreadable.
-const MAX_GROUP_DEPTH = 3;
 
 // Process-wide cache of resolved ATP/ECO curie -> display name, so switching
 // fields or re-rendering doesn't refetch names already seen. Best-effort: a
@@ -77,113 +75,178 @@ const useFieldOptions = (fieldKey) => {
   });
 };
 
-const cellStyle = { marginBottom: '4px' };
+// One value on a field, shown as a removable chip. Multiple chips on one field
+// are combined with OR (a tag matches any of the values), so an OR pill sits
+// between them.
+const ValueChip = ({ chip, onRemove }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: '4px',
+    border: '1px solid #b6d4fe', backgroundColor: '#e7f1ff', color: '#084298',
+    borderRadius: '12px', padding: '1px 8px', fontSize: '0.8rem', whiteSpace: 'nowrap',
+  }}>
+    {chip.label}
+    <span
+      role="button"
+      aria-label="remove value"
+      onClick={onRemove}
+      style={{ cursor: 'pointer', fontWeight: 700, lineHeight: 1 }}
+    >×</span>
+  </span>
+);
 
-const FieldRow = ({ row, onChange, onRemove, canRemove }) => {
+// The value editor for one field row: a chip list (OR) plus an adder. Range fields
+// (confidence score) use a min/max pair instead of chips.
+const ValueEditor = ({ row, onChange }) => {
   const options = useFieldOptions(row.field);
+  const [text, setText] = useState('');
+  const values = Array.isArray(row.values) ? row.values : [];
+
+  if (isRangeField(row.field)) {
+    return (
+      <InputGroup size="sm" style={{ maxWidth: '16rem' }}>
+        <Form.Control
+          type="number" step="0.01" min={0} max={1}
+          aria-label="confidence score min"
+          value={row.min}
+          onChange={(e) => onChange({ ...row, min: e.target.value })}
+        />
+        <InputGroup.Text>to</InputGroup.Text>
+        <Form.Control
+          type="number" step="0.01" min={0} max={1}
+          aria-label="confidence score max"
+          value={row.max}
+          onChange={(e) => onChange({ ...row, max: e.target.value })}
+        />
+      </InputGroup>
+    );
+  }
+
+  const addChip = (value, label) => {
+    const v = String(value || '').trim();
+    if (!v || values.some((c) => c.value === v)) return;
+    onChange({ ...row, values: [...values, { value: v, label: label || v }] });
+  };
+  const removeChip = (idx) =>
+    onChange({ ...row, values: values.filter((_c, i) => i !== idx) });
+
   return (
-    <InputGroup size="sm" style={cellStyle}>
-      <Form.Control
-        as="select"
-        aria-label="sub-facet field"
-        style={{ maxWidth: '11rem' }}
-        value={row.field}
-        onChange={(e) => onChange({ ...createFieldRow(e.target.value) })}
-      >
-        {TET_FIELD_DEFS.map((def) => (
-          <option key={def.key} value={def.key}>{def.label}</option>
-        ))}
-      </Form.Control>
-      {isRangeField(row.field) ? (
-        <>
-          <Form.Control
-            type="number" step="0.01" min={0} max={1}
-            aria-label="confidence score min"
-            value={row.min}
-            onChange={(e) => onChange({ ...row, min: e.target.value })}
-          />
-          <InputGroup.Text>to</InputGroup.Text>
-          <Form.Control
-            type="number" step="0.01" min={0} max={1}
-            aria-label="confidence score max"
-            value={row.max}
-            onChange={(e) => onChange({ ...row, max: e.target.value })}
-          />
-        </>
-      ) : options ? (
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px', flex: 1 }}>
+      {values.map((chip, idx) => (
+        <React.Fragment key={chip.value}>
+          {idx > 0 && (
+            <Badge variant="secondary" style={{ fontSize: '0.65rem' }}>OR</Badge>
+          )}
+          <ValueChip chip={chip} onRemove={() => removeChip(idx)} />
+        </React.Fragment>
+      ))}
+      {options ? (
         <Form.Control
           as="select"
-          aria-label="value"
-          value={row.value}
-          onChange={(e) => onChange({ ...row, value: e.target.value })}
+          size="sm"
+          aria-label="add value"
+          style={{ maxWidth: '14rem' }}
+          value=""
+          onChange={(e) => {
+            const opt = options.find((o) => o.value === e.target.value);
+            if (opt) addChip(opt.value, opt.label);
+          }}
         >
-          <option value="">— select —</option>
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
+          <option value="">{values.length ? '+ or…' : '— select —'}</option>
+          {options
+            .filter((o) => !values.some((c) => c.value === o.value))
+            .map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
         </Form.Control>
       ) : (
         <Form.Control
           type="text"
-          placeholder="value(s), comma-separated"
-          aria-label="value"
-          value={row.value}
-          onChange={(e) => onChange({ ...row, value: e.target.value })}
+          size="sm"
+          style={{ maxWidth: '14rem' }}
+          placeholder={values.length ? '+ or value…' : 'type value, Enter'}
+          aria-label="add value"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              addChip(text);
+              setText('');
+            }
+          }}
+          onBlur={() => { if (text.trim()) { addChip(text); setText(''); } }}
         />
       )}
-      <Button
-        variant="outline-danger"
-        onClick={onRemove}
-        disabled={!canRemove}
-        title="Remove field"
-      >×</Button>
-    </InputGroup>
+    </div>
   );
 };
 
-// One leaf = conditions that must all hold on the SAME topic entity tag.
-const QueryCondition = ({ leaf, onChange, onRemove, canRemove }) => {
-  const setField = (idx, newRow) => {
-    const fields = leaf.fields.map((f, i) => (i === idx ? newRow : f));
-    onChange({ ...leaf, fields });
-  };
+const FieldRow = ({ row, onChange, onRemove, canRemove }) => (
+  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginBottom: '6px' }}>
+    <Form.Control
+      as="select"
+      size="sm"
+      aria-label="sub-facet field"
+      style={{ maxWidth: '11rem', flex: '0 0 auto' }}
+      value={row.field}
+      onChange={(e) => onChange(createFieldRow(e.target.value))}
+    >
+      {TET_FIELD_DEFS.map((def) => (
+        <option key={def.key} value={def.key}>{def.label}</option>
+      ))}
+    </Form.Control>
+    <span style={{ padding: '4px 2px', color: '#6c757d' }}>=</span>
+    <ValueEditor row={row} onChange={onChange} />
+    <Button
+      variant="outline-danger" size="sm"
+      onClick={onRemove} disabled={!canRemove}
+      title="Remove field"
+      style={{ flex: '0 0 auto' }}
+    >×</Button>
+  </div>
+);
+
+// One Tag card = one topic_entity_tag the paper must (or must not) have. All fields
+// inside AND on the SAME tag; multiple values on a field OR. A second Tag card is a
+// DIFFERENT tag on the same paper.
+const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
+  const setField = (idx, newRow) =>
+    onChange({ ...leaf, fields: leaf.fields.map((f, i) => (i === idx ? newRow : f)) });
   const addField = () => onChange({ ...leaf, fields: [...leaf.fields, createFieldRow()] });
   const removeField = (idx) =>
     onChange({ ...leaf, fields: leaf.fields.filter((_f, i) => i !== idx) });
 
-  // A non-range sub-facet repeated within one condition compiles to a single
-  // any-of (OR) match on that field, NOT an AND across separate tags (a tag has
-  // one value per sub-facet). Warn so a curator who means "must have both" uses a
-  // second condition combined with AND instead.
-  const duplicateLabels = (() => {
-    const seen = new Set();
-    const dups = new Set();
-    (leaf.fields || []).forEach((f) => {
-      if (!f || !f.field || isRangeField(f.field)) return;
-      if (seen.has(f.field)) dups.add(f.field);
-      else seen.add(f.field);
-    });
-    return [...dups].map((k) => (FIELD_DEF_BY_KEY[k] ? FIELD_DEF_BY_KEY[k].label : k));
-  })();
+  const scope = index === 0
+    ? 'one tag must match all of these (same tag)'
+    : 'a different tag on the same paper must match all of these';
 
   return (
     <div style={{
-      border: '1px solid #dee2e6', borderRadius: '4px',
-      padding: '6px', margin: '4px 0', backgroundColor: '#fff',
+      border: '1px solid #cfe2ff', borderRadius: '8px',
+      padding: '8px 10px', margin: '8px 0', backgroundColor: '#f6faff',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-        <Form.Check
-          type="checkbox"
-          label="exclude (NOT)"
-          checked={!!leaf.negate}
-          style={{ fontSize: '0.8rem' }}
-          onChange={(e) => onChange({ ...leaf, negate: e.target.checked })}
-        />
-        <Button
-          variant="outline-danger" size="sm"
-          onClick={onRemove} disabled={!canRemove}
-          title="Remove condition"
-        >Remove condition</Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Badge variant="primary">{index + 1}</Badge>
+          <span style={{ fontWeight: 600 }}>Tag {index + 1}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Form.Check
+            type="checkbox"
+            label="exclude (paper must NOT have this tag)"
+            checked={!!leaf.negate}
+            style={{ fontSize: '0.8rem' }}
+            onChange={(e) => onChange({ ...leaf, negate: e.target.checked })}
+          />
+          <Button
+            variant="outline-danger" size="sm"
+            onClick={onRemove} disabled={!canRemove}
+            title="Remove tag"
+          >Remove tag</Button>
+        </div>
+      </div>
+      <div style={{ fontSize: '0.75rem', color: '#6c757d', marginBottom: '6px' }}>
+        {scope}. Fields are combined with AND; multiple values on one field match any (OR).
       </div>
       {leaf.fields.map((row, idx) => (
         <FieldRow
@@ -194,85 +257,7 @@ const QueryCondition = ({ leaf, onChange, onRemove, canRemove }) => {
           canRemove={leaf.fields.length > 1}
         />
       ))}
-      {duplicateLabels.length > 0 && (
-        <div style={{ fontSize: '0.75rem', color: '#8a6d3b', backgroundColor: '#fcf8e3',
-          border: '1px solid #faebcc', borderRadius: '4px', padding: '4px 6px', margin: '2px 0 4px' }}>
-          ⚠ Repeated <b>{duplicateLabels.join(', ')}</b> rows match{' '}
-          <b>any</b> of their values (OR) on one tag. To require different values on separate tags
-          (e.g. one source AND another), add a second condition and combine with AND instead.
-        </div>
-      )}
       <Button variant="link" size="sm" style={{ padding: 0 }} onClick={addField}>+ add field (same tag)</Button>
-    </div>
-  );
-};
-
-// A group combines its children (conditions and/or nested sub-groups) with AND or
-// OR. Rendered recursively so a curator can nest groups up to MAX_GROUP_DEPTH,
-// matching the backend's arbitrary AND/OR tree.
-const QueryGroup = ({ group, onChange, onRemove, canRemove, depth = 0 }) => {
-  const setChild = (idx, newChild) => {
-    const children = group.children.map((c, i) => (i === idx ? newChild : c));
-    onChange({ ...group, children });
-  };
-  const addCondition = () => onChange({ ...group, children: [...group.children, createLeaf()] });
-  const addSubGroup = () => onChange({ ...group, children: [...group.children, createGroup()] });
-  const removeChild = (idx) =>
-    onChange({ ...group, children: group.children.filter((_c, i) => i !== idx) });
-
-  return (
-    <div style={{
-      border: '1px solid #ced4da', borderRadius: '6px',
-      padding: '8px', margin: '6px 0', backgroundColor: depth % 2 === 0 ? '#f8f9fa' : '#eef1f4',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {/* The operator only has an effect with 2+ children; hide it otherwise so
-            an inert dropdown doesn't read as broken. */}
-        {group.children.length >= 2 ? (
-          <InputGroup size="sm" style={{ width: 'auto' }}>
-            <InputGroup.Text>combine with</InputGroup.Text>
-            <Form.Control
-              as="select"
-              aria-label="group operator"
-              style={{ maxWidth: '6rem' }}
-              value={group.operator}
-              onChange={(e) => onChange({ ...group, operator: e.target.value })}
-            >
-              <option value="AND">AND</option>
-              <option value="OR">OR</option>
-            </Form.Control>
-          </InputGroup>
-        ) : <span />}
-        <Button
-          variant="outline-danger" size="sm"
-          onClick={onRemove} disabled={!canRemove}
-          title="Remove group"
-        >Remove group</Button>
-      </div>
-      {group.children.map((child, idx) => (
-        isLeaf(child) ? (
-          <QueryCondition
-            key={idx}
-            leaf={child}
-            onChange={(newChild) => setChild(idx, newChild)}
-            onRemove={() => removeChild(idx)}
-            canRemove={group.children.length > 1}
-          />
-        ) : (
-          <QueryGroup
-            key={idx}
-            group={child}
-            depth={depth + 1}
-            onChange={(newChild) => setChild(idx, newChild)}
-            onRemove={() => removeChild(idx)}
-            canRemove /* a nested group can always be removed */
-          />
-        )
-      ))}
-      <Button variant="link" size="sm" style={{ padding: 0, marginRight: '12px' }} onClick={addCondition}>+ add condition</Button>
-      {depth < MAX_GROUP_DEPTH && (
-        <Button variant="link" size="sm" style={{ padding: 0 }} onClick={addSubGroup}>+ add sub-group</Button>
-      )}
     </div>
   );
 };
@@ -281,19 +266,54 @@ const AdvancedTopicQueryBuilder = () => {
   const dispatch = useDispatch();
   const tree = useSelector((s) => s.search.advancedTopicQuery);
 
-  // Seed a default tree the first time the builder is shown.
+  // Corpus/MOD scope is a non-TET facet that still applies in advanced mode; show
+  // it read-only so the preview reflects the full search without duplicating the
+  // corpus facet's state here.
+  const corpusMods = useSelector((s) => {
+    const fv = s.search.searchFacetsValues || {};
+    return Array.from(new Set([
+      ...(fv['mods_in_corpus.keyword'] || []),
+      ...(fv['mods_needs_review.keyword'] || []),
+      ...(fv['mods_in_corpus_or_needs_review.keyword'] || []),
+    ]));
+  });
+
+  // Seed a default flat tree the first time the builder is shown; normalize a
+  // legacy/nested saved tree into flat Tag cards so it renders without crashing.
   useEffect(() => {
-    if (!tree) dispatch(setAdvancedTopicQuery(createEmptyTree()));
+    if (!tree) { dispatch(setAdvancedTopicQuery(createEmptyTree())); return; }
+    if ((tree.children || []).some((c) => !isLeaf(c))) {
+      dispatch(setAdvancedTopicQuery(normalizeToFlatTree(tree)));
+    }
   }, [tree, dispatch]);
 
-  if (!tree) return null;
+  // Display-name lookup for chip values, so the preview reads like the mockup
+  // (topic = "disease model") rather than showing raw curies.
+  const labelFor = useMemo(() => {
+    const map = {};
+    const walk = (n) => {
+      if (!n) return;
+      if (isLeaf(n)) {
+        (n.fields || []).forEach((f) =>
+          (Array.isArray(f.values) ? f.values : []).forEach((v) => {
+            if (v && typeof v === 'object') map[`${f.field}::${v.value}`] = v.label;
+          }));
+      }
+      (n.children || []).forEach(walk);
+    };
+    walk(tree);
+    return (field, value) => map[`${field}::${value}`] || value;
+  }, [tree]);
 
+  if (!tree || (tree.children || []).some((c) => !isLeaf(c))) return null;
+
+  const tags = tree.children;
   const update = (newTree) => dispatch(setAdvancedTopicQuery(newTree));
-  const setGroup = (idx, newGroup) =>
-    update({ ...tree, children: tree.children.map((g, i) => (i === idx ? newGroup : g)) });
-  const addGroup = () => update({ ...tree, children: [...tree.children, createGroup()] });
-  const removeGroup = (idx) =>
-    update({ ...tree, children: tree.children.filter((_g, i) => i !== idx) });
+  const setTag = (idx, newLeaf) =>
+    update({ ...tree, children: tags.map((t, i) => (i === idx ? newLeaf : t)) });
+  const addTag = () => update({ ...tree, children: [...tags, createLeaf()] });
+  const removeTag = (idx) =>
+    update({ ...tree, children: tags.filter((_t, i) => i !== idx) });
   const reset = () => update(createEmptyTree());
 
   const runSearch = () => {
@@ -301,43 +321,64 @@ const AdvancedTopicQueryBuilder = () => {
     dispatch(searchReferences());
   };
 
+  const compiled = compileAdvancedQuery(tree);
   const empty = isAdvancedQueryEmpty(tree);
+  const tetPart = compiled ? describeCompiledQuery(compiled, labelFor) : '(no Topic conditions yet)';
+  const corpusPart = corpusMods.length > 0
+    ? ` AND corpus in (${corpusMods.map((m) => `"${m}"`).join(', ')})`
+    : '';
 
   return (
     <div style={{ padding: '4px 10px 10px' }}>
-      <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '4px' }}>
-        Build a query across Topic sub-facets. Conditions in a group share one tag;
-        groups are combined below. Facet counts are not shown in advanced mode.
+      <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '6px' }}>
+        Build a query over Topic sub-facets. Each <b>Tag</b> is one topic-entity tag the
+        paper must have; fields inside a Tag apply to that <b>same</b> tag. Add another Tag
+        for a requirement on a <b>different</b> tag of the same paper. Corpus, date and
+        workflow facets still apply. Facet counts are not shown in advanced mode.
       </div>
-      {/* Top-level operator only matters with 2+ groups; hide it otherwise. */}
-      {tree.children.length >= 2 && (
+
+      {tags.length >= 2 && (
         <InputGroup size="sm" style={{ width: 'auto', marginBottom: '4px' }}>
-          <InputGroup.Text>combine groups with</InputGroup.Text>
+          <InputGroup.Text>paper must match</InputGroup.Text>
           <Form.Control
             as="select"
             aria-label="top-level operator"
-            style={{ maxWidth: '6rem' }}
+            style={{ maxWidth: '11rem' }}
             value={tree.operator}
             onChange={(e) => update({ ...tree, operator: e.target.value })}
           >
-            <option value="AND">AND</option>
-            <option value="OR">OR</option>
+            <option value="AND">ALL Tags (AND)</option>
+            <option value="OR">ANY Tag (OR)</option>
           </Form.Control>
         </InputGroup>
       )}
-      {tree.children.map((group, idx) => (
-        <QueryGroup
+
+      {tags.map((leaf, idx) => (
+        <TagCard
           key={idx}
-          group={group}
-          onChange={(newGroup) => setGroup(idx, newGroup)}
-          onRemove={() => removeGroup(idx)}
-          canRemove={tree.children.length > 1}
+          leaf={leaf}
+          index={idx}
+          onChange={(newLeaf) => setTag(idx, newLeaf)}
+          onRemove={() => removeTag(idx)}
+          canRemove={tags.length > 1}
         />
       ))}
-      <div style={{ marginTop: '6px' }}>
-        <Button variant="link" size="sm" style={{ padding: 0, marginRight: '12px' }} onClick={addGroup}>+ add group</Button>
+
+      <Button variant="link" size="sm" style={{ padding: 0 }} onClick={addTag}>+ add Tag (different tag on same paper)</Button>
+
+      <div style={{
+        marginTop: '8px', backgroundColor: '#f8f9fa', border: '1px solid #dee2e6',
+        borderRadius: '6px', padding: '6px 8px',
+      }}>
+        <div style={{ fontSize: '0.7rem', color: '#6c757d', marginBottom: '2px' }}>Query preview</div>
+        <code style={{ fontSize: '0.75rem', color: '#212529', wordBreak: 'break-word' }}>
+          PAPER WHERE {tetPart}{corpusPart}
+        </code>
+      </div>
+
+      <div style={{ marginTop: '8px' }}>
         <ButtonGroup size="sm">
-          <Button variant="primary" onClick={runSearch} disabled={empty}>Search</Button>
+          <Button variant="primary" onClick={runSearch} disabled={empty}>Run query</Button>
           <Button variant="outline-secondary" onClick={reset}>Reset</Button>
         </ButtonGroup>
       </div>

@@ -36,12 +36,37 @@ export const FIELD_DEF_BY_KEY = TET_FIELD_DEFS.reduce((acc, def) => {
 export const isRangeField = (key) => !!(FIELD_DEF_BY_KEY[key] && FIELD_DEF_BY_KEY[key].range);
 
 // Factory helpers — every new node is a fresh object so React state updates stay immutable.
-export const createFieldRow = (field = 'topic') => ({ field, value: '', min: 0, max: 1 });
+// A field row now carries a `values` array of { value, label } chips (multiple
+// values on one field = OR); `label` is display-only, the compiler reads `value`.
+// Range fields keep min/max. (Legacy rows with a scalar `value` still compile.)
+export const createFieldRow = (field = 'topic') => ({ field, values: [], min: 0, max: 1 });
 export const createLeaf = () => ({ type: 'tet', negate: false, fields: [createFieldRow()] });
 export const createGroup = () => ({ operator: 'OR', children: [createLeaf()] });
-export const createEmptyTree = () => ({ operator: 'AND', children: [createGroup()] });
+// The Tag-card UI keeps a FLAT tree: leaves (one per Tag) directly under the root,
+// combined with the top-level operator. The compiler still supports nested groups,
+// so older/nested saved trees round-trip; normalizeToFlatTree collapses them for
+// display when the flat builder loads one.
+export const createEmptyTree = () => ({ operator: 'AND', children: [createLeaf()] });
 
 export const isLeaf = (node) => !!node && node.type === 'tet';
+
+// Collect every leaf in a (possibly nested) tree into a flat { operator, children:[leaf] }
+// so the Tag-card builder can display a legacy/nested saved query without crashing.
+// Best-effort: intermediate group operators are dropped (the flat UI can't show them).
+export const normalizeToFlatTree = (tree) => {
+  if (!tree) return createEmptyTree();
+  const leaves = [];
+  const walk = (n) => {
+    if (!n) return;
+    if (isLeaf(n)) { leaves.push(n); return; }
+    (n.children || []).forEach(walk);
+  };
+  walk(tree);
+  return {
+    operator: String(tree.operator || 'AND').toUpperCase() === 'OR' ? 'OR' : 'AND',
+    children: leaves.length > 0 ? leaves : [createLeaf()],
+  };
+};
 
 // Split a free-text value into a trimmed, de-duplicated, non-empty list.
 const splitValues = (value) => {
@@ -50,6 +75,16 @@ const splitValues = (value) => {
     .split(',')
     .map((v) => v.trim())
     .filter(Boolean);
+};
+
+// Pull the string values out of a field row, accepting both the current chip
+// shape (`values: [{ value, label } | string]`) and the legacy scalar `value`
+// (comma-separated). Trimmed, de-duplicated, non-empty.
+const rowValues = (row) => {
+  if (Array.isArray(row.values)) {
+    return splitValues(row.values.map((v) => (v && typeof v === 'object' ? v.value : v)));
+  }
+  return splitValues(row.value);
 };
 
 // Fold a UI leaf's `fields` array into an API `match` object. Returns null when
@@ -66,7 +101,7 @@ const compileLeafMatch = (leaf) => {
       }
       return;
     }
-    const values = splitValues(row.value);
+    const values = rowValues(row);
     if (values.length === 0) return;
     // Merge when the same sub-facet appears in more than one row (values OR within a field).
     match[row.field] = (match[row.field] || []).concat(values);
@@ -94,6 +129,30 @@ export const compileAdvancedQuery = (node) => {
 
 // True when the tree would produce no query (used to decide whether a search is runnable).
 export const isAdvancedQueryEmpty = (node) => compileAdvancedQuery(node) === null;
+
+// Render a COMPILED query as a readable, SQL-like preview. Built from the compiled
+// output (not the UI tree) so what a curator reads matches exactly what is sent to
+// the backend. `labelFor(field, value)` supplies display names for curie values;
+// it falls back to the raw value. Same-field value lists render as `in (...)` (OR),
+// distinct fields on one tag as `AND`, tags/groups per the node operator.
+export const describeCompiledQuery = (node, labelFor = (_f, v) => v) => {
+  if (!node) return '';
+  if (node.type === 'tet') {
+    const parts = Object.entries(node.match).map(([field, vals]) => {
+      if (field === 'confidence_score') {
+        return `confidence_score in [${vals[0]}, ${vals[1]}]`;
+      }
+      const shown = (vals || []).map((v) => `"${labelFor(field, v)}"`);
+      return shown.length === 1
+        ? `${field} = ${shown[0]}`
+        : `${field} in (${shown.join(', ')})`;
+    });
+    const body = parts.join(' AND ');
+    return node.negate ? `NOT (${body})` : `(${body})`;
+  }
+  const op = String(node.operator).toUpperCase() === 'OR' ? ' OR ' : ' AND ';
+  return `(${node.children.map((c) => describeCompiledQuery(c, labelFor)).join(op)})`;
+};
 
 // Grid filter keys for the Topic grid's /topic_entity_tag/by_references endpoint,
 // which takes a FLAT filter object (it cannot express an arbitrary AND/OR tree).
