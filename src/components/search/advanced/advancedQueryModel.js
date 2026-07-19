@@ -11,14 +11,32 @@
 // curator can add/remove sub-facet rows without worrying about object keys; the
 // compiler folds that array into the `match` object and prunes empties.
 
+// Entity type is a small controlled vocabulary of ATP curies (there is no search
+// aggregation for it), so its dropdown options are static. Mirrors the list used
+// by the TET create form (TopicEntityCreate.js) so search values match the curies
+// actually stored on tags — a free-text name like "gene" would never match.
+export const ENTITY_TYPE_OPTIONS = [
+  { value: 'ATP:0000005', label: 'gene (ATP:0000005)' },
+  { value: 'ATP:0000006', label: 'allele (ATP:0000006)' },
+  { value: 'ATP:0000110', label: 'transgenic allele (ATP:0000110)' },
+  { value: 'ATP:0000285', label: 'classical allele (ATP:0000285)' },
+  { value: 'ATP:0000123', label: 'species (ATP:0000123)' },
+  { value: 'ATP:0000027', label: 'strain (ATP:0000027)' },
+  { value: 'ATP:0000025', label: 'genotype (ATP:0000025)' },
+  { value: 'ATP:0000026', label: 'fish (ATP:0000026)' },
+  { value: 'ATP:0000013', label: 'transgenic construct (ATP:0000013)' },
+  { value: 'ATP:0000093', label: 'sequence targeting reagent (ATP:0000093)' },
+];
+
 // key      : short TET sub-facet name -> topic_entity_tags.<key>.keyword on the backend
 // label    : display label in the field dropdown
 // facetKey : aggregation key in state.search.searchFacets whose buckets seed the
 //            value dropdown; null => free-text input (comma-separated for multiple)
+// options  : static value dropdown (overrides facetKey/free-text) for controlled vocabs
 // range    : confidence score, edited as a [min, max] pair
 export const TET_FIELD_DEFS = [
   { key: 'topic', label: 'Topic', facetKey: 'topics' },
-  { key: 'entity_type', label: 'Entity type', facetKey: null },
+  { key: 'entity_type', label: 'Entity type', facetKey: null, options: ENTITY_TYPE_OPTIONS },
   { key: 'entity', label: 'Entity', facetKey: null },
   { key: 'source_method', label: 'Source method', facetKey: 'source_methods' },
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },

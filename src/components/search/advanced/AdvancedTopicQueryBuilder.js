@@ -68,6 +68,8 @@ const useFieldOptions = (fieldKey) => {
     return () => { cancelled = true; };
   }, [buckets]);
 
+  // Static controlled vocab (e.g. entity_type) wins over aggregation buckets.
+  if (def && Array.isArray(def.options)) return def.options;
   if (!Array.isArray(buckets)) return null;
   return buckets.map((b) => {
     const name = b.name || curieNameCache.get(String(b.key || '').toUpperCase());

@@ -6,6 +6,8 @@ import {
   normalizeToFlatTree,
   describeCompiledQuery,
   isLeaf,
+  ENTITY_TYPE_OPTIONS,
+  FIELD_DEF_BY_KEY,
 } from '../advancedQueryModel';
 
 // Build a UI leaf from a compact {field: value|[min,max]} map for terse tests.
@@ -169,6 +171,16 @@ describe('field-row chip shape (multi-value OR, SCRUM-6228)', () => {
 
   test('empty chip list drops the field (and an all-empty leaf compiles to null)', () => {
     expect(compileAdvancedQuery(chipLeaf({ topic: [] }))).toBeNull();
+  });
+});
+
+describe('entity_type controlled vocabulary (SCRUM-6228)', () => {
+  test('entity_type field uses the static ATP-curie option list', () => {
+    expect(FIELD_DEF_BY_KEY.entity_type.options).toBe(ENTITY_TYPE_OPTIONS);
+    expect(ENTITY_TYPE_OPTIONS.length).toBeGreaterThan(0);
+    // Values are ATP curies (what tags store), not display names.
+    expect(ENTITY_TYPE_OPTIONS.every((o) => /^ATP:\d+$/.test(o.value))).toBe(true);
+    expect(ENTITY_TYPE_OPTIONS.find((o) => o.value === 'ATP:0000005').label).toMatch(/gene/);
   });
 });
 
