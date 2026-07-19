@@ -131,6 +131,9 @@ const ValueEditor = ({ row, onChange }) => {
   const removeChip = (idx) =>
     onChange({ ...row, values: values.filter((_c, i) => i !== idx) });
 
+  // The adder sits inline immediately after the chips (a leading "or" pill when the
+  // field already has a value) so it reads as "add another value to THIS field"
+  // rather than a stray box between field rows. flex:'0 0 auto' keeps it compact.
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px', flex: 1 }}>
       {values.map((chip, idx) => (
@@ -141,19 +144,22 @@ const ValueEditor = ({ row, onChange }) => {
           <ValueChip chip={chip} onRemove={() => removeChip(idx)} />
         </React.Fragment>
       ))}
+      {values.length > 0 && (
+        <span style={{ fontSize: '0.7rem', color: '#6c757d', whiteSpace: 'nowrap' }}>or</span>
+      )}
       {options ? (
         <Form.Control
           as="select"
           size="sm"
           aria-label="add value"
-          style={{ maxWidth: '14rem' }}
+          style={{ width: 'auto', maxWidth: '12rem', flex: '0 0 auto' }}
           value=""
           onChange={(e) => {
             const opt = options.find((o) => o.value === e.target.value);
             if (opt) addChip(opt.value, opt.label);
           }}
         >
-          <option value="">{values.length ? '+ or…' : '— select —'}</option>
+          <option value="">{values.length ? 'add value (same field)…' : '— select —'}</option>
           {options
             .filter((o) => !values.some((c) => c.value === o.value))
             .map((o) => (
@@ -164,8 +170,8 @@ const ValueEditor = ({ row, onChange }) => {
         <Form.Control
           type="text"
           size="sm"
-          style={{ maxWidth: '14rem' }}
-          placeholder={values.length ? '+ or value…' : 'type value, Enter'}
+          style={{ width: '12rem', maxWidth: '100%', flex: '0 0 auto' }}
+          placeholder={values.length ? 'add value (same field)…' : 'type value, Enter'}
           aria-label="add value"
           value={text}
           onChange={(e) => setText(e.target.value)}
