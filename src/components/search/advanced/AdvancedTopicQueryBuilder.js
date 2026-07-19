@@ -151,6 +151,21 @@ const QueryCondition = ({ leaf, onChange, onRemove, canRemove }) => {
   const removeField = (idx) =>
     onChange({ ...leaf, fields: leaf.fields.filter((_f, i) => i !== idx) });
 
+  // A non-range sub-facet repeated within one condition compiles to a single
+  // any-of (OR) match on that field, NOT an AND across separate tags (a tag has
+  // one value per sub-facet). Warn so a curator who means "must have both" uses a
+  // second condition combined with AND instead.
+  const duplicateLabels = (() => {
+    const seen = new Set();
+    const dups = new Set();
+    (leaf.fields || []).forEach((f) => {
+      if (!f || !f.field || isRangeField(f.field)) return;
+      if (seen.has(f.field)) dups.add(f.field);
+      else seen.add(f.field);
+    });
+    return [...dups].map((k) => (FIELD_DEF_BY_KEY[k] ? FIELD_DEF_BY_KEY[k].label : k));
+  })();
+
   return (
     <div style={{
       border: '1px solid #dee2e6', borderRadius: '4px',
@@ -179,6 +194,14 @@ const QueryCondition = ({ leaf, onChange, onRemove, canRemove }) => {
           canRemove={leaf.fields.length > 1}
         />
       ))}
+      {duplicateLabels.length > 0 && (
+        <div style={{ fontSize: '0.75rem', color: '#8a6d3b', backgroundColor: '#fcf8e3',
+          border: '1px solid #faebcc', borderRadius: '4px', padding: '4px 6px', margin: '2px 0 4px' }}>
+          ⚠ Repeated <b>{duplicateLabels.join(', ')}</b> rows match{' '}
+          <b>any</b> of their values (OR) on one tag. To require different values on separate tags
+          (e.g. one source AND another), add a second condition and combine with AND instead.
+        </div>
+      )}
       <Button variant="link" size="sm" style={{ padding: 0 }} onClick={addField}>+ add field (same tag)</Button>
     </div>
   );
@@ -203,19 +226,23 @@ const QueryGroup = ({ group, onChange, onRemove, canRemove, depth = 0 }) => {
       padding: '8px', margin: '6px 0', backgroundColor: depth % 2 === 0 ? '#f8f9fa' : '#eef1f4',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <InputGroup size="sm" style={{ width: 'auto' }}>
-          <InputGroup.Text>combine with</InputGroup.Text>
-          <Form.Control
-            as="select"
-            aria-label="group operator"
-            style={{ maxWidth: '6rem' }}
-            value={group.operator}
-            onChange={(e) => onChange({ ...group, operator: e.target.value })}
-          >
-            <option value="AND">AND</option>
-            <option value="OR">OR</option>
-          </Form.Control>
-        </InputGroup>
+        {/* The operator only has an effect with 2+ children; hide it otherwise so
+            an inert dropdown doesn't read as broken. */}
+        {group.children.length >= 2 ? (
+          <InputGroup size="sm" style={{ width: 'auto' }}>
+            <InputGroup.Text>combine with</InputGroup.Text>
+            <Form.Control
+              as="select"
+              aria-label="group operator"
+              style={{ maxWidth: '6rem' }}
+              value={group.operator}
+              onChange={(e) => onChange({ ...group, operator: e.target.value })}
+            >
+              <option value="AND">AND</option>
+              <option value="OR">OR</option>
+            </Form.Control>
+          </InputGroup>
+        ) : <span />}
         <Button
           variant="outline-danger" size="sm"
           onClick={onRemove} disabled={!canRemove}
@@ -282,19 +309,22 @@ const AdvancedTopicQueryBuilder = () => {
         Build a query across Topic sub-facets. Conditions in a group share one tag;
         groups are combined below. Facet counts are not shown in advanced mode.
       </div>
-      <InputGroup size="sm" style={{ width: 'auto', marginBottom: '4px' }}>
-        <InputGroup.Text>combine groups with</InputGroup.Text>
-        <Form.Control
-          as="select"
-          aria-label="top-level operator"
-          style={{ maxWidth: '6rem' }}
-          value={tree.operator}
-          onChange={(e) => update({ ...tree, operator: e.target.value })}
-        >
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
-        </Form.Control>
-      </InputGroup>
+      {/* Top-level operator only matters with 2+ groups; hide it otherwise. */}
+      {tree.children.length >= 2 && (
+        <InputGroup size="sm" style={{ width: 'auto', marginBottom: '4px' }}>
+          <InputGroup.Text>combine groups with</InputGroup.Text>
+          <Form.Control
+            as="select"
+            aria-label="top-level operator"
+            style={{ maxWidth: '6rem' }}
+            value={tree.operator}
+            onChange={(e) => update({ ...tree, operator: e.target.value })}
+          >
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+          </Form.Control>
+        </InputGroup>
+      )}
       {tree.children.map((group, idx) => (
         <QueryGroup
           key={idx}
