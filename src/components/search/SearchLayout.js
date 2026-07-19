@@ -102,6 +102,18 @@ const SearchLayout = () => {
             : (searchExcludedFacetsValues?.confidence_levels || [])),
         [searchMode, advGridFilters, searchExcludedFacetsValues]
     );
+    // Confidence range for the grid's client-side re-filter. In facet mode this is
+    // the confidence slider. In advanced mode the slider is hidden (replaced by the
+    // builder), so a stale non-default slider value would silently hide grid tags
+    // the advanced query actually matched — use the builder's confidence_score range
+    // instead (the same range already sent server-side via advGridFilters), falling
+    // back to the full [0, 1] no-op range when the builder sets none.
+    const confidenceScoreForGrid = useMemo(() => {
+        if (searchMode !== 'advanced') return confidenceScore;
+        const min = advGridFilters?.confidence_score_min;
+        const max = advGridFilters?.confidence_score_max;
+        return (typeof min === 'number' && typeof max === 'number') ? [min, max] : [0, 1];
+    }, [searchMode, advGridFilters, confidenceScore]);
     // The TET facet criteria from the current search, forwarded to the grid's
     // batch fetch so the API returns ONLY the tags the search asked for (e.g.
     // when a curator selects a topic/entity) instead of every tag on every
@@ -408,7 +420,7 @@ const SearchLayout = () => {
                                                 referenceIds={referenceIds}
                                                 topics={topicsForGrid}
                                                 excludedConfidenceLevels={excludedConfidenceLevels}
-                                                confidenceScore={confidenceScore}
+                                                confidenceScore={confidenceScoreForGrid}
                                                 biblioByCurie={biblioByCurie}
                                                 searchFilters={searchFilters}
                                                 active={view === 'grid'}
