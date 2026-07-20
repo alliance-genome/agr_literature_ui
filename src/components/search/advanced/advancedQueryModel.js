@@ -28,6 +28,18 @@ export const ENTITY_TYPE_OPTIONS = [
   { value: 'ATP:0000093', label: 'sequence targeting reagent (ATP:0000093)' },
 ];
 
+// "Has data" is the human-facing view of a tag's boolean `negated` attribute: a
+// positive tag (negated=false) asserts the topic HAS data; a negated tag
+// (negated=true) asserts NO data. Static Yes/No options so a curator can require, on
+// the same tag, e.g. "Topic = disease model AND Source method = acknowledge_form AND
+// Has data = yes". BACKEND CONTRACT (build_tet_advanced_query): map the `has_data`
+// match key to a term on topic_entity_tags.negated, inverted — "yes" => negated=false,
+// "no" => negated=true (it is a boolean field, so there is no .keyword sub-field).
+export const HAS_DATA_OPTIONS = [
+  { value: 'yes', label: 'yes (has data)' },
+  { value: 'no', label: 'no (no data)' },
+];
+
 // key      : short TET sub-facet name -> topic_entity_tags.<key>.keyword on the backend
 // label    : display label in the field dropdown
 // facetKey : aggregation key in state.search.searchFacets whose buckets seed the
@@ -42,6 +54,7 @@ export const TET_FIELD_DEFS = [
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },
   { key: 'confidence_level', label: 'Confidence level', facetKey: 'confidence_levels' },
   { key: 'data_novelty', label: 'Data novelty', facetKey: 'data_novelty' },
+  { key: 'has_data', label: 'Has data', facetKey: null, options: HAS_DATA_OPTIONS },
   { key: 'species', label: 'Species', facetKey: null },
   { key: 'confidence_score', label: 'Confidence score', range: true },
 ];
