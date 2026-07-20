@@ -30,6 +30,16 @@ const curieNameCache = new Map();
 // storm of per-curie lookups.
 const MAX_NAME_LOOKUPS = 300;
 
+// The ontology root term "entity" (used elsewhere as the generic "whole paper"
+// marker) surfaces in the topics aggregation but is not a curatable topic, so it is
+// dropped from the Topic value dropdown. Matched by curie and by resolved name.
+const EXCLUDED_TOPIC_CURIE = 'ATP:0000002';
+const isExcludedTopicOption = (curie, name) => {
+  const upper = String(curie || '').toUpperCase();
+  if (upper === EXCLUDED_TOPIC_CURIE) return true;
+  return String(name || '').trim().toLowerCase() === 'entity';
+};
+
 // Value options for a sub-facet field come from the same aggregation buckets the
 // facet panel uses (already in Redux), so the builder stays consistent with the
 // facet path. Fields without an aggregation (entity_type, entity, species) fall
@@ -79,10 +89,14 @@ const useFieldOptions = (fieldKey) => {
   // Static controlled vocab (e.g. entity_type) wins over aggregation buckets.
   if (def && Array.isArray(def.options)) return def.options;
   if (!Array.isArray(buckets)) return null;
-  return buckets.map((b) => {
-    const name = b.name || curieNameCache.get(String(b.key || '').toUpperCase());
-    return { value: b.key, label: name ? `${name} (${b.key})` : b.key };
-  });
+  return buckets
+    .map((b) => {
+      const name = b.name || curieNameCache.get(String(b.key || '').toUpperCase());
+      return { value: b.key, label: name ? `${name} (${b.key})` : b.key, name };
+    })
+    // Drop the non-curatable "entity" root term from the Topic dropdown.
+    .filter((o) => !(fieldKey === 'topic' && isExcludedTopicOption(o.value, o.name)))
+    .map(({ value, label }) => ({ value, label }));
 };
 
 // One value on a field, shown as a removable chip. Multiple chips on one field
