@@ -32,11 +32,14 @@ const MAX_NAME_LOOKUPS = 300;
 
 // The ontology root term "entity" (used elsewhere as the generic "whole paper"
 // marker) surfaces in the topics aggregation but is not a curatable topic, so it is
-// dropped from the Topic value dropdown. Matched by curie and by resolved name.
+// dropped from the Topic value dropdown. Matched three ways because the aggregation
+// may carry it as the root curie, as a resolved name, or as a bare "entity" key
+// (which never triggers an ATP/ECO name lookup, so its name stays unresolved).
 const EXCLUDED_TOPIC_CURIE = 'ATP:0000002';
 const isExcludedTopicOption = (curie, name) => {
-  const upper = String(curie || '').toUpperCase();
-  if (upper === EXCLUDED_TOPIC_CURIE) return true;
+  const value = String(curie || '').trim();
+  if (value.toUpperCase() === EXCLUDED_TOPIC_CURIE) return true;
+  if (value.toLowerCase() === 'entity') return true;
   return String(name || '').trim().toLowerCase() === 'entity';
 };
 
