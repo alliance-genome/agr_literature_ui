@@ -360,12 +360,7 @@ const AdvancedTopicQueryBuilder = () => {
 
   const compiled = compileAdvancedQuery(tree);
   const empty = isAdvancedQueryEmpty(tree);
-  // A blank builder now compiles to a default Has data = yes leaf, but that alone is
-  // not runnable — show the placeholder (matching the disabled Run button) until a
-  // Topic or other condition is added, rather than a misleading has_data-only preview.
-  const tetPart = (!empty && compiled)
-    ? describeCompiledQuery(compiled, labelFor)
-    : '(no Topic conditions yet)';
+  const tetPart = compiled ? describeCompiledQuery(compiled, labelFor) : '(no Topic conditions yet)';
   const corpusPart = corpusMods.length > 0
     ? ` AND corpus in (${corpusMods.map((m) => `"${m}"`).join(', ')})`
     : '';
@@ -377,6 +372,23 @@ const AdvancedTopicQueryBuilder = () => {
         paper must have; fields inside a Tag apply to that <b>same</b> tag. Add another Tag
         for a requirement on a <b>different</b> tag of the same paper. Corpus, date and
         workflow facets still apply. Facet counts are not shown in advanced mode.
+      </div>
+
+      <div style={{ marginBottom: '8px' }}>
+        <Form.Check
+          type="checkbox"
+          id="tetv-adv-exclude-no-data"
+          checked={tree.excludeNoData === true}
+          onChange={(e) => update({ ...tree, excludeNoData: e.target.checked })}
+          label={
+            <span style={{ fontSize: '0.8rem' }}>
+              <b>Exclude no-data tags</b> — match only positive (has-data) tags, the
+              same default as the facet search’s “exclude negative”. It appears in the
+              query preview; uncheck to include no-data tags, or add an explicit
+              “Has data” field to a Tag to override it there.
+            </span>
+          }
+        />
       </div>
 
       <details style={{
@@ -413,10 +425,11 @@ const AdvancedTopicQueryBuilder = () => {
               require the paper has <b>no</b> tag matching that card.
             </li>
             <li>
-              <b>Has data</b> filters a tag by whether it records data: <b>yes</b> =
-              the tag has data, <b>no</b> = the tag has no data. New Tags default to{' '}
-              <b>yes</b> (mirroring the facet search’s “exclude negative”); switch it to{' '}
-              <b>no</b>, or remove the field, to include no-data tags.
+              <b>Has data</b> distinguishes positive tags (has data) from negated tags
+              (no data). By default <b>Exclude no-data tags</b> is on, so every tag
+              condition requires a positive tag — the facet search’s “exclude negative”.
+              Uncheck it to include no-data tags, or add an explicit <b>Has data</b>{' '}
+              field to a Tag (set to <b>no</b>) to override the default for that tag.
             </li>
             <li>
               <b>Validation (biocurator)</b> filters predicted tags by professional

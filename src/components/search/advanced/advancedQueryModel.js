@@ -93,29 +93,37 @@ export const isRangeField = (key) => !!(FIELD_DEF_BY_KEY[key] && FIELD_DEF_BY_KE
 // A field row now carries a `values` array of { value, label } chips (multiple
 // values on one field = OR); `label` is display-only, the compiler reads `value`.
 // Range fields keep min/max. (Legacy rows with a scalar `value` still compile.)
-export const createFieldRow = (field = 'topic') => ({ field, values: [], min: 0, max: 1 });
-// Every new Tag starts with Has data = yes so the advanced builder mirrors the
-// facet search's default "exclude negative" (SCRUM-6228). A curator can switch it
-// to "no", or remove the field, per Tag. The seeded has_data alone does not make
-// the query runnable — see isAdvancedQueryEmpty — so a blank form still needs a
-// Topic (or other value) before "Run query" enables.
-const createHasDataYesRow = () => ({
-  field: 'has_data',
-  values: [{ value: HAS_DATA_OPTIONS[0].value, label: HAS_DATA_OPTIONS[0].label }],
+// A new field row starts empty, except "Has data": adding it pre-selects
+// "yes (has data)" so an explicit Has-data field is a ready-to-use control (a
+// curator can switch it to "no"). The tree-wide "exclude no-data" default already
+// covers the common positive-only case without any field — see EXCLUDE_NO_DATA_DEFAULT
+// and compileAdvancedQuery (SCRUM-6228).
+export const createFieldRow = (field = 'topic') => ({
+  field,
+  values: field === 'has_data'
+    ? [{ value: HAS_DATA_OPTIONS[0].value, label: HAS_DATA_OPTIONS[0].label }]
+    : [],
   min: 0,
   max: 1,
 });
-export const createLeaf = () => ({
-  type: 'tet',
-  negate: false,
-  fields: [createFieldRow(), createHasDataYesRow()],
-});
+export const createLeaf = () => ({ type: 'tet', negate: false, fields: [createFieldRow()] });
 export const createGroup = () => ({ operator: 'OR', children: [createLeaf()] });
 // The Tag-card UI keeps a FLAT tree: leaves (one per Tag) directly under the root,
 // combined with the top-level operator. The compiler still supports nested groups,
 // so older/nested saved trees round-trip; normalizeToFlatTree collapses them for
 // display when the flat builder loads one.
-export const createEmptyTree = () => ({ operator: 'AND', children: [createLeaf()] });
+//
+// excludeNoData mirrors the facet search's default "exclude negative": when on
+// (the default), every positive tag condition is compiled with has_data = yes so
+// results only include tags that have data. It is surfaced as a single toggle
+// (not a per-Tag field) and shown in the query preview; unchecking it, or adding an
+// explicit Has data field to a Tag, overrides it (SCRUM-6228).
+export const EXCLUDE_NO_DATA_DEFAULT = true;
+export const createEmptyTree = () => ({
+  operator: 'AND',
+  excludeNoData: EXCLUDE_NO_DATA_DEFAULT,
+  children: [createLeaf()],
+});
 
 export const isLeaf = (node) => !!node && node.type === 'tet';
 
@@ -133,6 +141,8 @@ export const normalizeToFlatTree = (tree) => {
   walk(tree);
   return {
     operator: String(tree.operator || 'AND').toUpperCase() === 'OR' ? 'OR' : 'AND',
+    // Preserve an explicit excludeNoData; default it on for trees that predate the flag.
+    excludeNoData: tree.excludeNoData !== false,
     children: leaves.length > 0 ? leaves : [createLeaf()],
   };
 };
@@ -181,39 +191,36 @@ const compileLeafMatch = (leaf) => {
 // Compile the UI tree into the API contract shape. Empty leaves/groups collapse
 // away; a node with a single effective child returns that child directly;
 // returns null when the whole tree is empty (caller then omits tet_advanced_query).
-export const compileAdvancedQuery = (node) => {
+//
+// When the tree's excludeNoData flag is on, each positive (non-excluded) leaf that
+// does not already pin has_data gets has_data = yes injected, so results only match
+// tags that have data — the same default the facet search applies as "exclude
+// negative". The flag lives on the tree root; `exclude` propagates it to leaves.
+// Injection is skipped for excluded (negated) leaves and for any leaf that already
+// carries an explicit Has data field, so those override the default (SCRUM-6228).
+export const compileAdvancedQuery = (node, exclude) => {
   if (!node) return null;
+  const excludeNoData = exclude === undefined ? node.excludeNoData === true : exclude;
   if (isLeaf(node)) {
     const match = compileLeafMatch(node);
     if (!match) return null;
+    if (excludeNoData && !node.negate && !('has_data' in match)) {
+      match.has_data = ['yes'];
+    }
     return { type: 'tet', negate: !!node.negate, match };
   }
   const children = (node.children || [])
-    .map(compileAdvancedQuery)
+    .map((child) => compileAdvancedQuery(child, excludeNoData))
     .filter(Boolean);
   if (children.length === 0) return null;
   if (children.length === 1) return children[0];
   return { operator: String(node.operator || 'AND').toUpperCase() === 'OR' ? 'OR' : 'AND', children };
 };
 
-// A compiled tree carries a "substantive" condition when some leaf constrains a
-// field other than the default-seeded has_data (topic, entity, source, confidence,
-// …). Used so a freshly seeded Tag — which now defaults to Has data = yes — is not
-// treated as a runnable query on its own (SCRUM-6228).
-const hasSubstantiveCondition = (node) => {
-  if (!node) return false;
-  if (node.type === 'tet') {
-    return Object.keys(node.match || {}).some((k) => k !== 'has_data');
-  }
-  return (node.children || []).some(hasSubstantiveCondition);
-};
-
-// True when the tree would produce no query, or only a default Has data filter with
-// nothing else (used to decide whether a search is runnable).
-export const isAdvancedQueryEmpty = (node) => {
-  const compiled = compileAdvancedQuery(node);
-  return compiled === null || !hasSubstantiveCondition(compiled);
-};
+// True when the tree would produce no query (used to decide whether a search is
+// runnable). The excludeNoData default never makes an otherwise-empty tree runnable:
+// has_data is only injected into leaves that already have a value.
+export const isAdvancedQueryEmpty = (node) => compileAdvancedQuery(node) === null;
 
 // Render a COMPILED query as a readable, SQL-like preview. Built from the compiled
 // output (not the UI tree) so what a curator reads matches exactly what is sent to

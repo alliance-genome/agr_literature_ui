@@ -2,6 +2,7 @@ import {
   compileAdvancedQuery,
   isAdvancedQueryEmpty,
   createEmptyTree,
+  createFieldRow,
   flattenAdvancedForGrid,
   normalizeToFlatTree,
   describeCompiledQuery,
@@ -139,27 +140,12 @@ describe('compileAdvancedQuery', () => {
     expect(compileAdvancedQuery(tree)).toEqual(compileAdvancedQuery(leaf({ topic: 'ATP:1' })));
   });
 
-  test('a freshly seeded default tree is not runnable (only the default Has data = yes)', () => {
-    // New Tags default to Has data = yes (SCRUM-6228), so the seed compiles to a
-    // has_data-only leaf — but that alone is not a runnable query.
-    expect(compileAdvancedQuery(createEmptyTree())).toEqual({
-      type: 'tet',
-      negate: false,
-      match: { has_data: ['yes'] },
-    });
+  test('a freshly seeded default tree is empty (nothing to search yet)', () => {
+    // New Tags carry only an empty Topic field; the excludeNoData default never makes
+    // an otherwise-empty tree runnable (has_data is injected only into non-empty leaves).
+    expect(compileAdvancedQuery(createEmptyTree())).toBeNull();
     expect(isAdvancedQueryEmpty(createEmptyTree())).toBe(true);
     expect(compileAdvancedQuery(null)).toBeNull();
-  });
-
-  test('a seeded Tag becomes runnable once a Topic value is added', () => {
-    const seeded = createEmptyTree();
-    seeded.children[0].fields[0].values = [{ value: 'ATP:0000018', label: 'disease model' }];
-    expect(isAdvancedQueryEmpty(seeded)).toBe(false);
-    expect(compileAdvancedQuery(seeded)).toEqual({
-      type: 'tet',
-      negate: false,
-      match: { topic: ['ATP:0000018'], has_data: ['yes'] },
-    });
   });
 });
 
@@ -238,6 +224,61 @@ describe('validation_by_professional_biocurator controlled vocabulary (SCRUM-622
       topic: ['ATP:0000110'],
       validation_by_professional_biocurator: ['validated_right', 'not_validated'],
     });
+  });
+});
+
+describe('excludeNoData default (facet "exclude negative" parity, SCRUM-6228)', () => {
+  const treeWith = (fieldMap, excludeNoData, negate = false) => ({
+    operator: 'AND',
+    excludeNoData,
+    children: [{
+      type: 'tet',
+      negate,
+      fields: Object.entries(fieldMap).map(([field, values]) => ({
+        field,
+        values: values.map((v) => ({ value: v, label: v })),
+      })),
+    }],
+  });
+
+  test('createEmptyTree defaults excludeNoData on', () => {
+    expect(createEmptyTree().excludeNoData).toBe(true);
+  });
+
+  test('injects has_data=yes into positive leaves when on', () => {
+    expect(compileAdvancedQuery(treeWith({ topic: ['ATP:1'] }, true)).match)
+      .toEqual({ topic: ['ATP:1'], has_data: ['yes'] });
+  });
+
+  test('does not inject when off', () => {
+    expect(compileAdvancedQuery(treeWith({ topic: ['ATP:1'] }, false)).match)
+      .toEqual({ topic: ['ATP:1'] });
+  });
+
+  test('does not inject into excluded (negated) leaves', () => {
+    const out = compileAdvancedQuery(treeWith({ topic: ['ATP:1'] }, true, true));
+    expect(out.negate).toBe(true);
+    expect(out.match).toEqual({ topic: ['ATP:1'] });
+  });
+
+  test('an explicit Has data field overrides the default', () => {
+    expect(compileAdvancedQuery(treeWith({ topic: ['ATP:1'], has_data: ['no'] }, true)).match)
+      .toEqual({ topic: ['ATP:1'], has_data: ['no'] });
+  });
+
+  test('never makes an empty tree runnable', () => {
+    const emptyTree = {
+      operator: 'AND',
+      excludeNoData: true,
+      children: [{ type: 'tet', negate: false, fields: [createFieldRow('topic')] }],
+    };
+    expect(compileAdvancedQuery(emptyTree)).toBeNull();
+    expect(isAdvancedQueryEmpty(emptyTree)).toBe(true);
+  });
+
+  test('picking Has data pre-selects yes; other fields start empty', () => {
+    expect(createFieldRow('has_data').values).toEqual([{ value: 'yes', label: 'yes (has data)' }]);
+    expect(createFieldRow('topic').values).toEqual([]);
   });
 });
 
