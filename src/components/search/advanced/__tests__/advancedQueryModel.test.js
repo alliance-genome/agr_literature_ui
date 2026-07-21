@@ -304,6 +304,20 @@ describe('normalizeToFlatTree (legacy/nested -> flat Tag cards, SCRUM-6228)', ()
     expect(normalizeToFlatTree(undefined).children).toHaveLength(1);
     expect(isAdvancedQueryEmpty(normalizeToFlatTree(undefined))).toBe(true);
   });
+
+  test('backfills excludeNoData on for a tree that predates the flag', () => {
+    const legacy = {
+      operator: 'AND',
+      children: [{ type: 'tet', negate: false, fields: [{ field: 'topic', value: 'ATP:1' }] }],
+    };
+    expect(legacy.excludeNoData).toBeUndefined();
+    expect(normalizeToFlatTree(legacy).excludeNoData).toBe(true);
+  });
+
+  test('preserves an explicit excludeNoData = false', () => {
+    const off = { operator: 'AND', excludeNoData: false, children: [] };
+    expect(normalizeToFlatTree(off).excludeNoData).toBe(false);
+  });
 });
 
 describe('describeCompiledQuery (preview, SCRUM-6228)', () => {

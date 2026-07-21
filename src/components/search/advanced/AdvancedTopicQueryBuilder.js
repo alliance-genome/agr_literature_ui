@@ -317,9 +317,12 @@ const AdvancedTopicQueryBuilder = () => {
 
   // Seed a default flat tree the first time the builder is shown; normalize a
   // legacy/nested saved tree into flat Tag cards so it renders without crashing.
+  // Also backfill excludeNoData for a tree that predates the flag (e.g. persisted
+  // from an earlier session) so the "exclude no-data" default applies rather than
+  // silently reading as off (SCRUM-6228).
   useEffect(() => {
     if (!tree) { dispatch(setAdvancedTopicQuery(createEmptyTree())); return; }
-    if ((tree.children || []).some((c) => !isLeaf(c))) {
+    if ((tree.children || []).some((c) => !isLeaf(c)) || tree.excludeNoData === undefined) {
       dispatch(setAdvancedTopicQuery(normalizeToFlatTree(tree)));
     }
   }, [tree, dispatch]);
