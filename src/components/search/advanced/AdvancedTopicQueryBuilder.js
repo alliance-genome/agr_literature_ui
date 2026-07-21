@@ -412,6 +412,13 @@ const AdvancedTopicQueryBuilder = () => {
               data), <b>no</b> = negated tag (no data).
             </li>
             <li>
+              <b>Validation (biocurator)</b> filters predicted tags by professional
+              biocurator review: <b>validated right</b>, <b>validated wrong</b>,
+              <b>not validated</b> (and <i>validation conflict</i> /
+              <i>validated right (self)</i>). Use it to keep only confirmed predictions
+              or to exclude ones a biocurator marked wrong.
+            </li>
+            <li>
               <b>Confidence score</b> is a min/max range. Value lists are scoped to the
               selected corpus/MOD; corpus, date and workflow facets still apply.
             </li>
@@ -436,6 +443,13 @@ const AdvancedTopicQueryBuilder = () => {
             <li>
               <b>Exclude papers that have a no-data disease-model tag</b> — one Tag with
               “exclude” checked: Topic = disease model, Has data = no.
+            </li>
+            <li>
+              <b>New-to-field transgene predictions, minus the ones a biocurator
+              rejected</b> — one Tag: Topic = transgene, Data novelty = new to field,
+              and add two values to Validation (biocurator): validated right OR not
+              validated (this keeps confirmed and un-reviewed predictions while dropping
+              “validated wrong”).
             </li>
           </ol>
         </div>

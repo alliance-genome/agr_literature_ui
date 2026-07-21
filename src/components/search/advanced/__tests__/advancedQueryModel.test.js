@@ -7,6 +7,7 @@ import {
   describeCompiledQuery,
   isLeaf,
   ENTITY_TYPE_OPTIONS,
+  VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
   FIELD_DEF_BY_KEY,
 } from '../advancedQueryModel';
 
@@ -181,6 +182,45 @@ describe('entity_type controlled vocabulary (SCRUM-6228)', () => {
     // Values are ATP curies (what tags store), not display names.
     expect(ENTITY_TYPE_OPTIONS.every((o) => /^ATP:\d+$/.test(o.value))).toBe(true);
     expect(ENTITY_TYPE_OPTIONS.find((o) => o.value === 'ATP:0000005').label).toMatch(/gene/);
+  });
+});
+
+describe('validation_by_professional_biocurator controlled vocabulary (SCRUM-6228)', () => {
+  test('field uses the static validation option list', () => {
+    expect(FIELD_DEF_BY_KEY.validation_by_professional_biocurator.options)
+      .toBe(VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS);
+    // Values are the raw tokens stored on tags (map to the .keyword field), labels are human-readable.
+    const values = VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS.map((o) => o.value);
+    expect(values).toEqual([
+      'validated_right',
+      'validated_wrong',
+      'validated_right_self',
+      'validation_conflict',
+      'not_validated',
+    ]);
+    expect(VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS.find((o) => o.value === 'validated_right').label)
+      .toBe('validated right');
+  });
+
+  test('include-right-or-unreviewed compiles to an OR value list (curator use case)', () => {
+    const out = compileAdvancedQuery({
+      type: 'tet',
+      negate: false,
+      fields: [
+        { field: 'topic', values: [{ value: 'ATP:0000110', label: 'transgene' }] },
+        {
+          field: 'validation_by_professional_biocurator',
+          values: [
+            { value: 'validated_right', label: 'validated right' },
+            { value: 'not_validated', label: 'not validated' },
+          ],
+        },
+      ],
+    });
+    expect(out.match).toEqual({
+      topic: ['ATP:0000110'],
+      validation_by_professional_biocurator: ['validated_right', 'not_validated'],
+    });
   });
 });
 

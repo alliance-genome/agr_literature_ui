@@ -40,6 +40,24 @@ export const HAS_DATA_OPTIONS = [
   { value: 'no', label: 'no (no data)' },
 ];
 
+// Professional-biocurator validation of a (usually predicted) tag. A controlled
+// vocabulary computed by the backend (calculate_validation_value_for_tag): a
+// predicted tag is "validated right"/"validated wrong" when a professional
+// biocurator's tag agrees/disagrees with it, "validation conflict" when biocurator
+// tags disagree among themselves, "validated right (self)" when the tag itself was
+// made by a professional biocurator, and "not validated" when no biocurator tag
+// bears on it. Static options (not facet buckets) so the dropdown reads with these
+// human labels instead of raw tokens. BACKEND CONTRACT (build_tet_advanced_query):
+// the `validation_by_professional_biocurator` match key maps to a term on
+// topic_entity_tags.validation_by_professional_biocurator.keyword.
+export const VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS = [
+  { value: 'validated_right', label: 'validated right' },
+  { value: 'validated_wrong', label: 'validated wrong' },
+  { value: 'validated_right_self', label: 'validated right (self)' },
+  { value: 'validation_conflict', label: 'validation conflict' },
+  { value: 'not_validated', label: 'not validated' },
+];
+
 // key      : short TET sub-facet name -> topic_entity_tags.<key>.keyword on the backend
 // label    : display label in the field dropdown
 // facetKey : aggregation key in state.search.searchFacets whose buckets seed the
@@ -53,6 +71,12 @@ export const TET_FIELD_DEFS = [
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },
   { key: 'confidence_level', label: 'Confidence level', facetKey: 'confidence_levels' },
   { key: 'data_novelty', label: 'Data novelty', facetKey: 'data_novelty' },
+  {
+    key: 'validation_by_professional_biocurator',
+    label: 'Validation (biocurator)',
+    facetKey: null,
+    options: VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
+  },
   { key: 'has_data', label: 'Has data', facetKey: null, options: HAS_DATA_OPTIONS },
   { key: 'species', label: 'Species', facetKey: null },
   { key: 'confidence_score', label: 'Confidence score', range: true },
