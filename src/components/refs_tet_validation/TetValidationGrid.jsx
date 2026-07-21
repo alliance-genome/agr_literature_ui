@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
@@ -545,6 +546,10 @@ export default function TetValidationGrid({
   const [pinnedLeftWidth, setPinnedLeftWidth] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(0);
   const topScrollRef = useRef(null);
+  const wrapperRef = useRef(null);
+  // Portal container (a div we own, hosted inside AgGrid's .ag-root) that the
+  // custom top scrollbar renders into. See the reparent effect below.
+  const [scrollPortalEl, setScrollPortalEl] = useState(null);
   const innerStateSyncRef = useRef(false);
   const prevFilterModelRef = useRef({});
   const prevSortModelRef = useRef([]);
@@ -589,22 +594,50 @@ export default function TetValidationGrid({
     };
   }, [gridApi, updateScrollWidth]);
 
-  // Move the top scrollbar into .ag-root right after .ag-header, and observe
+  // Host the top scrollbar inside .ag-root right after .ag-header, and observe
   // header size so the sticky offset always tracks it.
+  //
+  // We render the scrollbar through a React PORTAL into a container we own
+  // (inserted after the header) rather than rendering it as a child of
+  // .tetv-grid-stack and physically moving the DOM node with insertAdjacentElement.
+  // The old move relocated a React-managed sibling out of .tetv-grid-stack, so when
+  // the loading / "adjusting columns" overlays (also children of the stack) toggled
+  // on a query rerun, React's insertBefore used the now-relocated scrollbar as its
+  // reference sibling and threw the commit-phase "insertBefore: node not a child of
+  // this node" that blanked the grid. With a portal React never treats the scrollbar
+  // as a stack sibling, so overlay toggling can't desync (SCRUM-6228). The container
+  // uses display:contents so it establishes no box — the scrollbar's sticky context
+  // stays .ag-root exactly as before.
   useEffect(() => {
-    if (!gridApi || !topScrollRef.current) return undefined;
-    const scrollEl = topScrollRef.current;
-    const wrapper = scrollEl.closest('.tetv-grid-wrapper');
-    const header = wrapper?.querySelector('.ag-header');
-    if (!header) return undefined;
-    if (scrollEl.previousElementSibling !== header) {
-      header.insertAdjacentElement('afterend', scrollEl);
-    }
-    const update = () => setHeaderHeight(header.offsetHeight || 0);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(header);
-    return () => ro.disconnect();
+    if (!gridApi || !wrapperRef.current) return undefined;
+    let container = null;
+    let ro = null;
+    let raf = null;
+    const setup = () => {
+      const header = wrapperRef.current?.querySelector('.ag-header');
+      if (!header) {
+        // Header not painted yet — retry next frame (parity with the old effect,
+        // which left the scrollbar rendered until the move could happen).
+        raf = requestAnimationFrame(setup);
+        return;
+      }
+      container = document.createElement('div');
+      container.className = 'tetv-top-scroll-portal';
+      container.style.display = 'contents';
+      header.insertAdjacentElement('afterend', container);
+      setScrollPortalEl(container);
+      const update = () => setHeaderHeight(header.offsetHeight || 0);
+      update();
+      ro = new ResizeObserver(update);
+      ro.observe(header);
+    };
+    setup();
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (ro) ro.disconnect();
+      setScrollPortalEl(null);
+      if (container) container.remove();
+    };
   }, [gridApi]);
 
   // Force AgGrid to recompute per-row classes when the visible-topic set
@@ -1466,6 +1499,7 @@ export default function TetValidationGrid({
     // disabled). Marking the subtree non-translatable keeps those extensions
     // out of it. Ported from SCRUM-6229 (282675bc).
     <div
+      ref={wrapperRef}
       translate="no"
       className={`ag-theme-quartz tetv-grid-wrapper notranslate${
         isFullscreen ? ' tetv-fullscreen' : ''
@@ -1517,10 +1551,11 @@ export default function TetValidationGrid({
           rendering it (`loading ? spinner : grid`) tears the grid down on
           every reload: with domLayout="autoHeight" that teardown triggers
           React's "removeChild ... not a child of this node" crash (AgGrid
-          owns DOM nodes React's reconciler then can't find), and it would
-          also delete the DOM-moved top-scroll div from a parent React no
-          longer tracks. The loading state is an overlay veil on top of the
-          live grid instead. Ported from the SCRUM-6229 branch (7a957038). */}
+          owns DOM nodes React's reconciler then can't find). The loading
+          state is an overlay veil on top of the live grid instead. Ported
+          from the SCRUM-6229 branch (7a957038). The top scrollbar is rendered
+          via a portal into .ag-root (see the reparent effect), so it is not a
+          sibling of these overlays and toggling them can't desync React. */}
       <div className="tetv-grid-stack">
         {loading && (
           <div
@@ -1532,17 +1567,20 @@ export default function TetValidationGrid({
             <span>Loading TET data…</span>
           </div>
         )}
-        <div
-          className="tetv-top-scroll"
-          ref={topScrollRef}
-          onScroll={onTopScroll}
-          style={{ marginLeft: pinnedLeftWidth, top: headerHeight }}
-        >
+        {scrollPortalEl && createPortal(
           <div
-            className="tetv-top-scroll-inner"
-            style={{ width: scrollContentWidth }}
-          />
-        </div>
+            className="tetv-top-scroll"
+            ref={topScrollRef}
+            onScroll={onTopScroll}
+            style={{ marginLeft: pinnedLeftWidth, top: headerHeight }}
+          >
+            <div
+              className="tetv-top-scroll-inner"
+              style={{ width: scrollContentWidth }}
+            />
+          </div>,
+          scrollPortalEl
+        )}
         {isResizing && (
           <div
             className="tetv-resize-overlay"
