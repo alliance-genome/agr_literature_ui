@@ -360,7 +360,12 @@ const AdvancedTopicQueryBuilder = () => {
 
   const compiled = compileAdvancedQuery(tree);
   const empty = isAdvancedQueryEmpty(tree);
-  const tetPart = compiled ? describeCompiledQuery(compiled, labelFor) : '(no Topic conditions yet)';
+  // A blank builder now compiles to a default Has data = yes leaf, but that alone is
+  // not runnable — show the placeholder (matching the disabled Run button) until a
+  // Topic or other condition is added, rather than a misleading has_data-only preview.
+  const tetPart = (!empty && compiled)
+    ? describeCompiledQuery(compiled, labelFor)
+    : '(no Topic conditions yet)';
   const corpusPart = corpusMods.length > 0
     ? ` AND corpus in (${corpusMods.map((m) => `"${m}"`).join(', ')})`
     : '';
@@ -408,8 +413,10 @@ const AdvancedTopicQueryBuilder = () => {
               require the paper has <b>no</b> tag matching that card.
             </li>
             <li>
-              <b>Has data</b> filters a tag’s polarity: <b>yes</b> = positive tag (has
-              data), <b>no</b> = negated tag (no data).
+              <b>Has data</b> filters a tag by whether it records data: <b>yes</b> =
+              the tag has data, <b>no</b> = the tag has no data. New Tags default to
+              <b>yes</b> (mirroring the facet search’s “exclude negative”); switch it to
+              <b>no</b>, or remove the field, to include no-data tags.
             </li>
             <li>
               <b>Validation (biocurator)</b> filters predicted tags by professional

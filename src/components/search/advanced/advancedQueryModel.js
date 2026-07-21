@@ -94,7 +94,22 @@ export const isRangeField = (key) => !!(FIELD_DEF_BY_KEY[key] && FIELD_DEF_BY_KE
 // values on one field = OR); `label` is display-only, the compiler reads `value`.
 // Range fields keep min/max. (Legacy rows with a scalar `value` still compile.)
 export const createFieldRow = (field = 'topic') => ({ field, values: [], min: 0, max: 1 });
-export const createLeaf = () => ({ type: 'tet', negate: false, fields: [createFieldRow()] });
+// Every new Tag starts with Has data = yes so the advanced builder mirrors the
+// facet search's default "exclude negative" (SCRUM-6228). A curator can switch it
+// to "no", or remove the field, per Tag. The seeded has_data alone does not make
+// the query runnable — see isAdvancedQueryEmpty — so a blank form still needs a
+// Topic (or other value) before "Run query" enables.
+const createHasDataYesRow = () => ({
+  field: 'has_data',
+  values: [{ value: HAS_DATA_OPTIONS[0].value, label: HAS_DATA_OPTIONS[0].label }],
+  min: 0,
+  max: 1,
+});
+export const createLeaf = () => ({
+  type: 'tet',
+  negate: false,
+  fields: [createFieldRow(), createHasDataYesRow()],
+});
 export const createGroup = () => ({ operator: 'OR', children: [createLeaf()] });
 // The Tag-card UI keeps a FLAT tree: leaves (one per Tag) directly under the root,
 // combined with the top-level operator. The compiler still supports nested groups,
@@ -181,8 +196,24 @@ export const compileAdvancedQuery = (node) => {
   return { operator: String(node.operator || 'AND').toUpperCase() === 'OR' ? 'OR' : 'AND', children };
 };
 
-// True when the tree would produce no query (used to decide whether a search is runnable).
-export const isAdvancedQueryEmpty = (node) => compileAdvancedQuery(node) === null;
+// A compiled tree carries a "substantive" condition when some leaf constrains a
+// field other than the default-seeded has_data (topic, entity, source, confidence,
+// …). Used so a freshly seeded Tag — which now defaults to Has data = yes — is not
+// treated as a runnable query on its own (SCRUM-6228).
+const hasSubstantiveCondition = (node) => {
+  if (!node) return false;
+  if (node.type === 'tet') {
+    return Object.keys(node.match || {}).some((k) => k !== 'has_data');
+  }
+  return (node.children || []).some(hasSubstantiveCondition);
+};
+
+// True when the tree would produce no query, or only a default Has data filter with
+// nothing else (used to decide whether a search is runnable).
+export const isAdvancedQueryEmpty = (node) => {
+  const compiled = compileAdvancedQuery(node);
+  return compiled === null || !hasSubstantiveCondition(compiled);
+};
 
 // Render a COMPILED query as a readable, SQL-like preview. Built from the compiled
 // output (not the UI tree) so what a curator reads matches exactly what is sent to

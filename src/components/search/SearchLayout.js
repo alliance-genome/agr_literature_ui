@@ -71,6 +71,9 @@ const SearchLayout = () => {
         () => (searchResults || []).map((r) => r.curie).filter(Boolean),
         [searchResults]
     );
+    // Signature of the current result set, used as the topic-grid error boundary's
+    // resetKey so each new query gets a fresh auto-recovery budget (SCRUM-6228).
+    const gridResetKey = useMemo(() => referenceIds.join('|'), [referenceIds]);
     // Reuse the biblio data the search already returned (curie/title/authors/
     // cross_references/date_published) so the grid can skip the per-row
     // /reference/{curie} fetch. Keyed by canonical AGRKB curie.
@@ -415,7 +418,7 @@ const SearchLayout = () => {
                                             display: view === 'grid' && !searchLoading ? 'block' : 'none',
                                         }}
                                     >
-                                        <TetGridErrorBoundary>
+                                        <TetGridErrorBoundary resetKey={gridResetKey}>
                                             <TetValidationGrid
                                                 referenceIds={referenceIds}
                                                 topics={topicsForGrid}

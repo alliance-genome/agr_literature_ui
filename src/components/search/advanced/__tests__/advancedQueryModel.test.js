@@ -139,10 +139,27 @@ describe('compileAdvancedQuery', () => {
     expect(compileAdvancedQuery(tree)).toEqual(compileAdvancedQuery(leaf({ topic: 'ATP:1' })));
   });
 
-  test('a freshly seeded default tree is empty (nothing to search yet)', () => {
-    expect(compileAdvancedQuery(createEmptyTree())).toBeNull();
+  test('a freshly seeded default tree is not runnable (only the default Has data = yes)', () => {
+    // New Tags default to Has data = yes (SCRUM-6228), so the seed compiles to a
+    // has_data-only leaf — but that alone is not a runnable query.
+    expect(compileAdvancedQuery(createEmptyTree())).toEqual({
+      type: 'tet',
+      negate: false,
+      match: { has_data: ['yes'] },
+    });
     expect(isAdvancedQueryEmpty(createEmptyTree())).toBe(true);
     expect(compileAdvancedQuery(null)).toBeNull();
+  });
+
+  test('a seeded Tag becomes runnable once a Topic value is added', () => {
+    const seeded = createEmptyTree();
+    seeded.children[0].fields[0].values = [{ value: 'ATP:0000018', label: 'disease model' }];
+    expect(isAdvancedQueryEmpty(seeded)).toBe(false);
+    expect(compileAdvancedQuery(seeded)).toEqual({
+      type: 'tet',
+      negate: false,
+      match: { topic: ['ATP:0000018'], has_data: ['yes'] },
+    });
   });
 });
 

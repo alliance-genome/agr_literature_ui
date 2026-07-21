@@ -13,17 +13,35 @@ import { Button, Spinner } from 'react-bootstrap';
 // times via a changing key, then fall back to a manual reload if it keeps
 // failing. It is a safety net, not a substitute for fixing the underlying
 // transition — but it guarantees the user never sees a blanked page.
+//
+// The retry budget is PER QUERY: `resetKey` (a signature of the current result
+// set) is threaded in from SearchLayout, and whenever it changes we clear the
+// error and reset the retry counter. Without this the counter is sticky for the
+// life of the (long-lived) boundary, so once a couple of transient desyncs used
+// up the budget every later query rerun dropped straight to the manual reload
+// (SCRUM-6228). Resetting only on a genuinely new result set keeps the per-query
+// cap intact, so a persistently-failing render still stops instead of looping.
 const MAX_AUTO_RETRIES = 2;
 
 export default class TetGridErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { error: null, retries: 0 };
+    this.state = { error: null, retries: 0, lastResetKey: props.resetKey };
     this._timer = null;
   }
 
   static getDerivedStateFromError(error) {
     return { error };
+  }
+
+  // A new query (changed result set) gets a fresh auto-recovery budget. Returning
+  // retries:0 when it was already 0 is a no-op, so normal reruns don't remount the
+  // grid — only a boundary carrying accumulated retries is reset here.
+  static getDerivedStateFromProps(props, state) {
+    if (props.resetKey !== state.lastResetKey) {
+      return { error: null, retries: 0, lastResetKey: props.resetKey };
+    }
+    return null;
   }
 
   componentDidCatch(error, info) {
