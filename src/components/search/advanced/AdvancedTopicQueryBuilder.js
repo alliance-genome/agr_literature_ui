@@ -414,14 +414,14 @@ const AdvancedTopicQueryBuilder = () => {
             </li>
             <li>
               <b>Has data</b> filters a tag by whether it records data: <b>yes</b> =
-              the tag has data, <b>no</b> = the tag has no data. New Tags default to
-              <b>yes</b> (mirroring the facet search’s “exclude negative”); switch it to
+              the tag has data, <b>no</b> = the tag has no data. New Tags default to{' '}
+              <b>yes</b> (mirroring the facet search’s “exclude negative”); switch it to{' '}
               <b>no</b>, or remove the field, to include no-data tags.
             </li>
             <li>
               <b>Validation (biocurator)</b> filters predicted tags by professional
-              biocurator review: <b>validated right</b>, <b>validated wrong</b>,
-              <b>not validated</b> (and <i>validation conflict</i> /
+              biocurator review: <b>validated right</b>, <b>validated wrong</b>,{' '}
+              <b>not validated</b> (and <i>validation conflict</i> /{' '}
               <i>validated right (self)</i>). Use it to keep only confirmed predictions
               or to exclude ones a biocurator marked wrong.
             </li>
