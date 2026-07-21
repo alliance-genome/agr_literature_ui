@@ -374,6 +374,73 @@ const AdvancedTopicQueryBuilder = () => {
         workflow facets still apply. Facet counts are not shown in advanced mode.
       </div>
 
+      <details style={{
+        fontSize: '0.8rem', color: '#333', marginBottom: '8px',
+        border: '1px solid #cfe2ff', borderRadius: '6px', backgroundColor: '#f6faff',
+        padding: '4px 8px',
+      }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#0d6efd' }}>
+          How to use — AND/OR, tags, and examples
+        </summary>
+        <div style={{ marginTop: '6px', lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 600, marginTop: '2px' }}>The building blocks</div>
+          <ul style={{ margin: '2px 0 6px', paddingLeft: '18px' }}>
+            <li>
+              A <b>Tag</b> is one topic-entity tag on a paper. Everything inside a Tag
+              card must be true of that <b>same</b> tag.
+            </li>
+            <li>
+              <b>Fields within a Tag</b> (Topic, Source method, Confidence level, Has
+              data, …) are combined with <b>AND</b> — the same tag must satisfy all of them.
+            </li>
+            <li>
+              <b>Multiple values on one field</b> are combined with <b>OR</b> — e.g. a
+              Topic field with two values matches a tag whose topic is <i>either</i> one.
+            </li>
+            <li>
+              <b>Multiple Tags</b> put requirements on <b>different</b> tags of the same
+              paper. The <b>“paper must match”</b> selector (shown once you add a second
+              Tag) sets how tags combine: <b>ALL Tags (AND)</b> = the paper must have
+              every tag; <b>ANY Tag (OR)</b> = the paper must have at least one.
+            </li>
+            <li>
+              <b>Exclude (paper must NOT have this tag)</b> — check this on a Tag to
+              require the paper has <b>no</b> tag matching that card.
+            </li>
+            <li>
+              <b>Has data</b> filters a tag’s polarity: <b>yes</b> = positive tag (has
+              data), <b>no</b> = negated tag (no data).
+            </li>
+            <li>
+              <b>Confidence score</b> is a min/max range. Value lists are scoped to the
+              selected corpus/MOD; corpus, date and workflow facets still apply.
+            </li>
+            <li>The <b>Query preview</b> shows exactly what will be searched.</li>
+          </ul>
+          <div style={{ fontWeight: 600 }}>Examples</div>
+          <ol style={{ margin: '2px 0 0', paddingLeft: '18px' }}>
+            <li>
+              <b>Disease-model tag from the ACKnowledge form that has data</b> — one Tag:
+              Topic = disease model, Source method = acknowledge_form, Has data = yes.
+            </li>
+            <li>
+              <b>Papers with BOTH a disease-model tag AND a separate gene tag</b> — Tag 1:
+              Topic = disease model; Tag 2: Topic = gene expression; paper must match =
+              ALL Tags (AND).
+            </li>
+            <li>
+              <b>Disease-model tag from EITHER the ACKnowledge form OR the ABC classifier</b>
+              {' '}— one Tag: Topic = disease model, and add two values to Source method
+              (acknowledge_form OR abc classifier).
+            </li>
+            <li>
+              <b>Exclude papers that have a no-data disease-model tag</b> — one Tag with
+              “exclude” checked: Topic = disease model, Has data = no.
+            </li>
+          </ol>
+        </div>
+      </details>
+
       {tags.length >= 2 && (
         <InputGroup size="sm" style={{ width: 'auto', marginBottom: '4px' }}>
           <InputGroup.Text>paper must match</InputGroup.Text>
