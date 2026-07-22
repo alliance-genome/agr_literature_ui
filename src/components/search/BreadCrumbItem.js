@@ -13,14 +13,17 @@ const BreadcrumbItem = ({ label, onRemove, tooltip, variant = "outline-secondary
         </span>
     );
     // When a tooltip is supplied, wrap the chip so hovering it shows the detail
-    // (e.g. the advanced query preview). whiteSpace:pre-line keeps multi-line text.
+    // (e.g. the advanced query preview). A custom class gives it a wider, lighter
+    // box (Bootstrap's default is narrow and dark); shown above the chip.
     if (tooltip) {
         return (
             <OverlayTrigger
-                placement="bottom"
+                placement="top"
                 overlay={
-                    <Tooltip id="breadcrumb-tooltip" style={{ whiteSpace: 'pre-line' }}>
-                        {tooltip}
+                    <Tooltip id="breadcrumb-tooltip" className="breadcrumb-wide-tooltip">
+                        <div style={{ whiteSpace: 'pre-line', textAlign: 'left' }}>
+                            {tooltip}
+                        </div>
                     </Tooltip>
                 }
             >

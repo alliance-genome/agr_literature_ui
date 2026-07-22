@@ -807,3 +807,24 @@ em {
   margin-top: 30px;
   margin-right: 20px;
 }
+
+/* Wider, lighter tooltip for breadcrumb chips (e.g. the active advanced Topic
+   query preview). Bootstrap's default .tooltip-inner is narrow (200px) and dark;
+   override the inner box and the arrow. Tooltips render in a portal on <body>,
+   so this must be global. (SCRUM-6228) */
+.breadcrumb-wide-tooltip {
+  opacity: 1 !important;
+}
+.breadcrumb-wide-tooltip .tooltip-inner {
+  max-width: 460px;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #ced4da;
+  box-shadow: 0 4px 14px rgba(31, 41, 55, 0.18);
+  padding: 8px 10px;
+  font-size: 0.8rem;
+}
+/* Bootstrap 4 uses .arrow (not .tooltip-arrow); placement="top" -> top border. */
+.breadcrumb-wide-tooltip .arrow::before {
+  border-top-color: #ced4da;
+}
