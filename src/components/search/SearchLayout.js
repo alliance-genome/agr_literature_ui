@@ -295,6 +295,7 @@ const SearchLayout = () => {
                                         borderTopLeftRadius: '8px',
                                         borderTopRightRadius: '8px',
                                         fontWeight: 600,
+                                        textAlign: 'left',
                                     }}>
                                         Advanced Topic query
                                     </div>
