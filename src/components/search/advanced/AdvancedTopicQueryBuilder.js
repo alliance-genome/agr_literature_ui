@@ -356,7 +356,7 @@ const AdvancedTopicQueryBuilder = () => {
     : '';
 
   return (
-    <div style={{ padding: '4px 10px 10px' }}>
+    <div style={{ padding: '4px 10px 10px', textAlign: 'left' }}>
       <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '6px' }}>
         Build a query over Topic sub-facets. Each <b>Tag</b> is one topic-entity tag the
         paper must have; fields inside a Tag apply to that <b>same</b> tag. Add another Tag
