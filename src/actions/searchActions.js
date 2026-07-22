@@ -316,9 +316,20 @@ const getSearchParams = (state) => {
   // facets (category, corpus/MOD, dates, workflow) still flow through unchanged.
   if (state.search.searchMode === 'advanced') {
     const compiled = compileAdvancedQuery(state.search.advancedTopicQuery);
-    delete params.tet_nested_facets_values;
     if (compiled) {
+      delete params.tet_nested_facets_values;
       params.tet_advanced_query = compiled;
+    } else {
+      // Empty advanced query (e.g. after Clear All): keep an EMPTY nested structure
+      // rather than deleting it, so the request stays a valid "search everything"
+      // (matching the facet path) instead of one with no query/filters — which the
+      // backend rejects with a 400. Stray facet-mode TET selections are still ignored
+      // because we overwrite with empty arrays.
+      params.tet_nested_facets_values = {
+        "apply_to_single_tag": state.search.applyToSingleTag,
+        "tet_facets_values": [],
+        "tet_facets_negative_values": []
+      };
     }
   }
 
