@@ -222,6 +222,25 @@ export const compileAdvancedQuery = (node, exclude) => {
 // has_data is only injected into leaves that already have a value.
 export const isAdvancedQueryEmpty = (node) => compileAdvancedQuery(node) === null;
 
+// Build a (field, value) -> display-name lookup from a UI tree's chips, so a
+// preview reads "topic = \"disease model\"" rather than showing the raw curie.
+// Falls back to the raw value for anything not carrying a label (SCRUM-6228).
+export const buildValueLabeler = (tree) => {
+  const map = {};
+  const walk = (n) => {
+    if (!n) return;
+    if (isLeaf(n)) {
+      (n.fields || []).forEach((f) =>
+        (Array.isArray(f.values) ? f.values : []).forEach((v) => {
+          if (v && typeof v === 'object') map[`${f.field}::${v.value}`] = v.label;
+        }));
+    }
+    (n.children || []).forEach(walk);
+  };
+  walk(tree);
+  return (field, value) => map[`${field}::${value}`] || value;
+};
+
 // Render a COMPILED query as a readable, SQL-like preview. Built from the compiled
 // output (not the UI tree) so what a curator reads matches exactly what is sent to
 // the backend. `labelFor(field, value)` supplies display names for curie values;

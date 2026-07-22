@@ -7,6 +7,7 @@ import {
   normalizeToFlatTree,
   describeCompiledQuery,
   isLeaf,
+  buildValueLabeler,
   ENTITY_TYPE_OPTIONS,
   VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
   FIELD_DEF_BY_KEY,
@@ -355,6 +356,30 @@ describe('describeCompiledQuery (preview, SCRUM-6228)', () => {
 
   test('null compiled query renders empty', () => {
     expect(describeCompiledQuery(null)).toBe('');
+  });
+});
+
+describe('buildValueLabeler (breadcrumb/preview labels, SCRUM-6228)', () => {
+  test('maps a chip value to its label and falls back to the raw value', () => {
+    const tree = {
+      operator: 'AND',
+      children: [{
+        type: 'tet',
+        negate: false,
+        fields: [{ field: 'topic', values: [{ value: 'ATP:0000152', label: 'disease model (atp:0000152)' }] }],
+      }],
+    };
+    const labelFor = buildValueLabeler(tree);
+    expect(labelFor('topic', 'ATP:0000152')).toBe('disease model (atp:0000152)');
+    expect(labelFor('topic', 'ATP:9999')).toBe('ATP:9999');
+    expect(labelFor('source_method', 'x')).toBe('x');
+  });
+
+  test('drives a readable preview off a compiled tree', () => {
+    const tree = createEmptyTree();
+    tree.children[0].fields[0].values = [{ value: 'ATP:0000152', label: 'disease model' }];
+    const preview = describeCompiledQuery(compileAdvancedQuery(tree), buildValueLabeler(tree));
+    expect(preview).toBe('(topic = "disease model" AND has_data = "yes")');
   });
 });
 

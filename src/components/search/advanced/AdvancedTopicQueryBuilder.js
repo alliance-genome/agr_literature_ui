@@ -20,6 +20,7 @@ import {
   isAdvancedQueryEmpty,
   compileAdvancedQuery,
   describeCompiledQuery,
+  buildValueLabeler,
 } from './advancedQueryModel';
 
 // Process-wide cache of resolved ATP/ECO curie -> display name, so switching
@@ -329,21 +330,7 @@ const AdvancedTopicQueryBuilder = () => {
 
   // Display-name lookup for chip values, so the preview reads like the mockup
   // (topic = "disease model") rather than showing raw curies.
-  const labelFor = useMemo(() => {
-    const map = {};
-    const walk = (n) => {
-      if (!n) return;
-      if (isLeaf(n)) {
-        (n.fields || []).forEach((f) =>
-          (Array.isArray(f.values) ? f.values : []).forEach((v) => {
-            if (v && typeof v === 'object') map[`${f.field}::${v.value}`] = v.label;
-          }));
-      }
-      (n.children || []).forEach(walk);
-    };
-    walk(tree);
-    return (field, value) => map[`${field}::${value}`] || value;
-  }, [tree]);
+  const labelFor = useMemo(() => buildValueLabeler(tree), [tree]);
 
   if (!tree || (tree.children || []).some((c) => !isLeaf(c))) return null;
 

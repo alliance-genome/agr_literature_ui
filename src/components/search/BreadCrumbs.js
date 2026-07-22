@@ -13,10 +13,17 @@ import {
     removeDatePubmedModified,
     removeDatePublished,
     removeDateCreated,
-    downloadSearchReferences, setConfidenceScore
+    downloadSearchReferences, setConfidenceScore,
+    setAdvancedTopicQuery
 } from "../../actions/searchActions";
 import { RENAME_FACETS, RENAME_FACET_VALUES } from "./Facets";
 import { evidenceAssertionName } from "../refs_tet_validation/helpers/buildEntries";
+import {
+    compileAdvancedQuery,
+    describeCompiledQuery,
+    buildValueLabeler,
+    createEmptyTree,
+} from "./advanced/advancedQueryModel";
 import BreadcrumbItem from "./BreadCrumbItem";
 
 const BreadCrumbs = () => {
@@ -29,7 +36,20 @@ const BreadCrumbs = () => {
     const dateCreated = useSelector(state => state.search.dateCreated);
     const confidenceScore = useSelector(state => state.search.confidenceScore);
     const searchResultsCount = useSelector(state => state.search.searchResultsCount);
+    const searchMode = useSelector(state => state.search.searchMode);
+    const advancedTopicQuery = useSelector(state => state.search.advancedTopicQuery);
     const dispatch = useDispatch();
+
+    // The advanced Topic query is "active" when the builder mode is on and the tree
+    // compiles to a non-empty query. Show it as a removable breadcrumb whose tooltip
+    // is the same SQL-like preview the builder shows (SCRUM-6228).
+    const advancedCompiled = searchMode === 'advanced'
+        ? compileAdvancedQuery(advancedTopicQuery)
+        : null;
+    const advancedActive = !!advancedCompiled;
+    const advancedPreview = advancedActive
+        ? `PAPER WHERE ${describeCompiledQuery(advancedCompiled, buildValueLabeler(advancedTopicQuery))}`
+        : '';
 
     const getDisplayName = (facet, value) => {
         const valueRename = RENAME_FACET_VALUES[facet]?.[value];
@@ -96,6 +116,15 @@ const BreadCrumbs = () => {
         dispatch(removeFacetValue(facet, value));
     };
 
+    // Removing the advanced-query breadcrumb resets the builder tree to an empty
+    // one (so the compiled query drops out of the next search) and re-runs. The
+    // builder mode is left as-is; the chip disappears because the tree no longer
+    // compiles to a query.
+    const handleRemoveAdvancedQuery = () => {
+        dispatch(setAdvancedTopicQuery(createEmptyTree()));
+        dispatch(searchReferences());
+    };
+
     const handleClearAll = () => {
         dispatch(resetFacetValues());
         Object.keys(RENAME_FACETS).forEach(key => {
@@ -103,6 +132,10 @@ const BreadCrumbs = () => {
                 dispatch(RENAME_FACETS[key].action());
             }
         });
+        // Clear All means all: also drop an active advanced Topic query.
+        if (advancedActive) {
+            dispatch(setAdvancedTopicQuery(createEmptyTree()));
+        }
         dispatch(searchReferences());
     };
 
@@ -202,7 +235,16 @@ const BreadCrumbs = () => {
                           );
                       })}
 
-                        {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || dateKeys.some(key => dateValues[key])) &&
+                        {advancedActive &&
+                            <BreadcrumbItem
+                                key="advanced_topic_query_breadcrumb"
+                                label="Advanced topic query (active)"
+                                variant="outline-primary"
+                                tooltip={advancedPreview}
+                                onRemove={handleRemoveAdvancedQuery}
+                            />}
+
+                        {(Object.keys(searchFacetsValues).length > 0 || Object.keys(searchExcludedFacetsValues).length > 0 || dateKeys.some(key => dateValues[key]) || advancedActive) &&
                             <Button onClick={handleClearAll}>Clear All</Button>}
                       </div>
                       <div>
