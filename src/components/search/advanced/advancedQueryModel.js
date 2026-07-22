@@ -28,6 +28,31 @@ export const ENTITY_TYPE_OPTIONS = [
   { value: 'ATP:0000093', label: 'sequence targeting reagent (ATP:0000093)' },
 ];
 
+// ATP entity-type curie -> the lowercase entity-type NAME the entity-validation
+// endpoint expects (mirrors TopicEntityCreate's curieToNameEntityType). The
+// endpoint/resolver collapse the allele and construct variants, so normalize them
+// here too. Used to look up a specific Entity (e.g. gene "ACT1") by name -> curie
+// via /ontology/entity_validation/{taxon}/{type}/{names} (SCRUM-6228).
+const ENTITY_TYPE_CURIE_TO_NAME = {
+  'ATP:0000005': 'gene',
+  'ATP:0000006': 'allele',
+  'ATP:0000110': 'transgenic allele',
+  'ATP:0000285': 'classical allele',
+  'ATP:0000123': 'species',
+  'ATP:0000027': 'strain',
+  'ATP:0000025': 'genotype',
+  'ATP:0000026': 'fish',
+  'ATP:0000013': 'transgenic construct',
+  'ATP:0000093': 'sequence targeting reagent',
+};
+export const entityTypeNameForCurie = (curie) => {
+  const name = ENTITY_TYPE_CURIE_TO_NAME[curie] || '';
+  if (!name) return '';
+  if (name.includes('allele')) return 'allele';
+  if (name.includes('construct')) return 'construct';
+  return name;
+};
+
 // "Has data" is the human-facing view of a tag's boolean `negated` attribute: a
 // positive tag (negated=false) asserts the topic HAS data; a negated tag
 // (negated=true) asserts NO data. Static Yes/No options so a curator can require, on
@@ -67,6 +92,7 @@ export const VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS = [
 export const TET_FIELD_DEFS = [
   { key: 'topic', label: 'Topic', facetKey: 'topics' },
   { key: 'entity_type', label: 'Entity type', facetKey: null, options: ENTITY_TYPE_OPTIONS },
+  { key: 'entity', label: 'Entity', facetKey: null },
   { key: 'source_method', label: 'Source method', facetKey: 'source_methods' },
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },
   { key: 'confidence_level', label: 'Confidence level', facetKey: 'confidence_levels' },

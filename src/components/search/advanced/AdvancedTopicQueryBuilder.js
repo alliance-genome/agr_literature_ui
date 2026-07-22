@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Badge, Button, ButtonGroup, Form, InputGroup } from 'react-bootstrap';
+import { AsyncTypeahead } from 'react-bootstrap-typeahead';
+import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { api } from '../../../api';
 import {
   setAdvancedTopicQuery,
@@ -8,6 +10,7 @@ import {
   searchReferences,
   fetchAdvancedFacetsVocab,
 } from '../../../actions/searchActions';
+import { changeFieldEntityEntityList } from '../../../actions/biblioActions';
 import {
   TET_FIELD_DEFS,
   FIELD_DEF_BY_KEY,
@@ -21,7 +24,23 @@ import {
   compileAdvancedQuery,
   describeCompiledQuery,
   buildValueLabeler,
+  entityTypeNameForCurie,
 } from './advancedQueryModel';
+
+// Validation sentinels returned by changeFieldEntityEntityList when a typed name
+// does not resolve to a real curie for the chosen species/entity type (mirrors
+// TopicEntityCreate's warnTypesEntityValidation). Treated as "not found".
+const ENTITY_WARN_CURIES = [
+  'no Alliance curie', 'obsolete entity', 'not found at WB',
+  'no WB curie', 'no SGD curie', 'no mod curie', 'duplicate',
+];
+
+// Stable per-instance id (AsyncTypeahead requires an id and we may render several).
+let advUidCounter = 0;
+const useAdvUid = (prefix) => {
+  const [id] = useState(() => `${prefix}-${(advUidCounter += 1)}`);
+  return id;
+};
 
 // Process-wide cache of resolved ATP/ECO curie -> display name, so switching
 // fields or re-rendering doesn't refetch names already seen. Best-effort: a
@@ -105,9 +124,116 @@ const ValueChip = ({ chip, onRemove }) => (
   </span>
 );
 
+// Species adder: a taxon typeahead backed by /ontology/search_species. Stores the
+// NCBITaxon curie as the chip value (labelled with the name) so it matches the
+// taxon curie tags carry, and so an Entity field in the same Tag can resolve names
+// against it. Mirrors the SpeciesPicker convention of "<name> <curie>" options.
+const SpeciesValueAdder = ({ hasValues, onAdd }) => {
+  const id = useAdvUid('adv-species-ta');
+  const ref = useRef(null);
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  return (
+    <div style={{ width: '16rem', maxWidth: '100%', flex: '0 0 auto' }}>
+      <AsyncTypeahead
+        id={id}
+        ref={ref}
+        size="sm"
+        isLoading={loading}
+        minLength={1}
+        useCache={false}
+        placeholder={hasValues ? 'add species…' : 'species name, e.g. Saccharomyces'}
+        options={options}
+        selected={[]}
+        onSearch={async (query) => {
+          setLoading(true);
+          try {
+            const res = await api.get(`/ontology/search_species/${encodeURIComponent(query)}`);
+            setOptions(Array.isArray(res.data)
+              ? res.data.filter((it) => it?.curie && it?.name).map((it) => `${it.name} ${it.curie}`)
+              : []);
+          } catch (e) {
+            setOptions([]);
+          } finally {
+            setLoading(false);
+          }
+        }}
+        onChange={(selected) => {
+          if (selected && selected.length > 0) {
+            const m = String(selected[selected.length - 1]).match(/(.+)\s+(NCBITaxon:\d+)$/);
+            if (m) onAdd(m[2], `${m[1]} (${m[2]})`);
+            ref.current?.clear?.();
+            setOptions([]);
+          }
+        }}
+      />
+    </div>
+  );
+};
+
+// Entity adder: a specific entity (e.g. gene "ACT1"). The validation endpoint
+// matches an EXACT name for a given entity type + taxon, so this is a
+// type-the-name-then-validate box (not a suggestion typeahead). It needs the
+// Tag's Entity type (-> name) and Species (-> NCBITaxon curie); until both are
+// set it prompts for them. On a hit it adds a chip { value: curie, label: name }.
+const EntityValueAdder = ({ hasValues, entityTypeCurie, taxon, onAdd }) => {
+  const dispatch = useDispatch();
+  const [text, setText] = useState('');
+  const [status, setStatus] = useState(null); // null | 'pending' | 'notfound'
+  const typeName = entityTypeNameForCurie(entityTypeCurie);
+  const taxonReady = !!(taxon && String(taxon).trim());
+  if (!typeName || !taxonReady) {
+    return (
+      <span style={{ fontSize: '0.75rem', color: '#b02a37' }}>
+        Add an <b>Entity type</b> and a <b>Species</b> field to this tag first, then enter an entity name.
+      </span>
+    );
+  }
+  const validate = () => {
+    const name = text.trim();
+    if (!name) return;
+    setStatus('pending');
+    dispatch(changeFieldEntityEntityList(name, null, 'alliance', taxon, typeName, (result) => {
+      const list = Array.isArray(result) ? result : [];
+      const hit = list.find((r) => r && r.curie && !ENTITY_WARN_CURIES.includes(r.curie));
+      if (hit) {
+        onAdd(hit.curie, `${name} (${hit.curie})`);
+        setText('');
+        setStatus(null);
+      } else {
+        setStatus('notfound');
+      }
+    }));
+  };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: '0 0 auto' }}>
+      <Form.Control
+        type="text"
+        size="sm"
+        style={{ width: '16rem', maxWidth: '100%' }}
+        placeholder={hasValues ? 'add entity, Enter' : 'entity name, e.g. ACT1 — Enter to validate'}
+        aria-label="add entity"
+        value={text}
+        onChange={(e) => { setText(e.target.value); if (status) setStatus(null); }}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); validate(); } }}
+        onBlur={validate}
+      />
+      {status === 'pending' && (
+        <span style={{ fontSize: '0.7rem', color: '#6c757d' }}>validating…</span>
+      )}
+      {status === 'notfound' && (
+        <span style={{ fontSize: '0.7rem', color: '#b02a37' }}>
+          “{text.trim()}” not found for that species / entity type
+        </span>
+      )}
+    </div>
+  );
+};
+
 // The value editor for one field row: a chip list (OR) plus an adder. Range fields
-// (confidence score) use a min/max pair instead of chips.
-const ValueEditor = ({ row, onChange }) => {
+// (confidence score) use a min/max pair instead of chips. Entity/Species use their
+// own resolver widgets (tagContext carries the sibling entity type + taxon).
+const ValueEditor = ({ row, onChange, tagContext }) => {
   const dispatch = useDispatch();
   const options = useFieldOptions(row.field);
   const [text, setText] = useState('');
@@ -161,7 +287,16 @@ const ValueEditor = ({ row, onChange }) => {
       {values.length > 0 && (
         <span style={{ fontSize: '0.7rem', color: '#6c757d', whiteSpace: 'nowrap' }}>or</span>
       )}
-      {options ? (
+      {row.field === 'species' ? (
+        <SpeciesValueAdder hasValues={values.length > 0} onAdd={addChip} />
+      ) : row.field === 'entity' ? (
+        <EntityValueAdder
+          hasValues={values.length > 0}
+          entityTypeCurie={tagContext?.entityTypeCurie}
+          taxon={tagContext?.taxon}
+          onAdd={addChip}
+        />
+      ) : options ? (
         <Form.Control
           as="select"
           size="sm"
@@ -203,7 +338,7 @@ const ValueEditor = ({ row, onChange }) => {
   );
 };
 
-const FieldRow = ({ row, onChange, onRemove, canRemove }) => (
+const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext }) => (
   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginBottom: '6px' }}>
     <Form.Control
       as="select"
@@ -218,7 +353,7 @@ const FieldRow = ({ row, onChange, onRemove, canRemove }) => (
       ))}
     </Form.Control>
     <span style={{ padding: '4px 2px', color: '#6c757d' }}>=</span>
-    <ValueEditor row={row} onChange={onChange} />
+    <ValueEditor row={row} onChange={onChange} tagContext={tagContext} />
     <Button
       variant="outline-danger" size="sm"
       onClick={onRemove} disabled={!canRemove}
@@ -246,6 +381,15 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
   const scope = index === 0
     ? 'one tag must match all of these (same tag)'
     : 'a different tag on the same paper must match all of these';
+
+  // Sibling context for the Entity resolver: the specific-entity lookup needs the
+  // Tag's entity type (-> name) and species (-> NCBITaxon curie), both taken from
+  // the first value of the matching field in this same Tag.
+  const firstValue = (fieldKey) => {
+    const f = leaf.fields.find((row) => row.field === fieldKey);
+    return (f && Array.isArray(f.values) && f.values[0]) ? f.values[0].value : '';
+  };
+  const tagContext = { entityTypeCurie: firstValue('entity_type'), taxon: firstValue('species') };
 
   return (
     <div style={{
@@ -282,6 +426,7 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
           onChange={(newRow) => setField(idx, newRow)}
           onRemove={() => removeField(idx)}
           canRemove={leaf.fields.length > 1}
+          tagContext={tagContext}
         />
       ))}
       <Button variant="link" size="sm" style={{ padding: 0 }} onClick={addField}>+ add field (same tag)</Button>
@@ -372,10 +517,11 @@ const AdvancedTopicQueryBuilder = () => {
           onChange={(e) => update({ ...tree, excludeNoData: e.target.checked })}
           label={
             <span style={{ fontSize: '0.8rem' }}>
-              <b>Exclude no-data tags</b> — match only positive (has-data) tags, the
-              same default as the facet search’s “exclude negative”. It appears in the
-              query preview; uncheck to include no-data tags, or add an explicit
-              “Has data” field to a Tag to override it there.
+              <b>Exclude no-data tags</b> — match only positive (has-data) tags, like
+              the facet search’s “exclude negative”. Off by default; check it to add
+              has-data=yes to every tag condition (it then appears in the query
+              preview), or add an explicit “Has data” field to a Tag to control it
+              per tag.
             </span>
           }
         />
@@ -415,11 +561,18 @@ const AdvancedTopicQueryBuilder = () => {
               require the paper has <b>no</b> tag matching that card.
             </li>
             <li>
+              <b>Entity</b> matches a specific entity (e.g. the gene <i>ACT1</i>) by
+              name and stores its curie. It needs an <b>Entity type</b> and a{' '}
+              <b>Species</b> field on the same Tag; type the exact name and press Enter
+              to validate it against that species and type.
+            </li>
+            <li>
               <b>Has data</b> distinguishes positive tags (has data) from negated tags
-              (no data). By default <b>Exclude no-data tags</b> is on, so every tag
-              condition requires a positive tag — the facet search’s “exclude negative”.
-              Uncheck it to include no-data tags, or add an explicit <b>Has data</b>{' '}
-              field to a Tag (set to <b>no</b>) to override the default for that tag.
+              (no data). The tree-wide <b>Exclude no-data tags</b> toggle (off by
+              default) adds has-data=yes to every tag condition — the facet search’s
+              “exclude negative”. Turn it on for positive-only results, or add an
+              explicit <b>Has data</b> field to a Tag (set to <b>no</b>) to control a
+              single tag.
             </li>
             <li>
               <b>Validation (biocurator)</b> filters predicted tags by professional

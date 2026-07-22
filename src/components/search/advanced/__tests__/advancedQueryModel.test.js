@@ -11,6 +11,7 @@ import {
   ENTITY_TYPE_OPTIONS,
   VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
   FIELD_DEF_BY_KEY,
+  entityTypeNameForCurie,
 } from '../advancedQueryModel';
 
 // Build a UI leaf from a compact {field: value|[min,max]} map for terse tests.
@@ -186,6 +187,36 @@ describe('entity_type controlled vocabulary (SCRUM-6228)', () => {
     // Values are ATP curies (what tags store), not display names.
     expect(ENTITY_TYPE_OPTIONS.every((o) => /^ATP:\d+$/.test(o.value))).toBe(true);
     expect(ENTITY_TYPE_OPTIONS.find((o) => o.value === 'ATP:0000005').label).toMatch(/gene/);
+  });
+});
+
+describe('entity field (specific-entity lookup, SCRUM-6228)', () => {
+  test('entity is a free-text field def (no static options/facet)', () => {
+    const def = FIELD_DEF_BY_KEY.entity;
+    expect(def).toBeTruthy();
+    expect(def.label).toBe('Entity');
+    expect(def.facetKey).toBeNull();
+    expect(def.options).toBeUndefined();
+  });
+
+  test('an entity curie compiles to the entity match key', () => {
+    const leaf = {
+      type: 'tet',
+      negate: false,
+      fields: [{ field: 'entity', values: [{ value: 'SGD:S000001855', label: 'ACT1 (SGD:S000001855)' }] }],
+    };
+    expect(compileAdvancedQuery(leaf).match).toEqual({ entity: ['SGD:S000001855'] });
+  });
+
+  test('entityTypeNameForCurie maps curies to endpoint names and normalizes variants', () => {
+    expect(entityTypeNameForCurie('ATP:0000005')).toBe('gene');
+    // transgenic/classical allele collapse to "allele"; transgenic construct to "construct"
+    expect(entityTypeNameForCurie('ATP:0000110')).toBe('allele');
+    expect(entityTypeNameForCurie('ATP:0000285')).toBe('allele');
+    expect(entityTypeNameForCurie('ATP:0000013')).toBe('construct');
+    // unknown / empty -> '' (caller treats as "entity type not set")
+    expect(entityTypeNameForCurie('ATP:9999999')).toBe('');
+    expect(entityTypeNameForCurie('')).toBe('');
   });
 });
 
