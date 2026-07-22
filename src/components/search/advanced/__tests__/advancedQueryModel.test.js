@@ -242,8 +242,8 @@ describe('excludeNoData default (facet "exclude negative" parity, SCRUM-6228)', 
     }],
   });
 
-  test('createEmptyTree defaults excludeNoData on', () => {
-    expect(createEmptyTree().excludeNoData).toBe(true);
+  test('createEmptyTree defaults excludeNoData off', () => {
+    expect(createEmptyTree().excludeNoData).toBe(false);
   });
 
   test('injects has_data=yes into positive leaves when on', () => {
@@ -306,13 +306,13 @@ describe('normalizeToFlatTree (legacy/nested -> flat Tag cards, SCRUM-6228)', ()
     expect(isAdvancedQueryEmpty(normalizeToFlatTree(undefined))).toBe(true);
   });
 
-  test('backfills excludeNoData on for a tree that predates the flag', () => {
+  test('defaults excludeNoData off for a tree that predates the flag', () => {
     const legacy = {
       operator: 'AND',
       children: [{ type: 'tet', negate: false, fields: [{ field: 'topic', value: 'ATP:1' }] }],
     };
     expect(legacy.excludeNoData).toBeUndefined();
-    expect(normalizeToFlatTree(legacy).excludeNoData).toBe(true);
+    expect(normalizeToFlatTree(legacy).excludeNoData).toBe(false);
   });
 
   test('preserves an explicit excludeNoData = false', () => {
@@ -379,7 +379,7 @@ describe('buildValueLabeler (breadcrumb/preview labels, SCRUM-6228)', () => {
     const tree = createEmptyTree();
     tree.children[0].fields[0].values = [{ value: 'ATP:0000152', label: 'disease model' }];
     const preview = describeCompiledQuery(compileAdvancedQuery(tree), buildValueLabeler(tree));
-    expect(preview).toBe('(topic = "disease model" AND has_data = "yes")');
+    expect(preview).toBe('(topic = "disease model")');
   });
 });
 
