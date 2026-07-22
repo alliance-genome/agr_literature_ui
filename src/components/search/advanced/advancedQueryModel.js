@@ -95,9 +95,9 @@ export const isRangeField = (key) => !!(FIELD_DEF_BY_KEY[key] && FIELD_DEF_BY_KE
 // Range fields keep min/max. (Legacy rows with a scalar `value` still compile.)
 // A new field row starts empty, except "Has data": adding it pre-selects
 // "yes (has data)" so an explicit Has-data field is a ready-to-use control (a
-// curator can switch it to "no"). The tree-wide "exclude no-data" default already
-// covers the common positive-only case without any field — see EXCLUDE_NO_DATA_DEFAULT
-// and compileAdvancedQuery (SCRUM-6228).
+// curator can switch it to "no"). The tree-wide "exclude no-data" toggle can also
+// apply has_data = yes to every positive tag, but is off by default — see
+// EXCLUDE_NO_DATA_DEFAULT and compileAdvancedQuery (SCRUM-6228).
 export const createFieldRow = (field = 'topic') => ({
   field,
   values: field === 'has_data'
@@ -113,12 +113,14 @@ export const createGroup = () => ({ operator: 'OR', children: [createLeaf()] });
 // so older/nested saved trees round-trip; normalizeToFlatTree collapses them for
 // display when the flat builder loads one.
 //
-// excludeNoData mirrors the facet search's default "exclude negative": when on
-// (the default), every positive tag condition is compiled with has_data = yes so
-// results only include tags that have data. It is surfaced as a single toggle
-// (not a per-Tag field) and shown in the query preview; unchecking it, or adding an
-// explicit Has data field to a Tag, overrides it (SCRUM-6228).
-export const EXCLUDE_NO_DATA_DEFAULT = true;
+// excludeNoData optionally mirrors the facet search's "exclude negative": when on,
+// every positive tag condition is compiled with has_data = yes so results only
+// include tags that have data. It is surfaced as a single toggle (not a per-Tag
+// field) and shown in the query preview; checking it, or adding an explicit Has data
+// field to a Tag, applies it. It defaults OFF: forcing has_data = yes by default hid
+// the no-data tags that some MODs (e.g. FB) rely on, breaking their searches
+// (SCRUM-6228).
+export const EXCLUDE_NO_DATA_DEFAULT = false;
 export const createEmptyTree = () => ({
   operator: 'AND',
   excludeNoData: EXCLUDE_NO_DATA_DEFAULT,
@@ -141,8 +143,8 @@ export const normalizeToFlatTree = (tree) => {
   walk(tree);
   return {
     operator: String(tree.operator || 'AND').toUpperCase() === 'OR' ? 'OR' : 'AND',
-    // Preserve an explicit excludeNoData; default it on for trees that predate the flag.
-    excludeNoData: tree.excludeNoData !== false,
+    // Preserve an explicit excludeNoData; default it off for trees that predate the flag.
+    excludeNoData: tree.excludeNoData === true,
     children: leaves.length > 0 ? leaves : [createLeaf()],
   };
 };
