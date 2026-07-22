@@ -23,7 +23,6 @@ import {
     removeDatePublished,
     removeDateCreated
 } from '../../actions/searchActions';
-import AdvancedTopicQueryBuilder from './advanced/AdvancedTopicQueryBuilder';
 import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse, ButtonGroup, OverlayTrigger, Tooltip} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
@@ -742,7 +741,9 @@ const Facets = () => {
                                 {facetCategory === 'Date Range'
                                     ? <DateFacet facetsToInclude={facetsInCategory}/>
                                     : (facetCategory === 'Topics and Entities' && searchMode === 'advanced')
-                                        ? <AdvancedTopicQueryBuilder/>
+                                        ? <div style={{ marginLeft: '30px', marginRight: '10px', fontSize: '0.8rem', color: '#6c757d' }}>
+                                              The advanced query builder is shown above the results, where it has more room.
+                                          </div>
                                         : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
                             </div>
                         </Collapse>

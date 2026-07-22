@@ -12,6 +12,7 @@ import SearchResults from "./SearchResults";
 import SearchOptions from "./SearchOptions";
 import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
+import AdvancedTopicQueryBuilder from './advanced/AdvancedTopicQueryBuilder';
 import { compileAdvancedQuery, flattenAdvancedForGrid } from './advanced/advancedQueryModel';
 import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
 import TetGridErrorBoundary from '../refs_tet_validation/TetGridErrorBoundary';
@@ -272,6 +273,38 @@ const SearchLayout = () => {
                     </Col>
                 </Row>
                 <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
+                {/* Advanced Topic query builder (SCRUM-6228-2): in advanced mode the
+                    builder is lifted out of the narrow facet sidebar and rendered as a
+                    full-width band here, above the results, so it gets the horizontal
+                    room its tag/field/value layout needs. The facet sidebar below still
+                    holds the mode toggle and the other facets (corpus/MOD, dates,
+                    category, workflow) that continue to apply on top of the query. */}
+                {searchMode === 'advanced' && (
+                    <>
+                        <Row style={{ margin: 0 }}>
+                            <Col style={{ padding: 0 }}>
+                                <div style={{
+                                    border: '1px solid #cfe2ff',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#fbfdff',
+                                }}>
+                                    <div style={{
+                                        padding: '6px 12px',
+                                        borderBottom: '1px solid #cfe2ff',
+                                        backgroundColor: '#eef5ff',
+                                        borderTopLeftRadius: '8px',
+                                        borderTopRightRadius: '8px',
+                                        fontWeight: 600,
+                                    }}>
+                                        Advanced Topic query
+                                    </div>
+                                    <AdvancedTopicQueryBuilder/>
+                                </div>
+                            </Col>
+                        </Row>
+                        <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
+                    </>
+                )}
                 {/* The flex container wrapping both the facet panel and search results */}
                 <Row style={{ margin: 0 }}>
                     <Col style={{ padding: 0 }}>
