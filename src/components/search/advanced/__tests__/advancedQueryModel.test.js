@@ -11,7 +11,6 @@ import {
   ENTITY_TYPE_OPTIONS,
   VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
   FIELD_DEF_BY_KEY,
-  TET_FIELD_DEFS,
   entityTypeNameForCurie,
 } from '../advancedQueryModel';
 
@@ -192,12 +191,15 @@ describe('entity_type controlled vocabulary (SCRUM-6228)', () => {
 });
 
 describe('entity field (specific-entity lookup, SCRUM-6228)', () => {
-  test('entity is NOT a selectable field in the dropdown (removed per curator request)', () => {
-    expect(FIELD_DEF_BY_KEY.entity).toBeUndefined();
-    expect(TET_FIELD_DEFS.some((d) => d.key === 'entity')).toBe(false);
+  test('entity is a free-text field def (no static options/facet)', () => {
+    const def = FIELD_DEF_BY_KEY.entity;
+    expect(def).toBeTruthy();
+    expect(def.label).toBe('Entity');
+    expect(def.facetKey).toBeNull();
+    expect(def.options).toBeUndefined();
   });
 
-  test('the compiler still folds a persisted entity field into the entity match key', () => {
+  test('an entity curie compiles to the entity match key', () => {
     const leaf = {
       type: 'tet',
       negate: false,

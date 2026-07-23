@@ -1,8 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Badge, Button, ButtonGroup, Form, InputGroup } from 'react-bootstrap';
-import { AsyncTypeahead } from 'react-bootstrap-typeahead';
-import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { api } from '../../../api';
 import {
   setAdvancedTopicQuery,
@@ -10,7 +8,7 @@ import {
   searchReferences,
   fetchAdvancedFacetsVocab,
 } from '../../../actions/searchActions';
-import { changeFieldEntityEntityList } from '../../../actions/biblioActions';
+import { changeFieldEntityEntityList, fetchTaxonData } from '../../../actions/biblioActions';
 import {
   TET_FIELD_DEFS,
   FIELD_DEF_BY_KEY,
@@ -35,11 +33,22 @@ const ENTITY_WARN_CURIES = [
   'no WB curie', 'no SGD curie', 'no mod curie', 'duplicate',
 ];
 
-// Stable per-instance id (AsyncTypeahead requires an id and we may render several).
-let advUidCounter = 0;
-const useAdvUid = (prefix) => {
-  const [id] = useState(() => `${prefix}-${(advUidCounter += 1)}`);
-  return id;
+// Species options for the Species field's dropdown: the Alliance MOD taxa (plus
+// human), matching the TET create form's species list. Read from the shared
+// biblio taxon data (loaded once by the builder via fetchTaxonData). Value is the
+// NCBITaxon curie (what tags store, and what the entity lookup needs); label is the
+// species name. Returns null until the data has loaded.
+const useSpeciesOptions = () => {
+  const modToTaxon = useSelector((s) => s.biblio.modToTaxon);
+  const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
+  return useMemo(() => {
+    if (!modToTaxon || !curieToNameTaxon) return null;
+    const curies = [...new Set(Object.values(modToTaxon).flat().concat('NCBITaxon:9606'))];
+    return curies
+      .filter((c) => c && curieToNameTaxon[c])
+      .map((c) => ({ value: c, label: curieToNameTaxon[c] }))
+      .sort((a, b) => (a.label > b.label ? 1 : -1));
+  }, [modToTaxon, curieToNameTaxon]);
 };
 
 // Process-wide cache of resolved ATP/ECO curie -> display name, so switching
@@ -124,53 +133,6 @@ const ValueChip = ({ chip, onRemove }) => (
   </span>
 );
 
-// Species adder: a taxon typeahead backed by /ontology/search_species. Stores the
-// NCBITaxon curie as the chip value (labelled with the name) so it matches the
-// taxon curie tags carry, and so an Entity field in the same Tag can resolve names
-// against it. Mirrors the SpeciesPicker convention of "<name> <curie>" options.
-const SpeciesValueAdder = ({ hasValues, onAdd }) => {
-  const id = useAdvUid('adv-species-ta');
-  const ref = useRef(null);
-  const [options, setOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  return (
-    <div style={{ width: '16rem', maxWidth: '100%', flex: '0 0 auto' }}>
-      <AsyncTypeahead
-        id={id}
-        ref={ref}
-        size="sm"
-        isLoading={loading}
-        minLength={1}
-        useCache={false}
-        placeholder={hasValues ? 'add species…' : 'species name, e.g. Saccharomyces'}
-        options={options}
-        selected={[]}
-        onSearch={async (query) => {
-          setLoading(true);
-          try {
-            const res = await api.get(`/ontology/search_species/${encodeURIComponent(query)}`);
-            setOptions(Array.isArray(res.data)
-              ? res.data.filter((it) => it?.curie && it?.name).map((it) => `${it.name} ${it.curie}`)
-              : []);
-          } catch (e) {
-            setOptions([]);
-          } finally {
-            setLoading(false);
-          }
-        }}
-        onChange={(selected) => {
-          if (selected && selected.length > 0) {
-            const m = String(selected[selected.length - 1]).match(/(.+)\s+(NCBITaxon:\d+)$/);
-            if (m) onAdd(m[2], `${m[1]} (${m[2]})`);
-            ref.current?.clear?.();
-            setOptions([]);
-          }
-        }}
-      />
-    </div>
-  );
-};
-
 // Entity adder: a specific entity (e.g. gene "ACT1"). The validation endpoint
 // matches an EXACT name for a given entity type + taxon, so this is a
 // type-the-name-then-validate box (not a suggestion typeahead). It needs the
@@ -185,7 +147,7 @@ const EntityValueAdder = ({ hasValues, entityTypeCurie, taxon, onAdd }) => {
   if (!typeName || !taxonReady) {
     return (
       <span style={{ fontSize: '0.75rem', color: '#b02a37' }}>
-        Add an <b>Entity type</b> and a <b>Species</b> field to this tag first, then enter an entity name.
+        Choose an <b>Entity type</b> and a <b>Species</b> for this tag first, then enter an entity name.
       </span>
     );
   }
@@ -231,11 +193,16 @@ const EntityValueAdder = ({ hasValues, entityTypeCurie, taxon, onAdd }) => {
 };
 
 // The value editor for one field row: a chip list (OR) plus an adder. Range fields
-// (confidence score) use a min/max pair instead of chips. Entity/Species use their
-// own resolver widgets (tagContext carries the sibling entity type + taxon).
+// (confidence score) use a min/max pair instead of chips. Species uses the fixed
+// MOD species dropdown; Entity uses a validate-on-type box (tagContext carries the
+// sibling entity type + taxon it resolves against).
 const ValueEditor = ({ row, onChange, tagContext }) => {
   const dispatch = useDispatch();
-  const options = useFieldOptions(row.field);
+  const fieldOptions = useFieldOptions(row.field);
+  const speciesOptions = useSpeciesOptions();
+  // Species is a controlled dropdown of the MOD taxa; [] while the list loads so it
+  // still renders as a (temporarily empty) select rather than a free-text box.
+  const options = row.field === 'species' ? (speciesOptions || []) : fieldOptions;
   const [text, setText] = useState('');
   const values = Array.isArray(row.values) ? row.values : [];
 
@@ -287,9 +254,7 @@ const ValueEditor = ({ row, onChange, tagContext }) => {
       {values.length > 0 && (
         <span style={{ fontSize: '0.7rem', color: '#6c757d', whiteSpace: 'nowrap' }}>or</span>
       )}
-      {row.field === 'species' ? (
-        <SpeciesValueAdder hasValues={values.length > 0} onAdd={addChip} />
-      ) : row.field === 'entity' ? (
+      {row.field === 'entity' ? (
         <EntityValueAdder
           hasValues={values.length > 0}
           entityTypeCurie={tagContext?.entityTypeCurie}
@@ -368,8 +333,22 @@ const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext }) => (
 // DIFFERENT tag on the same paper.
 const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
   const dispatch = useDispatch();
-  const setField = (idx, newRow) =>
-    onChange({ ...leaf, fields: leaf.fields.map((f, i) => (i === idx ? newRow : f)) });
+  const setField = (idx, newRow) => {
+    let fields = leaf.fields.map((f, i) => (i === idx ? newRow : f));
+    // Picking "Entity" needs an entity type and a species to resolve the name
+    // against (a gene is species-specific), so surface those fields automatically
+    // if the Tag doesn't already have them — inserted just above the Entity row so
+    // the curator fills them top-down.
+    if (newRow.field === 'entity') {
+      const missing = ['entity_type', 'species']
+        .filter((k) => !fields.some((f) => f.field === k))
+        .map((k) => createFieldRow(k));
+      if (missing.length > 0) {
+        fields = [...fields.slice(0, idx), ...missing, ...fields.slice(idx)];
+      }
+    }
+    onChange({ ...leaf, fields });
+  };
   const addField = () => onChange({ ...leaf, fields: [...leaf.fields, createFieldRow()] });
   const removeField = (idx) => {
     onChange({ ...leaf, fields: leaf.fields.filter((_f, i) => i !== idx) });
@@ -460,6 +439,12 @@ const AdvancedTopicQueryBuilder = () => {
   useEffect(() => {
     dispatch(fetchAdvancedFacetsVocab());
   }, [corpusModsKey, dispatch]);
+
+  // Load the MOD species list once so the Species field's dropdown is populated
+  // (shared biblio taxon data; the thunk caches and de-dupes fetches).
+  useEffect(() => {
+    dispatch(fetchTaxonData());
+  }, [dispatch]);
 
   // Seed a default flat tree the first time the builder is shown; normalize a
   // legacy/nested saved tree into flat Tag cards so it renders without crashing.
@@ -562,9 +547,9 @@ const AdvancedTopicQueryBuilder = () => {
             </li>
             <li>
               <b>Entity</b> matches a specific entity (e.g. the gene <i>ACT1</i>) by
-              name and stores its curie. It needs an <b>Entity type</b> and a{' '}
-              <b>Species</b> field on the same Tag; type the exact name and press Enter
-              to validate it against that species and type.
+              name and stores its curie. Picking it adds <b>Entity type</b> and{' '}
+              <b>Species</b> fields for you (an entity is species-specific); choose
+              those, then type the exact name and press Enter to validate it.
             </li>
             <li>
               <b>Has data</b> distinguishes positive tags (has data) from negated tags
