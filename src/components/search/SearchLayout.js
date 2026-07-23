@@ -12,6 +12,8 @@ import SearchResults from "./SearchResults";
 import SearchOptions from "./SearchOptions";
 import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
+import AdvancedTopicQueryBuilder from './advanced/AdvancedTopicQueryBuilder';
+import { compileAdvancedQuery, flattenAdvancedForGrid } from './advanced/advancedQueryModel';
 import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
 import TetGridErrorBoundary from '../refs_tet_validation/TetGridErrorBoundary';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -52,11 +54,27 @@ const SearchLayout = () => {
     const confidenceScore = useSelector((s) => s.search.confidenceScore);
     const applyToSingleTag = useSelector((s) => s.search.applyToSingleTag);
     const searchLoading = useSelector((s) => s.search.searchLoading);
+    const searchMode = useSelector((s) => s.search.searchMode);
+    const advancedTopicQuery = useSelector((s) => s.search.advancedTopicQuery);
+
+    // Advanced Topic search (SCRUM-6228): a best-effort FLAT grid filter derived
+    // from the builder tree. The grid's flat filter can't model the boolean tree,
+    // and row inclusion is already authoritative from the search, so this only
+    // scopes which tags the grid fetches/highlights (union of all leaves).
+    const advGridFilters = useMemo(
+        () => (searchMode === 'advanced'
+            ? flattenAdvancedForGrid(compileAdvancedQuery(advancedTopicQuery))
+            : undefined),
+        [searchMode, advancedTopicQuery]
+    );
 
     const referenceIds = useMemo(
         () => (searchResults || []).map((r) => r.curie).filter(Boolean),
         [searchResults]
     );
+    // Signature of the current result set, used as the topic-grid error boundary's
+    // resetKey so each new query gets a fresh auto-recovery budget (SCRUM-6228).
+    const gridResetKey = useMemo(() => referenceIds.join('|'), [referenceIds]);
     // Reuse the biblio data the search already returned (curie/title/authors/
     // cross_references/date_published) so the grid can skip the per-row
     // /reference/{curie} fetch. Keyed by canonical AGRKB curie.
@@ -68,20 +86,38 @@ const SearchLayout = () => {
         return map;
     }, [searchResults]);
     const topicsForGrid = useMemo(() => {
-        const arr = searchFacetsValues?.topics;
+        // In advanced mode the topic columns come from the union of topics across
+        // the builder's leaves; in facet mode from the topic facet selection.
+        const arr = searchMode === 'advanced'
+            ? advGridFilters?.topics
+            : searchFacetsValues?.topics;
         if (!Array.isArray(arr) || arr.length === 0) return undefined;
-        // searchFacetsValues.topics is always a list of ATP curies (the bucket.key
-        // values from the topic aggregation); display names are looked up by the
-        // grid via /ontology/map_curie_to_name/atpterm/{curie}.
+        // These are ATP curies (the bucket.key values from the topic aggregation);
+        // display names are looked up by the grid via
+        // /ontology/map_curie_to_name/atpterm/{curie}.
         return arr.map((curie) => ({ curie, name: undefined }));
-    }, [searchFacetsValues]);
+    }, [searchMode, advGridFilters, searchFacetsValues]);
     // Confidence levels the user excluded (e.g. ['NEG']). The Topic grid fetches
     // TETs independently of the search query, so it must apply the same
     // "Exclude NEG" filter itself to avoid showing negative data the search hid.
     const excludedConfidenceLevels = useMemo(
-        () => searchExcludedFacetsValues?.confidence_levels || [],
-        [searchExcludedFacetsValues]
+        () => (searchMode === 'advanced'
+            ? (advGridFilters?.negated_confidence_levels || [])
+            : (searchExcludedFacetsValues?.confidence_levels || [])),
+        [searchMode, advGridFilters, searchExcludedFacetsValues]
     );
+    // Confidence range for the grid's client-side re-filter. In facet mode this is
+    // the confidence slider. In advanced mode the slider is hidden (replaced by the
+    // builder), so a stale non-default slider value would silently hide grid tags
+    // the advanced query actually matched — use the builder's confidence_score range
+    // instead (the same range already sent server-side via advGridFilters), falling
+    // back to the full [0, 1] no-op range when the builder sets none.
+    const confidenceScoreForGrid = useMemo(() => {
+        if (searchMode !== 'advanced') return confidenceScore;
+        const min = advGridFilters?.confidence_score_min;
+        const max = advGridFilters?.confidence_score_max;
+        return (typeof min === 'number' && typeof max === 'number') ? [min, max] : [0, 1];
+    }, [searchMode, advGridFilters, confidenceScore]);
     // The TET facet criteria from the current search, forwarded to the grid's
     // batch fetch so the API returns ONLY the tags the search asked for (e.g.
     // when a curator selects a topic/entity) instead of every tag on every
@@ -90,6 +126,26 @@ const SearchLayout = () => {
     // sent only when it differs from the default full range [0, 1].
     const searchFilters = useMemo(() => {
         const fv = searchFacetsValues || {};
+        // Corpus/MOD scope still comes from the Alliance Metadata facets in both
+        // modes (that category stays visible when the Topic builder is active).
+        const corpusMods = Array.from(new Set([
+            ...(fv['mods_in_corpus.keyword'] || []),
+            ...(fv['mods_needs_review.keyword'] || []),
+            ...(fv['mods_in_corpus_or_needs_review.keyword'] || []),
+        ]));
+
+        // Advanced Topic search: use the flattened builder filter (best-effort
+        // union across tags) instead of the flat facet selections.
+        if (searchMode === 'advanced') {
+            const base = advGridFilters ? { ...advGridFilters } : {};
+            if (corpusMods.length > 0) base.mods = corpusMods;
+            if (Object.keys(base).length === 0) return undefined;
+            // The flat grid filter can't model the AND/OR tree; the union above is
+            // matched across tags, so never assert single-tag semantics here.
+            base.apply_to_single_tag = false;
+            return base;
+        }
+
         const neg = searchExcludedFacetsValues || {};
         const nonEmpty = (a) => Array.isArray(a) && a.length > 0;
         const f = {};
@@ -104,15 +160,10 @@ const SearchLayout = () => {
         if (nonEmpty(neg.source_methods)) f.negated_source_methods = neg.source_methods;
         if (nonEmpty(neg.source_evidence_assertions)) f.negated_source_evidence_assertions = neg.source_evidence_assertions;
         // MOD scope: the corpus facet selection (in-corpus / needs-review /
-        // in-corpus-or-needs-review). The grid shows only the selected MOD's tags,
-        // so a shared reference doesn't surface another MOD's tags (e.g. an
-        // fb_svm_classifier / FB source when only WB is selected). Union across the
-        // three corpus facets; when none is selected, no MOD restriction is sent.
-        const corpusMods = Array.from(new Set([
-            ...(fv['mods_in_corpus.keyword'] || []),
-            ...(fv['mods_needs_review.keyword'] || []),
-            ...(fv['mods_in_corpus_or_needs_review.keyword'] || []),
-        ]));
+        // in-corpus-or-needs-review), computed as corpusMods at the top of this
+        // memo. The grid shows only the selected MOD's tags, so a shared reference
+        // doesn't surface another MOD's tags (e.g. an fb_svm_classifier / FB source
+        // when only WB is selected). When none is selected, no MOD restriction is sent.
         if (corpusMods.length > 0) f.mods = corpusMods;
         if (Array.isArray(confidenceScore) && !(confidenceScore[0] === 0 && confidenceScore[1] === 1)) {
             f.confidence_score_min = confidenceScore[0];
@@ -129,7 +180,7 @@ const SearchLayout = () => {
         // (the reducer defaults applyToSingleTag to true).
         f.apply_to_single_tag = !!applyToSingleTag;
         return f;
-    }, [searchFacetsValues, searchExcludedFacetsValues, confidenceScore, applyToSingleTag]);
+    }, [searchMode, advGridFilters, searchFacetsValues, searchExcludedFacetsValues, confidenceScore, applyToSingleTag]);
 
     // Handle window resize
     useEffect(() => {
@@ -222,6 +273,39 @@ const SearchLayout = () => {
                     </Col>
                 </Row>
                 <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
+                {/* Advanced Topic query builder (SCRUM-6228-2): in advanced mode the
+                    builder is lifted out of the narrow facet sidebar and rendered as a
+                    full-width band here, above the results, so it gets the horizontal
+                    room its tag/field/value layout needs. The facet sidebar below still
+                    holds the mode toggle and the other facets (corpus/MOD, dates,
+                    category, workflow) that continue to apply on top of the query. */}
+                {searchMode === 'advanced' && (
+                    <>
+                        <Row style={{ margin: 0 }}>
+                            <Col style={{ padding: 0 }}>
+                                <div style={{
+                                    border: '1px solid #cfe2ff',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#fbfdff',
+                                }}>
+                                    <div style={{
+                                        padding: '6px 12px',
+                                        borderBottom: '1px solid #cfe2ff',
+                                        backgroundColor: '#eef5ff',
+                                        borderTopLeftRadius: '8px',
+                                        borderTopRightRadius: '8px',
+                                        fontWeight: 600,
+                                        textAlign: 'left',
+                                    }}>
+                                        Advanced Topic query
+                                    </div>
+                                    <AdvancedTopicQueryBuilder/>
+                                </div>
+                            </Col>
+                        </Row>
+                        <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
+                    </>
+                )}
                 {/* The flex container wrapping both the facet panel and search results */}
                 <Row style={{ margin: 0 }}>
                     <Col style={{ padding: 0 }}>
@@ -368,12 +452,12 @@ const SearchLayout = () => {
                                             display: view === 'grid' && !searchLoading ? 'block' : 'none',
                                         }}
                                     >
-                                        <TetGridErrorBoundary>
+                                        <TetGridErrorBoundary resetKey={gridResetKey}>
                                             <TetValidationGrid
                                                 referenceIds={referenceIds}
                                                 topics={topicsForGrid}
                                                 excludedConfidenceLevels={excludedConfidenceLevels}
-                                                confidenceScore={confidenceScore}
+                                                confidenceScore={confidenceScoreForGrid}
                                                 biblioByCurie={biblioByCurie}
                                                 searchFilters={searchFilters}
                                                 active={view === 'grid'}

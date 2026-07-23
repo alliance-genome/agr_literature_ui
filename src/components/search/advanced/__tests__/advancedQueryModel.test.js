@@ -1,0 +1,468 @@
+import {
+  compileAdvancedQuery,
+  isAdvancedQueryEmpty,
+  createEmptyTree,
+  createFieldRow,
+  flattenAdvancedForGrid,
+  normalizeToFlatTree,
+  describeCompiledQuery,
+  isLeaf,
+  buildValueLabeler,
+  ENTITY_TYPE_OPTIONS,
+  VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
+  FIELD_DEF_BY_KEY,
+  TET_FIELD_DEFS,
+  entityTypeNameForCurie,
+} from '../advancedQueryModel';
+
+// Build a UI leaf from a compact {field: value|[min,max]} map for terse tests.
+const leaf = (fieldMap, negate = false) => ({
+  type: 'tet',
+  negate,
+  fields: Object.entries(fieldMap).map(([field, value]) =>
+    field === 'confidence_score'
+      ? { field, value: '', min: value[0], max: value[1] }
+      : { field, value }
+  ),
+});
+
+describe('compileAdvancedQuery', () => {
+  test('single leaf -> API leaf with array-valued match', () => {
+    expect(compileAdvancedQuery(leaf({ topic: 'ATP:0000018' }))).toEqual({
+      type: 'tet',
+      negate: false,
+      match: { topic: ['ATP:0000018'] },
+    });
+  });
+
+  test('comma-separated value becomes multiple OR values on the field', () => {
+    expect(compileAdvancedQuery(leaf({ topic: 'ATP:1, ATP:2' })).match).toEqual({
+      topic: ['ATP:1', 'ATP:2'],
+    });
+  });
+
+  test('AND group of two leaves', () => {
+    const tree = { operator: 'AND', children: [leaf({ topic: 'ATP:1' }), leaf({ entity_type: 'ATP:2' })] };
+    const out = compileAdvancedQuery(tree);
+    expect(out.operator).toBe('AND');
+    expect(out.children).toHaveLength(2);
+  });
+
+  test('OR group of two leaves', () => {
+    const tree = { operator: 'OR', children: [leaf({ source_method: 'ACKnowledge form' }), leaf({ source_method: 'ABC classifier' })] };
+    const out = compileAdvancedQuery(tree);
+    expect(out.operator).toBe('OR');
+    expect(out.children).toHaveLength(2);
+  });
+
+  test('ticket example: AND of an OR-group and an Allele leaf', () => {
+    const tree = {
+      operator: 'AND',
+      children: [
+        {
+          operator: 'OR',
+          children: [
+            leaf({ topic: 'ATP:0000018', source_method: 'ACKnowledge form', confidence_level: 'POS' }),
+            leaf({ topic: 'ATP:0000018', source_method: 'ABC classifier', confidence_level: 'POS' }),
+          ],
+        },
+        leaf({ topic: 'ATP:0000012', entity_type: 'ATP:0000110', entity: 'WB:WBGene00000001' }),
+      ],
+    };
+    const out = compileAdvancedQuery(tree);
+    expect(out.operator).toBe('AND');
+    expect(out.children).toHaveLength(2);
+    expect(out.children[0].operator).toBe('OR');
+    expect(out.children[0].children).toHaveLength(2);
+    expect(out.children[1].match).toEqual({
+      topic: ['ATP:0000012'],
+      entity_type: ['ATP:0000110'],
+      entity: ['WB:WBGene00000001'],
+    });
+  });
+
+  test('deeply nested groups (sub-groups) compile recursively', () => {
+    const tree = {
+      operator: 'AND',
+      children: [
+        leaf({ topic: 'ATP:0000012' }),
+        {
+          operator: 'OR',
+          children: [
+            leaf({ source_method: 'ACKnowledge form' }),
+            {
+              operator: 'AND',
+              children: [
+                leaf({ source_method: 'ABC classifier' }),
+                leaf({ confidence_level: 'POS' }),
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const out = compileAdvancedQuery(tree);
+    expect(out.operator).toBe('AND');
+    expect(out.children).toHaveLength(2);
+    const orGroup = out.children[1];
+    expect(orGroup.operator).toBe('OR');
+    // The nested AND sub-group is preserved as its own bool node.
+    const innerAnd = orGroup.children.find((c) => c.operator === 'AND');
+    expect(innerAnd).toBeTruthy();
+    expect(innerAnd.children).toHaveLength(2);
+  });
+
+  test('negate leaf is preserved', () => {
+    expect(compileAdvancedQuery(leaf({ confidence_level: 'NEG' }, true))).toEqual({
+      type: 'tet',
+      negate: true,
+      match: { confidence_level: ['NEG'] },
+    });
+  });
+
+  test('confidence_score compiles to a [min, max] range', () => {
+    expect(compileAdvancedQuery(leaf({ confidence_score: [0.5, 1] })).match).toEqual({
+      confidence_score: [0.5, 1],
+    });
+  });
+
+  test('single-child group collapses to the child', () => {
+    const tree = { operator: 'AND', children: [leaf({ topic: 'ATP:1' })] };
+    expect(compileAdvancedQuery(tree)).toEqual(compileAdvancedQuery(leaf({ topic: 'ATP:1' })));
+  });
+
+  test('empty leaves/groups collapse away', () => {
+    const tree = {
+      operator: 'AND',
+      children: [
+        leaf({ topic: 'ATP:1' }),
+        leaf({ topic: '' }),
+        { operator: 'OR', children: [leaf({ entity: '  ' })] },
+      ],
+    };
+    expect(compileAdvancedQuery(tree)).toEqual(compileAdvancedQuery(leaf({ topic: 'ATP:1' })));
+  });
+
+  test('a freshly seeded default tree is empty (nothing to search yet)', () => {
+    // New Tags carry only an empty Topic field; the excludeNoData default never makes
+    // an otherwise-empty tree runnable (has_data is injected only into non-empty leaves).
+    expect(compileAdvancedQuery(createEmptyTree())).toBeNull();
+    expect(isAdvancedQueryEmpty(createEmptyTree())).toBe(true);
+    expect(compileAdvancedQuery(null)).toBeNull();
+  });
+});
+
+describe('field-row chip shape (multi-value OR, SCRUM-6228)', () => {
+  // The Tag-card UI stores values as [{ value, label }] chips; multiple chips on a
+  // field OR. Legacy scalar `value` rows must still compile.
+  const chipLeaf = (fieldMap, negate = false) => ({
+    type: 'tet',
+    negate,
+    fields: Object.entries(fieldMap).map(([field, chips]) => ({
+      field,
+      values: chips.map((c) => ({ value: c, label: `${c}-name` })),
+    })),
+  });
+
+  test('multiple chips on one field compile to an OR value list', () => {
+    const out = compileAdvancedQuery(chipLeaf({ source_method: ['acknowledge_form', 'abc_document_classifier'] }));
+    expect(out.match).toEqual({
+      source_method: ['acknowledge_form', 'abc_document_classifier'],
+    });
+  });
+
+  test('distinct chip fields AND on the same tag', () => {
+    const out = compileAdvancedQuery(chipLeaf({ topic: ['ATP:1'], entity_type: ['ATP:2'] }));
+    expect(out.match).toEqual({ topic: ['ATP:1'], entity_type: ['ATP:2'] });
+  });
+
+  test('empty chip list drops the field (and an all-empty leaf compiles to null)', () => {
+    expect(compileAdvancedQuery(chipLeaf({ topic: [] }))).toBeNull();
+  });
+});
+
+describe('entity_type controlled vocabulary (SCRUM-6228)', () => {
+  test('entity_type field uses the static ATP-curie option list', () => {
+    expect(FIELD_DEF_BY_KEY.entity_type.options).toBe(ENTITY_TYPE_OPTIONS);
+    expect(ENTITY_TYPE_OPTIONS.length).toBeGreaterThan(0);
+    // Values are ATP curies (what tags store), not display names.
+    expect(ENTITY_TYPE_OPTIONS.every((o) => /^ATP:\d+$/.test(o.value))).toBe(true);
+    expect(ENTITY_TYPE_OPTIONS.find((o) => o.value === 'ATP:0000005').label).toMatch(/gene/);
+  });
+});
+
+describe('entity field (specific-entity lookup, SCRUM-6228)', () => {
+  test('entity is NOT a selectable field in the dropdown (removed per curator request)', () => {
+    expect(FIELD_DEF_BY_KEY.entity).toBeUndefined();
+    expect(TET_FIELD_DEFS.some((d) => d.key === 'entity')).toBe(false);
+  });
+
+  test('the compiler still folds a persisted entity field into the entity match key', () => {
+    const leaf = {
+      type: 'tet',
+      negate: false,
+      fields: [{ field: 'entity', values: [{ value: 'SGD:S000001855', label: 'ACT1 (SGD:S000001855)' }] }],
+    };
+    expect(compileAdvancedQuery(leaf).match).toEqual({ entity: ['SGD:S000001855'] });
+  });
+
+  test('entityTypeNameForCurie maps curies to endpoint names and normalizes variants', () => {
+    expect(entityTypeNameForCurie('ATP:0000005')).toBe('gene');
+    // transgenic/classical allele collapse to "allele"; transgenic construct to "construct"
+    expect(entityTypeNameForCurie('ATP:0000110')).toBe('allele');
+    expect(entityTypeNameForCurie('ATP:0000285')).toBe('allele');
+    expect(entityTypeNameForCurie('ATP:0000013')).toBe('construct');
+    // unknown / empty -> '' (caller treats as "entity type not set")
+    expect(entityTypeNameForCurie('ATP:9999999')).toBe('');
+    expect(entityTypeNameForCurie('')).toBe('');
+  });
+});
+
+describe('validation_by_professional_biocurator controlled vocabulary (SCRUM-6228)', () => {
+  test('field uses the static validation option list', () => {
+    expect(FIELD_DEF_BY_KEY.validation_by_professional_biocurator.options)
+      .toBe(VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS);
+    // Values are the raw tokens stored on tags (map to the .keyword field), labels are human-readable.
+    const values = VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS.map((o) => o.value);
+    expect(values).toEqual([
+      'validated_right',
+      'validated_wrong',
+      'validated_right_self',
+      'validation_conflict',
+      'not_validated',
+    ]);
+    expect(VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS.find((o) => o.value === 'validated_right').label)
+      .toBe('validated right');
+  });
+
+  test('include-right-or-unreviewed compiles to an OR value list (curator use case)', () => {
+    const out = compileAdvancedQuery({
+      type: 'tet',
+      negate: false,
+      fields: [
+        { field: 'topic', values: [{ value: 'ATP:0000110', label: 'transgene' }] },
+        {
+          field: 'validation_by_professional_biocurator',
+          values: [
+            { value: 'validated_right', label: 'validated right' },
+            { value: 'not_validated', label: 'not validated' },
+          ],
+        },
+      ],
+    });
+    expect(out.match).toEqual({
+      topic: ['ATP:0000110'],
+      validation_by_professional_biocurator: ['validated_right', 'not_validated'],
+    });
+  });
+});
+
+describe('excludeNoData default (facet "exclude negative" parity, SCRUM-6228)', () => {
+  const treeWith = (fieldMap, excludeNoData, negate = false) => ({
+    operator: 'AND',
+    excludeNoData,
+    children: [{
+      type: 'tet',
+      negate,
+      fields: Object.entries(fieldMap).map(([field, values]) => ({
+        field,
+        values: values.map((v) => ({ value: v, label: v })),
+      })),
+    }],
+  });
+
+  test('createEmptyTree defaults excludeNoData off', () => {
+    expect(createEmptyTree().excludeNoData).toBe(false);
+  });
+
+  test('injects has_data=yes into positive leaves when on', () => {
+    expect(compileAdvancedQuery(treeWith({ topic: ['ATP:1'] }, true)).match)
+      .toEqual({ topic: ['ATP:1'], has_data: ['yes'] });
+  });
+
+  test('does not inject when off', () => {
+    expect(compileAdvancedQuery(treeWith({ topic: ['ATP:1'] }, false)).match)
+      .toEqual({ topic: ['ATP:1'] });
+  });
+
+  test('does not inject into excluded (negated) leaves', () => {
+    const out = compileAdvancedQuery(treeWith({ topic: ['ATP:1'] }, true, true));
+    expect(out.negate).toBe(true);
+    expect(out.match).toEqual({ topic: ['ATP:1'] });
+  });
+
+  test('an explicit Has data field overrides the default', () => {
+    expect(compileAdvancedQuery(treeWith({ topic: ['ATP:1'], has_data: ['no'] }, true)).match)
+      .toEqual({ topic: ['ATP:1'], has_data: ['no'] });
+  });
+
+  test('never makes an empty tree runnable', () => {
+    const emptyTree = {
+      operator: 'AND',
+      excludeNoData: true,
+      children: [{ type: 'tet', negate: false, fields: [createFieldRow('topic')] }],
+    };
+    expect(compileAdvancedQuery(emptyTree)).toBeNull();
+    expect(isAdvancedQueryEmpty(emptyTree)).toBe(true);
+  });
+
+  test('picking Has data pre-selects yes; other fields start empty', () => {
+    expect(createFieldRow('has_data').values).toEqual([{ value: 'yes', label: 'yes (has data)' }]);
+    expect(createFieldRow('topic').values).toEqual([]);
+  });
+});
+
+describe('normalizeToFlatTree (legacy/nested -> flat Tag cards, SCRUM-6228)', () => {
+  test('collapses a nested tree into a flat list of leaves', () => {
+    const nested = {
+      operator: 'AND',
+      children: [
+        { operator: 'OR', children: [
+          { type: 'tet', negate: false, fields: [{ field: 'topic', value: 'ATP:1' }] },
+          { type: 'tet', negate: false, fields: [{ field: 'topic', value: 'ATP:2' }] },
+        ] },
+        { type: 'tet', negate: true, fields: [{ field: 'confidence_level', value: 'NEG' }] },
+      ],
+    };
+    const flat = normalizeToFlatTree(nested);
+    expect(flat.operator).toBe('AND');
+    expect(flat.children).toHaveLength(3);
+    expect(flat.children.every(isLeaf)).toBe(true);
+  });
+
+  test('empty/undefined input yields a seed tree', () => {
+    expect(normalizeToFlatTree(undefined).children).toHaveLength(1);
+    expect(isAdvancedQueryEmpty(normalizeToFlatTree(undefined))).toBe(true);
+  });
+
+  test('defaults excludeNoData off for a tree that predates the flag', () => {
+    const legacy = {
+      operator: 'AND',
+      children: [{ type: 'tet', negate: false, fields: [{ field: 'topic', value: 'ATP:1' }] }],
+    };
+    expect(legacy.excludeNoData).toBeUndefined();
+    expect(normalizeToFlatTree(legacy).excludeNoData).toBe(false);
+  });
+
+  test('preserves an explicit excludeNoData = false', () => {
+    const off = { operator: 'AND', excludeNoData: false, children: [] };
+    expect(normalizeToFlatTree(off).excludeNoData).toBe(false);
+  });
+});
+
+describe('describeCompiledQuery (preview, SCRUM-6228)', () => {
+  const leaf = (fieldMap, negate = false) => ({
+    type: 'tet',
+    negate,
+    fields: Object.entries(fieldMap).map(([field, value]) =>
+      field === 'confidence_score'
+        ? { field, value: '', min: value[0], max: value[1] }
+        : { field, value }
+    ),
+  });
+
+  test('single value renders with = and applies labelFor', () => {
+    const compiled = compileAdvancedQuery(leaf({ topic: 'ATP:0000018' }));
+    const label = (f, v) => (v === 'ATP:0000018' ? 'disease model' : v);
+    expect(describeCompiledQuery(compiled, label)).toBe('(topic = "disease model")');
+  });
+
+  test('multi value renders with in (...) and NOT wraps a negated tag', () => {
+    const compiled = compileAdvancedQuery(leaf({ source_method: 'a, b' }, true));
+    expect(describeCompiledQuery(compiled)).toBe('NOT (source_method in ("a", "b"))');
+  });
+
+  test('AND of two tags joins with the top operator', () => {
+    const tree = { operator: 'AND', children: [leaf({ topic: 'ATP:1' }), leaf({ entity_type: 'ATP:2' })] };
+    expect(describeCompiledQuery(compileAdvancedQuery(tree)))
+      .toBe('((topic = "ATP:1") AND (entity_type = "ATP:2"))');
+  });
+
+  test('confidence_score renders as a range', () => {
+    const compiled = compileAdvancedQuery(leaf({ confidence_score: [0.5, 1] }));
+    expect(describeCompiledQuery(compiled)).toBe('(confidence_score in [0.5, 1])');
+  });
+
+  test('null compiled query renders empty', () => {
+    expect(describeCompiledQuery(null)).toBe('');
+  });
+});
+
+describe('buildValueLabeler (breadcrumb/preview labels, SCRUM-6228)', () => {
+  test('maps a chip value to its label and falls back to the raw value', () => {
+    const tree = {
+      operator: 'AND',
+      children: [{
+        type: 'tet',
+        negate: false,
+        fields: [{ field: 'topic', values: [{ value: 'ATP:0000152', label: 'disease model (atp:0000152)' }] }],
+      }],
+    };
+    const labelFor = buildValueLabeler(tree);
+    expect(labelFor('topic', 'ATP:0000152')).toBe('disease model (atp:0000152)');
+    expect(labelFor('topic', 'ATP:9999')).toBe('ATP:9999');
+    expect(labelFor('source_method', 'x')).toBe('x');
+  });
+
+  test('drives a readable preview off a compiled tree', () => {
+    const tree = createEmptyTree();
+    tree.children[0].fields[0].values = [{ value: 'ATP:0000152', label: 'disease model' }];
+    const preview = describeCompiledQuery(compileAdvancedQuery(tree), buildValueLabeler(tree));
+    expect(preview).toBe('(topic = "disease model")');
+  });
+});
+
+describe('flattenAdvancedForGrid (grid integration, SCRUM-6228)', () => {
+  test('unions positive sub-facet values across all leaves', () => {
+    const tree = {
+      operator: 'AND',
+      children: [
+        {
+          operator: 'OR',
+          children: [
+            leaf({ topic: 'ATP:0000018', source_method: 'ACKnowledge form' }),
+            leaf({ topic: 'ATP:0000018', source_method: 'ABC classifier' }),
+          ],
+        },
+        leaf({ topic: 'ATP:0000012', entity_type: 'ATP:0000110', entity: 'WB:WBGene1' }),
+      ],
+    };
+    const flat = flattenAdvancedForGrid(compileAdvancedQuery(tree));
+    expect(flat.topics.sort()).toEqual(['ATP:0000012', 'ATP:0000018']);
+    expect(flat.source_methods.sort()).toEqual(['ABC classifier', 'ACKnowledge form']);
+    expect(flat.entity_types).toEqual(['ATP:0000110']);
+    expect(flat.entities).toEqual(['WB:WBGene1']);
+  });
+
+  test('negated leaves map to negated_* grid keys', () => {
+    const tree = { operator: 'AND', children: [
+      leaf({ topic: 'ATP:1' }),
+      leaf({ confidence_level: 'NEG' }, true),
+    ] };
+    const flat = flattenAdvancedForGrid(compileAdvancedQuery(tree));
+    expect(flat.topics).toEqual(['ATP:1']);
+    expect(flat.negated_confidence_levels).toEqual(['NEG']);
+  });
+
+  test('unions confidence_score ranges and omits the default full range', () => {
+    const tightened = flattenAdvancedForGrid(compileAdvancedQuery(
+      { operator: 'OR', children: [
+        leaf({ topic: 'ATP:1', confidence_score: [0.4, 0.9] }),
+        leaf({ topic: 'ATP:2', confidence_score: [0.6, 1] }),
+      ] }
+    ));
+    expect(tightened.confidence_score_min).toBe(0.4);
+    expect(tightened.confidence_score_max).toBe(1);
+
+    const fullRange = flattenAdvancedForGrid(compileAdvancedQuery(
+      leaf({ topic: 'ATP:1', confidence_score: [0, 1] })
+    ));
+    expect(fullRange.confidence_score_min).toBeUndefined();
+    expect(fullRange.confidence_score_max).toBeUndefined();
+  });
+
+  test('returns undefined for an empty/null compiled tree', () => {
+    expect(flattenAdvancedForGrid(null)).toBeUndefined();
+    expect(flattenAdvancedForGrid(compileAdvancedQuery(createEmptyTree()))).toBeUndefined();
+  });
+});

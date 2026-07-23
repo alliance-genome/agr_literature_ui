@@ -1,5 +1,6 @@
 import axios from "axios";
 import { api } from "../api";
+import { compileAdvancedQuery } from "../components/search/advanced/advancedQueryModel";
 //import {useDispatch, useSelector} from 'react-redux';
 
 export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
@@ -38,8 +39,17 @@ export const SEARCH_REMOVE_DATE_PUBLISHED = "SEARCH_REMOVE_DATE_PUBLISHED"
 export const SEARCH_REMOVE_DATE_CREATED = "SEARCH_REMOVE_DATE_CREATED"
 export const SEARCH_SET_CURRENT_ABORT_CONTROLLER = 'SEARCH_SET_CURRENT_ABORT_CONTROLLER';
 export const SEARCH_LOAD_SAVED_SEARCH_STATE = 'SEARCH_LOAD_SAVED_SEARCH_STATE';
+export const SEARCH_SET_SEARCH_MODE = 'SEARCH_SET_SEARCH_MODE';
+export const SEARCH_SET_ADVANCED_TOPIC_QUERY = 'SEARCH_SET_ADVANCED_TOPIC_QUERY';
+export const SEARCH_SET_ADVANCED_FACETS_VOCAB = 'SEARCH_SET_ADVANCED_FACETS_VOCAB';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions","data_novelty"];
+
+// Upper bound for the Advanced query builder's value dropdowns. The facet panel
+// paginates (INITIAL_FACETS_LIMIT with Show More/All), and every search overwrites
+// searchFacets with result-scoped, limited buckets — so the builder can't rely on
+// it for a complete list. Mirrors the facet panel's "Show All" limit (1000).
+const ADVANCED_VOCAB_LIMIT = 1000;
 
 export const loadSavedSearchState = (saved) => ({
   type: SEARCH_LOAD_SAVED_SEARCH_STATE,
@@ -80,6 +90,76 @@ export const fetchInitialFacets = (facetsLimits) => {
           // dispatch(setSearchFacets(res.data.aggregations));
         })
         .catch();
+  }
+}
+
+// Fetch the TET sub-facet vocabulary for the Advanced query builder (SCRUM-6228),
+// scoped to the currently selected corpus/MOD so the dropdowns list only the topics
+// (and sources) relevant to that MOD rather than the whole ontology. Uses query:null
+// with the MOD facet keys as facets_values and a high per-facet limit so the lists
+// aren't truncated to the facet panel's INITIAL_FACETS_LIMIT. Stored separately from
+// searchFacets so a later search's result-scoped aggregations don't overwrite it, and
+// re-fetched when the MOD selection changes. When no MOD is selected, falls back to
+// the global list.
+export const fetchAdvancedFacetsVocab = () => {
+  return (dispatch, getState) => {
+    const fv = (getState().search && getState().search.searchFacetsValues) || {};
+    // Mirror the corpus/MOD facet keys the search itself uses to scope aggregations.
+    const facets_values = {};
+    ['mods_in_corpus.keyword', 'mods_needs_review.keyword', 'mods_in_corpus_or_needs_review.keyword']
+      .forEach((k) => {
+        if (Array.isArray(fv[k]) && fv[k].length > 0) facets_values[k] = fv[k];
+      });
+    const mods = Array.from(new Set(Object.values(facets_values).flat()));
+    const hasMod = mods.length > 0;
+
+    const facets_limits = TET_FACETS_LIST.reduce((acc, key) => {
+      acc[key] = ADVANCED_VOCAB_LIMIT;
+      return acc;
+    }, {});
+    // Source methods are aggregated only within a corpus/MOD scope, so the aggregation
+    // returns them only when a MOD is selected. The dedicated endpoint carries the full
+    // list with its owning MOD, so use it to fill/scope source methods when the
+    // aggregation doesn't.
+    Promise.all([
+      api.post('/search/references/', {
+        query: null,
+        facets_values: hasMod ? facets_values : null,
+        facets_limits: facets_limits,
+        return_facets_only: true
+      })
+        .then(res => (res.data && res.data.aggregations) ? res.data.aggregations : {})
+        .catch(() => ({})),
+      api.get('/topic_entity_tag/source/all')
+        .then(res => Array.isArray(res.data) ? res.data : [])
+        .catch(() => [])
+    ]).then(([aggregations, sources]) => {
+      const vocab = { ...aggregations };
+      const aggSources = (vocab.source_methods && Array.isArray(vocab.source_methods.buckets))
+        ? vocab.source_methods.buckets : [];
+      // Prefer the MOD-scoped aggregation's source methods; otherwise derive them from
+      // the endpoint, filtered to the selected MOD(s) when one is chosen. The endpoint
+      // returns one row per MOD, so dedupe by name; bucket.key is the source_method
+      // string, matching the value the search filter expects.
+      if (aggSources.length === 0) {
+        const modSet = new Set(mods);
+        const seen = new Set();
+        const sourceBuckets = [];
+        for (const item of sources) {
+          const key = item && item.source_method ? String(item.source_method) : '';
+          if (!key || seen.has(key)) continue;
+          if (hasMod) {
+            const provider = item.data_provider || item.secondary_data_provider_abbreviation;
+            if (!modSet.has(provider)) continue;
+          }
+          seen.add(key);
+          sourceBuckets.push({ key });
+        }
+        sourceBuckets.sort((a, b) => a.key.localeCompare(b.key));
+        if (sourceBuckets.length > 0) vocab.source_methods = { buckets: sourceBuckets };
+      }
+      if (Object.keys(vocab).length > 0) dispatch(setAdvancedFacetsVocab(vocab));
+    });
   }
 }
 
@@ -230,7 +310,30 @@ const getSearchParams = (state) => {
         facetsValues[key] = data[key];
     }
   });
-  console.log('POST /search/references payload', params);    
+
+  // Advanced Topic search (SCRUM-6228): when the query builder is active, replace
+  // the flat TET nested-facet mechanism with the compiled AND/OR tree. Non-TET
+  // facets (category, corpus/MOD, dates, workflow) still flow through unchanged.
+  if (state.search.searchMode === 'advanced') {
+    const compiled = compileAdvancedQuery(state.search.advancedTopicQuery);
+    if (compiled) {
+      delete params.tet_nested_facets_values;
+      params.tet_advanced_query = compiled;
+    } else {
+      // Empty advanced query (e.g. after Clear All): keep an EMPTY nested structure
+      // rather than deleting it, so the request stays a valid "search everything"
+      // (matching the facet path) instead of one with no query/filters — which the
+      // backend rejects with a 400. Stray facet-mode TET selections are still ignored
+      // because we overwrite with empty arrays.
+      params.tet_nested_facets_values = {
+        "apply_to_single_tag": state.search.applyToSingleTag,
+        "tet_facets_values": [],
+        "tet_facets_negative_values": []
+      };
+    }
+  }
+
+  console.log('POST /search/references payload', params);
   return params;
 }
 
@@ -463,6 +566,13 @@ export const setSearchFacets = (facets) => ({
   }
 });
 
+export const setAdvancedFacetsVocab = (facets) => ({
+  type: SEARCH_SET_ADVANCED_FACETS_VOCAB,
+  payload: {
+    facets: facets
+  }
+});
+
 export const setReadyToFacetSearch = (value) => ({
   type: SEARCH_SET_READY_TO_FACET_SEARCH,
   payload: {
@@ -593,4 +703,17 @@ export const removeDateCreated = () => ({
 export const setCurrentAbortController = (cancelSource) => ({
   type: SEARCH_SET_CURRENT_ABORT_CONTROLLER,
   payload: cancelSource
+});
+
+// Advanced Topic query builder (SCRUM-6228). searchMode toggles between the
+// facet panel ('facet') and the query builder ('advanced'); advancedTopicQuery
+// holds the builder's UI tree (compiled to tet_advanced_query at search time).
+export const setSearchMode = (mode) => ({
+  type: SEARCH_SET_SEARCH_MODE,
+  payload: mode
+});
+
+export const setAdvancedTopicQuery = (tree) => ({
+  type: SEARCH_SET_ADVANCED_TOPIC_QUERY,
+  payload: tree
 });

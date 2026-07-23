@@ -79,10 +79,11 @@
   border-radius: 0 0 8px 8px;
   border-right: 0;
 }
-/* Top scrollbar lives between the AgGrid header and the body (DOM-moved into
-   .ag-root after .ag-header at runtime). The sticky `top` is set inline based
-   on the measured header height so it pins right below the header when the
-   page scrolls. */
+/* Top scrollbar lives between the AgGrid header and the body. It is rendered via
+   a React portal into a display:contents container placed after .ag-header inside
+   .ag-root (see TetValidationGrid.jsx), so its sticky context is .ag-root while
+   React keeps ownership of the node. The sticky `top` is set inline based on the
+   measured header height so it pins right below the header when the page scrolls. */
 .tetv-top-scroll {
   position: sticky;
   z-index: 3;

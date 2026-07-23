@@ -17,6 +17,7 @@ import {
     setDateCreated,
     setConfidenceScore,
     setApplyToSingleTag,
+    setSearchMode,
     removeDatePubmedAdded,
     removeDatePubmedModified,
     removeDatePublished,
@@ -625,6 +626,7 @@ const Facets = () => {
     const applyToSingleTag = useSelector(state => state.search.applyToSingleTag);
     const seaValues = useSelector(state => state.search.searchFacetsValues['source_evidence_assertions'] || []);
     const hasGroupSEA = seaValues.some(v => v === 'ECO:0006155' || v === 'ECO:0007669');
+    const searchMode = useSelector(state => state.search.searchMode);
     const dispatch = useDispatch();
 
     // Whenever a group-SEA is selected, turn off applyToSingleTag
@@ -704,11 +706,22 @@ const Facets = () => {
                             <div>
 				{facetCategory === 'Topics and Entities' && (
 				   <>
-				     {/*  {showWarning && (
-					   <div className="alert alert-warning" role="alert">
-					       You can only pick one topic and one confidence level since you checked the "apply selections to one tag" checkbox.
-					   </div>
-				       )} */}
+				     {/* Advanced Topic search toggle (SCRUM-6228): sits next to the
+				         Topic facet; switches between the facet panel and the query
+				         builder. */}
+				     <div style={{ marginLeft: '30px', marginBottom: '6px' }}>
+				       <ButtonGroup size="sm">
+				         <Button
+				           variant={searchMode === 'facet' ? 'primary' : 'outline-secondary'}
+				           onClick={() => dispatch(setSearchMode('facet'))}
+				         >Facets</Button>
+				         <Button
+				           variant={searchMode === 'advanced' ? 'primary' : 'outline-secondary'}
+				           onClick={() => dispatch(setSearchMode('advanced'))}
+				         >Advanced query</Button>
+				       </ButtonGroup>
+				     </div>
+				     {searchMode === 'facet' && (
                                        <Form.Check
 					   type="checkbox"
 					   label="apply selections to single tag"
@@ -722,9 +735,16 @@ const Facets = () => {
 					       opacity: hasGroupSEA ? 0.5 : 1
 					   }}
                                        />
+				     )}
 				   </>
                                 )}
-                                {facetCategory === 'Date Range' ? <DateFacet facetsToInclude={facetsInCategory}/> : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
+                                {facetCategory === 'Date Range'
+                                    ? <DateFacet facetsToInclude={facetsInCategory}/>
+                                    : (facetCategory === 'Topics and Entities' && searchMode === 'advanced')
+                                        ? <div style={{ marginLeft: '30px', marginRight: '10px', fontSize: '0.8rem', color: '#6c757d' }}>
+                                              The advanced query builder is shown above the results, where it has more room.
+                                          </div>
+                                        : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
                             </div>
                         </Collapse>
                     </div>
