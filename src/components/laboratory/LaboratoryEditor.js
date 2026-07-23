@@ -587,7 +587,7 @@ const LaboratoryEditor = ({ laboratory }) => {
   const deleteMember = (i) => deleteChild({ list: members, update: updateMember, remove: removeMember, i, endpoint: '/laboratory_person' });
 
   const recordTs = metaLabel(recordMeta.updated_by, recordMeta.date_updated);
-  const rowLabel = (list, i, one) => (i === list.length - 1 ? `new ${one}` : `${one} ${i + 1}`);
+  const rowLabel = (list, i, one) => (i === list.length - 1 ? `${one} (add)` : one);
   const modOptions = (enumDict.mods || []).filter(Boolean);
 
   const scalarField = (field, label, props = {}) => (
@@ -848,7 +848,7 @@ const LaboratoryEditor = ({ laboratory }) => {
               return (
               <FieldLine
                 key={i}
-                label={i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (new)' : (x.curie_prefix || 'xref')}
+                label={i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : (x.curie_prefix || 'xref')}
                 ts={metaLabel(x._by, x._ts)}
                 status={childStatus(x, xrefSnap)}
                 error={x._error}
@@ -901,7 +901,7 @@ const LaboratoryEditor = ({ laboratory }) => {
             {alleles.map((a, i) => (
               <FieldLine
                 key={i}
-                label={i === alleles.length - 1 && alleleIsEmpty(a) ? 'designation (new)' : (a.mod_abbreviation || 'designation')}
+                label={i === alleles.length - 1 && alleleIsEmpty(a) ? 'designation (add)' : (a.mod_abbreviation || 'designation')}
                 ts={metaLabel(a._by, a._ts)}
                 status={childStatus(a, alleleSnap)}
                 error={a._error}

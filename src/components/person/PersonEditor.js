@@ -1062,24 +1062,24 @@ const PersonEditor = ({ person }) => {
   };
 
   const labelForName = (n, i) => {
-    if (i === names.length - 1 && nameIsEmpty(n)) return 'name (new)';
+    if (i === names.length - 1 && nameIsEmpty(n)) return 'name (add)';
     return n.is_primary ? 'name (primary)' : 'name';
   };
   const labelForEmail = (e, i) => {
-    if (i === emails.length - 1 && emailIsEmpty(e)) return 'email (new)';
+    if (i === emails.length - 1 && emailIsEmpty(e)) return 'email (add)';
     if (e.invalidated) return 'old_email';
     return 'email';
   };
   const labelForUrl = (u, i) =>
-    i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (new)' : 'webpage';
+    i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (add)' : 'webpage';
   const labelForInst = (it, i) =>
-    i === insts.length - 1 && instIsEmpty(it) ? 'institution (new)' : 'institution';
+    i === insts.length - 1 && instIsEmpty(it) ? 'institution (add)' : 'institution';
   const labelForXref = (x, i) =>
-    i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (new)' : x.curie_prefix || 'xref';
+    i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : x.curie_prefix || 'xref';
   const labelForNote = (n, i) =>
-    i === notes.length - 1 && noteIsEmpty(n) ? 'comment (new)' : 'comment';
+    i === notes.length - 1 && noteIsEmpty(n) ? 'comment (add)' : 'comment';
   const labelForLab = (l, i) =>
-    i === labs.length - 1 && labIsEmpty(l) ? 'laboratory (new)' : 'laboratory';
+    i === labs.length - 1 && labIsEmpty(l) ? 'laboratory (add)' : 'laboratory';
 
   const recordTs = metaLabel(recordMeta.updated_by, recordMeta.date_updated);
 
