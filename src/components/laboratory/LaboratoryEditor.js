@@ -411,7 +411,16 @@ const LaboratoryEditor = ({ laboratory }) => {
     if (row._id && key === row._savedKey) return; // saved & unchanged
     update(i, { _status: 'saving', _error: null });
     const isCreate = !row._id;
-    const body = bodyFn(row, isCreate);
+    // On PATCH, only send the fields that changed vs the last-saved baseline, so
+    // unrelated (possibly stale/invalid) values aren't resent and a concurrent
+    // edit to another field isn't clobbered. bodyFn maps these to API fields.
+    let changedKeys = null;
+    if (!isCreate && savedOf) {
+      const cur = savedOf(row);
+      const base = row._saved || {};
+      changedKeys = Object.keys(cur).filter((k) => cur[k] !== base[k]);
+    }
+    const body = bodyFn(row, isCreate, changedKeys);
     const req = isCreate ? api.post(createPath, body) : api.patch(`${endpoint}/${row._id}`, body);
     req
       .then((res) => {
@@ -461,9 +470,14 @@ const LaboratoryEditor = ({ laboratory }) => {
     list: xrefs, update: updateXref, i, override,
     idKey: 'laboratory_cross_reference_id', endpoint: '/laboratory_cross_reference', createPath: '/laboratory_cross_reference/',
     completeFn: (r) => !!((r.curie_prefix || '').trim() && (r.curie || '').trim()),
-    bodyFn: (r, isCreate) => {
-      const body = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
-      return isCreate ? { ...body, laboratory_curie: curie } : body;
+    bodyFn: (r, isCreate, changed) => {
+      const full = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
+      if (isCreate) return { ...full, laboratory_curie: curie };
+      const body = {};
+      // prefix + id both feed the single API `curie` field.
+      if (changed.includes('curie_prefix') || changed.includes('curie')) body.curie = full.curie;
+      if (changed.includes('is_obsolete')) body.is_obsolete = full.is_obsolete;
+      return body;
     },
     snap: xrefSnap, savedOf: xrefFields,
   });
@@ -490,9 +504,12 @@ const LaboratoryEditor = ({ laboratory }) => {
     list: alleles, update: updateAllele, i, override,
     idKey: 'laboratory_allele_designation_id', endpoint: '/laboratory_allele_designation', createPath: '/laboratory_allele_designation/',
     completeFn: (r) => !!((r.mod_abbreviation || '').trim() && (r.allele_designation || '').trim()),
-    bodyFn: (r, isCreate) => {
-      const body = { mod_abbreviation: r.mod_abbreviation, allele_designation: (r.allele_designation || '').trim(), is_obsolete: !!r.is_obsolete };
-      return isCreate ? { ...body, laboratory_curie: curie } : body;
+    bodyFn: (r, isCreate, changed) => {
+      const full = { mod_abbreviation: r.mod_abbreviation, allele_designation: (r.allele_designation || '').trim(), is_obsolete: !!r.is_obsolete };
+      if (isCreate) return { ...full, laboratory_curie: curie };
+      const body = {};
+      ['mod_abbreviation', 'allele_designation', 'is_obsolete'].forEach((k) => { if (changed.includes(k)) body[k] = full[k]; });
+      return body;
     },
     snap: alleleSnap, savedOf: alleleFields,
   });
@@ -530,17 +547,34 @@ const LaboratoryEditor = ({ laboratory }) => {
     list: members, update: updateMember, i, override,
     idKey: 'laboratory_person_id', endpoint: '/laboratory_person', createPath: '/laboratory_person/',
     completeFn: (r) => !!r.personCurie,
-    bodyFn: (r, isCreate) => {
+    bodyFn: (r, isCreate, changed) => {
       const now = new Date().toISOString();
-      const flags = {
-        is_pi: r.is_pi ? (r._is_pi_ts || now) : null,
-        former_pi: r.former_pi ? (r._former_pi_ts || now) : null,
-        alum: r.alum ? (r._alum_ts || now) : null,
-        is_lab_contact: !!r.is_lab_contact,
-        can_edit_lab: !!r.can_edit_lab,
-        lab_position: r.lab_position || null,
+      // Map one member field to its API value (date-flag checkboxes -> timestamp/null).
+      const fieldValue = (key) => {
+        if (key === 'is_pi') return r.is_pi ? (r._is_pi_ts || now) : null;
+        if (key === 'former_pi') return r.former_pi ? (r._former_pi_ts || now) : null;
+        if (key === 'alum') return r.alum ? (r._alum_ts || now) : null;
+        if (key === 'is_lab_contact') return !!r.is_lab_contact;
+        if (key === 'can_edit_lab') return !!r.can_edit_lab;
+        if (key === 'lab_position') return r.lab_position || null;
+        return undefined;
       };
-      return isCreate ? { ...flags, laboratory_curie: curie, person_curie: r.personCurie } : flags;
+      if (isCreate) {
+        return {
+          is_pi: fieldValue('is_pi'), former_pi: fieldValue('former_pi'), alum: fieldValue('alum'),
+          is_lab_contact: fieldValue('is_lab_contact'), can_edit_lab: fieldValue('can_edit_lab'),
+          lab_position: fieldValue('lab_position'),
+          laboratory_curie: curie, person_curie: r.personCurie,
+        };
+      }
+      // PATCH only the changed field(s), so unrelated (possibly stale/invalid)
+      // values like lab_position aren't resent. personCurie is immutable here.
+      const body = {};
+      changed.forEach((key) => {
+        const v = fieldValue(key);
+        if (v !== undefined) body[key] = v;
+      });
+      return body;
     },
     snap: memberSnap, savedOf: memberFields,
     applyResp: (d) => ({
