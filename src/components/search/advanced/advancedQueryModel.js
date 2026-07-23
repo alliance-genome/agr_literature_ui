@@ -92,7 +92,6 @@ export const VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS = [
 export const TET_FIELD_DEFS = [
   { key: 'topic', label: 'Topic', facetKey: 'topics' },
   { key: 'entity_type', label: 'Entity type', facetKey: null, options: ENTITY_TYPE_OPTIONS },
-  { key: 'entity', label: 'Entity', facetKey: null },
   { key: 'source_method', label: 'Source method', facetKey: 'source_methods' },
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },
   { key: 'confidence_level', label: 'Confidence level', facetKey: 'confidence_levels' },
