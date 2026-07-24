@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "../../../api";
+import useAbortableSearch from "../../../hooks/useAbortableSearch";
 import { isSuccess } from "../../../api/httpStatus";
 import {
   getDescendantATPIds,
@@ -33,6 +34,8 @@ const TopicEntityCreate = () => {
   const debugMode = false;
 
   const dispatch = useDispatch();
+  const runTopicSearch = useAbortableSearch();
+  const runSpeciesSearch = useAbortableSearch();
   const editTag = useSelector((state) => state.biblio.editTag);
   const referenceJsonLive = useSelector((state) => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"];
@@ -863,35 +866,39 @@ const TopicEntityCreate = () => {
                 <AsyncTypeahead
                   isLoading={topicSelectLoading}
                   useCache={false}
+                  delay={300}
                   placeholder="Start typing to search topics"
                   ref={topicTypeaheadRef}
                   id={`topicTypeahead-${index}`}
-                  onSearch={async (query) => {
-                    setTopicSelectLoading(true);
-                    try {
+                  onSearch={(query) => runTopicSearch(
+                    (signal) => {
                       let url = `/ontology/search_topic/${encodeURIComponent(query)}`;
                       if (accessLevel) {
                         url += "?mod_abbr=" + accessLevel
                       }
-                      const response = await api.get(url);
+                      return api.get(url, { signal });
+                    },
+                    (response, err) => {
+                      if (err) {
+                        console.error("Error during topic search:", err);
+                        setTypeaheadOptions([]);
+                        return;
+                      }
                       const results = response.data;
                       if (!Array.isArray(results)) {
-                         throw new Error("Invalid response format");
+                        console.error("Error during topic search: invalid response format");
+                        setTypeaheadOptions([]);
+                        return;
                       }
-          	    const nameToCurie = {};
-          	    for (const item of results) {
-          		nameToCurie[item.name] = item.curie;
-          	    }
-
-          	    dispatch(setTypeaheadName2CurieMap(nameToCurie));
-          	    setTypeaheadOptions(Object.keys(nameToCurie));
-                    } catch (error) {
-                      console.error("Error during topic search:", error);
-                      setTypeaheadOptions([]);
-                    } finally {
-                      setTopicSelectLoading(false);
-          	  }
-                  }}
+                      const nameToCurie = {};
+                      for (const item of results) {
+                        nameToCurie[item.name] = item.curie;
+                      }
+                      dispatch(setTypeaheadName2CurieMap(nameToCurie));
+                      setTypeaheadOptions(Object.keys(nameToCurie));
+                    },
+                    setTopicSelectLoading,
+                  )}
                   onChange={(selected) => {
                     if (selected.length > 0) {
                       const selectedCurie = typeaheadName2CurieMap[selected[0]];
@@ -1020,24 +1027,23 @@ const TopicEntityCreate = () => {
           	  id={`species-typeahead-${index}`}
                     multiple
                     isLoading={speciesSelectLoading}
+                    delay={300}
                     placeholder="enter species name"
                     ref={speciesTypeaheadRef}
-                    onSearch={async (query) => {
-                      setSpeciesSelectLoading(true);
-                      try {
-                        const url = `/ontology/search_species/${encodeURIComponent(query)}`;
-                        const response = await api.get(url);
+                    onSearch={(query) => runSpeciesSearch(
+                      (signal) => api.get(`/ontology/search_species/${encodeURIComponent(query)}`, { signal }),
+                      (response, err) => {
+                        if (err) {
+                          console.error("Error fetching typeahead options:", err);
+                          return;
+                        }
                         const results = response.data;
-
-                        setSpeciesSelectLoading(false);
                         if (results) {
                           setTypeaheadOptions(results.map((item) => `${item.name} ${item.curie}`));
                         }
-                      } catch (error) {
-                         console.error("Error fetching typeahead options:", error);
-                          setSpeciesSelectLoading(false);
-                      }
-          	  }}
+                      },
+                      setSpeciesSelectLoading,
+                    )}
                     onChange={(selected) => {
                       const extractedStrings = selected
                         .map((specie) => {

@@ -3,6 +3,7 @@ import { AsyncTypeahead } from 'react-bootstrap-typeahead';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 import { api } from '../../../api';
 import { debug } from '../helpers/debug';
+import useAbortableSearch from '../../../hooks/useAbortableSearch';
 
 /** Single-select species autocomplete used by the validation modals.
  *
@@ -27,6 +28,7 @@ export default function SpeciesPicker({
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const typeaheadRef = useRef(null);
+  const runSearch = useAbortableSearch();
 
   const selectedString = value
     ? `${valueName || value} ${value}`
@@ -54,12 +56,16 @@ export default function SpeciesPicker({
       disabled={disabled}
       useCache={false}
       minLength={1}
-      onSearch={async (query) => {
-        setLoading(true);
-        try {
-          const res = await api.get(
-            `/ontology/search_species/${encodeURIComponent(query)}`
-          );
+      delay={300}
+      onSearch={(query) => runSearch(
+        (signal) => api.get(`/ontology/search_species/${encodeURIComponent(query)}`, { signal }),
+        (res, err) => {
+          if (err) {
+            // Network / 5xx — clear suggestions, leave the field as is.
+            debug.warn('[SpeciesPicker] search failed', err?.message);
+            setOptions([]);
+            return;
+          }
           if (Array.isArray(res.data)) {
             setOptions(
               res.data
@@ -69,14 +75,9 @@ export default function SpeciesPicker({
           } else {
             setOptions([]);
           }
-        } catch (e) {
-          // Network / 5xx — clear suggestions, leave the field as is.
-          debug.warn('[SpeciesPicker] search failed', e?.message);
-          setOptions([]);
-        } finally {
-          setLoading(false);
-        }
-      }}
+        },
+        setLoading,
+      )}
       onChange={(selected) => {
         if (!selected || selected.length === 0) {
           onChange?.(null);

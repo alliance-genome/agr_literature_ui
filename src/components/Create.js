@@ -598,6 +598,9 @@ const CreateLab = () => {
     setCreateError('');
     try {
       // lookupKey ('name' | 'strain_designation') selects the matching endpoint.
+      // Both by_name and by_strain_designation return 200 + a (possibly empty)
+      // List, so res.data is always an array here. The single-object and 404
+      // branches below are defensive only (not part of this endpoint's contract).
       const res = await api.get('/laboratory/by_' + lookupKey + '?query=' + encodeURIComponent(trimmed));
       let list = [];
       if (Array.isArray(res.data)) {

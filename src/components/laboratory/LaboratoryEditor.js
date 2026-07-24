@@ -8,6 +8,7 @@ import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 
 import { api } from '../../api';
+import { roleFlagDisabled } from '../../utils/labPersonRoles';
 import PersonCuriePicker from '../person/PersonCuriePicker';
 import { enumDict } from '../biblio/BiblioEditor';
 import LaboratoryEditorLayoutModal from '../settings/LaboratoryEditorLayoutModal';
@@ -228,6 +229,7 @@ const LaboratoryEditor = ({ laboratory }) => {
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
+  const isWB = effectiveMod === 'WB';
 
   // ---- layout / visibility / metadata-toggle state (restored from saved prefs) ----
   const [activeLayout, setActiveLayout] = useState(null);
@@ -1005,7 +1007,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                       {positionOptions.map((p) => (<option key={p} value={p}>{p}</option>))}
                     </HlControl>
                     {dateFlags.map(({ key, tsKey }) => {
-                      const stamp = showTimestamps && m[key] && m[tsKey] ? formatTimestamp(m[tsKey]) : null;
+                      const stamp = isWB && showTimestamps && m[key] && m[tsKey] ? formatTimestamp(m[tsKey]) : null;
                       return (
                         <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
                           <HlCheck
@@ -1014,7 +1016,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                             label={key}
                             checked={m[key]}
                             savedValue={m._saved?.[key]}
-                            disabled={!m.personCurie}
+                            disabled={!m.personCurie || roleFlagDisabled(m, key)}
                             onChange={(ev) => { updateMember(i, { [key]: ev.target.checked }); saveMember(i, { [key]: ev.target.checked }); }}
                             style={{ whiteSpace: 'nowrap' }}
                           />
@@ -1030,7 +1032,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                         label={key}
                         checked={m[key]}
                         savedValue={m._saved?.[key]}
-                        disabled={!m.personCurie}
+                        disabled={!m.personCurie || roleFlagDisabled(m, key)}
                         onChange={(ev) => { updateMember(i, { [key]: ev.target.checked }); saveMember(i, { [key]: ev.target.checked }); }}
                         style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
                       />

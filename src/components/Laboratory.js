@@ -38,13 +38,16 @@ const classifyInput = (raw, lookupKey) => {
   }
   return {
     endpoint: '/laboratory/by_' + lookupKey + '?query=' + encodeURIComponent(trimmed),
+    field: lookupKey,
   };
 };
 
-const buildSearch = (value, tab) => {
+const buildSearch = (value, tab, field) => {
   const params = new URLSearchParams();
   params.set('q', value);
   if (tab && tab !== DEFAULT_TAB) params.set('tab', tab);
+  // Only free-text (name/strain) lookups carry the field; curie/xref omit it.
+  if (field) params.set('field', field);
   return '?' + params.toString();
 };
 
@@ -56,13 +59,21 @@ const Laboratory = () => {
   const testerMod = useSelector((state) => state.isLogged.testerMod);
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
 
-  // Lookup field for free-text queries. WormBase curators default to strain
-  // designation; everyone else to lab name. Initialized synchronously so the
-  // mount-time URL-sync auto-load (e.g. a WB deep-link) uses the right field on
-  // first render; the effect below still covers a late-resolving accessLevel.
-  // Stop auto-defaulting once the curator picks a field themselves.
-  const [lookupKey, setLookupKey] = useState(() => (accessLevel === 'WB' ? 'strain_designation' : 'name'));
-  const lookupKeyTouched = useRef(false);
+  // Lookup field for free-text queries. An explicit ?field= in the URL wins;
+  // otherwise WormBase curators default to strain designation, everyone else to
+  // lab name. Initialized synchronously so the mount-time URL-sync auto-load uses
+  // the right field on first render.
+  // Mount-only: consumed solely by the useState/useRef initializers below (which
+  // read it once). Later URL changes are reflected into lookupKey by the sync
+  // effect further down — this does NOT keep lookupKey in step on its own.
+  const urlField = (() => {
+    const f = new URLSearchParams(location.search).get('field');
+    return f === 'name' || f === 'strain_designation' ? f : null;
+  })();
+  const [lookupKey, setLookupKey] = useState(urlField || (accessLevel === 'WB' ? 'strain_designation' : 'name'));
+  // A URL-supplied field (or a manual dropdown change) is an explicit choice that
+  // freezes the MOD default.
+  const lookupKeyTouched = useRef(!!urlField);
   useEffect(() => {
     if (!lookupKeyTouched.current) {
       setLookupKey(accessLevel === 'WB' ? 'strain_designation' : 'name');
@@ -81,9 +92,17 @@ const Laboratory = () => {
 
   // The query currently reflected in the URL, so URL syncs don't refetch needlessly.
   const currentQueryRef = useRef(null);
+  // The lookup field reflected in the URL for the current query (null for curie/xref).
+  const currentFieldRef = useRef(null);
 
-  const runQuery = useCallback(async (rawValue, tabForUrl) => {
-    const classified = classifyInput(rawValue, lookupKey);
+  const runQuery = useCallback(async (rawValue, tabForUrl, fieldOverride, replaceHistory = false) => {
+    // fieldOverride lets the URL-sync path force the field before lookupKey state
+    // has settled; otherwise use the current dropdown selection. replaceHistory is
+    // set when the query originates from the URL (deep-link / Back / forward) so
+    // normalizing a field-less URL to include ?field= replaces the entry instead
+    // of pushing a new one — otherwise Back would re-trigger this and re-push,
+    // trapping the browser Back button.
+    const classified = classifyInput(rawValue, fieldOverride || lookupKey);
     if (!classified) return;
     setIsLoading(true);
     setShowAlert(false);
@@ -107,6 +126,7 @@ const Laboratory = () => {
         setError('Laboratory not found');
         setShowAlert(true);
         currentQueryRef.current = null;
+        currentFieldRef.current = null;
         return;
       }
 
@@ -118,15 +138,17 @@ const Laboratory = () => {
         setMatches(null);
       }
       currentQueryRef.current = rawValue.trim();
+      currentFieldRef.current = classified.field ?? null;
 
-      const desiredSearch = buildSearch(rawValue.trim(), tabForUrl ?? activeTab);
+      const desiredSearch = buildSearch(rawValue.trim(), tabForUrl ?? activeTab, classified.field);
       if (location.search !== desiredSearch) {
-        history.push({ pathname: '/lab', search: desiredSearch });
+        history[replaceHistory ? 'replace' : 'push']({ pathname: '/lab', search: desiredSearch });
       }
     } catch (err) {
       setLaboratoryData(null);
       setMatches(null);
       currentQueryRef.current = null;
+      currentFieldRef.current = null;
       const detail = err?.response?.data?.detail;
       setError(typeof detail === 'string' ? detail : 'An unexpected error occurred.');
       setShowAlert(true);
@@ -140,18 +162,25 @@ const Laboratory = () => {
     const params = new URLSearchParams(location.search);
     const q = params.get('q');
     const tab = params.get('tab');
+    const fieldParam = params.get('field');
+    const validField = fieldParam === 'name' || fieldParam === 'strain_designation' ? fieldParam : null;
 
     if (tab && VALID_TABS.includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }
+    if (validField && validField !== lookupKey) {
+      setLookupKey(validField);
+      lookupKeyTouched.current = true;
+    }
 
     if (!q) {
       currentQueryRef.current = null;
+      currentFieldRef.current = null;
       return;
     }
-    if (currentQueryRef.current === q) return;
+    if (currentQueryRef.current === q && currentFieldRef.current === validField) return;
     setInputValue(q);
-    runQuery(q, tab && VALID_TABS.includes(tab) ? tab : activeTab);
+    runQuery(q, tab && VALID_TABS.includes(tab) ? tab : activeTab, validField, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
@@ -168,7 +197,7 @@ const Laboratory = () => {
     setActiveTab(key);
     const q = currentQueryRef.current;
     if (q) {
-      const newSearch = buildSearch(q, key);
+      const newSearch = buildSearch(q, key, currentFieldRef.current);
       if (location.search !== newSearch) {
         history.replace({ pathname: '/lab', search: newSearch });
       }
