@@ -242,6 +242,7 @@ const LaboratoryEditor = ({ laboratory }) => {
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
+  const isWB = effectiveMod === 'WB';
 
   // ---- layout / visibility / metadata-toggle state (restored from saved prefs) ----
   const [activeLayout, setActiveLayout] = useState(null);
@@ -1019,7 +1020,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                       {positionOptions.map((p) => (<option key={p} value={p}>{p}</option>))}
                     </HlControl>
                     {dateFlags.map(({ key, tsKey }) => {
-                      const stamp = showTimestamps && m[key] && m[tsKey] ? formatTimestamp(m[tsKey]) : null;
+                      const stamp = isWB && showTimestamps && m[key] && m[tsKey] ? formatTimestamp(m[tsKey]) : null;
                       return (
                         <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
                           <HlCheck

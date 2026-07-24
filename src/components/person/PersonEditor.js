@@ -1461,7 +1461,7 @@ const PersonEditor = ({ person }) => {
                 )}
                 {flags.map(({ key, tsKey }) => {
                   const stamp =
-                    showTimestamps && lab[key] && lab[tsKey]
+                    isWB && showTimestamps && lab[key] && lab[tsKey]
                       ? formatTimestamp(lab[tsKey])
                       : null;
                   return (
