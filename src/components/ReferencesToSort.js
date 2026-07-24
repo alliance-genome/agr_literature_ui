@@ -15,6 +15,7 @@ import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import { NewTaxonModal, FileElement } from './SortHelper'; // Updated import
 import PropTypes from 'prop-types';
 import { api } from '../api';
+import useAbortableSearch from '../hooks/useAbortableSearch';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faCheck, faCheckCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
 
@@ -39,6 +40,7 @@ const ReferencesToSort = ({
   showCheckbox = false
 }) => {
   const dispatch = useDispatch();
+  const runSpeciesSearch = useAbortableSearch();
 
   const backgroundColor = reference['prepublication_pipeline'] ? '#f8d7da' : '';
 
@@ -335,29 +337,26 @@ const ReferencesToSort = ({
                   id={`species_select-${index}`}
                   labelKey={`species_select-${index}`}
                   useCache={false}
-                  onSearch={(query) => {
-                    const loadingState = new Array(speciesSelectLoading.length).fill(false);
-                    loadingState[index] = true;
-                    setSpeciesSelectLoading(loadingState);
-
-                    api
-                      .get(`/ontology/search_species/${encodeURIComponent(query)}`)
-                      .then(res => {
-                        const updatedLoading = new Array(speciesSelectLoading.length).fill(false);
-                        setSpeciesSelectLoading(updatedLoading);
-
-                        // Assuming API returns an array of { name, curie }
-                        if (Array.isArray(res.data)) {
-                          setTypeaheadOptions(
-                            res.data.map(item => `${item.name} ${item.curie}`)
-                          );
-                        }
-                      })
-                      .catch(error => {
-                        console.error('Error searching species:', error);
-                        setSpeciesSelectLoading(new Array(speciesSelectLoading.length).fill(false));
-                      });
-                  }}
+                  onSearch={(query) => runSpeciesSearch(
+                    (signal) => api.get(`/ontology/search_species/${encodeURIComponent(query)}`, { signal }),
+                    (res, err) => {
+                      if (err) {
+                        console.error('Error searching species:', err);
+                        return;
+                      }
+                      // Assuming API returns an array of { name, curie }
+                      if (Array.isArray(res.data)) {
+                        setTypeaheadOptions(
+                          res.data.map(item => `${item.name} ${item.curie}`)
+                        );
+                      }
+                    },
+                    (loading) => {
+                      const loadingState = new Array(speciesSelectLoading.length).fill(false);
+                      if (loading) loadingState[index] = true;
+                      setSpeciesSelectLoading(loadingState);
+                    },
+                  )}
                   onChange={(selected) => {
                     const newSpeciesSelect = [...speciesSelect];
                     newSpeciesSelect[index] = selected;

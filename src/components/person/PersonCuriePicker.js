@@ -3,6 +3,7 @@ import { AsyncTypeahead } from 'react-bootstrap-typeahead';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 
 import { api } from '../../api';
+import useAbortableSearch from '../../hooks/useAbortableSearch';
 
 /**
  * Name -> person single-select autocomplete for the Lineage section.
@@ -23,6 +24,7 @@ export default function PersonCuriePicker({
 }) {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const runSearch = useAbortableSearch();
 
   const labelKey = (o) => {
     if (typeof o === 'string') return o;
@@ -40,24 +42,22 @@ export default function PersonCuriePicker({
       disabled={disabled}
       useCache={false}
       minLength={2}
+      delay={300}
       labelKey={labelKey}
       filterBy={() => true}
-      onSearch={async (query) => {
-        setLoading(true);
-        try {
-          const res = await api.get('/person/by_name?name=' + encodeURIComponent(query));
+      onSearch={(query) => runSearch(
+        (signal) => api.get('/person/by_name?name=' + encodeURIComponent(query), { signal }),
+        (res, err) => {
+          if (err) { setOptions([]); return; }
           const list = Array.isArray(res.data)
             ? res.data
             : res.data && res.data.curie
             ? [res.data]
             : [];
           setOptions(list.filter((person) => person && person.curie));
-        } catch {
-          setOptions([]);
-        } finally {
-          setLoading(false);
-        }
-      }}
+        },
+        setLoading,
+      )}
       onChange={(sel) => {
         const o = sel && sel[sel.length - 1];
         onChange?.(o && o.curie ? { curie: o.curie, name: o.display_name || '' } : null);
