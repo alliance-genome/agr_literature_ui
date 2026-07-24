@@ -634,7 +634,24 @@ const AdvancedTopicQueryBuilder = () => {
         padding: '10px 16px', borderBottom: '1px solid #cfe2ff', backgroundColor: '#eef5ff',
         borderTopLeftRadius: '9px', borderTopRightRadius: '9px', flexWrap: 'wrap',
       }}>
-        <span style={{ fontWeight: 600, letterSpacing: '0.01em' }}>Advanced Topic query</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: 600, letterSpacing: '0.01em' }}>Advanced Topic query</span>
+          <OverlayTrigger trigger="click" placement="bottom-start" rootClose overlay={helpPopover}>
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="How to use the advanced query builder"
+              title="How to use — AND/OR, tags, and examples"
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: '20px', height: '20px', borderRadius: '50%',
+                backgroundColor: '#0d6efd', color: '#fff',
+                fontSize: '0.75rem', fontWeight: 700, lineHeight: 1, cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(13, 110, 253, 0.35)',
+              }}
+            >?</span>
+          </OverlayTrigger>
+        </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <Form.Check
             type="checkbox"
@@ -649,19 +666,6 @@ const AdvancedTopicQueryBuilder = () => {
             }
             style={{ marginBottom: 0 }}
           />
-          <OverlayTrigger trigger="click" placement="bottom-end" rootClose overlay={helpPopover}>
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label="How to use the advanced query builder"
-              style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: '20px', height: '20px', borderRadius: '50%',
-                border: '1px solid #0d6efd', color: '#0d6efd',
-                fontSize: '0.72rem', fontWeight: 700, lineHeight: 1, cursor: 'pointer',
-              }}
-            >?</span>
-          </OverlayTrigger>
         </div>
       </div>
 
@@ -724,15 +728,16 @@ const AdvancedTopicQueryBuilder = () => {
         boxShadow: '0 -2px 6px rgba(15, 23, 42, 0.05)',
       }}>
         <div style={{
-          flex: 1, minWidth: '240px', backgroundColor: '#0d1b2a',
+          flex: 1, minWidth: '240px', backgroundColor: '#f1f5f9',
+          border: '1px solid #dbe4ee',
           borderRadius: '8px', padding: '8px 12px', overflowX: 'auto',
         }}>
           <div style={{
-            fontSize: '0.62rem', color: '#7c96b3', marginBottom: '3px',
+            fontSize: '0.62rem', color: '#64748b', marginBottom: '3px',
             textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>Query preview</div>
           <code style={{
-            fontSize: '0.75rem', color: '#a9d5ff', wordBreak: 'break-word',
+            fontSize: '0.75rem', color: '#0b5394', wordBreak: 'break-word',
             whiteSpace: 'pre-wrap', fontFamily: 'monospace',
           }}>
             PAPER WHERE {tetPart}{corpusPart}
