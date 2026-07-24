@@ -73,6 +73,20 @@ const xrefSnap = (r) => JSON.stringify(xrefFields(r));
 const alleleSnap = (r) => JSON.stringify(alleleFields(r));
 const memberSnap = (r) => JSON.stringify(memberFields(r));
 
+// The person-lab checkboxes are mutually constrained: is_pi excludes both
+// former_pi and alum (and vice-versa); former_pi and alum may coexist; an alum
+// additionally disables is_lab_contact and can_edit_lab (everything but
+// former_pi). Only unchecked boxes are disabled, so a curator can always
+// un-select a set one.
+const roleFlagDisabled = (row, key) => {
+  if (row[key]) return false;
+  if (key === 'is_pi') return !!(row.former_pi || row.alum);
+  if (key === 'former_pi') return !!row.is_pi;
+  if (key === 'alum') return !!row.is_pi;
+  if (key === 'is_lab_contact' || key === 'can_edit_lab') return !!row.alum;
+  return false;
+};
+
 // Allowed cross-reference prefixes. The API stores a single curie "PREFIX:ID";
 // the editor edits prefix + id separately (like the Person editor).
 const LAB_XREF_PREFIXES = ['ZFIN', 'XenBase', 'WB', 'SGD'];
@@ -1014,7 +1028,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                             label={key}
                             checked={m[key]}
                             savedValue={m._saved?.[key]}
-                            disabled={!m.personCurie}
+                            disabled={!m.personCurie || roleFlagDisabled(m, key)}
                             onChange={(ev) => { updateMember(i, { [key]: ev.target.checked }); saveMember(i, { [key]: ev.target.checked }); }}
                             style={{ whiteSpace: 'nowrap' }}
                           />
@@ -1030,7 +1044,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                         label={key}
                         checked={m[key]}
                         savedValue={m._saved?.[key]}
-                        disabled={!m.personCurie}
+                        disabled={!m.personCurie || roleFlagDisabled(m, key)}
                         onChange={(ev) => { updateMember(i, { [key]: ev.target.checked }); saveMember(i, { [key]: ev.target.checked }); }}
                         style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
                       />

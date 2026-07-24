@@ -69,6 +69,19 @@ const emailSnap = (r) => JSON.stringify(emailFields(r));
 const noteSnap = (r) => JSON.stringify(noteFields(r));
 const xrefSnap = (r) => JSON.stringify(xrefFields(r));
 const labSnap = (r) => JSON.stringify(labFields(r));
+// The person-lab checkboxes are mutually constrained: is_pi excludes both
+// former_pi and alum (and vice-versa); former_pi and alum may coexist; an alum
+// additionally disables is_lab_contact and can_edit_lab (everything but
+// former_pi). Only unchecked boxes are disabled, so a curator can always
+// un-select a set one. (The person editor renders only the three role flags.)
+const roleFlagDisabled = (row, key) => {
+  if (row[key]) return false;
+  if (key === 'is_pi') return !!(row.former_pi || row.alum);
+  if (key === 'former_pi') return !!row.is_pi;
+  if (key === 'alum') return !!row.is_pi;
+  if (key === 'is_lab_contact' || key === 'can_edit_lab') return !!row.alum;
+  return false;
+};
 const EMAIL_RE = /^[^@\s]+@[^@\s]+$/;
 // The API stores a single curie "PREFIX:ID"; the editor edits prefix + id separately.
 const xrefIdPart = (fullCurie, prefix) => {
@@ -1472,7 +1485,7 @@ const PersonEditor = ({ person }) => {
                         label={key}
                         checked={lab[key]}
                         savedValue={lab._saved?.[key]}
-                        disabled={!lab.labCurie}
+                        disabled={!lab.labCurie || roleFlagDisabled(lab, key)}
                         onChange={(ev) => {
                           updateLab(i, { [key]: ev.target.checked });
                           saveLab(i, { [key]: ev.target.checked });
