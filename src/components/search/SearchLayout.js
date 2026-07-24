@@ -273,40 +273,11 @@ const SearchLayout = () => {
                     </Col>
                 </Row>
                 <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
-                {/* Advanced Topic query builder (SCRUM-6228-2): in advanced mode the
-                    builder is lifted out of the narrow facet sidebar and rendered as a
-                    full-width band here, above the results, so it gets the horizontal
-                    room its tag/field/value layout needs. The facet sidebar below still
-                    holds the mode toggle and the other facets (corpus/MOD, dates,
-                    category, workflow) that continue to apply on top of the query. */}
-                {searchMode === 'advanced' && (
-                    <>
-                        <Row style={{ margin: 0 }}>
-                            <Col style={{ padding: 0 }}>
-                                <div style={{
-                                    border: '1px solid #cfe2ff',
-                                    borderRadius: '8px',
-                                    backgroundColor: '#fbfdff',
-                                }}>
-                                    <div style={{
-                                        padding: '6px 12px',
-                                        borderBottom: '1px solid #cfe2ff',
-                                        backgroundColor: '#eef5ff',
-                                        borderTopLeftRadius: '8px',
-                                        borderTopRightRadius: '8px',
-                                        fontWeight: 600,
-                                        textAlign: 'left',
-                                    }}>
-                                        Advanced Topic query
-                                    </div>
-                                    <AdvancedTopicQueryBuilder/>
-                                </div>
-                            </Col>
-                        </Row>
-                        <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
-                    </>
-                )}
-                {/* The flex container wrapping both the facet panel and search results */}
+                {/* The flex container wrapping both the facet panel and search results.
+                    The Advanced Topic query builder (SCRUM-6333) is rendered inside the
+                    results column below, at the top of the results, so the facet sidebar
+                    stays visible to its left instead of being pushed down by a full-width
+                    band above the whole page. */}
                 <Row style={{ margin: 0 }}>
                     <Col style={{ padding: 0 }}>
                         {facetsCollapsed && (
@@ -424,6 +395,32 @@ const SearchLayout = () => {
                                 padding: 0,
                                 marginLeft: isMobile ? 0 : undefined
                             }}>
+                                {/* Advanced Topic query builder (SCRUM-6333): anchored at
+                                    the top of the results column so the facet sidebar stays
+                                    visible to its left and the results flow directly
+                                    beneath it (was a full-width band above the page). */}
+                                {searchMode === 'advanced' && (
+                                    <div style={{
+                                        border: '1px solid #cfe2ff',
+                                        borderRadius: '10px',
+                                        backgroundColor: '#fbfdff',
+                                        boxShadow: '0 1px 4px rgba(13, 110, 253, 0.08)',
+                                        marginBottom: '16px',
+                                        overflow: 'hidden',
+                                    }}>
+                                        <div style={{
+                                            padding: '8px 14px',
+                                            borderBottom: '1px solid #cfe2ff',
+                                            backgroundColor: '#eef5ff',
+                                            fontWeight: 600,
+                                            textAlign: 'left',
+                                            letterSpacing: '0.01em',
+                                        }}>
+                                            Advanced Topic query
+                                        </div>
+                                        <AdvancedTopicQueryBuilder/>
+                                    </div>
+                                )}
                                 {referenceIds.length > 0 && (
                                     <div className="tetv-view-switchbar">
                                         <ToggleButtonGroup
