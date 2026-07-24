@@ -13,9 +13,9 @@
 // row that already had alum + is_lab_contact set directly via the API), which is
 // resolved by unchecking either box.
 //
-// Editor scope: the is_lab_contact / can_edit_lab *rows* (:22) are rendered only
-// in the Laboratory editor. But the contact/edit legs of the alum case (:21) are
-// live in BOTH editors, so the Person editor — which renders only the three role
+// Editor scope: the is_lab_contact / can_edit_lab checkbox rows are rendered only
+// in the Laboratory editor. But the contact/edit legs of the alum case are live
+// in BOTH editors, so the Person editor — which renders only the three role
 // flags — must still supply row.is_lab_contact / row.can_edit_lab for the alum
 // exclusion to hold there. Do not treat those fields as dead weight in
 // PersonEditor's lab rows.
