@@ -1,29 +1,28 @@
 // Mutual-exclusion rule for the person-lab role/status checkboxes, shared by the
 // Person and Laboratory editors so the constraint lives in one place.
 //
-// The exclusions must be enforced BIDIRECTIONALLY (each side disables the other),
-// because only UNCHECKED boxes are disabled — a one-way rule would let the
-// forbidden state be reached by checking the boxes in the permissive order:
-//   - is_pi is mutually exclusive with former_pi and with alum
-//   - former_pi and alum may coexist
-//   - alum is mutually exclusive with is_lab_contact and can_edit_lab
+// Rules (only UNCHECKED boxes are disabled, so a checked box can always be
+// un-selected to back out):
+//   - is_pi is mutually exclusive with former_pi and with alum (bidirectional):
+//     checking one disables the others; each exclusion is enforced both ways.
+//   - former_pi and alum may coexist.
+//   - alum is NOT blocked by is_lab_contact / can_edit_lab. Curators set alum
+//     whenever they learn it and reconcile the contact/edit flags afterward, so
+//     nothing about contact/edit may disable the alum box.
+//   - Setting alum does still disable *adding* is_lab_contact / can_edit_lab in
+//     the Laboratory editor (they read row.alum); an already-set one stays
+//     checked and can be un-selected to clean it up. This one-directional gate
+//     is intentional — do not "restore" an alum -> contact/edit symmetry, it
+//     would re-block setting alum, which is exactly what this change removed.
 //
-// Since a checked box is never disabled, a curator can always un-select a flag
-// that is set — including one leg of a pre-existing invalid combination (e.g. a
-// row that already had alum + is_lab_contact set directly via the API), which is
-// resolved by unchecking either box.
-//
-// Editor scope: the is_lab_contact / can_edit_lab checkbox rows are rendered only
-// in the Laboratory editor. But the contact/edit legs of the alum case are live
-// in BOTH editors, so the Person editor — which renders only the three role
-// flags — must still supply row.is_lab_contact / row.can_edit_lab for the alum
-// exclusion to hold there. Do not treat those fields as dead weight in
-// PersonEditor's lab rows.
+// Note only the Laboratory editor renders the is_lab_contact / can_edit_lab
+// boxes; the Person editor renders just the three role flags and no longer needs
+// to carry those two fields (the alum case reads only is_pi).
 export const roleFlagDisabled = (row, key) => {
   if (row[key]) return false;
   if (key === 'is_pi') return !!(row.former_pi || row.alum);
   if (key === 'former_pi') return !!row.is_pi;
-  if (key === 'alum') return !!(row.is_pi || row.is_lab_contact || row.can_edit_lab);
+  if (key === 'alum') return !!row.is_pi;
   if (key === 'is_lab_contact' || key === 'can_edit_lab') return !!row.alum;
   return false;
 };

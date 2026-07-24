@@ -641,11 +641,6 @@ const PersonEditor = ({ person }) => {
     const r = {
       labCurie: '', labName: '', labStrain: '',
       alum: false, is_pi: false, former_pi: false,
-      // Carried for the roleFlagDisabled guard only (alum ↔ is_lab_contact /
-      // can_edit_lab). Not rendered/editable here and deliberately kept out of
-      // labFields, so they never enter changed/_saved and can't be PATCHed from
-      // the Person editor.
-      is_lab_contact: false, can_edit_lab: false,
       _alum_ts: null, _is_pi_ts: null, _former_pi_ts: null,
       _ts: null, _by: null, _id: null, _status: null, _error: null,
     };
@@ -660,11 +655,6 @@ const PersonEditor = ({ person }) => {
       alum: !!lp.alum,
       is_pi: !!lp.is_pi,
       former_pi: !!lp.former_pi,
-      // Guard-only (see emptyLab): lets roleFlagDisabled enforce the
-      // alum ↔ is_lab_contact / can_edit_lab exclusion even though those two
-      // boxes aren't rendered in this editor.
-      is_lab_contact: !!lp.is_lab_contact,
-      can_edit_lab: !!lp.can_edit_lab,
       _alum_ts: lp.alum ?? null,
       _is_pi_ts: lp.is_pi ?? null,
       _former_pi_ts: lp.former_pi ?? null,
@@ -1057,8 +1047,6 @@ const PersonEditor = ({ person }) => {
     applyResp: (d) => ({
       alum: !!d.alum, is_pi: !!d.is_pi, former_pi: !!d.former_pi,
       _alum_ts: d.alum ?? null, _is_pi_ts: d.is_pi ?? null, _former_pi_ts: d.former_pi ?? null,
-      // keep the guard-only flags in step with the server (not editable here)
-      is_lab_contact: !!d.is_lab_contact, can_edit_lab: !!d.can_edit_lab,
     }),
   });
   const deleteLab = (i) => deleteChild({ list: labs, update: updateLab, remove: removeLab, i, endpoint: '/laboratory_person' });
@@ -1486,9 +1474,6 @@ const PersonEditor = ({ person }) => {
                         checked={lab[key]}
                         savedValue={lab._saved?.[key]}
                         disabled={!lab.labCurie || roleFlagDisabled(lab, key)}
-                        title={key === 'alum' && !lab.alum && (lab.is_lab_contact || lab.can_edit_lab)
-                          ? 'Disabled because this person is a lab contact or can edit the lab — change that in the Laboratory editor.'
-                          : undefined}
                         onChange={(ev) => {
                           updateLab(i, { [key]: ev.target.checked });
                           saveLab(i, { [key]: ev.target.checked });
