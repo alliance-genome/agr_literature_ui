@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Badge, Button, ButtonGroup, Form, InputGroup } from 'react-bootstrap';
+import { Button, Form, InputGroup, OverlayTrigger, Popover } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrashAlt, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { api } from '../../../api';
 import {
   setAdvancedTopicQuery,
@@ -246,14 +248,15 @@ const ValueEditor = ({ row, onChange, tagContext }) => {
       {values.map((chip, idx) => (
         <React.Fragment key={chip.value}>
           {idx > 0 && (
-            <Badge variant="secondary" style={{ fontSize: '0.65rem' }}>OR</Badge>
+            <span style={{
+              fontSize: '0.62rem', fontWeight: 600, color: '#6c757d',
+              backgroundColor: '#e9ecef', borderRadius: '10px', padding: '1px 7px',
+              letterSpacing: '0.02em',
+            }}>or</span>
           )}
           <ValueChip chip={chip} onRemove={() => removeChip(idx)} />
         </React.Fragment>
       ))}
-      {values.length > 0 && (
-        <span style={{ fontSize: '0.7rem', color: '#6c757d', whiteSpace: 'nowrap' }}>or</span>
-      )}
       {row.field === 'entity' ? (
         <EntityValueAdder
           hasValues={values.length > 0}
@@ -266,14 +269,19 @@ const ValueEditor = ({ row, onChange, tagContext }) => {
           as="select"
           size="sm"
           aria-label="add value"
-          style={{ width: 'auto', maxWidth: '12rem', flex: '0 0 auto' }}
+          style={{
+            width: 'auto', maxWidth: '12rem', flex: '0 0 auto',
+            border: '1px dashed #cbd5e1', borderRadius: '14px',
+            color: '#64748b', backgroundColor: 'transparent', fontSize: '0.8rem',
+            height: 'auto', paddingTop: '2px', paddingBottom: '2px',
+          }}
           value=""
           onChange={(e) => {
             const opt = options.find((o) => o.value === e.target.value);
             if (opt) addChip(opt.value, opt.label);
           }}
         >
-          <option value="">{values.length ? 'add value (same field)…' : '— select —'}</option>
+          <option value="">{values.length ? 'add value…' : '— select —'}</option>
           {options
             .filter((o) => !values.some((c) => c.value === o.value))
             .map((o) => (
@@ -284,8 +292,11 @@ const ValueEditor = ({ row, onChange, tagContext }) => {
         <Form.Control
           type="text"
           size="sm"
-          style={{ width: '12rem', maxWidth: '100%', flex: '0 0 auto' }}
-          placeholder={values.length ? 'add value (same field)…' : 'type value, Enter'}
+          style={{
+            width: '12rem', maxWidth: '100%', flex: '0 0 auto',
+            border: '1px dashed #cbd5e1', borderRadius: '14px', fontSize: '0.8rem',
+          }}
+          placeholder={values.length ? 'add value…' : 'type value, Enter'}
           aria-label="add value"
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -304,12 +315,12 @@ const ValueEditor = ({ row, onChange, tagContext }) => {
 };
 
 const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext }) => (
-  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginBottom: '6px' }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2px' }}>
     <Form.Control
       as="select"
       size="sm"
       aria-label="sub-facet field"
-      style={{ maxWidth: '11rem', flex: '0 0 auto' }}
+      style={{ maxWidth: '11rem', minWidth: '9rem', flex: '0 0 auto' }}
       value={row.field}
       onChange={(e) => onChange(createFieldRow(e.target.value))}
     >
@@ -317,13 +328,23 @@ const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext }) => (
         <option key={def.key} value={def.key}>{def.label}</option>
       ))}
     </Form.Control>
-    <span style={{ padding: '4px 2px', color: '#6c757d' }}>=</span>
-    <ValueEditor row={row} onChange={onChange} tagContext={tagContext} />
+    <span style={{ color: '#94a3b8', fontWeight: 600, flex: '0 0 auto' }}>=</span>
+    <div style={{
+      flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px',
+      border: '1px solid #e3e8ef', borderRadius: '8px', backgroundColor: '#fbfcfe',
+      padding: '4px 8px', minHeight: '36px',
+    }}>
+      <ValueEditor row={row} onChange={onChange} tagContext={tagContext} />
+    </div>
     <Button
-      variant="outline-danger" size="sm"
+      variant="link" size="sm"
       onClick={onRemove} disabled={!canRemove}
       title="Remove field"
-      style={{ flex: '0 0 auto' }}
+      aria-label="remove field"
+      style={{
+        flex: '0 0 auto', color: '#adb5bd', textDecoration: 'none',
+        fontSize: '1.15rem', lineHeight: 1, padding: '0 4px',
+      }}
     >×</Button>
   </div>
 );
@@ -357,10 +378,6 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
     dispatch(fetchAdvancedFacetsVocab());
   };
 
-  const scope = index === 0
-    ? 'one tag must match all of these (same tag)'
-    : 'a different tag on the same paper must match all of these';
-
   // Sibling context for the Entity resolver: the specific-entity lookup needs the
   // Tag's entity type (-> name) and species (-> NCBITaxon curie), both taken from
   // the first value of the matching field in this same Tag.
@@ -372,43 +389,66 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
 
   return (
     <div style={{
-      border: '1px solid #cfe2ff', borderRadius: '8px',
-      padding: '8px 10px', margin: '8px 0', backgroundColor: '#f6faff',
+      border: '1px solid #e3e8ef', borderRadius: '12px',
+      padding: '14px 16px', margin: '12px 0', backgroundColor: '#fff',
+      boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Badge variant="primary">{index + 1}</Badge>
-          <span style={{ fontWeight: 600 }}>Tag {index + 1}</span>
-        </div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        flexWrap: 'wrap', gap: '8px', marginBottom: '10px',
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#2563eb',
+            color: '#fff', fontSize: '0.75rem', fontWeight: 700,
+          }}>{index + 1}</span>
+          <span style={{ fontWeight: 700 }}>Tag {index + 1}</span>
+          <span style={{
+            fontSize: '0.68rem', color: '#64748b', backgroundColor: '#f1f5f9',
+            border: '1px solid #e2e8f0', borderRadius: '10px', padding: '2px 8px',
+          }}>fields are AND inside Tag</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <Form.Check
             type="checkbox"
-            label="exclude (paper must NOT have this tag)"
+            id={`tetv-tag-exclude-${index}`}
+            label={<span style={{ fontSize: '0.8rem' }} title="paper must NOT have this tag">exclude</span>}
             checked={!!leaf.negate}
-            style={{ fontSize: '0.8rem' }}
+            style={{ marginBottom: 0 }}
             onChange={(e) => onChange({ ...leaf, negate: e.target.checked })}
           />
           <Button
-            variant="outline-danger" size="sm"
+            variant="link" size="sm"
             onClick={onRemove} disabled={!canRemove}
             title="Remove tag"
-          >Remove tag</Button>
+            style={{ color: '#94a3b8', textDecoration: 'none', padding: 0, fontSize: '0.8rem' }}
+          ><FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '5px' }} />Remove tag</Button>
         </div>
       </div>
-      <div style={{ fontSize: '0.75rem', color: '#6c757d', marginBottom: '6px' }}>
-        {scope}. Fields are combined with AND; multiple values on one field match any (OR).
-      </div>
       {leaf.fields.map((row, idx) => (
-        <FieldRow
-          key={idx}
-          row={row}
-          onChange={(newRow) => setField(idx, newRow)}
-          onRemove={() => removeField(idx)}
-          canRemove={leaf.fields.length > 1}
-          tagContext={tagContext}
-        />
+        <React.Fragment key={idx}>
+          {idx > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '11rem', margin: '3px 0' }}>
+              <span style={{ flex: 1, height: '1px', backgroundColor: '#e3e8ef' }} />
+              <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em' }}>AND</span>
+              <span style={{ flex: 1, height: '1px', backgroundColor: '#e3e8ef' }} />
+            </div>
+          )}
+          <FieldRow
+            row={row}
+            onChange={(newRow) => setField(idx, newRow)}
+            onRemove={() => removeField(idx)}
+            canRemove={leaf.fields.length > 1}
+            tagContext={tagContext}
+          />
+        </React.Fragment>
       ))}
-      <Button variant="link" size="sm" style={{ padding: 0 }} onClick={addField}>+ add field (same tag)</Button>
+      <Button
+        variant="outline-secondary" size="sm"
+        onClick={addField}
+        style={{ marginTop: '10px', borderRadius: '16px', fontSize: '0.8rem' }}
+      ><FontAwesomeIcon icon={faPlus} style={{ marginRight: '6px' }} />Add field to Tag {index + 1}</Button>
     </div>
   );
 };
@@ -485,168 +525,223 @@ const AdvancedTopicQueryBuilder = () => {
     ? ` AND corpus in (${corpusMods.map((m) => `"${m}"`).join(', ')})`
     : '';
 
+  // The full "how to use" content, moved out of a page-consuming <details> block
+  // into a click-to-open help popover so it no longer pushes Tag 1 off-screen (#3).
+  const helpPopover = (
+    <Popover id="tetv-adv-help" style={{ maxWidth: '540px' }}>
+      <Popover.Title as="h3" style={{ fontSize: '0.9rem' }}>
+        How to use — AND/OR, tags, and examples
+      </Popover.Title>
+      <Popover.Content style={{
+        fontSize: '0.8rem', color: '#333', lineHeight: 1.5,
+        maxHeight: '65vh', overflowY: 'auto',
+      }}>
+        <p style={{ marginBottom: '8px' }}>
+          Build a query over Topic sub-facets. Each <b>Tag</b> is one topic-entity tag the
+          paper must have; fields inside a Tag apply to that <b>same</b> tag. Add another Tag
+          for a requirement on a <b>different</b> tag of the same paper. Corpus, date and
+          workflow facets still apply. Facet counts are not shown in advanced mode.
+        </p>
+        <div style={{ fontWeight: 600, marginTop: '2px' }}>The building blocks</div>
+        <ul style={{ margin: '2px 0 6px', paddingLeft: '18px' }}>
+          <li>
+            A <b>Tag</b> is one topic-entity tag on a paper. Everything inside a Tag
+            card must be true of that <b>same</b> tag.
+          </li>
+          <li>
+            <b>Fields within a Tag</b> (Topic, Source method, Confidence level, Has
+            data, …) are combined with <b>AND</b> — the same tag must satisfy all of them.
+          </li>
+          <li>
+            <b>Multiple values on one field</b> are combined with <b>OR</b> — e.g. a
+            Topic field with two values matches a tag whose topic is <i>either</i> one.
+          </li>
+          <li>
+            <b>Multiple Tags</b> put requirements on <b>different</b> tags of the same
+            paper. The <b>“paper must match”</b> selector (shown once you add a second
+            Tag) sets how tags combine: <b>ALL Tags (AND)</b> = the paper must have
+            every tag; <b>ANY Tag (OR)</b> = the paper must have at least one.
+          </li>
+          <li>
+            <b>Exclude (paper must NOT have this tag)</b> — check this on a Tag to
+            require the paper has <b>no</b> tag matching that card.
+          </li>
+          <li>
+            <b>Entity</b> matches a specific entity (e.g. the gene <i>ACT1</i>) by
+            name and stores its curie. Picking it adds <b>Entity type</b> and{' '}
+            <b>Species</b> fields for you (an entity is species-specific); choose
+            those, then type the exact name and press Enter to validate it.
+          </li>
+          <li>
+            <b>Has data</b> distinguishes positive tags (has data) from negated tags
+            (no data). The tree-wide <b>Exclude no-data tags</b> toggle (off by
+            default) adds has-data=yes to every tag condition — the facet search’s
+            “exclude negative”. Turn it on for positive-only results, or add an
+            explicit <b>Has data</b> field to a Tag (set to <b>no</b>) to control a
+            single tag.
+          </li>
+          <li>
+            <b>Validation (biocurator)</b> filters predicted tags by professional
+            biocurator review: <b>validated right</b>, <b>validated wrong</b>,{' '}
+            <b>not validated</b> (and <i>validation conflict</i> /{' '}
+            <i>validated right (self)</i>). Use it to keep only confirmed predictions
+            or to exclude ones a biocurator marked wrong.
+          </li>
+          <li>
+            <b>Confidence score</b> is a min/max range. Value lists are scoped to the
+            selected corpus/MOD; corpus, date and workflow facets still apply.
+          </li>
+          <li>The <b>Query preview</b> shows exactly what will be searched.</li>
+        </ul>
+        <div style={{ fontWeight: 600 }}>Examples</div>
+        <ol style={{ margin: '2px 0 0', paddingLeft: '18px' }}>
+          <li>
+            <b>Disease-model tag from the ACKnowledge form that has data</b> — one Tag:
+            Topic = disease model, Source method = acknowledge_form, Has data = yes.
+          </li>
+          <li>
+            <b>Papers with BOTH a disease-model tag AND a separate gene tag</b> — Tag 1:
+            Topic = disease model; Tag 2: Topic = gene expression; paper must match =
+            ALL Tags (AND).
+          </li>
+          <li>
+            <b>Disease-model tag from EITHER the ACKnowledge form OR the ABC classifier</b>
+            {' '}— one Tag: Topic = disease model, and add two values to Source method
+            (acknowledge_form OR abc classifier).
+          </li>
+          <li>
+            <b>Exclude papers that have a no-data disease-model tag</b> — one Tag with
+            “exclude” checked: Topic = disease model, Has data = no.
+          </li>
+          <li>
+            <b>New-to-field transgene predictions, minus the ones a biocurator
+            rejected</b> — one Tag: Topic = transgene, Data novelty = new to field,
+            and add two values to Validation (biocurator): validated right OR not
+            validated (this keeps confirmed and un-reviewed predictions while dropping
+            “validated wrong”).
+          </li>
+        </ol>
+      </Popover.Content>
+    </Popover>
+  );
+
   return (
-    <div style={{ padding: '4px 10px 10px', textAlign: 'left' }}>
-      <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '6px' }}>
-        Build a query over Topic sub-facets. Each <b>Tag</b> is one topic-entity tag the
-        paper must have; fields inside a Tag apply to that <b>same</b> tag. Add another Tag
-        for a requirement on a <b>different</b> tag of the same paper. Corpus, date and
-        workflow facets still apply. Facet counts are not shown in advanced mode.
-      </div>
-
-      <div style={{ marginBottom: '8px' }}>
-        <Form.Check
-          type="checkbox"
-          id="tetv-adv-exclude-no-data"
-          checked={tree.excludeNoData === true}
-          onChange={(e) => update({ ...tree, excludeNoData: e.target.checked })}
-          label={
-            <span style={{ fontSize: '0.8rem' }}>
-              <b>Exclude no-data tags</b> — match only positive (has-data) tags, like
-              the facet search’s “exclude negative”. Off by default; check it to add
-              has-data=yes to every tag condition (it then appears in the query
-              preview), or add an explicit “Has data” field to a Tag to control it
-              per tag.
-            </span>
-          }
-        />
-      </div>
-
-      <details style={{
-        fontSize: '0.8rem', color: '#333', marginBottom: '8px',
-        border: '1px solid #cfe2ff', borderRadius: '6px', backgroundColor: '#f6faff',
-        padding: '4px 8px',
-      }}>
-        <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#0d6efd' }}>
-          How to use — AND/OR, tags, and examples
-        </summary>
-        <div style={{ marginTop: '6px', lineHeight: 1.5 }}>
-          <div style={{ fontWeight: 600, marginTop: '2px' }}>The building blocks</div>
-          <ul style={{ margin: '2px 0 6px', paddingLeft: '18px' }}>
-            <li>
-              A <b>Tag</b> is one topic-entity tag on a paper. Everything inside a Tag
-              card must be true of that <b>same</b> tag.
-            </li>
-            <li>
-              <b>Fields within a Tag</b> (Topic, Source method, Confidence level, Has
-              data, …) are combined with <b>AND</b> — the same tag must satisfy all of them.
-            </li>
-            <li>
-              <b>Multiple values on one field</b> are combined with <b>OR</b> — e.g. a
-              Topic field with two values matches a tag whose topic is <i>either</i> one.
-            </li>
-            <li>
-              <b>Multiple Tags</b> put requirements on <b>different</b> tags of the same
-              paper. The <b>“paper must match”</b> selector (shown once you add a second
-              Tag) sets how tags combine: <b>ALL Tags (AND)</b> = the paper must have
-              every tag; <b>ANY Tag (OR)</b> = the paper must have at least one.
-            </li>
-            <li>
-              <b>Exclude (paper must NOT have this tag)</b> — check this on a Tag to
-              require the paper has <b>no</b> tag matching that card.
-            </li>
-            <li>
-              <b>Entity</b> matches a specific entity (e.g. the gene <i>ACT1</i>) by
-              name and stores its curie. Picking it adds <b>Entity type</b> and{' '}
-              <b>Species</b> fields for you (an entity is species-specific); choose
-              those, then type the exact name and press Enter to validate it.
-            </li>
-            <li>
-              <b>Has data</b> distinguishes positive tags (has data) from negated tags
-              (no data). The tree-wide <b>Exclude no-data tags</b> toggle (off by
-              default) adds has-data=yes to every tag condition — the facet search’s
-              “exclude negative”. Turn it on for positive-only results, or add an
-              explicit <b>Has data</b> field to a Tag (set to <b>no</b>) to control a
-              single tag.
-            </li>
-            <li>
-              <b>Validation (biocurator)</b> filters predicted tags by professional
-              biocurator review: <b>validated right</b>, <b>validated wrong</b>,{' '}
-              <b>not validated</b> (and <i>validation conflict</i> /{' '}
-              <i>validated right (self)</i>). Use it to keep only confirmed predictions
-              or to exclude ones a biocurator marked wrong.
-            </li>
-            <li>
-              <b>Confidence score</b> is a min/max range. Value lists are scoped to the
-              selected corpus/MOD; corpus, date and workflow facets still apply.
-            </li>
-            <li>The <b>Query preview</b> shows exactly what will be searched.</li>
-          </ul>
-          <div style={{ fontWeight: 600 }}>Examples</div>
-          <ol style={{ margin: '2px 0 0', paddingLeft: '18px' }}>
-            <li>
-              <b>Disease-model tag from the ACKnowledge form that has data</b> — one Tag:
-              Topic = disease model, Source method = acknowledge_form, Has data = yes.
-            </li>
-            <li>
-              <b>Papers with BOTH a disease-model tag AND a separate gene tag</b> — Tag 1:
-              Topic = disease model; Tag 2: Topic = gene expression; paper must match =
-              ALL Tags (AND).
-            </li>
-            <li>
-              <b>Disease-model tag from EITHER the ACKnowledge form OR the ABC classifier</b>
-              {' '}— one Tag: Topic = disease model, and add two values to Source method
-              (acknowledge_form OR abc classifier).
-            </li>
-            <li>
-              <b>Exclude papers that have a no-data disease-model tag</b> — one Tag with
-              “exclude” checked: Topic = disease model, Has data = no.
-            </li>
-            <li>
-              <b>New-to-field transgene predictions, minus the ones a biocurator
-              rejected</b> — one Tag: Topic = transgene, Data novelty = new to field,
-              and add two values to Validation (biocurator): validated right OR not
-              validated (this keeps confirmed and un-reviewed predictions while dropping
-              “validated wrong”).
-            </li>
-          </ol>
-        </div>
-      </details>
-
-      {tags.length >= 2 && (
-        <InputGroup size="sm" style={{ width: 'auto', marginBottom: '4px' }}>
-          <InputGroup.Text>paper must match</InputGroup.Text>
-          <Form.Control
-            as="select"
-            aria-label="top-level operator"
-            style={{ maxWidth: '11rem' }}
-            value={tree.operator}
-            onChange={(e) => update({ ...tree, operator: e.target.value })}
-          >
-            <option value="AND">ALL Tags (AND)</option>
-            <option value="OR">ANY Tag (OR)</option>
-          </Form.Control>
-        </InputGroup>
-      )}
-
-      {tags.map((leaf, idx) => (
-        <TagCard
-          key={idx}
-          leaf={leaf}
-          index={idx}
-          onChange={(newLeaf) => setTag(idx, newLeaf)}
-          onRemove={() => removeTag(idx)}
-          canRemove={tags.length > 1}
-        />
-      ))}
-
-      <Button variant="link" size="sm" style={{ padding: 0 }} onClick={addTag}>+ add Tag (different tag on same paper)</Button>
-
+    <div style={{ textAlign: 'left' }}>
+      {/* Header: title + global options (Exclude no-data) + help icon (#3). The long
+          intro/help text now lives in the help popover instead of stacked above Tag 1. */}
       <div style={{
-        marginTop: '8px', backgroundColor: '#f8f9fa', border: '1px solid #dee2e6',
-        borderRadius: '6px', padding: '6px 8px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
+        padding: '10px 16px', borderBottom: '1px solid #cfe2ff', backgroundColor: '#eef5ff',
+        borderTopLeftRadius: '9px', borderTopRightRadius: '9px', flexWrap: 'wrap',
       }}>
-        <div style={{ fontSize: '0.7rem', color: '#6c757d', marginBottom: '2px' }}>Query preview</div>
-        <code style={{ fontSize: '0.75rem', color: '#212529', wordBreak: 'break-word' }}>
-          PAPER WHERE {tetPart}{corpusPart}
-        </code>
+        <span style={{ fontWeight: 600, letterSpacing: '0.01em' }}>Advanced Topic query</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <Form.Check
+            type="checkbox"
+            id="tetv-adv-exclude-no-data"
+            checked={tree.excludeNoData === true}
+            onChange={(e) => update({ ...tree, excludeNoData: e.target.checked })}
+            label={
+              <span
+                style={{ fontSize: '0.8rem' }}
+                title="Match only positive (has-data) tags — adds has-data=yes to every tag condition. See help for details."
+              >Exclude no-data tags</span>
+            }
+            style={{ marginBottom: 0 }}
+          />
+          <OverlayTrigger trigger="click" placement="bottom-end" rootClose overlay={helpPopover}>
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="How to use the advanced query builder"
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: '20px', height: '20px', borderRadius: '50%',
+                border: '1px solid #0d6efd', color: '#0d6efd',
+                fontSize: '0.72rem', fontWeight: 700, lineHeight: 1, cursor: 'pointer',
+              }}
+            >?</span>
+          </OverlayTrigger>
+        </div>
       </div>
 
-      <div style={{ marginTop: '8px' }}>
-        <ButtonGroup size="sm">
-          <Button variant="primary" onClick={runSearch} disabled={empty}>Run query</Button>
-          <Button variant="outline-secondary" onClick={reset}>Reset</Button>
-        </ButtonGroup>
+      <div style={{ padding: '12px 16px' }}>
+        {tags.length >= 2 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap',
+            marginBottom: '4px',
+          }}>
+            <span style={{
+              fontSize: '0.72rem', fontWeight: 700, color: '#475569', letterSpacing: '0.06em',
+            }}>PAPER MUST MATCH</span>
+            <Form.Control
+              as="select"
+              size="sm"
+              aria-label="top-level operator"
+              style={{ maxWidth: '11rem', width: 'auto', borderRadius: '16px' }}
+              value={tree.operator}
+              onChange={(e) => update({ ...tree, operator: e.target.value })}
+            >
+              <option value="AND">ALL Tags (AND)</option>
+              <option value="OR">ANY Tag (OR)</option>
+            </Form.Control>
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+              {tree.operator === 'AND'
+                ? 'Paper must contain every Tag below'
+                : 'Paper must contain at least one Tag below'}
+            </span>
+          </div>
+        )}
+
+        {tags.map((leaf, idx) => (
+          <TagCard
+            key={idx}
+            leaf={leaf}
+            index={idx}
+            onChange={(newLeaf) => setTag(idx, newLeaf)}
+            onRemove={() => removeTag(idx)}
+            canRemove={tags.length > 1}
+          />
+        ))}
+
+        <Button
+          variant="outline-primary"
+          onClick={addTag}
+          style={{
+            width: '100%', marginTop: '4px', borderStyle: 'dashed',
+            borderRadius: '10px', fontSize: '0.85rem',
+          }}
+        ><FontAwesomeIcon icon={faPlus} style={{ marginRight: '6px' }} />Add another Tag (different tag on same paper)</Button>
+      </div>
+
+      {/* Sticky footer: query preview + Run/Reset, kept in view while editing (#4). */}
+      <div style={{
+        position: 'sticky', bottom: 0, zIndex: 5,
+        display: 'flex', alignItems: 'stretch', gap: '12px', flexWrap: 'wrap',
+        padding: '10px 16px', backgroundColor: '#fff',
+        borderTop: '1px solid #e3e8ef',
+        borderBottomLeftRadius: '9px', borderBottomRightRadius: '9px',
+        boxShadow: '0 -2px 6px rgba(15, 23, 42, 0.05)',
+      }}>
+        <div style={{
+          flex: 1, minWidth: '240px', backgroundColor: '#0d1b2a',
+          borderRadius: '8px', padding: '8px 12px', overflowX: 'auto',
+        }}>
+          <div style={{
+            fontSize: '0.62rem', color: '#7c96b3', marginBottom: '3px',
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+          }}>Query preview</div>
+          <code style={{
+            fontSize: '0.75rem', color: '#a9d5ff', wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap', fontFamily: 'monospace',
+          }}>
+            PAPER WHERE {tetPart}{corpusPart}
+          </code>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
+          <Button variant="primary" size="sm" onClick={runSearch} disabled={empty}>Run query</Button>
+          <Button variant="outline-secondary" size="sm" onClick={reset}>Reset</Button>
+        </div>
       </div>
     </div>
   );

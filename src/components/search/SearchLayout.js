@@ -406,18 +406,11 @@ const SearchLayout = () => {
                                         backgroundColor: '#fbfdff',
                                         boxShadow: '0 1px 4px rgba(13, 110, 253, 0.08)',
                                         marginBottom: '16px',
-                                        overflow: 'hidden',
                                     }}>
-                                        <div style={{
-                                            padding: '8px 14px',
-                                            borderBottom: '1px solid #cfe2ff',
-                                            backgroundColor: '#eef5ff',
-                                            fontWeight: 600,
-                                            textAlign: 'left',
-                                            letterSpacing: '0.01em',
-                                        }}>
-                                            Advanced Topic query
-                                        </div>
+                                        {/* Title, help and the sticky preview/actions
+                                            footer are rendered inside the builder. No
+                                            overflow:hidden here so the footer's
+                                            position:sticky keeps working. */}
                                         <AdvancedTopicQueryBuilder/>
                                     </div>
                                 )}
