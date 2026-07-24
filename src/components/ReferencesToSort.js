@@ -337,6 +337,7 @@ const ReferencesToSort = ({
                   id={`species_select-${index}`}
                   labelKey={`species_select-${index}`}
                   useCache={false}
+                  delay={300}
                   onSearch={(query) => runSpeciesSearch(
                     (signal) => api.get(`/ontology/search_species/${encodeURIComponent(query)}`, { signal }),
                     (res, err) => {

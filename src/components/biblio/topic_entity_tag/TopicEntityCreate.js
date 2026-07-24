@@ -866,6 +866,7 @@ const TopicEntityCreate = () => {
                 <AsyncTypeahead
                   isLoading={topicSelectLoading}
                   useCache={false}
+                  delay={300}
                   placeholder="Start typing to search topics"
                   ref={topicTypeaheadRef}
                   id={`topicTypeahead-${index}`}
@@ -1026,6 +1027,7 @@ const TopicEntityCreate = () => {
           	  id={`species-typeahead-${index}`}
                     multiple
                     isLoading={speciesSelectLoading}
+                    delay={300}
                     placeholder="enter species name"
                     ref={speciesTypeaheadRef}
                     onSearch={(query) => runSpeciesSearch(

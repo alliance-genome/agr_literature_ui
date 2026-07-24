@@ -56,6 +56,7 @@ export default function SpeciesPicker({
       disabled={disabled}
       useCache={false}
       minLength={1}
+      delay={300}
       onSearch={(query) => runSearch(
         (signal) => api.get(`/ontology/search_species/${encodeURIComponent(query)}`, { signal }),
         (res, err) => {

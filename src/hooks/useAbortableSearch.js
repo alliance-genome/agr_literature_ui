@@ -26,7 +26,11 @@ export default function useAbortableSearch() {
   const ctrlRef = useRef(null);
   const seqRef = useRef(0);
 
-  // Abort any request still in flight when the component unmounts.
+  // Abort any request still in flight when the component unmounts, so it stops
+  // consuming a connection and its `apply` never runs (the abort/seq guards
+  // below skip it). Note this does not suppress the `finally`'s setLoading(false)
+  // for the latest request — that can still fire once after unmount, but it's a
+  // harmless no-op on an unmounted component in React 18.
   useEffect(() => () => { if (ctrlRef.current) ctrlRef.current.abort(); }, []);
 
   return useCallback(async (fetcher, apply, setLoading) => {

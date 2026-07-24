@@ -63,6 +63,9 @@ const Laboratory = () => {
   // otherwise WormBase curators default to strain designation, everyone else to
   // lab name. Initialized synchronously so the mount-time URL-sync auto-load uses
   // the right field on first render.
+  // Mount-only: consumed solely by the useState/useRef initializers below (which
+  // read it once). Later URL changes are reflected into lookupKey by the sync
+  // effect further down — this does NOT keep lookupKey in step on its own.
   const urlField = (() => {
     const f = new URLSearchParams(location.search).get('field');
     return f === 'name' || f === 'strain_designation' ? f : null;
@@ -123,6 +126,7 @@ const Laboratory = () => {
         setError('Laboratory not found');
         setShowAlert(true);
         currentQueryRef.current = null;
+        currentFieldRef.current = null;
         return;
       }
 
@@ -144,6 +148,7 @@ const Laboratory = () => {
       setLaboratoryData(null);
       setMatches(null);
       currentQueryRef.current = null;
+      currentFieldRef.current = null;
       const detail = err?.response?.data?.detail;
       setError(typeof detail === 'string' ? detail : 'An unexpected error occurred.');
       setShowAlert(true);
