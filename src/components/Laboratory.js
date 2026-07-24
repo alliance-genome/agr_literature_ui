@@ -92,9 +92,13 @@ const Laboratory = () => {
   // The lookup field reflected in the URL for the current query (null for curie/xref).
   const currentFieldRef = useRef(null);
 
-  const runQuery = useCallback(async (rawValue, tabForUrl, fieldOverride) => {
+  const runQuery = useCallback(async (rawValue, tabForUrl, fieldOverride, replaceHistory = false) => {
     // fieldOverride lets the URL-sync path force the field before lookupKey state
-    // has settled; otherwise use the current dropdown selection.
+    // has settled; otherwise use the current dropdown selection. replaceHistory is
+    // set when the query originates from the URL (deep-link / Back / forward) so
+    // normalizing a field-less URL to include ?field= replaces the entry instead
+    // of pushing a new one — otherwise Back would re-trigger this and re-push,
+    // trapping the browser Back button.
     const classified = classifyInput(rawValue, fieldOverride || lookupKey);
     if (!classified) return;
     setIsLoading(true);
@@ -134,7 +138,7 @@ const Laboratory = () => {
 
       const desiredSearch = buildSearch(rawValue.trim(), tabForUrl ?? activeTab, classified.field);
       if (location.search !== desiredSearch) {
-        history.push({ pathname: '/lab', search: desiredSearch });
+        history[replaceHistory ? 'replace' : 'push']({ pathname: '/lab', search: desiredSearch });
       }
     } catch (err) {
       setLaboratoryData(null);
@@ -171,7 +175,7 @@ const Laboratory = () => {
     }
     if (currentQueryRef.current === q && currentFieldRef.current === validField) return;
     setInputValue(q);
-    runQuery(q, tab && VALID_TABS.includes(tab) ? tab : activeTab, validField);
+    runQuery(q, tab && VALID_TABS.includes(tab) ? tab : activeTab, validField, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
