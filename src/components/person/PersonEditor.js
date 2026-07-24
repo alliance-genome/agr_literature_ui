@@ -882,7 +882,16 @@ const PersonEditor = ({ person }) => {
     if (row._id && key === row._savedKey) return; // saved & unchanged
     update(i, { _status: 'saving', _error: null });
     const isCreate = !row._id;
-    const body = bodyFn(row, isCreate);
+    // On PATCH, only send the fields that changed vs the last-saved baseline, so
+    // unrelated (possibly stale/invalid) values aren't resent and a concurrent
+    // edit to another field isn't clobbered. bodyFn maps these to API fields.
+    let changedKeys = null;
+    if (!isCreate && savedOf) {
+      const cur = savedOf(row);
+      const base = row._saved || {};
+      changedKeys = Object.keys(cur).filter((k) => cur[k] !== base[k]);
+    }
+    const body = bodyFn(row, isCreate, changedKeys);
     const req = isCreate ? api.post(createPath, body) : api.patch(`${endpoint}/${row._id}`, body);
     req
       .then((res) => {
@@ -931,12 +940,18 @@ const PersonEditor = ({ person }) => {
     list: names, update: updateName, i,
     idKey: 'person_name_id', endpoint: '/person_name', createPath: `/person_name/person/${p.curie}`,
     completeFn: (r) => !!(r.last_name && r.last_name.trim()),
-    bodyFn: (r) => ({
-      first_name: r.first_name || null,
-      middle_name: r.middle_name || null,
-      last_name: r.last_name,
-      is_primary: !!r.is_primary,
-    }),
+    bodyFn: (r, isCreate, changed) => {
+      const full = {
+        first_name: r.first_name || null,
+        middle_name: r.middle_name || null,
+        last_name: r.last_name,
+        is_primary: !!r.is_primary,
+      };
+      if (isCreate) return full;
+      const body = {};
+      ['first_name', 'middle_name', 'last_name', 'is_primary'].forEach((k) => { if (changed.includes(k)) body[k] = full[k]; });
+      return body;
+    },
     snap: nameSnap, savedOf: nameFields,
   });
   const deleteName = (i) => deleteChild({ list: names, update: updateName, remove: removeName, i, endpoint: '/person_name' });
@@ -946,11 +961,18 @@ const PersonEditor = ({ person }) => {
     list: emails, update: updateEmail, i, override,
     idKey: 'person_email_id', endpoint: '/person_email', createPath: `/person_email/person/${p.curie}`,
     completeFn: (r) => EMAIL_RE.test((r.email_address || '').trim()),
-    bodyFn: (r) => ({
-      email_address: (r.email_address || '').trim(),
-      // checked => mark old (keep an existing old-date, else now); unchecked => clear.
-      date_made_old_email: r.invalidated ? (r._origOldDate || new Date().toISOString()) : null,
-    }),
+    bodyFn: (r, isCreate, changed) => {
+      const full = {
+        email_address: (r.email_address || '').trim(),
+        // checked => mark old (keep an existing old-date, else now); unchecked => clear.
+        date_made_old_email: r.invalidated ? (r._origOldDate || new Date().toISOString()) : null,
+      };
+      if (isCreate) return full;
+      const body = {};
+      if (changed.includes('email_address')) body.email_address = full.email_address;
+      if (changed.includes('invalidated')) body.date_made_old_email = full.date_made_old_email;
+      return body;
+    },
     snap: emailSnap, savedOf: emailFields,
   });
   const deleteEmail = (i) => deleteChild({ list: emails, update: updateEmail, remove: removeEmail, i, endpoint: '/person_email' });
@@ -968,7 +990,12 @@ const PersonEditor = ({ person }) => {
     list: notes, update: updateNote, i,
     idKey: 'person_note_id', endpoint: '/person_note', createPath: '/person_note/',
     completeFn: (r) => !!(r.note && r.note.trim()),
-    bodyFn: (r, isCreate) => (isCreate ? { note: r.note, person_curie: p.curie } : { note: r.note }),
+    bodyFn: (r, isCreate, changed) => {
+      if (isCreate) return { note: r.note, person_curie: p.curie };
+      const body = {};
+      if (changed.includes('note')) body.note = r.note;
+      return body;
+    },
     snap: noteSnap, savedOf: noteFields,
   });
   const deleteNote = (i) => deleteChild({ list: notes, update: updateNote, remove: removeNote, i, endpoint: '/person_note' });
@@ -978,9 +1005,14 @@ const PersonEditor = ({ person }) => {
     list: xrefs, update: updateXref, i, override,
     idKey: 'person_cross_reference_id', endpoint: '/person_cross_reference', createPath: '/person_cross_reference/',
     completeFn: (r) => !!((r.curie_prefix || '').trim() && (r.curie || '').trim()),
-    bodyFn: (r, isCreate) => {
-      const body = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
-      return isCreate ? { ...body, person_curie: p.curie } : body;
+    bodyFn: (r, isCreate, changed) => {
+      const full = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
+      if (isCreate) return { ...full, person_curie: p.curie };
+      const body = {};
+      // prefix + id both feed the single API `curie` field.
+      if (changed.includes('curie_prefix') || changed.includes('curie')) body.curie = full.curie;
+      if (changed.includes('is_obsolete')) body.is_obsolete = full.is_obsolete;
+      return body;
     },
     snap: xrefSnap, savedOf: xrefFields,
   });
@@ -994,14 +1026,21 @@ const PersonEditor = ({ person }) => {
     list: labs, update: updateLab, i, override,
     idKey: 'laboratory_person_id', endpoint: '/laboratory_person', createPath: '/laboratory_person/',
     completeFn: (r) => !!r.labCurie,
-    bodyFn: (r, isCreate) => {
+    bodyFn: (r, isCreate, changed) => {
       const now = new Date().toISOString();
-      const flags = {
-        is_pi: r.is_pi ? (r._is_pi_ts || now) : null,
-        former_pi: r.former_pi ? (r._former_pi_ts || now) : null,
-        alum: r.alum ? (r._alum_ts || now) : null,
+      const val = (key) => {
+        if (key === 'is_pi') return r.is_pi ? (r._is_pi_ts || now) : null;
+        if (key === 'former_pi') return r.former_pi ? (r._former_pi_ts || now) : null;
+        if (key === 'alum') return r.alum ? (r._alum_ts || now) : null;
+        return undefined;
       };
-      return isCreate ? { ...flags, laboratory_curie: r.labCurie, person_curie: p.curie } : flags;
+      if (isCreate) {
+        return { is_pi: val('is_pi'), former_pi: val('former_pi'), alum: val('alum'), laboratory_curie: r.labCurie, person_curie: p.curie };
+      }
+      // PATCH only the changed date-flag(s); the lab link itself is immutable here.
+      const body = {};
+      changed.forEach((k) => { const v = val(k); if (v !== undefined) body[k] = v; });
+      return body;
     },
     snap: labSnap, savedOf: labFields,
     applyResp: (d) => ({
@@ -1023,24 +1062,24 @@ const PersonEditor = ({ person }) => {
   };
 
   const labelForName = (n, i) => {
-    if (i === names.length - 1 && nameIsEmpty(n)) return 'name (new)';
+    if (i === names.length - 1 && nameIsEmpty(n)) return 'name (add)';
     return n.is_primary ? 'name (primary)' : 'name';
   };
   const labelForEmail = (e, i) => {
-    if (i === emails.length - 1 && emailIsEmpty(e)) return 'email (new)';
+    if (i === emails.length - 1 && emailIsEmpty(e)) return 'email (add)';
     if (e.invalidated) return 'old_email';
     return 'email';
   };
   const labelForUrl = (u, i) =>
-    i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (new)' : 'webpage';
+    i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (add)' : 'webpage';
   const labelForInst = (it, i) =>
-    i === insts.length - 1 && instIsEmpty(it) ? 'institution (new)' : 'institution';
+    i === insts.length - 1 && instIsEmpty(it) ? 'institution (add)' : 'institution';
   const labelForXref = (x, i) =>
-    i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (new)' : x.curie_prefix || 'xref';
+    i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : x.curie_prefix || 'xref';
   const labelForNote = (n, i) =>
-    i === notes.length - 1 && noteIsEmpty(n) ? 'comment (new)' : 'comment';
+    i === notes.length - 1 && noteIsEmpty(n) ? 'comment (add)' : 'comment';
   const labelForLab = (l, i) =>
-    i === labs.length - 1 && labIsEmpty(l) ? 'laboratory (new)' : 'laboratory';
+    i === labs.length - 1 && labIsEmpty(l) ? 'laboratory (add)' : 'laboratory';
 
   const recordTs = metaLabel(recordMeta.updated_by, recordMeta.date_updated);
 
