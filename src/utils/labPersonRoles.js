@@ -11,9 +11,14 @@
 // Since a checked box is never disabled, a curator can always un-select a flag
 // that is set — including one leg of a pre-existing invalid combination (e.g. a
 // row that already had alum + is_lab_contact set directly via the API), which is
-// resolved by unchecking either box. (The Person editor renders only the three
-// role flags; the is_lab_contact / can_edit_lab cases apply to the Laboratory
-// editor's lab-member rows.)
+// resolved by unchecking either box.
+//
+// Editor scope: the is_lab_contact / can_edit_lab *rows* (:22) are rendered only
+// in the Laboratory editor. But the contact/edit legs of the alum case (:21) are
+// live in BOTH editors, so the Person editor — which renders only the three role
+// flags — must still supply row.is_lab_contact / row.can_edit_lab for the alum
+// exclusion to hold there. Do not treat those fields as dead weight in
+// PersonEditor's lab rows.
 export const roleFlagDisabled = (row, key) => {
   if (row[key]) return false;
   if (key === 'is_pi') return !!(row.former_pi || row.alum);
