@@ -43,7 +43,13 @@ export default function EvidencePanels({
           {showTitles ? (
             <div
               className="tetv-evidence-title"
-              title={evidence ? `evidence: ${label} (${evidence})` : 'no evidence assertion'}
+              title={
+                evidence
+                  ? label === evidence
+                    ? `evidence: ${evidence}`
+                    : `evidence: ${label} (${evidence})`
+                  : 'no evidence assertion'
+              }
             >
               {label}
             </div>

@@ -1,10 +1,12 @@
 import { sourceLabel, isCuratorSourceTet } from './groupTets';
 
-/** Fallback evidence-assertion curie → human-readable label, used only when
- *  the backend did not supply a resolved name (source_evidence_assertion_name).
- *  This list is intentionally incomplete: the authoritative label comes from the
- *  ontology store via the API, so prefer entry.source_evidence_assertion_name and
- *  treat this map purely as a last-resort offline fallback. */
+/** Curated evidence-assertion curie → short human-readable label. This is the
+ *  FIRST choice in evidenceAssertionLabel: for the codes listed here the grid
+ *  keeps these stable, deliberately short titles (e.g. "manual", "automated")
+ *  regardless of the longer ontology phrase the backend may resolve. The map is
+ *  intentionally incomplete — codes absent from it fall through to the backend's
+ *  source_evidence_assertion_name, then to the raw curie. Add a code here only
+ *  when you want a curated short label to override the ontology name. */
 const EVIDENCE_ASSERTION_NAMES = {
   'ECO:0006155': 'manual',
   'ECO:0007669': 'automated',

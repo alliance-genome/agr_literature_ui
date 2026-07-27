@@ -1336,6 +1336,7 @@ export default function TetValidationGrid({
           kind,
           width,
           minWidth,
+          maxWidth,
           cellRenderer,
           cellRendererParams = {},
           cellClass = '',
@@ -1347,6 +1348,7 @@ export default function TetValidationGrid({
           field: topicField,
           width,
           minWidth,
+          maxWidth,
           autoHeight: true,
           sortable: true,
           filter: InnerValueFilter,
@@ -1396,6 +1398,11 @@ export default function TetValidationGrid({
             colId: t.curie,
             kind: INNER_COLUMN_TYPES.SOURCES,
             width: 180,
+            // Cap autosize growth: ellipsis clips painting, not intrinsic width,
+            // so autoSizeColumns would otherwise widen this column to fit a long
+            // (unmapped-code) ontology label. maxWidth bounds that; the tooltip
+            // carries the full text.
+            maxWidth: 260,
             cellRenderer: SourcesCell,
             cellRendererParams: {
               topicCurie: t.curie,
