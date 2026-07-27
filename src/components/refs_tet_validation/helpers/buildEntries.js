@@ -1,12 +1,16 @@
 import { sourceLabel, isCuratorSourceTet } from './groupTets';
 
-/** Common evidence-assertion curies → human-readable label. Mirrors the
- *  hardcoded mapping in the search backend's add_curie_to_name_values. */
+/** Fallback evidence-assertion curie → human-readable label, used only when
+ *  the backend did not supply a resolved name (source_evidence_assertion_name).
+ *  This list is intentionally incomplete: the authoritative label comes from the
+ *  ontology store via the API, so prefer entry.source_evidence_assertion_name and
+ *  treat this map purely as a last-resort offline fallback. */
 const EVIDENCE_ASSERTION_NAMES = {
   'ECO:0006155': 'manual',
   'ECO:0007669': 'automated',
   'ECO:0008004': 'machine learning',
   'ECO:0008021': 'string matching',
+  'ECO:0008025': 'neural network method',
   'ATP:0000035': 'author',
   'ATP:0000036': 'professional biocurator',
 };
@@ -15,6 +19,19 @@ export function evidenceAssertionName(curie) {
   if (!curie) return 'unspecified evidence';
   const key = String(curie).toUpperCase();
   return EVIDENCE_ASSERTION_NAMES[key] || curie;
+}
+
+/** Resolve an evidence-assertion panel label, preferring the ontology name the
+ *  backend already resolved from the persistent store over the local fallback
+ *  map. `entries` are the mini-rows grouped under a single evidence curie. */
+export function evidenceAssertionLabel(entries, curie) {
+  for (const e of entries || []) {
+    const name =
+      e?.source_evidence_assertion_name ||
+      e?.tets?.[0]?.topic_entity_tag_source?.source_evidence_assertion_name;
+    if (name) return name;
+  }
+  return evidenceAssertionName(curie);
 }
 
 /** Group a buildEntries output by source.source_evidence_assertion so cells

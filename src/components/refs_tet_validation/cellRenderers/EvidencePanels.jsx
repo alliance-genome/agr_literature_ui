@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-  evidenceAssertionName,
+  evidenceAssertionLabel,
   groupEntriesByEvidence,
 } from '../helpers/buildEntries';
 
@@ -43,7 +43,7 @@ export default function EvidencePanels({
               className="tetv-evidence-title"
               title={evidence ? `evidence: ${evidence}` : 'no evidence assertion'}
             >
-              {evidenceAssertionName(evidence)}
+              {evidenceAssertionLabel(panelEntries, evidence)}
             </div>
           ) : (
             <div className="tetv-evidence-title-spacer" aria-hidden="true">
