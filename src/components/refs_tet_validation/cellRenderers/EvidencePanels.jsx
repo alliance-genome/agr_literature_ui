@@ -33,7 +33,9 @@ export default function EvidencePanels({
 
   return (
     <>
-      {[...groups.entries()].map(([evidence, panelEntries], idx) => (
+      {[...groups.entries()].map(([evidence, panelEntries], idx) => {
+        const label = evidenceAssertionLabel(panelEntries, evidence);
+        return (
         <div
           className={`tetv-evidence-panel${idx > 0 ? ' tetv-evidence-panel-sep' : ''}`}
           key={evidence || `_${idx}`}
@@ -41,9 +43,9 @@ export default function EvidencePanels({
           {showTitles ? (
             <div
               className="tetv-evidence-title"
-              title={evidence ? `evidence: ${evidence}` : 'no evidence assertion'}
+              title={evidence ? `evidence: ${label} (${evidence})` : 'no evidence assertion'}
             >
-              {evidenceAssertionLabel(panelEntries, evidence)}
+              {label}
             </div>
           ) : (
             <div className="tetv-evidence-title-spacer" aria-hidden="true">
@@ -52,7 +54,8 @@ export default function EvidencePanels({
           )}
           {panelEntries.map((e) => renderEntry(e))}
         </div>
-      ))}
+        );
+      })}
     </>
   );
 }

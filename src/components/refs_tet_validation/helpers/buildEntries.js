@@ -21,10 +21,19 @@ export function evidenceAssertionName(curie) {
   return EVIDENCE_ASSERTION_NAMES[key] || curie;
 }
 
-/** Resolve an evidence-assertion panel label, preferring the ontology name the
- *  backend already resolved from the persistent store over the local fallback
- *  map. `entries` are the mini-rows grouped under a single evidence curie. */
+/** Resolve an evidence-assertion panel label. Precedence, chosen so the grid's
+ *  established short titles stay stable while still labelling codes the offline
+ *  map does not cover:
+ *    1. the curated offline label (keeps manual/automated/... short and fixed);
+ *    2. the ontology name the backend resolved from the persistent store
+ *       (source_evidence_assertion_name) for any code missing from the map;
+ *    3. the raw curie as a last resort.
+ *  `entries` are the mini-rows grouped under a single evidence curie. These
+ *  resolved ontology names can be long, so callers must clip/ellipsize the
+ *  title and surface the full text via the cell tooltip. */
 export function evidenceAssertionLabel(entries, curie) {
+  const mapped = curie ? EVIDENCE_ASSERTION_NAMES[String(curie).toUpperCase()] : null;
+  if (mapped) return mapped;
   for (const e of entries || []) {
     const name =
       e?.source_evidence_assertion_name ||

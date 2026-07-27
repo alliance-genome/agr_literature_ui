@@ -19,8 +19,8 @@ describe('evidenceAssertionName (offline fallback map)', () => {
   });
 });
 
-describe('evidenceAssertionLabel (prefers backend-resolved name)', () => {
-  test('uses source_evidence_assertion_name from the entry when present', () => {
+describe('evidenceAssertionLabel (curated map first, backend name as fallback)', () => {
+  test('keeps the curated short label for a mapped code, ignoring the backend name', () => {
     const entries = [
       {
         source_evidence_assertion: 'ECO:0008025',
@@ -28,11 +28,24 @@ describe('evidenceAssertionLabel (prefers backend-resolved name)', () => {
           'neural network method evidence used in automatic assertion',
       },
     ];
+    // ECO:0008025 is in the offline map, so its short curated label wins and the
+    // grid's established titles stay stable.
     expect(evidenceAssertionLabel(entries, 'ECO:0008025')).toBe(
-      'neural network method evidence used in automatic assertion'
+      'neural network method'
     );
   });
-  test('reads the resolved name from a nested raw tag', () => {
+  test('uses source_evidence_assertion_name for a code missing from the map', () => {
+    const entries = [
+      {
+        source_evidence_assertion: 'ECO:1234567',
+        source_evidence_assertion_name: 'some resolved label',
+      },
+    ];
+    expect(evidenceAssertionLabel(entries, 'ECO:1234567')).toBe(
+      'some resolved label'
+    );
+  });
+  test('reads the resolved name from a nested raw tag for an unmapped code', () => {
     const entries = [
       {
         tets: [
@@ -48,13 +61,7 @@ describe('evidenceAssertionLabel (prefers backend-resolved name)', () => {
       'some resolved label'
     );
   });
-  test('falls back to the offline map when no resolved name is supplied', () => {
-    const entries = [{ source_evidence_assertion: 'ECO:0008025' }];
-    expect(evidenceAssertionLabel(entries, 'ECO:0008025')).toBe(
-      'neural network method'
-    );
-  });
-  test('falls back to the raw curie when neither name nor map matches', () => {
+  test('falls back to the raw curie when neither map nor backend name matches', () => {
     expect(evidenceAssertionLabel([], 'ECO:9999999')).toBe('ECO:9999999');
   });
 });
