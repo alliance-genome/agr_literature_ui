@@ -314,7 +314,7 @@ const ValueEditor = ({ row, onChange, tagContext }) => {
   );
 };
 
-const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext }) => (
+const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext, usedFieldKeys }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2px' }}>
     <Form.Control
       as="select"
@@ -324,8 +324,14 @@ const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext }) => (
       value={row.field}
       onChange={(e) => onChange(createFieldRow(e.target.value))}
     >
+      {/* A Tag can carry each field at most once (a tag can't be topic=A AND topic=B),
+          so disable field types already used by other rows in this same Tag. */}
       {TET_FIELD_DEFS.map((def) => (
-        <option key={def.key} value={def.key}>{def.label}</option>
+        <option
+          key={def.key}
+          value={def.key}
+          disabled={def.key !== row.field && usedFieldKeys.includes(def.key)}
+        >{def.label}</option>
       ))}
     </Form.Control>
     <span style={{ color: '#94a3b8', fontWeight: 600, flex: '0 0 auto' }}>=</span>
@@ -370,7 +376,14 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
     }
     onChange({ ...leaf, fields });
   };
-  const addField = () => onChange({ ...leaf, fields: [...leaf.fields, createFieldRow()] });
+  const addField = () => {
+    // Default a new row to the first field type this Tag isn't already using, so we
+    // never open on a duplicate the curator would then have to change.
+    const usedKeys = leaf.fields.map((f) => f.field);
+    const nextDef = TET_FIELD_DEFS.find((def) => !usedKeys.includes(def.key));
+    if (!nextDef) return; // every field type already present in this Tag
+    onChange({ ...leaf, fields: [...leaf.fields, createFieldRow(nextDef.key)] });
+  };
   const removeField = (idx) => {
     onChange({ ...leaf, fields: leaf.fields.filter((_f, i) => i !== idx) });
     // Re-pull the vocabulary so the dropdowns are full and fresh when a replacement
@@ -441,12 +454,15 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
             onRemove={() => removeField(idx)}
             canRemove={leaf.fields.length > 1}
             tagContext={tagContext}
+            usedFieldKeys={leaf.fields.filter((_f, i) => i !== idx).map((f) => f.field)}
           />
         </React.Fragment>
       ))}
       <Button
         variant="outline-secondary" size="sm"
         onClick={addField}
+        disabled={leaf.fields.length >= TET_FIELD_DEFS.length}
+        title={leaf.fields.length >= TET_FIELD_DEFS.length ? 'Every field type is already used in this Tag' : undefined}
         style={{ marginTop: '10px', borderRadius: '16px', fontSize: '0.8rem' }}
       ><FontAwesomeIcon icon={faPlus} style={{ marginRight: '6px' }} />Add field to Tag {index + 1}</Button>
     </div>
