@@ -110,6 +110,13 @@ const ID_COLUMN_MIN_WIDTH = 200;
 const ID_COLUMN_CHAR_WIDTH = 8.5;
 const ID_COLUMN_PADDING = 42;
 
+// Cap how wide autoSizeColumns may grow a Sources column. Ellipsis clips
+// painting, not intrinsic width, so a long (unmapped-code) ontology label
+// would otherwise let autosize stretch the column arbitrarily. We clamp the
+// autosize result (below) rather than setting a colDef maxWidth, so the
+// fill-remaining-space pass and manual column resizing stay unconstrained.
+const SOURCES_AUTOSIZE_CAP = 260;
+
 const prefixOf = (curie) =>
   curie ? String(curie).split(':')[0].toUpperCase() : null;
 
@@ -667,6 +674,21 @@ export default function TetValidationGrid({
     const colIds = cols.map((c) => c.getColId?.()).filter(Boolean);
     if (colIds.length === 0) return;
     gridApi.autoSizeColumns?.(colIds, false);
+    // Clamp any Sources column (colId === topic curie, no `__suffix`) that
+    // autosize grew past the cap. Done here, not via a colDef maxWidth, so the
+    // rAF fill below can still expand these columns to absorb blank space and a
+    // curator can still drag the column border wider.
+    const overCap = cols
+      .filter((c) => {
+        const cid = c.getColId?.() || '';
+        return (
+          cid &&
+          !cid.includes('__') &&
+          (c.getActualWidth?.() || 0) > SOURCES_AUTOSIZE_CAP
+        );
+      })
+      .map((c) => ({ key: c.getColId(), newWidth: SOURCES_AUTOSIZE_CAP }));
+    if (overCap.length > 0) gridApi.setColumnWidths?.(overCap, false);
     requestAnimationFrame(() => {
       const wrapper = topScrollRef.current?.closest('.tetv-grid-wrapper');
       const viewport = wrapper?.querySelector('.ag-center-cols-viewport');
@@ -1398,11 +1420,6 @@ export default function TetValidationGrid({
             colId: t.curie,
             kind: INNER_COLUMN_TYPES.SOURCES,
             width: 180,
-            // Cap autosize growth: ellipsis clips painting, not intrinsic width,
-            // so autoSizeColumns would otherwise widen this column to fit a long
-            // (unmapped-code) ontology label. maxWidth bounds that; the tooltip
-            // carries the full text.
-            maxWidth: 260,
             cellRenderer: SourcesCell,
             cellRendererParams: {
               topicCurie: t.curie,
