@@ -4,13 +4,14 @@ import { Button, Form, InputGroup, OverlayTrigger, Popover } from 'react-bootstr
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashAlt, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { api } from '../../../api';
+import './AdvancedTopicQueryBuilder.css';
 import {
   setAdvancedTopicQuery,
   setSearchResultsPage,
   searchReferences,
   fetchAdvancedFacetsVocab,
 } from '../../../actions/searchActions';
-import { changeFieldEntityEntityList, fetchTaxonData } from '../../../actions/biblioActions';
+import { changeFieldEntityEntityList, fetchTaxonData, clearTaxonData } from '../../../actions/biblioActions';
 import {
   TET_FIELD_DEFS,
   FIELD_DEF_BY_KEY,
@@ -36,21 +37,36 @@ const ENTITY_WARN_CURIES = [
 ];
 
 // Species options for the Species field's dropdown: the Alliance MOD taxa (plus
-// human), matching the TET create form's species list. Read from the shared
-// biblio taxon data (loaded once by the builder via fetchTaxonData). Value is the
+// human), matching the TET create form's species list. Read from the shared biblio
+// taxon data (loaded once by the builder via fetchTaxonData). Value is the
 // NCBITaxon curie (what tags store, and what the entity lookup needs); label is the
-// species name. Returns null until the data has loaded.
+// species name. Returns { status, options }:
+//   'loading' — data not in yet (or a fetch is in flight)
+//   'error'   — the fetch failed. NOTE getModToTaxon swallows a /mod/taxons/all
+//               failure and returns {}, which fetchTaxonData then caches as a
+//               "successful" empty modToTaxon (no taxonDataError). That yields a
+//               bogus Homo-sapiens-only list, so an EMPTY modToTaxon is treated as
+//               an error here rather than a one-species result.
+//   'ready'   — options populated.
 const useSpeciesOptions = () => {
   const modToTaxon = useSelector((s) => s.biblio.modToTaxon);
   const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
+  const isFetching = useSelector((s) => s.biblio.isFetchingTaxonData);
+  const fetchError = useSelector((s) => s.biblio.taxonDataError);
   return useMemo(() => {
-    if (!modToTaxon || !curieToNameTaxon) return null;
+    if (isFetching || !modToTaxon || !curieToNameTaxon) {
+      return { status: 'loading', options: [] };
+    }
+    if (fetchError || Object.keys(modToTaxon).length === 0) {
+      return { status: 'error', options: [] };
+    }
     const curies = [...new Set(Object.values(modToTaxon).flat().concat('NCBITaxon:9606'))];
-    return curies
+    const options = curies
       .filter((c) => c && curieToNameTaxon[c])
       .map((c) => ({ value: c, label: curieToNameTaxon[c] }))
       .sort((a, b) => (a.label > b.label ? 1 : -1));
-  }, [modToTaxon, curieToNameTaxon]);
+    return { status: 'ready', options };
+  }, [modToTaxon, curieToNameTaxon, isFetching, fetchError]);
 };
 
 // Process-wide cache of resolved ATP/ECO curie -> display name, so switching
@@ -201,10 +217,12 @@ const EntityValueAdder = ({ hasValues, entityTypeCurie, taxon, onAdd }) => {
 const ValueEditor = ({ row, onChange, tagContext }) => {
   const dispatch = useDispatch();
   const fieldOptions = useFieldOptions(row.field);
-  const speciesOptions = useSpeciesOptions();
-  // Species is a controlled dropdown of the MOD taxa; [] while the list loads so it
-  // still renders as a (temporarily empty) select rather than a free-text box.
-  const options = row.field === 'species' ? (speciesOptions || []) : fieldOptions;
+  const species = useSpeciesOptions();
+  const isSpecies = row.field === 'species';
+  // Species is a controlled dropdown of the MOD taxa. Its options are only used
+  // once loaded; while loading/errored the render below shows a status affordance
+  // instead of the select, so it never falls through to a free-text box.
+  const options = isSpecies ? species.options : fieldOptions;
   const [text, setText] = useState('');
   const values = Array.isArray(row.values) ? row.values : [];
 
@@ -264,6 +282,17 @@ const ValueEditor = ({ row, onChange, tagContext }) => {
           taxon={tagContext?.taxon}
           onAdd={addChip}
         />
+      ) : isSpecies && species.status === 'loading' ? (
+        <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>loading species…</span>
+      ) : isSpecies && species.status === 'error' ? (
+        <span style={{ fontSize: '0.75rem', color: '#b02a37' }}>
+          Couldn’t load the species list.{' '}
+          <Button
+            variant="link" size="sm"
+            style={{ padding: 0, fontSize: '0.75rem', verticalAlign: 'baseline' }}
+            onClick={() => { dispatch(clearTaxonData()); dispatch(fetchTaxonData()); }}
+          >Retry</Button>
+        </span>
       ) : options ? (
         <Form.Control
           as="select"
@@ -344,12 +373,13 @@ const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext, usedFieldKey
     </div>
     <Button
       variant="link" size="sm"
+      className="tetv-adv-remove-btn"
       onClick={onRemove} disabled={!canRemove}
       title={canRemove ? 'Remove field' : 'A tag needs at least one field'}
       aria-label="remove field"
       style={{
-        flex: '0 0 auto', color: canRemove ? '#dc3545' : '#cbd5e1',
-        textDecoration: 'none', fontSize: '1.15rem', lineHeight: 1, padding: '0 4px',
+        flex: '0 0 auto', textDecoration: 'none',
+        fontSize: '1.15rem', lineHeight: 1, padding: '0 4px',
       }}
     >×</Button>
   </div>
@@ -358,22 +388,29 @@ const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext, usedFieldKey
 // One Tag card = one topic_entity_tag the paper must (or must not) have. All fields
 // inside AND on the SAME tag; multiple values on a field OR. A second Tag card is a
 // DIFFERENT tag on the same paper.
+// Picking "Entity" needs an entity type and a species to resolve the name against
+// (a gene is species-specific), so surface those fields automatically if the Tag
+// doesn't already have them — inserted just above the Entity row at entityIdx so
+// the curator fills them top-down. No-op when the row isn't Entity or the
+// companions are already present. Applies whether the Entity row was added or a
+// row was switched to Entity, so the Add-field path doesn't leave a bare Entity
+// row showing the "choose type and species first" prompt.
+const withEntityCompanions = (fields, entityIdx) => {
+  if (fields[entityIdx]?.field !== 'entity') return fields;
+  const missing = ['entity_type', 'species']
+    .filter((k) => !fields.some((f) => f.field === k))
+    .map((k) => createFieldRow(k));
+  if (missing.length === 0) return fields;
+  return [...fields.slice(0, entityIdx), ...missing, ...fields.slice(entityIdx)];
+};
+
 const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
   const dispatch = useDispatch();
   const setField = (idx, newRow) => {
-    let fields = leaf.fields.map((f, i) => (i === idx ? newRow : f));
-    // Picking "Entity" needs an entity type and a species to resolve the name
-    // against (a gene is species-specific), so surface those fields automatically
-    // if the Tag doesn't already have them — inserted just above the Entity row so
-    // the curator fills them top-down.
-    if (newRow.field === 'entity') {
-      const missing = ['entity_type', 'species']
-        .filter((k) => !fields.some((f) => f.field === k))
-        .map((k) => createFieldRow(k));
-      if (missing.length > 0) {
-        fields = [...fields.slice(0, idx), ...missing, ...fields.slice(idx)];
-      }
-    }
+    const fields = withEntityCompanions(
+      leaf.fields.map((f, i) => (i === idx ? newRow : f)),
+      idx
+    );
     onChange({ ...leaf, fields });
   };
   const addField = () => {
@@ -382,7 +419,8 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
     const usedKeys = leaf.fields.map((f) => f.field);
     const nextDef = TET_FIELD_DEFS.find((def) => !usedKeys.includes(def.key));
     if (!nextDef) return; // every field type already present in this Tag
-    onChange({ ...leaf, fields: [...leaf.fields, createFieldRow(nextDef.key)] });
+    const appended = [...leaf.fields, createFieldRow(nextDef.key)];
+    onChange({ ...leaf, fields: withEntityCompanions(appended, appended.length - 1) });
   };
   const removeField = (idx) => {
     onChange({ ...leaf, fields: leaf.fields.filter((_f, i) => i !== idx) });
@@ -433,12 +471,10 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
           />
           <Button
             variant="link" size="sm"
+            className="tetv-adv-remove-btn"
             onClick={onRemove} disabled={!canRemove}
             title={canRemove ? 'Remove tag' : 'A query needs at least one tag'}
-            style={{
-              color: canRemove ? '#dc3545' : '#cbd5e1',
-              textDecoration: 'none', padding: 0, fontSize: '0.8rem',
-            }}
+            style={{ textDecoration: 'none', padding: 0, fontSize: '0.8rem' }}
           ><FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '5px' }} />Remove tag</Button>
         </div>
       </div>
@@ -655,20 +691,23 @@ const AdvancedTopicQueryBuilder = () => {
       }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: 600, letterSpacing: '0.01em' }}>Advanced Topic query</span>
+          {/* A native <button> (not a role="button" span) so it's keyboard-
+              operable: react-bootstrap v1's OverlayTrigger only binds onClick, and
+              a button fires that on Enter/Space where a span would not. */}
           <OverlayTrigger trigger="click" placement="bottom-start" rootClose overlay={helpPopover}>
-            <span
-              role="button"
-              tabIndex={0}
+            <button
+              type="button"
               aria-label="How to use the advanced query builder"
+              aria-haspopup="dialog"
               title="How to use — AND/OR, tags, and examples"
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: '20px', height: '20px', borderRadius: '50%',
+                width: '20px', height: '20px', borderRadius: '50%', border: 'none', padding: 0,
                 backgroundColor: '#0d6efd', color: '#fff',
                 fontSize: '0.75rem', fontWeight: 700, lineHeight: 1, cursor: 'pointer',
                 boxShadow: '0 1px 2px rgba(13, 110, 253, 0.35)',
               }}
-            >?</span>
+            >?</button>
           </OverlayTrigger>
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>

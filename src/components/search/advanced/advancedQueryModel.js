@@ -155,6 +155,35 @@ export const createEmptyTree = () => ({
 
 export const isLeaf = (node) => !!node && node.type === 'tet';
 
+// Collapse duplicate field rows within a leaf so the one-row-per-field invariant
+// the flat Tag builder relies on holds for restored queries too. A query saved
+// before that invariant (or a nested tree) can carry the same field twice; the
+// builder would then render two rows of the same type, and Add-field could be
+// disabled while types remain unused. Later duplicates merge their chip values
+// into the first row (values on one field are OR, so nothing is lost); range
+// fields keep the first row's min/max. First-occurrence order is preserved.
+const dedupeLeafFields = (leaf) => {
+  if (!leaf || !Array.isArray(leaf.fields)) return leaf;
+  const byField = new Map();
+  leaf.fields.forEach((row) => {
+    if (!row || !row.field) return;
+    const existing = byField.get(row.field);
+    if (!existing) {
+      byField.set(row.field, { ...row });
+      return;
+    }
+    const valueKey = (v) => (v && typeof v === 'object' ? v.value : v);
+    const seen = new Set((existing.values || []).map(valueKey));
+    const merged = [...(existing.values || [])];
+    (row.values || []).forEach((v) => {
+      const k = valueKey(v);
+      if (k && !seen.has(k)) { seen.add(k); merged.push(v); }
+    });
+    existing.values = merged;
+  });
+  return { ...leaf, fields: Array.from(byField.values()) };
+};
+
 // Collect every leaf in a (possibly nested) tree into a flat { operator, children:[leaf] }
 // so the Tag-card builder can display a legacy/nested saved query without crashing.
 // Best-effort: intermediate group operators are dropped (the flat UI can't show them).
@@ -171,7 +200,7 @@ export const normalizeToFlatTree = (tree) => {
     operator: String(tree.operator || 'AND').toUpperCase() === 'OR' ? 'OR' : 'AND',
     // Preserve an explicit excludeNoData; default it off for trees that predate the flag.
     excludeNoData: tree.excludeNoData === true,
-    children: leaves.length > 0 ? leaves : [createLeaf()],
+    children: leaves.length > 0 ? leaves.map(dedupeLeafFields) : [createLeaf()],
   };
 };
 

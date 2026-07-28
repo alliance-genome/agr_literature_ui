@@ -350,6 +350,30 @@ describe('normalizeToFlatTree (legacy/nested -> flat Tag cards, SCRUM-6228)', ()
     const off = { operator: 'AND', excludeNoData: false, children: [] };
     expect(normalizeToFlatTree(off).excludeNoData).toBe(false);
   });
+
+  test('dedupes duplicate field rows within a leaf, merging their values (OR)', () => {
+    // A query saved before the one-row-per-field invariant can carry the same
+    // field twice; the flat builder must collapse them so Add-field/field-disable
+    // logic stays correct.
+    const dup = {
+      operator: 'AND',
+      children: [{
+        type: 'tet', negate: false,
+        fields: [
+          { field: 'topic', values: [{ value: 'ATP:1', label: 'a' }] },
+          { field: 'source_method', values: [{ value: 'sm', label: 'sm' }] },
+          { field: 'topic', values: [{ value: 'ATP:2', label: 'b' }, { value: 'ATP:1', label: 'a' }] },
+        ],
+      }],
+    };
+    const flat = normalizeToFlatTree(dup);
+    const rows = flat.children[0].fields;
+    // topic appears once, in first-occurrence position, with merged, de-duped values.
+    expect(rows.map((r) => r.field)).toEqual(['topic', 'source_method']);
+    expect(rows[0].values.map((v) => v.value)).toEqual(['ATP:1', 'ATP:2']);
+    // The merged leaf still compiles to the OR of both topic values.
+    expect(compileAdvancedQuery(flat).match.topic).toEqual(['ATP:1', 'ATP:2']);
+  });
 });
 
 describe('describeCompiledQuery (preview, SCRUM-6228)', () => {

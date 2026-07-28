@@ -1,0 +1,18 @@
+/* Remove controls (field-row "×" and the tag "Remove tag" trashcan). Dark slate
+   grey at rest so they read as active without shouting, red only on hover/focus to
+   signal the destructive action at the point of intent, and the light disabled grey
+   when the last tag/field can't be removed. Color lives here (not inline) so the
+   :hover/:focus states can override the resting color. The `.btn` prefix lifts
+   specificity above react-bootstrap's own `.btn-link` color rules. */
+.btn.tetv-adv-remove-btn {
+  color: #475569;
+  transition: color 0.12s ease;
+}
+.btn.tetv-adv-remove-btn:not(:disabled):hover,
+.btn.tetv-adv-remove-btn:not(:disabled):focus-visible {
+  color: #dc3545;
+}
+.btn.tetv-adv-remove-btn:disabled,
+.btn.tetv-adv-remove-btn.disabled {
+  color: #cbd5e1;
+}
