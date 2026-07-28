@@ -5,13 +5,13 @@ import {
   createFieldRow,
   flattenAdvancedForGrid,
   normalizeToFlatTree,
+  needsFlatNormalization,
   describeCompiledQuery,
   isLeaf,
   buildValueLabeler,
   ENTITY_TYPE_OPTIONS,
   VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
   FIELD_DEF_BY_KEY,
-  TET_FIELD_DEFS,
   entityTypeNameForCurie,
 } from '../advancedQueryModel';
 
@@ -192,12 +192,15 @@ describe('entity_type controlled vocabulary (SCRUM-6228)', () => {
 });
 
 describe('entity field (specific-entity lookup, SCRUM-6228)', () => {
-  test('entity is NOT a selectable field in the dropdown (removed per curator request)', () => {
-    expect(FIELD_DEF_BY_KEY.entity).toBeUndefined();
-    expect(TET_FIELD_DEFS.some((d) => d.key === 'entity')).toBe(false);
+  test('entity is a free-text field def (no static options/facet)', () => {
+    const def = FIELD_DEF_BY_KEY.entity;
+    expect(def).toBeTruthy();
+    expect(def.label).toBe('Entity');
+    expect(def.facetKey).toBeNull();
+    expect(def.options).toBeUndefined();
   });
 
-  test('the compiler still folds a persisted entity field into the entity match key', () => {
+  test('an entity curie compiles to the entity match key', () => {
     const leaf = {
       type: 'tet',
       negate: false,
@@ -347,6 +350,78 @@ describe('normalizeToFlatTree (legacy/nested -> flat Tag cards, SCRUM-6228)', ()
   test('preserves an explicit excludeNoData = false', () => {
     const off = { operator: 'AND', excludeNoData: false, children: [] };
     expect(normalizeToFlatTree(off).excludeNoData).toBe(false);
+  });
+
+  test('dedupes duplicate field rows within a leaf, merging their values (OR)', () => {
+    // A query saved before the one-row-per-field invariant can carry the same
+    // field twice; the flat builder must collapse them so Add-field/field-disable
+    // logic stays correct.
+    const dup = {
+      operator: 'AND',
+      children: [{
+        type: 'tet', negate: false,
+        fields: [
+          { field: 'topic', values: [{ value: 'ATP:1', label: 'a' }] },
+          { field: 'source_method', values: [{ value: 'sm', label: 'sm' }] },
+          { field: 'topic', values: [{ value: 'ATP:2', label: 'b' }, { value: 'ATP:1', label: 'a' }] },
+        ],
+      }],
+    };
+    const flat = normalizeToFlatTree(dup);
+    const rows = flat.children[0].fields;
+    // topic appears once, in first-occurrence position, with merged, de-duped values.
+    expect(rows.map((r) => r.field)).toEqual(['topic', 'source_method']);
+    expect(rows[0].values.map((v) => v.value)).toEqual(['ATP:1', 'ATP:2']);
+    // The merged leaf still compiles to the OR of both topic values.
+    expect(compileAdvancedQuery(flat).match.topic).toEqual(['ATP:1', 'ATP:2']);
+  });
+});
+
+describe('needsFlatNormalization (restore-path gate, SCRUM-6333)', () => {
+  const leafWith = (fields) => ({ type: 'tet', negate: false, fields });
+
+  test('true for a nested tree', () => {
+    const nested = { operator: 'AND', excludeNoData: false, children: [
+      { operator: 'OR', children: [leafWith([{ field: 'topic', values: [] }])] },
+    ] };
+    expect(needsFlatNormalization(nested)).toBe(true);
+  });
+
+  test('true for a tree that predates the excludeNoData flag', () => {
+    const legacy = { operator: 'AND', children: [leafWith([{ field: 'topic', values: [] }])] };
+    expect(legacy.excludeNoData).toBeUndefined();
+    expect(needsFlatNormalization(legacy)).toBe(true);
+  });
+
+  test('true for a flat, excludeNoData-defined tree carrying a duplicate field row', () => {
+    // The case the dedupe targets: saved by the flat builder after excludeNoData
+    // landed but before the one-row-per-field invariant. Both other gate clauses
+    // are false here, so this duplicate check is what triggers re-normalization.
+    const dup = { operator: 'AND', excludeNoData: false, children: [leafWith([
+      { field: 'topic', values: [{ value: 'ATP:1' }] },
+      { field: 'topic', values: [{ value: 'ATP:2' }] },
+    ])] };
+    expect(needsFlatNormalization(dup)).toBe(true);
+  });
+
+  test('false for a clean flat tree, and idempotent after one normalize pass', () => {
+    const clean = { operator: 'AND', excludeNoData: false, children: [leafWith([
+      { field: 'topic', values: [{ value: 'ATP:1' }] },
+      { field: 'source_method', values: [{ value: 'sm' }] },
+    ])] };
+    expect(needsFlatNormalization(clean)).toBe(false);
+    // Normalizing the duplicate tree from the previous test must yield a tree the
+    // gate leaves alone, so the builder's seeding effect can't loop.
+    const normalized = normalizeToFlatTree({ operator: 'AND', excludeNoData: false, children: [leafWith([
+      { field: 'topic', values: [{ value: 'ATP:1' }] },
+      { field: 'topic', values: [{ value: 'ATP:2' }] },
+    ])] });
+    expect(needsFlatNormalization(normalized)).toBe(false);
+  });
+
+  test('false for null/undefined (seeding handles the empty case separately)', () => {
+    expect(needsFlatNormalization(null)).toBe(false);
+    expect(needsFlatNormalization(undefined)).toBe(false);
   });
 });
 

@@ -92,6 +92,7 @@ export const VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS = [
 export const TET_FIELD_DEFS = [
   { key: 'topic', label: 'Topic', facetKey: 'topics' },
   { key: 'entity_type', label: 'Entity type', facetKey: null, options: ENTITY_TYPE_OPTIONS },
+  { key: 'entity', label: 'Entity', facetKey: null },
   { key: 'source_method', label: 'Source method', facetKey: 'source_methods' },
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },
   { key: 'confidence_level', label: 'Confidence level', facetKey: 'confidence_levels' },
@@ -154,6 +155,35 @@ export const createEmptyTree = () => ({
 
 export const isLeaf = (node) => !!node && node.type === 'tet';
 
+// Collapse duplicate field rows within a leaf so the one-row-per-field invariant
+// the flat Tag builder relies on holds for restored queries too. A query saved
+// before that invariant (or a nested tree) can carry the same field twice; the
+// builder would then render two rows of the same type, and Add-field could be
+// disabled while types remain unused. Later duplicates merge their chip values
+// into the first row (values on one field are OR, so nothing is lost); range
+// fields keep the first row's min/max. First-occurrence order is preserved.
+const dedupeLeafFields = (leaf) => {
+  if (!leaf || !Array.isArray(leaf.fields)) return leaf;
+  const byField = new Map();
+  leaf.fields.forEach((row) => {
+    if (!row || !row.field) return;
+    const existing = byField.get(row.field);
+    if (!existing) {
+      byField.set(row.field, { ...row });
+      return;
+    }
+    const valueKey = (v) => (v && typeof v === 'object' ? v.value : v);
+    const seen = new Set((existing.values || []).map(valueKey));
+    const merged = [...(existing.values || [])];
+    (row.values || []).forEach((v) => {
+      const k = valueKey(v);
+      if (k && !seen.has(k)) { seen.add(k); merged.push(v); }
+    });
+    existing.values = merged;
+  });
+  return { ...leaf, fields: Array.from(byField.values()) };
+};
+
 // Collect every leaf in a (possibly nested) tree into a flat { operator, children:[leaf] }
 // so the Tag-card builder can display a legacy/nested saved query without crashing.
 // Best-effort: intermediate group operators are dropped (the flat UI can't show them).
@@ -170,8 +200,30 @@ export const normalizeToFlatTree = (tree) => {
     operator: String(tree.operator || 'AND').toUpperCase() === 'OR' ? 'OR' : 'AND',
     // Preserve an explicit excludeNoData; default it off for trees that predate the flag.
     excludeNoData: tree.excludeNoData === true,
-    children: leaves.length > 0 ? leaves : [createLeaf()],
+    children: leaves.length > 0 ? leaves.map(dedupeLeafFields) : [createLeaf()],
   };
+};
+
+// True when a (possibly restored) tree must be run through normalizeToFlatTree
+// before the flat Tag builder can safely display it. Three cases:
+//   - it still contains nested groups (the flat UI can't render them),
+//   - it predates the excludeNoData flag (undefined reads as an unset default),
+//   - it carries duplicate field rows within a Tag — a search saved by the flat
+//     builder AFTER excludeNoData landed but BEFORE the one-row-per-field
+//     invariant. Those trees are all-leaf with excludeNoData defined, so the first
+//     two checks miss them; without this the duplicates survive and Add-field can
+//     be disabled while field types remain unused (SCRUM-6333).
+// Idempotent with normalizeToFlatTree: a normalized tree returns false, so the
+// builder's one-shot seeding effect can't loop.
+export const needsFlatNormalization = (tree) => {
+  if (!tree) return false;
+  const children = tree.children || [];
+  if (children.some((c) => !isLeaf(c))) return true;
+  if (tree.excludeNoData === undefined) return true;
+  return children.some((c) => {
+    const fieldKeys = (c.fields || []).map((f) => f && f.field).filter(Boolean);
+    return new Set(fieldKeys).size !== fieldKeys.length;
+  });
 };
 
 // Split a free-text value into a trimmed, de-duplicated, non-empty list.

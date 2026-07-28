@@ -741,9 +741,7 @@ const Facets = () => {
                                 {facetCategory === 'Date Range'
                                     ? <DateFacet facetsToInclude={facetsInCategory}/>
                                     : (facetCategory === 'Topics and Entities' && searchMode === 'advanced')
-                                        ? <div style={{ marginLeft: '30px', marginRight: '10px', fontSize: '0.8rem', color: '#6c757d' }}>
-                                              The advanced query builder is shown above the results, where it has more room.
-                                          </div>
+                                        ? null
                                         : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
                             </div>
                         </Collapse>
