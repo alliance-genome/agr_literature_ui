@@ -345,11 +345,11 @@ const FieldRow = ({ row, onChange, onRemove, canRemove, tagContext, usedFieldKey
     <Button
       variant="link" size="sm"
       onClick={onRemove} disabled={!canRemove}
-      title="Remove field"
+      title={canRemove ? 'Remove field' : 'A tag needs at least one field'}
       aria-label="remove field"
       style={{
-        flex: '0 0 auto', color: '#adb5bd', textDecoration: 'none',
-        fontSize: '1.15rem', lineHeight: 1, padding: '0 4px',
+        flex: '0 0 auto', color: canRemove ? '#dc3545' : '#cbd5e1',
+        textDecoration: 'none', fontSize: '1.15rem', lineHeight: 1, padding: '0 4px',
       }}
     >×</Button>
   </div>
@@ -434,8 +434,11 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
           <Button
             variant="link" size="sm"
             onClick={onRemove} disabled={!canRemove}
-            title="Remove tag"
-            style={{ color: '#94a3b8', textDecoration: 'none', padding: 0, fontSize: '0.8rem' }}
+            title={canRemove ? 'Remove tag' : 'A query needs at least one tag'}
+            style={{
+              color: canRemove ? '#dc3545' : '#cbd5e1',
+              textDecoration: 'none', padding: 0, fontSize: '0.8rem',
+            }}
           ><FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '5px' }} />Remove tag</Button>
         </div>
       </div>
