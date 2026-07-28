@@ -204,6 +204,28 @@ export const normalizeToFlatTree = (tree) => {
   };
 };
 
+// True when a (possibly restored) tree must be run through normalizeToFlatTree
+// before the flat Tag builder can safely display it. Three cases:
+//   - it still contains nested groups (the flat UI can't render them),
+//   - it predates the excludeNoData flag (undefined reads as an unset default),
+//   - it carries duplicate field rows within a Tag — a search saved by the flat
+//     builder AFTER excludeNoData landed but BEFORE the one-row-per-field
+//     invariant. Those trees are all-leaf with excludeNoData defined, so the first
+//     two checks miss them; without this the duplicates survive and Add-field can
+//     be disabled while field types remain unused (SCRUM-6333).
+// Idempotent with normalizeToFlatTree: a normalized tree returns false, so the
+// builder's one-shot seeding effect can't loop.
+export const needsFlatNormalization = (tree) => {
+  if (!tree) return false;
+  const children = tree.children || [];
+  if (children.some((c) => !isLeaf(c))) return true;
+  if (tree.excludeNoData === undefined) return true;
+  return children.some((c) => {
+    const fieldKeys = (c.fields || []).map((f) => f && f.field).filter(Boolean);
+    return new Set(fieldKeys).size !== fieldKeys.length;
+  });
+};
+
 // Split a free-text value into a trimmed, de-duplicated, non-empty list.
 const splitValues = (value) => {
   if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);

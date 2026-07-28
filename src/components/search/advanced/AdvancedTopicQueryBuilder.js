@@ -20,6 +20,7 @@ import {
   createLeaf,
   createEmptyTree,
   normalizeToFlatTree,
+  needsFlatNormalization,
   isLeaf,
   isAdvancedQueryEmpty,
   compileAdvancedQuery,
@@ -54,12 +55,14 @@ const useSpeciesOptions = () => {
   const isFetching = useSelector((s) => s.biblio.isFetchingTaxonData);
   const fetchError = useSelector((s) => s.biblio.taxonDataError);
   return useMemo(() => {
-    if (isFetching || !modToTaxon || !curieToNameTaxon) {
-      return { status: 'loading', options: [] };
-    }
-    if (fetchError || Object.keys(modToTaxon).length === 0) {
-      return { status: 'error', options: [] };
-    }
+    if (isFetching) return { status: 'loading', options: [] };
+    // A dispatched fetch error (should getTaxonData ever start rejecting) takes
+    // precedence over the not-loaded-yet check below, which would otherwise pin the
+    // row to "loading" forever since FETCH_TAXON_DATA_ERROR leaves modToTaxon null.
+    if (fetchError) return { status: 'error', options: [] };
+    if (!modToTaxon || !curieToNameTaxon) return { status: 'loading', options: [] };
+    // Empty modToTaxon = the swallowed /mod/taxons/all failure (see note above).
+    if (Object.keys(modToTaxon).length === 0) return { status: 'error', options: [] };
     const curies = [...new Set(Object.values(modToTaxon).flat().concat('NCBITaxon:9606'))];
     const options = curies
       .filter((c) => c && curieToNameTaxon[c])
@@ -541,14 +544,13 @@ const AdvancedTopicQueryBuilder = () => {
     dispatch(fetchTaxonData());
   }, [dispatch]);
 
-  // Seed a default flat tree the first time the builder is shown; normalize a
-  // legacy/nested saved tree into flat Tag cards so it renders without crashing.
-  // Also normalize excludeNoData for a tree that predates the flag (e.g. persisted
-  // from an earlier session) so it reads as the current default (off) rather than
-  // an undefined flag (SCRUM-6228).
+  // Seed a default flat tree the first time the builder is shown; otherwise
+  // re-normalize a restored tree that the flat Tag builder can't safely display as-is
+  // — nested groups, a pre-excludeNoData flag, or duplicate field rows within a Tag
+  // (see needsFlatNormalization). Idempotent, so this one-shot effect can't loop.
   useEffect(() => {
     if (!tree) { dispatch(setAdvancedTopicQuery(createEmptyTree())); return; }
-    if ((tree.children || []).some((c) => !isLeaf(c)) || tree.excludeNoData === undefined) {
+    if (needsFlatNormalization(tree)) {
       dispatch(setAdvancedTopicQuery(normalizeToFlatTree(tree)));
     }
   }, [tree, dispatch]);
