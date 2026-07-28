@@ -1,12 +1,18 @@
 import { sourceLabel, isCuratorSourceTet } from './groupTets';
 
-/** Common evidence-assertion curies → human-readable label. Mirrors the
- *  hardcoded mapping in the search backend's add_curie_to_name_values. */
+/** Curated evidence-assertion curie → short human-readable label. This is the
+ *  FIRST choice in evidenceAssertionLabel: for the codes listed here the grid
+ *  keeps these stable, deliberately short titles (e.g. "manual", "automated")
+ *  regardless of the longer ontology phrase the backend may resolve. The map is
+ *  intentionally incomplete — codes absent from it fall through to the backend's
+ *  source_evidence_assertion_name, then to the raw curie. Add a code here only
+ *  when you want a curated short label to override the ontology name. */
 const EVIDENCE_ASSERTION_NAMES = {
   'ECO:0006155': 'manual',
   'ECO:0007669': 'automated',
   'ECO:0008004': 'machine learning',
   'ECO:0008021': 'string matching',
+  'ECO:0008025': 'neural network method',
   'ATP:0000035': 'author',
   'ATP:0000036': 'professional biocurator',
 };
@@ -15,6 +21,28 @@ export function evidenceAssertionName(curie) {
   if (!curie) return 'unspecified evidence';
   const key = String(curie).toUpperCase();
   return EVIDENCE_ASSERTION_NAMES[key] || curie;
+}
+
+/** Resolve an evidence-assertion panel label. Precedence, chosen so the grid's
+ *  established short titles stay stable while still labelling codes the offline
+ *  map does not cover:
+ *    1. the curated offline label (keeps manual/automated/... short and fixed);
+ *    2. the ontology name the backend resolved from the persistent store
+ *       (source_evidence_assertion_name) for any code missing from the map;
+ *    3. the raw curie as a last resort.
+ *  `entries` are the mini-rows grouped under a single evidence curie. These
+ *  resolved ontology names can be long, so callers must clip/ellipsize the
+ *  title and surface the full text via the cell tooltip. */
+export function evidenceAssertionLabel(entries, curie) {
+  const mapped = curie ? EVIDENCE_ASSERTION_NAMES[String(curie).toUpperCase()] : null;
+  if (mapped) return mapped;
+  for (const e of entries || []) {
+    const name =
+      e?.source_evidence_assertion_name ||
+      e?.tets?.[0]?.topic_entity_tag_source?.source_evidence_assertion_name;
+    if (name) return name;
+  }
+  return evidenceAssertionName(curie);
 }
 
 /** Group a buildEntries output by source.source_evidence_assertion so cells
