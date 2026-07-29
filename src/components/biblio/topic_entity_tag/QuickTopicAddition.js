@@ -151,13 +151,14 @@ function PredictionTooltip({ group, rect }) {
   return createPortal(
     <div style={{
       position: 'fixed', left, top, width: TOOLTIP_WIDTH, zIndex: 4000,
-      background: '#1d2939', color: '#f9fafb', borderRadius: 8, padding: '8px 10px',
-      fontSize: 12, boxShadow: '0 6px 20px rgba(16,24,40,0.28)', pointerEvents: 'none',
+      background: '#ffffff', color: '#1d2939', borderRadius: 8, padding: '8px 10px',
+      fontSize: 12, border: '1px solid #e4e7ec',
+      boxShadow: '0 6px 20px rgba(16,24,40,0.16)', pointerEvents: 'none',
     }}>
       <div style={{ fontWeight: 600, marginBottom: 2 }}>
         {prettySourceMethod(group.source_method)} · predicts &ldquo;{ASSESSMENT_LABEL[group.assessment] || group.assessment}&rdquo;
       </div>
-      <div style={{ color: '#98a2b3', marginBottom: 6 }}>
+      <div style={{ color: '#667085', marginBottom: 6 }}>
         {group.source_method || 'computed'} · {group.items.length} prediction{group.items.length === 1 ? '' : 's'}
         {hasEntities ? '' : ' · no entities'}
       </div>
@@ -166,7 +167,7 @@ function PredictionTooltip({ group, rect }) {
           <div key={i} style={{ fontFamily: 'monospace' }}>{line}</div>
         ))}
         {lines.length > MAX_TOOLTIP_ROWS && (
-          <div style={{ color: '#98a2b3' }}>+{lines.length - MAX_TOOLTIP_ROWS} more</div>
+          <div style={{ color: '#667085' }}>+{lines.length - MAX_TOOLTIP_ROWS} more</div>
         )}
       </div>
     </div>,
