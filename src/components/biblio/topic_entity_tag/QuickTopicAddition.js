@@ -42,6 +42,42 @@ const ASSESSMENTS = [
   { kind: 'no', header: 'No data', computed: 'no_data' },
   { kind: 'new', header: 'New data', computed: 'new_data' },
 ];
+const ASSESSMENT_LABEL = { has: 'Has data', no: 'No data', new: 'New data' };
+
+// Friendly display names for known computed source methods (see
+// tet-confidence-source-methods: classifiers carry confidence, manual tags don't).
+const SOURCE_METHOD_LABELS = {
+  abc_document_classifier: 'Alliance ML',
+  abc_bert_entity_extractor: 'Alliance BERT',
+  abc_entity_extractor: 'Alliance NER',
+};
+const prettySourceMethod = (m) => SOURCE_METHOD_LABELS[m] || m || 'computed';
+
+// Badge palette per assessment column, so a prediction's target is legible.
+const ASSESSMENT_COLORS = {
+  has: { fg: '#065f46', bg: '#ecfdf3', border: '#a6f4c5' },
+  no: { fg: '#b42318', bg: '#fef3f2', border: '#fecdca' },
+  new: { fg: '#1849a9', bg: '#eff8ff', border: '#b2ddff' },
+};
+
+// Badge text for a computed prediction: friendly method + confidence when the
+// source carries one, otherwise a positive/negative assertion.
+const predictionLabel = (p) => {
+  const method = prettySourceMethod(p.source_method);
+  if (typeof p.confidence_score === 'number') { return `${method}: ${p.confidence_score.toFixed(2)}`; }
+  if (p.confidence_level) { return `${method}: ${p.confidence_level}`; }
+  return `${method}: ${p.negated ? 'negative' : 'positive'}`;
+};
+
+// A human (author/biocurator) has already recorded an assessment for this topic.
+const isManuallyCurated = (d) => !!(d && (d.manual_has_data || d.manual_no_data || d.manual_new_data));
+const manualForKind = (d, kind) => (
+  kind === 'no' ? !!d.manual_no_data : kind === 'new' ? !!d.manual_new_data : !!d.manual_has_data
+);
+// A prediction targets this column ('new' also counts as positive "has data").
+const predictedForKind = (d, kind) => (d.source_predictions || []).some((p) => (
+  kind === 'has' ? (p.assessment === 'has' || p.assessment === 'new') : p.assessment === kind
+));
 
 const QuickTopicAddition = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
@@ -152,6 +188,8 @@ const QuickTopicAddition = () => {
           const source = Array.isArray(info.tet_info_topic_source)
             ? info.tet_info_topic_source.join(', ')
             : info.tet_info_topic_source;
+          const predictions = Array.isArray(info.tet_info_source_predictions)
+            ? info.tet_info_source_predictions : [];
           return {
             topic_name: info.topic_name,
             topic_curie: info.topic_curie,
@@ -161,9 +199,15 @@ const QuickTopicAddition = () => {
             has_data: info.tet_info_has_data,
             new_data: info.tet_info_new_data,
             no_data: info.tet_info_no_data,
+            // Manual (curator/author) assessments already recorded — used to
+            // prevent duplicate curation.
+            manual_has_data: !!info.tet_info_manual_has_data,
+            manual_new_data: !!info.tet_info_manual_new_data,
+            manual_no_data: !!info.tet_info_manual_no_data,
             topic_source: source,
-            // A computed pipeline result exists for this topic on this paper.
-            has_prediction: !!(source && String(source).trim()),
+            source_predictions: predictions,
+            // A computed pipeline prediction exists for this topic on this paper.
+            has_prediction: predictions.length > 0,
           };
         })
         // Predicted topics first (for fast triage), then alphabetical.
@@ -368,7 +412,8 @@ const QuickTopicAddition = () => {
       {
         headerName: '',
         colId: 'select',
-        checkboxSelection: true,
+        // Already-curated topics can't be re-added, so their checkbox is disabled.
+        checkboxSelection: (params) => !isManuallyCurated(params.data),
         headerCheckboxSelection: true,
         headerCheckboxSelectionFilteredOnly: true,
         width: 50,
@@ -389,6 +434,7 @@ const QuickTopicAddition = () => {
         cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
         cellRenderer: (params) => {
           const species = speciesForTopicRef.current?.(params.data.topic_curie);
+          const curated = isManuallyCurated(params.data);
           return (
             <div>
               <div style={{ fontWeight: 600 }}>{params.data.topic_name}</div>
@@ -403,6 +449,11 @@ const QuickTopicAddition = () => {
                 >
                   {species.name}
                 </span>
+              )}
+              {curated && (
+                <div style={{ marginTop: 4, fontSize: 11, color: '#12b76a', fontWeight: 600 }}>
+                  <FontAwesomeIcon icon={faCheck} /> already curated
+                </div>
               )}
             </div>
           );
@@ -493,16 +544,30 @@ const QuickTopicAddition = () => {
         sortable: false,
         cellStyle: { textAlign: 'center' },
         cellRenderer: (params) => {
+          // Already curated by a human for this column: show a filled green
+          // check and block re-adding (duplicate prevention).
+          if (manualForKind(params.data, kind)) {
+            return (
+              <span
+                title={`Already curated as "${header}" by a curator`}
+                style={{ color: '#12b76a', fontWeight: 'bold' }}
+              >
+                <FontAwesomeIcon icon={faCheck} />
+              </span>
+            );
+          }
           const conflict = params.data.has_data && params.data.no_data;
+          const predicted = predictedForKind(params.data, kind);
           let icon = faPlus;
-          let color = '#98a2b3';
+          let color = predicted ? '#1570ef' : '#98a2b3';
           if (kind !== 'new' && conflict) { icon = faExclamation; color = 'red'; }
-          else if (params.data[computed]) { icon = faCheck; color = 'green'; }
           return (
             <button
               type="button"
               className="qta-assess-btn"
-              title={`Assert "${header}" for ${params.data.topic_name}`}
+              title={predicted
+                ? `Predicted "${header}" — click to confirm for ${params.data.topic_name}`
+                : `Assert "${header}" for ${params.data.topic_name}`}
               onClick={() => onAssessRef.current(kind, params.data)}
               style={{
                 border: 'none', background: 'transparent', cursor: 'pointer',
@@ -526,24 +591,27 @@ const QuickTopicAddition = () => {
       autoHeight: true,
       cellStyle: { textAlign: 'left', whiteSpace: 'normal', paddingTop: 8, paddingBottom: 8 },
       cellRenderer: (params) => {
-        const sources = String(params.value || '')
-          .split(',').map(s => s.trim()).filter(Boolean);
-        if (sources.length === 0) {
+        const preds = params.data.source_predictions || [];
+        if (preds.length === 0) {
           return <span style={{ color: '#98a2b3', fontStyle: 'italic', fontSize: 12 }}>— no prediction —</span>;
         }
         return (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 0' }}>
-            {sources.map((s, i) => (
-              <span
-                key={i}
-                style={{
-                  padding: '1px 8px', fontSize: 11, fontWeight: 500, color: '#065f46',
-                  background: '#ecfdf3', border: '1px solid #a6f4c5', borderRadius: 10,
-                }}
-              >
-                {s}
-              </span>
-            ))}
+            {preds.map((p, i) => {
+              const c = ASSESSMENT_COLORS[p.assessment] || ASSESSMENT_COLORS.has;
+              return (
+                <span
+                  key={i}
+                  title={`Predicts "${ASSESSMENT_LABEL[p.assessment] || p.assessment}"`}
+                  style={{
+                    padding: '1px 8px', fontSize: 11, fontWeight: 500,
+                    color: c.fg, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10,
+                  }}
+                >
+                  {predictionLabel(p)}
+                </span>
+              );
+            })}
           </div>
         );
       },
@@ -650,6 +718,7 @@ const QuickTopicAddition = () => {
             rowData={topicRows}
             columnDefs={columnDefs}
             rowSelection="multiple"
+            showDisabledCheckboxes={true}
             suppressRowClickSelection={true}
             onGridReady={onGridReady}
             onSelectionChanged={onSelectionChanged}
