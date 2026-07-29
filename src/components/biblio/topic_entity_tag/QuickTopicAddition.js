@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { api } from "../../../api";
 import { getCuratorSourceId } from '../../../actions/biblioActions';
@@ -60,22 +61,48 @@ const ASSESSMENT_COLORS = {
   new: { fg: '#1849a9', bg: '#eff8ff', border: '#b2ddff' },
 };
 
-// Badge text for a computed prediction: friendly method + confidence when the
-// source carries one, otherwise a positive/negative assertion.
-const predictionLabel = (p) => {
-  const method = prettySourceMethod(p.source_method);
-  if (typeof p.confidence_score === 'number') { return `${method}: ${p.confidence_score.toFixed(2)}`; }
-  if (p.confidence_level) { return `${method}: ${p.confidence_level}`; }
-  return `${method}: ${p.negated ? 'negative' : 'positive'}`;
+// Consolidate a topic's raw predictions into one badge per (source method,
+// assessment). An entity extractor emits one prediction per extracted gene, so a
+// single "gene" topic can carry a dozen rows; collapsing them keeps the row
+// compact and lets the badge show a confidence range instead of a wall of pills.
+const groupPredictions = (preds) => {
+  const groups = new Map();
+  (preds || []).forEach((p) => {
+    const assessment = p.assessment || 'has';
+    const key = `${p.source_method || 'computed'}|${assessment}`;
+    if (!groups.has(key)) {
+      groups.set(key, { source_method: p.source_method, assessment, items: [] });
+    }
+    groups.get(key).items.push(p);
+  });
+  // Highest-confidence group first so the strongest signal leads.
+  return [...groups.values()].sort((a, b) => maxScore(b) - maxScore(a));
 };
 
-// Full hover text: raw source method, what it predicts, and its confidence when
-// present — the raw method is what curators quote when reporting a bad tag.
-const predictionTooltip = (p) => {
-  const parts = [`${p.source_method || 'computed'} — predicts "${ASSESSMENT_LABEL[p.assessment] || p.assessment}"`];
-  if (typeof p.confidence_score === 'number') { parts.push(`Confidence score = ${p.confidence_score.toFixed(2)}`); }
-  else if (p.confidence_level) { parts.push(`Confidence level = ${p.confidence_level}`); }
-  return parts.join('. ');
+const scoresOf = (g) => g.items.map((p) => p.confidence_score).filter((s) => typeof s === 'number');
+const maxScore = (g) => { const s = scoresOf(g); return s.length ? Math.max(...s) : -1; };
+
+// Badge text for a consolidated group: friendly method + a single score or a
+// min–max range; falls back to confidence level, then positive/negative.
+const groupLabel = (g) => {
+  const method = prettySourceMethod(g.source_method);
+  const scores = scoresOf(g);
+  if (scores.length) {
+    const min = Math.min(...scores), max = Math.max(...scores);
+    const range = min === max ? min.toFixed(2) : `${min.toFixed(2)}–${max.toFixed(2)}`;
+    return g.items.length > 1 ? `${method}: ${range} (${g.items.length})` : `${method}: ${range}`;
+  }
+  const levels = [...new Set(g.items.map((p) => p.confidence_level).filter(Boolean))];
+  if (levels.length) { return `${method}: ${levels.join('/')}`; }
+  return `${method}: ${g.items.some((p) => !p.negated) ? 'positive' : 'negative'}`;
+};
+
+// One row of the hover breakdown: the extracted entity and its confidence.
+const entityDetail = (p) => {
+  const who = p.entity || 'no entity';
+  if (typeof p.confidence_score === 'number') { return `${who} — ${p.confidence_score.toFixed(2)}`; }
+  if (p.confidence_level) { return `${who} — ${p.confidence_level}`; }
+  return `${who} — ${p.negated ? 'negative' : 'positive'}`;
 };
 
 // A human (author/biocurator) has already recorded an assessment for this topic.
@@ -87,6 +114,78 @@ const manualForKind = (d, kind) => (
 const predictedForKind = (d, kind) => (d.source_predictions || []).some((p) => (
   kind === 'has' ? (p.assessment === 'has' || p.assessment === 'new') : p.assessment === kind
 ));
+
+// A hover card floated above the grid via a portal — native `title` tooltips get
+// clipped by the table's overflow, so we position our own on document.body. Lists
+// each extracted entity and its confidence for the hovered group.
+const TOOLTIP_WIDTH = 300;
+const MAX_TOOLTIP_ROWS = 15;
+
+function PredictionTooltip({ group, rect }) {
+  const items = [...group.items].sort(
+    (a, b) => (b.confidence_score ?? -1) - (a.confidence_score ?? -1)
+  );
+  const shown = items.slice(0, MAX_TOOLTIP_ROWS);
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - TOOLTIP_WIDTH - 8));
+  // Flip above the badge when there isn't room below (rows low in the viewport).
+  const estHeight = 52 + (shown.length + (items.length > MAX_TOOLTIP_ROWS ? 1 : 0)) * 18;
+  const below = rect.bottom + 6;
+  const top = below + estHeight > window.innerHeight - 8 ? Math.max(8, rect.top - 6 - estHeight) : below;
+  return createPortal(
+    <div style={{
+      position: 'fixed', left, top, width: TOOLTIP_WIDTH, zIndex: 4000,
+      background: '#1d2939', color: '#f9fafb', borderRadius: 8, padding: '8px 10px',
+      fontSize: 12, boxShadow: '0 6px 20px rgba(16,24,40,0.28)', pointerEvents: 'none',
+    }}>
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>
+        {prettySourceMethod(group.source_method)} · predicts &ldquo;{ASSESSMENT_LABEL[group.assessment] || group.assessment}&rdquo;
+      </div>
+      <div style={{ color: '#98a2b3', marginBottom: 6 }}>
+        {group.source_method || 'computed'} · {group.items.length} prediction{group.items.length === 1 ? '' : 's'}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {shown.map((p, i) => (
+          <div key={i} style={{ fontFamily: 'monospace' }}>{entityDetail(p)}</div>
+        ))}
+        {items.length > MAX_TOOLTIP_ROWS && (
+          <div style={{ color: '#98a2b3' }}>+{items.length - MAX_TOOLTIP_ROWS} more</div>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// Renders one badge per (source method, assessment) group, with the portal
+// tooltip wired to hover.
+function PredictionBadges({ preds }) {
+  const [hover, setHover] = useState(null);
+  const groups = useMemo(() => groupPredictions(preds), [preds]);
+  if (groups.length === 0) {
+    return <span style={{ color: '#98a2b3', fontStyle: 'italic', fontSize: 12 }}>— no prediction —</span>;
+  }
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 0' }}>
+      {groups.map((g, i) => {
+        const c = ASSESSMENT_COLORS[g.assessment] || ASSESSMENT_COLORS.has;
+        return (
+          <span
+            key={i}
+            onMouseEnter={(e) => setHover({ group: g, rect: e.currentTarget.getBoundingClientRect() })}
+            onMouseLeave={() => setHover(null)}
+            style={{
+              padding: '1px 8px', fontSize: 11, fontWeight: 500, cursor: 'default',
+              color: c.fg, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10,
+            }}
+          >
+            {groupLabel(g)}
+          </span>
+        );
+      })}
+      {hover && <PredictionTooltip group={hover.group} rect={hover.rect} />}
+    </div>
+  );
+}
 
 const QuickTopicAddition = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
@@ -599,31 +698,9 @@ const QuickTopicAddition = () => {
       wrapText: true,
       autoHeight: true,
       cellStyle: { textAlign: 'left', whiteSpace: 'normal', paddingTop: 8, paddingBottom: 8 },
-      cellRenderer: (params) => {
-        const preds = params.data.source_predictions || [];
-        if (preds.length === 0) {
-          return <span style={{ color: '#98a2b3', fontStyle: 'italic', fontSize: 12 }}>— no prediction —</span>;
-        }
-        return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 0' }}>
-            {preds.map((p, i) => {
-              const c = ASSESSMENT_COLORS[p.assessment] || ASSESSMENT_COLORS.has;
-              return (
-                <span
-                  key={i}
-                  title={predictionTooltip(p)}
-                  style={{
-                    padding: '1px 8px', fontSize: 11, fontWeight: 500,
-                    color: c.fg, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10,
-                  }}
-                >
-                  {predictionLabel(p)}
-                </span>
-              );
-            })}
-          </div>
-        );
-      },
+      cellRenderer: (params) => (
+        <PredictionBadges preds={params.data.source_predictions || []} />
+      ),
     });
     return cols;
   }, [showDefinition, showSynonyms, toggleDefExpanded]);
