@@ -8,6 +8,7 @@ import BiblioDisplay from './biblio/BiblioDisplay';
 import BiblioEditor from './biblio/BiblioEditor';
 import BiblioEntity from './biblio/BiblioEntity';
 import BiblioWorkflow from './biblio/BiblioWorkflow';
+import QuickTopicAddition from './biblio/topic_entity_tag/QuickTopicAddition';
 import BiblioFileManagement from './biblio/BiblioFileManagement';
 import BiblioRawTetData from './biblio/BiblioRawTetData';
 import BiblioAuthorReorder from './biblio/BiblioAuthorReorder';
@@ -137,12 +138,14 @@ const BiblioActionToggler = () => {
   let workflowChecked = '';
   let filemanagementChecked = '';
   let rawtopicentityChecked = '';
+  let quicktopicChecked = '';
   let radioFormDisplayClassname = 'radio-form';
   let radioFormEditorClassname = 'radio-form';
   let radioFormEntityClassname = 'radio-form';
   let radioFormWorkflowClassname = 'radio-form';
   let radioFormFilemanagementClassname = 'radio-form';
   let radioFormRawtopicentityClassname = 'radio-form';
+  let radioFormQuicktopicClassname = 'radio-form';
   if (biblioAction === 'editor') {
     radioFormEditorClassname += ' underlined';
     editorChecked = 'checked';
@@ -162,6 +165,10 @@ const BiblioActionToggler = () => {
     else if (biblioAction === 'rawtopicentity') {
       radioFormRawtopicentityClassname += ' underlined';
       rawtopicentityChecked = 'checked';
+    }
+    else if (biblioAction === 'quicktopic') {
+      radioFormQuicktopicClassname += ' underlined';
+      quicktopicChecked = 'checked';
     }
     else {
       radioFormDisplayClassname += ' underlined';
@@ -251,6 +258,17 @@ const BiblioActionToggler = () => {
           onChange={(e) => dispatch(changeBiblioActionToggler(e, 'rawtopicentity'))}
         />
       </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormQuicktopicClassname}
+          checked={quicktopicChecked}
+          type='radio'
+          label='Quick Topic Addition'
+          id='biblio-toggler-quicktopic'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'quicktopic'))}
+        />
+      </div>
     </div>
     </Form>);
 } // const BiblioActionToggler
@@ -281,6 +299,8 @@ const BiblioActionRouter = () => {
       return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioFileManagement /> }</>);
     case 'rawtopicentity':
       return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioRawTetData /> }</>);
+    case 'quicktopic':
+      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     default:
       return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);
   }
@@ -375,8 +395,11 @@ const BiblioTagging = () => {
     rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
     // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
   }
+  let taggingBody = <BiblioEntity />;
+  if (biblioAction === 'workflow') { taggingBody = <BiblioWorkflow />; }
+  else if (biblioAction === 'quicktopic') { taggingBody = <QuickTopicAddition />; }
   return (<><Container>{rowOrderedElements}</Container>
-            { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
+            {taggingBody}</>);
 } // const BiblioTagging
 
 export const RowDisplayReferencefiles = ({displayOrEditor}) => {
