@@ -16,6 +16,15 @@ import { topicDefaultTaxonCurie } from './topicDefaultSpecies';
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
 
+// Curator display prefs (show definition/synonyms, confirm popup) persist across
+// sessions so a curator who has learned the Alliance names can hide the helper
+// columns for good (SCRUM-6168).
+const PREFS_KEY = 'quickTopicAddition.prefs';
+const loadPrefs = () => {
+  try { return JSON.parse(window.localStorage.getItem(PREFS_KEY)) || {}; }
+  catch { return {}; }
+};
+
 // Data-novelty ATP terms, matching the TET editor (getDataNoveltyAtpArray).
 const NOVELTY_UNSPECIFIED = 'ATP:0000335';
 const NEW_NOVELTY_OPTIONS = [
@@ -47,16 +56,24 @@ const QuickTopicAddition = () => {
 
   const [topicRows, setTopicRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showDefinition, setShowDefinition] = useState(true);
-  const [showSynonyms, setShowSynonyms] = useState(true);
+  const initialPrefs = useMemo(() => loadPrefs(), []);
+  const [showDefinition, setShowDefinition] = useState(initialPrefs.showDefinition ?? true);
+  const [showSynonyms, setShowSynonyms] = useState(initialPrefs.showSynonyms ?? true);
   const [sourceId, setSourceId] = useState(null);
+
+  // Filter toolbar state.
+  const [quickFilter, setQuickFilter] = useState('');
+  const [withPredictions, setWithPredictions] = useState(false);
+  const [onlyUntagged, setOnlyUntagged] = useState(false);
+  // topic_curie set of definitions expanded past the 2-line clamp.
+  const [expandedDefs, setExpandedDefs] = useState(() => new Set());
 
   // pending = null | { kind, topicCurie, topicName, novelty, note,
   //                    species: {curie, name} | null, status, errorMessage? }
   const [pending, setPending] = useState(null);
   // When false, clicking a cell creates the tag directly without the popup
   // (the "Don't show this again" option). Session-scoped, resets on remount.
-  const [confirmEach, setConfirmEach] = useState(true);
+  const [confirmEach, setConfirmEach] = useState(initialPrefs.confirmEach ?? true);
   const [notification, setNotification] = useState(null);
 
   // Batch flow: tick topics, choose an assessment kind, then "Add topics".
@@ -70,6 +87,46 @@ const QuickTopicAddition = () => {
   const onGridReady = useCallback((params) => { gridApiRef.current = params.api; }, []);
   const onSelectionChanged = useCallback(() => {
     setSelectedCount(gridApiRef.current?.getSelectedRows().length || 0);
+  }, []);
+
+  // External (toggle) filters, layered on top of AG Grid's own column filters
+  // and the quick-filter text box.
+  const isExternalFilterPresent = useCallback(
+    () => withPredictions || onlyUntagged,
+    [withPredictions, onlyUntagged]
+  );
+  const doesExternalFilterPass = useCallback((node) => {
+    if (withPredictions && !node.data.has_prediction) { return false; }
+    if (onlyUntagged && node.data.has_prediction) { return false; }
+    return true;
+  }, [withPredictions, onlyUntagged]);
+
+  // Re-run the external filter when a toggle changes.
+  useEffect(() => {
+    gridApiRef.current?.onFilterChanged();
+  }, [withPredictions, onlyUntagged]);
+
+  const predictionsCount = useMemo(
+    () => topicRows.filter(r => r.has_prediction).length,
+    [topicRows]
+  );
+
+  // Highlight predicted rows so curators can spot them at a glance.
+  const getRowStyle = useCallback((params) => (
+    params.data?.has_prediction ? { background: '#eff6ff' } : undefined
+  ), []);
+
+  const toggleDefExpanded = useCallback((curie) => {
+    setExpandedDefs((prev) => {
+      const next = new Set(prev);
+      if (next.has(curie)) { next.delete(curie); } else { next.add(curie); }
+      return next;
+    });
+    // Definition text changed; re-render that cell and recompute autoHeight rows.
+    setTimeout(() => {
+      gridApiRef.current?.refreshCells({ force: true, columns: ['topic_definition'] });
+      gridApiRef.current?.resetRowHeights();
+    }, 0);
   }, []);
 
   // Default species for a topic: the hard-coded per-topic override when one
@@ -91,20 +148,29 @@ const QuickTopicAddition = () => {
       const result = await api.get(url);
       const rows = result.data
         .filter(info => info.topic_curie !== WHOLE_PAPER_TOPIC)
-        .map(info => ({
-          topic_name: info.topic_name,
-          topic_curie: info.topic_curie,
-          // Definition / synonyms are enriched below via /ontology/term_details.
-          topic_definition: '',
-          topic_synonyms: '',
-          has_data: info.tet_info_has_data,
-          new_data: info.tet_info_new_data,
-          no_data: info.tet_info_no_data,
-          topic_source: Array.isArray(info.tet_info_topic_source)
+        .map(info => {
+          const source = Array.isArray(info.tet_info_topic_source)
             ? info.tet_info_topic_source.join(', ')
-            : info.tet_info_topic_source,
-        }))
-        .sort((a, b) => a.topic_name.localeCompare(b.topic_name));
+            : info.tet_info_topic_source;
+          return {
+            topic_name: info.topic_name,
+            topic_curie: info.topic_curie,
+            // Definition / synonyms are enriched below via /ontology/term_details.
+            topic_definition: '',
+            topic_synonyms: '',
+            has_data: info.tet_info_has_data,
+            new_data: info.tet_info_new_data,
+            no_data: info.tet_info_no_data,
+            topic_source: source,
+            // A computed pipeline result exists for this topic on this paper.
+            has_prediction: !!(source && String(source).trim()),
+          };
+        })
+        // Predicted topics first (for fast triage), then alphabetical.
+        .sort((a, b) => {
+          if (a.has_prediction !== b.has_prediction) { return a.has_prediction ? -1 : 1; }
+          return a.topic_name.localeCompare(b.topic_name);
+        });
       setTopicRows(rows);
 
       // Enrich with definition/synonyms in one bulk lookup (SCRUM-6168). This is
@@ -136,6 +202,16 @@ const QuickTopicAddition = () => {
   }, [referenceCurie, accessLevel]);
 
   useEffect(() => { fetchTopics(); }, [fetchTopics]);
+
+  // Persist display prefs whenever they change.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ showDefinition, showSynonyms, confirmEach })
+      );
+    } catch { /* ignore quota / disabled storage */ }
+  }, [showDefinition, showSynonyms, confirmEach]);
 
   useEffect(() => {
     if (!accessLevel) { return; }
@@ -199,6 +275,13 @@ const QuickTopicAddition = () => {
       setNotification({ variant: 'danger', message: `Could not add "${rowData.topic_name}": HTTP ${status || '?'} ${typeof detail === 'string' ? detail : JSON.stringify(detail)}` });
     }
   };
+
+  // Refs so AG Grid cell renderers read current values without rebuilding columnDefs
+  // (which would reset column sort/width state).
+  const speciesForTopicRef = useRef();
+  speciesForTopicRef.current = speciesForTopic;
+  const expandedDefsRef = useRef(expandedDefs);
+  expandedDefsRef.current = expandedDefs;
 
   // Ref so the AG Grid cell renderers always call the current handler.
   const onAssessRef = useRef();
@@ -301,7 +384,29 @@ const QuickTopicAddition = () => {
         minWidth: 200,
         sortable: true,
         filter: true,
-        cellStyle: { textAlign: 'left' },
+        wrapText: true,
+        autoHeight: true,
+        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
+        cellRenderer: (params) => {
+          const species = speciesForTopicRef.current?.(params.data.topic_curie);
+          return (
+            <div>
+              <div style={{ fontWeight: 600 }}>{params.data.topic_name}</div>
+              {species?.name && (
+                <span
+                  title="Default species for this topic (hard-coded mapping; change per paper in the popup)"
+                  style={{
+                    display: 'inline-block', marginTop: 4, padding: '1px 8px',
+                    fontSize: 11, fontStyle: 'italic', color: '#475467',
+                    background: '#f2f4f7', border: '1px solid #e4e7ec', borderRadius: 10,
+                  }}
+                >
+                  {species.name}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
     ];
     if (showDefinition) {
@@ -314,7 +419,35 @@ const QuickTopicAddition = () => {
         filter: true,
         wrapText: true,
         autoHeight: true,
-        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em' },
+        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
+        cellRenderer: (params) => {
+          const text = params.value || '';
+          if (!text) { return ''; }
+          const expanded = expandedDefsRef.current?.has(params.data.topic_curie);
+          const clampStyle = expanded ? {} : {
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          };
+          // Only offer more/less when the text is long enough to be clamped.
+          const isLong = text.length > 120;
+          return (
+            <div>
+              <div style={clampStyle}>{text}</div>
+              {isLong && (
+                <button
+                  type="button"
+                  onClick={() => toggleDefExpanded(params.data.topic_curie)}
+                  style={{
+                    border: 'none', background: 'transparent', padding: 0, marginTop: 2,
+                    color: '#1570ef', cursor: 'pointer', fontSize: 12,
+                  }}
+                >
+                  {expanded ? 'less' : 'more'}
+                </button>
+              )}
+            </div>
+          );
+        },
       });
     }
     if (showSynonyms) {
@@ -327,7 +460,27 @@ const QuickTopicAddition = () => {
         filter: true,
         wrapText: true,
         autoHeight: true,
-        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em' },
+        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
+        cellRenderer: (params) => {
+          const syns = String(params.value || '')
+            .split(',').map(s => s.trim()).filter(Boolean);
+          if (syns.length === 0) { return ''; }
+          return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 0' }}>
+              {syns.map((s, i) => (
+                <span
+                  key={i}
+                  style={{
+                    padding: '1px 8px', fontSize: 11, color: '#344054',
+                    background: '#f2f4f7', border: '1px solid #e4e7ec', borderRadius: 10,
+                  }}
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          );
+        },
       });
     }
     cols.push({
@@ -363,16 +516,40 @@ const QuickTopicAddition = () => {
       })),
     });
     cols.push({
-      headerName: 'Sources',
+      headerName: 'Sources (computed)',
       field: 'topic_source',
       flex: 2,
       minWidth: 160,
       sortable: true,
       filter: true,
-      cellStyle: { textAlign: 'left' },
+      wrapText: true,
+      autoHeight: true,
+      cellStyle: { textAlign: 'left', whiteSpace: 'normal', paddingTop: 8, paddingBottom: 8 },
+      cellRenderer: (params) => {
+        const sources = String(params.value || '')
+          .split(',').map(s => s.trim()).filter(Boolean);
+        if (sources.length === 0) {
+          return <span style={{ color: '#98a2b3', fontStyle: 'italic', fontSize: 12 }}>— no prediction —</span>;
+        }
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 0' }}>
+            {sources.map((s, i) => (
+              <span
+                key={i}
+                style={{
+                  padding: '1px 8px', fontSize: 11, fontWeight: 500, color: '#065f46',
+                  background: '#ecfdf3', border: '1px solid #a6f4c5', borderRadius: 10,
+                }}
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        );
+      },
     });
     return cols;
-  }, [showDefinition, showSynonyms]);
+  }, [showDefinition, showSynonyms, toggleDefExpanded]);
 
   if (!referenceCurie) {
     return (<div style={{ padding: '20px' }}>No AGR Reference Curie found.</div>);
@@ -405,6 +582,11 @@ const QuickTopicAddition = () => {
           checked={confirmEach}
           onChange={(e) => setConfirmEach(e.target.checked)}
         />
+        {predictionsCount > 0 && (
+          <span style={{ marginLeft: 'auto', color: '#475467', fontSize: 13 }}>
+            Predicted topics highlighted · {predictionsCount} prediction{predictionsCount === 1 ? '' : 's'}
+          </span>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: '12px', margin: '10px 0', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -422,6 +604,32 @@ const QuickTopicAddition = () => {
         <Button variant="success" onClick={openBatch} disabled={selectedCount === 0}>
           Add topics{selectedCount > 0 ? ` (${selectedCount})` : ''}
         </Button>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
+          <Form.Control
+            type="text"
+            placeholder="Filter topics, synonyms, definitions…"
+            value={quickFilter}
+            onChange={(e) => setQuickFilter(e.target.value)}
+            style={{ width: 260 }}
+          />
+          <Button
+            variant={withPredictions ? 'primary' : 'outline-secondary'}
+            size="sm"
+            onClick={() => { setWithPredictions((v) => !v); setOnlyUntagged(false); }}
+            title="Show only topics with a computed prediction"
+          >
+            With predictions
+          </Button>
+          <Button
+            variant={onlyUntagged ? 'primary' : 'outline-secondary'}
+            size="sm"
+            onClick={() => { setOnlyUntagged((v) => !v); setWithPredictions(false); }}
+            title="Show only topics without a computed prediction"
+          >
+            Only untagged
+          </Button>
+        </div>
       </div>
 
       {notification && (
@@ -449,6 +657,10 @@ const QuickTopicAddition = () => {
             ensureDomOrder={true}
             suppressColumnVirtualisation={true}
             domLayout="normal"
+            quickFilterText={quickFilter}
+            isExternalFilterPresent={isExternalFilterPresent}
+            doesExternalFilterPass={doesExternalFilterPass}
+            getRowStyle={getRowStyle}
             getRowClass={() => 'ag-row-striped-light'}
             popupParent={document.body}
           />
