@@ -69,6 +69,15 @@ const predictionLabel = (p) => {
   return `${method}: ${p.negated ? 'negative' : 'positive'}`;
 };
 
+// Full hover text: raw source method, what it predicts, and its confidence when
+// present — the raw method is what curators quote when reporting a bad tag.
+const predictionTooltip = (p) => {
+  const parts = [`${p.source_method || 'computed'} — predicts "${ASSESSMENT_LABEL[p.assessment] || p.assessment}"`];
+  if (typeof p.confidence_score === 'number') { parts.push(`Confidence score = ${p.confidence_score.toFixed(2)}`); }
+  else if (p.confidence_level) { parts.push(`Confidence level = ${p.confidence_level}`); }
+  return parts.join('. ');
+};
+
 // A human (author/biocurator) has already recorded an assessment for this topic.
 const isManuallyCurated = (d) => !!(d && (d.manual_has_data || d.manual_no_data || d.manual_new_data));
 const manualForKind = (d, kind) => (
@@ -602,7 +611,7 @@ const QuickTopicAddition = () => {
               return (
                 <span
                   key={i}
-                  title={`Predicts "${ASSESSMENT_LABEL[p.assessment] || p.assessment}"`}
+                  title={predictionTooltip(p)}
                   style={{
                     padding: '1px 8px', fontSize: 11, fontWeight: 500,
                     color: c.fg, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10,
