@@ -97,12 +97,24 @@ const groupLabel = (g) => {
   return `${method}: ${g.items.some((p) => !p.negated) ? 'positive' : 'negative'}`;
 };
 
+// The confidence a prediction carries, as display text.
+const confidenceText = (p) => {
+  if (typeof p.confidence_score === 'number') { return p.confidence_score.toFixed(2); }
+  if (p.confidence_level) { return p.confidence_level; }
+  return p.negated ? 'negative' : 'positive';
+};
+
 // One row of the hover breakdown: the extracted entity and its confidence.
-const entityDetail = (p) => {
-  const who = p.entity || 'no entity';
-  if (typeof p.confidence_score === 'number') { return `${who} — ${p.confidence_score.toFixed(2)}`; }
-  if (p.confidence_level) { return `${who} — ${p.confidence_level}`; }
-  return `${who} — ${p.negated ? 'negative' : 'positive'}`;
+const entityDetail = (p) => `${p.entity} — ${confidenceText(p)}`;
+
+// When a group carries no entities (e.g. topic-level tags), a per-entity list
+// would just repeat "no entity"; summarize the confidence distribution instead.
+const scoreDistribution = (items) => {
+  const counts = new Map();
+  items.forEach((p) => { const v = confidenceText(p); counts.set(v, (counts.get(v) || 0) + 1); });
+  return [...counts.entries()]
+    .sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]))
+    .map(([value, count]) => `${value} × ${count}`);
 };
 
 // A human (author/biocurator) has already recorded an assessment for this topic.
@@ -122,13 +134,18 @@ const TOOLTIP_WIDTH = 300;
 const MAX_TOOLTIP_ROWS = 15;
 
 function PredictionTooltip({ group, rect }) {
-  const items = [...group.items].sort(
-    (a, b) => (b.confidence_score ?? -1) - (a.confidence_score ?? -1)
-  );
-  const shown = items.slice(0, MAX_TOOLTIP_ROWS);
+  // Per-entity list when entities are present; otherwise a confidence summary so
+  // topic-level tags don't just repeat "no entity" for every row.
+  const hasEntities = group.items.some((p) => p.entity);
+  const lines = hasEntities
+    ? [...group.items]
+        .sort((a, b) => (b.confidence_score ?? -1) - (a.confidence_score ?? -1))
+        .map(entityDetail)
+    : scoreDistribution(group.items);
+  const shown = lines.slice(0, MAX_TOOLTIP_ROWS);
   const left = Math.max(8, Math.min(rect.left, window.innerWidth - TOOLTIP_WIDTH - 8));
   // Flip above the badge when there isn't room below (rows low in the viewport).
-  const estHeight = 52 + (shown.length + (items.length > MAX_TOOLTIP_ROWS ? 1 : 0)) * 18;
+  const estHeight = 52 + (shown.length + (lines.length > MAX_TOOLTIP_ROWS ? 1 : 0)) * 18;
   const below = rect.bottom + 6;
   const top = below + estHeight > window.innerHeight - 8 ? Math.max(8, rect.top - 6 - estHeight) : below;
   return createPortal(
@@ -142,13 +159,14 @@ function PredictionTooltip({ group, rect }) {
       </div>
       <div style={{ color: '#98a2b3', marginBottom: 6 }}>
         {group.source_method || 'computed'} · {group.items.length} prediction{group.items.length === 1 ? '' : 's'}
+        {hasEntities ? '' : ' · no entities'}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {shown.map((p, i) => (
-          <div key={i} style={{ fontFamily: 'monospace' }}>{entityDetail(p)}</div>
+        {shown.map((line, i) => (
+          <div key={i} style={{ fontFamily: 'monospace' }}>{line}</div>
         ))}
-        {items.length > MAX_TOOLTIP_ROWS && (
-          <div style={{ color: '#98a2b3' }}>+{items.length - MAX_TOOLTIP_ROWS} more</div>
+        {lines.length > MAX_TOOLTIP_ROWS && (
+          <div style={{ color: '#98a2b3' }}>+{lines.length - MAX_TOOLTIP_ROWS} more</div>
         )}
       </div>
     </div>,
