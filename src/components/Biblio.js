@@ -228,6 +228,17 @@ const BiblioActionToggler = () => {
       <div className='radio-span'>
         <Form.Check
           inline
+          className={radioFormQuicktopicClassname}
+          checked={quicktopicChecked}
+          type='radio'
+          label='quick topic addition'
+          id='biblio-toggler-quicktopic'
+          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'quicktopic'))}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
           className={radioFormWorkflowClassname}
           checked={workflowChecked}
           type='radio'
@@ -256,17 +267,6 @@ const BiblioActionToggler = () => {
           label='raw entity and topic data'
           id='biblio-toggler-rawtopicentity'
           onChange={(e) => dispatch(changeBiblioActionToggler(e, 'rawtopicentity'))}
-        />
-      </div>
-      <div className='radio-span'>
-        <Form.Check
-          inline
-          className={radioFormQuicktopicClassname}
-          checked={quicktopicChecked}
-          type='radio'
-          label='Quick Topic Addition'
-          id='biblio-toggler-quicktopic'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'quicktopic'))}
         />
       </div>
     </div>
