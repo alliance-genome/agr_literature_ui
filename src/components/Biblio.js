@@ -308,6 +308,7 @@ const BiblioActionRouter = () => {
 
 
 const BiblioTagging = () => {
+  const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const biblioAction = useSelector(state => state.biblio.biblioAction);
@@ -398,7 +399,19 @@ const BiblioTagging = () => {
   let taggingBody = <BiblioEntity />;
   if (biblioAction === 'workflow') { taggingBody = <BiblioWorkflow />; }
   else if (biblioAction === 'quicktopic') { taggingBody = <QuickTopicAddition />; }
+  const quickTopicButton = (biblioAction === 'entity') ? (
+    <Container className="mb-2">
+      <Button
+        variant="outline-primary"
+        size="sm"
+        onClick={() => dispatch(changeBiblioActionToggler({ target: { id: 'biblio-toggler-quicktopic' } }, 'quicktopic'))}
+      >
+        Quick Topic Addition
+      </Button>
+    </Container>
+  ) : null;
   return (<><Container>{rowOrderedElements}</Container>
+            {quickTopicButton}
             {taggingBody}</>);
 } // const BiblioTagging
 
