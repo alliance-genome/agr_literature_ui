@@ -15,6 +15,7 @@ import {
   setEditTag,
   biblioQueryReferenceCurie,
   fetchTaxonData,
+  changeBiblioActionToggler,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
 
@@ -820,6 +821,15 @@ const TopicEntityCreate = () => {
               </Button>
             );
           })}
+
+          <Button
+            variant="outline-primary"
+            size="sm"
+            style={{ marginLeft: "10px" }}
+            onClick={() => dispatch(changeBiblioActionToggler({ target: { id: 'biblio-toggler-quicktopic' } }, 'quicktopic'))}
+          >
+            Quick Topic Addition
+          </Button>
         </Col>
       </Row>
 
