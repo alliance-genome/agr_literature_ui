@@ -448,8 +448,6 @@ const QuickTopicAddition = () => {
 
   // Refs so AG Grid cell renderers read current values without rebuilding columnDefs
   // (which would reset column sort/width state).
-  const speciesForTopicRef = useRef();
-  speciesForTopicRef.current = speciesForTopic;
   const expandedDefsRef = useRef(expandedDefs);
   expandedDefsRef.current = expandedDefs;
 
@@ -559,23 +557,10 @@ const QuickTopicAddition = () => {
         autoHeight: true,
         cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
         cellRenderer: (params) => {
-          const species = speciesForTopicRef.current?.(params.data.topic_curie);
           const curated = isManuallyCurated(params.data);
           return (
             <div>
               <div style={{ fontWeight: 600 }}>{params.data.topic_name}</div>
-              {species?.name && (
-                <span
-                  title="Default species for this topic (hard-coded mapping; change per paper in the popup)"
-                  style={{
-                    display: 'inline-block', marginTop: 4, padding: '1px 8px',
-                    fontSize: 11, fontStyle: 'italic', color: '#475467',
-                    background: '#f2f4f7', border: '1px solid #e4e7ec', borderRadius: 10,
-                  }}
-                >
-                  {species.name}
-                </span>
-              )}
               {curated && (
                 <div style={{ marginTop: 4, fontSize: 11, color: '#12b76a', fontWeight: 600 }}>
                   <FontAwesomeIcon icon={faCheck} /> already curated
