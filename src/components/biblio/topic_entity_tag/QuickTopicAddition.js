@@ -563,7 +563,7 @@ const QuickTopicAddition = () => {
               <div style={{ fontWeight: 600 }}>{params.data.topic_name}</div>
               {curated && (
                 <div style={{ marginTop: 4, fontSize: 11, color: '#12b76a', fontWeight: 600 }}>
-                  <FontAwesomeIcon icon={faCheck} /> already curated
+                  <FontAwesomeIcon icon={faCheck} /> has manual TET
                 </div>
               )}
             </div>
