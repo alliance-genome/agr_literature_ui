@@ -225,7 +225,6 @@ const QuickTopicAddition = () => {
   const [sourceId, setSourceId] = useState(null);
 
   // Filter toolbar state.
-  const [quickFilter, setQuickFilter] = useState('');
   const [withPredictions, setWithPredictions] = useState(false);
   const [onlyUntagged, setOnlyUntagged] = useState(false);
   // topic_curie set of definitions expanded past the 2-line clamp.
@@ -779,13 +778,6 @@ const QuickTopicAddition = () => {
         </Button>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
-          <Form.Control
-            type="text"
-            placeholder="Filter topics, synonyms, definitions…"
-            value={quickFilter}
-            onChange={(e) => setQuickFilter(e.target.value)}
-            style={{ width: 260 }}
-          />
           <Button
             variant={withPredictions ? 'primary' : 'outline-secondary'}
             size="sm"
@@ -831,7 +823,6 @@ const QuickTopicAddition = () => {
             ensureDomOrder={true}
             suppressColumnVirtualisation={true}
             domLayout="normal"
-            quickFilterText={quickFilter}
             isExternalFilterPresent={isExternalFilterPresent}
             doesExternalFilterPass={doesExternalFilterPass}
             getRowStyle={getRowStyle}
