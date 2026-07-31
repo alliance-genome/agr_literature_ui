@@ -777,7 +777,7 @@ const QuickTopicAddition = () => {
             onClick={() => { setOnlyUntagged((v) => !v); setWithPredictions(false); }}
             title="Show only topics without a computed prediction"
           >
-            Only untagged
+            No predictions
           </Button>
         </div>
       </div>
