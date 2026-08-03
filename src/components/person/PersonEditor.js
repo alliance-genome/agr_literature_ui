@@ -10,6 +10,7 @@ import Badge from 'react-bootstrap/Badge';
 import Container from 'react-bootstrap/Container';
 
 import { api } from '../../api';
+import { useVocabulary } from '../../hooks/useVocabulary';
 import { roleFlagDisabled } from '../../utils/labPersonRoles';
 import PersonCuriePicker from './PersonCuriePicker';
 import LabCuriePicker from './LabCuriePicker';
@@ -20,20 +21,9 @@ import './personEditorSections.css';
 const STATUS_OPTIONS = ['active', 'retired', 'deceased'];
 const PRIVACY_OPTIONS = ['show_all', 'logged_in_only', 'fully_hidden', 'hide_email'];
 const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
-// PersonPersonRole controlled vocabulary (person_lineage.relationship).
-const PERSON_PERSON_ROLES = [
-  'phd_supervisor_of',
-  'postdoc_supervisor_of',
-  'masters_supervisor_of',
-  'undergrad_supervisor_of',
-  'highschool_supervisor_of',
-  'sabbatical_supervisor_of',
-  'lab_visitor_supervisor_of',
-  'research_staff_supervisor_of',
-  'assistant_professor_supervisor_of',
-  'unknown_supervisor_of',
-  'collaborator_of',
-];
+// person_lineage.relationship is a vocabulary term: read shape is the object
+// {value,label,is_obsolete} (or null), write is the term id (int).
+const relationshipValue = (rel) => (rel && typeof rel === 'object' ? rel.value ?? '' : rel || '');
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -330,7 +320,7 @@ const LineageClaimRow = ({ submission, lead = '', showStatus = false, style, tra
     <span style={{ ...claimCellBase, width: 240 }} title={submission.person_subject_name}>
       {lead}{submission.person_subject_name}
     </span>
-    <span style={{ ...claimCellBase, width: 260 }} title={submission.relationship}>{submission.relationship}</span>
+    <span style={{ ...claimCellBase, width: 260 }} title={submission.relationship?.label}>{submission.relationship?.label}</span>
     <span style={{ ...claimCellBase, width: 240 }} title={submission.person_object_name}>{submission.person_object_name}</span>
     <span style={{ ...claimCellBase, width: DATES_COL_WIDTH }}>{dateRange(submission.start_date, submission.end_date)}</span>
     <span style={{ ...claimCellBase, width: 'auto' }}>
@@ -739,7 +729,7 @@ const PersonEditor = ({ person }) => {
     return {
       otherCurie: (side === 'subject' ? s.person_object_curie : s.person_subject_curie) || '',
       otherName: (side === 'subject' ? s.person_object_name : s.person_subject_name) || '',
-      relationship: s.relationship || '',
+      relationship: relationshipValue(s.relationship),
       start: s.start_date ? String(s.start_date).slice(0, 10) : '',
       end: s.end_date ? String(s.end_date).slice(0, 10) : '',
     };
@@ -753,7 +743,7 @@ const PersonEditor = ({ person }) => {
   const handleValidate = (s) => {
     const e = subEdit(s);
     const side = lockedSide(s);
-    const body = { relationship: e.relationship || undefined };
+    const body = { relationship: e.relationship ? Number(e.relationship) : undefined };
     if (e.start) body.start_date = e.start;
     if (e.end) body.end_date = e.end;
     // The locked (loaded-person) side is omitted, so validate falls back to the
@@ -784,7 +774,7 @@ const PersonEditor = ({ person }) => {
     if (existing) return existing;
     const side = canonLockedSide(c);
     return {
-      relationship: c.relationship || '',
+      relationship: relationshipValue(c.relationship),
       start: c.start_date ? String(c.start_date).slice(0, 10) : '',
       end: c.end_date ? String(c.end_date).slice(0, 10) : '',
       otherCurie: (side === 'subject' ? c.person_object_curie : c.person_subject_curie) || '',
@@ -798,7 +788,7 @@ const PersonEditor = ({ person }) => {
     const e = canonEdit(c);
     const side = canonLockedSide(c);
     const body = {
-      relationship: e.relationship || undefined,
+      relationship: e.relationship ? Number(e.relationship) : undefined,
       start_date: e.start || null,
       end_date: e.end || null,
     };
@@ -841,7 +831,7 @@ const PersonEditor = ({ person }) => {
     api.post('/person_lineage/', {
       person_subject_curie_or_id: newCanon.subjectCurie,
       person_object_curie_or_id: newCanon.objectCurie,
-      relationship: newCanon.relationship,
+      relationship: Number(newCanon.relationship),
       start_date: newCanon.start || undefined,
       end_date: newCanon.end || undefined,
     })
@@ -856,10 +846,16 @@ const PersonEditor = ({ person }) => {
       .finally(() => setLineageBusy(false));
   };
 
-  const relOptionsFor = (current) =>
-    PERSON_PERSON_ROLES.includes(current) || !current
-      ? PERSON_PERSON_ROLES
-      : [...PERSON_PERSON_ROLES, current];
+  const relationshipVocab = useVocabulary('person_person_relationship');
+  // Vocab options (obsolete filtered); inject the current value as a disabled
+  // "(obsolete)" option if it isn't among the offered terms.
+  const relOptionsFor = (current) => {
+    const opts = relationshipVocab.options;
+    if (current && !opts.some((o) => String(o.value) === String(current))) {
+      return [...opts, { value: current, label: `${relationshipVocab.labelFor(current)} (obsolete)`, disabled: true }];
+    }
+    return opts;
+  };
 
   const setNamePrimary = (idx) =>
     setNames((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
@@ -1705,7 +1701,7 @@ const PersonEditor = ({ person }) => {
                   disabled={lineageBusy}
                 >
                   <option value=""></option>
-                  {relOptionsFor(e.relationship).map((o) => <option key={o} value={o}>{o}</option>)}
+                  {relOptionsFor(e.relationship).map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
                 </HlControl>
                 {side === 'object' ? lockedCell : otherPicker}
                 <LineageDateRange
@@ -1783,7 +1779,7 @@ const PersonEditor = ({ person }) => {
                   style={relSelectStyle}
                   disabled={lineageBusy}
                 >
-                  {relOptionsFor(e.relationship).map((o) => <option key={o} value={o}>{o}</option>)}
+                  {relOptionsFor(e.relationship).map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
                 </HlControl>
                 {objectCell}
                 <LineageDateRange
@@ -1856,7 +1852,7 @@ const PersonEditor = ({ person }) => {
             disabled={lineageBusy}
           >
             <option value=""></option>
-            {PERSON_PERSON_ROLES.map((o) => <option key={o} value={o}>{o}</option>)}
+            {relationshipVocab.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </HlControl>
           {newCanon.anchor === 'subject' ? (
             <div style={personSlot}>
