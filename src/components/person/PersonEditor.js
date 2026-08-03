@@ -18,8 +18,6 @@ import PersonEditorLayoutModal from '../settings/PersonEditorLayoutModal';
 import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './personEditorSections';
 import './personEditorSections.css';
 
-const STATUS_OPTIONS = ['active', 'retired', 'deceased'];
-const PRIVACY_OPTIONS = ['show_all', 'logged_in_only', 'fully_hidden', 'hide_email'];
 const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
 // person_lineage.relationship is a vocabulary term: read shape is the object
 // {value,label,is_obsolete} (or null), write is the term id (int).
@@ -500,15 +498,15 @@ const PersonEditor = ({ person }) => {
     }
   };
 
+  const activeStatusVocab = useVocabulary('person_active_status');
+  const privacyVocab = useVocabulary('person_privacy');
+  // Keep a stored value visible even if it isn't among the fetched options.
+  const withCurrent = (opts, current) =>
+    !current || opts.some((o) => o.value === current) ? opts : [...opts, { value: current, label: current }];
   const currentStatus = live.active_status;
-  const statusOptions = STATUS_OPTIONS.includes(currentStatus)
-    ? STATUS_OPTIONS
-    : [...STATUS_OPTIONS, currentStatus];
-
+  const statusOptions = withCurrent(activeStatusVocab.options, currentStatus);
   const currentPrivacy = live.privacy;
-  const privacyOptions = PRIVACY_OPTIONS.includes(currentPrivacy)
-    ? PRIVACY_OPTIONS
-    : [...PRIVACY_OPTIONS, currentPrivacy];
+  const privacyOptions = withCurrent(privacyVocab.options, currentPrivacy);
 
   // Names
   const emptyName = () => {
@@ -1120,8 +1118,8 @@ const PersonEditor = ({ person }) => {
             onChange={(ev) => { setLiveField('active_status', ev.target.value); saveScalar('active_status', ev.target.value); }}
             style={{ maxWidth: 240 }}
           >
-            {statusOptions.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {statusOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </HlControl>
         </FieldLine>
@@ -1139,8 +1137,8 @@ const PersonEditor = ({ person }) => {
             onChange={(ev) => { setLiveField('privacy', ev.target.value); saveScalar('privacy', ev.target.value); }}
             style={{ maxWidth: 240 }}
           >
-            {privacyOptions.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {privacyOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </HlControl>
         </FieldLine>

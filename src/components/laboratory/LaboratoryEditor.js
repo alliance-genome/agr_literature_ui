@@ -16,12 +16,6 @@ import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './laborato
 import { useVocabulary } from '../../hooks/useVocabulary';
 import './laboratoryEditorSections.css';
 
-// Controlled vocabularies — mirror the API enums (laboratory_schemas.py /
-// laboratory_position_enum.py). The DB columns are plain strings, so the
-// frontend enforces the allowed values.
-const STATUS_OPTIONS = ['active', 'closed', 'unknown'];
-const EMAIL_VISIBILITY_OPTIONS = ['public', 'logged_in_user', 'not_shown'];
-
 // lab_position is a vocabulary term: read shape is the object {value,label,is_obsolete}
 // (or null); write is the term id (int). Extract the id from whatever shape is held.
 const labPositionValue = (lp) => (lp && typeof lp === 'object' ? lp.value ?? '' : lp || '');
@@ -362,10 +356,15 @@ const LaboratoryEditor = ({ laboratory }) => {
     }
   };
 
+  const statusVocab = useVocabulary('laboratory_status');
+  const visVocab = useVocabulary('laboratory_email_visibility');
+  // Keep a stored value visible even if it isn't among the fetched options.
+  const withCurrent = (opts, current) =>
+    !current || opts.some((o) => o.value === current) ? opts : [...opts, { value: current, label: current }];
   const currentStatus = live.status;
-  const statusOptions = STATUS_OPTIONS.includes(currentStatus) ? STATUS_OPTIONS : [...STATUS_OPTIONS, currentStatus];
+  const statusOptions = withCurrent(statusVocab.options, currentStatus);
   const currentVis = live.email_visibility;
-  const visOptions = EMAIL_VISIBILITY_OPTIONS.includes(currentVis) ? EMAIL_VISIBILITY_OPTIONS : [...EMAIL_VISIBILITY_OPTIONS, currentVis];
+  const visOptions = withCurrent(visVocab.options, currentVis);
 
   // ---- string-array collections ----
   const emptyInst = () => ({ value: '', _savedValue: '', _status: null, _error: null });
@@ -623,7 +622,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                 onChange={(ev) => { setLiveField('status', ev.target.value); saveScalar('status', ev.target.value); }}
                 style={{ maxWidth: 240 }}
               >
-                {statusOptions.map((s) => (<option key={s} value={s}>{s}</option>))}
+                {statusOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
               </HlControl>
             </FieldLine>
             <FieldLine
@@ -657,7 +656,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                 onChange={(ev) => { setLiveField('email_visibility', ev.target.value); saveScalar('email_visibility', ev.target.value); }}
                 style={{ maxWidth: 240 }}
               >
-                {visOptions.map((s) => (<option key={s} value={s}>{s}</option>))}
+                {visOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
               </HlControl>
             </FieldLine>
           </Card.Body>
