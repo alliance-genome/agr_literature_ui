@@ -14,6 +14,8 @@ import { enumDict } from '../biblio/BiblioEditor';
 import LaboratoryEditorLayoutModal from '../settings/LaboratoryEditorLayoutModal';
 import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './laboratoryEditorSections';
 import { useVocabulary } from '../../hooks/useVocabulary';
+import { useCheckPatterns } from '../../hooks/useCheckPatterns';
+import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie';
 import './laboratoryEditorSections.css';
 
 // lab_position is a vocabulary term: read shape is the object {value,label,is_obsolete}
@@ -57,9 +59,8 @@ const xrefSnap = (r) => JSON.stringify(xrefFields(r));
 const alleleSnap = (r) => JSON.stringify(alleleFields(r));
 const memberSnap = (r) => JSON.stringify(memberFields(r));
 
-// Allowed cross-reference prefixes. The API stores a single curie "PREFIX:ID";
-// the editor edits prefix + id separately (like the Person editor).
-const LAB_XREF_PREFIXES = ['ZFIN', 'XenBase', 'WB', 'SGD'];
+// Cross-reference prefixes come from the API (/laboratory_cross_reference/check/patterns).
+// The API stores a single curie "PREFIX:ID"; the editor edits prefix + id separately.
 const xrefIdPart = (fullCurie, prefix) => {
   const s = fullCurie || '';
   if (prefix && s.startsWith(prefix + ':')) return s.slice(prefix.length + 1);
@@ -358,6 +359,7 @@ const LaboratoryEditor = ({ laboratory }) => {
 
   const statusVocab = useVocabulary('laboratory_status');
   const visVocab = useVocabulary('laboratory_email_visibility');
+  const labXrefPatterns = useCheckPatterns('laboratory');
   // Keep a stored value visible even if it isn't among the fetched options.
   const withCurrent = (opts, current) =>
     !current || opts.some((o) => o.value === current) ? opts : [...opts, { value: current, label: current }];
@@ -459,9 +461,14 @@ const LaboratoryEditor = ({ laboratory }) => {
   const saveXref = (i, override) => persistChild({
     list: xrefs, update: updateXref, i, override,
     idKey: 'laboratory_cross_reference_id', endpoint: '/laboratory_cross_reference', createPath: '/laboratory_cross_reference/',
-    completeFn: (r) => !!((r.curie_prefix || '').trim() && (r.curie || '').trim()),
+    completeFn: (r) => {
+      const pfx = normalizePrefix(r.curie_prefix, labXrefPatterns.prefixes);
+      return !!(pfx.trim() && (r.curie || '').trim()) &&
+        validateCurie(pfx, r.curie, labXrefPatterns.regexFor);
+    },
     bodyFn: (r, isCreate, changed) => {
-      const full = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
+      const pfx = normalizePrefix(r.curie_prefix, labXrefPatterns.prefixes);
+      const full = { curie: joinCurie(pfx, r.curie), is_obsolete: !!r.is_obsolete };
       if (isCreate) return { ...full, laboratory_curie: curie };
       const body = {};
       // prefix + id both feed the single API `curie` field.
@@ -833,24 +840,28 @@ const LaboratoryEditor = ({ laboratory }) => {
           <Card.Header>Cross references</Card.Header>
           <Card.Body>
             {xrefs.map((x, i) => {
-              const prefixOptions = LAB_XREF_PREFIXES.includes(x.curie_prefix) || !x.curie_prefix
-                ? LAB_XREF_PREFIXES
-                : [...LAB_XREF_PREFIXES, x.curie_prefix];
+              const prefix = normalizePrefix(x.curie_prefix, labXrefPatterns.prefixes);
+              const prefixOptions = prefix && !labXrefPatterns.prefixes.includes(prefix)
+                ? [...labXrefPatterns.prefixes, prefix]
+                : labXrefPatterns.prefixes;
+              const curieError = x.curie && !validateCurie(prefix, x.curie, labXrefPatterns.regexFor)
+                ? `Invalid ${prefix} id format`
+                : null;
               return (
               <FieldLine
                 key={i}
-                label={i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : (x.curie_prefix || 'xref')}
+                label={i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : (prefix || 'xref')}
                 ts={metaLabel(x._by, x._ts)}
                 status={childStatus(x, xrefSnap)}
-                error={x._error}
+                error={x._error || curieError}
                 onDismissError={() => updateXref(i, { _error: null })}
                 trail={<RemoveBtn onClick={() => deleteXref(i)} />}
               >
                 <div style={inlineRow}>
                   <HlControl
                     as="select"
-                    value={x.curie_prefix}
-                    savedValue={x._saved?.curie_prefix}
+                    value={prefix}
+                    savedValue={normalizePrefix(x._saved?.curie_prefix, labXrefPatterns.prefixes)}
                     onChange={(ev) => updateXref(i, { curie_prefix: ev.target.value })}
                     onBlur={() => saveXref(i)}
                     style={{ maxWidth: 140 }}

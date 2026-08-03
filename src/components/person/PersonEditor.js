@@ -11,6 +11,8 @@ import Container from 'react-bootstrap/Container';
 
 import { api } from '../../api';
 import { useVocabulary } from '../../hooks/useVocabulary';
+import { useCheckPatterns } from '../../hooks/useCheckPatterns';
+import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie';
 import { roleFlagDisabled } from '../../utils/labPersonRoles';
 import PersonCuriePicker from './PersonCuriePicker';
 import LabCuriePicker from './LabCuriePicker';
@@ -18,7 +20,6 @@ import PersonEditorLayoutModal from '../settings/PersonEditorLayoutModal';
 import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './personEditorSections';
 import './personEditorSections.css';
 
-const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
 // person_lineage.relationship is a vocabulary term: read shape is the object
 // {value,label,is_obsolete} (or null), write is the term id (int).
 const relationshipValue = (rel) => (rel && typeof rel === 'object' ? rel.value ?? '' : rel || '');
@@ -500,6 +501,7 @@ const PersonEditor = ({ person }) => {
 
   const activeStatusVocab = useVocabulary('person_active_status');
   const privacyVocab = useVocabulary('person_privacy');
+  const personXrefPatterns = useCheckPatterns('person');
   // Keep a stored value visible even if it isn't among the fetched options.
   const withCurrent = (opts, current) =>
     !current || opts.some((o) => o.value === current) ? opts : [...opts, { value: current, label: current }];
@@ -999,9 +1001,14 @@ const PersonEditor = ({ person }) => {
   const saveXref = (i, override) => persistChild({
     list: xrefs, update: updateXref, i, override,
     idKey: 'person_cross_reference_id', endpoint: '/person_cross_reference', createPath: '/person_cross_reference/',
-    completeFn: (r) => !!((r.curie_prefix || '').trim() && (r.curie || '').trim()),
+    completeFn: (r) => {
+      const pfx = normalizePrefix(r.curie_prefix, personXrefPatterns.prefixes);
+      return !!(pfx.trim() && (r.curie || '').trim()) &&
+        validateCurie(pfx, r.curie, personXrefPatterns.regexFor);
+    },
     bodyFn: (r, isCreate, changed) => {
-      const full = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
+      const pfx = normalizePrefix(r.curie_prefix, personXrefPatterns.prefixes);
+      const full = { curie: joinCurie(pfx, r.curie), is_obsolete: !!r.is_obsolete };
       if (isCreate) return { ...full, person_curie: p.curie };
       const body = {};
       // prefix + id both feed the single API `curie` field.
@@ -1491,25 +1498,28 @@ const PersonEditor = ({ person }) => {
       <Card.Header>Cross references</Card.Header>
       <Card.Body>
         {xrefs.map((x, i) => {
-          const prefixOptions =
-            XREF_PREFIXES.includes(x.curie_prefix) || !x.curie_prefix
-              ? XREF_PREFIXES
-              : [...XREF_PREFIXES, x.curie_prefix];
+          const prefix = normalizePrefix(x.curie_prefix, personXrefPatterns.prefixes);
+          const prefixOptions = prefix && !personXrefPatterns.prefixes.includes(prefix)
+            ? [...personXrefPatterns.prefixes, prefix]
+            : personXrefPatterns.prefixes;
+          const curieError = x.curie && !validateCurie(prefix, x.curie, personXrefPatterns.regexFor)
+            ? `Invalid ${prefix} id format`
+            : null;
           return (
             <FieldLine
               key={i}
               label={labelForXref(x, i)}
               ts={metaLabel(x._by, x._ts)}
               status={childStatus(x, xrefSnap)}
-              error={x._error}
+              error={x._error || curieError}
               onDismissError={() => updateXref(i, { _error: null })}
               trail={<RemoveBtn onClick={() => deleteXref(i)} />}
             >
               <div style={inlineRow}>
                 <HlControl
                   as="select"
-                  value={x.curie_prefix}
-                  savedValue={x._saved?.curie_prefix}
+                  value={prefix}
+                  savedValue={normalizePrefix(x._saved?.curie_prefix, personXrefPatterns.prefixes)}
                   onChange={(ev) => updateXref(i, { curie_prefix: ev.target.value })}
                   onBlur={() => saveXref(i)}
                   style={{ maxWidth: 140 }}
