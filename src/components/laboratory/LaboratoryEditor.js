@@ -844,8 +844,9 @@ const LaboratoryEditor = ({ laboratory }) => {
               const prefixOptions = prefix && !labXrefPatterns.prefixes.includes(prefix)
                 ? [...labXrefPatterns.prefixes, prefix]
                 : labXrefPatterns.prefixes;
-              const curieError = x.curie && !validateCurie(prefix, x.curie, labXrefPatterns.regexFor)
-                ? `Invalid ${prefix} id format`
+              const xrefRe = labXrefPatterns.regexFor(prefix);
+              const curieError = x.curie && xrefRe && !xrefRe.test(joinCurie(prefix, x.curie))
+                ? `Invalid ${prefix} — expected ${xrefRe.source}`
                 : null;
               return (
               <FieldLine

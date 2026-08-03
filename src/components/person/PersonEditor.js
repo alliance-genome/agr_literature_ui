@@ -1502,8 +1502,9 @@ const PersonEditor = ({ person }) => {
           const prefixOptions = prefix && !personXrefPatterns.prefixes.includes(prefix)
             ? [...personXrefPatterns.prefixes, prefix]
             : personXrefPatterns.prefixes;
-          const curieError = x.curie && !validateCurie(prefix, x.curie, personXrefPatterns.regexFor)
-            ? `Invalid ${prefix} id format`
+          const xrefRe = personXrefPatterns.regexFor(prefix);
+          const curieError = x.curie && xrefRe && !xrefRe.test(joinCurie(prefix, x.curie))
+            ? `Invalid ${prefix} — expected ${xrefRe.source}`
             : null;
           return (
             <FieldLine
