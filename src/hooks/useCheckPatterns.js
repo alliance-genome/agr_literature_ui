@@ -30,7 +30,9 @@ export function deriveCheckPatterns(map) {
       return new RegExp(src);
     } catch (e) {
       // A backend pattern using Python-only syntax that JS can't compile — treat as
-      // "no pattern" (unvalidated) rather than throwing during render.
+      // "no pattern" (unvalidated) rather than throwing during render, but log it so a
+      // silently-disabled validation is diagnosable.
+      console.warn(`useCheckPatterns: unusable regex for "${prefix}": ${src}`, e);
       return null;
     }
   };

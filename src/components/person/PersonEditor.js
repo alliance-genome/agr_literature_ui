@@ -1537,7 +1537,11 @@ const PersonEditor = ({ person }) => {
                   onBlur={() => saveXref(i)}
                   style={{ maxWidth: 140 }}
                 >
-                  <option value="">prefix (required)</option>
+                  <option value="">
+                    {!personXrefPatterns.loading && personXrefPatterns.prefixes.length === 0
+                      ? 'prefix (unavailable — reload)'
+                      : 'prefix (required)'}
+                  </option>
                   {prefixOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}

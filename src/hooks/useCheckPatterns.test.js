@@ -25,8 +25,11 @@ describe('deriveCheckPatterns', () => {
   });
 
   test('a Python-only pattern JS cannot compile is treated as no pattern (not thrown)', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const { regexFor } = deriveCheckPatterns({ FOO: '(?P<name>\\d+)' });
     expect(regexFor('FOO')).toBeNull();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
 
@@ -42,5 +45,14 @@ describe('loadCheckPatterns', () => {
     await loadCheckPatterns('person');
     expect(api.get).toHaveBeenCalledTimes(1);
     expect(api.get).toHaveBeenCalledWith('/person_cross_reference/check/patterns');
+  });
+
+  test('a rejected fetch is not cached — the next call re-fetches', async () => {
+    api.get.mockReset();
+    api.get.mockRejectedValueOnce(new Error('boom')).mockResolvedValue({ data: MAP });
+    await expect(loadCheckPatterns('person')).rejects.toThrow('boom');
+    const second = await loadCheckPatterns('person');
+    expect(second).toEqual(MAP);
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 });

@@ -39,4 +39,13 @@ describe('loadVocabulary', () => {
     expect(api.get).toHaveBeenCalledTimes(1);
     expect(api.get).toHaveBeenCalledWith('/vocabulary/lab_position');
   });
+
+  test('a rejected fetch is not cached — the next call re-fetches', async () => {
+    api.get.mockReset();
+    api.get.mockRejectedValueOnce(new Error('boom')).mockResolvedValue({ data: TERMS });
+    await expect(loadVocabulary('lab_position')).rejects.toThrow('boom');
+    const second = await loadVocabulary('lab_position');
+    expect(second).toEqual(TERMS);
+    expect(api.get).toHaveBeenCalledTimes(2);
+  });
 });

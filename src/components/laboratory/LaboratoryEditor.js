@@ -872,7 +872,11 @@ const LaboratoryEditor = ({ laboratory }) => {
                     onBlur={() => saveXref(i)}
                     style={{ maxWidth: 140 }}
                   >
-                    <option value="">prefix (required)</option>
+                    <option value="">
+                      {!labXrefPatterns.loading && labXrefPatterns.prefixes.length === 0
+                        ? 'prefix (unavailable — reload)'
+                        : 'prefix (required)'}
+                    </option>
                     {prefixOptions.map((opt) => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
