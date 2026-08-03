@@ -10,10 +10,11 @@ export const __clearCheckPatternsCache = () => cache.clear();
 
 export function loadCheckPatterns(entity) {
   if (!cache.has(entity)) {
-    cache.set(
-      entity,
-      api.get(`/${entity}_cross_reference/check/patterns`).then((r) => r.data)
-    );
+    const promise = api.get(`/${entity}_cross_reference/check/patterns`).then((r) => r.data);
+    // Don't cache a rejection — a transient failure would otherwise poison the whole
+    // session; drop it so the next mount retries.
+    promise.catch(() => cache.delete(entity));
+    cache.set(entity, promise);
   }
   return cache.get(entity);
 }
@@ -22,7 +23,17 @@ export function loadCheckPatterns(entity) {
 export function deriveCheckPatterns(map) {
   const m = map || {};
   const prefixes = Object.keys(m);
-  const regexFor = (prefix) => (m[prefix] ? new RegExp(m[prefix]) : null);
+  const regexFor = (prefix) => {
+    const src = m[prefix];
+    if (!src) return null;
+    try {
+      return new RegExp(src);
+    } catch (e) {
+      // A backend pattern using Python-only syntax that JS can't compile — treat as
+      // "no pattern" (unvalidated) rather than throwing during render.
+      return null;
+    }
+  };
   return { prefixes, regexFor };
 }
 

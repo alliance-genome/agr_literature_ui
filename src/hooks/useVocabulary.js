@@ -11,7 +11,11 @@ export const __clearVocabCache = () => cache.clear();
 // Cached fetch (one request per vocabulary name per session; the lists are stable).
 export function loadVocabulary(name) {
   if (!cache.has(name)) {
-    cache.set(name, api.get(`/vocabulary/${name}`).then((r) => r.data));
+    const promise = api.get(`/vocabulary/${name}`).then((r) => r.data);
+    // Don't cache a rejection — drop it so a transient failure retries on next mount
+    // instead of permanently emptying the dropdown for the session.
+    promise.catch(() => cache.delete(name));
+    cache.set(name, promise);
   }
   return cache.get(name);
 }

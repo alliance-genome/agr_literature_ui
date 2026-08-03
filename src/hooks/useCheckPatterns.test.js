@@ -23,6 +23,11 @@ describe('deriveCheckPatterns', () => {
     expect(prefixes).toEqual([]);
     expect(regexFor('ZFIN')).toBeNull();
   });
+
+  test('a Python-only pattern JS cannot compile is treated as no pattern (not thrown)', () => {
+    const { regexFor } = deriveCheckPatterns({ FOO: '(?P<name>\\d+)' });
+    expect(regexFor('FOO')).toBeNull();
+  });
 });
 
 describe('loadCheckPatterns', () => {

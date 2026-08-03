@@ -21,8 +21,13 @@ import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './personEd
 import './personEditorSections.css';
 
 // person_lineage.relationship is a vocabulary term: read shape is the object
-// {value,label,is_obsolete} (or null), write is the term id (int).
-const relationshipValue = (rel) => (rel && typeof rel === 'object' ? rel.value ?? '' : rel || '');
+// {value,label,is_obsolete} (or null), write is the term id (int). Keep it a STRING in
+// state (select value / change events / saved-key all compare consistently); the save
+// bodies convert to Number only when sending to the API.
+const relationshipValue = (rel) => {
+  const v = rel && typeof rel === 'object' ? rel.value : rel;
+  return v == null || v === '' ? '' : String(v);
+};
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -852,7 +857,14 @@ const PersonEditor = ({ person }) => {
   const relOptionsFor = (current) => {
     const opts = relationshipVocab.options;
     if (current && !opts.some((o) => String(o.value) === String(current))) {
-      return [...opts, { value: current, label: `${relationshipVocab.labelFor(current)} (obsolete)`, disabled: true }];
+      const label = relationshipVocab.labelFor(current);
+      // While the vocab is still loading, options is [] and labelFor returns the raw id;
+      // don't label a not-yet-resolved term "(obsolete)" (misleading flash).
+      return [...opts, {
+        value: current,
+        label: relationshipVocab.loading ? label : `${label} (obsolete)`,
+        disabled: !relationshipVocab.loading,
+      }];
     }
     return opts;
   };

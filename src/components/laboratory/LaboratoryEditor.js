@@ -19,8 +19,13 @@ import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie
 import './laboratoryEditorSections.css';
 
 // lab_position is a vocabulary term: read shape is the object {value,label,is_obsolete}
-// (or null); write is the term id (int). Extract the id from whatever shape is held.
-const labPositionValue = (lp) => (lp && typeof lp === 'object' ? lp.value ?? '' : lp || '');
+// (or null); write is the term id (int). Extract the id and keep it as a STRING in
+// state so the <select> value, the change events and the saved-key snapshot all compare
+// consistently (bodyFn converts to Number only when sending to the API).
+const labPositionValue = (lp) => {
+  const v = lp && typeof lp === 'object' ? lp.value : lp;
+  return v == null || v === '' ? '' : String(v);
+};
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -1007,8 +1012,9 @@ const LaboratoryEditor = ({ laboratory }) => {
                       ))}
                       {m.lab_position &&
                         !labPositionVocab.options.some((o) => String(o.value) === String(m.lab_position)) && (
-                          <option value={m.lab_position} disabled>
-                            {labPositionVocab.labelFor(m.lab_position)} (obsolete)
+                          <option value={m.lab_position} disabled={!labPositionVocab.loading}>
+                            {labPositionVocab.labelFor(m.lab_position)}
+                            {labPositionVocab.loading ? '' : ' (obsolete)'}
                           </option>
                         )}
                     </HlControl>
