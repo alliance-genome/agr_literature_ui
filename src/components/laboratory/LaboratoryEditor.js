@@ -13,6 +13,7 @@ import PersonCuriePicker from '../person/PersonCuriePicker';
 import { enumDict } from '../biblio/BiblioEditor';
 import LaboratoryEditorLayoutModal from '../settings/LaboratoryEditorLayoutModal';
 import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './laboratoryEditorSections';
+import { useVocabulary } from '../../hooks/useVocabulary';
 import './laboratoryEditorSections.css';
 
 // Controlled vocabularies — mirror the API enums (laboratory_schemas.py /
@@ -20,22 +21,10 @@ import './laboratoryEditorSections.css';
 // frontend enforces the allowed values.
 const STATUS_OPTIONS = ['active', 'closed', 'unknown'];
 const EMAIL_VISIBILITY_OPTIONS = ['public', 'logged_in_user', 'not_shown'];
-const LAB_POSITION_OPTIONS = [
-  'other',
-  'co_pi',
-  'research_professor',
-  'md_vet',
-  'administrator',
-  'animal_facility_staff',
-  'research_staff',
-  'technical_staff',
-  'postdoc',
-  'graduate_student',
-  'undergrad',
-  'masters_student',
-  'phd_student',
-  'high_school',
-];
+
+// lab_position is a vocabulary term: read shape is the object {value,label,is_obsolete}
+// (or null); write is the term id (int). Extract the id from whatever shape is held.
+const labPositionValue = (lp) => (lp && typeof lp === 'object' ? lp.value ?? '' : lp || '');
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -68,7 +57,7 @@ const memberFields = (r) => ({
   personCurie: r.personCurie || '',
   is_pi: !!r.is_pi, former_pi: !!r.former_pi, alum: !!r.alum,
   is_lab_contact: !!r.is_lab_contact, can_edit_lab: !!r.can_edit_lab,
-  lab_position: r.lab_position || '',
+  lab_position: labPositionValue(r.lab_position),
 });
 const xrefSnap = (r) => JSON.stringify(xrefFields(r));
 const alleleSnap = (r) => JSON.stringify(alleleFields(r));
@@ -520,6 +509,7 @@ const LaboratoryEditor = ({ laboratory }) => {
   // Lab members (laboratory_person). is_pi / former_pi / alum are DateTime fields
   // shown as checkboxes: checked => set (keep existing date, else now), unchecked =>
   // clear. The person link can't change on PATCH, so it's locked once created.
+  const labPositionVocab = useVocabulary('lab_position');
   const emptyMember = () => {
     const r = {
       personCurie: '', personName: '',
@@ -537,7 +527,7 @@ const LaboratoryEditor = ({ laboratory }) => {
       personName: lp.person_display_name || '',
       is_pi: !!lp.is_pi, former_pi: !!lp.former_pi, alum: !!lp.alum,
       is_lab_contact: !!lp.is_lab_contact, can_edit_lab: !!lp.can_edit_lab,
-      lab_position: lp.lab_position || '',
+      lab_position: labPositionValue(lp.lab_position),
       _is_pi_ts: lp.is_pi ?? null, _former_pi_ts: lp.former_pi ?? null, _alum_ts: lp.alum ?? null,
       _ts: lp.date_updated ?? null, _by: lp.updated_by ?? null,
       _id: lp.laboratory_person_id ?? null, _status: null, _error: null,
@@ -558,7 +548,7 @@ const LaboratoryEditor = ({ laboratory }) => {
         if (key === 'alum') return r.alum ? (r._alum_ts || now) : null;
         if (key === 'is_lab_contact') return !!r.is_lab_contact;
         if (key === 'can_edit_lab') return !!r.can_edit_lab;
-        if (key === 'lab_position') return r.lab_position || null;
+        if (key === 'lab_position') return r.lab_position ? Number(r.lab_position) : null;
         return undefined;
       };
       if (isCreate) {
@@ -582,7 +572,7 @@ const LaboratoryEditor = ({ laboratory }) => {
     applyResp: (d) => ({
       is_pi: !!d.is_pi, former_pi: !!d.former_pi, alum: !!d.alum,
       is_lab_contact: !!d.is_lab_contact, can_edit_lab: !!d.can_edit_lab,
-      lab_position: d.lab_position || '',
+      lab_position: labPositionValue(d.lab_position),
       _is_pi_ts: d.is_pi ?? null, _former_pi_ts: d.former_pi ?? null, _alum_ts: d.alum ?? null,
     }),
   });
@@ -951,9 +941,6 @@ const LaboratoryEditor = ({ laboratory }) => {
           <Card.Header>Lab members</Card.Header>
           <Card.Body>
             {members.map((m, i) => {
-              const positionOptions = LAB_POSITION_OPTIONS.includes(m.lab_position) || !m.lab_position
-                ? LAB_POSITION_OPTIONS
-                : [...LAB_POSITION_OPTIONS, m.lab_position];
               const dateFlags = [
                 { key: 'is_pi', tsKey: '_is_pi_ts' },
                 { key: 'former_pi', tsKey: '_former_pi_ts' },
@@ -1004,7 +991,15 @@ const LaboratoryEditor = ({ laboratory }) => {
                       style={{ maxWidth: 200 }}
                     >
                       <option value="">position</option>
-                      {positionOptions.map((p) => (<option key={p} value={p}>{p}</option>))}
+                      {labPositionVocab.options.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                      {m.lab_position &&
+                        !labPositionVocab.options.some((o) => String(o.value) === String(m.lab_position)) && (
+                          <option value={m.lab_position} disabled>
+                            {labPositionVocab.labelFor(m.lab_position)} (obsolete)
+                          </option>
+                        )}
                     </HlControl>
                     {dateFlags.map(({ key, tsKey }) => {
                       const stamp = isWB && showTimestamps && m[key] && m[tsKey] ? formatTimestamp(m[tsKey]) : null;

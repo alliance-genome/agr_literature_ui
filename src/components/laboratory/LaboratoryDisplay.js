@@ -142,7 +142,7 @@ const CrossReferencesCard = ({ list }) => (
 
 const personRoles = (lp) => {
   const roles = [];
-  if (lp.lab_position) roles.push(lp.lab_position);
+  if (lp.lab_position?.label) roles.push(lp.lab_position.label);
   if (lp.is_pi) roles.push(`PI since ${formatDate(lp.is_pi)}`);
   if (lp.former_pi) roles.push(`former PI since ${formatDate(lp.former_pi)}`);
   if (lp.alum) roles.push(`alum since ${formatDate(lp.alum)}`);
