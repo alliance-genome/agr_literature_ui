@@ -5,6 +5,7 @@ import { useHistory } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
 
 import { api } from '../api';
+import { useVocabulary } from '../hooks/useVocabulary';
 
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
@@ -368,8 +369,6 @@ const CreateActionRouter = () => {
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
-const PERSON_XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
-const PERSON_STATUS_OPTIONS = ['active', 'retired', 'deceased'];
 const MockupCreatePersonTitle = 'Mockup only — not wired to the API';
 
 const classifyPersonInput = (raw) => {
@@ -378,7 +377,9 @@ const classifyPersonInput = (raw) => {
   if (trimmed.startsWith('AGRKB:')) {
     return { endpoint: '/person/' + trimmed };
   }
-  if (PERSON_XREF_PREFIXES.some((p) => trimmed.startsWith(p + ':'))) {
+  // Any colon-bearing input (not AGRKB) is an xref curie, resolved by the backend
+  // (Biblio convention; no hardcoded prefix list).
+  if (trimmed.includes(':')) {
     return { endpoint: '/person/by_person_cross_reference/' + trimmed };
   }
   if (trimmed.includes('@')) {
@@ -396,6 +397,7 @@ const CreatePerson = () => {
 
   const [displayName, setDisplayName] = useState('');
   const [status, setStatus] = useState('active');
+  const activeStatusVocab = useVocabulary('person_active_status');
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -510,8 +512,8 @@ const CreatePerson = () => {
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                {PERSON_STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                {activeStatusVocab.options.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </Form.Control>
             </Col>
