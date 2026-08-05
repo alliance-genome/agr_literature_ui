@@ -1,7 +1,10 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import CellValidationStrip from './CellValidationStrip';
-import { isCuratorValidationTet } from '../helpers/groupTets';
+import {
+  VALIDATION_STATE_LABELS,
+  isCuratorValidationTet,
+} from '../helpers/groupTets';
 import { speciesBadgeLetter, speciesName } from '../helpers/speciesUtils';
 
 /** TETs from this cell that are *topic-level* and authored by a professional
@@ -148,10 +151,10 @@ export default function ValidationCell(params) {
 
     let label, cls, tooltip, attribution;
     if (positives > 0 && negatives > 0) {
-      label = 'assessment conflict';
+      label = VALIDATION_STATE_LABELS.conflict;
       cls = 'tetv-validation-status tetv-validated-conflict';
       tooltip =
-        `${positives} positive + ${negatives} negative professional ` +
+        `${positives} Y + ${negatives} N professional ` +
         `biocurator topic tag(s) on this cell`;
       attribution = (
         <div className="tetv-validation-by-list">
@@ -163,7 +166,11 @@ export default function ValidationCell(params) {
                     ? 'tetv-validation-by-neg'
                     : 'tetv-validation-by-pos'
                 }`}
-                title={p.negated ? 'voted negative' : 'voted positive'}
+                title={
+                  p.negated
+                    ? 'assessed N (no data for this topic)'
+                    : 'assessed Y (data present for this topic)'
+                }
               >
                 {p.negated ? 'N' : 'Y'}
               </span>{' '}
@@ -180,13 +187,15 @@ export default function ValidationCell(params) {
       );
     } else if (positives > 0 || negatives > 0) {
       const isPositive = positives > 0;
-      label = isPositive ? 'positive' : 'negative';
+      label = isPositive
+        ? VALIDATION_STATE_LABELS.positive
+        : VALIDATION_STATE_LABELS.negative;
       cls = isPositive
         ? 'tetv-validation-status tetv-validated-pos'
         : 'tetv-validation-status tetv-validated-neg';
       tooltip = isPositive
-        ? `${positives} positive professional biocurator topic tag(s)`
-        : `${negatives} negative professional biocurator topic tag(s)`;
+        ? `Y (data present) — ${positives} professional biocurator topic tag(s)`
+        : `N (no data) — ${negatives} professional biocurator topic tag(s)`;
       attribution =
         uniquePairs.length > 0 ? (
           <div className="tetv-validation-by-list">

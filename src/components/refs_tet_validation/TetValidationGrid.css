@@ -353,6 +353,25 @@
   color: #475467;
   font-weight: 600;
 }
+/* Nested group inside a topic group: the "Data assessment by other sources"
+   band that spans the source label, its Y/N/{N}E tag and the optional
+   confidence / note columns. Toned between the topic-name band above it and
+   the leaf sub-headers below so the three levels stay distinguishable. */
+.ag-header-group-cell.tetv-topic-subgroup-header {
+  background: #eef3f7;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+  color: #3d5566;
+  border-right: 1px solid #d0dce7;
+  border-bottom: 1px solid #dbe4ec;
+}
+/* The biocurator column has no nested group above it, so AgGrid renders an
+   empty group cell in that row. Keep it blank rather than showing a stray
+   band of the sub-group tone. */
+.tetv-grid-wrapper .ag-header-group-cell-no-group {
+  background: #f8fafc;
+  border-right: 1px solid #d0dce7;
+}
 /* Alternating row tones for readability. Each paper is separated by a
    prominent slate-grey divider so curators clearly see where one paper ends
    and the next begins. */
@@ -383,6 +402,9 @@
   font-size: 1rem;
   font-weight: 700;
   padding: 7px 14px;
+  /* Y and N are single characters — keep both pills the same size so a column
+     of assessments reads as one consistent shape. */
+  min-width: 2.75rem;
   border-radius: 999px;
   text-align: center;
   white-space: normal;

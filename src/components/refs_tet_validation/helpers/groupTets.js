@@ -101,6 +101,24 @@ export const VALIDATION_FILTER_KEYS = [
   'conflict',
 ];
 
+/** Display labels for the validation states above. The keys are the server's
+ *  aggregate `validation.state` values and are also what gets persisted in
+ *  saved AgGrid filter models, so they must not change — only the UI wording
+ *  does. Y / N mirror the "Data" column pills and the `has_data` advanced-search
+ *  facet, so a biocurator assessment reads the same way everywhere (SCRUM-6330). */
+export const VALIDATION_STATE_LABELS = Object.freeze({
+  unvalidated: 'unassessed',
+  positive: 'Y',
+  negative: 'N',
+  conflict: 'conflict',
+});
+
+/** Human label for a validation state, falling back to the raw key so an
+ *  unrecognized server state still renders something. */
+export function validationStateLabel(state) {
+  return VALIDATION_STATE_LABELS[state] || state;
+}
+
 /** Stable numeric ordering for AgGrid sort: unvalidated < conflict <
  *  negative < positive. Curators can flip via shift-click for descending. */
 export function validationSortRank(tets) {

@@ -3,13 +3,8 @@ import { useGridFilter } from 'ag-grid-react';
 import {
   VALIDATION_FILTER_KEYS,
   validationState,
+  validationStateLabel,
 } from '../helpers/groupTets';
-
-// Display labels for the (persisted) filter-model keys — the keys themselves
-// stay unchanged so saved filter models keep working (SCRUM-6291).
-const FILTER_KEY_LABELS = {
-  unvalidated: 'unassessed',
-};
 
 const ValidationFilter = ({ model: rawModel, onModelChange }) => {
   const model = Array.isArray(rawModel) ? rawModel : null;
@@ -47,7 +42,7 @@ const ValidationFilter = ({ model: rawModel, onModelChange }) => {
 
   return (
     <div className="custom-filter">
-      <div>Assessment status</div>
+      <div>Data assessment by biocurator</div>
       <hr />
       {VALIDATION_FILTER_KEYS.map((k) => (
         <div key={k}>
@@ -57,7 +52,7 @@ const ValidationFilter = ({ model: rawModel, onModelChange }) => {
             checked={!!(unappliedModel && unappliedModel.includes(k))}
             onChange={(e) => onChange(k, e.target.checked)}
           />
-          <label htmlFor={`vf-${k}`}> {FILTER_KEY_LABELS[k] || k}</label>
+          <label htmlFor={`vf-${k}`}> {validationStateLabel(k)}</label>
         </div>
       ))}
       <hr />
