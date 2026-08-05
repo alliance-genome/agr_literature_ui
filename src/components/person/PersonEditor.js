@@ -10,6 +10,9 @@ import Badge from 'react-bootstrap/Badge';
 import Container from 'react-bootstrap/Container';
 
 import { api } from '../../api';
+import { useVocabulary } from '../../hooks/useVocabulary';
+import { useCheckPatterns } from '../../hooks/useCheckPatterns';
+import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie';
 import { roleFlagDisabled } from '../../utils/labPersonRoles';
 import PersonCuriePicker from './PersonCuriePicker';
 import LabCuriePicker from './LabCuriePicker';
@@ -17,23 +20,14 @@ import PersonEditorLayoutModal from '../settings/PersonEditorLayoutModal';
 import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './personEditorSections';
 import './personEditorSections.css';
 
-const STATUS_OPTIONS = ['active', 'retired', 'deceased'];
-const PRIVACY_OPTIONS = ['show_all', 'logged_in_only', 'fully_hidden', 'hide_email'];
-const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
-// PersonPersonRole controlled vocabulary (person_lineage.relationship).
-const PERSON_PERSON_ROLES = [
-  'phd_supervisor_of',
-  'postdoc_supervisor_of',
-  'masters_supervisor_of',
-  'undergrad_supervisor_of',
-  'highschool_supervisor_of',
-  'sabbatical_supervisor_of',
-  'lab_visitor_supervisor_of',
-  'research_staff_supervisor_of',
-  'assistant_professor_supervisor_of',
-  'unknown_supervisor_of',
-  'collaborator_of',
-];
+// person_lineage.relationship is a vocabulary term: read shape is the object
+// {value,label,is_obsolete} (or null), write is the term id (int). Keep it a STRING in
+// state (select value / change events / saved-key all compare consistently); the save
+// bodies convert to Number only when sending to the API.
+const relationshipValue = (rel) => {
+  const v = rel && typeof rel === 'object' ? rel.value : rel;
+  return v == null || v === '' ? '' : String(v);
+};
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -330,7 +324,7 @@ const LineageClaimRow = ({ submission, lead = '', showStatus = false, style, tra
     <span style={{ ...claimCellBase, width: 240 }} title={submission.person_subject_name}>
       {lead}{submission.person_subject_name}
     </span>
-    <span style={{ ...claimCellBase, width: 260 }} title={submission.relationship}>{submission.relationship}</span>
+    <span style={{ ...claimCellBase, width: 260 }} title={submission.relationship?.label}>{submission.relationship?.label}</span>
     <span style={{ ...claimCellBase, width: 240 }} title={submission.person_object_name}>{submission.person_object_name}</span>
     <span style={{ ...claimCellBase, width: DATES_COL_WIDTH }}>{dateRange(submission.start_date, submission.end_date)}</span>
     <span style={{ ...claimCellBase, width: 'auto' }}>
@@ -510,15 +504,16 @@ const PersonEditor = ({ person }) => {
     }
   };
 
+  const activeStatusVocab = useVocabulary('person_active_status');
+  const privacyVocab = useVocabulary('person_privacy');
+  const personXrefPatterns = useCheckPatterns('person');
+  // Keep a stored value visible even if it isn't among the fetched options.
+  const withCurrent = (opts, current) =>
+    !current || opts.some((o) => o.value === current) ? opts : [...opts, { value: current, label: current }];
   const currentStatus = live.active_status;
-  const statusOptions = STATUS_OPTIONS.includes(currentStatus)
-    ? STATUS_OPTIONS
-    : [...STATUS_OPTIONS, currentStatus];
-
+  const statusOptions = withCurrent(activeStatusVocab.options, currentStatus);
   const currentPrivacy = live.privacy;
-  const privacyOptions = PRIVACY_OPTIONS.includes(currentPrivacy)
-    ? PRIVACY_OPTIONS
-    : [...PRIVACY_OPTIONS, currentPrivacy];
+  const privacyOptions = withCurrent(privacyVocab.options, currentPrivacy);
 
   // Names
   const emptyName = () => {
@@ -739,7 +734,7 @@ const PersonEditor = ({ person }) => {
     return {
       otherCurie: (side === 'subject' ? s.person_object_curie : s.person_subject_curie) || '',
       otherName: (side === 'subject' ? s.person_object_name : s.person_subject_name) || '',
-      relationship: s.relationship || '',
+      relationship: relationshipValue(s.relationship),
       start: s.start_date ? String(s.start_date).slice(0, 10) : '',
       end: s.end_date ? String(s.end_date).slice(0, 10) : '',
     };
@@ -753,7 +748,7 @@ const PersonEditor = ({ person }) => {
   const handleValidate = (s) => {
     const e = subEdit(s);
     const side = lockedSide(s);
-    const body = { relationship: e.relationship || undefined };
+    const body = { relationship: e.relationship ? Number(e.relationship) : undefined };
     if (e.start) body.start_date = e.start;
     if (e.end) body.end_date = e.end;
     // The locked (loaded-person) side is omitted, so validate falls back to the
@@ -784,7 +779,7 @@ const PersonEditor = ({ person }) => {
     if (existing) return existing;
     const side = canonLockedSide(c);
     return {
-      relationship: c.relationship || '',
+      relationship: relationshipValue(c.relationship),
       start: c.start_date ? String(c.start_date).slice(0, 10) : '',
       end: c.end_date ? String(c.end_date).slice(0, 10) : '',
       otherCurie: (side === 'subject' ? c.person_object_curie : c.person_subject_curie) || '',
@@ -798,7 +793,7 @@ const PersonEditor = ({ person }) => {
     const e = canonEdit(c);
     const side = canonLockedSide(c);
     const body = {
-      relationship: e.relationship || undefined,
+      relationship: e.relationship ? Number(e.relationship) : undefined,
       start_date: e.start || null,
       end_date: e.end || null,
     };
@@ -841,7 +836,7 @@ const PersonEditor = ({ person }) => {
     api.post('/person_lineage/', {
       person_subject_curie_or_id: newCanon.subjectCurie,
       person_object_curie_or_id: newCanon.objectCurie,
-      relationship: newCanon.relationship,
+      relationship: Number(newCanon.relationship),
       start_date: newCanon.start || undefined,
       end_date: newCanon.end || undefined,
     })
@@ -856,10 +851,23 @@ const PersonEditor = ({ person }) => {
       .finally(() => setLineageBusy(false));
   };
 
-  const relOptionsFor = (current) =>
-    PERSON_PERSON_ROLES.includes(current) || !current
-      ? PERSON_PERSON_ROLES
-      : [...PERSON_PERSON_ROLES, current];
+  const relationshipVocab = useVocabulary('person_person_relationship');
+  // Vocab options (obsolete filtered); inject the current value as a disabled
+  // "(obsolete)" option if it isn't among the offered terms.
+  const relOptionsFor = (current) => {
+    const opts = relationshipVocab.options;
+    if (current && !opts.some((o) => String(o.value) === String(current))) {
+      const label = relationshipVocab.labelFor(current);
+      // While the vocab is still loading, options is [] and labelFor returns the raw id;
+      // don't label a not-yet-resolved term "(obsolete)" (misleading flash).
+      return [...opts, {
+        value: current,
+        label: relationshipVocab.loading ? label : `${label} (obsolete)`,
+        disabled: !relationshipVocab.loading,
+      }];
+    }
+    return opts;
+  };
 
   const setNamePrimary = (idx) =>
     setNames((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
@@ -1005,9 +1013,14 @@ const PersonEditor = ({ person }) => {
   const saveXref = (i, override) => persistChild({
     list: xrefs, update: updateXref, i, override,
     idKey: 'person_cross_reference_id', endpoint: '/person_cross_reference', createPath: '/person_cross_reference/',
-    completeFn: (r) => !!((r.curie_prefix || '').trim() && (r.curie || '').trim()),
+    completeFn: (r) => {
+      const pfx = normalizePrefix(r.curie_prefix, personXrefPatterns.prefixes);
+      return !!(pfx.trim() && (r.curie || '').trim()) &&
+        validateCurie(pfx, r.curie, personXrefPatterns.regexFor);
+    },
     bodyFn: (r, isCreate, changed) => {
-      const full = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
+      const pfx = normalizePrefix(r.curie_prefix, personXrefPatterns.prefixes);
+      const full = { curie: joinCurie(pfx, r.curie), is_obsolete: !!r.is_obsolete };
       if (isCreate) return { ...full, person_curie: p.curie };
       const body = {};
       // prefix + id both feed the single API `curie` field.
@@ -1124,8 +1137,8 @@ const PersonEditor = ({ person }) => {
             onChange={(ev) => { setLiveField('active_status', ev.target.value); saveScalar('active_status', ev.target.value); }}
             style={{ maxWidth: 240 }}
           >
-            {statusOptions.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {statusOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </HlControl>
         </FieldLine>
@@ -1143,8 +1156,8 @@ const PersonEditor = ({ person }) => {
             onChange={(ev) => { setLiveField('privacy', ev.target.value); saveScalar('privacy', ev.target.value); }}
             style={{ maxWidth: 240 }}
           >
-            {privacyOptions.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {privacyOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </HlControl>
         </FieldLine>
@@ -1497,30 +1510,38 @@ const PersonEditor = ({ person }) => {
       <Card.Header>Cross references</Card.Header>
       <Card.Body>
         {xrefs.map((x, i) => {
-          const prefixOptions =
-            XREF_PREFIXES.includes(x.curie_prefix) || !x.curie_prefix
-              ? XREF_PREFIXES
-              : [...XREF_PREFIXES, x.curie_prefix];
+          const prefix = normalizePrefix(x.curie_prefix, personXrefPatterns.prefixes);
+          const prefixOptions = prefix && !personXrefPatterns.prefixes.includes(prefix)
+            ? [...personXrefPatterns.prefixes, prefix]
+            : personXrefPatterns.prefixes;
+          const xrefRe = personXrefPatterns.regexFor(prefix);
+          const curieError = x.curie && xrefRe && !xrefRe.test(joinCurie(prefix, x.curie))
+            ? `Invalid ${prefix} — expected ${xrefRe.source}`
+            : null;
           return (
             <FieldLine
               key={i}
               label={labelForXref(x, i)}
               ts={metaLabel(x._by, x._ts)}
               status={childStatus(x, xrefSnap)}
-              error={x._error}
+              error={x._error || curieError}
               onDismissError={() => updateXref(i, { _error: null })}
               trail={<RemoveBtn onClick={() => deleteXref(i)} />}
             >
               <div style={inlineRow}>
                 <HlControl
                   as="select"
-                  value={x.curie_prefix}
-                  savedValue={x._saved?.curie_prefix}
+                  value={prefix}
+                  savedValue={normalizePrefix(x._saved?.curie_prefix, personXrefPatterns.prefixes)}
                   onChange={(ev) => updateXref(i, { curie_prefix: ev.target.value })}
                   onBlur={() => saveXref(i)}
                   style={{ maxWidth: 140 }}
                 >
-                  <option value="">prefix (required)</option>
+                  <option value="">
+                    {!personXrefPatterns.loading && personXrefPatterns.prefixes.length === 0
+                      ? 'prefix (unavailable — reload)'
+                      : 'prefix (required)'}
+                  </option>
                   {prefixOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
@@ -1705,7 +1726,7 @@ const PersonEditor = ({ person }) => {
                   disabled={lineageBusy}
                 >
                   <option value=""></option>
-                  {relOptionsFor(e.relationship).map((o) => <option key={o} value={o}>{o}</option>)}
+                  {relOptionsFor(e.relationship).map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
                 </HlControl>
                 {side === 'object' ? lockedCell : otherPicker}
                 <LineageDateRange
@@ -1783,7 +1804,7 @@ const PersonEditor = ({ person }) => {
                   style={relSelectStyle}
                   disabled={lineageBusy}
                 >
-                  {relOptionsFor(e.relationship).map((o) => <option key={o} value={o}>{o}</option>)}
+                  {relOptionsFor(e.relationship).map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
                 </HlControl>
                 {objectCell}
                 <LineageDateRange
@@ -1856,7 +1877,7 @@ const PersonEditor = ({ person }) => {
             disabled={lineageBusy}
           >
             <option value=""></option>
-            {PERSON_PERSON_ROLES.map((o) => <option key={o} value={o}>{o}</option>)}
+            {relationshipVocab.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </HlControl>
           {newCanon.anchor === 'subject' ? (
             <div style={personSlot}>

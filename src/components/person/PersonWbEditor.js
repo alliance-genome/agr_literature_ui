@@ -3,11 +3,11 @@ import Form from 'react-bootstrap/Form';
 import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
+import { useVocabulary } from '../../hooks/useVocabulary';
+import { useCheckPatterns } from '../../hooks/useCheckPatterns';
+import { normalizePrefix } from '../../utils/xrefCurie';
 
 const MockupTitle = 'Mockup only — not wired to the API';
-const STATUS_OPTIONS = ['active', 'retired', 'deceased'];
-const PRIVACY_OPTIONS = ['show_all', 'logged_in_only', 'fully_hidden', 'hide_email'];
-const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -135,15 +135,15 @@ const inlineRow = {
 const PersonWbEditor = ({ person }) => {
   const p = person ?? {};
 
+  const activeStatusVocab = useVocabulary('person_active_status');
+  const privacyVocab = useVocabulary('person_privacy');
+  const personXrefPatterns = useCheckPatterns('person');
+  const withCurrent = (opts, current) =>
+    !current || opts.some((o) => o.value === current) ? opts : [...opts, { value: current, label: current }];
   const currentStatus = p.active_status || 'active';
-  const statusOptions = STATUS_OPTIONS.includes(currentStatus)
-    ? STATUS_OPTIONS
-    : [...STATUS_OPTIONS, currentStatus];
-
+  const statusOptions = withCurrent(activeStatusVocab.options, currentStatus);
   const currentPrivacy = p.privacy || 'hide_email';
-  const privacyOptions = PRIVACY_OPTIONS.includes(currentPrivacy)
-    ? PRIVACY_OPTIONS
-    : [...PRIVACY_OPTIONS, currentPrivacy];
+  const privacyOptions = withCurrent(privacyVocab.options, currentPrivacy);
 
   // Names
   const emptyName = () => ({
@@ -302,15 +302,15 @@ const PersonWbEditor = ({ person }) => {
           </FieldLine>
           <FieldLine label="status" ts={recordTs}>
             <Form.Control as="select" defaultValue={currentStatus} style={{ maxWidth: 240 }}>
-              {statusOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
+              {statusOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </Form.Control>
           </FieldLine>
           <FieldLine label="privacy" ts={recordTs}>
             <Form.Control as="select" defaultValue={currentPrivacy} style={{ maxWidth: 240 }}>
-              {privacyOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
+              {privacyOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </Form.Control>
           </FieldLine>
@@ -555,10 +555,10 @@ const PersonWbEditor = ({ person }) => {
           {xrefs.map((x, i) => {
             const isNew = i === xrefs.length - 1 && xrefIsEmpty(x);
             const ts = isNew ? 'new' : tsLabel(x._by, x._ts);
-            const prefixOptions =
-              XREF_PREFIXES.includes(x.curie_prefix) || !x.curie_prefix
-                ? XREF_PREFIXES
-                : [...XREF_PREFIXES, x.curie_prefix];
+            const prefix = normalizePrefix(x.curie_prefix, personXrefPatterns.prefixes);
+            const prefixOptions = prefix && !personXrefPatterns.prefixes.includes(prefix)
+              ? [...personXrefPatterns.prefixes, prefix]
+              : personXrefPatterns.prefixes;
             return (
               <FieldLine
                 key={i}
@@ -569,7 +569,7 @@ const PersonWbEditor = ({ person }) => {
                 <div style={inlineRow}>
                   <Form.Control
                     as="select"
-                    value={x.curie_prefix}
+                    value={prefix}
                     onChange={(ev) => updateXref(i, { curie_prefix: ev.target.value })}
                     style={{ maxWidth: 140 }}
                   >

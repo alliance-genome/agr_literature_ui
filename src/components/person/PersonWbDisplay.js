@@ -78,7 +78,7 @@ const xrefHref = (x) => {
 
 const labRoles = (lp) => {
   const roles = [];
-  if (lp.lab_position) roles.push(lp.lab_position);
+  if (lp.lab_position?.label) roles.push(lp.lab_position.label);
   if (lp.is_pi) roles.push(`PI since ${formatTimestamp(lp.is_pi)}`);
   if (lp.former_pi) roles.push(`former PI since ${formatTimestamp(lp.former_pi)}`);
   if (lp.alum) roles.push(`alum since ${formatTimestamp(lp.alum)}`);

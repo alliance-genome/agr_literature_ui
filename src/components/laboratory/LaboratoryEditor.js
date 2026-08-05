@@ -13,29 +13,19 @@ import PersonCuriePicker from '../person/PersonCuriePicker';
 import { enumDict } from '../biblio/BiblioEditor';
 import LaboratoryEditorLayoutModal from '../settings/LaboratoryEditorLayoutModal';
 import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './laboratoryEditorSections';
+import { useVocabulary } from '../../hooks/useVocabulary';
+import { useCheckPatterns } from '../../hooks/useCheckPatterns';
+import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie';
 import './laboratoryEditorSections.css';
 
-// Controlled vocabularies — mirror the API enums (laboratory_schemas.py /
-// laboratory_position_enum.py). The DB columns are plain strings, so the
-// frontend enforces the allowed values.
-const STATUS_OPTIONS = ['active', 'closed', 'unknown'];
-const EMAIL_VISIBILITY_OPTIONS = ['public', 'logged_in_user', 'not_shown'];
-const LAB_POSITION_OPTIONS = [
-  'other',
-  'co_pi',
-  'research_professor',
-  'md_vet',
-  'administrator',
-  'animal_facility_staff',
-  'research_staff',
-  'technical_staff',
-  'postdoc',
-  'graduate_student',
-  'undergrad',
-  'masters_student',
-  'phd_student',
-  'high_school',
-];
+// lab_position is a vocabulary term: read shape is the object {value,label,is_obsolete}
+// (or null); write is the term id (int). Extract the id and keep it as a STRING in
+// state so the <select> value, the change events and the saved-key snapshot all compare
+// consistently (bodyFn converts to Number only when sending to the API).
+const labPositionValue = (lp) => {
+  const v = lp && typeof lp === 'object' ? lp.value : lp;
+  return v == null || v === '' ? '' : String(v);
+};
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -68,15 +58,14 @@ const memberFields = (r) => ({
   personCurie: r.personCurie || '',
   is_pi: !!r.is_pi, former_pi: !!r.former_pi, alum: !!r.alum,
   is_lab_contact: !!r.is_lab_contact, can_edit_lab: !!r.can_edit_lab,
-  lab_position: r.lab_position || '',
+  lab_position: labPositionValue(r.lab_position),
 });
 const xrefSnap = (r) => JSON.stringify(xrefFields(r));
 const alleleSnap = (r) => JSON.stringify(alleleFields(r));
 const memberSnap = (r) => JSON.stringify(memberFields(r));
 
-// Allowed cross-reference prefixes. The API stores a single curie "PREFIX:ID";
-// the editor edits prefix + id separately (like the Person editor).
-const LAB_XREF_PREFIXES = ['ZFIN', 'XenBase', 'WB', 'SGD'];
+// Cross-reference prefixes come from the API (/laboratory_cross_reference/check/patterns).
+// The API stores a single curie "PREFIX:ID"; the editor edits prefix + id separately.
 const xrefIdPart = (fullCurie, prefix) => {
   const s = fullCurie || '';
   if (prefix && s.startsWith(prefix + ':')) return s.slice(prefix.length + 1);
@@ -373,10 +362,16 @@ const LaboratoryEditor = ({ laboratory }) => {
     }
   };
 
+  const statusVocab = useVocabulary('laboratory_status');
+  const visVocab = useVocabulary('laboratory_email_visibility');
+  const labXrefPatterns = useCheckPatterns('laboratory');
+  // Keep a stored value visible even if it isn't among the fetched options.
+  const withCurrent = (opts, current) =>
+    !current || opts.some((o) => o.value === current) ? opts : [...opts, { value: current, label: current }];
   const currentStatus = live.status;
-  const statusOptions = STATUS_OPTIONS.includes(currentStatus) ? STATUS_OPTIONS : [...STATUS_OPTIONS, currentStatus];
+  const statusOptions = withCurrent(statusVocab.options, currentStatus);
   const currentVis = live.email_visibility;
-  const visOptions = EMAIL_VISIBILITY_OPTIONS.includes(currentVis) ? EMAIL_VISIBILITY_OPTIONS : [...EMAIL_VISIBILITY_OPTIONS, currentVis];
+  const visOptions = withCurrent(visVocab.options, currentVis);
 
   // ---- string-array collections ----
   const emptyInst = () => ({ value: '', _savedValue: '', _status: null, _error: null });
@@ -471,9 +466,14 @@ const LaboratoryEditor = ({ laboratory }) => {
   const saveXref = (i, override) => persistChild({
     list: xrefs, update: updateXref, i, override,
     idKey: 'laboratory_cross_reference_id', endpoint: '/laboratory_cross_reference', createPath: '/laboratory_cross_reference/',
-    completeFn: (r) => !!((r.curie_prefix || '').trim() && (r.curie || '').trim()),
+    completeFn: (r) => {
+      const pfx = normalizePrefix(r.curie_prefix, labXrefPatterns.prefixes);
+      return !!(pfx.trim() && (r.curie || '').trim()) &&
+        validateCurie(pfx, r.curie, labXrefPatterns.regexFor);
+    },
     bodyFn: (r, isCreate, changed) => {
-      const full = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
+      const pfx = normalizePrefix(r.curie_prefix, labXrefPatterns.prefixes);
+      const full = { curie: joinCurie(pfx, r.curie), is_obsolete: !!r.is_obsolete };
       if (isCreate) return { ...full, laboratory_curie: curie };
       const body = {};
       // prefix + id both feed the single API `curie` field.
@@ -520,6 +520,7 @@ const LaboratoryEditor = ({ laboratory }) => {
   // Lab members (laboratory_person). is_pi / former_pi / alum are DateTime fields
   // shown as checkboxes: checked => set (keep existing date, else now), unchecked =>
   // clear. The person link can't change on PATCH, so it's locked once created.
+  const labPositionVocab = useVocabulary('lab_position');
   const emptyMember = () => {
     const r = {
       personCurie: '', personName: '',
@@ -537,7 +538,7 @@ const LaboratoryEditor = ({ laboratory }) => {
       personName: lp.person_display_name || '',
       is_pi: !!lp.is_pi, former_pi: !!lp.former_pi, alum: !!lp.alum,
       is_lab_contact: !!lp.is_lab_contact, can_edit_lab: !!lp.can_edit_lab,
-      lab_position: lp.lab_position || '',
+      lab_position: labPositionValue(lp.lab_position),
       _is_pi_ts: lp.is_pi ?? null, _former_pi_ts: lp.former_pi ?? null, _alum_ts: lp.alum ?? null,
       _ts: lp.date_updated ?? null, _by: lp.updated_by ?? null,
       _id: lp.laboratory_person_id ?? null, _status: null, _error: null,
@@ -558,7 +559,7 @@ const LaboratoryEditor = ({ laboratory }) => {
         if (key === 'alum') return r.alum ? (r._alum_ts || now) : null;
         if (key === 'is_lab_contact') return !!r.is_lab_contact;
         if (key === 'can_edit_lab') return !!r.can_edit_lab;
-        if (key === 'lab_position') return r.lab_position || null;
+        if (key === 'lab_position') return r.lab_position ? Number(r.lab_position) : null;
         return undefined;
       };
       if (isCreate) {
@@ -582,7 +583,7 @@ const LaboratoryEditor = ({ laboratory }) => {
     applyResp: (d) => ({
       is_pi: !!d.is_pi, former_pi: !!d.former_pi, alum: !!d.alum,
       is_lab_contact: !!d.is_lab_contact, can_edit_lab: !!d.can_edit_lab,
-      lab_position: d.lab_position || '',
+      lab_position: labPositionValue(d.lab_position),
       _is_pi_ts: d.is_pi ?? null, _former_pi_ts: d.former_pi ?? null, _alum_ts: d.alum ?? null,
     }),
   });
@@ -633,7 +634,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                 onChange={(ev) => { setLiveField('status', ev.target.value); saveScalar('status', ev.target.value); }}
                 style={{ maxWidth: 240 }}
               >
-                {statusOptions.map((s) => (<option key={s} value={s}>{s}</option>))}
+                {statusOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
               </HlControl>
             </FieldLine>
             <FieldLine
@@ -667,7 +668,7 @@ const LaboratoryEditor = ({ laboratory }) => {
                 onChange={(ev) => { setLiveField('email_visibility', ev.target.value); saveScalar('email_visibility', ev.target.value); }}
                 style={{ maxWidth: 240 }}
               >
-                {visOptions.map((s) => (<option key={s} value={s}>{s}</option>))}
+                {visOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
               </HlControl>
             </FieldLine>
           </Card.Body>
@@ -844,29 +845,38 @@ const LaboratoryEditor = ({ laboratory }) => {
           <Card.Header>Cross references</Card.Header>
           <Card.Body>
             {xrefs.map((x, i) => {
-              const prefixOptions = LAB_XREF_PREFIXES.includes(x.curie_prefix) || !x.curie_prefix
-                ? LAB_XREF_PREFIXES
-                : [...LAB_XREF_PREFIXES, x.curie_prefix];
+              const prefix = normalizePrefix(x.curie_prefix, labXrefPatterns.prefixes);
+              const prefixOptions = prefix && !labXrefPatterns.prefixes.includes(prefix)
+                ? [...labXrefPatterns.prefixes, prefix]
+                : labXrefPatterns.prefixes;
+              const xrefRe = labXrefPatterns.regexFor(prefix);
+              const curieError = x.curie && xrefRe && !xrefRe.test(joinCurie(prefix, x.curie))
+                ? `Invalid ${prefix} — expected ${xrefRe.source}`
+                : null;
               return (
               <FieldLine
                 key={i}
-                label={i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : (x.curie_prefix || 'xref')}
+                label={i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : (prefix || 'xref')}
                 ts={metaLabel(x._by, x._ts)}
                 status={childStatus(x, xrefSnap)}
-                error={x._error}
+                error={x._error || curieError}
                 onDismissError={() => updateXref(i, { _error: null })}
                 trail={<RemoveBtn onClick={() => deleteXref(i)} />}
               >
                 <div style={inlineRow}>
                   <HlControl
                     as="select"
-                    value={x.curie_prefix}
-                    savedValue={x._saved?.curie_prefix}
+                    value={prefix}
+                    savedValue={normalizePrefix(x._saved?.curie_prefix, labXrefPatterns.prefixes)}
                     onChange={(ev) => updateXref(i, { curie_prefix: ev.target.value })}
                     onBlur={() => saveXref(i)}
                     style={{ maxWidth: 140 }}
                   >
-                    <option value="">prefix (required)</option>
+                    <option value="">
+                      {!labXrefPatterns.loading && labXrefPatterns.prefixes.length === 0
+                        ? 'prefix (unavailable — reload)'
+                        : 'prefix (required)'}
+                    </option>
                     {prefixOptions.map((opt) => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
@@ -951,9 +961,6 @@ const LaboratoryEditor = ({ laboratory }) => {
           <Card.Header>Lab members</Card.Header>
           <Card.Body>
             {members.map((m, i) => {
-              const positionOptions = LAB_POSITION_OPTIONS.includes(m.lab_position) || !m.lab_position
-                ? LAB_POSITION_OPTIONS
-                : [...LAB_POSITION_OPTIONS, m.lab_position];
               const dateFlags = [
                 { key: 'is_pi', tsKey: '_is_pi_ts' },
                 { key: 'former_pi', tsKey: '_former_pi_ts' },
@@ -1004,7 +1011,16 @@ const LaboratoryEditor = ({ laboratory }) => {
                       style={{ maxWidth: 200 }}
                     >
                       <option value="">position</option>
-                      {positionOptions.map((p) => (<option key={p} value={p}>{p}</option>))}
+                      {labPositionVocab.options.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                      {m.lab_position &&
+                        !labPositionVocab.options.some((o) => String(o.value) === String(m.lab_position)) && (
+                          <option value={m.lab_position} disabled={!labPositionVocab.loading}>
+                            {labPositionVocab.labelFor(m.lab_position)}
+                            {labPositionVocab.loading ? '' : ' (obsolete)'}
+                          </option>
+                        )}
                     </HlControl>
                     {dateFlags.map(({ key, tsKey }) => {
                       const stamp = isWB && showTimestamps && m[key] && m[tsKey] ? formatTimestamp(m[tsKey]) : null;

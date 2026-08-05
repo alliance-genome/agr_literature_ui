@@ -1023,7 +1023,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
       const curie = prefix + ':' + value;
       var re = new RegExp(pattern);
       if (re.test(curie) === false) {
-        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' check your entry and try again.'));
+        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' — expected ' + pattern + '. Check your entry and try again.'));
       }
     } else {
       console.log('xref prefix ' + prefix + ' not allowed');
@@ -1112,7 +1112,7 @@ const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
       const curie = prefix + ':' + value;
       var re = new RegExp(pattern);
       if (re.test(curie) === false) {
-        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' check your entry and try again.'));
+        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' — expected ' + pattern + '. Check your entry and try again.'));
       }
     } else {
       console.log('xref prefix ' + prefix + ' not allowed');

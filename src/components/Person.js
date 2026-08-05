@@ -23,8 +23,6 @@ import PersonWbEditor from './person/PersonWbEditor';
 const VALID_TABS = ['editor', 'ccdisplay', 'cceditor', 'json', 'compact', 'tree', 'wbdisplay', 'wbeditor'];
 const DEFAULT_TAB = 'editor';
 
-const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
-
 const classifyInput = (raw) => {
   const trimmed = (raw || '').trim();
   if (!trimmed) return null;
@@ -32,7 +30,10 @@ const classifyInput = (raw) => {
     // Match the Biblio "Query exact ID" convention: do not encode curies (colon must stay literal).
     return { kind: 'curie', value: trimmed, urlParam: 'personCurie', endpoint: '/person/' + trimmed };
   }
-  if (XREF_PREFIXES.some((p) => trimmed.startsWith(p + ':'))) {
+  // Any colon-bearing input (not AGRKB, handled above) is treated as an xref curie and
+  // resolved by the backend — matching Biblio's "AGRKB -> reference, else -> cross_reference"
+  // convention. No hardcoded prefix list, so new prefixes (e.g. SGD) and casing just work.
+  if (trimmed.includes(':')) {
     return {
       kind: 'xref',
       value: trimmed,
