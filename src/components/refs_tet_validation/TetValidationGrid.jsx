@@ -17,6 +17,7 @@ import {
   groupTetsByTopicAndSource,
   sourceLabel,
   normalizeCurie,
+  VALIDATION_STATE_LABELS,
 } from './helpers/groupTets';
 import IdsCell from './cellRenderers/IdsCell';
 import TitleCell from './cellRenderers/TitleCell';
@@ -62,12 +63,18 @@ const EMPTY_CELL_FILTER_FLAGS = Object.freeze({
 });
 
 const INNER_COLUMN_FILTER_LABELS = {
-  [INNER_COLUMN_TYPES.VALIDATION]: 'Assessment status',
+  [INNER_COLUMN_TYPES.VALIDATION]: 'Data assessment by biocurator',
   [INNER_COLUMN_TYPES.TAG]: 'Data',
   [INNER_COLUMN_TYPES.SOURCES]: 'Sources',
   [INNER_COLUMN_TYPES.CONF_SCORE]: 'Confidence score',
   [INNER_COLUMN_TYPES.CONF_LEVEL]: 'Confidence level',
   [INNER_COLUMN_TYPES.NOTE]: 'Note',
+};
+
+// Display labels for filter checkboxes whose raw values are internal keys. The
+// filter model keeps the raw values so saved models stay valid (SCRUM-6330).
+const INNER_COLUMN_FILTER_VALUE_LABELS = {
+  [INNER_COLUMN_TYPES.VALIDATION]: VALIDATION_STATE_LABELS,
 };
 
 function modelsEqual(a, b) {
@@ -1372,11 +1379,17 @@ export default function TetValidationGrid({
           minWidth,
           maxWidth,
           autoHeight: true,
+          // Sub-header labels are full phrases ("Data assessment by
+          // biocurator"), so let them wrap over the column width instead of
+          // being clipped, and grow the sub-header row to fit the tallest one.
+          wrapHeaderText: true,
+          autoHeaderHeight: true,
           sortable: true,
           filter: InnerValueFilter,
           filterParams: {
             availableValues: innerFilterOptions[kind] || [],
             filterLabel: INNER_COLUMN_FILTER_LABELS[kind],
+            valueLabels: INNER_COLUMN_FILTER_VALUE_LABELS[kind],
             innerFieldType: kind,
             sourceFilterModel,
           },
@@ -1392,31 +1405,37 @@ export default function TetValidationGrid({
           headerClass: 'tetv-topic-subheader',
           cellRendererParams,
         });
-        const children = [
-          makeInnerColumn({
-            headerName: 'Assessment by Biocurator',
-            headerTooltip:
-              'Assessment by Biocurator. When at least one curator has submitted a topic-level tag, the cell shows the assessment status (positive / negative / assessment conflict). Otherwise, ✓ and ✗ buttons let the curator submit one.',
-            colId: `${t.curie}__val`,
-            kind: INNER_COLUMN_TYPES.VALIDATION,
-            width: 90,
-            minWidth: 80,
-            wrapHeaderText: true,
-            autoHeaderHeight: true,
-            cellRenderer: ValidationCell,
-            cellClass: leftmostClass,
-            cellRendererParams: {
-              topicCurie: t.curie,
-              topicName: t.name || t.curie,
-              onValidated: handleValidated,
-              curationStatusOptions,
-              curationTagOptions,
-            },
-          }),
+        // The biocurator assessment stands alone; every other sub-column is
+        // driven by `buildEntries`, which excludes curator-submitted tags, so
+        // they all describe the same thing — what the non-biocurator sources
+        // said — and sit under one sub-group header (SCRUM-6330).
+        const validationChild = makeInnerColumn({
+          headerName: 'Data assessment by biocurator',
+          headerTooltip:
+            'Data assessment by biocurator. When at least one curator has submitted a topic-level tag, the cell shows the assessment: Y (data present for this topic), N (no data), or "conflict" when curators disagree. Otherwise, ✓ and ✗ buttons let the curator submit one. Y / N here mean the same thing as under "Data assessment by other sources" and as the has_data facet in advanced search.',
+          colId: `${t.curie}__val`,
+          kind: INNER_COLUMN_TYPES.VALIDATION,
+          width: 90,
+          minWidth: 80,
+          // Cap the autosize: the Y / N / conflict pill and the wrapped
+          // curator names are narrow, so without this each topic group would
+          // widen just to fit the header phrase on one line.
+          maxWidth: 150,
+          cellRenderer: ValidationCell,
+          cellClass: leftmostClass,
+          cellRendererParams: {
+            topicCurie: t.curie,
+            topicName: t.name || t.curie,
+            onValidated: handleValidated,
+            curationStatusOptions,
+            curationTagOptions,
+          },
+        });
+        const otherSourceChildren = [
           makeInnerColumn({
             headerName: 'Sources',
             headerTooltip:
-              'Source pipelines that produced TET tags for this topic on this reference (e.g. textpresso, manual, abc_entity_extractor). The cell only lists the source labels — the actual Y / N / {N}E breakdown is shown in the adjacent Tag column.',
+              'Source pipelines that produced TET tags for this topic on this reference (e.g. textpresso, manual, abc_entity_extractor). The cell only lists the source labels — each one\'s Y / N / {N}E assessment is on the matching row of the adjacent Data column.',
             colId: t.curie,
             kind: INNER_COLUMN_TYPES.SOURCES,
             width: 180,
@@ -1429,7 +1448,7 @@ export default function TetValidationGrid({
           makeInnerColumn({
             headerName: 'Data',
             headerTooltip:
-              'Per-source TET data pills for this topic. Y (green) = topic-level positive tag; N (red) = topic-level negated tag; "{N}E" (violet) = an entity-level extraction with N entities (click the badge to see the full list of entities). Each row aligns with the matching source label in the Sources column to its left.',
+              'Per-source TET data pills for this topic. Y (green) = topic-level tag, data present; N (red) = topic-level negated tag, no data; "{N}E" (violet) = an entity-level extraction with N entities (click the badge to see the full list of entities). Each row aligns with the matching source label in the Sources column to its left.',
             colId: `${t.curie}__tag`,
             kind: INNER_COLUMN_TYPES.TAG,
             width: 58,
@@ -1442,7 +1461,7 @@ export default function TetValidationGrid({
           }),
         ];
         if (displayOptions.showScore) {
-          children.push(makeInnerColumn({
+          otherSourceChildren.push(makeInnerColumn({
             headerName: 'conf sc',
             headerTooltip:
               'Confidence score (0.00 – 1.00) of the TET tag, when reported by the source pipeline. For entity-level buckets, the cell shows the min – max range across that bucket.',
@@ -1455,7 +1474,7 @@ export default function TetValidationGrid({
           }));
         }
         if (displayOptions.showLevel) {
-          children.push(makeInnerColumn({
+          otherSourceChildren.push(makeInnerColumn({
             headerName: 'conf lvl',
             headerTooltip:
               'Confidence level label (e.g. high / medium / low) of the TET tag, when reported by the source pipeline. For entity-level buckets, the cell shows the count of distinct levels if they vary.',
@@ -1467,7 +1486,7 @@ export default function TetValidationGrid({
             cellRendererParams: { sourceFilterModel },
           }));
         }
-        children.push(makeInnerColumn({
+        otherSourceChildren.push(makeInnerColumn({
           headerName: 'note',
           headerTooltip:
             'Free-text notes attached to TET tags. Click the 📝 icon for the full note in a modal; toggle "Expand notes" in the toolbar to render note text inline.',
@@ -1481,12 +1500,27 @@ export default function TetValidationGrid({
             sourceFilterModel,
           },
         }));
+        const children = [
+          validationChild,
+          {
+            headerName: 'Data assessment by other sources',
+            headerGroupComponent: HeaderGroupWithHelp,
+            headerTooltip:
+              'Data assessment by the non-biocurator sources that produced TET tags for this topic on this reference (e.g. textpresso, abc_entity_extractor). Each sub-column iterates the same per-source rows in lockstep: the source label, its Y / N / {N}E assessment, and — when toggled on in the toolbar — its confidence and notes.',
+            groupId: `tg-${t.curie}-other`,
+            marryChildren: true,
+            wrapHeaderText: true,
+            autoHeaderHeight: true,
+            headerClass: 'tetv-topic-subgroup-header',
+            children: otherSourceChildren,
+          },
+        ];
         return {
           headerName: t.name || t.curie,
           headerGroupComponent: HeaderGroupWithHelp,
           headerTooltip:
             `Topic "${t.name || t.curie}" (${t.curie}) — a topic from the MOD's ATP subset. ` +
-            'Sub-columns show the assessment status, per-source TET data, a compact tag summary, and (optionally) confidence and notes for this topic on each reference.',
+            'Sub-columns split into the data assessment by biocurator and the data assessment by other sources (source label, Y / N / {N}E tag, and optionally confidence and notes) for this topic on each reference.',
           groupId: `tg-${t.curie}`,
           marryChildren: true,
           // Allow long topic names to wrap inside the group header instead of
