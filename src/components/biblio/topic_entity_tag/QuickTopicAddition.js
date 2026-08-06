@@ -127,6 +127,19 @@ const predictedForKind = (d, kind) => (d.source_predictions || []).some((p) => (
   kind === 'has' ? (p.assessment === 'has' || p.assessment === 'new') : p.assessment === kind
 ));
 
+// Sources that have recorded a tag for this topic ('author' | 'biocurator' |
+// 'computational'), from the aggregated topic_source string.
+const topicSourceList = (d) => String((d && d.topic_source) || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+// Per the curation spec only a professional biocurator counts as "validated";
+// author and computational tags stay unvalidated ("?").
+const isCuratorValidated = (d) => topicSourceList(d).includes('biocurator');
+// Any tag (has / new / no data) exists for the topic, regardless of source.
+const hasAnyTag = (d) => !!(d && (d.has_data || d.no_data));
+// Both "has data" and "no data" are present and no curator has resolved it. The
+// curator must fix this in the TET editor; quick-add is blocked until then.
+const hasUnresolvedConflict = (d) => !!(d && d.has_data && d.no_data && !isCuratorValidated(d));
+
 // A hover card floated above the grid via a portal — native `title` tooltips get
 // clipped by the table's overflow, so we position our own on document.body. Lists
 // each extracted entity and its confidence for the hovered group.
@@ -458,6 +471,10 @@ const QuickTopicAddition = () => {
       setNotification({ variant: 'danger', message: 'Curator source not resolved yet — please retry in a moment.' });
       return;
     }
+    if (hasUnresolvedConflict(rowData)) {
+      setNotification({ variant: 'warning', message: `"${rowData.topic_name}" has a data conflict (both "has data" and "no data"). Resolve it in the TET editor before adding here.` });
+      return;
+    }
     if (confirmEach) { openConfirm(kind, rowData); }
     else { quickCreate(kind, rowData); }
   };
@@ -488,6 +505,15 @@ const QuickTopicAddition = () => {
     const rows = gridApiRef.current?.getSelectedRows() || [];
     if (rows.length === 0) {
       setNotification({ variant: 'warning', message: 'No topics selected. Tick the topics you want to add first.' });
+      return;
+    }
+    // Can't submit while any selected topic has an unresolved data conflict.
+    const conflicted = rows.filter(hasUnresolvedConflict);
+    if (conflicted.length > 0) {
+      setNotification({
+        variant: 'warning',
+        message: `${conflicted.length} selected topic(s) have a data conflict — fix them in the TET editor before submitting: ${conflicted.map(r => r.topic_name).join(', ')}`,
+      });
       return;
     }
     setBatchPending({
@@ -545,6 +571,43 @@ const QuickTopicAddition = () => {
         sortable: false,
         filter: false,
         resizable: false,
+      },
+      {
+        // Per-topic validation status: green tick once a biocurator has
+        // validated, "?" while only unvalidated (author/computational) tags
+        // exist, blank when there is no data.
+        headerName: '',
+        colId: 'curationStatusBox',
+        width: 46,
+        pinned: 'left',
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellStyle: { textAlign: 'center' },
+        cellRenderer: (params) => {
+          if (isCuratorValidated(params.data)) {
+            return (
+              <span title="Validated by a curator" style={{ color: '#12b76a', fontWeight: 'bold' }}>
+                <FontAwesomeIcon icon={faCheck} />
+              </span>
+            );
+          }
+          if (hasAnyTag(params.data)) {
+            return (
+              <span
+                title="Has an unvalidated tag (author or computational)"
+                style={{
+                  display: 'inline-block', minWidth: 18, padding: '0 4px',
+                  border: '1px solid #d0d5dd', borderRadius: 4,
+                  color: '#667085', fontWeight: 700, fontSize: 12, lineHeight: '16px',
+                }}
+              >
+                ?
+              </span>
+            );
+          }
+          return null; // no data
+        },
       },
       {
         headerName: 'Topic for curation',
@@ -646,7 +709,7 @@ const QuickTopicAddition = () => {
       });
     }
     cols.push({
-      headerName: 'Assessment by biocurator',
+      headerName: 'Topic data',
       headerClass: 'wft-bold-header',
       children: ASSESSMENTS.map(({ kind, header, computed }) => ({
         headerName: header,
@@ -667,11 +730,20 @@ const QuickTopicAddition = () => {
               </span>
             );
           }
-          const conflict = params.data.has_data && params.data.no_data;
+          // Unresolved has-data/no-data conflict: show a static red "!" (not a
+          // clickable +) — the curator resolves it in the TET editor.
+          if (kind !== 'new' && hasUnresolvedConflict(params.data)) {
+            return (
+              <span
+                title="Data conflict (both has-data and no-data) — resolve in the TET editor"
+                style={{ color: 'red', fontWeight: 'bold' }}
+              >
+                <FontAwesomeIcon icon={faExclamation} />
+              </span>
+            );
+          }
           const predicted = predictedForKind(params.data, kind);
-          let icon = faPlus;
-          let color = predicted ? '#1570ef' : '#98a2b3';
-          if (kind !== 'new' && conflict) { icon = faExclamation; color = 'red'; }
+          const color = predicted ? '#1570ef' : '#98a2b3';
           return (
             <button
               type="button"
@@ -685,7 +757,7 @@ const QuickTopicAddition = () => {
                 color, fontWeight: 'bold', width: '100%', height: '100%',
               }}
             >
-              <FontAwesomeIcon icon={icon} />
+              <FontAwesomeIcon icon={faPlus} />
             </button>
           );
         },
