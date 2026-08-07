@@ -9,7 +9,7 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faExclamation, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons';
 import SpeciesPicker from '../../refs_tet_validation/cellRenderers/SpeciesPicker';
 import { defaultSpeciesCurieForMod, speciesName } from '../../refs_tet_validation/helpers/speciesUtils';
 import { getTaxonData } from './TaxonUtils';
@@ -119,13 +119,6 @@ const scoreDistribution = (items) => {
 
 // A human (author/biocurator) has already recorded an assessment for this topic.
 const isManuallyCurated = (d) => !!(d && (d.manual_has_data || d.manual_no_data || d.manual_new_data));
-const manualForKind = (d, kind) => (
-  kind === 'no' ? !!d.manual_no_data : kind === 'new' ? !!d.manual_new_data : !!d.manual_has_data
-);
-// A prediction targets this column ('new' also counts as positive "has data").
-const predictedForKind = (d, kind) => (d.source_predictions || []).some((p) => (
-  kind === 'has' ? (p.assessment === 'has' || p.assessment === 'new') : p.assessment === kind
-));
 
 // Sources that have recorded a tag for this topic ('author' | 'biocurator' |
 // 'computational'), from the aggregated topic_source string.
@@ -139,6 +132,34 @@ const hasAnyTag = (d) => !!(d && (d.has_data || d.no_data));
 // Both "has data" and "no data" are present and no curator has resolved it. The
 // curator must fix this in the TET editor; quick-add is blocked until then.
 const hasUnresolvedConflict = (d) => !!(d && d.has_data && d.no_data && !isCuratorValidated(d));
+
+// The assessment buckets shown in the per-row cluster. Each maps to the
+// negated flag + data-novelty of the biocurator tag a click would create.
+// "New to DB" / "New to Field" are indented under "New Data".
+const ASSESSMENT_BUCKETS = [
+  { key: 'new', label: 'New Data', kind: 'new', novelty: 'ATP:0000321', negated: false, indent: 0 },
+  { key: 'newDb', label: 'New to DB', kind: 'new', novelty: 'ATP:0000228', negated: false, indent: 1 },
+  { key: 'newField', label: 'New to Field', kind: 'new', novelty: 'ATP:0000229', negated: false, indent: 1 },
+  { key: 'no', label: 'No Data', kind: 'no', novelty: null, negated: true, indent: 0 },
+];
+
+// Does a tag (manual assessment or computed prediction) fall in a bucket?
+// No-data matches any negated tag; the positive buckets match by exact novelty.
+const tagInBucket = (t, bucket) => (
+  bucket.negated ? !!t.negated : (!t.negated && t.data_novelty === bucket.novelty)
+);
+
+// Per-bucket cluster state: a biocurator match is 'validated' (green ✓); an
+// author or computational match with no biocurator is 'unvalidated' ("?");
+// otherwise 'blank'.
+const bucketState = (d, bucket) => {
+  const manual = (d && d.manual_assessments) || [];
+  const preds = (d && d.source_predictions) || [];
+  if (manual.some((t) => t.source === 'biocurator' && tagInBucket(t, bucket))) { return 'validated'; }
+  if (manual.some((t) => t.source === 'author' && tagInBucket(t, bucket))
+      || preds.some((t) => tagInBucket(t, bucket))) { return 'unvalidated'; }
+  return 'blank';
+};
 
 // A hover card floated above the grid via a portal — native `title` tooltips get
 // clipped by the table's overflow, so we position our own on document.body. Lists
@@ -369,6 +390,8 @@ const QuickTopicAddition = () => {
             : info.tet_info_topic_source;
           const predictions = Array.isArray(info.tet_info_source_predictions)
             ? info.tet_info_source_predictions : [];
+          const manualAssessments = Array.isArray(info.tet_info_manual_assessments)
+            ? info.tet_info_manual_assessments : [];
           return {
             topic_name: info.topic_name,
             topic_curie: info.topic_curie,
@@ -385,6 +408,9 @@ const QuickTopicAddition = () => {
             manual_no_data: !!info.tet_info_manual_no_data,
             topic_source: source,
             source_predictions: predictions,
+            // Manual tags with their negated flag + novelty, so the assessment
+            // cluster can show per-bucket biocurator (✓) vs author (?) state.
+            manual_assessments: manualAssessments,
             // A computed pipeline prediction exists for this topic on this paper.
             has_prediction: predictions.length > 0,
           };
@@ -502,12 +528,12 @@ const QuickTopicAddition = () => {
     await api.post('/topic_entity_tag/', payload);
   }, [referenceCurie, sourceId]);
 
-  const openConfirm = (kind, rowData) => {
+  const openConfirm = (kind, rowData, novelty = DEFAULT_NEW_NOVELTY) => {
     setPending({
       kind,
       topicCurie: rowData.topic_curie,
       topicName: rowData.topic_name,
-      novelty: DEFAULT_NEW_NOVELTY,
+      novelty,
       note: '',
       species: speciesForRow(rowData.topic_curie),
       status: 'editing',
@@ -516,16 +542,17 @@ const QuickTopicAddition = () => {
   const closeConfirm = () => setPending(null);
 
   // Direct create (used when the curator opted out of the popup).
-  const quickCreate = async (kind, rowData) => {
+  const quickCreate = async (kind, rowData, novelty = DEFAULT_NEW_NOVELTY, label) => {
     try {
       await createTag({
         kind,
         topicCurie: rowData.topic_curie,
-        novelty: DEFAULT_NEW_NOVELTY,
+        novelty,
         note: '',
         species: speciesForRow(rowData.topic_curie),
       });
-      setNotification({ variant: 'success', message: `Added "${rowData.topic_name}" (${kind === 'no' ? 'no data' : kind === 'new' ? 'new data' : 'has data'}).` });
+      const what = label || (kind === 'no' ? 'no data' : kind === 'new' ? 'new data' : 'has data');
+      setNotification({ variant: 'success', message: `Added "${rowData.topic_name}" (${what}).` });
       fetchTopics();
     } catch (e) {
       const status = e?.response?.status;
@@ -539,19 +566,18 @@ const QuickTopicAddition = () => {
   const expandedDefsRef = useRef(expandedDefs);
   expandedDefsRef.current = expandedDefs;
 
-  // Ref so the AG Grid cell renderers always call the current handler.
-  const onAssessRef = useRef();
-  onAssessRef.current = (kind, rowData) => {
+  // Ref so the AG Grid cluster cells always call the current handler. Clicking
+  // a bucket box records a biocurator tag for that bucket (negated + novelty);
+  // this is how a curator validates/asserts, so it is allowed even on a
+  // conflicted row (the biocurator tag resolves the conflict).
+  const onBucketRef = useRef();
+  onBucketRef.current = (bucket, rowData) => {
     if (!sourceId) {
       setNotification({ variant: 'danger', message: 'Curator source not resolved yet — please retry in a moment.' });
       return;
     }
-    if (hasUnresolvedConflict(rowData)) {
-      setNotification({ variant: 'warning', message: `"${rowData.topic_name}" has a data conflict (both "has data" and "no data"). Resolve it in the TET editor before adding here.` });
-      return;
-    }
-    if (confirmEach) { openConfirm(kind, rowData); }
-    else { quickCreate(kind, rowData); }
+    if (confirmEach) { openConfirm(bucket.kind, rowData, bucket.novelty); }
+    else { quickCreate(bucket.kind, rowData, bucket.novelty, bucket.label); }
   };
 
   const handleConfirm = async () => {
@@ -729,6 +755,51 @@ const QuickTopicAddition = () => {
           );
         },
       },
+      {
+        // Curator assessment input: one clickable box per bucket showing the
+        // per-bucket state — green ✓ (biocurator-validated), "?" (an author /
+        // computational tag exists, unvalidated), or an empty box (no tag).
+        // Clicking records a biocurator tag for that bucket.
+        headerName: 'Assessment',
+        colId: 'assessmentCluster',
+        width: 170,
+        sortable: false,
+        filter: false,
+        cellStyle: { paddingTop: 6, paddingBottom: 6 },
+        cellRenderer: (params) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {ASSESSMENT_BUCKETS.map((b) => {
+              const state = bucketState(params.data, b);
+              const box = state === 'validated'
+                ? <span style={{ color: '#12b76a', fontWeight: 'bold' }}><FontAwesomeIcon icon={faCheck} /></span>
+                : state === 'unvalidated'
+                  ? <span style={{ color: '#b54708', fontWeight: 700 }}>?</span>
+                  : <span style={{ color: '#d0d5dd' }}>&#9744;</span>;
+              return (
+                <button
+                  key={b.key}
+                  type="button"
+                  onClick={() => onBucketRef.current(b, params.data)}
+                  title={state === 'validated'
+                    ? `Validated as "${b.label}" by a curator`
+                    : state === 'unvalidated'
+                      ? `Unvalidated "${b.label}" — click to validate`
+                      : `Assert "${b.label}"`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    border: 'none', background: 'transparent', cursor: 'pointer',
+                    paddingLeft: b.indent ? 16 : 0, fontSize: 12,
+                    color: '#344054', textAlign: 'left', width: '100%',
+                  }}
+                >
+                  <span style={{ width: 14, textAlign: 'center' }}>{box}</span>
+                  <span>{b.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ),
+      },
     ];
     if (showDefinition) {
       cols.push({
@@ -807,6 +878,8 @@ const QuickTopicAddition = () => {
     cols.push({
       headerName: 'Topic data',
       headerClass: 'wft-bold-header',
+      // Read-only display of the aggregated data (like the WF editor). The
+      // curator's input is the Assessment cluster, not these cells.
       children: ASSESSMENTS.map(({ kind, header, computed }) => ({
         headerName: header,
         field: computed,
@@ -814,20 +887,7 @@ const QuickTopicAddition = () => {
         sortable: false,
         cellStyle: { textAlign: 'center' },
         cellRenderer: (params) => {
-          // Already curated by a human for this column: show a filled green
-          // check and block re-adding (duplicate prevention).
-          if (manualForKind(params.data, kind)) {
-            return (
-              <span
-                title={`Already curated as "${header}" by a curator`}
-                style={{ color: '#12b76a', fontWeight: 'bold' }}
-              >
-                <FontAwesomeIcon icon={faCheck} />
-              </span>
-            );
-          }
-          // Unresolved has-data/no-data conflict: show a static red "!" (not a
-          // clickable +) — the curator resolves it in the TET editor.
+          // Unresolved has-data/no-data conflict: red "!" on the has/no columns.
           if (kind !== 'new' && hasUnresolvedConflict(params.data)) {
             return (
               <span
@@ -838,24 +898,18 @@ const QuickTopicAddition = () => {
               </span>
             );
           }
-          const predicted = predictedForKind(params.data, kind);
-          const color = predicted ? '#1570ef' : '#98a2b3';
-          return (
-            <button
-              type="button"
-              className="qta-assess-btn"
-              title={predicted
-                ? `Predicted "${header}" — click to confirm for ${params.data.topic_name}`
-                : `Assert "${header}" for ${params.data.topic_name}`}
-              onClick={() => onAssessRef.current(kind, params.data)}
-              style={{
-                border: 'none', background: 'transparent', cursor: 'pointer',
-                color, fontWeight: 'bold', width: '100%', height: '100%',
-              }}
-            >
-              <FontAwesomeIcon icon={faPlus} />
-            </button>
-          );
+          // Green check when data exists for this column (any source).
+          const present = kind === 'no'
+            ? params.data.no_data
+            : kind === 'new' ? params.data.new_data : params.data.has_data;
+          if (present) {
+            return (
+              <span title={header} style={{ color: '#12b76a', fontWeight: 'bold' }}>
+                <FontAwesomeIcon icon={faCheck} />
+              </span>
+            );
+          }
+          return null;
         },
       })),
     });
