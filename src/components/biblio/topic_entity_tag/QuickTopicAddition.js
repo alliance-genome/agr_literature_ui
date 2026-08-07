@@ -762,10 +762,19 @@ const QuickTopicAddition = () => {
           <Button variant="success" onClick={openSubmit} disabled={stagedTagCount === 0}>
             Submit{stagedTagCount > 0 ? ` (${stagedTagCount})` : ''}
           </Button>
+          <span style={{ fontSize: 13, color: '#475467' }}>Rows:</span>
+          <Button
+            variant={(!withPredictions && !onlyUntagged) ? 'primary' : 'outline-secondary'}
+            size="sm"
+            onClick={() => { setWithPredictions(false); setOnlyUntagged(false); }}
+            title="Show all topics (both with and without a prediction)"
+          >
+            All
+          </Button>
           <Button
             variant={withPredictions ? 'primary' : 'outline-secondary'}
             size="sm"
-            onClick={() => { setWithPredictions((v) => !v); setOnlyUntagged(false); }}
+            onClick={() => { setWithPredictions(true); setOnlyUntagged(false); }}
             title="Show only topics with a computed prediction"
           >
             With predictions
@@ -773,7 +782,7 @@ const QuickTopicAddition = () => {
           <Button
             variant={onlyUntagged ? 'primary' : 'outline-secondary'}
             size="sm"
-            onClick={() => { setOnlyUntagged((v) => !v); setWithPredictions(false); }}
+            onClick={() => { setOnlyUntagged(true); setWithPredictions(false); }}
             title="Show only topics without a computed prediction"
           >
             No predictions
