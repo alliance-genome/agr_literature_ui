@@ -456,6 +456,22 @@
   padding: 2px 0px 4px 2px;
 }
 
+/* Mode-selector row: use the full viewport width so all options sit on one
+   line on wide monitors (wrapping only when genuinely narrow), instead of
+   being capped by the Bootstrap container and wrapping early. Full-bleed via
+   negative margins keeps it centered without a hard-coded width. */
+.biblio-mode-radios {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
 .radio-span:hover {
   background-color: var(--light-blue);
   border-radius: 10px;
