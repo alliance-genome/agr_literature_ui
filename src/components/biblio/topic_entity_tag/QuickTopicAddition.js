@@ -90,10 +90,11 @@ const QuickTopicAddition = () => {
   const [sourceId, setSourceId] = useState(null);
   // Distinct species [{curie, name}] for this MOD, from the ml_model table.
   const [modSpecies, setModSpecies] = useState([]);
-  // Species of the MOD's production ml_model — the default species for new tags
+  // Default species derived from the MOD's ml_model rows — the production
+  // model's species when it has one, else the most common ml_model species
   // (e.g. FB -> Drosophilidae rather than the canonical D. melanogaster). Null
-  // when the MOD has no production model with a species.
-  const [prodSpeciesCurie, setProdSpeciesCurie] = useState(null);
+  // when the MOD has no ml_model species at all.
+  const [mlDefaultSpeciesCurie, setMlDefaultSpeciesCurie] = useState(null);
   // Canonical MOD->taxon mapping + names from /mod/taxons/all (same source the
   // TET UI uses), so the default species matches the TET editor even when the
   // redux modToTaxon isn't populated in this view.
@@ -191,12 +192,12 @@ const QuickTopicAddition = () => {
     // The production ml_model's species wins (e.g. FB -> Drosophilidae); other
     // MODs fall back to the canonical /mod/taxons/all taxon (matches the TET
     // editor: WB -> C. elegans, XB -> X. laevis).
-    prodSpeciesCurie
+    mlDefaultSpeciesCurie
     || (taxonData.modToTaxon[accessLevel]?.[0])
     || defaultSpeciesCurieForMod(modToTaxon, accessLevel)
     || (modSpecies.length === 1 ? modSpecies[0].curie : null)
     || (speciesOptions[0]?.curie ?? null)
-  ), [prodSpeciesCurie, taxonData, accessLevel, modToTaxon, modSpecies, speciesOptions]);
+  ), [mlDefaultSpeciesCurie, taxonData, accessLevel, modToTaxon, modSpecies, speciesOptions]);
 
   // Refs so the AG Grid species dropdown reads current options/default without
   // rebuilding columnDefs (which would reset column state); cells are refreshed
@@ -310,23 +311,32 @@ const QuickTopicAddition = () => {
         if (cancelled) { return; }
         const seen = new Map();
         const prodCounts = new Map();
+        const allCounts = new Map();
         (res.data || []).forEach((m) => {
-          if (m.species && !seen.has(m.species)) {
+          if (!m.species) { return; }
+          if (!seen.has(m.species)) {
             seen.set(m.species, m.species_name || speciesName(curieToNameTaxon, m.species));
           }
-          if (m.production && m.species) {
+          allCounts.set(m.species, (allCounts.get(m.species) || 0) + 1);
+          if (m.production) {
             prodCounts.set(m.species, (prodCounts.get(m.species) || 0) + 1);
           }
         });
         setModSpecies([...seen].map(([curie, name]) => ({ curie, name })));
-        // Default to the species used by the production model(s); if several
-        // production models disagree, use the most common one.
-        let prod = null;
-        let best = 0;
-        prodCounts.forEach((count, curie) => { if (count > best) { best = count; prod = curie; } });
-        setProdSpeciesCurie(prod);
+        // Default species from the ml_model table: prefer the production
+        // model(s) species, but many MODs' production models carry no species
+        // (e.g. FB's topic classifiers are NULL), so fall back to the most
+        // common ml_model species overall (FB -> Drosophilidae). Ties -> most
+        // frequent; further ties are arbitrary but stable.
+        const topOf = (counts) => {
+          let curie = null;
+          let best = 0;
+          counts.forEach((n, c) => { if (n > best) { best = n; curie = c; } });
+          return curie;
+        };
+        setMlDefaultSpeciesCurie(topOf(prodCounts) || topOf(allCounts) || null);
       })
-      .catch(() => { if (!cancelled) { setModSpecies([]); setProdSpeciesCurie(null); } });
+      .catch(() => { if (!cancelled) { setModSpecies([]); setMlDefaultSpeciesCurie(null); } });
     return () => { cancelled = true; };
   }, [accessLevel, curieToNameTaxon]);
 
@@ -604,6 +614,9 @@ const QuickTopicAddition = () => {
           const current = speciesSelectionRef.current[topic] || defaultSpeciesCurieRef.current || opts[0].curie;
           return (
             <select
+              // key on the resolved value so the uncontrolled default re-applies
+              // when the ml_model default arrives after the first render.
+              key={current}
               defaultValue={current}
               title="Species for this topic's tag"
               onChange={(e) => { speciesSelectionRef.current[topic] = e.target.value; }}
