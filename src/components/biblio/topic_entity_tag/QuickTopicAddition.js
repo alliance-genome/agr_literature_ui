@@ -12,7 +12,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation, faPlus } from '@fortawesome/free-solid-svg-icons';
 import SpeciesPicker from '../../refs_tet_validation/cellRenderers/SpeciesPicker';
 import { defaultSpeciesCurieForMod, speciesName } from '../../refs_tet_validation/helpers/speciesUtils';
-import { topicDefaultTaxonCurie } from './topicDefaultSpecies';
 
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
@@ -44,6 +43,13 @@ const ASSESSMENTS = [
   { kind: 'new', header: 'New data', computed: 'new_data' },
 ];
 const ASSESSMENT_LABEL = { has: 'Has data', no: 'No data', new: 'New data' };
+
+// Default species (taxon curie) for MODs that have more than one species in the
+// ml_model table. Single-species MODs resolve via defaultSpeciesCurieForMod.
+const MOD_DEFAULT_SPECIES = {
+  WB: 'NCBITaxon:6239',   // Caenorhabditis elegans
+  XB: 'NCBITaxon:8355',   // Xenopus laevis
+};
 
 // Friendly display names for known computed source methods (see
 // tet-confidence-source-methods: classifiers carry confidence, manual tags don't).
@@ -236,6 +242,8 @@ const QuickTopicAddition = () => {
   const [showDefinition, setShowDefinition] = useState(initialPrefs.showDefinition ?? true);
   const [showSynonyms, setShowSynonyms] = useState(initialPrefs.showSynonyms ?? true);
   const [sourceId, setSourceId] = useState(null);
+  // Distinct species [{curie, name}] for this MOD, from the ml_model table.
+  const [modSpecies, setModSpecies] = useState([]);
 
   // Filter toolbar state.
   const [withPredictions, setWithPredictions] = useState(false);
@@ -304,15 +312,40 @@ const QuickTopicAddition = () => {
     }, 0);
   }, []);
 
-  // Default species for a topic: the hard-coded per-topic override when one
-  // exists (topicDefaultSpecies.js), otherwise the MOD's primary taxon.
-  const speciesForTopic = useCallback((topicCurie) => {
-    const curie = topicDefaultTaxonCurie(accessLevel, topicCurie)
-      || defaultSpeciesCurieForMod(modToTaxon, accessLevel);
-    return curie
-      ? { curie, name: speciesName(curieToNameTaxon, curie) }
-      : null;
-  }, [modToTaxon, curieToNameTaxon, accessLevel]);
+  // Species options for this MOD, from the ml_model table (distinct non-null
+  // species), falling back to the MOD's default species when the model table
+  // has none for the MOD.
+  const speciesOptions = useMemo(() => {
+    if (modSpecies.length > 0) { return modSpecies; }
+    const c = MOD_DEFAULT_SPECIES[accessLevel] || defaultSpeciesCurieForMod(modToTaxon, accessLevel);
+    return c ? [{ curie: c, name: speciesName(curieToNameTaxon, c) }] : [];
+  }, [modSpecies, accessLevel, modToTaxon, curieToNameTaxon]);
+
+  // Default selected species: configured default for multi-species MODs
+  // (WB -> C. elegans, XB -> X. laevis), else the single-taxon MOD default,
+  // else the sole ml_model species, else the first option.
+  const defaultSpeciesCurie = useMemo(() => (
+    MOD_DEFAULT_SPECIES[accessLevel]
+    || defaultSpeciesCurieForMod(modToTaxon, accessLevel)
+    || (modSpecies.length === 1 ? modSpecies[0].curie : null)
+    || (speciesOptions[0]?.curie ?? null)
+  ), [accessLevel, modToTaxon, modSpecies, speciesOptions]);
+
+  // Refs so the AG Grid species dropdown reads current options/default without
+  // rebuilding columnDefs (which would reset column state); cells are refreshed
+  // explicitly when these change.
+  const speciesOptionsRef = useRef(speciesOptions);
+  speciesOptionsRef.current = speciesOptions;
+  const defaultSpeciesCurieRef = useRef(defaultSpeciesCurie);
+  defaultSpeciesCurieRef.current = defaultSpeciesCurie;
+  // topic_curie -> chosen taxon curie (per-row override of the default).
+  const speciesSelectionRef = useRef({});
+
+  // Species chosen for a topic's tag: the per-row override, else the default.
+  const speciesForRow = useCallback((topicCurie) => {
+    const curie = speciesSelectionRef.current[topicCurie] || defaultSpeciesCurie;
+    return curie ? { curie, name: speciesName(curieToNameTaxon, curie) } : null;
+  }, [defaultSpeciesCurie, curieToNameTaxon]);
 
   const fetchTopics = useCallback(async () => {
     if (!referenceCurie || !accessLevel) { return; }
@@ -405,6 +438,31 @@ const QuickTopicAddition = () => {
     return () => { cancelled = true; };
   }, [accessLevel]);
 
+  // Load the MOD's distinct species from the ml_model table for the per-row
+  // species dropdown. Best-effort: on failure we fall back to the MOD default.
+  useEffect(() => {
+    if (!accessLevel) { return undefined; }
+    let cancelled = false;
+    api.get(`/ml_model/all?mod_abbreviation=${accessLevel}`)
+      .then((res) => {
+        if (cancelled) { return; }
+        const seen = new Map();
+        (res.data || []).forEach((m) => {
+          if (m.species && !seen.has(m.species)) {
+            seen.set(m.species, m.species_name || speciesName(curieToNameTaxon, m.species));
+          }
+        });
+        setModSpecies([...seen].map(([curie, name]) => ({ curie, name })));
+      })
+      .catch(() => { if (!cancelled) { setModSpecies([]); } });
+    return () => { cancelled = true; };
+  }, [accessLevel, curieToNameTaxon]);
+
+  // Re-render the species dropdown cells once options / default resolve.
+  useEffect(() => {
+    gridApiRef.current?.refreshCells({ force: true, columns: ['rowSpecies'] });
+  }, [speciesOptions, defaultSpeciesCurie]);
+
   // Create one biocurator topic tag. Mirrors the payload the validation and bulk
   // modals send (force_insertion, server-resolved source, no entity).
   const createTag = useCallback(async ({ kind, topicCurie, novelty, note, species }) => {
@@ -434,7 +492,7 @@ const QuickTopicAddition = () => {
       topicName: rowData.topic_name,
       novelty: DEFAULT_NEW_NOVELTY,
       note: '',
-      species: speciesForTopic(rowData.topic_curie),
+      species: speciesForRow(rowData.topic_curie),
       status: 'editing',
     });
   };
@@ -448,7 +506,7 @@ const QuickTopicAddition = () => {
         topicCurie: rowData.topic_curie,
         novelty: DEFAULT_NEW_NOVELTY,
         note: '',
-        species: speciesForTopic(rowData.topic_curie),
+        species: speciesForRow(rowData.topic_curie),
       });
       setNotification({ variant: 'success', message: `Added "${rowData.topic_name}" (${kind === 'no' ? 'no data' : kind === 'new' ? 'new data' : 'has data'}).` });
       fetchTopics();
@@ -538,7 +596,7 @@ const QuickTopicAddition = () => {
     for (let i = 0; i < rows.length; i++) {
       try {
         // No shared species set → use this topic's own default.
-        const rowSpecies = species || speciesForTopic(rows[i].topic_curie);
+        const rowSpecies = species || speciesForRow(rows[i].topic_curie);
         await createTag({ kind, topicCurie: rows[i].topic_curie, novelty, note, species: rowSpecies });
       } catch (e) {
         const status = e?.response?.status;
@@ -619,17 +677,38 @@ const QuickTopicAddition = () => {
         wrapText: true,
         autoHeight: true,
         cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
+        cellRenderer: (params) => (
+          // Curation state is shown by the status box column; no sub-label here.
+          <div style={{ fontWeight: 600 }}>{params.data.topic_name}</div>
+        ),
+      },
+      {
+        // Species for the tag this row would create. Options come from the MOD's
+        // ml_model species (with the MOD default as fallback); the choice flows
+        // into createTag. Reads options/default from refs so loading them doesn't
+        // rebuild columnDefs (the cells are refreshed explicitly instead).
+        headerName: 'Species',
+        colId: 'rowSpecies',
+        width: 200,
+        sortable: false,
+        filter: false,
+        cellStyle: { display: 'flex', alignItems: 'center', paddingTop: 6, paddingBottom: 6 },
         cellRenderer: (params) => {
-          const curated = isManuallyCurated(params.data);
+          const opts = speciesOptionsRef.current;
+          if (!opts.length) {
+            return <span style={{ color: '#98a2b3', fontSize: 12 }}>—</span>;
+          }
+          const topic = params.data.topic_curie;
+          const current = speciesSelectionRef.current[topic] || defaultSpeciesCurieRef.current || opts[0].curie;
           return (
-            <div>
-              <div style={{ fontWeight: 600 }}>{params.data.topic_name}</div>
-              {curated && (
-                <div style={{ marginTop: 4, fontSize: 11, color: '#12b76a', fontWeight: 600 }}>
-                  <FontAwesomeIcon icon={faCheck} /> has manual TET
-                </div>
-              )}
-            </div>
+            <select
+              defaultValue={current}
+              title="Species for this topic's tag"
+              onChange={(e) => { speciesSelectionRef.current[topic] = e.target.value; }}
+              style={{ width: '100%', fontSize: 12, padding: '2px 4px', border: '1px solid #d0d5dd', borderRadius: 4 }}
+            >
+              {opts.map((o) => (<option key={o.curie} value={o.curie}>{o.name}</option>))}
+            </select>
           );
         },
       },
