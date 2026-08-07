@@ -191,7 +191,7 @@ const BiblioActionToggler = () => {
 
   return (
     <Form>
-    <div key={`default-radio`} className="mb-3">
+    <div key={`default-radio`} className="mb-3 biblio-mode-radios">
       <div className='radio-span'>
         <Form.Check
           inline
