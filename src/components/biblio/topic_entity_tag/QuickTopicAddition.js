@@ -28,6 +28,14 @@ const loadPrefs = () => {
 const NOVELTY_UNSPECIFIED = 'ATP:0000335';
 const DEFAULT_NEW_NOVELTY = 'ATP:0000321';
 
+// Per-MOD default-species preference. Most MODs default to the first canonical
+// taxon from /mod/taxons/all (matches the TET editor: WB -> C. elegans, XB ->
+// X. laevis). FB curators instead want the broader ml_model species
+// (Drosophilidae) rather than the canonical D. melanogaster (SCRUM-6113).
+// Matched by name against the MOD's ml_model species so it stays correct
+// regardless of the taxon curie.
+const DEFAULT_ML_SPECIES_NAME = { FB: 'Drosophilidae' };
+
 // The five assessment columns of the quick-add grid (SCRUM-6113). Each column is
 // a clickable box (blank / ? / ✓). Checking a column stages a biocurator tag:
 // positives carry the column's data novelty, "No Data" is a negated tag. The
@@ -183,12 +191,18 @@ const QuickTopicAddition = () => {
   // Default selected species: the MOD's first canonical taxon from
   // /mod/taxons/all (matches the TET editor: FB -> D. melanogaster,
   // WB -> C. elegans, XB -> X. laevis), then fallbacks.
-  const defaultSpeciesCurie = useMemo(() => (
-    (taxonData.modToTaxon[accessLevel]?.[0])
-    || defaultSpeciesCurieForMod(modToTaxon, accessLevel)
-    || (modSpecies.length === 1 ? modSpecies[0].curie : null)
-    || (speciesOptions[0]?.curie ?? null)
-  ), [taxonData, accessLevel, modToTaxon, modSpecies, speciesOptions]);
+  const defaultSpeciesCurie = useMemo(() => {
+    // MOD-specific ml_model species preference (e.g. FB -> Drosophilidae) wins.
+    const preferName = DEFAULT_ML_SPECIES_NAME[accessLevel];
+    if (preferName) {
+      const match = modSpecies.find((s) => s.name === preferName);
+      if (match) { return match.curie; }
+    }
+    return (taxonData.modToTaxon[accessLevel]?.[0])
+      || defaultSpeciesCurieForMod(modToTaxon, accessLevel)
+      || (modSpecies.length === 1 ? modSpecies[0].curie : null)
+      || (speciesOptions[0]?.curie ?? null);
+  }, [taxonData, accessLevel, modToTaxon, modSpecies, speciesOptions]);
 
   // Refs so the AG Grid species dropdown reads current options/default without
   // rebuilding columnDefs (which would reset column state); cells are refreshed
