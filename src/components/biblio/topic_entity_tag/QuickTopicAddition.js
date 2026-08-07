@@ -768,9 +768,9 @@ const QuickTopicAddition = () => {
         // Grow the row to fit all four bucket boxes (otherwise a short
         // definition clips "No Data" / "New to Field").
         autoHeight: true,
-        cellStyle: { paddingTop: 6, paddingBottom: 6 },
+        cellStyle: { paddingTop: 2, paddingBottom: 2 },
         cellRenderer: (params) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {ASSESSMENT_BUCKETS.map((b) => {
               const state = bucketState(params.data, b);
               const box = state === 'validated'
@@ -791,6 +791,7 @@ const QuickTopicAddition = () => {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     border: 'none', background: 'transparent', cursor: 'pointer',
+                    padding: 0, lineHeight: '18px',
                     paddingLeft: b.indent ? 16 : 0, fontSize: 12,
                     color: '#344054', textAlign: 'left', width: '100%',
                   }}
