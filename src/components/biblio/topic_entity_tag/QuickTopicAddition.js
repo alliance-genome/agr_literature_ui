@@ -765,6 +765,9 @@ const QuickTopicAddition = () => {
         width: 170,
         sortable: false,
         filter: false,
+        // Grow the row to fit all four bucket boxes (otherwise a short
+        // definition clips "No Data" / "New to Field").
+        autoHeight: true,
         cellStyle: { paddingTop: 6, paddingBottom: 6 },
         cellRenderer: (params) => (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
