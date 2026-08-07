@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { api } from "../../../api";
 import { getCuratorSourceId } from '../../../actions/biblioActions';
@@ -9,17 +8,16 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons';
-import SpeciesPicker from '../../refs_tet_validation/cellRenderers/SpeciesPicker';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
 import { defaultSpeciesCurieForMod, speciesName } from '../../refs_tet_validation/helpers/speciesUtils';
 import { getTaxonData } from './TaxonUtils';
 
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
 
-// Curator display prefs (show definition/synonyms, confirm popup) persist across
-// sessions so a curator who has learned the Alliance names can hide the helper
-// columns for good (SCRUM-6168).
+// Curator display prefs (show definition/synonyms) persist across sessions so a
+// curator who has learned the Alliance names can hide the helper columns for
+// good (SCRUM-6168).
 const PREFS_KEY = 'quickTopicAddition.prefs';
 const loadPrefs = () => {
   try { return JSON.parse(window.localStorage.getItem(PREFS_KEY)) || {}; }
@@ -28,217 +26,50 @@ const loadPrefs = () => {
 
 // Data-novelty ATP terms, matching the TET editor (getDataNoveltyAtpArray).
 const NOVELTY_UNSPECIFIED = 'ATP:0000335';
-const NEW_NOVELTY_OPTIONS = [
-  { curie: 'ATP:0000321', label: 'new data' },
-  { curie: 'ATP:0000228', label: 'new to database' },
-  { curie: 'ATP:0000229', label: 'new to field' },
+const DEFAULT_NEW_NOVELTY = 'ATP:0000321';
+
+// The five assessment columns of the quick-add grid (SCRUM-6113). Each column is
+// a clickable box (blank / ? / ✓). Checking a column stages a biocurator tag:
+// positives carry the column's data novelty, "No Data" is a negated tag. The
+// grid state is server-computed (tet_info_assessment_states) and the curator's
+// clicks stage local overrides that are only written on Submit.
+const ASSESSMENT_COLUMNS = [
+  { key: 'has_data', header: 'Has data', kind: 'has', novelty: NOVELTY_UNSPECIFIED, negated: false },
+  { key: 'new_data', header: 'New data', kind: 'new', novelty: 'ATP:0000321', negated: false },
+  { key: 'new_to_db', header: 'New to DB', kind: 'new', novelty: 'ATP:0000228', negated: false },
+  { key: 'new_to_field', header: 'New to Field', kind: 'new', novelty: 'ATP:0000229', negated: false },
+  { key: 'no_data', header: 'No Data', kind: 'no', novelty: null, negated: true },
 ];
-const DEFAULT_NEW_NOVELTY = NEW_NOVELTY_OPTIONS[0].curie;
+const COLUMN_BY_KEY = Object.fromEntries(ASSESSMENT_COLUMNS.map((c) => [c.key, c]));
+const POSITIVE_COLUMNS = ['has_data', 'new_data', 'new_to_db', 'new_to_field'];
+const NEW_COLUMNS = ['new_data', 'new_to_db', 'new_to_field'];
 
-// The three assessment columns. `kind` drives the created tag's negated flag and
-// data novelty; `computed` names the aggregated-endpoint field used to show the
-// existing pipeline result in the cell.
-const ASSESSMENTS = [
-  { kind: 'has', header: 'Has data', computed: 'has_data' },
-  { kind: 'no', header: 'No data', computed: 'no_data' },
-  { kind: 'new', header: 'New data', computed: 'new_data' },
-];
-const ASSESSMENT_LABEL = { has: 'Has data', no: 'No data', new: 'New data' };
-
-// Friendly display names for known computed source methods (see
-// tet-confidence-source-methods: classifiers carry confidence, manual tags don't).
-const SOURCE_METHOD_LABELS = {
-  abc_document_classifier: 'Alliance ML',
-  abc_bert_entity_extractor: 'Alliance BERT',
-  abc_entity_extractor: 'Alliance NER',
-};
-const prettySourceMethod = (m) => SOURCE_METHOD_LABELS[m] || m || 'computed';
-
-// Badge palette per assessment column, so a prediction's target is legible.
-const ASSESSMENT_COLORS = {
-  has: { fg: '#065f46', bg: '#ecfdf3', border: '#a6f4c5' },
-  no: { fg: '#b42318', bg: '#fef3f2', border: '#fecdca' },
-  new: { fg: '#1849a9', bg: '#eff8ff', border: '#b2ddff' },
-};
-
-// Consolidate a topic's raw predictions into one badge per (source method,
-// assessment). An entity extractor emits one prediction per extracted gene, so a
-// single "gene" topic can carry a dozen rows; collapsing them keeps the row
-// compact and lets the badge show a confidence range instead of a wall of pills.
-const groupPredictions = (preds) => {
-  const groups = new Map();
-  (preds || []).forEach((p) => {
-    const assessment = p.assessment || 'has';
-    const key = `${p.source_method || 'computed'}|${assessment}`;
-    if (!groups.has(key)) {
-      groups.set(key, { source_method: p.source_method, assessment, items: [] });
-    }
-    groups.get(key).items.push(p);
-  });
-  // Highest-confidence group first so the strongest signal leads.
-  return [...groups.values()].sort((a, b) => maxScore(b) - maxScore(a));
-};
-
-const scoresOf = (g) => g.items.map((p) => p.confidence_score).filter((s) => typeof s === 'number');
-const maxScore = (g) => { const s = scoresOf(g); return s.length ? Math.max(...s) : -1; };
-
-// Badge text for a consolidated group: friendly method + a single score or a
-// min–max range; falls back to confidence level, then positive/negative.
-const groupLabel = (g) => {
-  const method = prettySourceMethod(g.source_method);
-  const scores = scoresOf(g);
-  if (scores.length) {
-    const min = Math.min(...scores), max = Math.max(...scores);
-    const range = min === max ? min.toFixed(2) : `${min.toFixed(2)}–${max.toFixed(2)}`;
-    return g.items.length > 1 ? `${method}: ${range} (${g.items.length})` : `${method}: ${range}`;
-  }
-  const levels = [...new Set(g.items.map((p) => p.confidence_level).filter(Boolean))];
-  if (levels.length) { return `${method}: ${levels.join('/')}`; }
-  return `${method}: ${g.items.some((p) => !p.negated) ? 'positive' : 'negative'}`;
-};
-
-// The confidence a prediction carries, as display text.
-const confidenceText = (p) => {
-  if (typeof p.confidence_score === 'number') { return p.confidence_score.toFixed(2); }
-  if (p.confidence_level) { return p.confidence_level; }
-  return p.negated ? 'negative' : 'positive';
-};
-
-// One row of the hover breakdown: the extracted entity and its confidence.
-const entityDetail = (p) => `${p.entity} — ${confidenceText(p)}`;
-
-// When a group carries no entities (e.g. topic-level tags), a per-entity list
-// would just repeat "no entity"; summarize the confidence distribution instead.
-const scoreDistribution = (items) => {
-  const counts = new Map();
-  items.forEach((p) => { const v = confidenceText(p); counts.set(v, (counts.get(v) || 0) + 1); });
-  return [...counts.entries()]
-    .sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]))
-    .map(([value, count]) => `${value} × ${count}`);
-};
-
-// A human (author/biocurator) has already recorded an assessment for this topic.
-const isManuallyCurated = (d) => !!(d && (d.manual_has_data || d.manual_no_data || d.manual_new_data));
-
-// Sources that have recorded a tag for this topic ('author' | 'biocurator' |
-// 'computational'), from the aggregated topic_source string.
-const topicSourceList = (d) => String((d && d.topic_source) || '')
-  .split(',').map((s) => s.trim()).filter(Boolean);
-// Per the curation spec only a professional biocurator counts as "validated";
-// author and computational tags stay unvalidated ("?").
-const isCuratorValidated = (d) => topicSourceList(d).includes('biocurator');
-// Any tag (has / new / no data) exists for the topic, regardless of source.
-const hasAnyTag = (d) => !!(d && (d.has_data || d.no_data));
-// Both "has data" and "no data" are present and no curator has resolved it. The
-// curator must fix this in the TET editor; quick-add is blocked until then.
-const hasUnresolvedConflict = (d) => !!(d && d.has_data && d.no_data && !isCuratorValidated(d));
-
-// The assessment buckets shown in the per-row cluster. Each maps to the
-// negated flag + data-novelty of the biocurator tag a click would create.
-// "New to DB" / "New to Field" are indented under "New Data".
-const ASSESSMENT_BUCKETS = [
-  { key: 'new', label: 'New Data', kind: 'new', novelty: 'ATP:0000321', negated: false, indent: 0 },
-  { key: 'newDb', label: 'New to DB', kind: 'new', novelty: 'ATP:0000228', negated: false, indent: 1 },
-  { key: 'newField', label: 'New to Field', kind: 'new', novelty: 'ATP:0000229', negated: false, indent: 1 },
-  { key: 'no', label: 'No Data', kind: 'no', novelty: null, negated: true, indent: 0 },
-];
-
-// Does a tag (manual assessment or computed prediction) fall in a bucket?
-// No-data matches any negated tag; the positive buckets match by exact novelty.
-const tagInBucket = (t, bucket) => (
-  bucket.negated ? !!t.negated : (!t.negated && t.data_novelty === bucket.novelty)
-);
-
-// Per-bucket cluster state: a biocurator match is 'validated' (green ✓); an
-// author or computational match with no biocurator is 'unvalidated' ("?");
-// otherwise 'blank'.
-const bucketState = (d, bucket) => {
-  const manual = (d && d.manual_assessments) || [];
-  const preds = (d && d.source_predictions) || [];
-  if (manual.some((t) => t.source === 'biocurator' && tagInBucket(t, bucket))) { return 'validated'; }
-  if (manual.some((t) => t.source === 'author' && tagInBucket(t, bucket))
-      || preds.some((t) => tagInBucket(t, bucket))) { return 'unvalidated'; }
+// Effective display state of one column for a row: the curator's staged override
+// wins, otherwise the server-computed state. Only a biocurator tag ('validated')
+// or a staged click ('checked') renders as a ✓; a prediction/author tag is '?'.
+const computeCellState = (stagedMap, rowData, colKey) => {
+  const override = stagedMap?.[rowData.topic_curie]?.[colKey];
+  if (override === 'checked') { return 'checked'; }
+  if (override === 'cleared') { return 'blank'; }
+  const backend = (rowData.assessment_states || {})[colKey];
+  if (backend === 'validated') { return 'validated'; }
+  if (backend === 'unvalidated') { return 'unvalidated'; }
   return 'blank';
 };
 
-// A hover card floated above the grid via a portal — native `title` tooltips get
-// clipped by the table's overflow, so we position our own on document.body. Lists
-// each extracted entity and its confidence for the hovered group.
-const TOOLTIP_WIDTH = 300;
-const MAX_TOOLTIP_ROWS = 15;
-
-function PredictionTooltip({ group, rect }) {
-  // Per-entity list when entities are present; otherwise a confidence summary so
-  // topic-level tags don't just repeat "no entity" for every row.
-  const hasEntities = group.items.some((p) => p.entity);
-  const lines = hasEntities
-    ? [...group.items]
-        .sort((a, b) => (b.confidence_score ?? -1) - (a.confidence_score ?? -1))
-        .map(entityDetail)
-    : scoreDistribution(group.items);
-  const shown = lines.slice(0, MAX_TOOLTIP_ROWS);
-  const left = Math.max(8, Math.min(rect.left, window.innerWidth - TOOLTIP_WIDTH - 8));
-  // Flip above the badge when there isn't room below (rows low in the viewport).
-  const estHeight = 52 + (shown.length + (lines.length > MAX_TOOLTIP_ROWS ? 1 : 0)) * 18;
-  const below = rect.bottom + 6;
-  const top = below + estHeight > window.innerHeight - 8 ? Math.max(8, rect.top - 6 - estHeight) : below;
-  return createPortal(
-    <div style={{
-      position: 'fixed', left, top, width: TOOLTIP_WIDTH, zIndex: 4000,
-      background: '#ffffff', color: '#1d2939', borderRadius: 8, padding: '8px 10px',
-      fontSize: 12, border: '1px solid #e4e7ec',
-      boxShadow: '0 6px 20px rgba(16,24,40,0.16)', pointerEvents: 'none',
-    }}>
-      <div style={{ fontWeight: 600, marginBottom: 2 }}>
-        {prettySourceMethod(group.source_method)} · predicts &ldquo;{ASSESSMENT_LABEL[group.assessment] || group.assessment}&rdquo;
-      </div>
-      <div style={{ color: '#667085', marginBottom: 6 }}>
-        {group.source_method || 'computed'} · {group.items.length} prediction{group.items.length === 1 ? '' : 's'}
-        {hasEntities ? '' : ' · no entities'}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {shown.map((line, i) => (
-          <div key={i} style={{ fontFamily: 'monospace' }}>{line}</div>
-        ))}
-        {lines.length > MAX_TOOLTIP_ROWS && (
-          <div style={{ color: '#667085' }}>+{lines.length - MAX_TOOLTIP_ROWS} more</div>
-        )}
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-// Renders one badge per (source method, assessment) group, with the portal
-// tooltip wired to hover.
-function PredictionBadges({ preds }) {
-  const [hover, setHover] = useState(null);
-  const groups = useMemo(() => groupPredictions(preds), [preds]);
-  if (groups.length === 0) {
-    return <span style={{ color: '#98a2b3', fontStyle: 'italic', fontSize: 12 }}>— no prediction —</span>;
+// Stage a column as checked in one row's override map, applying the cross-check
+// rules: "No Data" and the positive columns are mutually exclusive, and any
+// New* column implies "Has data". New to DB and New to Field may coexist.
+const applyChecked = (cur, colKey) => {
+  cur[colKey] = 'checked';
+  if (colKey === 'no_data') {
+    POSITIVE_COLUMNS.forEach((c) => { cur[c] = 'cleared'; });
+  } else {
+    cur.no_data = 'cleared';
+    if (colKey !== 'has_data') { cur.has_data = 'checked'; }
   }
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '2px 0' }}>
-      {groups.map((g, i) => {
-        const c = ASSESSMENT_COLORS[g.assessment] || ASSESSMENT_COLORS.has;
-        return (
-          <span
-            key={i}
-            onMouseEnter={(e) => setHover({ group: g, rect: e.currentTarget.getBoundingClientRect() })}
-            onMouseLeave={() => setHover(null)}
-            style={{
-              padding: '1px 8px', fontSize: 11, fontWeight: 500, cursor: 'default',
-              color: c.fg, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10,
-            }}
-          >
-            {groupLabel(g)}
-          </span>
-        );
-      })}
-      {hover && <PredictionTooltip group={hover.group} rect={hover.rect} />}
-    </div>
-  );
-}
+  return cur;
+};
 
 const QuickTopicAddition = () => {
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
@@ -270,21 +101,21 @@ const QuickTopicAddition = () => {
   // topic_curie set of definitions expanded past the 2-line clamp.
   const [expandedDefs, setExpandedDefs] = useState(() => new Set());
 
-  // pending = null | { kind, topicCurie, topicName, novelty, note,
-  //                    species: {curie, name} | null, status, errorMessage? }
-  const [pending, setPending] = useState(null);
-  // When false, clicking a cell creates the tag directly without the popup
-  // (the "Don't show this again" option). Session-scoped, resets on remount.
-  const [confirmEach, setConfirmEach] = useState(initialPrefs.confirmEach ?? true);
+  // Staged, not-yet-submitted column edits. Shape:
+  //   { [topic_curie]: { [colKey]: 'checked' | 'cleared' } }
+  // Nothing hits the DB until the curator clicks Submit.
+  const [staged, setStaged] = useState({});
   const [notification, setNotification] = useState(null);
 
-  // Batch flow: tick topics, choose an assessment kind, then "Add topics".
+  // Bulk control: tick topics, choose a column, stage it for all ticked rows.
   const gridApiRef = useRef(null);
   const [selectedCount, setSelectedCount] = useState(0);
-  const [batchKind, setBatchKind] = useState('has');
-  // batchPending = null | { kind, novelty, note, species, rows,
-  //                         status: 'editing'|'submitting'|'done', progress, errors }
-  const [batchPending, setBatchPending] = useState(null);
+  const [bulkCol, setBulkCol] = useState('has_data');
+
+  // Deferred-submit review modal.
+  //   null | { note, items:[{row, tags:[{kind,novelty,label}]}],
+  //            status:'editing'|'submitting'|'done', progress, errors }
+  const [submitState, setSubmitState] = useState(null);
 
   const onGridReady = useCallback((params) => { gridApiRef.current = params.api; }, []);
   const onSelectionChanged = useCallback(() => {
@@ -390,27 +221,17 @@ const QuickTopicAddition = () => {
             : info.tet_info_topic_source;
           const predictions = Array.isArray(info.tet_info_source_predictions)
             ? info.tet_info_source_predictions : [];
-          const manualAssessments = Array.isArray(info.tet_info_manual_assessments)
-            ? info.tet_info_manual_assessments : [];
           return {
             topic_name: info.topic_name,
             topic_curie: info.topic_curie,
             // Definition / synonyms are enriched below via /ontology/term_details.
             topic_definition: '',
             topic_synonyms: '',
-            has_data: info.tet_info_has_data,
-            new_data: info.tet_info_new_data,
-            no_data: info.tet_info_no_data,
-            // Manual (curator/author) assessments already recorded — used to
-            // prevent duplicate curation.
-            manual_has_data: !!info.tet_info_manual_has_data,
-            manual_new_data: !!info.tet_info_manual_new_data,
-            manual_no_data: !!info.tet_info_manual_no_data,
+            // Server-computed per-column state (validated / unvalidated / null),
+            // driving the five clickable assessment columns.
+            assessment_states: info.tet_info_assessment_states || {},
             topic_source: source,
             source_predictions: predictions,
-            // Manual tags with their negated flag + novelty, so the assessment
-            // cluster can show per-bucket biocurator (✓) vs author (?) state.
-            manual_assessments: manualAssessments,
             // A computed pipeline prediction exists for this topic on this paper.
             has_prediction: predictions.length > 0,
           };
@@ -457,10 +278,10 @@ const QuickTopicAddition = () => {
     try {
       window.localStorage.setItem(
         PREFS_KEY,
-        JSON.stringify({ showDefinition, showSynonyms, confirmEach })
+        JSON.stringify({ showDefinition, showSynonyms })
       );
     } catch { /* ignore quota / disabled storage */ }
-  }, [showDefinition, showSynonyms, confirmEach]);
+  }, [showDefinition, showSynonyms]);
 
   useEffect(() => {
     if (!accessLevel) { return; }
@@ -506,6 +327,14 @@ const QuickTopicAddition = () => {
     gridApiRef.current?.refreshCells({ force: true, columns: ['rowSpecies'] });
   }, [speciesOptions, defaultSpeciesCurie]);
 
+  // Re-render the assessment cells whenever the staged edits change.
+  useEffect(() => {
+    gridApiRef.current?.refreshCells({
+      force: true,
+      columns: ASSESSMENT_COLUMNS.map((c) => `col_${c.key}`),
+    });
+  }, [staged]);
+
   // Create one biocurator topic tag. Mirrors the payload the validation and bulk
   // modals send (force_insertion, server-resolved source, no entity).
   const createTag = useCallback(async ({ kind, topicCurie, novelty, note, species }) => {
@@ -528,143 +357,193 @@ const QuickTopicAddition = () => {
     await api.post('/topic_entity_tag/', payload);
   }, [referenceCurie, sourceId]);
 
-  const openConfirm = (kind, rowData, novelty = DEFAULT_NEW_NOVELTY) => {
-    setPending({
-      kind,
-      topicCurie: rowData.topic_curie,
-      topicName: rowData.topic_name,
-      novelty,
-      note: '',
-      species: speciesForRow(rowData.topic_curie),
-      status: 'editing',
-    });
-  };
-  const closeConfirm = () => setPending(null);
-
-  // Direct create (used when the curator opted out of the popup).
-  const quickCreate = async (kind, rowData, novelty = DEFAULT_NEW_NOVELTY, label) => {
-    try {
-      await createTag({
-        kind,
-        topicCurie: rowData.topic_curie,
-        novelty,
-        note: '',
-        species: speciesForRow(rowData.topic_curie),
-      });
-      const what = label || (kind === 'no' ? 'no data' : kind === 'new' ? 'new data' : 'has data');
-      setNotification({ variant: 'success', message: `Added "${rowData.topic_name}" (${what}).` });
-      fetchTopics();
-    } catch (e) {
-      const status = e?.response?.status;
-      const detail = e?.response?.data?.detail || e?.message || 'unknown error';
-      setNotification({ variant: 'danger', message: `Could not add "${rowData.topic_name}": HTTP ${status || '?'} ${typeof detail === 'string' ? detail : JSON.stringify(detail)}` });
-    }
-  };
-
-  // Refs so AG Grid cell renderers read current values without rebuilding columnDefs
-  // (which would reset column sort/width state).
+  // Refs so AG Grid cell renderers read current values without rebuilding
+  // columnDefs (which would reset column sort/width state).
   const expandedDefsRef = useRef(expandedDefs);
   expandedDefsRef.current = expandedDefs;
+  const stagedRef = useRef(staged);
+  stagedRef.current = staged;
 
-  // Ref so the AG Grid cluster cells always call the current handler. Clicking
-  // a bucket box records a biocurator tag for that bucket (negated + novelty);
-  // this is how a curator validates/asserts, so it is allowed even on a
-  // conflicted row (the biocurator tag resolves the conflict).
-  const onBucketRef = useRef();
-  onBucketRef.current = (bucket, rowData) => {
-    if (!sourceId) {
-      setNotification({ variant: 'danger', message: 'Curator source not resolved yet — please retry in a moment.' });
-      return;
-    }
-    if (confirmEach) { openConfirm(bucket.kind, rowData, bucket.novelty); }
-    else { quickCreate(bucket.kind, rowData, bucket.novelty, bucket.label); }
+  // Toggle one assessment cell for a row. A biocurator-validated cell is already
+  // recorded and is a no-op; a staged ✓ toggles back off; anything else stages a
+  // ✓ with the cross-check rules applied.
+  const onCellRef = useRef();
+  onCellRef.current = (colKey, rowData) => {
+    const state = computeCellState(stagedRef.current, rowData, colKey);
+    if (state === 'validated') { return; }
+    setStaged((prev) => {
+      const cur = { ...(prev[rowData.topic_curie] || {}) };
+      if (state === 'checked') {
+        delete cur[colKey];
+      } else {
+        applyChecked(cur, colKey);
+      }
+      const next = { ...prev };
+      if (Object.keys(cur).length === 0) { delete next[rowData.topic_curie]; }
+      else { next[rowData.topic_curie] = cur; }
+      return next;
+    });
   };
 
-  const handleConfirm = async () => {
-    if (!pending) { return; }
-    setPending((s) => ({ ...s, status: 'submitting' }));
-    try {
-      await createTag(pending);
-      setPending((s) => ({ ...s, status: 'success' }));
-      fetchTopics();
-    } catch (e) {
-      const status = e?.response?.status;
-      const detail = e?.response?.data?.detail || e?.message || 'unknown error';
-      setPending((s) => ({
-        ...s,
-        status: 'error',
-        errorMessage: `HTTP ${status || '?'}: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`,
-      }));
-    }
-  };
-
-  const openBatch = () => {
-    if (!sourceId) {
-      setNotification({ variant: 'danger', message: 'Curator source not resolved yet — please retry in a moment.' });
-      return;
-    }
+  // Stage the chosen column for every ticked topic (bulk control).
+  const applyBulk = () => {
     const rows = gridApiRef.current?.getSelectedRows() || [];
     if (rows.length === 0) {
-      setNotification({ variant: 'warning', message: 'No topics selected. Tick the topics you want to add first.' });
+      setNotification({ variant: 'warning', message: 'No topics ticked. Tick the topics you want to assess first.' });
       return;
     }
-    // Can't submit while any selected topic has an unresolved data conflict.
-    const conflicted = rows.filter(hasUnresolvedConflict);
-    if (conflicted.length > 0) {
-      setNotification({
-        variant: 'warning',
-        message: `${conflicted.length} selected topic(s) have a data conflict — fix them in the TET editor before submitting: ${conflicted.map(r => r.topic_name).join(', ')}`,
+    setStaged((prev) => {
+      const next = { ...prev };
+      rows.forEach((r) => {
+        // Already recorded by a biocurator — nothing to stage.
+        if ((r.assessment_states || {})[bulkCol] === 'validated') { return; }
+        const cur = { ...(next[r.topic_curie] || {}) };
+        applyChecked(cur, bulkCol);
+        next[r.topic_curie] = cur;
       });
+      return next;
+    });
+    gridApiRef.current?.deselectAll();
+    setNotification({
+      variant: 'info',
+      message: `Staged "${COLUMN_BY_KEY[bulkCol].header}" for ${rows.length} topic(s). Review and click Submit to save.`,
+    });
+  };
+
+  // The biocurator tags a row's staged edits would create on Submit. Skips any
+  // column already validated by a biocurator (no duplicate), and drops the bare
+  // "Has data" tag when a more specific New* column is also set for the row.
+  const stagedTagsForRow = useCallback((row) => {
+    const s = staged[row.topic_curie];
+    if (!s) { return []; }
+    const backend = row.assessment_states || {};
+    const checked = (c) => {
+      const o = s[c];
+      if (o === 'checked') { return true; }
+      if (o === 'cleared') { return false; }
+      return backend[c] === 'validated';
+    };
+    const newCol = (c) => checked(c) && backend[c] !== 'validated';
+    const tags = [];
+    if (checked('no_data') && backend.no_data !== 'validated') {
+      tags.push({ kind: 'no', novelty: null, label: 'No Data' });
+    }
+    NEW_COLUMNS.forEach((c) => {
+      if (newCol(c)) { tags.push({ kind: 'new', novelty: COLUMN_BY_KEY[c].novelty, label: COLUMN_BY_KEY[c].header }); }
+    });
+    const anyNewEffective = NEW_COLUMNS.some((c) => checked(c));
+    if (newCol('has_data') && !anyNewEffective) {
+      tags.push({ kind: 'has', novelty: NOVELTY_UNSPECIFIED, label: 'Has data' });
+    }
+    return tags;
+  }, [staged]);
+
+  // Topics with at least one staged tag to create.
+  const stagedSummary = useMemo(() => (
+    topicRows
+      .map((row) => ({ row, tags: stagedTagsForRow(row) }))
+      .filter((x) => x.tags.length > 0)
+  ), [topicRows, stagedTagsForRow]);
+
+  const stagedTagCount = useMemo(
+    () => stagedSummary.reduce((n, x) => n + x.tags.length, 0),
+    [stagedSummary]
+  );
+
+  const clearStaged = () => setStaged({});
+
+  const openSubmit = () => {
+    if (!sourceId) {
+      setNotification({ variant: 'danger', message: 'Curator source not resolved yet — please retry in a moment.' });
       return;
     }
-    setBatchPending({
-      kind: batchKind,
-      novelty: DEFAULT_NEW_NOVELTY,
+    if (stagedSummary.length === 0) {
+      setNotification({ variant: 'warning', message: 'No staged changes to submit. Click the assessment cells first.' });
+      return;
+    }
+    setSubmitState({
       note: '',
-      // Left blank so each topic gets its own per-topic default in runBatch;
-      // setting it in the modal overrides the species for every selected topic.
-      species: null,
-      rows,
+      items: stagedSummary,
       status: 'editing',
-      progress: { done: 0, total: rows.length },
+      progress: { done: 0, total: stagedTagCount },
       errors: [],
     });
   };
+  const closeSubmit = () => setSubmitState(null);
 
-  const runBatch = async () => {
-    if (!batchPending) { return; }
-    const { rows, kind, novelty, note, species } = batchPending;
-    setBatchPending((s) => ({ ...s, status: 'submitting', progress: { done: 0, total: rows.length }, errors: [] }));
+  const runSubmit = async () => {
+    if (!submitState) { return; }
+    const { items, note } = submitState;
+    const total = items.reduce((n, x) => n + x.tags.length, 0);
+    setSubmitState((s) => ({ ...s, status: 'submitting', progress: { done: 0, total }, errors: [] }));
     const errors = [];
-    for (let i = 0; i < rows.length; i++) {
-      try {
-        // No shared species set → use this topic's own default.
-        const rowSpecies = species || speciesForRow(rows[i].topic_curie);
-        await createTag({ kind, topicCurie: rows[i].topic_curie, novelty, note, species: rowSpecies });
-      } catch (e) {
-        const status = e?.response?.status;
-        const detail = e?.response?.data?.detail || e?.message || 'unknown error';
-        errors.push({ topic: rows[i].topic_name, msg: `HTTP ${status || '?'} ${typeof detail === 'string' ? detail : JSON.stringify(detail)}` });
+    let done = 0;
+    for (const { row, tags } of items) {
+      const species = speciesForRow(row.topic_curie);
+      for (const t of tags) {
+        try {
+          await createTag({ kind: t.kind, topicCurie: row.topic_curie, novelty: t.novelty, note, species });
+        } catch (e) {
+          const status = e?.response?.status;
+          const detail = e?.response?.data?.detail || e?.message || 'unknown error';
+          errors.push({
+            topic: row.topic_name,
+            label: t.label,
+            msg: `HTTP ${status || '?'} ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`,
+          });
+        }
+        const nextDone = done + 1;
+        done = nextDone;
+        setSubmitState((s) => (s ? { ...s, progress: { done: nextDone, total } } : s));
       }
-      setBatchPending((s) => (s ? { ...s, progress: { done: i + 1, total: rows.length } } : s));
     }
-    setBatchPending((s) => (s ? { ...s, status: 'done', errors } : s));
-    gridApiRef.current?.deselectAll();
+    setSubmitState((s) => (s ? { ...s, status: 'done', errors } : s));
+    setStaged({});
     fetchTopics();
   };
 
-  const closeBatch = () => setBatchPending(null);
+  const isSubmitting = submitState?.status === 'submitting';
 
-  const isSubmitting = pending?.status === 'submitting';
-  const isBatchSubmitting = batchPending?.status === 'submitting';
+  // One assessment cell: blank / ? / staged-✓ / validated-✓, clickable.
+  const renderAssessmentCell = (colKey, rowData) => {
+    const state = computeCellState(stagedRef.current, rowData, colKey);
+    let box;
+    let title;
+    if (state === 'validated') {
+      box = <span style={{ color: '#12b76a', fontWeight: 'bold' }}><FontAwesomeIcon icon={faCheck} /></span>;
+      title = 'Recorded by a biocurator';
+    } else if (state === 'checked') {
+      box = <span style={{ color: '#1570ef', fontWeight: 'bold' }}><FontAwesomeIcon icon={faCheck} /></span>;
+      title = 'Staged — will be submitted';
+    } else if (state === 'unvalidated') {
+      box = <span style={{ color: '#b54708', fontWeight: 700 }}>?</span>;
+      title = 'Predicted / author tag — click to confirm';
+    } else {
+      box = <span style={{ color: '#d0d5dd' }}>&#9744;</span>;
+      title = 'Click to assess';
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => onCellRef.current(colKey, rowData)}
+        title={title}
+        style={{
+          border: 'none', background: 'transparent', cursor: state === 'validated' ? 'default' : 'pointer',
+          padding: 0, width: '100%', height: '100%', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', fontSize: 14, lineHeight: '18px',
+        }}
+      >
+        {box}
+      </button>
+    );
+  };
 
   const columnDefs = useMemo(() => {
     const cols = [
       {
         headerName: '',
         colId: 'select',
-        // Already-curated topics can't be re-added, so their checkbox is disabled.
-        checkboxSelection: (params) => !isManuallyCurated(params.data),
+        checkboxSelection: true,
         headerCheckboxSelection: true,
         headerCheckboxSelectionFilteredOnly: true,
         width: 50,
@@ -672,43 +551,6 @@ const QuickTopicAddition = () => {
         sortable: false,
         filter: false,
         resizable: false,
-      },
-      {
-        // Per-topic validation status: green tick once a biocurator has
-        // validated, "?" while only unvalidated (author/computational) tags
-        // exist, blank when there is no data.
-        headerName: '',
-        colId: 'curationStatusBox',
-        width: 46,
-        pinned: 'left',
-        sortable: false,
-        filter: false,
-        resizable: false,
-        cellStyle: { textAlign: 'center' },
-        cellRenderer: (params) => {
-          if (isCuratorValidated(params.data)) {
-            return (
-              <span title="Validated by a curator" style={{ color: '#12b76a', fontWeight: 'bold' }}>
-                <FontAwesomeIcon icon={faCheck} />
-              </span>
-            );
-          }
-          if (hasAnyTag(params.data)) {
-            return (
-              <span
-                title="Has an unvalidated tag (author or computational)"
-                style={{
-                  display: 'inline-block', minWidth: 18, padding: '0 4px',
-                  border: '1px solid #d0d5dd', borderRadius: 4,
-                  color: '#667085', fontWeight: 700, fontSize: 12, lineHeight: '16px',
-                }}
-              >
-                ?
-              </span>
-            );
-          }
-          return null; // no data
-        },
       },
       {
         headerName: 'Topic for curation',
@@ -721,12 +563,11 @@ const QuickTopicAddition = () => {
         autoHeight: true,
         cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
         cellRenderer: (params) => (
-          // Curation state is shown by the status box column; no sub-label here.
           <div style={{ fontWeight: 600 }}>{params.data.topic_name}</div>
         ),
       },
       {
-        // Species for the tag this row would create. Options come from the MOD's
+        // Species for the tags this row would create. Options come from the MOD's
         // ml_model species (with the MOD default as fallback); the choice flows
         // into createTag. Reads options/default from refs so loading them doesn't
         // rebuild columnDefs (the cells are refreshed explicitly instead).
@@ -756,53 +597,19 @@ const QuickTopicAddition = () => {
         },
       },
       {
-        // Curator assessment input: one clickable box per bucket showing the
-        // per-bucket state — green ✓ (biocurator-validated), "?" (an author /
-        // computational tag exists, unvalidated), or an empty box (no tag).
-        // Clicking records a biocurator tag for that bucket.
-        headerName: 'Assessment',
-        colId: 'assessmentCluster',
-        width: 170,
-        sortable: false,
-        filter: false,
-        // Grow the row to fit all four bucket boxes (otherwise a short
-        // definition clips "No Data" / "New to Field").
-        autoHeight: true,
-        cellStyle: { paddingTop: 2, paddingBottom: 2 },
-        cellRenderer: (params) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {ASSESSMENT_BUCKETS.map((b) => {
-              const state = bucketState(params.data, b);
-              const box = state === 'validated'
-                ? <span style={{ color: '#12b76a', fontWeight: 'bold' }}><FontAwesomeIcon icon={faCheck} /></span>
-                : state === 'unvalidated'
-                  ? <span style={{ color: '#b54708', fontWeight: 700 }}>?</span>
-                  : <span style={{ color: '#d0d5dd' }}>&#9744;</span>;
-              return (
-                <button
-                  key={b.key}
-                  type="button"
-                  onClick={() => onBucketRef.current(b, params.data)}
-                  title={state === 'validated'
-                    ? `Validated as "${b.label}" by a curator`
-                    : state === 'unvalidated'
-                      ? `Unvalidated "${b.label}" — click to validate`
-                      : `Assert "${b.label}"`}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    border: 'none', background: 'transparent', cursor: 'pointer',
-                    padding: 0, lineHeight: '18px',
-                    paddingLeft: b.indent ? 16 : 0, fontSize: 12,
-                    color: '#344054', textAlign: 'left', width: '100%',
-                  }}
-                >
-                  <span style={{ width: 14, textAlign: 'center' }}>{box}</span>
-                  <span>{b.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        ),
+        // The five clickable assessment columns. Each cell cycles blank -> ✓ and
+        // enforces the cross-check rules; the choices are only written on Submit.
+        headerName: 'Topic data',
+        headerClass: 'wft-bold-header',
+        children: ASSESSMENT_COLUMNS.map((c) => ({
+          headerName: c.header,
+          colId: `col_${c.key}`,
+          width: 118,
+          sortable: false,
+          filter: false,
+          cellStyle: { padding: 0 },
+          cellRenderer: (params) => renderAssessmentCell(c.key, params.data),
+        })),
       },
     ];
     if (showDefinition) {
@@ -879,66 +686,13 @@ const QuickTopicAddition = () => {
         },
       });
     }
-    cols.push({
-      headerName: 'Topic data',
-      headerClass: 'wft-bold-header',
-      // Read-only display of the aggregated data (like the WF editor). The
-      // curator's input is the Assessment cluster, not these cells.
-      children: ASSESSMENTS.map(({ kind, header, computed }) => ({
-        headerName: header,
-        field: computed,
-        width: 120,
-        sortable: false,
-        cellStyle: { textAlign: 'center' },
-        cellRenderer: (params) => {
-          // Unresolved has-data/no-data conflict: red "!" on the has/no columns.
-          if (kind !== 'new' && hasUnresolvedConflict(params.data)) {
-            return (
-              <span
-                title="Data conflict (both has-data and no-data) — resolve in the TET editor"
-                style={{ color: 'red', fontWeight: 'bold' }}
-              >
-                <FontAwesomeIcon icon={faExclamation} />
-              </span>
-            );
-          }
-          // Green check when data exists for this column (any source).
-          const present = kind === 'no'
-            ? params.data.no_data
-            : kind === 'new' ? params.data.new_data : params.data.has_data;
-          if (present) {
-            return (
-              <span title={header} style={{ color: '#12b76a', fontWeight: 'bold' }}>
-                <FontAwesomeIcon icon={faCheck} />
-              </span>
-            );
-          }
-          return null;
-        },
-      })),
-    });
-    cols.push({
-      headerName: 'Sources (computed)',
-      field: 'topic_source',
-      flex: 2,
-      minWidth: 160,
-      sortable: true,
-      filter: true,
-      wrapText: true,
-      autoHeight: true,
-      cellStyle: { textAlign: 'left', whiteSpace: 'normal', paddingTop: 8, paddingBottom: 8 },
-      cellRenderer: (params) => (
-        <PredictionBadges preds={params.data.source_predictions || []} />
-      ),
-    });
     return cols;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showDefinition, showSynonyms, toggleDefExpanded]);
 
   if (!referenceCurie) {
     return (<div style={{ padding: '20px' }}>No AGR Reference Curie found.</div>);
   }
-
-  const kindLabel = (kind) => (kind === 'no' ? 'no data' : kind === 'new' ? 'new data' : 'has data');
 
   return (
     <div style={{ padding: '10px 20px' }}>
@@ -958,13 +712,6 @@ const QuickTopicAddition = () => {
           checked={showSynonyms}
           onChange={(e) => setShowSynonyms(e.target.checked)}
         />
-        <Form.Check
-          type="checkbox"
-          id="quick-topic-confirm-each"
-          label="Confirm each assessment (show popup)"
-          checked={confirmEach}
-          onChange={(e) => setConfirmEach(e.target.checked)}
-        />
         {predictionsCount > 0 && (
           <span style={{ marginLeft: 'auto', color: '#475467', fontSize: 13 }}>
             Predicted topics highlighted · {predictionsCount} prediction{predictionsCount === 1 ? '' : 's'}
@@ -973,22 +720,30 @@ const QuickTopicAddition = () => {
       </div>
 
       <div style={{ display: 'flex', gap: '12px', margin: '10px 0', alignItems: 'center', flexWrap: 'wrap' }}>
-        <span>Ticked topics get assessed as:</span>
+        <span>Ticked topics:</span>
         <Form.Control
           as="select"
           style={{ width: 'auto' }}
-          value={batchKind}
-          onChange={(e) => setBatchKind(e.target.value)}
+          value={bulkCol}
+          onChange={(e) => setBulkCol(e.target.value)}
         >
-          {ASSESSMENTS.map((a) => (
-            <option key={a.kind} value={a.kind}>{a.header}</option>
+          {ASSESSMENT_COLUMNS.map((c) => (
+            <option key={c.key} value={c.key}>{c.header}</option>
           ))}
         </Form.Control>
-        <Button variant="success" onClick={openBatch} disabled={selectedCount === 0}>
-          Add topics{selectedCount > 0 ? ` (${selectedCount})` : ''}
+        <Button variant="outline-primary" onClick={applyBulk} disabled={selectedCount === 0}>
+          Apply to ticked{selectedCount > 0 ? ` (${selectedCount})` : ''}
         </Button>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
+          {stagedTagCount > 0 && (
+            <Button variant="link" size="sm" onClick={clearStaged} style={{ textDecoration: 'none' }}>
+              Clear staged
+            </Button>
+          )}
+          <Button variant="success" onClick={openSubmit} disabled={stagedTagCount === 0}>
+            Submit{stagedTagCount > 0 ? ` (${stagedTagCount})` : ''}
+          </Button>
           <Button
             variant={withPredictions ? 'primary' : 'outline-secondary'}
             size="sm"
@@ -1044,162 +799,32 @@ const QuickTopicAddition = () => {
       )}
 
       <Modal
-        show={!!pending}
-        onHide={isSubmitting ? undefined : closeConfirm}
+        show={!!submitState}
+        onHide={isSubmitting ? undefined : closeSubmit}
         centered
         backdrop={isSubmitting ? 'static' : true}
         size="lg"
       >
         <Modal.Header closeButton={!isSubmitting}>
-          <Modal.Title>Topic assessment</Modal.Title>
+          <Modal.Title>
+            Submit {submitState?.progress.total} assessment{submitState?.progress.total === 1 ? '' : 's'}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {pending && (pending.status === 'editing' || pending.status === 'submitting') && (
+          {submitState && (submitState.status === 'editing' || submitState.status === 'submitting') && (
             <>
               <p style={{ marginBottom: 12 }}>
-                This will create a new <strong>{kindLabel(pending.kind)}</strong> topic tag
-                for <strong>{pending.topicName}</strong>, attributed to{' '}
-                <strong>{userEmail || uid || '(unknown user)'}</strong>.
-              </p>
-
-              {pending.kind === 'new' && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Novelty</Form.Label>
-                  <Form.Control
-                    as="select"
-                    value={pending.novelty}
-                    onChange={(e) => setPending((s) => ({ ...s, novelty: e.target.value }))}
-                    disabled={isSubmitting}
-                  >
-                    {NEW_NOVELTY_OPTIONS.map((o) => (
-                      <option key={o.curie} value={o.curie}>{o.label} ({o.curie})</option>
-                    ))}
-                  </Form.Control>
-                </Form.Group>
-              )}
-
-              <Form.Group className="mb-3">
-                <Form.Label>Species (optional)</Form.Label>
-                <SpeciesPicker
-                  id="quick-topic-species"
-                  value={pending.species?.curie || null}
-                  valueName={pending.species?.name || ''}
-                  disabled={isSubmitting}
-                  onChange={(next) => setPending((s) => ({ ...s, species: next }))}
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Note (optional)</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  placeholder="Optional note for this tag…"
-                  value={pending.note}
-                  onChange={(e) => setPending((s) => ({ ...s, note: e.target.value }))}
-                  disabled={isSubmitting}
-                />
-              </Form.Group>
-
-              <Form.Check
-                type="checkbox"
-                id="quick-topic-dont-show-again"
-                label="Don't show this again (add topics without confirming)"
-                checked={!confirmEach}
-                onChange={(e) => setConfirmEach(!e.target.checked)}
-                disabled={isSubmitting}
-              />
-
-              {isSubmitting && (
-                <p style={{ marginTop: 12, color: '#555' }}>
-                  <Spinner animation="border" size="sm" /> Submitting…
-                </p>
-              )}
-            </>
-          )}
-          {pending?.status === 'success' && (
-            <p style={{ color: '#1e7d3a', textAlign: 'center', margin: 0, fontWeight: 600 }}>
-              <FontAwesomeIcon icon={faCheck} /> Tag created successfully
-            </p>
-          )}
-          {pending?.status === 'error' && (
-            <>
-              <p style={{ color: '#b03a2e' }}>Could not create the assessment tag.</p>
-              <pre style={{ background: '#fdecea', border: '1px solid #f5b7b1', padding: 8, borderRadius: 4, fontSize: 12, whiteSpace: 'pre-wrap', marginBottom: 0 }}>
-                {pending.errorMessage}
-              </pre>
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          {pending?.status === 'editing' && (
-            <>
-              <Button variant="secondary" onClick={closeConfirm}>Cancel</Button>
-              <Button variant={pending.kind === 'no' ? 'danger' : 'success'} onClick={handleConfirm}>
-                Confirm {kindLabel(pending.kind)}
-              </Button>
-            </>
-          )}
-          {pending?.status === 'submitting' && (
-            <Button variant="secondary" disabled>Submitting…</Button>
-          )}
-          {pending?.status === 'success' && (
-            <Button variant="success" onClick={closeConfirm}>Close</Button>
-          )}
-          {pending?.status === 'error' && (
-            <>
-              <Button variant="secondary" onClick={closeConfirm}>Close</Button>
-              <Button variant={pending.kind === 'no' ? 'danger' : 'success'} onClick={handleConfirm}>Retry</Button>
-            </>
-          )}
-        </Modal.Footer>
-      </Modal>
-
-      <Modal
-        show={!!batchPending}
-        onHide={isBatchSubmitting ? undefined : closeBatch}
-        centered
-        backdrop={isBatchSubmitting ? 'static' : true}
-        size="lg"
-      >
-        <Modal.Header closeButton={!isBatchSubmitting}>
-          <Modal.Title>Add {batchPending?.rows.length} topic{batchPending?.rows.length === 1 ? '' : 's'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {batchPending && (batchPending.status === 'editing' || batchPending.status === 'submitting') && (
-            <>
-              <p style={{ marginBottom: 12 }}>
-                This will create a <strong>{kindLabel(batchPending.kind)}</strong> topic tag for
-                the <strong>{batchPending.rows.length}</strong> selected topic{batchPending.rows.length === 1 ? '' : 's'},
+                This will create the following biocurator topic tag{submitState.progress.total === 1 ? '' : 's'},
                 attributed to <strong>{userEmail || uid || '(unknown user)'}</strong>.
               </p>
 
-              {batchPending.kind === 'new' && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Novelty</Form.Label>
-                  <Form.Control
-                    as="select"
-                    value={batchPending.novelty}
-                    onChange={(e) => setBatchPending((s) => ({ ...s, novelty: e.target.value }))}
-                    disabled={isBatchSubmitting}
-                  >
-                    {NEW_NOVELTY_OPTIONS.map((o) => (
-                      <option key={o.curie} value={o.curie}>{o.label} ({o.curie})</option>
-                    ))}
-                  </Form.Control>
-                </Form.Group>
-              )}
-
-              <Form.Group className="mb-3">
-                <Form.Label>Species (optional — leave blank to use each topic's default; set to override all)</Form.Label>
-                <SpeciesPicker
-                  id="quick-topic-batch-species"
-                  value={batchPending.species?.curie || null}
-                  valueName={batchPending.species?.name || ''}
-                  disabled={isBatchSubmitting}
-                  onChange={(next) => setBatchPending((s) => ({ ...s, species: next }))}
-                />
-              </Form.Group>
+              <ul style={{ maxHeight: 240, overflowY: 'auto', marginBottom: 12 }}>
+                {submitState.items.map(({ row, tags }) => (
+                  <li key={row.topic_curie}>
+                    <strong>{row.topic_name}</strong>: {tags.map((t) => t.label).join(', ')}
+                  </li>
+                ))}
+              </ul>
 
               <Form.Group className="mb-3">
                 <Form.Label>Note (optional, applied to all)</Form.Label>
@@ -1207,47 +832,43 @@ const QuickTopicAddition = () => {
                   as="textarea"
                   rows={2}
                   placeholder="Optional note for these tags…"
-                  value={batchPending.note}
-                  onChange={(e) => setBatchPending((s) => ({ ...s, note: e.target.value }))}
-                  disabled={isBatchSubmitting}
+                  value={submitState.note}
+                  onChange={(e) => setSubmitState((s) => ({ ...s, note: e.target.value }))}
+                  disabled={isSubmitting}
                 />
               </Form.Group>
 
-              <ul style={{ maxHeight: 160, overflowY: 'auto', marginBottom: 0 }}>
-                {batchPending.rows.map((r) => (<li key={r.topic_curie}>{r.topic_name}</li>))}
-              </ul>
-
-              {isBatchSubmitting && (
+              {isSubmitting && (
                 <p style={{ marginTop: 12, color: '#555' }}>
-                  <Spinner animation="border" size="sm" /> Adding {batchPending.progress.done} / {batchPending.progress.total}…
+                  <Spinner animation="border" size="sm" /> Submitting {submitState.progress.done} / {submitState.progress.total}…
                 </p>
               )}
             </>
           )}
-          {batchPending?.status === 'done' && (
+          {submitState?.status === 'done' && (
             <>
-              <p style={{ color: batchPending.errors.length ? '#b03a2e' : '#1e7d3a', fontWeight: 600 }}>
-                Added {batchPending.progress.total - batchPending.errors.length} of {batchPending.progress.total} topic tag{batchPending.progress.total === 1 ? '' : 's'}.
+              <p style={{ color: submitState.errors.length ? '#b03a2e' : '#1e7d3a', fontWeight: 600 }}>
+                Created {submitState.progress.total - submitState.errors.length} of {submitState.progress.total} tag{submitState.progress.total === 1 ? '' : 's'}.
               </p>
-              {batchPending.errors.length > 0 && (
+              {submitState.errors.length > 0 && (
                 <ul style={{ color: '#b03a2e', maxHeight: 200, overflowY: 'auto' }}>
-                  {batchPending.errors.map((er, i) => (<li key={i}>{er.topic}: {er.msg}</li>))}
+                  {submitState.errors.map((er, i) => (<li key={i}>{er.topic} ({er.label}): {er.msg}</li>))}
                 </ul>
               )}
             </>
           )}
         </Modal.Body>
         <Modal.Footer>
-          {batchPending?.status === 'editing' && (
+          {submitState?.status === 'editing' && (
             <>
-              <Button variant="secondary" onClick={closeBatch}>Cancel</Button>
-              <Button variant="success" onClick={runBatch}>
-                Add {batchPending.rows.length} topic{batchPending.rows.length === 1 ? '' : 's'}
+              <Button variant="secondary" onClick={closeSubmit}>Cancel</Button>
+              <Button variant="success" onClick={runSubmit}>
+                Submit {submitState.progress.total} assessment{submitState.progress.total === 1 ? '' : 's'}
               </Button>
             </>
           )}
-          {batchPending?.status === 'submitting' && (<Button variant="secondary" disabled>Adding…</Button>)}
-          {batchPending?.status === 'done' && (<Button variant="success" onClick={closeBatch}>Close</Button>)}
+          {submitState?.status === 'submitting' && (<Button variant="secondary" disabled>Submitting…</Button>)}
+          {submitState?.status === 'done' && (<Button variant="success" onClick={closeSubmit}>Close</Button>)}
         </Modal.Footer>
       </Modal>
     </div>
