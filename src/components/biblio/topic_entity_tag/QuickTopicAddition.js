@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation, faPlus } from '@fortawesome/free-solid-svg-icons';
 import SpeciesPicker from '../../refs_tet_validation/cellRenderers/SpeciesPicker';
 import { defaultSpeciesCurieForMod, speciesName } from '../../refs_tet_validation/helpers/speciesUtils';
+import { getTaxonData } from './TaxonUtils';
 
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
@@ -43,13 +44,6 @@ const ASSESSMENTS = [
   { kind: 'new', header: 'New data', computed: 'new_data' },
 ];
 const ASSESSMENT_LABEL = { has: 'Has data', no: 'No data', new: 'New data' };
-
-// Default species (taxon curie) for MODs that have more than one species in the
-// ml_model table. Single-species MODs resolve via defaultSpeciesCurieForMod.
-const MOD_DEFAULT_SPECIES = {
-  WB: 'NCBITaxon:6239',   // Caenorhabditis elegans
-  XB: 'NCBITaxon:8355',   // Xenopus laevis
-};
 
 // Friendly display names for known computed source methods (see
 // tet-confidence-source-methods: classifiers carry confidence, manual tags don't).
@@ -244,6 +238,10 @@ const QuickTopicAddition = () => {
   const [sourceId, setSourceId] = useState(null);
   // Distinct species [{curie, name}] for this MOD, from the ml_model table.
   const [modSpecies, setModSpecies] = useState([]);
+  // Canonical MOD->taxon mapping + names from /mod/taxons/all (same source the
+  // TET UI uses), so the default species matches the TET editor even when the
+  // redux modToTaxon isn't populated in this view.
+  const [taxonData, setTaxonData] = useState({ curieToName: {}, modToTaxon: {} });
 
   // Filter toolbar state.
   const [withPredictions, setWithPredictions] = useState(false);
@@ -312,24 +310,33 @@ const QuickTopicAddition = () => {
     }, 0);
   }, []);
 
-  // Species options for this MOD, from the ml_model table (distinct non-null
-  // species), falling back to the MOD's default species when the model table
-  // has none for the MOD.
+  // Resolve a taxon curie to a name: prefer the /mod/taxons names, then redux.
+  const nameForTaxon = useCallback((curie) => (
+    taxonData.curieToName[curie] || speciesName(curieToNameTaxon, curie)
+  ), [taxonData, curieToNameTaxon]);
+
+  // Species options for this MOD: the ml_model species (which include the extra
+  // WB nematodes / XB species), else the MOD's canonical taxa from
+  // /mod/taxons/all, else the single-taxon MOD default.
   const speciesOptions = useMemo(() => {
     if (modSpecies.length > 0) { return modSpecies; }
-    const c = MOD_DEFAULT_SPECIES[accessLevel] || defaultSpeciesCurieForMod(modToTaxon, accessLevel);
-    return c ? [{ curie: c, name: speciesName(curieToNameTaxon, c) }] : [];
-  }, [modSpecies, accessLevel, modToTaxon, curieToNameTaxon]);
+    const canonical = taxonData.modToTaxon[accessLevel] || [];
+    if (canonical.length > 0) {
+      return canonical.map((curie) => ({ curie, name: nameForTaxon(curie) }));
+    }
+    const c = defaultSpeciesCurieForMod(modToTaxon, accessLevel);
+    return c ? [{ curie: c, name: nameForTaxon(c) }] : [];
+  }, [modSpecies, taxonData, accessLevel, modToTaxon, nameForTaxon]);
 
-  // Default selected species: configured default for multi-species MODs
-  // (WB -> C. elegans, XB -> X. laevis), else the single-taxon MOD default,
-  // else the sole ml_model species, else the first option.
+  // Default selected species: the MOD's first canonical taxon from
+  // /mod/taxons/all (matches the TET editor: FB -> D. melanogaster,
+  // WB -> C. elegans, XB -> X. laevis), then fallbacks.
   const defaultSpeciesCurie = useMemo(() => (
-    MOD_DEFAULT_SPECIES[accessLevel]
+    (taxonData.modToTaxon[accessLevel]?.[0])
     || defaultSpeciesCurieForMod(modToTaxon, accessLevel)
     || (modSpecies.length === 1 ? modSpecies[0].curie : null)
     || (speciesOptions[0]?.curie ?? null)
-  ), [accessLevel, modToTaxon, modSpecies, speciesOptions]);
+  ), [taxonData, accessLevel, modToTaxon, modSpecies, speciesOptions]);
 
   // Refs so the AG Grid species dropdown reads current options/default without
   // rebuilding columnDefs (which would reset column state); cells are refreshed
@@ -457,6 +464,16 @@ const QuickTopicAddition = () => {
       .catch(() => { if (!cancelled) { setModSpecies([]); } });
     return () => { cancelled = true; };
   }, [accessLevel, curieToNameTaxon]);
+
+  // Canonical MOD->taxon mapping + names (same source as the TET UI), so the
+  // default species matches the TET editor regardless of redux state.
+  useEffect(() => {
+    let cancelled = false;
+    getTaxonData()
+      .then((d) => { if (!cancelled && d) { setTaxonData(d); } })
+      .catch(() => { /* keep defaults; falls back to ml_model / redux */ });
+    return () => { cancelled = true; };
+  }, []);
 
   // Re-render the species dropdown cells once options / default resolve.
   useEffect(() => {
