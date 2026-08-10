@@ -11,6 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck } from '@fortawesome/free-solid-svg-icons';
 import { defaultSpeciesCurieForMod, speciesName } from '../../refs_tet_validation/helpers/speciesUtils';
 import { getTaxonData } from './TaxonUtils';
+import { setQuickTopicStagedCount } from './quickTopicStaged';
 
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
@@ -77,8 +78,6 @@ const QuickTopicAddition = () => {
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
-  const uid = useSelector(state => state.isLogged.uid);
-  const userEmail = useSelector(state => state.isLogged.email);
   const modToTaxon = useSelector(state => state.biblio.modToTaxon);
   const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
 
@@ -478,39 +477,38 @@ const QuickTopicAddition = () => {
     [stagedSummary]
   );
 
+  // Publish the staged count so the Biblio tab-switch radios can warn before
+  // discarding unsubmitted work; clear it when leaving the tab.
+  useEffect(() => {
+    setQuickTopicStagedCount(stagedTagCount);
+    return () => setQuickTopicStagedCount(0);
+  }, [stagedTagCount]);
+
   const clearStaged = () => setStaged({});
 
-  const openSubmit = () => {
+  const closeSubmit = () => setSubmitState(null);
+
+  // Submit the staged edits directly — no confirmation step and no note field
+  // (curators add notes in the TET editor). Shows a progress/result modal only.
+  const submitStaged = async () => {
     if (!sourceId) {
       setNotification({ variant: 'danger', message: 'Curator source not resolved yet — please retry in a moment.' });
       return;
     }
-    if (stagedSummary.length === 0) {
+    const items = stagedSummary;
+    if (items.length === 0) {
       setNotification({ variant: 'warning', message: 'No staged changes to submit. Click the assessment cells first.' });
       return;
     }
-    setSubmitState({
-      note: '',
-      items: stagedSummary,
-      status: 'editing',
-      progress: { done: 0, total: stagedTagCount },
-      errors: [],
-    });
-  };
-  const closeSubmit = () => setSubmitState(null);
-
-  const runSubmit = async () => {
-    if (!submitState) { return; }
-    const { items, note } = submitState;
     const total = items.reduce((n, x) => n + x.tags.length, 0);
-    setSubmitState((s) => ({ ...s, status: 'submitting', progress: { done: 0, total }, errors: [] }));
+    setSubmitState({ items, status: 'submitting', progress: { done: 0, total }, errors: [] });
     const errors = [];
     let done = 0;
     for (const { row, tags } of items) {
       const species = speciesForRow(row.topic_curie);
       for (const t of tags) {
         try {
-          await createTag({ kind: t.kind, topicCurie: row.topic_curie, novelty: t.novelty, note, species });
+          await createTag({ kind: t.kind, topicCurie: row.topic_curie, novelty: t.novelty, note: null, species });
         } catch (e) {
           const status = e?.response?.status;
           const detail = e?.response?.data?.detail || e?.message || 'unknown error';
@@ -772,7 +770,7 @@ const QuickTopicAddition = () => {
               Clear staged
             </Button>
           )}
-          <Button variant="success" onClick={openSubmit} disabled={stagedTagCount === 0}>
+          <Button variant="success" onClick={submitStaged} disabled={stagedTagCount === 0 || isSubmitting}>
             Submit{stagedTagCount > 0 ? ` (${stagedTagCount})` : ''}
           </Button>
           <span style={{ fontSize: 13, color: '#475467' }}>Rows:</span>
@@ -851,39 +849,10 @@ const QuickTopicAddition = () => {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {submitState && (submitState.status === 'editing' || submitState.status === 'submitting') && (
-            <>
-              <p style={{ marginBottom: 12 }}>
-                This will create the following biocurator topic tag{submitState.progress.total === 1 ? '' : 's'},
-                attributed to <strong>{userEmail || uid || '(unknown user)'}</strong>.
-              </p>
-
-              <ul style={{ maxHeight: 240, overflowY: 'auto', marginBottom: 12 }}>
-                {submitState.items.map(({ row, tags }) => (
-                  <li key={row.topic_curie}>
-                    <strong>{row.topic_name}</strong>: {tags.map((t) => t.label).join(', ')}
-                  </li>
-                ))}
-              </ul>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Note (optional, applied to all)</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  placeholder="Optional note for these tags…"
-                  value={submitState.note}
-                  onChange={(e) => setSubmitState((s) => ({ ...s, note: e.target.value }))}
-                  disabled={isSubmitting}
-                />
-              </Form.Group>
-
-              {isSubmitting && (
-                <p style={{ marginTop: 12, color: '#555' }}>
-                  <Spinner animation="border" size="sm" /> Submitting {submitState.progress.done} / {submitState.progress.total}…
-                </p>
-              )}
-            </>
+          {submitState?.status === 'submitting' && (
+            <p style={{ margin: 0, color: '#555' }}>
+              <Spinner animation="border" size="sm" /> Submitting {submitState.progress.done} / {submitState.progress.total}…
+            </p>
           )}
           {submitState?.status === 'done' && (
             <>
@@ -899,14 +868,6 @@ const QuickTopicAddition = () => {
           )}
         </Modal.Body>
         <Modal.Footer>
-          {submitState?.status === 'editing' && (
-            <>
-              <Button variant="secondary" onClick={closeSubmit}>Cancel</Button>
-              <Button variant="success" onClick={runSubmit}>
-                Submit {submitState.progress.total} assessment{submitState.progress.total === 1 ? '' : 's'}
-              </Button>
-            </>
-          )}
           {submitState?.status === 'submitting' && (<Button variant="secondary" disabled>Submitting…</Button>)}
           {submitState?.status === 'done' && (<Button variant="success" onClick={closeSubmit}>Close</Button>)}
         </Modal.Footer>
