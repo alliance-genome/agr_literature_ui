@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { api } from "../../../api";
-import { getCuratorSourceId } from '../../../actions/biblioActions';
+import { getCuratorSourceId, fetchTopicEntityTags } from '../../../actions/biblioActions';
 import { AgGridReact } from 'ag-grid-react';
 import { handleGridCopy } from '../../../utils/gridCopyHandler';
 import 'ag-grid-community/styles/ag-grid.css';
@@ -73,6 +73,7 @@ const applyChecked = (cur, colKey) => {
 };
 
 const QuickTopicAddition = () => {
+  const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"];
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
@@ -526,6 +527,12 @@ const QuickTopicAddition = () => {
     setSubmitState((s) => (s ? { ...s, status: 'done', errors } : s));
     setStaged({});
     fetchTopics();
+    if (errors.length < total) {
+      // At least one tag was created (and the backend may have revalidated
+      // existing predictions), so the redux-cached TET list is stale — force a
+      // refetch so the TET editor tab shows the new state without a reload.
+      dispatch(fetchTopicEntityTags(referenceCurie, true));
+    }
   };
 
   const isSubmitting = submitState?.status === 'submitting';
