@@ -382,3 +382,56 @@ describe('mergeAuthors', () => {
       .toContain('park refused');
   });
 });
+
+describe('errorMessage shapes reaching the update alert', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    api.request.mockReset();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => { jest.useRealTimers(); console.error.mockRestore(); });
+
+  const planWithOnePatch = {
+    deletes: [],
+    patches: [{ author_id: 1, payload: { reference_curie: 'AGRKB:101' } }],
+    creates: [],
+    finalSequence: [{ kind: 'existing', author_id: 1, author_order: 1 }],
+    needsFlatten: false,
+  };
+
+  const messageFor = async (responseData) => {
+    api.request.mockImplementation(async () => {
+      const error = new Error('Request failed with status code 422');
+      error.response = { data: responseData };
+      throw error;
+    });
+    const dispatch = await runThunk(updateBiblioAuthors('AGRKB:101', planWithOnePatch));
+    return dispatch.mock.calls[0][0].payload.responseMessage;
+  };
+
+  test('a string detail passes through unchanged', async () => {
+    expect(await messageFor({ detail: 'author_order cannot be changed via PATCH' }))
+      .toBe('author_order cannot be changed via PATCH');
+  });
+
+  test('a pydantic list detail is collapsed to a string, never an array', async () => {
+    const message = await messageFor({
+      detail: [{ loc: ['body', 'author_order'], msg: 'ensure this value is >= 1', type: 'value_error' }],
+    });
+    expect(typeof message).toBe('string');
+    expect(message).toContain('ensure this value is >= 1');
+    expect(message).toContain('author_order');
+  });
+
+  test('an unexpected detail shape is still a string', async () => {
+    const message = await messageFor({ detail: { unexpected: 'object' } });
+    expect(typeof message).toBe('string');
+    expect(message).toContain('unexpected');
+  });
+
+  test('no detail falls back to the axios message', async () => {
+    const message = await messageFor({});
+    expect(typeof message).toBe('string');
+    expect(message).toContain('author/1');
+  });
+});

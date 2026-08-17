@@ -25,8 +25,25 @@ const reporter = (dispatch, type, extraPayload = {}) => (responseMessage) => {
   }, REPORT_DELAY_MS);
 };
 
-const errorMessage = (subPath, error) =>
-  error.response?.data?.detail || 'error: ' + subPath + ' : ' + error.message;
+// The message must end up a string. Both consumers render it straight into JSX
+// (BiblioEditor's and Merge's update alerts) and BiblioEditor also calls .includes() on it, so a
+// non-string detail would throw "Objects are not valid as a React child" and take the alert down
+// with it -- swallowing the very error it was meant to show. FastAPI's own HTTPExceptions send a
+// string, but a request-validation 422 sends a list of {loc, msg, type}, so collapse that the way
+// updateButtonBiblio already does for the forApiArray path.
+const errorMessage = (subPath, error) => {
+  const detail = error.response?.data?.detail;
+  if (typeof detail === 'string' && detail !== '') { return detail; }
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0];
+    if (first && typeof first.msg === 'string') {
+      const where = Array.isArray(first.loc) ? first.loc[first.loc.length - 1] : '';
+      return 'error: ' + subPath + ' : ' + first.msg + (where ? ': ' + where : '');
+    }
+  }
+  if (detail) { return 'error: ' + subPath + ' : ' + JSON.stringify(detail); }
+  return 'error: ' + subPath + ' : ' + error.message;
+};
 
 // Every call reports exactly once, success or failure, so the caller's updating counter
 // always returns to zero and the spinner clears.
