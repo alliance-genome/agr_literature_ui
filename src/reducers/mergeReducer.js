@@ -284,10 +284,25 @@ export default function(state = initialState, action) {
         blah: 'blah'
       }
 
+    case 'SET_MERGE_BLOCKED':
+      // A pre-flight refusal: nothing was sent, so dataTransferHappened stays false and the
+      // Transfer button remains available once the curator fixes the conflict.
+      return {
+        ...state,
+        updateAlert: state.updateAlert + 1,
+        updateFailure: action.payload.length,
+        updateMessages: action.payload
+      }
+
     case 'SET_MERGE_UPDATING':
       console.log('SET_MERGE_UPDATING reducer ' + action.payload);
       return {
         ...state,
+        // clear any earlier attempt's alert: a stale updateFailure would make the
+        // data-transferred modal render its failure body and hide Complete Merge
+        updateAlert: 0,
+        updateFailure: 0,
+        updateMessages: [],
         dataTransferHappened: true,
         showDataTransferModal: true,
         mergeTransferringCount: action.payload

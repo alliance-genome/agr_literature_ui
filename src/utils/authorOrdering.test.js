@@ -8,6 +8,7 @@ import {
   mergeAuthorSwap,
   buildMergeAuthorPlan,
   mergeAuthorPlanCallCount,
+  describeMergePersonConflicts,
 } from './authorOrdering';
 
 describe('orderedAuthors', () => {
@@ -443,5 +444,79 @@ describe('mergeAuthorPlanCallCount', () => {
     expect(mergeAuthorPlanCallCount({
       deletes: [], parkOrdering: null, reparents: [], finalOrdering: [1, 2], needsFlatten: false,
     })).toBe(0);
+  });
+});
+
+describe('buildMergeAuthorPlan person conflicts', () => {
+  const base = { ref1Curie: 'AGRKB:R1', pmidKeepReference: 1 };
+
+  test('flags a transfer whose person is already an author on the surviving reference', () => {
+    const plan = buildMergeAuthorPlan({
+      ...base,
+      ref1Authors: [{ author_id: 'A1', author_order: 1, person_id: 7 }],
+      ref2Authors: [{ author_id: 'B1', author_order: 1, person_id: 7, toggle: true, name: 'Smith, J' }],
+    });
+    expect(plan.personConflicts).toHaveLength(1);
+    expect(plan.personConflicts[0].person_id).toBe(7);
+    expect(plan.personConflicts[0].keeper.author_id).toBe('A1');
+    expect(plan.personConflicts[0].transfer.author_id).toBe('B1');
+  });
+
+  test('no conflict when the persons differ', () => {
+    const plan = buildMergeAuthorPlan({
+      ...base,
+      ref1Authors: [{ author_id: 'A1', author_order: 1, person_id: 7 }],
+      ref2Authors: [{ author_id: 'B1', author_order: 1, person_id: 8, toggle: true }],
+    });
+    expect(plan.personConflicts).toEqual([]);
+  });
+
+  test('null person_ids never collide with each other', () => {
+    // uq_author_ref_person treats NULLs as distinct, so unlinked authors must not be flagged
+    const plan = buildMergeAuthorPlan({
+      ...base,
+      ref1Authors: [{ author_id: 'A1', author_order: 1, person_id: null },
+                    { author_id: 'A2', author_order: 2 }],
+      ref2Authors: [{ author_id: 'B1', author_order: 1, person_id: null, toggle: true },
+                    { author_id: 'B2', author_order: 2, toggle: true }],
+    });
+    expect(plan.personConflicts).toEqual([]);
+  });
+
+  test('a discarded reference-1 author is not a keeper, so its person does not conflict', () => {
+    const plan = buildMergeAuthorPlan({
+      ...base,
+      ref1Authors: [{ author_id: 'A1', author_order: 1, person_id: 7, toggle: true }],
+      ref2Authors: [{ author_id: 'B1', author_order: 1, person_id: 7, toggle: true }],
+    });
+    expect(plan.deletes).toEqual([{ author_id: 'A1' }]);
+    expect(plan.personConflicts).toEqual([]);
+  });
+});
+
+describe('describeMergePersonConflicts', () => {
+  test('names both sides and says what to do', () => {
+    const [message] = describeMergePersonConflicts([{
+      person_id: 7,
+      keeper: { author_id: 'A1', author_order: 3, person_id: 7, name: 'Smith, J' },
+      transfer: { author_id: 'B1', author_order: 1, person_id: 7, name: 'Smith, J' },
+    }]);
+    expect(message).toContain('Smith, J');
+    expect(message).toContain('author 3');
+    expect(message).toContain('Untoggle');
+  });
+
+  test('falls back to the person id when neither row has a name', () => {
+    const [message] = describeMergePersonConflicts([{
+      person_id: 7,
+      keeper: { author_id: 'A1', author_order: 3, person_id: 7 },
+      transfer: { author_id: 'B1', author_order: 1, person_id: 7 },
+    }]);
+    expect(message).toContain('person 7');
+  });
+
+  test('handles an empty or missing list', () => {
+    expect(describeMergePersonConflicts([])).toEqual([]);
+    expect(describeMergePersonConflicts(undefined)).toEqual([]);
   });
 });

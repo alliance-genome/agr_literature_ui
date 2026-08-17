@@ -20,11 +20,12 @@ import { setShowDataTransferModal } from '../actions/mergeActions';
 // import { setCompletionMergeHappened } from '../actions/mergeActions';
 import { closeMergeUpdateAlert } from '../actions/mergeActions';
 import { mergeQueryAtp } from '../actions/mergeActions';
+import { setMergeBlocked } from '../actions/mergeActions';
 
 import { splitCurie } from './biblio/BiblioEditor';
 import { comcorMapping } from './biblio/BiblioEditor';
 
-import { buildMergeAuthorPlan, mergeAuthorPlanCallCount } from '../utils/authorOrdering';
+import { buildMergeAuthorPlan, mergeAuthorPlanCallCount, describeMergePersonConflicts } from '../utils/authorOrdering';
 import { mergeAuthors } from '../actions/authorOrderActions';
 
 import Container from 'react-bootstrap/Container';
@@ -884,6 +885,16 @@ const MergeSubmitDataTransferUpdateButton = () => {
           forApiArray.push( array ); } }
     });
     // unaccounted for cannot get transferred
+
+    // A person may be linked to only one author per reference, so transferring an author whose
+    // person is already on the surviving reference can never succeed -- and unlike an order
+    // collision, re-running the merge fails the same way. Refuse here, before anything is sent:
+    // the author phase deletes the discarded authors first, so failing partway would leave the
+    // curator with authors already destroyed and a merge that cannot be completed.
+    if (authorPlan.personConflicts.length > 0) {
+      dispatch(setMergeBlocked(describeMergePersonConflicts(authorPlan.personConflicts)));
+      return;
+    }
 
     // the author thunk reports once per call it makes with mergeType 'mergeData', exactly like
     // the forApiArray dispatches below, so both have to be counted here or the spinner hangs

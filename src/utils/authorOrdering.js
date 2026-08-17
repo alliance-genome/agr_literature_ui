@@ -193,6 +193,25 @@ export const buildMergeAuthorPlan = ({ ref1Authors, ref2Authors, ref1Curie, pmid
     payload: { reference_curie: ref1Curie },
   }));
 
+  // uq_author_ref_person allows a person to be linked to only one author per reference, and a
+  // reparent carries the row's person_id along just as it carries author_order. Unlike an order
+  // collision -- which the parking step above makes impossible -- this one cannot be engineered
+  // away: if the same person really is an author on both references, the transfer can never
+  // succeed, and re-running the merge fails identically. Report it so the caller can refuse
+  // BEFORE the destructive deletes run, rather than discovering it mid-merge.
+  const keepersByPerson = new Map(
+    keepers.filter((a) => a.person_id !== null && a.person_id !== undefined)
+      .map((a) => [a.person_id, a]),
+  );
+  const personConflicts = transfers
+    .filter((a) => a.person_id !== null && a.person_id !== undefined
+      && keepersByPerson.has(a.person_id))
+    .map((a) => ({
+      person_id: a.person_id,
+      keeper: keepersByPerson.get(a.person_id),
+      transfer: a,
+    }));
+
   // keepers before transfers, matching the shared counter the merge screen already used
   const finalOrdering = [...keepers, ...transfers].map((authorDict, i) => ({
     author_id: authorDict.author_id, author_order: i + 1,
@@ -215,7 +234,7 @@ export const buildMergeAuthorPlan = ({ ref1Authors, ref2Authors, ref1Curie, pmid
   const needsFlatten = reparents.length > 0
     || keepers.some((authorDict, i) => authorDict.author_order !== i + 1);
 
-  return { deletes, parkOrdering, reparents, finalOrdering, needsFlatten, offset };
+  return { deletes, parkOrdering, reparents, finalOrdering, needsFlatten, personConflicts, offset };
 };
 
 export const mergeAuthorPlanCallCount = (plan) =>
@@ -223,3 +242,14 @@ export const mergeAuthorPlanCallCount = (plan) =>
   + (plan.parkOrdering ? 1 : 0)
   + plan.reparents.length
   + ((plan.needsFlatten && plan.finalOrdering.length > 0) ? 1 : 0);
+
+// One line per conflict, naming both sides so a curator can act on it without opening either
+// reference. Falls back to the author_id when a row carries no name.
+export const describeMergePersonConflicts = (personConflicts) =>
+  (personConflicts || []).map(({ keeper, transfer }) => {
+    const who = transfer.name || keeper.name || `person ${keeper.person_id}`;
+    return `${who} cannot be transferred: the same person is already author `
+      + `${keeper.author_order} on the reference being kept `
+      + `(author ${transfer.author_id} would duplicate author ${keeper.author_id}). `
+      + `Untoggle that author, or resolve the duplicate person link first.`;
+  });
