@@ -24,6 +24,9 @@ import { mergeQueryAtp } from '../actions/mergeActions';
 import { splitCurie } from './biblio/BiblioEditor';
 import { comcorMapping } from './biblio/BiblioEditor';
 
+import { buildMergeAuthorPlan, mergeAuthorPlanCallCount } from '../utils/authorOrdering';
+import { mergeAuthors } from '../actions/authorOrderActions';
+
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -756,59 +759,18 @@ const MergeSubmitDataTransferUpdateButton = () => {
           forApiArray.push( array );
     } } }
 
-    let authorOrder = 0;
-    if ('authors' in referenceMeta1['referenceJson'] && referenceMeta1['referenceJson']['authors'] !== null) {
-      const orderedAuthors = [];
-      for (const value of referenceMeta1['referenceJson']['authors'].values()) {
-        let index = value['author_order'] - 1;
-        if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'author_order' field value of 0
-        orderedAuthors[index] = value; }
-      for (const [index, authDict] of orderedAuthors.entries()) {
-        // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' author_order ' + authDict['author_order']);
-        let swap = false;
-        if (authDict['toggle']) { swap = !swap; }
-        if (pmidKeepReference === 2) { swap = !swap; }
-        if (swap) {
-          // console.log('remove ' + authDict['author_id'] + ' ' + authDict['author_order']);
-          let subPath = 'author/' + authDict['author_id'];
-          let array = [ subPath, null, 'DELETE', 0, null, null];
-          forApiArray.push( array ); }
-        else {
-          authorOrder++;
-          // console.log('no swap raise authorOrder to ' + authorOrder);
-          if (authorOrder-1 !== index) {
-            // console.log('reorder ' + authDict['author_id'] + ' to authorOrder ' + authorOrder);
-            const updateJsonAuth1 = { 'author_order': authorOrder }
-            let subPath = 'author/' + authDict['author_id'];
-            let array = [ subPath, updateJsonAuth1, 'PATCH', 0, null, null];
-            forApiArray.push( array );
-    } } } }
-    if ('authors' in referenceMeta2['referenceJson'] && referenceMeta2['referenceJson']['authors'] !== null) {
-      const orderedAuthors = [];
-      for (const value of referenceMeta2['referenceJson']['authors'].values()) {
-        let index = value['author_order'] - 1;
-        if (index < 0) { index = 0 }      // temporary fix for fake authors have an 'author_order' field value of 0
-        orderedAuthors[index] = value; }
-      for (const authDict of orderedAuthors.values()) {
-      // for (const [index, authDict] of orderedAuthors.entries())
-        // console.log( authDict['first_name'] + ' ' + authDict['author_id'] + ' index ' + index + ' author_order ' + authDict['author_order']);
-        let swap = false;
-        if (authDict['toggle']) { swap = !swap; }
-        if (pmidKeepReference === 2) { swap = !swap; }
-        if (swap) {
-          authorOrder++;
-          // console.log('transfer ' + authDict['author_id'] + ' ' + authDict['author_order'] + ' to ' + authorOrder);
-          const referenceCurie = referenceMeta1.curie;
-          const updateJsonAuth2 = { 'reference_curie': referenceCurie, 'author_order': authorOrder }
-          let subPath = 'author/' + authDict['author_id'];
-          let array = [ subPath, updateJsonAuth2, 'PATCH', 0, null, null];
-          forApiArray.push( array ); } 
-        else { 
-          // console.log('no swap remove ' + authorOrder);
-          let subPath = 'author/' + authDict['author_id'];
-          let array = [ subPath, null, 'DELETE', 0, null, null];
-          forApiArray.push( array );
-    } } }
+    // Authors go through a dedicated thunk: transfers keep their old author_order (PATCH
+    // cannot set one) and the API rejects a colliding reparent with a 422, which would still
+    // fail the transfer -- so the keepers have to be parked above the incoming range first and
+    // flattened afterwards. buildMergeAuthorPlan also sorts defensively instead of indexing a
+    // sparse array by author_order - 1.
+    const authorPlan = buildMergeAuthorPlan({
+      ref1Authors: referenceMeta1['referenceJson']['authors'],
+      ref2Authors: referenceMeta2['referenceJson']['authors'],
+      ref1Curie: referenceMeta1['referenceJson']['curie'],
+      pmidKeepReference: pmidKeepReference,
+    });
+    const authorCallCount = mergeAuthorPlanCallCount(authorPlan);
 
     const [reffile1, reffile2, md5sums] = deriveReffilesMd5sum(referenceMeta1['referenceJson']['reference_files'], referenceMeta2['referenceJson']['reference_files'])
     const sameMd5 = {}; const uniqMd5 = {};
@@ -923,7 +885,9 @@ const MergeSubmitDataTransferUpdateButton = () => {
     });
     // unaccounted for cannot get transferred
 
-    let dispatchCount = forApiArray.length;
+    // the author thunk reports once per call it makes with mergeType 'mergeData', exactly like
+    // the forApiArray dispatches below, so both have to be counted here or the spinner hangs
+    let dispatchCount = forApiArray.length + authorCallCount;
 
     // console.log('dispatchCount ' + dispatchCount)
     dispatch(setMergeUpdating(dispatchCount))
@@ -933,6 +897,10 @@ const MergeSubmitDataTransferUpdateButton = () => {
       arrayData.unshift('mergeData');
       arrayData.unshift(accessToken)
       dispatch(mergeButtonApiDispatch(arrayData))
+    }
+
+    if (authorCallCount > 0) {
+      dispatch(mergeAuthors(referenceMeta1['referenceJson']['curie'], authorPlan));
     }
 
   } // function mergeReferences()
