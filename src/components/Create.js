@@ -79,7 +79,10 @@ const CreatePubmed = () => {
     const subPath = 'reference/add/';
     // For alliance-only, we don't have a modCurie to check, so pass a placeholder
     const modCurieForCheck = allianceOnly ? 'Alliance:new' : (modPrefix + ':' + modIdent);
-    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
+    // subField 'curie' names the field to read the new reference's curie from: the reducer
+    // redirects to whatever this yields, so leaving it null sends the curator to
+    // ?referenceCurie=null on an otherwise successful create.
+    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, 'curie']
     dispatch(updateButtonCreate(arrayData, 'pmid', modCurieForCheck));
   }
 
@@ -155,7 +158,8 @@ const CreateAlliance = () => {
 
     // For alliance-only, we don't have a modCurie to check, so pass a placeholder
     const modCurieForCheck = allianceOnly ? 'Alliance:new' : (modPrefix + ':' + modIdent);
-    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
+    // subField 'curie' -- see the note in the PMID create path above
+    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, 'curie']
     dispatch(updateButtonCreate(arrayData, 'alliance', modCurieForCheck))
   }
 
