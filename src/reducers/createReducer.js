@@ -104,16 +104,24 @@ export default function(state = initialState, action) {
         redirectCurie: action.payload,
         redirectToBiblio: true
       }
+    // Both create-loading actions are dispatched the moment a create starts, which is the
+    // right point to drop the previous attempt's alert. Without this, a message survives the
+    // create that produced it -- the curator comes back to Create later and reads a red error
+    // about a reference that was made minutes ago and is perfectly fine.
     case 'CREATE_SET_PMID_CREATE_LOADING':
       // console.log(action.payload);
       return {
         ...state,
+        updateFailure: 0,
+        updateMessages: [],
         createPmidLoading: true
       }
     case 'CREATE_SET_ALLIANCE_CREATE_LOADING':
       // console.log(action.payload);
       return {
         ...state,
+        updateFailure: 0,
+        updateMessages: [],
         createAllianceLoading: true
       }
     case 'UPDATE_BUTTON_CREATE_ALREADY_EXISTS':
@@ -133,7 +141,9 @@ export default function(state = initialState, action) {
       console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
       console.log('reducer value ' + action.payload.value);
       let newUpdateFailure = 0;
-      let newArrayUpdateMessages = state.updateMessages;
+      // copy, never alias: the pushes below would otherwise mutate the store in place, and
+      // for an untouched store that array is the module-level initialState singleton
+      let newArrayUpdateMessages = [...state.updateMessages];
       let redirectCurie = state.redirectCurie;
       let redirectToBiblio = false;
       let createPmidLoading = state.createPmidLoading;
