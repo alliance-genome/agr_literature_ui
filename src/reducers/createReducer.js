@@ -147,9 +147,24 @@ export default function(state = initialState, action) {
 //       let hasChangeUpdateButton = state.referenceJsonHasChange;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
-        newArrayUpdateMessages = [];
-        redirectToBiblio = true;
-        redirectCurie = action.payload.value;
+        if (action.payload.value === null || action.payload.value === undefined) {
+          // The reference was created, but nothing usable came back to redirect to.
+          // Redirecting anyway is the silent failure this guard exists to stop: the curator
+          // lands on ?referenceCurie=null looking at an empty editor, with no error anywhere
+          // and no hint that the reference does exist. Report it instead, so a renamed field,
+          // a reverted response_model, or a new call site that forgets to name its id field
+          // announces itself the day it lands rather than months later.
+          const named = action.payload.subField ? ` ("${action.payload.subField}")` : '';
+          newArrayUpdateMessages.push(
+            `The reference was created, but the API response carried no identifier${named} to `
+            + `open it with, so it could not be displayed. Find it via search.`);
+          newUpdateFailure = 1;
+          console.log('Update success with no id to redirect to');
+        } else {
+          newArrayUpdateMessages = [];
+          redirectToBiblio = true;
+          redirectCurie = action.payload.value;
+        }
 //         getReferenceCurieFlagUpdateButton = true;
 //         hasChangeUpdateButton = {};
       } else {
