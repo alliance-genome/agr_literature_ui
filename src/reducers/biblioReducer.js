@@ -546,14 +546,9 @@ export default function(state = initialState, action) {
       let hasChangeAuthorFieldDelete = state.referenceJsonHasChange
       hasChangeAuthorFieldDelete[fieldIdAuthorDelete] = 'diff'
 
-      // this would correctly reorder down other authors, but then the deleted author has the same order as a renumbered one,
-      // and disappears, so ceri decided we should reorder with a separate call after editing, and purposely show the curators
-      // the pre-deletion author order in the UI
-      // let startingAuthorOrder = indexDomAuthorDelete + 1
-      // for (let authorReorderDict of deleteAuthorChange) {
-      //   if (authorReorderDict['order'] > startingAuthorOrder) {
-      //     authorReorderDict['needsChange'] = true;
-      //     authorReorderDict['order'] -= 1 } }
+      // Deleting does not renumber the remaining authors here: curators are shown the
+      // pre-deletion order until they submit, and the save thunk then issues a single
+      // POST /author/reorder that closes the gap.
 
       return {
         ...state,
@@ -605,27 +600,6 @@ export default function(state = initialState, action) {
       else if (subfieldAuthorInfo === 'affiliations') {
 //         let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] = authorInfoNewValue; }
-      else if (subfieldAuthorInfo === 'author_order') {
-        let oldAuthorOrder = indexDomAuthorInfo + 1
-        let newAuthorOrder = parseInt(authorInfoNewValue)
-        // console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
-        // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
-        for (let authorReorderDict of newAuthorInfoChange) {
-          // console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
-          if (newAuthorOrder < oldAuthorOrder) {
-            if (authorReorderDict['author_order'] === oldAuthorOrder) {
-              authorReorderDict['needsChange'] = true;
-              authorReorderDict['author_order'] = newAuthorOrder }
-            else if ( (authorReorderDict['author_order'] >= newAuthorOrder) && (authorReorderDict['author_order'] < oldAuthorOrder) ) {
-              authorReorderDict['needsChange'] = true;
-              authorReorderDict['author_order'] += 1 } }
-          else if (newAuthorOrder > oldAuthorOrder) {
-            if (authorReorderDict['author_order'] === oldAuthorOrder) {
-              authorReorderDict['needsChange'] = true;
-              authorReorderDict['author_order'] = newAuthorOrder }
-            else if ( (authorReorderDict['author_order'] <= newAuthorOrder) && (authorReorderDict['author_order'] > oldAuthorOrder) ) {
-              authorReorderDict['needsChange'] = true;
-              authorReorderDict['author_order'] -= 1 } } } }
       else {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = authorInfoNewValue; }
       // console.log(newAuthorInfoChange)

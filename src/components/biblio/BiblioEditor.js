@@ -44,6 +44,9 @@ import { setBiblioEditorModalText } from '../../actions/biblioActions';
 import { changeFieldDatePublishedRange } from '../../actions/biblioActions';
 import { getXrefPatterns } from '../../actions/biblioActions';
 
+import { buildAuthorSavePlan, authorPlanCallCount, maxAuthorOrder } from '../../utils/authorOrdering';
+import { updateBiblioAuthors } from '../../actions/authorOrderActions';
+
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -366,84 +369,14 @@ const BiblioSubmitUpdateButton = () => {
     } } }
 
 
+    // Authors are handled by a dedicated thunk: the calls are order-dependent (deletes free
+    // the orders the flatten hands out, and the flatten needs the created authors' ids), and
+    // the forApiArray loop below is fire-and-forget.
+    let authorPlan = null;
+    let authorCallCount = 0;
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-      const authorFields = [ 'author_order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations' ];
-
-      // 1. Delete authors marked for deletion
-      for (const [index, authorDict] of referenceJsonLive['authors'].entries()) {
-        if (authorDict.deleteMe === true && authorDict.author_id !== 'new') {
-          let subPath = 'author/' + authorDict['author_id'];
-          let method = 'DELETE';
-          let array = [subPath, updateJson, method, index, null, null];
-          forApiArray.push(array);
-        }
-      }
-
-      // 2. Collect surviving authors (not deleted), keep original order
-      let survivingAuthors = referenceJsonLive['authors']
-        .filter(authorDict => !(authorDict.deleteMe === true))
-        .map(authorDict => ({
-          authorDict,
-          originalOrder: authorDict.author_order
-        }));
-      // Sort by original order
-      survivingAuthors.sort((a, b) => a.originalOrder - b.originalOrder);
-
-      // 3. Reassign order and track if order changed
-      for (let i = 0; i < survivingAuthors.length; i++) {
-        let { authorDict, originalOrder } = survivingAuthors[i];
-        let newOrder = i + 1;
-        authorDict.author_order = newOrder;  // update local order
-        survivingAuthors[i].orderChanged = (originalOrder !== newOrder);
-      }
-
-      // 4. Patch existing authors (with author_id !== 'new') if needsChange or reordered
-      for (const { authorDict, orderChanged } of survivingAuthors) {
-        if (authorDict.author_id !== 'new' && (authorDict.needsChange || orderChanged)) {
-          let updateJson = { reference_curie: referenceCurie };
-          for (const field of authorFields) {
-            if (field in authorDict) {
-              if (field === 'orcid' && authorDict['orcid'] !== null) {
-                let orcidValue = authorDict['orcid'].toUpperCase();
-                if (orcidValue !== '' && !orcidValue.match(/^ORCID:(.*)$/)) {
-                  orcidValue = 'ORCID:' + orcidValue;
-                }
-                updateJson['orcid'] = orcidValue;
-              } else if (field !== 'orcid') {
-                updateJson[field] = authorDict[field];
-              }
-            }
-          }
-          let subPath = 'author/' + authorDict['author_id'];
-          let method = 'PATCH';
-          let array = [subPath, updateJson, method, null, null, null];
-          forApiArray.push(array);
-        }
-      }
-
-      // 5. Create new authors (author_id === 'new') with POST and correct order
-      for (const { authorDict } of survivingAuthors) {
-        if (authorDict.author_id === 'new') {
-          let updateJson = { reference_curie: referenceCurie };
-          for (const field of authorFields) {
-            if (field in authorDict) {
-              if (field === 'orcid' && authorDict['orcid'] !== null) {
-                let orcidValue = authorDict['orcid'].toUpperCase();
-                if (orcidValue !== '' && !orcidValue.match(/^ORCID:(.*)$/)) {
-                  orcidValue = 'ORCID:' + orcidValue;
-                }
-                updateJson['orcid'] = orcidValue;
-              } else if (field !== 'orcid') {
-                updateJson[field] = authorDict[field];
-              }
-            }
-          }
-          let subPath = 'author/';
-          let method = 'POST';
-          let array = [subPath, updateJson, method, null, 'authors', 'author_id'];
-          forApiArray.push(array);
-        }
-      }
+      authorPlan = buildAuthorSavePlan(referenceJsonLive['authors'], referenceCurie);
+      authorCallCount = authorPlanCallCount(authorPlan);
     }
 
 
@@ -542,7 +475,7 @@ const BiblioSubmitUpdateButton = () => {
             forApiArray.push( array ); }
     } } }
 
-    let dispatchCount = forApiArray.length;
+    let dispatchCount = forApiArray.length + authorCallCount;
 
     // console.log('dispatchCount ' + dispatchCount)
     dispatch(setBiblioUpdating(dispatchCount))
@@ -553,6 +486,10 @@ const BiblioSubmitUpdateButton = () => {
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken)
       dispatch(updateButtonBiblio(arrayData))
+    }
+
+    if (authorCallCount > 0) {
+      dispatch(updateBiblioAuthors(referenceCurie, authorPlan));
     }
     // console.log('end updateBiblio')
   } // function updateBiblio(referenceCurie, referenceJsonLive)
@@ -586,17 +523,6 @@ const ColEditorSelect = ({fieldType, fieldName, value, colSize, updatedFlag, dis
                 {enumType in enumDict && enumDict[enumType].map((optionValue, index) => (
                   <option key={`${fieldKey} ${optionValue}`}>{optionValue}</option>
                 ))}
-              </Form.Control>
-            </Col>); }
-
-const ColEditorSelectNumeric = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, dispatchAction, minNumber, maxNumber}) => {
-  const dispatch = useDispatch();
-  const numericOptionElements = []
-  for (let i = minNumber; i <= maxNumber; i++) {
-    numericOptionElements.push(<option key={`${fieldKey} ${i}`}>{i}</option>) }
-  return (  <Col sm={colSize}>
-              <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} >
-              {numericOptionElements}
               </Form.Control>
             </Col>); }
 
@@ -1228,8 +1154,10 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   const authorExpand = useSelector(state => state.biblio.authorExpand);
 //   const revertDictFields = 'order, name, first_name, last_name, orcid, first_author, corresponding_author, affiliations'
   const updatableFields = ['author_order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations']
-  let authorOrder = 1;
-  if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) { authorOrder = referenceJsonLive['authors'].length + 1; }
+  // highest existing order + 1, NOT length + 1: with a gap in the orders, length + 1 can
+  // collide with a real author and overwrite its row in the sparse array built below.
+  const highestAuthorOrder = maxAuthorOrder(referenceJsonLive['authors'] || []);
+  const authorOrder = highestAuthorOrder + 1;
   const initializeDict = {'author_order': authorOrder, 'name': '', 'first_name': '', 'last_name': '', orcid: null, first_author: false, corresponding_author: false, affiliations: [], 'author_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
@@ -1248,9 +1176,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   rowAuthorsElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="editor" />);
   const orderedAuthors = [];
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-    let highestAuthorOrder = 0;		// previously was using referenceJsonLive['authors'].length, but there could be a gap in the order from db
     for (const value  of referenceJsonLive['authors'].values()) {
-      if (value['author_order'] > highestAuthorOrder) { highestAuthorOrder = value['author_order']; }
       let index = value['author_order'] - 1;
       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
       orderedAuthors[index] = value; }
@@ -1274,18 +1200,9 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         </Row>); }
 
     else if (authorExpand === 'detailed') {
-      // Remove warning row because author edit + delete + reorder + create at the same time seems to work, but if it doesn't, bring it back
-      // Warning row for curators not to create and delete authors at the same time.  The UI cannot handle gaps in the author list based on the
-      // db author order from the API.  When a delete is sent to the API, it triggers comparing the author orders to what they should be, but
-      // the newly created author does not have an author_id from the database yet, so it cannot update its order to flatten the order gap.
-      // An API endpoint to flatten author orders would fix it, replace the  if (hasAuthorDeletion) { survivingAuthors  code.
-      // UI is not meant to handle gaps in order, it could be reworked to.
-      // rowAuthorsElements.push(
-      //   <Row key="author editing warning" className="Row-general" xs={2} md={4} lg={6}>
-      //     <Col className="Col-general "></Col>
-      //     <Col className="Col-general " lg={{ span: 10 }}>
-      //       <span style={{color: 'red'}}>Warning: Deleting and Creating an author at the same time will break the UI for the created Authors. Do each of those actions separately and press the Update Biblio Data between them.</span></Col>
-      //   </Row>);
+      // No warning about deleting and creating authors in the same submit any more: the save
+      // path now plans the calls (see src/utils/authorOrdering.js) and closes any order gap
+      // with a single POST /author/reorder once the created authors have real author_ids.
       for (const[index, authorDict] of orderedAuthors.entries()) {
         if (typeof authorDict === 'undefined') { continue; }
         let rowEvenness = (index % 2 === 0) ? 'row-even' : 'row-odd'
@@ -1388,8 +1305,22 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
               <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
               <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabledName} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
               <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
-              <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['author_order']} updatedFlag={updatedDict['author_order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} author_order`} minNumber="1"
- maxNumber={highestAuthorOrder} dispatchAction={changeFieldAuthorsReferenceJson} />
+              {/* Author order is read-only: the API rejects author_order on PATCH and renumbering
+                  goes through POST /author/reorder, which the save thunk issues. Rendered as plain
+                  text rather than a disabled <select>, which would still look like a control.
+                  updatedDict['author_order'] is inert for saved authors -- an existing author's
+                  order is never mutated in the store (the reducer branch and the submit-time
+                  renumber are both gone), so its live and Db orders always match. It can still
+                  flash 'updated' on unsaved new authors: with two or more of them, the Db-index
+                  lookup above (:1243-1245) resolves every author_id === 'new' row to the LAST
+                  new author, so the first one's live order (max+1) is compared against the
+                  second one's Db order (max+2). That mis-resolution is pre-existing and affects
+                  every field of a multi-new-author row, not just this one; it is out of scope
+                  here. It is always assigned, so no "undefined" leaks into className;
+                  it is kept as the ready-made hook for a future reorder UI. The id likewise has no
+                  consumer in the tree (no getElementById, no test, no CSS rule) and is kept purely
+                  as a manual-QA / Playwright selector -- do not wire one up. */}
+              <Col className={`Col-general Col-editor-disabled ${updatedDict['author_order']}`} sm="1" id={`${fieldName} ${index} author_order`} >{authorDict['author_order']}</Col>
               {buttonsElement}
             </Form.Group>);
               // <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />

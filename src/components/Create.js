@@ -15,6 +15,7 @@ import { setBiblioAction } from '../actions/biblioActions';
 import { changeCreateActionToggler } from '../actions/createActions';
 import { setCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
+import { resetCreateAlert } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
 import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
@@ -79,7 +80,10 @@ const CreatePubmed = () => {
     const subPath = 'reference/add/';
     // For alliance-only, we don't have a modCurie to check, so pass a placeholder
     const modCurieForCheck = allianceOnly ? 'Alliance:new' : (modPrefix + ':' + modIdent);
-    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
+    // subField 'curie' names the field to read the new reference's curie from: the reducer
+    // redirects to whatever this yields, so leaving it null sends the curator to
+    // ?referenceCurie=null on an otherwise successful create.
+    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, 'curie']
     dispatch(updateButtonCreate(arrayData, 'pmid', modCurieForCheck));
   }
 
@@ -155,7 +159,8 @@ const CreateAlliance = () => {
 
     // For alliance-only, we don't have a modCurie to check, so pass a placeholder
     const modCurieForCheck = allianceOnly ? 'Alliance:new' : (modPrefix + ':' + modIdent);
-    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
+    // subField 'curie' -- see the note in the PMID create path above
+    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, 'curie']
     dispatch(updateButtonCreate(arrayData, 'alliance', modCurieForCheck))
   }
 
@@ -750,6 +755,12 @@ const Create = () => {
     dispatch(setReferenceCurie(referenceCurie));
     history.push("/Biblio/?action=editor&referenceCurie=" + referenceCurie);
   }
+
+  // Mount only: the store is a module-level singleton with no route-level reset, so an alert
+  // from a previous visit would otherwise still be on screen when the curator comes back.
+  useEffect(() => {
+    dispatch(resetCreateAlert());
+  }, [dispatch]);
 
   useEffect(() => {
     if (createRedirectToBiblio) {
