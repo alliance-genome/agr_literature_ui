@@ -483,6 +483,31 @@ describe('buildMergeAuthorPlan person conflicts', () => {
     expect(plan.personConflicts).toEqual([]);
   });
 
+  test('a person-only row on reference 1 still conflicts, though it never reaches ref1Authors', () => {
+    // The API splits author_order IS NULL rows into author_person_without_author_order, so a
+    // stub is invisible to orderedAuthors -- neither keeper nor delete. It stays on reference 1
+    // holding its person, so a transfer of that person must still be refused.
+    const plan = buildMergeAuthorPlan({
+      ...base,
+      ref1Authors: [{ author_id: 'A1', author_order: 1, person_id: 9 }],
+      ref1PersonOnly: [{ author_id: 'A0', author_order: null, person_id: 7 }],
+      ref2Authors: [{ author_id: 'B1', author_order: 1, person_id: 7, toggle: true, name: 'Smith, J' }],
+    });
+    expect(plan.personConflicts).toHaveLength(1);
+    expect(plan.personConflicts[0].keeper.author_id).toBe('A0');
+    expect(plan.personConflicts[0].transfer.author_id).toBe('B1');
+  });
+
+  test('ref1PersonOnly is optional and tolerates null', () => {
+    const args = {
+      ...base,
+      ref1Authors: [{ author_id: 'A1', author_order: 1, person_id: 9 }],
+      ref2Authors: [{ author_id: 'B1', author_order: 1, person_id: 7, toggle: true }],
+    };
+    expect(buildMergeAuthorPlan(args).personConflicts).toEqual([]);
+    expect(buildMergeAuthorPlan({ ...args, ref1PersonOnly: null }).personConflicts).toEqual([]);
+  });
+
   test('a discarded reference-1 author is not a keeper, so its person does not conflict', () => {
     const plan = buildMergeAuthorPlan({
       ...base,
@@ -503,7 +528,7 @@ describe('describeMergePersonConflicts', () => {
     }]);
     expect(message).toContain('Smith, J');
     expect(message).toContain('author 3');
-    expect(message).toContain('Untoggle');
+    expect(message).toContain('left behind');
   });
 
   test('falls back to the person id when neither row has a name', () => {
@@ -513,6 +538,16 @@ describe('describeMergePersonConflicts', () => {
       transfer: { author_id: 'B1', author_order: 1, person_id: 7 },
     }]);
     expect(message).toContain('person 7');
+  });
+
+  test('a person-only keeper has no order to name', () => {
+    const [message] = describeMergePersonConflicts([{
+      person_id: 7,
+      keeper: { author_id: 'A0', author_order: null, person_id: 7 },
+      transfer: { author_id: 'B1', author_order: 1, person_id: 7, name: 'Smith, J' },
+    }]);
+    expect(message).toContain('already linked to the reference being kept');
+    expect(message).not.toContain('author null');
   });
 
   test('handles an empty or missing list', () => {

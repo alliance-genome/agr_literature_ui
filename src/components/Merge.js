@@ -768,6 +768,9 @@ const MergeSubmitDataTransferUpdateButton = () => {
     const authorPlan = buildMergeAuthorPlan({
       ref1Authors: referenceMeta1['referenceJson']['authors'],
       ref2Authors: referenceMeta2['referenceJson']['authors'],
+      // person-only rows live in their own field, never in authors; they still hold a person
+      // link on the surviving reference, so a transfer of that person collides with them
+      ref1PersonOnly: referenceMeta1['referenceJson']['author_person_without_author_order'],
       ref1Curie: referenceMeta1['referenceJson']['curie'],
       pmidKeepReference: pmidKeepReference,
     });

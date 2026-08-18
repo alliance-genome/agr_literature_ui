@@ -163,7 +163,8 @@ export const mergeAuthorSwap = (authorDict, pmidKeepReference) => {
 // beats absorbing it: reference 1's keepers are first parked above every order in either
 // reference, leaving the whole low range free for the incoming authors, and a final flatten
 // brings everything back to 1..N.
-export const buildMergeAuthorPlan = ({ ref1Authors, ref2Authors, ref1Curie, pmidKeepReference }) => {
+export const buildMergeAuthorPlan = ({ ref1Authors, ref2Authors, ref1Curie, pmidKeepReference,
+  ref1PersonOnly = [] }) => {
   const ref1 = orderedAuthors(ref1Authors);
   const ref2 = orderedAuthors(ref2Authors);
   // computed from the pre-delete lists so it stays a safe upper bound even if a delete fails,
@@ -199,8 +200,14 @@ export const buildMergeAuthorPlan = ({ ref1Authors, ref2Authors, ref1Curie, pmid
   // away: if the same person really is an author on both references, the transfer can never
   // succeed, and re-running the merge fails identically. Report it so the caller can refuse
   // BEFORE the destructive deletes run, rather than discovering it mid-merge.
+  // Person-only rows count too, and they do NOT arrive in ref1Authors: the API splits
+  // author_order IS NULL rows into author_person_without_author_order, so they are invisible to
+  // orderedAuthors and are never keepers or deletes -- they simply stay on reference 1 holding
+  // their person. A transfer of that same person still collides with them, so they have to be
+  // part of the conflict set or the guard misses exactly the rows most likely to carry a link.
+  const ref1PersonHolders = [...keepers, ...(ref1PersonOnly || []).filter((a) => a)];
   const keepersByPerson = new Map(
-    keepers.filter((a) => a.person_id !== null && a.person_id !== undefined)
+    ref1PersonHolders.filter((a) => a.person_id !== null && a.person_id !== undefined)
       .map((a) => [a.person_id, a]),
   );
   const personConflicts = transfers
@@ -248,8 +255,13 @@ export const mergeAuthorPlanCallCount = (plan) =>
 export const describeMergePersonConflicts = (personConflicts) =>
   (personConflicts || []).map(({ keeper, transfer }) => {
     const who = transfer.name || keeper.name || `person ${keeper.person_id}`;
-    return `${who} cannot be transferred: the same person is already author `
-      + `${keeper.author_order} on the reference being kept `
+    // Name the state, not the toggle action: when pmidKeepReference === 2 the swap sense
+    // inverts, so the offending author is transferring precisely because it is UNtoggled and
+    // the curator would need to toggle it. "leave it behind" is true either way.
+    const where = keeper.author_order === null || keeper.author_order === undefined
+      ? 'is already linked to the reference being kept'
+      : `is already author ${keeper.author_order} on the reference being kept`;
+    return `${who} cannot be transferred: the same person ${where} `
       + `(author ${transfer.author_id} would duplicate author ${keeper.author_id}). `
-      + `Untoggle that author, or resolve the duplicate person link first.`;
+      + `Set that author to be left behind, or resolve the duplicate person link first.`;
   });
