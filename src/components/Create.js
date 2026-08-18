@@ -15,6 +15,7 @@ import { setBiblioAction } from '../actions/biblioActions';
 import { changeCreateActionToggler } from '../actions/createActions';
 import { setCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
+import { resetCreateAlert } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
 import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
@@ -754,6 +755,12 @@ const Create = () => {
     dispatch(setReferenceCurie(referenceCurie));
     history.push("/Biblio/?action=editor&referenceCurie=" + referenceCurie);
   }
+
+  // Mount only: the store is a module-level singleton with no route-level reset, so an alert
+  // from a previous visit would otherwise still be on screen when the curator comes back.
+  useEffect(() => {
+    dispatch(resetCreateAlert());
+  }, [dispatch]);
 
   useEffect(() => {
     if (createRedirectToBiblio) {

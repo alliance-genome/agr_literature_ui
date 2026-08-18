@@ -94,6 +94,15 @@ export const setCreateAction = (createAction) => {
   };
 };
 
+// Dropped when Create mounts, so an alert from an earlier attempt does not greet a curator
+// who navigated away and came back -- which is exactly the trip the "find it via search"
+// message sends them on.
+export const resetCreateAlert = () => {
+  return {
+    type: 'RESET_CREATE_ALERT'
+  };
+};
+
 export const resetCreateRedirect = () => {
   return {
     type: 'RESET_CREATE_REDIRECT'

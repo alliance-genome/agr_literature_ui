@@ -71,7 +71,8 @@ describe('update alert lifetime', () => {
   });
 
   test('the initial state is not corrupted by dispatches against it', () => {
-    createReducer(undefined, { type: '@@INIT' });
+    // each createReducer(undefined, ...) hands back the same module-level object, so a push
+    // against one of these would show up in the assertion below
     created(createReducer(undefined, { type: '@@INIT' }), null);
     created(createReducer(undefined, { type: '@@INIT' }), null);
     expect(createReducer(undefined, { type: '@@INIT' }).updateMessages).toEqual([]);
@@ -85,6 +86,24 @@ describe('update alert lifetime', () => {
       expect(next.updateMessages).toEqual([]);
       expect(next.updateFailure).toBe(0);
     }
+  });
+
+  test('arriving at Create drops an alert left over from a previous visit', () => {
+    // clearing at create-start only covers a second create without leaving the page; this is
+    // the curator who read the message, went to Search as it told them to, and came back
+    const stale = created(freshState(), null);
+    expect(stale.updateMessages).toHaveLength(1);
+    const onMount = createReducer(stale, { type: 'RESET_CREATE_ALERT' });
+    expect(onMount.updateMessages).toEqual([]);
+    expect(onMount.updateFailure).toBe(0);
+    expect(onMount.updateAlert).toBe(0);
+  });
+
+  test('the mount reset leaves everything else alone', () => {
+    const stale = { ...created(freshState(), null), pmid: '31896237', modIdent: 'WBPaper1' };
+    const onMount = createReducer(stale, { type: 'RESET_CREATE_ALERT' });
+    expect(onMount.pmid).toBe('31896237');
+    expect(onMount.modIdent).toBe('WBPaper1');
   });
 
   test('two failures in a row do not stack duplicates from an earlier state', () => {

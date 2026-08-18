@@ -81,6 +81,17 @@ export default function(state = initialState, action) {
         ...state,
         createAction: action.payload
       }
+    // Clearing at create-start (below) only covers a second create made without leaving the
+    // page. This covers arriving at Create with an alert still in the store from last time.
+    // updateAlert is reset alongside them: nothing reads it today, but it is the counter a
+    // dismissible alert here would key off, and leaving it monotonic would be a trap.
+    case 'RESET_CREATE_ALERT':
+      return {
+        ...state,
+        updateAlert: 0,
+        updateFailure: 0,
+        updateMessages: []
+      }
     case 'RESET_CREATE_REDIRECT':
       console.log("reset create redirect");
       return {
