@@ -810,6 +810,24 @@ em {
   border-bottom: 1px solid #dee2e6;     /* Add border for better separation */
 }
 
+/* Quick Topic Addition: make the row-drag handle an obvious, easy grab target
+   (rows only reorder when the handle itself is dragged; dragging the row text
+   just selects text because cell text selection is enabled). */
+.quick-topic-grid .ag-row-drag {
+  cursor: grab;
+  padding: 0 10px;
+  margin: 0 -4px;
+  color: #667085;
+}
+.quick-topic-grid .ag-row-drag:hover {
+  color: #1570ef;
+  background: #eff6ff;
+  border-radius: 4px;
+}
+.quick-topic-grid .ag-row-drag:active {
+  cursor: grabbing;
+}
+
 /* Alternating row colors */
 .ag-theme-quartz .ag-row-striped-dark {
   background-color: #e9ecef;  /* Darker grey */
