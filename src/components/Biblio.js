@@ -8,6 +8,8 @@ import BiblioDisplay from './biblio/BiblioDisplay';
 import BiblioEditor from './biblio/BiblioEditor';
 import BiblioEntity from './biblio/BiblioEntity';
 import BiblioWorkflow from './biblio/BiblioWorkflow';
+import QuickTopicAddition from './biblio/topic_entity_tag/QuickTopicAddition';
+import { getQuickTopicStagedCount } from './biblio/topic_entity_tag/quickTopicStaged';
 import BiblioFileManagement from './biblio/BiblioFileManagement';
 import BiblioRawTetData from './biblio/BiblioRawTetData';
 import NoAccessAlert from './biblio/NoAccessAlert';
@@ -130,18 +132,33 @@ const RetractionBanner = () => {
 const BiblioActionToggler = () => {
   const dispatch = useDispatch();
   const biblioAction = useSelector(state => state.biblio.biblioAction);
+
+  // Warn before leaving Quick Topic Addition with staged, unsubmitted
+  // assessments (switching tabs unmounts the grid and discards them).
+  const toggleAction = (e, mode) => {
+    if (biblioAction === 'quicktopic' && mode !== 'quicktopic' && getQuickTopicStagedCount() > 0) {
+      const ok = window.confirm(
+        'You have staged topic assessments in Quick Topic Addition that have not been submitted. '
+        + 'Leave this tab and discard them?'
+      );
+      if (!ok) { return; }
+    }
+    dispatch(changeBiblioActionToggler(e, mode));
+  };
   let displayChecked = '';
   let editorChecked = '';
   let entityChecked = '';
   let workflowChecked = '';
   let filemanagementChecked = '';
   let rawtopicentityChecked = '';
+  let quicktopicChecked = '';
   let radioFormDisplayClassname = 'radio-form';
   let radioFormEditorClassname = 'radio-form';
   let radioFormEntityClassname = 'radio-form';
   let radioFormWorkflowClassname = 'radio-form';
   let radioFormFilemanagementClassname = 'radio-form';
   let radioFormRawtopicentityClassname = 'radio-form';
+  let radioFormQuicktopicClassname = 'radio-form';
   if (biblioAction === 'editor') {
     radioFormEditorClassname += ' underlined';
     editorChecked = 'checked';
@@ -161,6 +178,10 @@ const BiblioActionToggler = () => {
     else if (biblioAction === 'rawtopicentity') {
       radioFormRawtopicentityClassname += ' underlined';
       rawtopicentityChecked = 'checked';
+    }
+    else if (biblioAction === 'quicktopic') {
+      radioFormQuicktopicClassname += ' underlined';
+      quicktopicChecked = 'checked';
     }
     else {
       radioFormDisplayClassname += ' underlined';
@@ -183,7 +204,7 @@ const BiblioActionToggler = () => {
 
   return (
     <Form>
-    <div key={`default-radio`} className="mb-3">
+    <div key={`default-radio`} className="mb-3 biblio-mode-radios">
       <div className='radio-span'>
         <Form.Check
           inline
@@ -192,7 +213,7 @@ const BiblioActionToggler = () => {
           type='radio'
           label='biblio display'
           id='biblio-toggler-display'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'display'))}
+          onChange={(e) => toggleAction(e, 'display')}
         />
       </div>
       <div className='radio-span'>
@@ -203,7 +224,7 @@ const BiblioActionToggler = () => {
           type='radio'
           label='biblio editor'
           id='biblio-toggler-editor'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'editor'))}
+          onChange={(e) => toggleAction(e, 'editor')}
         />
       </div>
       <div className='radio-span'>
@@ -214,7 +235,18 @@ const BiblioActionToggler = () => {
           type='radio'
           label='entity and topic editor'
           id='biblio-toggler-entity'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'entity'))}
+          onChange={(e) => toggleAction(e, 'entity')}
+        />
+      </div>
+      <div className='radio-span'>
+        <Form.Check
+          inline
+          className={radioFormQuicktopicClassname}
+          checked={quicktopicChecked}
+          type='radio'
+          label='quick topic addition'
+          id='biblio-toggler-quicktopic'
+          onChange={(e) => toggleAction(e, 'quicktopic')}
         />
       </div>
       <div className='radio-span'>
@@ -225,7 +257,7 @@ const BiblioActionToggler = () => {
           type='radio'
           label='workflow editor'
           id='biblio-toggler-workflow'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'workflow'))}
+          onChange={(e) => toggleAction(e, 'workflow')}
         />
       </div>
       <div className='radio-span'>
@@ -236,7 +268,7 @@ const BiblioActionToggler = () => {
           type='radio'
           label='file management'
           id='biblio-toggler-filemanagement'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'filemanagement'))}
+          onChange={(e) => toggleAction(e, 'filemanagement')}
         />
       </div>
       <div className='radio-span'>
@@ -247,7 +279,7 @@ const BiblioActionToggler = () => {
           type='radio'
           label='raw entity and topic data'
           id='biblio-toggler-rawtopicentity'
-          onChange={(e) => dispatch(changeBiblioActionToggler(e, 'rawtopicentity'))}
+          onChange={(e) => toggleAction(e, 'rawtopicentity')}
         />
       </div>
     </div>
@@ -271,6 +303,8 @@ const BiblioActionRouter = () => {
       return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioFileManagement /> }</>);
     case 'rawtopicentity':
       return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioRawTetData /> }</>);
+    case 'quicktopic':
+      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     default:
       return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);
   }
@@ -369,8 +403,11 @@ const BiblioTagging = () => {
     rowOrderedElements.push(<RowDisplayString key="abstract" fieldName="abstract" referenceJsonLive={referenceJsonLive} referenceJsonDb={referenceJsonDb} />);
     // rowOrderedElements.push(<EntityCreate key="geneAutocomplete"/>);
   }
+  let taggingBody = <BiblioEntity />;
+  if (biblioAction === 'workflow') { taggingBody = <BiblioWorkflow />; }
+  else if (biblioAction === 'quicktopic') { taggingBody = <QuickTopicAddition />; }
   return (<><Container>{rowOrderedElements}</Container>
-            { (biblioAction === 'workflow') ? <BiblioWorkflow /> : <BiblioEntity /> }</>);
+            {taggingBody}</>);
 } // const BiblioTagging
 
 export const RowDisplayReferencefiles = ({displayOrEditor}) => {
