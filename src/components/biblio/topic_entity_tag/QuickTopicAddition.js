@@ -246,9 +246,23 @@ const QuickTopicAddition = () => {
     }).catch(() => {});
   }, [accessLevel, applySettingsToGrid, getSafeCurrentState]);
 
-  // Restore the built-in defaults: predicted-first row order, the columnDefs'
-  // column layout, and no sort/filters. Saved preference settings are untouched.
+  // Live prefsApi from the preference controls, so Reset can read the current
+  // settings list (including saves made after load).
+  const prefsApiRef = useRef(null);
+  const onPrefsApiChange = useCallback((prefsApi) => { prefsApiRef.current = prefsApi; }, []);
+
+  // Reset the table to the curator's DEFAULT SETTING when one exists (that is
+  // what "my normal view" means to a curator); otherwise fall back to the
+  // built-in defaults: predicted-first row order, the columnDefs' column
+  // layout, and no sort/filters. Saved preference settings are untouched.
   const resetTableLayout = useCallback(() => {
+    const prefsApi = prefsApiRef.current;
+    const defaultSetting = (prefsApi?.settings || []).find((s) => s.default_setting);
+    if (defaultSetting?.json_settings) {
+      prefsApi.setSelectedSettingId(defaultSetting.person_setting_id);
+      applySettingsToGrid(defaultSetting.json_settings);
+      return;
+    }
     savedRowOrderRef.current = null;
     lastSettingsRef.current = null;
     const api = gridApiRef.current;
@@ -256,7 +270,7 @@ const QuickTopicAddition = () => {
     api?.setFilterModel?.(null);
     api?.onFilterChanged?.();
     setTopicRows((prev) => [...prev].sort(defaultTopicOrder));
-  }, []);
+  }, [applySettingsToGrid]);
 
   // External (toggle) filters, layered on top of AG Grid's own column filters
   // and the quick-filter text box.
@@ -889,7 +903,7 @@ const QuickTopicAddition = () => {
             variant="outline-secondary"
             size="sm"
             onClick={resetTableLayout}
-            title="Restore the default row order (predicted topics first), column layout and filters"
+            title="Reset the table to your default setting (or the built-in layout when you have none)"
           >
             Reset layout
           </Button>
@@ -902,6 +916,7 @@ const QuickTopicAddition = () => {
             getSafeCurrentState={getSafeCurrentState}
             applySettingsToGrid={applySettingsToGrid}
             onAfterLoad={onPreferencesAfterLoad}
+            onPrefsApiChange={onPrefsApiChange}
             title="Manage Quick Topic Table Preferences"
             showNotification={(message, variant) => (
               setNotification({ message, variant: variant === 'error' ? 'danger' : variant })
