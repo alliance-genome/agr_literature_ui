@@ -29,6 +29,10 @@ const BiblioPreferenceControls = ({
   setItems,
   setColDefs,
 
+  // optional row-order persistence for grids with managed row dragging
+  getRowOrder,
+  applyRowOrder,
+
   // UI feedback
   showNotification,
 
@@ -71,13 +75,14 @@ const BiblioPreferenceControls = ({
       return {
         columnState,
         filterModel: filterModel || {},
-        sortModel: sortModel || []
+        sortModel: sortModel || [],
+        ...(getRowOrder ? { rowOrder: getRowOrder() } : {})
       };
     } catch (err) {
       console.error('Error extracting grid state:', err);
       return null;
     }
-  }, [getGridApi]);
+  }, [getGridApi, getRowOrder]);
 
   // getSafeCurrentState() makes sure we always return something usable
   const getSafeCurrentState = useCallback(() => {
@@ -88,9 +93,10 @@ const BiblioPreferenceControls = ({
     return {
       columnState: columnStateFromColDefs(updateColDefsWithItems(defaultItems)),
       filterModel: {},
-      sortModel: []
+      sortModel: [],
+      ...(getRowOrder ? { rowOrder: getRowOrder() } : {})
     };
-  }, [extractCurrentGridState, getInitialItems, updateColDefsWithItems]);
+  }, [extractCurrentGridState, getInitialItems, getRowOrder, updateColDefsWithItems]);
 
   // Keep Hide/Show checkbox list in sync
   const syncItemsFromGridColumnState = useCallback(() => {
@@ -113,7 +119,9 @@ const BiblioPreferenceControls = ({
       if (!api) return;
 
       try {
-        const { columnState, filterModel, sortModel } = payload || {};
+        const { columnState, filterModel, sortModel, rowOrder } = payload || {};
+
+        applyRowOrder?.(rowOrder || null);
 
         // Merge sortModel into columnState (AG Grid stores sort on columnState)
         let combinedState = Array.isArray(columnState) ? [...columnState] : [];
@@ -166,6 +174,7 @@ const BiblioPreferenceControls = ({
       forceFilterRefresh,
       getGridApi,
       getInitialItems,
+      applyRowOrder,
       setColDefs,
       setItems,
       showNotification,
@@ -243,7 +252,8 @@ const BiblioPreferenceControls = ({
         const seedState = {
           columnState: columnStateFromColDefs(updateColDefsWithItems(defaultItems)),
           filterModel: {},
-          sortModel: []
+          sortModel: [],
+          ...(getRowOrder ? { rowOrder: getRowOrder() } : {})
         };
 
         setItems(defaultItems);
@@ -286,6 +296,7 @@ const BiblioPreferenceControls = ({
       forceFilterRefresh,
       getGridApi,
       getInitialItems,
+      getRowOrder,
       gridRef,
       setColDefs,
       setItems,

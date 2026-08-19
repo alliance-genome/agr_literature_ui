@@ -115,6 +115,8 @@ const BiblioWorkflow = () => {
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
 
   const [curationData, setCurationData] = useState([]);
+  const curationDataRef = useRef(curationData);
+  curationDataRef.current = curationData;
   const [curationWholePaperData, setCurationWholePaperData] = useState([]);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
   const [curationTagOptions, setCurationTagOptions] = useState([]);
@@ -1370,6 +1372,28 @@ const BiblioWorkflow = () => {
     setCurationData(reorderedRows);
   }, []);
 
+  const getCurationRowOrder = useCallback(
+    () => curationDataRef.current.map(row => row.topic_curie),
+    []
+  );
+
+  const applyCurationRowOrder = useCallback((rowOrder) => {
+    const positions = Array.isArray(rowOrder) && rowOrder.length > 0
+      ? new Map(rowOrder.map((curie, index) => [curie, index]))
+      : null;
+    curationRowOrderRef.current = positions ? rowOrder : null;
+    setCurationData(prev => [...prev].sort((a, b) => {
+      if (positions) {
+        const aPosition = positions.get(a.topic_curie);
+        const bPosition = positions.get(b.topic_curie);
+        if (aPosition != null && bPosition != null) return aPosition - bPosition;
+        if (aPosition != null) return -1;
+        if (bPosition != null) return 1;
+      }
+      return a.topic_name.localeCompare(b.topic_name);
+    }));
+  }, []);
+
   const resetCurationTable = useCallback(() => {
     curationRowOrderRef.current = null;
     const api = apiRef.current;
@@ -1736,6 +1760,8 @@ const BiblioWorkflow = () => {
               updateColDefsWithItems={updateColDefsWithItems}
               setItems={setItems}
               setColDefs={setColDefs}
+              getRowOrder={getCurationRowOrder}
+              applyRowOrder={applyCurationRowOrder}
               showNotification={showNotification}
               title="Manage Table Preferences"
               componentName="wft_curation_table"
