@@ -219,6 +219,11 @@ const QuickTopicAddition = () => {
       (Array.isArray(payload.rowOrder) && payload.rowOrder.length > 0) ? payload.rowOrder : null;
     if (savedRowOrderRef.current) {
       setTopicRows((prev) => orderRows(prev, savedRowOrderRef.current));
+    } else {
+      // A setting without a saved row order (e.g. the seeded default, which can
+      // be captured before the topic list loads) means the DEFAULT order —
+      // otherwise Reset would leave a dragged order in place.
+      setTopicRows((prev) => [...prev].sort(defaultTopicOrder));
     }
     // Let a possible columnDefs rebuild (definition/synonyms toggle) settle
     // before applying column state to the new defs.
