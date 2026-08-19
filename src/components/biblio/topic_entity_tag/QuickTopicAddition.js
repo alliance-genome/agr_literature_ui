@@ -4,6 +4,7 @@ import { api } from "../../../api";
 import { getCuratorSourceId, fetchTopicEntityTags } from '../../../actions/biblioActions';
 import { AgGridReact } from 'ag-grid-react';
 import { handleGridCopy } from '../../../utils/gridCopyHandler';
+import AgGridTablePreferenceControls from '../../settings/AgGridTablePreferenceControls';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Alert } from 'react-bootstrap';
@@ -72,6 +73,25 @@ const applyChecked = (cur, colKey) => {
   return cur;
 };
 
+// Default row order: predicted topics first (for fast triage), then alphabetical.
+const defaultTopicOrder = (a, b) => {
+  if (a.has_prediction !== b.has_prediction) { return a.has_prediction ? -1 : 1; }
+  return a.topic_name.localeCompare(b.topic_name);
+};
+
+// Re-apply a saved row order (a list of topic curies). Topics not in the saved
+// list (e.g. added to the ontology later) follow in default order.
+const orderRows = (rows, order) => {
+  if (!Array.isArray(order) || order.length === 0) { return rows; }
+  const pos = new Map(order.map((curie, i) => [curie, i]));
+  return [...rows].sort((a, b) => {
+    const ai = pos.has(a.topic_curie) ? pos.get(a.topic_curie) : Infinity;
+    const bi = pos.has(b.topic_curie) ? pos.get(b.topic_curie) : Infinity;
+    if (ai !== bi) { return ai - bi; }
+    return defaultTopicOrder(a, b);
+  });
+};
+
 const QuickTopicAddition = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
@@ -81,6 +101,8 @@ const QuickTopicAddition = () => {
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   const modToTaxon = useSelector(state => state.biblio.modToTaxon);
   const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
+  const accessToken = useSelector(state => state.isLogged.accessToken);
+  const email = useSelector(state => state.isLogged.email);
 
   const [topicRows, setTopicRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -122,7 +144,35 @@ const QuickTopicAddition = () => {
   //            status:'editing'|'submitting'|'done', progress, errors }
   const [submitState, setSubmitState] = useState(null);
 
-  const onGridReady = useCallback((params) => { gridApiRef.current = params.api; }, []);
+  const [isGridReady, setIsGridReady] = useState(false);
+  // Active row order (topic curies): from a manual drag or a loaded preference.
+  // Re-applied when the topic list refetches (e.g. after Submit).
+  const savedRowOrderRef = useRef(null);
+  // The last applied preference payload, so the column/filter layout can be
+  // re-applied when the grid remounts (it unmounts behind the loading spinner).
+  const lastSettingsRef = useRef(null);
+  const topicRowsRef = useRef(topicRows);
+  topicRowsRef.current = topicRows;
+
+  // Apply the grid-level part of a preference payload (column layout + filters).
+  const applyGridLayout = useCallback((payload) => {
+    const api = gridApiRef.current;
+    if (!api || !payload) { return; }
+    const { columnState, filterModel } = payload;
+    if (Array.isArray(columnState) && columnState.length > 0) {
+      api.applyColumnState({ state: columnState, applyOrder: true });
+    }
+    if (api.setFilterModel) {
+      api.setFilterModel(filterModel && Object.keys(filterModel).length > 0 ? filterModel : null);
+    }
+    api.onFilterChanged?.();
+  }, []);
+
+  const onGridReady = useCallback((params) => {
+    gridApiRef.current = params.api;
+    setIsGridReady(true);
+    if (lastSettingsRef.current) { applyGridLayout(lastSettingsRef.current); }
+  }, [applyGridLayout]);
   const onSelectionChanged = useCallback(() => {
     setSelectedCount(gridApiRef.current?.getSelectedRows().length || 0);
   }, []);
@@ -138,6 +188,74 @@ const QuickTopicAddition = () => {
     const reordered = [];
     api.forEachNode((node) => { reordered.push(node.data); });
     setTopicRows(reordered);
+    // Keep the manual order across topic refetches this session; it is only
+    // persisted when the curator saves it to a preference setting.
+    savedRowOrderRef.current = reordered.map((r) => r.topic_curie);
+  }, []);
+
+  // ----- Table preference settings (same person-settings backend as the TET
+  // ----- table): the payload adds rowOrder + the definition/synonyms toggles
+  // ----- on top of the usual column layout and filters.
+  const getSafeCurrentState = useCallback(() => {
+    const api = gridApiRef.current;
+    const columnState = api?.getColumnState ? api.getColumnState() : [];
+    const filterModel = api?.getFilterModel ? api.getFilterModel() : {};
+    return {
+      columnState: Array.isArray(columnState) ? columnState : [],
+      filterModel: filterModel || {},
+      rowOrder: topicRowsRef.current.map((r) => r.topic_curie),
+      quickView: { showDefinition, showSynonyms },
+    };
+  }, [showDefinition, showSynonyms]);
+
+  const applySettingsToGrid = useCallback(async (payload) => {
+    if (!payload) { return; }
+    lastSettingsRef.current = payload;
+    if (payload.quickView) {
+      setShowDefinition(payload.quickView.showDefinition ?? true);
+      setShowSynonyms(payload.quickView.showSynonyms ?? true);
+    }
+    savedRowOrderRef.current =
+      (Array.isArray(payload.rowOrder) && payload.rowOrder.length > 0) ? payload.rowOrder : null;
+    if (savedRowOrderRef.current) {
+      setTopicRows((prev) => orderRows(prev, savedRowOrderRef.current));
+    }
+    // Let a possible columnDefs rebuild (definition/synonyms toggle) settle
+    // before applying column state to the new defs.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    applyGridLayout(payload);
+  }, [applyGridLayout]);
+
+  const onPreferencesAfterLoad = useCallback((prefsApi, { existing, picked }) => {
+    const list = existing || [];
+    if (list.length > 0) {
+      const setting = picked || list.find((s) => s.default_setting) || null;
+      if (setting?.json_settings) {
+        prefsApi.setSelectedSettingId(setting.person_setting_id);
+        applySettingsToGrid(setting.json_settings);
+      }
+      return;
+    }
+    // First use: seed a default preset from the current (default) layout.
+    prefsApi.seed({
+      name: accessLevel ? `${accessLevel} Default` : 'Default',
+      payload: { ...getSafeCurrentState(), meta: { accessLevel } },
+      isDefault: true,
+    }).then((created) => {
+      if (created?.person_setting_id) { prefsApi.setSelectedSettingId(created.person_setting_id); }
+    }).catch(() => {});
+  }, [accessLevel, applySettingsToGrid, getSafeCurrentState]);
+
+  // Restore the built-in defaults: predicted-first row order, the columnDefs'
+  // column layout, and no sort/filters. Saved preference settings are untouched.
+  const resetTableLayout = useCallback(() => {
+    savedRowOrderRef.current = null;
+    lastSettingsRef.current = null;
+    const api = gridApiRef.current;
+    api?.resetColumnState?.();
+    api?.setFilterModel?.(null);
+    api?.onFilterChanged?.();
+    setTopicRows((prev) => [...prev].sort(defaultTopicOrder));
   }, []);
 
   // External (toggle) filters, layered on top of AG Grid's own column filters
@@ -258,12 +376,9 @@ const QuickTopicAddition = () => {
             has_prediction: predictions.length > 0,
           };
         })
-        // Predicted topics first (for fast triage), then alphabetical.
-        .sort((a, b) => {
-          if (a.has_prediction !== b.has_prediction) { return a.has_prediction ? -1 : 1; }
-          return a.topic_name.localeCompare(b.topic_name);
-        });
-      setTopicRows(rows);
+        .sort(defaultTopicOrder);
+      // Re-apply the active custom order (manual drag or loaded preference), if any.
+      setTopicRows(orderRows(rows, savedRowOrderRef.current));
 
       // Enrich with definition/synonyms in one bulk lookup (SCRUM-6168). This is
       // best-effort: if it fails, the topic list still renders without them.
@@ -765,10 +880,34 @@ const QuickTopicAddition = () => {
           onChange={(e) => setShowSynonyms(e.target.checked)}
         />
         {predictionsCount > 0 && (
-          <span style={{ marginLeft: 'auto', color: '#475467', fontSize: 13 }}>
+          <span style={{ color: '#475467', fontSize: 13 }}>
             Predicted topics highlighted · {predictionsCount} prediction{predictionsCount === 1 ? '' : 's'}
           </span>
         )}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={resetTableLayout}
+            title="Restore the default row order (predicted topics first), column layout and filters"
+          >
+            Reset layout
+          </Button>
+          <AgGridTablePreferenceControls
+            accessToken={accessToken}
+            email={email}
+            componentName="quick_topic_addition"
+            accessLevel={accessLevel}
+            isReady={isGridReady && !loading}
+            getSafeCurrentState={getSafeCurrentState}
+            applySettingsToGrid={applySettingsToGrid}
+            onAfterLoad={onPreferencesAfterLoad}
+            title="Manage Quick Topic Table Preferences"
+            showNotification={(message, variant) => (
+              setNotification({ message, variant: variant === 'error' ? 'danger' : variant })
+            )}
+          />
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '12px', margin: '10px 0', alignItems: 'center', flexWrap: 'wrap' }}>
