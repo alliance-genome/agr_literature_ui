@@ -173,6 +173,13 @@ const QuickTopicAddition = () => {
     setIsGridReady(true);
     if (lastSettingsRef.current) { applyGridLayout(lastSettingsRef.current); }
   }, [applyGridLayout]);
+  // Auto-height cells can retain AG Grid's initial estimated height until an
+  // interaction such as filtering forces a second measurement. Recalculate
+  // once the first set of cells has rendered so row height is stable from the
+  // outset instead of suddenly becoming more compact when a filter is used.
+  const onFirstDataRendered = useCallback((params) => {
+    setTimeout(() => params.api.resetRowHeights(), 0);
+  }, []);
   const onSelectionChanged = useCallback(() => {
     setSelectedCount(gridApiRef.current?.getSelectedRows().length || 0);
   }, []);
@@ -744,7 +751,7 @@ const QuickTopicAddition = () => {
         filter: true,
         wrapText: true,
         autoHeight: true,
-        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
+        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.2em', paddingTop: 4, paddingBottom: 4 },
         cellRenderer: (params) => (
           <div style={{ fontWeight: 600 }}>{params.data.topic_name}</div>
         ),
@@ -759,7 +766,7 @@ const QuickTopicAddition = () => {
         width: 200,
         sortable: false,
         filter: false,
-        cellStyle: { display: 'flex', alignItems: 'center', paddingTop: 6, paddingBottom: 6 },
+        cellStyle: { display: 'flex', alignItems: 'center', paddingTop: 3, paddingBottom: 3 },
         cellRenderer: (params) => {
           const opts = speciesOptionsRef.current;
           if (!opts.length) {
@@ -808,7 +815,7 @@ const QuickTopicAddition = () => {
         filter: true,
         wrapText: true,
         autoHeight: true,
-        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
+        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.2em', paddingTop: 4, paddingBottom: 4 },
         cellRenderer: (params) => {
           const text = params.value || '';
           if (!text) { return ''; }
@@ -849,7 +856,7 @@ const QuickTopicAddition = () => {
         filter: true,
         wrapText: true,
         autoHeight: true,
-        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.3em', paddingTop: 8, paddingBottom: 8 },
+        cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.2em', paddingTop: 4, paddingBottom: 4 },
         cellRenderer: (params) => {
           const syns = String(params.value || '')
             .split(',').map(s => s.trim()).filter(Boolean);
@@ -1008,6 +1015,7 @@ const QuickTopicAddition = () => {
             getRowId={getRowId}
             onRowDragEnd={onRowDragEnd}
             onGridReady={onGridReady}
+            onFirstDataRendered={onFirstDataRendered}
             onSelectionChanged={onSelectionChanged}
             enableCellTextSelection={true}
             ensureDomOrder={true}
