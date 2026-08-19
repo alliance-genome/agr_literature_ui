@@ -1007,6 +1007,7 @@ const QuickTopicAddition = () => {
           <AgGridReact
             rowData={topicRows}
             columnDefs={columnDefs}
+            rowHeight={44}
             rowSelection="multiple"
             showDisabledCheckboxes={true}
             suppressRowClickSelection={true}

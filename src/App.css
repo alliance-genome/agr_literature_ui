@@ -813,6 +813,19 @@ em {
 /* Quick Topic Addition: make the row-drag handle an obvious, easy grab target
    (rows only reorder when the handle itself is dragged; dragging the row text
    just selects text because cell text selection is enabled). */
+.quick-topic-grid .ag-row .ag-cell {
+  display: flex;
+  align-items: center;
+}
+
+/* AG Grid adds an extra wrapper around a cell while its drag handle is shown.
+   Keep both wrapped and unwrapped renderers centered so sorting/filtering does
+   not shift topic text or assessment controls toward the top of the row. */
+.quick-topic-grid .ag-row .ag-cell-wrapper {
+  width: 100%;
+  align-items: center;
+}
+
 .quick-topic-grid .ag-row-drag {
   cursor: grab;
   padding: 0 10px;
