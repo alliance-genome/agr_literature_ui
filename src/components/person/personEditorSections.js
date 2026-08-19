@@ -43,8 +43,8 @@ export const SECTION_DEFS = [
   { id: 'webpages', label: 'Webpages' },
   { id: 'laboratories', label: 'Laboratories' },
   { id: 'cross_references', label: 'Cross references' },
-  { id: 'research_interest', label: 'Research interest' },
-  { id: 'comments', label: 'Comments' },
+  { id: 'research_interest', label: 'Research interest (public)' },
+  { id: 'comments', label: 'Comments (internal)' },
   { id: 'lineage', label: 'Lineage', mods: ['WB'] },
 ];
 
