@@ -819,21 +819,25 @@ em {
   padding-right: 0.5rem;
 }
 
-/* Workflow editor curation table: make the row-drag handle an obvious, easy
-   grab target (rows only reorder when the handle itself is dragged; dragging
-   the row text just selects text because cell text selection is enabled). */
-.wft-curation-grid .ag-row-drag {
+/* Workflow editor curation table + Quick Topic Addition: make the row-drag
+   handle an obvious, easy grab target (rows only reorder when the handle
+   itself is dragged; dragging the row text just selects text because cell
+   text selection is enabled). */
+.wft-curation-grid .ag-row-drag,
+.quick-topic-grid .ag-row-drag {
   cursor: grab;
   padding: 0 10px;
   margin: 0 -4px;
   color: #667085;
 }
-.wft-curation-grid .ag-row-drag:hover {
+.wft-curation-grid .ag-row-drag:hover,
+.quick-topic-grid .ag-row-drag:hover {
   color: #1570ef;
   background: #eff6ff;
   border-radius: 4px;
 }
-.wft-curation-grid .ag-row-drag:active {
+.wft-curation-grid .ag-row-drag:active,
+.quick-topic-grid .ag-row-drag:active {
   cursor: grabbing;
 }
 

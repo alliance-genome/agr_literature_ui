@@ -834,7 +834,7 @@ const QuickTopicAddition = () => {
         <div style={{ textAlign: 'center', padding: '30px' }}><Spinner animation="border" /></div>
       ) : (
         <div
-          className="ag-theme-quartz"
+          className="ag-theme-quartz quick-topic-grid"
           onCopy={handleGridCopy}
           style={{ width: '100%', height: 600 }}
         >
