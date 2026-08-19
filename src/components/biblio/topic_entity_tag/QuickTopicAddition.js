@@ -127,6 +127,19 @@ const QuickTopicAddition = () => {
     setSelectedCount(gridApiRef.current?.getSelectedRows().length || 0);
   }, []);
 
+  // After a managed row drag, mirror the grid's new row order back into
+  // topicRows so everything that iterates it (staged summary, submit modal)
+  // follows the curator's order. getRowId keeps selection/staged cell state
+  // attached to the right rows across the state update.
+  const getRowId = useCallback((params) => params.data.topic_curie, []);
+  const onRowDragEnd = useCallback(() => {
+    const api = gridApiRef.current;
+    if (!api) { return; }
+    const reordered = [];
+    api.forEachNode((node) => { reordered.push(node.data); });
+    setTopicRows(reordered);
+  }, []);
+
   // External (toggle) filters, layered on top of AG Grid's own column filters
   // and the quick-filter text box.
   const isExternalFilterPresent = useCallback(
@@ -588,6 +601,9 @@ const QuickTopicAddition = () => {
       {
         headerName: 'Topic for curation',
         field: 'topic_name',
+        // Drag handle for reordering rows (AG Grid suppresses it while a column
+        // sort or filter is active, since the manual order would be meaningless).
+        rowDrag: true,
         flex: 2,
         minWidth: 200,
         sortable: true,
@@ -828,6 +844,10 @@ const QuickTopicAddition = () => {
             rowSelection="multiple"
             showDisabledCheckboxes={true}
             suppressRowClickSelection={true}
+            rowDragManaged={true}
+            animateRows={true}
+            getRowId={getRowId}
+            onRowDragEnd={onRowDragEnd}
             onGridReady={onGridReady}
             onSelectionChanged={onSelectionChanged}
             enableCellTextSelection={true}
