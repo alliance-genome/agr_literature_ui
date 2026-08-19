@@ -1343,10 +1343,14 @@ const BiblioWorkflow = () => {
   const updateColDefsWithItems = useCallback(
     (currentItems) => {
       const itemsByField = new Map((currentItems || []).map((i) => [i.field, i]));
-      return curationColumns.map((col) => {
+      const applyItemVisibility = (col) => {
+        if (col.children) {
+          return { ...col, children: col.children.map(applyItemVisibility) };
+        }
         const item = itemsByField.get(col.field);
         return item ? { ...col, hide: !item.checked } : col;
-      });
+      };
+      return curationColumns.map(applyItemVisibility);
     },
     [curationColumns]
   );
@@ -1747,7 +1751,7 @@ const BiblioWorkflow = () => {
           <AgGridReact
             ref={gridRef}
             rowData={curationData}
-            columnDefs={curationColumns}
+            columnDefs={colDefs}
             rowDragManaged={true}
             animateRows={true}
             getRowId={(params) => params.data.topic_curie}
