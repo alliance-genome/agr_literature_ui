@@ -740,11 +740,25 @@ const QuickTopicAddition = () => {
         resizable: false,
       },
       {
+        headerName: '',
+        colId: 'rowDrag',
+        // Keep a dedicated gutter for row reordering. AG Grid hides the handle
+        // while sorted/filtered, but the column remains so topic text does not
+        // jump horizontally when the handle disappears.
+        rowDrag: true,
+        width: 42,
+        minWidth: 42,
+        maxWidth: 42,
+        pinned: 'left',
+        sortable: false,
+        filter: false,
+        resizable: false,
+        suppressMovable: true,
+        cellStyle: { padding: 0, justifyContent: 'center' },
+      },
+      {
         headerName: 'Topic for curation',
         field: 'topic_name',
-        // Drag handle for reordering rows (AG Grid suppresses it while a column
-        // sort or filter is active, since the manual order would be meaningless).
-        rowDrag: true,
         flex: 2,
         minWidth: 200,
         sortable: true,
