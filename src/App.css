@@ -826,18 +826,21 @@ em {
   align-items: center;
 }
 
-.quick-topic-grid .ag-row-drag {
+.quick-topic-grid .ag-row-drag,
+.workflow-curation-grid .ag-row-drag {
   cursor: grab;
   padding: 0 10px;
   margin: 0 -4px;
   color: #667085;
 }
-.quick-topic-grid .ag-row-drag:hover {
+.quick-topic-grid .ag-row-drag:hover,
+.workflow-curation-grid .ag-row-drag:hover {
   color: #1570ef;
   background: #eff6ff;
   border-radius: 4px;
 }
-.quick-topic-grid .ag-row-drag:active {
+.quick-topic-grid .ag-row-drag:active,
+.workflow-curation-grid .ag-row-drag:active {
   cursor: grabbing;
 }
 

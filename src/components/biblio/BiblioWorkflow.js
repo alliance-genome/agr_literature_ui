@@ -100,6 +100,7 @@ const BiblioWorkflow = () => {
   const [isGridReady, setIsGridReady] = useState(false);
   const gridRef = useRef();
   const apiRef = useRef(null);
+  const curationRowOrderRef = useRef(null);
 
   const [notification, setNotification] = useState({ show: false, message: '', variant: 'success' });
   const showNotification = (message, variant = 'success') =>
@@ -428,6 +429,18 @@ const BiblioWorkflow = () => {
         const restOfCurationData = processedCurationData
           .filter(item => item.topic_curie !== 'ATP:0000002')
           .sort((a, b) => a.topic_name.localeCompare(b.topic_name));
+        const savedRowOrder = curationRowOrderRef.current;
+        if (savedRowOrder) {
+          const positions = new Map(savedRowOrder.map((curie, index) => [curie, index]));
+          restOfCurationData.sort((a, b) => {
+            const aPosition = positions.get(a.topic_curie);
+            const bPosition = positions.get(b.topic_curie);
+            if (aPosition != null && bPosition != null) return aPosition - bPosition;
+            if (aPosition != null) return -1;
+            if (bPosition != null) return 1;
+            return a.topic_name.localeCompare(b.topic_name);
+          });
+        }
         wholePaperEntry.topic_name = 'Whole Paper';
         setCurationWholePaperData([wholePaperEntry]);
         setCurationData(restOfCurationData);
@@ -838,6 +851,20 @@ const BiblioWorkflow = () => {
 
   const curationColumns = useMemo(
     () => [
+      {
+        headerName: '',
+        colId: 'rowDrag',
+        rowDrag: true,
+        width: 42,
+        minWidth: 42,
+        maxWidth: 42,
+        pinned: 'left',
+        sortable: false,
+        filter: false,
+        resizable: false,
+        suppressMovable: true,
+        cellStyle: { padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+      },
       {
 	headerName: 'Topic for curation',
 	field: 'topic_name',
@@ -1330,6 +1357,25 @@ const BiblioWorkflow = () => {
     setColDefs(updateColDefsWithItems(initItems));
   }, [getInitialItems, updateColDefsWithItems]);
 
+  const onCurationRowDragEnd = useCallback(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    const reorderedRows = [];
+    api.forEachNode((node) => reorderedRows.push(node.data));
+    curationRowOrderRef.current = reorderedRows.map(row => row.topic_curie);
+    setCurationData(reorderedRows);
+  }, []);
+
+  const resetCurationTable = useCallback(() => {
+    curationRowOrderRef.current = null;
+    const api = apiRef.current;
+    api?.resetColumnState?.();
+    api?.setFilterModel?.(null);
+    api?.onFilterChanged?.();
+    setCurationData(prev => [...prev].sort((a, b) => a.topic_name.localeCompare(b.topic_name)));
+    setItems(getInitialItems());
+  }, [getInitialItems]);
+
 
   const containerStyle = {
     display: 'flex',
@@ -1667,6 +1713,14 @@ const BiblioWorkflow = () => {
       <div style={containerStyle}>
         <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start', width: '80%' }}>
           <div className="d-flex align-items-start" style={{ gap: '14px' }}>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={resetCurationTable}
+              title="Reset columns, filters, sorting, and topic row order"
+            >
+              Reset layout
+            </Button>
             <BiblioPreferenceControls
               accessToken={accessToken}
               email={email}
@@ -1689,10 +1743,15 @@ const BiblioWorkflow = () => {
         {showApiErrorModal && (
           <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
         )}
-        <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 40 }}>
+        <div className="ag-theme-quartz workflow-curation-grid" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 40 }}>
           <AgGridReact
+            ref={gridRef}
             rowData={curationData}
             columnDefs={curationColumns}
+            rowDragManaged={true}
+            animateRows={true}
+            getRowId={(params) => params.data.topic_curie}
+            onRowDragEnd={onCurationRowDragEnd}
             singleClickEdit={true}
             enableCellTextSelection={true}
             ensureDomOrder={true}
