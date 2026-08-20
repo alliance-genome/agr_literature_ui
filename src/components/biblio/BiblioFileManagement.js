@@ -490,11 +490,15 @@ const OpenAccess = () => {
     lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"];
   }
 
-  // restrict the pulldown to the licenses on the reference's resource, when the resource has a license_list
+  // restrict the pulldown to the licenses on the reference's resource, but only when the resource's
+  // open access license applies to this paper: source "resource_open_access" means the backend already
+  // checked the resource has an OA license and publication_year >= license_start_year
+  const resourceLicenseApplies = imagePermissionSource === "resource_open_access" &&
+      imagePermission["can_display_images"] === true;
   const normalizeLicense = (name) => (name || '').trim().toLowerCase();
   const resourceLicenseSet = new Set(resourceLicenseList.map(normalizeLicense));
   let applicableLicenses = licenseData;
-  if (resourceLicenseSet.size > 0) {
+  if (resourceLicenseApplies && resourceLicenseSet.size > 0) {
     const restricted = licenseData.filter(x => resourceLicenseSet.has(normalizeLicense(x.name)));
     if (restricted.length > 0) { applicableLicenses = restricted; }
   }
