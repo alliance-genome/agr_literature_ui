@@ -313,10 +313,12 @@ const OpenAccess = () => {
 
   const dispatch = useDispatch();
   const [licenseData, setLicenseData] = useState([]);
+  const [resourceLicenseList, setResourceLicenseList] = useState([]);
   const [newLicense, setNewLicense] = useState('');
   const [showPermissionDetails, setShowPermissionDetails] = useState(false);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"]
+  const resourceCurie = referenceJsonLive["resource_curie"];
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
   let [showAlert, setShowAlert] = useState(false);
@@ -333,6 +335,23 @@ const OpenAccess = () => {
   useEffect(() => {
     fetchLicenseData().finally();
   }, []);
+
+  useEffect(() => {
+    const fetchResourceLicenseList = async () => {
+      if (!resourceCurie) {
+        setResourceLicenseList([]);
+        return;
+      }
+      try {
+        const result = await api.get("/resource/" + resourceCurie);
+        setResourceLicenseList(result.data["license_list"] || []);
+      } catch (error) {
+        console.log(error);
+        setResourceLicenseList([]);
+      }
+    }
+    fetchResourceLicenseList().finally();
+  }, [resourceCurie]);
 
   const licenseName = referenceJsonLive["copyright_license_name"];
   const licenseToShow = licenseName ? `${licenseName} (${referenceJsonLive["copyright_license_open_access"] ? "open access" : "not open access"})` : '';
@@ -471,7 +490,15 @@ const OpenAccess = () => {
     lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"];
   }
 
-  let licenseNames = ['Pick a license', ...licenseData.map(x => x.name)]
+  // restrict the pulldown to the licenses on the reference's resource, when the resource has a license_list
+  const normalizeLicense = (name) => (name || '').trim().toLowerCase();
+  const resourceLicenseSet = new Set(resourceLicenseList.map(normalizeLicense));
+  let applicableLicenses = licenseData;
+  if (resourceLicenseSet.size > 0) {
+    const restricted = licenseData.filter(x => resourceLicenseSet.has(normalizeLicense(x.name)));
+    if (restricted.length > 0) { applicableLicenses = restricted; }
+  }
+  let licenseNames = ['Pick a license', ...applicableLicenses.map(x => x.name)]
   if (licenseName !== '' && lastUpdatedBy !== '') {
     licenseNames.push('No license');
   }
