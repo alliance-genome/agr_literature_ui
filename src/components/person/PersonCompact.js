@@ -54,7 +54,7 @@ const PersonCompact = ({ person }) => {
     `${xrefs.length} cross-reference${xrefs.length === 1 ? '' : 's'}`,
     `${webpages.length} webpage${webpages.length === 1 ? '' : 's'}`,
     `${institutions.length} institution${institutions.length === 1 ? '' : 's'}`,
-    `${notes.length} note${notes.length === 1 ? '' : 's'}`,
+    `${notes.length} internal note${notes.length === 1 ? '' : 's'}`,
   ];
 
   return (

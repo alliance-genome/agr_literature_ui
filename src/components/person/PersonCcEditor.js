@@ -88,7 +88,7 @@ const PersonCcEditor = ({ person }) => {
           </Row>
           <Row className="mb-2">
             <Col>
-              <Form.Label>Biography / Research interest</Form.Label>
+              <Form.Label>Biography / Research interest (public)</Form.Label>
               <Form.Control as="textarea" rows={4} defaultValue={p.biography_research_interest ?? ''} />
             </Col>
           </Row>
@@ -205,7 +205,7 @@ const PersonCcEditor = ({ person }) => {
       />
 
       <ListSection
-        title="Notes"
+        title="Notes (internal)"
         rows={p.notes}
         addLabel="Add note"
         renderRow={(n) => (

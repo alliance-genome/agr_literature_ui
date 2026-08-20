@@ -296,7 +296,7 @@ const PersonWbDisplay = ({ person }) => {
         )}
       </Section>
 
-      <Section title="Comments / Research interest">
+      <Section title="Comments (internal) / Research interest (public)">
         <FieldRow label="research interest" ts={recordTs}>
           {person.biography_research_interest ? (
             <span style={{ whiteSpace: 'pre-wrap' }}>{person.biography_research_interest}</span>

@@ -126,7 +126,7 @@ const CrossReferencesCard = ({ refs }) => {
 
 const BiographyCard = ({ bio }) => (
   <Card className="mb-3">
-    <Card.Header>Biography / Research Interest</Card.Header>
+    <Card.Header>Biography / Research Interest (public)</Card.Header>
     <Card.Body>
       {bio ? (
         <div style={{ whiteSpace: 'pre-wrap' }}>{bio}</div>
@@ -211,7 +211,7 @@ const NotesCard = ({ notes }) => {
   const list = notes ?? [];
   return (
     <Card className="mb-3">
-      <Card.Header>Notes</Card.Header>
+      <Card.Header>Notes (internal)</Card.Header>
       <Card.Body>
         {list.length === 0 ? (
           <span style={muted}>—</span>

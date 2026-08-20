@@ -600,7 +600,7 @@ const PersonWbEditor = ({ person }) => {
       </Card>
 
       <Card className="mb-3">
-        <Card.Header>Research interest</Card.Header>
+        <Card.Header>Research interest (public)</Card.Header>
         <Card.Body>
           <FieldLine label="biography" ts={recordTs}>
             <Form.Control
@@ -613,7 +613,7 @@ const PersonWbEditor = ({ person }) => {
       </Card>
 
       <Card className="mb-3">
-        <Card.Header>Comments</Card.Header>
+        <Card.Header>Comments (internal)</Card.Header>
         <Card.Body>
           {notes.map((n, i) => {
             const isNew = i === notes.length - 1 && noteIsEmpty(n);

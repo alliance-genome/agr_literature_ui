@@ -1576,7 +1576,7 @@ const PersonEditor = ({ person }) => {
 
   sectionRows.research_interest = (
     <Card className="mb-3">
-      <Card.Header>Research interest</Card.Header>
+      <Card.Header>Research interest (public)</Card.Header>
       <Card.Body>
         <FieldLine
           label="biography"
@@ -1600,7 +1600,7 @@ const PersonEditor = ({ person }) => {
 
   sectionRows.comments = (
     <Card className="mb-3">
-      <Card.Header>Comments</Card.Header>
+      <Card.Header>Comments (internal)</Card.Header>
       <Card.Body>
         {notes.map((n, i) => (
             <FieldLine
