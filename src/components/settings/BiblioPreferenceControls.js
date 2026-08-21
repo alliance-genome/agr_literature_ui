@@ -32,6 +32,15 @@ const BiblioPreferenceControls = ({
   // UI feedback
   showNotification,
 
+  // optional extra table state (beyond column/filter/sort), e.g. a manual row
+  // order: getExtraState() is merged into every saved payload and
+  // applyExtraState(payload) is called whenever a payload is applied.
+  getExtraState,
+  applyExtraState,
+  // Optional: receive the live prefsApi (augmented with applySettingsToGrid),
+  // so the parent can re-apply the default setting on demand (Reset layout).
+  onPrefsApiChange,
+
   // optional
   title = 'Manage Table Preferences',
   componentName = 'tet_table'
@@ -81,16 +90,18 @@ const BiblioPreferenceControls = ({
 
   // getSafeCurrentState() makes sure we always return something usable
   const getSafeCurrentState = useCallback(() => {
+    const extra = (typeof getExtraState === 'function' ? getExtraState() : null) || {};
     const state = extractCurrentGridState();
-    if (state) return state;
+    if (state) return { ...state, ...extra };
 
     const defaultItems = getInitialItems();
     return {
       columnState: columnStateFromColDefs(updateColDefsWithItems(defaultItems)),
       filterModel: {},
-      sortModel: []
+      sortModel: [],
+      ...extra
     };
-  }, [extractCurrentGridState, getInitialItems, updateColDefsWithItems]);
+  }, [extractCurrentGridState, getExtraState, getInitialItems, updateColDefsWithItems]);
 
   // Keep Hide/Show checkbox list in sync
   const syncItemsFromGridColumnState = useCallback(() => {
@@ -113,6 +124,10 @@ const BiblioPreferenceControls = ({
       if (!api) return;
 
       try {
+        // Let the parent restore its extra state (e.g. row order) first, so a
+        // payload saved without it falls back to the parent's default.
+        if (typeof applyExtraState === 'function') { applyExtraState(payload || {}); }
+
         const { columnState, filterModel, sortModel } = payload || {};
 
         // Merge sortModel into columnState (AG Grid stores sort on columnState)
@@ -163,6 +178,7 @@ const BiblioPreferenceControls = ({
       }
     },
     [
+      applyExtraState,
       forceFilterRefresh,
       getGridApi,
       getInitialItems,
@@ -263,7 +279,11 @@ const BiblioPreferenceControls = ({
           prefsApi
             .seed({
               name: buildSeedPresetName(),
-              payload: { ...seedState, meta: { accessLevel } },
+              payload: {
+                ...seedState,
+                ...((typeof getExtraState === 'function' ? getExtraState() : null) || {}),
+                meta: { accessLevel }
+              },
               isDefault: true
             })
             .then((created) => {
@@ -284,6 +304,7 @@ const BiblioPreferenceControls = ({
       buildSeedPresetName,
       componentName,
       forceFilterRefresh,
+      getExtraState,
       getGridApi,
       getInitialItems,
       gridRef,
@@ -292,6 +313,17 @@ const BiblioPreferenceControls = ({
       tryApplyPending,
       updateColDefsWithItems
     ]
+  );
+
+  // Forward the prefsApi to the parent, augmented with this wrapper's
+  // applySettingsToGrid so the parent can re-apply a saved setting itself.
+  const handlePrefsApiChange = useCallback(
+    (prefsApi) => {
+      if (typeof onPrefsApiChange === 'function') {
+        onPrefsApiChange({ ...prefsApi, applySettingsToGrid });
+      }
+    },
+    [applySettingsToGrid, onPrefsApiChange]
   );
 
   // Memo so we don't churn props
@@ -305,6 +337,7 @@ const BiblioPreferenceControls = ({
       getSafeCurrentState,
       applySettingsToGrid,
       onAfterLoad: onPreferencesAfterLoad,
+      onPrefsApiChange: handlePrefsApiChange,
       showNotification,
       title
     }),
@@ -315,6 +348,7 @@ const BiblioPreferenceControls = ({
       componentName,
       email,
       getSafeCurrentState,
+      handlePrefsApiChange,
       isGridReady,
       onPreferencesAfterLoad,
       showNotification,

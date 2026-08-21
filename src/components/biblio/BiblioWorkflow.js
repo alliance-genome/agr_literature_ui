@@ -84,6 +84,22 @@ export const timestampToDateFormatter = (params) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${ampm}`;
 };
 
+// Default curation-row order: alphabetical by topic name.
+const defaultCurationRowOrder = (a, b) => a.topic_name.localeCompare(b.topic_name);
+
+// Re-apply a saved row order (a list of topic curies). Topics not in the saved
+// list (e.g. added to the ontology later) follow in default order.
+const orderCurationRows = (rows, order) => {
+  if (!Array.isArray(order) || order.length === 0) { return rows; }
+  const pos = new Map(order.map((curie, i) => [curie, i]));
+  return [...rows].sort((a, b) => {
+    const ai = pos.has(a.topic_curie) ? pos.get(a.topic_curie) : Infinity;
+    const bi = pos.has(b.topic_curie) ? pos.get(b.topic_curie) : Infinity;
+    if (ai !== bi) { return ai - bi; }
+    return defaultCurationRowOrder(a, b);
+  });
+};
+
 
 const BiblioWorkflow = () => {
   const dispatch = useDispatch();
@@ -114,6 +130,54 @@ const BiblioWorkflow = () => {
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
 
   const [curationData, setCurationData] = useState([]);
+  // Active row order (topic curies): from a manual drag or a loaded preference.
+  // Re-applied when the curation data refetches.
+  const savedRowOrderRef = useRef(null);
+  const curationDataRef = useRef(curationData);
+  curationDataRef.current = curationData;
+
+  // After a managed row drag, mirror the grid's new row order back into
+  // curationData. getRowId keeps cell state attached to the right rows
+  // across the state update.
+  const getRowId = useCallback((params) => params.data.topic_curie, []);
+  const onRowDragEnd = useCallback(() => {
+    const api = getGridApi();
+    if (!api) { return; }
+    const reordered = [];
+    api.forEachNode((node) => { reordered.push(node.data); });
+    setCurationData(reordered);
+    // Keep the manual order across refetches this session; it is only
+    // persisted when the curator saves it to a preference setting.
+    savedRowOrderRef.current = reordered.map((r) => r.topic_curie);
+    // Recreate cell renderers: the dropdown cells compute their stripe class
+    // from node.rowIndex at render time, which a managed drag changes without
+    // re-rendering them.
+    api.redrawRows();
+  }, [getGridApi]);
+
+  // Extra table-preference state: the manual row order rides along with the
+  // usual column layout and filters in each saved setting.
+  const getExtraState = useCallback(() => ({
+    rowOrder: curationDataRef.current.map((r) => r.topic_curie),
+  }), []);
+
+  const applyExtraState = useCallback((payload) => {
+    savedRowOrderRef.current =
+      (Array.isArray(payload?.rowOrder) && payload.rowOrder.length > 0) ? payload.rowOrder : null;
+    if (savedRowOrderRef.current) {
+      setCurationData((prev) => orderCurationRows(prev, savedRowOrderRef.current));
+    } else {
+      // A setting without a saved row order (e.g. the seeded default, which can
+      // be captured before the curation data loads) means the DEFAULT order —
+      // otherwise Reset would leave a dragged order in place.
+      setCurationData((prev) => [...prev].sort(defaultCurationRowOrder));
+    }
+  }, []);
+
+  // Live prefsApi from the preference controls, so Reset can read the current
+  // settings list (including saves made after load).
+  const prefsApiRef = useRef(null);
+  const onPrefsApiChange = useCallback((prefsApi) => { prefsApiRef.current = prefsApi; }, []);
   const [curationWholePaperData, setCurationWholePaperData] = useState([]);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
   const [curationTagOptions, setCurationTagOptions] = useState([]);
@@ -427,10 +491,11 @@ const BiblioWorkflow = () => {
         };
         const restOfCurationData = processedCurationData
           .filter(item => item.topic_curie !== 'ATP:0000002')
-          .sort((a, b) => a.topic_name.localeCompare(b.topic_name));
+          .sort(defaultCurationRowOrder);
         wholePaperEntry.topic_name = 'Whole Paper';
         setCurationWholePaperData([wholePaperEntry]);
-        setCurationData(restOfCurationData);
+        // Re-apply the active custom order (manual drag or loaded preference), if any.
+        setCurationData(orderCurationRows(restOfCurationData, savedRowOrderRef.current));
 
         // Extract and dispatch unique topics for the filter
         const uniqueTopics = [...new Set(restOfCurationData.map(item => item.topic_name))];
@@ -841,6 +906,9 @@ const BiblioWorkflow = () => {
       {
 	headerName: 'Topic for curation',
 	field: 'topic_name',
+	// Drag handle for reordering rows (AG Grid suppresses it while a column
+	// sort or filter is active, since the manual order would be meaningless).
+	rowDrag: true,
 	flex: 1,
 	cellStyle: { textAlign: 'left' },
 	headerClass: 'wft-bold-header wft-header-bg',
@@ -1330,6 +1398,35 @@ const BiblioWorkflow = () => {
     setColDefs(updateColDefsWithItems(initItems));
   }, [getInitialItems, updateColDefsWithItems]);
 
+  // Reset the table to the curator's DEFAULT SETTING when one exists (that is
+  // what "my normal view" means to a curator); otherwise fall back to the
+  // built-in defaults: alphabetical row order, the columnDefs' column layout,
+  // and no sort/filters. Saved preference settings are untouched.
+  const resetTableLayout = useCallback(() => {
+    const prefsApi = prefsApiRef.current;
+    const defaultSetting = (prefsApi?.settings || []).find((s) => s.default_setting);
+    if (defaultSetting?.json_settings && typeof prefsApi.applySettingsToGrid === 'function') {
+      prefsApi.setSelectedSettingId(defaultSetting.person_setting_id);
+      prefsApi.applySettingsToGrid(
+        defaultSetting.json_settings, defaultSetting.person_setting_id, { silent: true });
+      return;
+    }
+    savedRowOrderRef.current = null;
+    const api = getGridApi();
+    api?.resetColumnState?.();
+    api?.setFilterModel?.(null);
+    api?.onFilterChanged?.();
+    const initItems = getInitialItems();
+    setItems(initItems);
+    setColDefs(updateColDefsWithItems(initItems));
+    setCurationData((prev) => [...prev].sort(defaultCurationRowOrder));
+    // Recreate cell renderers once the grid has seen the reordered rows (with
+    // getRowId it repositions the preserved nodes instead of re-rendering
+    // them, leaving the dropdown cells' rowIndex-based stripe class stale).
+    // Deferred past the React commit, unlike the drag path where the grid
+    // reorders first.
+    setTimeout(() => getGridApi()?.redrawRows?.(), 0);
+  }, [getGridApi, getInitialItems, updateColDefsWithItems]);
 
   const containerStyle = {
     display: 'flex',
@@ -1667,6 +1764,14 @@ const BiblioWorkflow = () => {
       <div style={containerStyle}>
         <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start', width: '80%' }}>
           <div className="d-flex align-items-start" style={{ gap: '14px' }}>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={resetTableLayout}
+              title="Reset the table to your default setting (or the built-in layout when you have none)"
+            >
+              Reset layout
+            </Button>
             <BiblioPreferenceControls
               accessToken={accessToken}
               email={email}
@@ -1678,6 +1783,9 @@ const BiblioWorkflow = () => {
               updateColDefsWithItems={updateColDefsWithItems}
               setItems={setItems}
               setColDefs={setColDefs}
+              getExtraState={getExtraState}
+              applyExtraState={applyExtraState}
+              onPrefsApiChange={onPrefsApiChange}
               showNotification={showNotification}
               title="Manage Table Preferences"
               componentName="wft_curation_table"
@@ -1689,7 +1797,7 @@ const BiblioWorkflow = () => {
         {showApiErrorModal && (
           <GenericWorkflowTableModal title="Api Error" body={apiErrorMessage} show={showApiErrorModal} onHide={() => setShowApiErrorModal(false)} />
         )}
-        <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 40 }}>
+        <div className="ag-theme-quartz wft-curation-grid" onCopy={handleGridCopy} style={{ width: '80%', marginBottom: 40 }}>
           <AgGridReact
             rowData={curationData}
             columnDefs={curationColumns}
@@ -1697,6 +1805,9 @@ const BiblioWorkflow = () => {
             enableCellTextSelection={true}
             ensureDomOrder={true}
             suppressColumnVirtualisation={true}
+            rowDragManaged={true}
+            getRowId={getRowId}
+            onRowDragEnd={onRowDragEnd}
             domLayout="autoHeight"
             rowClassRules={{
               'ag-row-striped-dark': (params) => params.rowIndex % 2 === 0,
