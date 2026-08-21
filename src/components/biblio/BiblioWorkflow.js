@@ -149,6 +149,10 @@ const BiblioWorkflow = () => {
     // Keep the manual order across refetches this session; it is only
     // persisted when the curator saves it to a preference setting.
     savedRowOrderRef.current = reordered.map((r) => r.topic_curie);
+    // Recreate cell renderers: the dropdown cells compute their stripe class
+    // from node.rowIndex at render time, which a managed drag changes without
+    // re-rendering them.
+    api.redrawRows();
   }, [getGridApi]);
 
   // Extra table-preference state: the manual row order rides along with the
@@ -1796,7 +1800,6 @@ const BiblioWorkflow = () => {
             ensureDomOrder={true}
             suppressColumnVirtualisation={true}
             rowDragManaged={true}
-            animateRows={true}
             getRowId={getRowId}
             onRowDragEnd={onRowDragEnd}
             domLayout="autoHeight"
