@@ -50,6 +50,9 @@ const AgGridTablePreferenceControls = ({
   getSafeCurrentState,
   applySettingsToGrid,
   onAfterLoad,
+  // Optional: receive the prefsApi whenever it changes, so the parent can read
+  // the live settings list (e.g. to re-apply the default setting on demand).
+  onPrefsApiChange,
 
   title = 'Manage Table Preferences',
   showNotification = () => {},
@@ -108,6 +111,11 @@ const AgGridTablePreferenceControls = ({
       savePayloadTo,
     ]
   );
+
+  // Keep the parent's view of the prefsApi (settings list etc.) current.
+  useEffect(() => {
+    if (typeof onPrefsApiChange === 'function') { onPrefsApiChange(prefsApi); }
+  }, [prefsApi, onPrefsApiChange]);
 
   // Load settings once we have auth context
   useEffect(() => {
