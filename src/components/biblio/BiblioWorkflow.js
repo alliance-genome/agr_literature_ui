@@ -1420,6 +1420,12 @@ const BiblioWorkflow = () => {
     setItems(initItems);
     setColDefs(updateColDefsWithItems(initItems));
     setCurationData((prev) => [...prev].sort(defaultCurationRowOrder));
+    // Recreate cell renderers once the grid has seen the reordered rows (with
+    // getRowId it repositions the preserved nodes instead of re-rendering
+    // them, leaving the dropdown cells' rowIndex-based stripe class stale).
+    // Deferred past the React commit, unlike the drag path where the grid
+    // reorders first.
+    setTimeout(() => getGridApi()?.redrawRows?.(), 0);
   }, [getGridApi, getInitialItems, updateColDefsWithItems]);
 
   const containerStyle = {
