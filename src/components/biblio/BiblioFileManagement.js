@@ -313,10 +313,12 @@ const OpenAccess = () => {
 
   const dispatch = useDispatch();
   const [licenseData, setLicenseData] = useState([]);
+  const [resourceLicenses, setResourceLicenses] = useState({ curie: null, list: [] });
   const [newLicense, setNewLicense] = useState('');
   const [showPermissionDetails, setShowPermissionDetails] = useState(false);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"]
+  const resourceCurie = referenceJsonLive["resource_curie"];
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
   let [showAlert, setShowAlert] = useState(false);
@@ -346,6 +348,33 @@ const OpenAccess = () => {
   const endYear = imagePermission["end_year"] || null;
   const notes = imagePermission["notes"] || null;
   const canDisplayImages = imagePermission["can_display_images"] ? "can display images" : "cannot display images";
+
+  // the license_list restriction only applies when the backend resolved image permission to the
+  // resource's open access license (which includes the publication_year >= license_start_year check)
+  const resourceLicenseApplies = imagePermissionSource === "resource_open_access" &&
+      imagePermission["can_display_images"] === true;
+
+  useEffect(() => {
+    let cancelled = false;
+    // clear first so a list from the previous resource never restricts the current reference
+    setResourceLicenses({ curie: null, list: [] });
+    if (!resourceCurie || !resourceLicenseApplies) return;
+    const fetchResourceLicenseList = async () => {
+      try {
+        const result = await api.get("/resource/" + resourceCurie);
+        if (!cancelled) { setResourceLicenses({ curie: resourceCurie, list: result.data["license_list"] || [] }); }
+      } catch (error) {
+        console.log(error);
+        if (!cancelled) { setResourceLicenses({ curie: resourceCurie, list: [] }); }
+      }
+    }
+    fetchResourceLicenseList().finally();
+    return () => { cancelled = true; };
+  }, [resourceCurie, resourceLicenseApplies]);
+
+  useEffect(() => {
+    setNewLicense('');
+  }, [referenceCurie]);
 
   // Extract values for permission text placeholders
   const getPublicationYear = () => {
@@ -471,18 +500,30 @@ const OpenAccess = () => {
     lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"];
   }
 
-  let licenseNames = ['Pick a license', ...licenseData.map(x => x.name)]
+  // restrict the pulldown to the licenses on the reference's resource; the curie check keeps a list
+  // fetched for a previous resource from restricting the current reference
+  const normalizeLicense = (name) => (name || '').trim().toLowerCase();
+  const resourceLicenseSet = new Set(resourceLicenses.list.map(normalizeLicense));
+  let applicableLicenses = licenseData;
+  if (resourceLicenseApplies && resourceLicenses.curie === resourceCurie && resourceLicenseSet.size > 0) {
+    const restricted = licenseData.filter(x => resourceLicenseSet.has(normalizeLicense(x.name)));
+    if (restricted.length > 0) { applicableLicenses = restricted; }
+  }
+  let licenseNames = ['Pick a license', ...applicableLicenses.map(x => x.name)]
   if (licenseName !== '' && lastUpdatedBy !== '') {
     licenseNames.push('No license');
   }
 
   const addLicense = (e) => {
     if (!newLicense || newLicense === 'Pick a license' || newLicense === licenseName) return false;
+    // never submit a selection the current option list no longer offers
+    if (!licenseNames.includes(newLicense)) return false;
     let license = newLicense.replace(' ', '+')
     const url = "/reference/add_license/" + referenceCurie + "/" + license;
     api.post(url).then((res) => {
       setAlert("License Updated!");
       setShowAlert(true);
+      setNewLicense('');
       setTimeout(() => {
         setShowAlert(false);
         dispatch(biblioQueryReferenceCurie(referenceCurie));
