@@ -775,15 +775,46 @@
 }
 .tetv-header-help {
   align-items: center;
-  color: #7a8aa0;
-  cursor: help;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 0.85em;
   line-height: 1;
 }
-.tetv-header-help:hover {
+/* The ? itself is a bare <button> so it is keyboard operable; strip the
+   browser chrome so it still reads as an inline icon. */
+.tetv-header-help-btn {
+  align-items: center;
+  background: none;
+  border: none;
+  color: #7a8aa0;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.85em;
+  line-height: 1;
+  padding: 0;
+}
+.tetv-header-help-btn:hover,
+.tetv-header-help-btn:focus {
   color: var(--tetv-accent-dark);
+}
+/* The help popover is portalled to <body>, so it has to clear the fullscreen
+   grid wrapper (z-index 2000) — Bootstrap's default 1060 renders under it. */
+.popover.tetv-header-help-popover {
+  max-width: 420px;
+  z-index: 2100;
+}
+.tetv-header-help-popover .popover-header {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.tetv-header-help-popover .popover-body {
+  color: #333;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.5;
+  max-height: 60vh;
+  overflow-y: auto;
+  text-align: left;
+  white-space: normal;
 }
 /* Filter funnel icon rendered in HeaderWithHelp when the column opts in via
    headerComponentParams.showFilterIcon. Uses AgGrid's built-in

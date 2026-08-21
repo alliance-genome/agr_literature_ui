@@ -124,6 +124,13 @@ const ID_COLUMN_PADDING = 42;
 // fill-remaining-space pass and manual column resizing stay unconstrained.
 const SOURCES_AUTOSIZE_CAP = 260;
 
+// Same idea for the biocurator assessment column: autosize measures header
+// text unwrapped on one line, so "Data assessment by biocurator" would widen
+// every topic group far past what the narrow Y / N / conflict pill needs. This
+// was a colDef maxWidth, which also stopped curators dragging the column wider
+// (SCRUM-6330) — clamping the autosize result instead leaves resizing free.
+const VALIDATION_AUTOSIZE_CAP = 150;
+
 const prefixOf = (curie) =>
   curie ? String(curie).split(':')[0].toUpperCase() : null;
 
@@ -681,20 +688,27 @@ export default function TetValidationGrid({
     const colIds = cols.map((c) => c.getColId?.()).filter(Boolean);
     if (colIds.length === 0) return;
     gridApi.autoSizeColumns?.(colIds, false);
-    // Clamp any Sources column (colId === topic curie, no `__suffix`) that
-    // autosize grew past the cap. Done here, not via a colDef maxWidth, so the
-    // rAF fill below can still expand these columns to absorb blank space and a
-    // curator can still drag the column border wider.
+    // Clamp the columns autosize grew past their cap. Done here, not via a
+    // colDef maxWidth, so the rAF fill below can still expand these columns to
+    // absorb blank space and a curator can still drag the column border wider.
+    // Sources columns have colId === topic curie (no `__suffix`); the
+    // biocurator assessment column is `<curie>__val`.
+    const autosizeCapFor = (colId) => {
+      if (!colId) return null;
+      if (!colId.includes('__')) return SOURCES_AUTOSIZE_CAP;
+      if (colId.endsWith('__val')) return VALIDATION_AUTOSIZE_CAP;
+      return null;
+    };
     const overCap = cols
-      .filter((c) => {
+      .map((c) => {
         const cid = c.getColId?.() || '';
-        return (
-          cid &&
-          !cid.includes('__') &&
-          (c.getActualWidth?.() || 0) > SOURCES_AUTOSIZE_CAP
-        );
+        const cap = autosizeCapFor(cid);
+        if (cap === null) return null;
+        return (c.getActualWidth?.() || 0) > cap
+          ? { key: cid, newWidth: cap }
+          : null;
       })
-      .map((c) => ({ key: c.getColId(), newWidth: SOURCES_AUTOSIZE_CAP }));
+      .filter(Boolean);
     if (overCap.length > 0) gridApi.setColumnWidths?.(overCap, false);
     requestAnimationFrame(() => {
       const wrapper = topScrollRef.current?.closest('.tetv-grid-wrapper');
@@ -1302,9 +1316,11 @@ export default function TetValidationGrid({
     const idsCol = {
       headerName: 'IDs',
       headerComponent: HeaderWithHelp,
-      headerComponentParams: { showFilterIcon: true },
-      headerTooltip:
-        'Reference identifiers — the canonical AGRKB curie plus every cross-reference (PMID, MOD curies, DOI, …) and the publication year. Click the filter icon in the header to filter by prefix.',
+      headerComponentParams: {
+        showFilterIcon: true,
+        help:
+          'Reference identifiers — the canonical AGRKB curie plus every cross-reference (PMID, MOD curies, DOI, …) and the publication year. Click the filter icon in the header to filter by prefix.',
+      },
       field: '__ids',
       pinned: 'left',
       width: idsColumnWidth,
@@ -1326,8 +1342,10 @@ export default function TetValidationGrid({
     const titleCol = {
       headerName: 'Title',
       headerComponent: HeaderWithHelp,
-      headerTooltip:
-        'Publication title (links to the Biblio page) with journal name and authors.',
+      headerComponentParams: {
+        help:
+          'Publication title (links to the Biblio page) with journal name and authors.',
+      },
       field: '__title',
       pinned: 'left',
       width: 320,
@@ -1360,7 +1378,7 @@ export default function TetValidationGrid({
         const topicField = `__topic_${t.curie}`;
         const makeInnerColumn = ({
           headerName,
-          headerTooltip,
+          help,
           colId,
           kind,
           width,
@@ -1371,8 +1389,8 @@ export default function TetValidationGrid({
           cellClass = '',
         }) => ({
           headerName,
-          headerTooltip,
           headerComponent: HeaderWithHelp,
+          headerComponentParams: { help },
           colId,
           field: topicField,
           width,
@@ -1411,16 +1429,12 @@ export default function TetValidationGrid({
         // said — and sit under one sub-group header (SCRUM-6330).
         const validationChild = makeInnerColumn({
           headerName: 'Data assessment by biocurator',
-          headerTooltip:
+          help:
             'Data assessment by biocurator. When at least one curator has submitted a topic-level tag, the cell shows the assessment: Y (data present for this topic), N (no data), or "conflict" when curators disagree. Otherwise, ✓ and ✗ buttons let the curator submit one. Y / N here mean the same thing as under "Data assessment by other sources" and as the has_data facet in advanced search.',
           colId: `${t.curie}__val`,
           kind: INNER_COLUMN_TYPES.VALIDATION,
           width: 90,
           minWidth: 80,
-          // Cap the autosize: the Y / N / conflict pill and the wrapped
-          // curator names are narrow, so without this each topic group would
-          // widen just to fit the header phrase on one line.
-          maxWidth: 150,
           cellRenderer: ValidationCell,
           cellClass: leftmostClass,
           cellRendererParams: {
@@ -1434,7 +1448,7 @@ export default function TetValidationGrid({
         const otherSourceChildren = [
           makeInnerColumn({
             headerName: 'Sources',
-            headerTooltip:
+            help:
               'Source pipelines that produced TET tags for this topic on this reference (e.g. textpresso, manual, abc_entity_extractor). The cell only lists the source labels — each one\'s Y / N / {N}E assessment is on the matching row of the adjacent Data column.',
             colId: t.curie,
             kind: INNER_COLUMN_TYPES.SOURCES,
@@ -1447,7 +1461,7 @@ export default function TetValidationGrid({
           }),
           makeInnerColumn({
             headerName: 'Data',
-            headerTooltip:
+            help:
               'Per-source TET data pills for this topic. Y (green) = topic-level tag, data present; N (red) = topic-level negated tag, no data; "{N}E" (violet) = an entity-level extraction with N entities (click the badge to see the full list of entities). Each row aligns with the matching source label in the Sources column to its left.',
             colId: `${t.curie}__tag`,
             kind: INNER_COLUMN_TYPES.TAG,
@@ -1463,7 +1477,7 @@ export default function TetValidationGrid({
         if (displayOptions.showScore) {
           otherSourceChildren.push(makeInnerColumn({
             headerName: 'conf sc',
-            headerTooltip:
+            help:
               'Confidence score (0.00 – 1.00) of the TET tag, when reported by the source pipeline. For entity-level buckets, the cell shows the min – max range across that bucket.',
             colId: `${t.curie}__cs`,
             kind: INNER_COLUMN_TYPES.CONF_SCORE,
@@ -1476,7 +1490,7 @@ export default function TetValidationGrid({
         if (displayOptions.showLevel) {
           otherSourceChildren.push(makeInnerColumn({
             headerName: 'conf lvl',
-            headerTooltip:
+            help:
               'Confidence level label (e.g. high / medium / low) of the TET tag, when reported by the source pipeline. For entity-level buckets, the cell shows the count of distinct levels if they vary.',
             colId: `${t.curie}__cl`,
             kind: INNER_COLUMN_TYPES.CONF_LEVEL,
@@ -1488,7 +1502,7 @@ export default function TetValidationGrid({
         }
         otherSourceChildren.push(makeInnerColumn({
           headerName: 'note',
-          headerTooltip:
+          help:
             'Free-text notes attached to TET tags. Click the 📝 icon for the full note in a modal; toggle "Expand notes" in the toolbar to render note text inline.',
           colId: `${t.curie}__note`,
           kind: INNER_COLUMN_TYPES.NOTE,
@@ -1500,13 +1514,14 @@ export default function TetValidationGrid({
             sourceFilterModel,
           },
         }));
+        const otherSourcesGroupHelp =
+          'Data assessment by the non-biocurator sources that produced TET tags for this topic on this reference (e.g. textpresso, abc_entity_extractor). Each sub-column iterates the same per-source rows in lockstep: the source label, its Y / N / {N}E assessment, and — when toggled on in the toolbar — its confidence and notes.';
         const children = [
           validationChild,
           {
             headerName: 'Data assessment by other sources',
             headerGroupComponent: HeaderGroupWithHelp,
-            headerTooltip:
-              'Data assessment by the non-biocurator sources that produced TET tags for this topic on this reference (e.g. textpresso, abc_entity_extractor). Each sub-column iterates the same per-source rows in lockstep: the source label, its Y / N / {N}E assessment, and — when toggled on in the toolbar — its confidence and notes.',
+            headerGroupComponentParams: { help: otherSourcesGroupHelp },
             groupId: `tg-${t.curie}-other`,
             marryChildren: true,
             wrapHeaderText: true,
@@ -1515,12 +1530,13 @@ export default function TetValidationGrid({
             children: otherSourceChildren,
           },
         ];
+        const topicGroupHelp =
+          `Topic "${t.name || t.curie}" (${t.curie}) — a topic from the MOD's ATP subset. ` +
+          'Sub-columns split into the data assessment by biocurator and the data assessment by other sources (source label, Y / N / {N}E tag, and optionally confidence and notes) for this topic on each reference.';
         return {
           headerName: t.name || t.curie,
           headerGroupComponent: HeaderGroupWithHelp,
-          headerTooltip:
-            `Topic "${t.name || t.curie}" (${t.curie}) — a topic from the MOD's ATP subset. ` +
-            'Sub-columns split into the data assessment by biocurator and the data assessment by other sources (source label, Y / N / {N}E tag, and optionally confidence and notes) for this topic on each reference.',
+          headerGroupComponentParams: { help: topicGroupHelp },
           groupId: `tg-${t.curie}`,
           marryChildren: true,
           // Allow long topic names to wrap inside the group header instead of
