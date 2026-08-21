@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import HeaderHelpIcon from '../HeaderHelpIcon';
 import HeaderWithHelp from '../HeaderWithHelp';
 import HeaderGroupWithHelp from '../HeaderGroupWithHelp';
@@ -33,17 +33,38 @@ describe('HeaderHelpIcon (SCRUM-6330)', () => {
     expect(screen.getByRole('button', { name: 'Help for X' })).not.toHaveAttribute('title');
   });
 
-  test('a click on the ? does not reach the header cell (which would sort)', async () => {
-    const onHeaderClick = jest.fn();
+  test('a click elsewhere on the page dismisses the popover', async () => {
     render(
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
-      <div onClick={onHeaderClick}>
+      <>
         <HeaderHelpIcon help={HELP} label="X" />
-      </div>
+        <div data-testid="elsewhere">grid</div>
+      </>
     );
     fireEvent.click(screen.getByRole('button', { name: 'Help for X' }));
-    await screen.findByText(HELP);
-    expect(onHeaderClick).not.toHaveBeenCalled();
+    expect(await screen.findByText(HELP)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('elsewhere'));
+    await waitFor(() => expect(screen.queryByText(HELP)).not.toBeInTheDocument());
+  });
+
+  // A ? that swallowed the click (to shield the AgGrid header underneath it)
+  // would keep the event from reaching document, where react-overlays binds
+  // rootClose — leaving a stack of open popovers as the curator clicks along
+  // the header. There are one to three ? icons per topic, so this matters.
+  test('opening one ? dismisses another that is already open', async () => {
+    const OTHER = 'Per-source TET data pills for this topic.';
+    render(
+      <>
+        <HeaderHelpIcon help={HELP} label="Biocurator" />
+        <HeaderHelpIcon help={OTHER} label="Data" />
+      </>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Help for Biocurator' }));
+    expect(await screen.findByText(HELP)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Help for Data' }));
+    expect(await screen.findByText(OTHER)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(HELP)).not.toBeInTheDocument());
   });
 });
 

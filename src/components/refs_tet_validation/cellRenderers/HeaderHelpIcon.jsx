@@ -33,15 +33,16 @@ export default function HeaderHelpIcon({ help, label }) {
     </Popover>
   );
 
+  // No stopPropagation here. It would keep the click from reaching `document`,
+  // where react-overlays' useRootClose binds its listener, so clicking a second
+  // ? would leave the first popover open. Nothing on the header needs guarding:
+  // AgGrid's click-to-sort lives on the default HeaderComp's own label element,
+  // which a custom headerComponent replaces (HeaderWithHelp binds sort on the
+  // sibling .tetv-header-label), and its column-drag mousedown listener is bound
+  // natively on the header cell — below React's root container, so it already
+  // ran by the time a synthetic handler here could stop it.
   return (
-    // Both handlers stop the event before it reaches the AgGrid header cell,
-    // which would otherwise sort the column (click) or start a column
-    // drag/resize (mousedown) behind the popover.
-    <span
-      className="tetv-header-help"
-      onClick={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
+    <span className="tetv-header-help">
       <OverlayTrigger
         trigger="click"
         rootClose
