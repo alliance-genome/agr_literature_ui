@@ -193,18 +193,21 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
             }
             return;
         }
-        // Need both ends present, valid, and with believable years to form a
-        // range; otherwise wait.
+        // Need both ends present, valid, with searchable years, and in order
+        // to form a range; otherwise wait. An out-of-order range means the
+        // curator is mid-edit (e.g. moved the start forward before touching
+        // the end, when tabbing between the boxes commits on blur) — swapping
+        // and committing it would let the currentValue sync effect rewrite the
+        // boxes with values never typed (YYYY-MM-DD compares lexicographically).
         if (startStr && endStr && !isNaN(Date.parse(startStr)) && !isNaN(Date.parse(endStr))
-            && hasSearchableYear(startStr) && hasSearchableYear(endStr)){
-            // YYYY-MM-DD sorts lexicographically, so swap if entered out of order.
-            const [normStart, normEnd] = startStr <= endStr ? [startStr, endStr] : [endStr, startStr];
+            && hasSearchableYear(startStr) && hasSearchableYear(endStr)
+            && startStr <= endStr){
             // Skip the no-op re-search when the committed range is unchanged
             // (e.g. blur right after the settle timer already committed).
-            if (Array.isArray(currentValue) && currentValue[0] === normStart && currentValue[1] === normEnd){
+            if (Array.isArray(currentValue) && currentValue[0] === startStr && currentValue[1] === endStr){
                 return;
             }
-            dispatch(setValueFunction([normStart, normEnd]));
+            dispatch(setValueFunction([startStr, endStr]));
             dispatch(setSearchResultsPage(1));
             dispatch(searchReferences());
         }
