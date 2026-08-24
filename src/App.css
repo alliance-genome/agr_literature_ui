@@ -794,6 +794,15 @@ em {
   border-bottom: 1px solid #dee2e6;     /* Add border for better separation */
 }
 
+/* Search date facets: Bootstrap's .is-invalid feedback icon sits on the right
+   edge, where type="date" already shows the native calendar picker indicator,
+   and these inputs live in a narrow sidebar. Drop the icon and its reserved
+   padding — the red border is the signal (these are size=sm controls). */
+.date-facet-input.form-control.is-invalid {
+  background-image: none;
+  padding-right: 0.5rem;
+}
+
 /* Workflow editor curation table: make the row-drag handle an obvious, easy
    grab target (rows only reorder when the handle itself is dragged; dragging
    the row text just selects text because cell text selection is enabled). */
