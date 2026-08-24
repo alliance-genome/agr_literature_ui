@@ -160,6 +160,12 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     // shortly after a change settles (a calendar pick never blurs the input).
     const [startInput, setStartInput] = useState('');
     const [endInput, setEndInput] = useState('');
+    // Set when a commit was actually attempted (blur/Enter/settle timer) and
+    // declined, flagging the field(s) at fault — not derived from render
+    // state, so half-built ranges and mid-typed years don't flash red while
+    // the curator is still editing.
+    const [declinedStart, setDeclinedStart] = useState(false);
+    const [declinedEnd, setDeclinedEnd] = useState(false);
     const commitTimerRef = useRef(null);
 
     function clearPendingCommit(){
@@ -174,7 +180,11 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
 
     // Keep the typed inputs in sync with the stored range so the Day/Week/
     // Month/Year buttons and the clear (x) button are reflected here too.
+    // Anything landing here reflects a successful commit or an external
+    // change, so any declined flags are moot.
     useEffect(() => {
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
         if (Array.isArray(currentValue) && currentValue.length === 2){
             setStartInput(currentValue[0] || '');
             setEndInput(currentValue[1] || '');
@@ -189,6 +199,8 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         clearPendingCommit();
         // Both cleared -> remove the filter entirely (unless there is none).
         if (!startStr && !endStr){
+            setDeclinedStart(false);
+            setDeclinedEnd(false);
             if (currentValue !== ''){
                 dispatch(setValueFunction(''));
                 dispatch(setSearchResultsPage(1));
@@ -197,23 +209,30 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
             return;
         }
         // Need both ends present, valid, with searchable years, and in order
-        // to form a range; otherwise wait. An out-of-order range means the
-        // curator is mid-edit (e.g. moved the start forward before touching
-        // the end, when tabbing between the boxes commits on blur) — swapping
-        // and committing it would let the currentValue sync effect rewrite the
-        // boxes with values never typed (YYYY-MM-DD compares lexicographically).
-        if (startStr && endStr && !isNaN(Date.parse(startStr)) && !isNaN(Date.parse(endStr))
-            && hasSearchableYear(startStr) && hasSearchableYear(endStr)
-            && startStr <= endStr){
-            // Skip the no-op re-search when the committed range is unchanged
-            // (e.g. blur right after the settle timer already committed).
-            if (Array.isArray(currentValue) && currentValue[0] === startStr && currentValue[1] === endStr){
-                return;
-            }
-            dispatch(setValueFunction([startStr, endStr]));
-            dispatch(setSearchResultsPage(1));
-            dispatch(searchReferences());
+        // to form a range; otherwise decline and flag the field(s) at fault.
+        // An out-of-order range means the curator is mid-edit (e.g. moved the
+        // start forward before touching the end, when tabbing between the
+        // boxes commits on blur) — swapping and committing it would let the
+        // currentValue sync effect rewrite the boxes with values never typed
+        // (YYYY-MM-DD compares lexicographically).
+        const startOk = Boolean(startStr) && !isNaN(Date.parse(startStr)) && hasSearchableYear(startStr);
+        const endOk = Boolean(endStr) && !isNaN(Date.parse(endStr)) && hasSearchableYear(endStr);
+        const outOfOrder = startOk && endOk && startStr > endStr;
+        if (!startOk || !endOk || outOfOrder){
+            setDeclinedStart(!startOk || outOfOrder);
+            setDeclinedEnd(!endOk || outOfOrder);
+            return;
         }
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
+        // Skip the no-op re-search when the committed range is unchanged
+        // (e.g. blur right after the settle timer already committed).
+        if (Array.isArray(currentValue) && currentValue[0] === startStr && currentValue[1] === endStr){
+            return;
+        }
+        dispatch(setValueFunction([startStr, endStr]));
+        dispatch(setSearchResultsPage(1));
+        dispatch(searchReferences());
     }
 
     // A calendar pick fires onChange but keeps focus in the input, so nothing
@@ -223,6 +242,10 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     function handleDateInputChange(nextStart, nextEnd){
         setStartInput(nextStart);
         setEndInput(nextEnd);
+        // The curator is editing again — withdraw any declined flags until
+        // the next commit attempt (settle timer, blur, or Enter) re-judges.
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
         clearPendingCommit();
         commitTimerRef.current = setTimeout(() => {
             commitTimerRef.current = null;
@@ -236,15 +259,6 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
             e.target.blur(); // blur handler performs the commit
         }
     }
-
-    // Visual cue when the boxes hold a state that cannot commit (reversed
-    // range, only one end filled, or an unsearchable year), since committing
-    // silently waits and the boxes would otherwise disagree with the filter
-    // actually applied without any indication.
-    const rangeUncommittable =
-        (Boolean(startInput) !== Boolean(endInput)) ||
-        Boolean(startInput && endInput &&
-            (!hasSearchableYear(startInput) || !hasSearchableYear(endInput) || startInput > endInput));
 
     function formatDateRange(dateRange){
             let dateStart=dateRange[0].getFullYear()+"-"+parseInt(dateRange[0].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[0].getDate().toString().padStart(2,'0');
@@ -292,7 +306,8 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         type="date"
                         aria-label={`${facetName} start date`}
                         value={startInput}
-                        isInvalid={rangeUncommittable}
+                        className="date-facet-input"
+                        isInvalid={declinedStart}
                         min={MIN_SEARCHABLE_DATE}
                         max={MAX_SEARCHABLE_DATE}
                         onChange={(e) => handleDateInputChange(e.target.value, endInput)}
@@ -306,7 +321,8 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         type="date"
                         aria-label={`${facetName} end date`}
                         value={endInput}
-                        isInvalid={rangeUncommittable}
+                        className="date-facet-input"
+                        isInvalid={declinedEnd}
                         min={MIN_SEARCHABLE_DATE}
                         max={MAX_SEARCHABLE_DATE}
                         onChange={(e) => handleDateInputChange(startInput, e.target.value)}
