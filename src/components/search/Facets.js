@@ -167,12 +167,19 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         }
     }, [currentValue]);
 
-    // A native date input holds intermediate values while the year is being
-    // typed ("2026" passes through "0026"), and tabbing to the other field
-    // blurs and would commit them — Elasticsearch then 500s on dates that far
-    // back. Treat such years as still-in-progress, not as a searchable date.
-    function hasPlausibleYear(dateStr){
-        return parseInt(dateStr.split('-')[0], 10) >= 1000;
+    // Only commit years the backend can actually search. Two failure modes
+    // otherwise: (1) a native date input holds intermediate values while the
+    // year is being typed ("2026" passes through "0026"), and (2) the year
+    // segment accepts 5-6 digit years regardless of the input's min/max.
+    // date_created is compared in Elasticsearch as an epoch long in
+    // nanoseconds, which only represents 1677-09-21..2262-04-11 — anything
+    // outside 500s with 'long overflow' / 'Unable to obtain Instant'. These
+    // whole-year bounds sit safely inside that and cover all real dates.
+    const MIN_SEARCHABLE_YEAR = 1678;
+    const MAX_SEARCHABLE_YEAR = 2261;
+    function hasSearchableYear(dateStr){
+        const year = parseInt(dateStr.split('-')[0], 10);
+        return year >= MIN_SEARCHABLE_YEAR && year <= MAX_SEARCHABLE_YEAR;
     }
 
     function commitTypedRange(startStr, endStr){
@@ -189,7 +196,7 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         // Need both ends present, valid, and with believable years to form a
         // range; otherwise wait.
         if (startStr && endStr && !isNaN(Date.parse(startStr)) && !isNaN(Date.parse(endStr))
-            && hasPlausibleYear(startStr) && hasPlausibleYear(endStr)){
+            && hasSearchableYear(startStr) && hasSearchableYear(endStr)){
             // YYYY-MM-DD sorts lexicographically, so swap if entered out of order.
             const [normStart, normEnd] = startStr <= endStr ? [startStr, endStr] : [endStr, startStr];
             // Skip the no-op re-search when the committed range is unchanged
@@ -270,8 +277,8 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         type="date"
                         aria-label={`${facetName} start date`}
                         value={startInput}
-                        min="1000-01-01"
-                        max="9999-12-31"
+                        min="1678-01-01"
+                        max="2261-12-31"
                         onChange={(e) => handleDateInputChange(e.target.value, endInput)}
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
@@ -283,8 +290,8 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         type="date"
                         aria-label={`${facetName} end date`}
                         value={endInput}
-                        min="1000-01-01"
-                        max="9999-12-31"
+                        min="1678-01-01"
+                        max="2261-12-31"
                         onChange={(e) => handleDateInputChange(startInput, e.target.value)}
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
