@@ -155,6 +155,14 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         }
     }, [currentValue]);
 
+    // A native date input holds intermediate values while the year is being
+    // typed ("2026" passes through "0026"), and tabbing to the other field
+    // blurs and would commit them — Elasticsearch then 500s on dates that far
+    // back. Treat such years as still-in-progress, not as a searchable date.
+    function hasPlausibleYear(dateStr){
+        return parseInt(dateStr.split('-')[0], 10) >= 1000;
+    }
+
     function commitTypedRange(startStr, endStr){
         // Both cleared -> remove the filter entirely.
         if (!startStr && !endStr){
@@ -163,8 +171,10 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
             dispatch(searchReferences());
             return;
         }
-        // Need both ends present and valid to form a range; otherwise wait.
-        if (startStr && endStr && !isNaN(Date.parse(startStr)) && !isNaN(Date.parse(endStr))){
+        // Need both ends present, valid, and with believable years to form a
+        // range; otherwise wait.
+        if (startStr && endStr && !isNaN(Date.parse(startStr)) && !isNaN(Date.parse(endStr))
+            && hasPlausibleYear(startStr) && hasPlausibleYear(endStr)){
             // YYYY-MM-DD sorts lexicographically, so swap if entered out of order.
             const [normStart, normEnd] = startStr <= endStr ? [startStr, endStr] : [endStr, startStr];
             dispatch(setValueFunction([normStart, normEnd]));
@@ -223,6 +233,8 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         type="date"
                         aria-label={`${facetName} start date`}
                         value={startInput}
+                        min="1000-01-01"
+                        max="9999-12-31"
                         onChange={(e) => setStartInput(e.target.value)}
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
@@ -232,6 +244,8 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         type="date"
                         aria-label={`${facetName} end date`}
                         value={endInput}
+                        min="1000-01-01"
+                        max="9999-12-31"
                         onChange={(e) => setEndInput(e.target.value)}
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
