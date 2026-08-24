@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import { api } from "../../api";
 import {
@@ -139,9 +139,21 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     const dispatch = useDispatch();
 
     // Local state backing the two native <input type="date"> fields so the
-    // curator can type freely; the range is only committed on Enter/blur.
+    // curator can type freely; the range is committed on Enter/blur, or
+    // shortly after a change settles (a calendar pick never blurs the input).
     const [startInput, setStartInput] = useState('');
     const [endInput, setEndInput] = useState('');
+    const commitTimerRef = useRef(null);
+
+    function clearPendingCommit(){
+        if (commitTimerRef.current){
+            clearTimeout(commitTimerRef.current);
+            commitTimerRef.current = null;
+        }
+    }
+
+    // Cancel a scheduled commit if the facet unmounts (e.g. panel collapsed).
+    useEffect(() => clearPendingCommit, []);
 
     // Keep the typed inputs in sync with the stored range so the Day/Week/
     // Month/Year buttons and the clear (x) button are reflected here too.
@@ -164,11 +176,14 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     }
 
     function commitTypedRange(startStr, endStr){
-        // Both cleared -> remove the filter entirely.
+        clearPendingCommit();
+        // Both cleared -> remove the filter entirely (unless there is none).
         if (!startStr && !endStr){
-            dispatch(setValueFunction(''));
-            dispatch(setSearchResultsPage(1));
-            dispatch(searchReferences());
+            if (currentValue !== ''){
+                dispatch(setValueFunction(''));
+                dispatch(setSearchResultsPage(1));
+                dispatch(searchReferences());
+            }
             return;
         }
         // Need both ends present, valid, and with believable years to form a
@@ -177,10 +192,29 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
             && hasPlausibleYear(startStr) && hasPlausibleYear(endStr)){
             // YYYY-MM-DD sorts lexicographically, so swap if entered out of order.
             const [normStart, normEnd] = startStr <= endStr ? [startStr, endStr] : [endStr, startStr];
+            // Skip the no-op re-search when the committed range is unchanged
+            // (e.g. blur right after the settle timer already committed).
+            if (Array.isArray(currentValue) && currentValue[0] === normStart && currentValue[1] === normEnd){
+                return;
+            }
             dispatch(setValueFunction([normStart, normEnd]));
             dispatch(setSearchResultsPage(1));
             dispatch(searchReferences());
         }
+    }
+
+    // A calendar pick fires onChange but keeps focus in the input, so nothing
+    // would blur and commit the range. Schedule a commit once the value stops
+    // changing; the delay also absorbs segment-by-segment keyboard edits, and
+    // the plausible-year guard holds back mid-typed years that survive it.
+    function handleDateInputChange(nextStart, nextEnd){
+        setStartInput(nextStart);
+        setEndInput(nextEnd);
+        clearPendingCommit();
+        commitTimerRef.current = setTimeout(() => {
+            commitTimerRef.current = null;
+            commitTypedRange(nextStart, nextEnd);
+        }, 800);
     }
 
     function handleInputKeyDown(e){
@@ -235,7 +269,7 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         value={startInput}
                         min="1000-01-01"
                         max="9999-12-31"
-                        onChange={(e) => setStartInput(e.target.value)}
+                        onChange={(e) => handleDateInputChange(e.target.value, endInput)}
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
                     />
@@ -246,7 +280,7 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         value={endInput}
                         min="1000-01-01"
                         max="9999-12-31"
-                        onChange={(e) => setEndInput(e.target.value)}
+                        onChange={(e) => handleDateInputChange(startInput, e.target.value)}
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
                     />
