@@ -135,6 +135,23 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
+// Only commit years the backend can actually search. Two failure modes
+// otherwise: (1) a native date input holds intermediate values while the
+// year is being typed ("2026" passes through "0026"), and (2) the year
+// segment accepts 5-6 digit years regardless of the input's min/max.
+// date_created is compared in Elasticsearch as an epoch long in
+// nanoseconds, which only represents 1677-09-21..2262-04-11 — anything
+// outside 500s with 'long overflow' / 'Unable to obtain Instant'. These
+// whole-year bounds sit safely inside that and cover all real dates.
+const MIN_SEARCHABLE_YEAR = 1678;
+const MAX_SEARCHABLE_YEAR = 2261;
+const MIN_SEARCHABLE_DATE = `${MIN_SEARCHABLE_YEAR}-01-01`;
+const MAX_SEARCHABLE_DATE = `${MAX_SEARCHABLE_YEAR}-12-31`;
+function hasSearchableYear(dateStr){
+    const year = parseInt(dateStr.split('-')[0], 10);
+    return year >= MIN_SEARCHABLE_YEAR && year <= MAX_SEARCHABLE_YEAR;
+}
+
 const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     const dispatch = useDispatch();
 
@@ -167,20 +184,6 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         }
     }, [currentValue]);
 
-    // Only commit years the backend can actually search. Two failure modes
-    // otherwise: (1) a native date input holds intermediate values while the
-    // year is being typed ("2026" passes through "0026"), and (2) the year
-    // segment accepts 5-6 digit years regardless of the input's min/max.
-    // date_created is compared in Elasticsearch as an epoch long in
-    // nanoseconds, which only represents 1677-09-21..2262-04-11 — anything
-    // outside 500s with 'long overflow' / 'Unable to obtain Instant'. These
-    // whole-year bounds sit safely inside that and cover all real dates.
-    const MIN_SEARCHABLE_YEAR = 1678;
-    const MAX_SEARCHABLE_YEAR = 2261;
-    function hasSearchableYear(dateStr){
-        const year = parseInt(dateStr.split('-')[0], 10);
-        return year >= MIN_SEARCHABLE_YEAR && year <= MAX_SEARCHABLE_YEAR;
-    }
 
     function commitTypedRange(startStr, endStr){
         clearPendingCommit();
@@ -234,6 +237,15 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         }
     }
 
+    // Visual cue when the boxes hold a state that cannot commit (reversed
+    // range, only one end filled, or an unsearchable year), since committing
+    // silently waits and the boxes would otherwise disagree with the filter
+    // actually applied without any indication.
+    const rangeUncommittable =
+        (Boolean(startInput) !== Boolean(endInput)) ||
+        Boolean(startInput && endInput &&
+            (!hasSearchableYear(startInput) || !hasSearchableYear(endInput) || startInput > endInput));
+
     function formatDateRange(dateRange){
             let dateStart=dateRange[0].getFullYear()+"-"+parseInt(dateRange[0].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[0].getDate().toString().padStart(2,'0');
             let dateEnd=dateRange[1].getFullYear()+"-"+parseInt(dateRange[1].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[1].getDate().toString().padStart(2,'0');
@@ -280,8 +292,9 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         type="date"
                         aria-label={`${facetName} start date`}
                         value={startInput}
-                        min="1678-01-01"
-                        max="2261-12-31"
+                        isInvalid={rangeUncommittable}
+                        min={MIN_SEARCHABLE_DATE}
+                        max={MAX_SEARCHABLE_DATE}
                         onChange={(e) => handleDateInputChange(e.target.value, endInput)}
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
@@ -293,8 +306,9 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         type="date"
                         aria-label={`${facetName} end date`}
                         value={endInput}
-                        min="1678-01-01"
-                        max="2261-12-31"
+                        isInvalid={rangeUncommittable}
+                        min={MIN_SEARCHABLE_DATE}
+                        max={MAX_SEARCHABLE_DATE}
                         onChange={(e) => handleDateInputChange(startInput, e.target.value)}
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
