@@ -261,8 +261,11 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                 <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
                 <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
             </ButtonGroup>
+            {/* "from" and "to" stacked on their own rows: the facet sidebar is
+                too narrow for both date inputs side by side (curator request). */}
             <div style={{marginTop: "0.4em"}}>
                 <InputGroup size="sm">
+                    <InputGroup.Text style={{width: "3.2em", justifyContent: "center"}}>from</InputGroup.Text>
                     <Form.Control
                         type="date"
                         aria-label={`${facetName} start date`}
@@ -273,7 +276,9 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                         onBlur={() => commitTypedRange(startInput, endInput)}
                         onKeyDown={handleInputKeyDown}
                     />
-                    <InputGroup.Text>to</InputGroup.Text>
+                </InputGroup>
+                <InputGroup size="sm" style={{marginTop: "0.25em"}}>
+                    <InputGroup.Text style={{width: "3.2em", justifyContent: "center"}}>to</InputGroup.Text>
                     <Form.Control
                         type="date"
                         aria-label={`${facetName} end date`}
