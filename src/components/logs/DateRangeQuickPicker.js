@@ -4,17 +4,14 @@ import DateRangePicker from '@wojtekmaj/react-daterange-picker';
 import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 
-import { fixedTimeframeRange, formatDateRange, formatToUTCString } from '../../utils/dateRange';
+import { fixedTimeframeRange, formatToUTCString, rangeFromPickerValue } from '../../utils/dateRange';
 
 // Day/Week/Month/Year shortcuts plus a free range, matching the picker on the
 // Reports page. Controlled: `value` is ['YYYY-MM-DD','YYYY-MM-DD'] or '' when unset.
 const DateRangeQuickPicker = ({ value, onChange, disabled }) => {
   const handleRangeChange = (range) => {
-    if (range === null) {
-      onChange('');
-    } else if (!isNaN(Date.parse(range[0])) && !isNaN(Date.parse(range[1]))) {
-      onChange(formatDateRange(range));
-    }
+    const next = rangeFromPickerValue(range);
+    if (next !== undefined) onChange(next);
   };
 
   return (

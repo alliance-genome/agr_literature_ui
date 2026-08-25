@@ -1,4 +1,6 @@
-import { formatDateRange, formatToUTCString, fixedTimeframeRange } from './dateRange';
+import {
+  formatDateRange, formatToUTCString, fixedTimeframeRange, rangeFromPickerValue
+} from './dateRange';
 
 describe('formatDateRange', () => {
   test('renders a Date pair as YYYY-MM-DD strings', () => {
@@ -47,5 +49,21 @@ describe('fixedTimeframeRange', () => {
 
   test('an unknown timeframe clears the range', () => {
     expect(fixedTimeframeRange('Decade', today)).toBe('');
+  });
+});
+
+describe('rangeFromPickerValue', () => {
+  test('stores a picked pair as day strings', () => {
+    expect(rangeFromPickerValue([new Date(2026, 5, 1), new Date(2026, 5, 30)]))
+      .toEqual(['2026-06-01', '2026-06-30']);
+  });
+
+  test('clearing the picker clears the stored range', () => {
+    expect(rangeFromPickerValue(null)).toBe('');
+  });
+
+  test('an incomplete or unparseable pair leaves the range untouched', () => {
+    expect(rangeFromPickerValue([new Date(2026, 5, 1), null])).toBeUndefined();
+    expect(rangeFromPickerValue([null, null])).toBeUndefined();
   });
 });

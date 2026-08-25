@@ -11,7 +11,15 @@ const mockState = {
 };
 jest.mock('react-redux', () => ({ useSelector: (fn) => fn(mockState) }));
 jest.mock('../../../api', () => ({ api: { get: jest.fn() } }));
-jest.mock('../DateRangeQuickPicker', () => () => null);
+// The real widget needs canvas, which jsdom lacks. This stub keeps the wiring
+// under test: it reports whether it was disabled and can emit a range.
+jest.mock('../DateRangeQuickPicker', () => (props) => (
+  <button
+    data-testid="date-picker"
+    disabled={props.disabled}
+    onClick={() => props.onChange(['2026-06-01', '2026-06-30'])}
+  >date</button>
+));
 
 const mockGrid = { rowData: [] };
 jest.mock('ag-grid-react', () => ({
@@ -36,7 +44,9 @@ const ROWS = [
   row('gaf_zfin.log'),
   row('gaf_wb.log'),
   row('pdf2md.log'),
-  row('QC/duplicate_orcid_report.log')
+  row('QC/duplicate_orcid_report.log'),
+  row('pubmed_update/update_pubmed_papers_ZFIN_20260615.log'),
+  row('pubmed_update/update_pubmed_papers_ZFIN_20260815.log')
 ];
 
 beforeEach(() => {
@@ -104,3 +114,28 @@ describe('LogsBrowser standalone', () => {
   });
 });
 
+
+describe('date range', () => {
+  test('is usable in the default latest-only view', () => {
+    setup({ lockedMod: 'ZFIN' });
+    expect(screen.getByTestId('date-picker')).not.toBeDisabled();
+  });
+
+  test('narrows the listing to reports with a file in the window', () => {
+    setup({ lockedMod: 'ZFIN' });
+    fireEvent.click(screen.getByTestId('date-picker'));
+    const names = mockGrid.rowData.map((r) => r.name);
+    expect(names).toContain('update_pubmed_papers_ZFIN_20260615.log');
+    expect(names).not.toContain('update_pubmed_papers_ZFIN_20260815.log');
+    // Undated files fall back to mtime (2026-08-20), outside the June window.
+    expect(names).not.toContain('gaf_zfin.log');
+  });
+
+  test('still filters in the all-versions view', () => {
+    setup({ lockedMod: 'ZFIN' });
+    fireEvent.click(screen.getByRole('button', { name: /All versions/ }));
+    fireEvent.click(screen.getByTestId('date-picker'));
+    expect(mockGrid.rowData.map((r) => r.name))
+      .toEqual(['update_pubmed_papers_ZFIN_20260615.log']);
+  });
+});

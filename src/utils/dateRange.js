@@ -34,3 +34,12 @@ export function fixedTimeframeRange(timeframe, today = new Date()) {
   if (days === undefined) return '';
   return formatDateRange([new Date(today.getTime() - days * DAY_MS), today]);
 }
+
+// The picker hands back a Date pair, null when cleared, or a half-filled pair
+// mid-interaction. Returns the value to store, or undefined to mean "leave the
+// range as it is" — the user is still choosing.
+export function rangeFromPickerValue(range) {
+  if (range === null) return '';
+  if (!range || isNaN(Date.parse(range[0])) || isNaN(Date.parse(range[1]))) return undefined;
+  return formatDateRange(range);
+}

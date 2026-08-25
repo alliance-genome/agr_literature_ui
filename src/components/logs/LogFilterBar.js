@@ -124,12 +124,16 @@ const LogFilterBar = ({
           <Form.Label>
             Date range{' '}
             <span className="text-muted" style={{ fontWeight: 'normal' }}>
-              {isLatestOnly ? '(use All versions to filter by date)' : '(mtime when undated)'}
+              {isLatestOnly
+                ? '(reports with a file in this window; mtime when undated)'
+                : '(mtime when undated)'}
             </span>
           </Form.Label>
+          {/* Usable in both modes. In Latest only it narrows to reports that
+              produced a file in the window — a dead control in the default view
+              just reads as broken. */}
           <DateRangeQuickPicker
             value={filters.dateRange}
-            disabled={isLatestOnly}
             onChange={set('dateRange')}
           />
         </div>
