@@ -31,34 +31,88 @@ describe('QCReportDateSelector', () => {
     };
 
     test('asks the API for the dates of the report it was given', async () => {
-        api.get.mockResolvedValue({ data: { dates: ['20260707'] } });
+        api.get.mockResolvedValue({ data: { dates: ['20260707'], has_latest: true } });
         renderSelector({ reportKey: 'duplicate_orcids' });
         await waitFor(() => expect(api.get).toHaveBeenCalledWith('/check/qc_report_dates/duplicate_orcids'));
     });
 
-    test('lists the available runs as readable dates', async () => {
-        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'] } });
+    test('lists the archived runs as readable dates', async () => {
+        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'], latest: '20260707', has_latest: true } });
         renderSelector();
-        expect(await screen.findByRole('option', { name: '2026-07-07' })).toBeInTheDocument();
-        expect(screen.getByRole('option', { name: '2026-06-07' })).toBeInTheDocument();
+        expect(await screen.findByRole('option', { name: '2026-06-07' })).toBeInTheDocument();
     });
 
-    test('selects the newest run on load', async () => {
-        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'] } });
+    test('offers the current run as Latest, labelled with its date', async () => {
+        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'], latest: '20260707', has_latest: true } });
+        renderSelector();
+        expect(await screen.findByRole('option', { name: 'Latest (2026-07-07)' })).toBeInTheDocument();
+    });
+
+    test('does not offer the current run twice', async () => {
+        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'], latest: '20260707', has_latest: true } });
+        renderSelector();
+        await screen.findByRole('option', { name: 'Latest (2026-07-07)' });
+        expect(screen.queryByRole('option', { name: '2026-07-07' })).not.toBeInTheDocument();
+    });
+
+    test('defaults to Latest, which asks for no particular date', async () => {
+        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'], latest: '20260707', has_latest: true } });
         const { onChange } = renderSelector();
-        await waitFor(() => expect(onChange).toHaveBeenCalledWith('20260707'));
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith(''));
     });
 
-    test('reports the run the user picks', async () => {
-        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'] } });
-        const { onChange } = renderSelector({ selectedDate: '20260707' });
+    test('Latest stays selectable after picking an archived run', async () => {
+        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'], latest: '20260707', has_latest: true } });
+        const { onChange } = renderSelector({ selectedDate: '20260607' });
+        const select = await screen.findByRole('combobox');
+        await userEvent.selectOptions(select, '');
+        expect(onChange).toHaveBeenCalledWith('');
+    });
+
+    test('reports the archived run the user picks', async () => {
+        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'], latest: '20260707', has_latest: true } });
+        const { onChange } = renderSelector({ selectedDate: '' });
         const select = await screen.findByRole('combobox');
         await userEvent.selectOptions(select, '20260607');
         expect(onChange).toHaveBeenCalledWith('20260607');
     });
 
-    test('renders nothing and reports no history when there are no archived runs', async () => {
-        api.get.mockResolvedValue({ data: { dates: [] } });
+    test('falls back to the newest archive when there is no current run', async () => {
+        // Only archives on disk: nothing for Latest to point at, so it is not
+        // offered and the newest archive becomes the default.
+        api.get.mockResolvedValue({
+            data: { dates: ['20260707', '20260607'], latest: null, has_latest: false }
+        });
+        const { onChange } = renderSelector();
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith('20260707'));
+        expect(screen.queryByRole('option', { name: /^Latest/ })).not.toBeInTheDocument();
+        expect(screen.getByRole('option', { name: '2026-07-07' })).toBeInTheDocument();
+    });
+
+    test('still offers Latest for a current run that has no date of its own', async () => {
+        // A hand-written log with no date header is undatable but still the
+        // newest data, so Latest must be offered and must win by default -
+        // defaulting to an archive here would quietly show staler data.
+        api.get.mockResolvedValue({
+            data: { dates: ['20250601'], latest: null, has_latest: true }
+        });
+        const { onChange } = renderSelector();
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith(''));
+        expect(screen.getByRole('option', { name: 'Latest' })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: '2025-06-01' })).toBeInTheDocument();
+    });
+
+    test('renders nothing when only the current run exists', async () => {
+        api.get.mockResolvedValue({
+            data: { dates: ['20260707'], latest: '20260707', has_latest: true }
+        });
+        const { onChange, container } = renderSelector();
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith(''));
+        expect(container).toBeEmptyDOMElement();
+    });
+
+    test('renders nothing and asks for the latest when there are no runs at all', async () => {
+        api.get.mockResolvedValue({ data: { dates: [], latest: null, has_latest: false } });
         const { onChange, container } = renderSelector();
         await waitFor(() => expect(onChange).toHaveBeenCalledWith(''));
         expect(container).toBeEmptyDOMElement();
@@ -72,9 +126,16 @@ describe('QCReportDateSelector', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    test('tolerates a response with no dates field', async () => {
+    test('tolerates a response with neither dates nor latest', async () => {
         api.get.mockResolvedValue({ data: {} });
         const { onChange } = renderSelector();
         await waitFor(() => expect(onChange).toHaveBeenCalledWith(''));
+    });
+
+    test('infers a current run from a date alone, for an API without has_latest', async () => {
+        api.get.mockResolvedValue({ data: { dates: ['20260707', '20260607'], latest: '20260707' } });
+        const { onChange } = renderSelector();
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith(''));
+        expect(screen.getByRole('option', { name: 'Latest (2026-07-07)' })).toBeInTheDocument();
     });
 });
