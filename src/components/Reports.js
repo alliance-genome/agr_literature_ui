@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Spinner, Tabs, Tab, Button, ButtonGroup } from 'react-bootstrap';
 import Container from "react-bootstrap/Container";
@@ -727,7 +728,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
           <Row>
             <Col>
               <div style={{ textAlign: 'left' }}>
-                <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
+                <br /><Link to={`/logs?dir=QC&family=obsolete_entity_report&scope=all&mode=history`}>report history</Link>
               </div>
             </Col>
           </Row>
@@ -828,7 +829,7 @@ const QCReportRetractedPapers = ({modSection}) => {
                 <Row>
                     <Col>
                         <div style={{ textAlign: 'left' }}>
-                            <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
+                            <br /><Link to={`/logs?dir=QC&family=redacted_references_with_tags&scope=all&mode=history`}>report history</Link>
                         </div>
                     </Col>
                 </Row>
@@ -896,15 +897,9 @@ const QCObsoletePmids = ({ modSection }) => {
                 </div>
               )}
 
-              <div style={{ textAlign: 'left', marginTop: '0.5em' }}>
-                <a
-                  href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  report history
-                </a>
-              </div>
+                <div style={{ textAlign: 'left', marginTop: '0.5em' }}>
+                  <Link to={`/logs?dir=QC&family=obsolete_pmid_report&scope=all&mode=history`}>report history</Link>
+                </div>
             </>
           )}
         </Col>
@@ -1012,7 +1007,7 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
           <Row>
             <Col>
               <div style={{ textAlign: 'left' }}>
-                <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
+                <br /><Link to={`/logs?dir=QC&family=duplicate_orcid_report&scope=all&mode=history`}>report history</Link>
               </div>
             </Col>
           </Row>

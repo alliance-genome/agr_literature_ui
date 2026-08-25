@@ -53,6 +53,7 @@ const NavigationBar = () => {
         <Nav.Link className="navbar_link" as={Link} to="/create" onClick={closeMenu}>Create</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/merge" onClick={closeMenu}>Merge</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/reports" onClick={closeMenu}>Reports</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/logs" onClick={closeMenu}>Report Logs</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/download" onClick={closeMenu}>Download</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/bulkSubmission" onClick={closeMenu}>Bulk Submission</Nav.Link>
         <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>

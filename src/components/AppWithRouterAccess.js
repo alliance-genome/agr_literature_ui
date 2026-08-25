@@ -13,6 +13,7 @@ import Textpresso from './Textpresso';
 import Create from './Create';
 import Merge from './Merge';
 import Reports from './Reports';
+import Logs from './Logs';
 import Download from './Download';
 import BulkSubmission from './BulkSubmission';
 import About from './About';
@@ -138,6 +139,7 @@ const AppWithRouterAccess = () => {
                     <PrivateRoute path='/create' component={Create} />
                     <PrivateRoute path='/merge' component={Merge} />
                     <PrivateRoute path='/reports' component={Reports} />
+                    <PrivateRoute path='/logs' component={Logs} />
                     <PrivateRoute path='/download' component={Download} />
                     <PrivateRoute path='/bulkSubmission' component={BulkSubmission} />
                     <PrivateRoute path='/about' component={About} />
