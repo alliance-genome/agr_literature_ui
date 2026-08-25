@@ -22,6 +22,7 @@ describe('QCReportDateSelector', () => {
         const utils = render(
             <QCReportDateSelector
                 reportKey="obsolete_entities"
+                instanceId="WB"
                 selectedDate={null}
                 onChange={onChange}
                 {...props}
@@ -117,6 +118,41 @@ describe('QCReportDateSelector', () => {
         await waitFor(() => expect(onChange).toHaveBeenCalledWith(''));
         expect(container).toBeEmptyDOMElement();
         expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    });
+
+    test('keeps the select id unique per mod, so each label points at its own', async () => {
+        // The mod tabs mount on enter and never unmount, so several panes sit in
+        // the document at once; an id keyed by report alone would collide and
+        // every label would resolve to the first, hidden, select.
+        api.get.mockResolvedValue({
+            data: { dates: ['20260707', '20260607'], latest: '20260707', has_latest: true }
+        });
+        const { container } = render(
+            <div>
+                <QCReportDateSelector reportKey="obsolete_entities" instanceId="WB"
+                    selectedDate={null} onChange={jest.fn()} />
+                <QCReportDateSelector reportKey="obsolete_entities" instanceId="MGI"
+                    selectedDate={null} onChange={jest.fn()} />
+            </div>
+        );
+        await waitFor(() => expect(container.querySelectorAll('select')).toHaveLength(2));
+        const ids = [...container.querySelectorAll('select')].map(el => el.id);
+        expect(new Set(ids).size).toBe(2);
+        for (const label of container.querySelectorAll('label')) {
+            expect(ids).toContain(label.getAttribute('for'));
+        }
+    });
+
+    test('keeps a run listed when it is not offered as Latest', async () => {
+        // has_latest false means Latest is not offered, so that date must stay
+        // in the archived list - dropping it would make the run unreachable.
+        api.get.mockResolvedValue({
+            data: { dates: ['20260707', '20260607'], latest: '20260707', has_latest: false }
+        });
+        const { onChange } = renderSelector();
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith('20260707'));
+        expect(screen.getByRole('option', { name: '2026-07-07' })).toBeInTheDocument();
+        expect(screen.queryByRole('option', { name: /^Latest/ })).not.toBeInTheDocument();
     });
 
     test('reports no history when the endpoint is unavailable, so the parent can fall back', async () => {

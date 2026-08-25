@@ -21,6 +21,10 @@ import { convertDate } from '../../utils/reportDates';
  * one - a hand-made log with no date header is still the newest data, and
  * defaulting to an archive instead would quietly show something staler.
  *
+ * `instanceId` distinguishes one mount of a report's selector from another -
+ * pass the mod section - so the ids stay unique while several mod panes sit in
+ * the document together.
+ *
  * `onChange` must be a stable reference (pass a `useState` setter, not an inline
  * arrow): it is called once on load to pick the default, and it is a dependency
  * of the fetch effect.
@@ -30,7 +34,7 @@ import { convertDate } from '../../utils/reportDates';
  * then too, so the parent can tell "still loading the list" (its initial null)
  * from "just show the latest".
  */
-const QCReportDateSelector = ({ reportKey, label = 'Report date', selectedDate, onChange }) => {
+const QCReportDateSelector = ({ reportKey, instanceId, label = 'Report date', selectedDate, onChange }) => {
   // Archived runs only; the current one is offered as "Latest" instead.
   const [dates, setDates] = useState([]);
   // Datestamp the current, undated run reports for itself - null if it has none.
@@ -51,8 +55,10 @@ const QCReportDateSelector = ({ reportKey, label = 'Report date', selectedDate, 
         // An older API sends no has_latest; a date implies a current run there.
         const currentExists = result.data?.has_latest ?? Boolean(current);
         // The current run is represented by "Latest", so drop its date from the
-        // archived list rather than offering the same file twice.
-        const archived = available.filter(date => date !== current);
+        // archived list rather than offering the same file twice - but only when
+        // Latest is actually going to be offered, otherwise that run would be
+        // removed from the list and reachable nowhere.
+        const archived = currentExists ? available.filter(date => date !== current) : available;
         setLatest(current);
         setHasLatest(currentExists);
         setDates(archived);
@@ -74,15 +80,21 @@ const QCReportDateSelector = ({ reportKey, label = 'Report date', selectedDate, 
 
   if (dates.length === 0) { return null; }
 
+  // The mod tabs mount on enter and never unmount, so every mod pane visited
+  // stays in the document at once. Keying the id by report alone would then put
+  // several identical ids on the page and point each label at the first one -
+  // the hidden pane's select - so the caller's instance has to be part of it.
+  const selectId = `${reportKey}_${instanceId}_date`;
+
   return (
     <div style={{ textAlign: 'left', marginBottom: '0.75em' }}>
-      <Form.Label htmlFor={`${reportKey}_date`} style={{ marginRight: '0.5em', marginBottom: 0 }}>
+      <Form.Label htmlFor={selectId} style={{ marginRight: '0.5em', marginBottom: 0 }}>
         {label}
       </Form.Label>
       <Form.Control
         as='select'
-        id={`${reportKey}_date`}
-        name={`${reportKey}_date`}
+        id={selectId}
+        name={selectId}
         style={{ width: '15em', display: 'inline-block' }}
         value={selectedDate || ''}
         onChange={(e) => onChange(e.target.value)}

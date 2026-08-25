@@ -46,6 +46,16 @@ const qcReportUrl = (endpoint, datestamp) => (
     datestamp ? `${endpoint}?datestamp=${datestamp}` : endpoint
 );
 
+// Shown when a QC report fails to load. Deliberately distinct from the "no rows
+// for this mod" message: these reports are acted on, so a failed request must
+// never read as a clean bill of health for the run the curator selected.
+const QCReportLoadError = ({ selectedDate }) => (
+    <div style={{ textAlign: 'left', fontWeight: 'bold' }}>
+        Could not load this report{selectedDate ? ` for ${convertDate(selectedDate)}` : ''}.
+        Please try again, or pick another date.
+    </div>
+);
+
 const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType }) => {
   const [data, setData] = useState([]);
   const [totals, setTotals] = useState({});
@@ -618,6 +628,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const [key, setKey] = useState(0);
   const gridRef = useRef();
@@ -627,23 +638,29 @@ const QCReportObsoleteEntities = ({modSection}) => {
 
   useEffect(() => {
     if (selectedDate === null) { return; }
+    let cancelled = false;
 
     const fetchData = async () => {
       const url = qcReportUrl('/check/check_obsolete_entities', selectedDate);
       setIsLoadingData(true);
       try {
         const result = await api.get(url);
+        if (cancelled) { return; }
         setQcReportObsoleteEntities(result.data);
+        setLoadFailed(false);
         setKey(prevKey => prevKey + 1);
       } catch (error) {
+        if (cancelled) { return; }
         console.error('Error fetching data:', error);
         setQcReportObsoleteEntities(emptyQcReport);
+        setLoadFailed(true);
       } finally {
-        setIsLoadingData(false);
+        if (!cancelled) { setIsLoadingData(false); }
       }
     };
 
     fetchData();
+    return () => { cancelled = true; };
   }, [selectedDate]);
 
   const columnDefs = [
@@ -706,6 +723,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
             <Col>
               <QCReportDateSelector
                 reportKey="obsolete_entities"
+                instanceId={modSection}
                 selectedDate={selectedDate}
                 onChange={setSelectedDate}
               />
@@ -721,6 +739,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
                 </div>
               ) : (
                 <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
+                 {loadFailed ? (<QCReportLoadError selectedDate={selectedDate} />) : (<>
                  {( qcReportObsoleteEntities['date-produced'] !== null) &&
                   (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportObsoleteEntities['date-produced'])}<br /><br /></div>) }
                  {( qcReportObsoleteEntities["obsolete_entities"] && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) ? (
@@ -739,6 +758,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
                     gridOptions = {gridOptions}
                   />
                   ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No obsolete or deleted entities for {modSection}</div>)}
+                 </>)}
                 </div>
               )}
             </Col>
@@ -751,6 +771,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
 
 const QCReportRetractedPapers = ({modSection}) => {
     const [isLoadingData, setIsLoadingData] = useState(true);
+    const [loadFailed, setLoadFailed] = useState(false);
     const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
     const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
     // Component state, not redux: see the note in QCReportObsoleteEntities.
@@ -759,21 +780,27 @@ const QCReportRetractedPapers = ({modSection}) => {
 
     useEffect(() => {
         if (selectedDate === null) { return; }
+        let cancelled = false;
 
         const fetchData = async () => {
             const url = qcReportUrl('/check/check_redacted_references_with_tags', selectedDate);
             setIsLoadingData(true);
             try {
                 const result = await api.get(url);
+                if (cancelled) { return; }
                 setQcReportRedactedPapers(result.data);
+                setLoadFailed(false);
             } catch (error) {
+                if (cancelled) { return; }
                 console.error('Error fetching data:', error);
                 setQcReportRedactedPapers(emptyQcReport);
+                setLoadFailed(true);
             } finally {
-                setIsLoadingData(false);
+                if (!cancelled) { setIsLoadingData(false); }
             }
         };
         fetchData();
+        return () => { cancelled = true; };
     }, [selectedDate]);
 
     const columnDefs = [
@@ -812,6 +839,7 @@ const QCReportRetractedPapers = ({modSection}) => {
                     <Col>
                         <QCReportDateSelector
                             reportKey="redacted_references"
+                instanceId={modSection}
                             selectedDate={selectedDate}
                             onChange={setSelectedDate}
                         />
@@ -827,6 +855,7 @@ const QCReportRetractedPapers = ({modSection}) => {
                             </div>
                         ) : (
                             <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
+                                {loadFailed ? (<QCReportLoadError selectedDate={selectedDate} />) : (<>
                                 {( qcReportRedactedPapers['date-produced'] !== null) &&
                                     (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportRedactedPapers['date-produced'])}<br /><br /></div>) }
                                 {( qcReportRedactedPapers["redacted-references"] && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) ? (
@@ -843,6 +872,7 @@ const QCReportRetractedPapers = ({modSection}) => {
                                         gridOptions = {gridOptions}
                                     />
                                 ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No retracted papers with manual tags for {modSection}</div>)}
+                                </>)}
                             </div>
                         )}
                     </Col>
@@ -855,24 +885,31 @@ const QCReportRetractedPapers = ({modSection}) => {
 const QCObsoletePmids = ({ modSection }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
     if (selectedDate === null) { return; }
+    let cancelled = false;
 
     const fetchData = async () => {
       setIsLoading(true);
       try {
         const result = await api.get(qcReportUrl('/check/check_obsolete_pmids', selectedDate));
+        if (cancelled) { return; }
         setData(result.data);
+        setLoadFailed(false);
       } catch (error) {
+        if (cancelled) { return; }
         console.error('Error fetching obsolete PMIDs:', error);
         setData(null);
+        setLoadFailed(true);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) { setIsLoading(false); }
       }
     };
     fetchData();
+    return () => { cancelled = true; };
   }, [selectedDate]);
 
   const produced = data?.['date-produced'];
@@ -890,6 +927,7 @@ const QCObsoletePmids = ({ modSection }) => {
         <Col>
           <QCReportDateSelector
             reportKey="obsolete_pmids"
+                instanceId={modSection}
             selectedDate={selectedDate}
             onChange={setSelectedDate}
           />
@@ -904,6 +942,8 @@ const QCObsoletePmids = ({ modSection }) => {
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             </div>
+          ) : loadFailed ? (
+            <QCReportLoadError selectedDate={selectedDate} />
           ) : (
             <>
               {produced && (
@@ -939,6 +979,7 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const [key, setKey] = useState(0);
   const gridRef = useRef();
@@ -948,23 +989,29 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
 
   useEffect(() => {
     if (selectedDate === null) { return; }
+    let cancelled = false;
 
     const fetchData = async () => {
       const url = qcReportUrl('/check/check_duplicate_orcids', selectedDate);
       setIsLoadingData(true);
       try {
         const result = await api.get(url);
+        if (cancelled) { return; }
         setQcReportDuplicateOrcids(result.data);
+        setLoadFailed(false);
         setKey(prevKey => prevKey + 1);
       } catch (error) {
+        if (cancelled) { return; }
         console.error('Error fetching data:', error);
         setQcReportDuplicateOrcids(emptyQcReport);
+        setLoadFailed(true);
       } finally {
-        setIsLoadingData(false);
+        if (!cancelled) { setIsLoadingData(false); }
       }
     };
 
     fetchData();
+    return () => { cancelled = true; };
   }, [selectedDate]);
 
     const columnDefs = [
@@ -1002,6 +1049,7 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
             <Col>
               <QCReportDateSelector
                 reportKey="duplicate_orcids"
+                instanceId={modSection}
                 selectedDate={selectedDate}
                 onChange={setSelectedDate}
               />
@@ -1017,6 +1065,7 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
                 </div>
               ) : (
                 <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
+                 {loadFailed ? (<QCReportLoadError selectedDate={selectedDate} />) : (<>
                  {( qcReportDuplicateOrcids['date-produced'] !== null) &&
                   (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportDuplicateOrcids['date-produced'])}<br /><br /></div>) }
                  {( qcReportDuplicateOrcids["duplicate_orcids"] && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) ? (
@@ -1035,6 +1084,7 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
                     gridOptions = {gridOptions}
                   />
                   ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No duplicate ORCIDs for {modSection}</div>)}
+                 </>)}
                 </div>
               )}
             </Col>
