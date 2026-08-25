@@ -169,3 +169,31 @@ export const mergeAuthors = (ref1Curie, plan) => async (dispatch) => {
     }
   }
 };
+
+// The reorder screen's save. One call, so there is no plan to build and no ordering barrier to
+// respect -- buildAuthorSavePlan is for the editor's mixed create/patch/delete submits and is not
+// involved here.
+//
+// Written out rather than reusing caller() above because the screen needs the failure message
+// back: it stays open on failure with the arrangement intact, so bouncing the curator to the
+// editor would lose their work. Reports exactly once either way, honouring the counter contract
+// at the top of this file.
+export const saveAuthorReorder = (referenceCurie, ordering) => async (dispatch) => {
+  const report = reporter(dispatch, 'UPDATE_BUTTON_BIBLIO');
+  try {
+    await api.request({
+      url: '/author/reorder',
+      method: 'POST',
+      data: { reference_curie: referenceCurie, ordering },
+    });
+    // 'update success' is what makes the biblio reducer set getReferenceCurieFlag, so the editor
+    // returns showing freshly loaded orders rather than the optimistic local ones.
+    report('update success');
+    return { ok: true, message: '' };
+  } catch (error) {
+    console.error('author reorder save error:', error);
+    const message = errorMessage('author/reorder', error);
+    report(message);
+    return { ok: false, message };
+  }
+};

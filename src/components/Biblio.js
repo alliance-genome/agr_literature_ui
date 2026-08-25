@@ -10,6 +10,7 @@ import BiblioEntity from './biblio/BiblioEntity';
 import BiblioWorkflow from './biblio/BiblioWorkflow';
 import BiblioFileManagement from './biblio/BiblioFileManagement';
 import BiblioRawTetData from './biblio/BiblioRawTetData';
+import BiblioAuthorReorder from './biblio/BiblioAuthorReorder';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString, RowDisplayCrossReferences } from './biblio/BiblioDisplay';
@@ -258,11 +259,23 @@ const BiblioActionToggler = () => {
 const BiblioActionRouter = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const authorReorderOpen = useSelector(state => state.biblio.authorReorderOpen);
+  const authorReorderFullScreen = useSelector(state => state.biblio.authorReorderFullScreen);
   switch (biblioAction) {
     case 'display':
       return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);
     case 'editor':
-      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }</>);
+      // BiblioAuthorReorder is always the SECOND child, in both views, so React never sees it
+      // change position and its working state (order, undo history) survives the modal <-> full
+      // screen toggle. Only the first slot flips. Moving it instead would silently reset the
+      // arrangement on every toggle. In modal view the editor stays mounted behind the backdrop;
+      // in full screen it is not rendered at all, action toggler included.
+      return (<>
+        { (authorReorderOpen && authorReorderFullScreen && accessToken !== null)
+          ? null
+          : (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }</>) }
+        { (authorReorderOpen && accessToken !== null) ? <BiblioAuthorReorder /> : null }
+      </>);
     case 'entity':
       return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     case 'workflow':

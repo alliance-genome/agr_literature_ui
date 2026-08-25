@@ -36,6 +36,7 @@ import { biblioAddNewRowDict } from '../../actions/biblioActions';
 import { updateButtonBiblio } from '../../actions/biblioActions';
 import { closeBiblioUpdateAlert } from '../../actions/biblioActions';
 import { changeBiblioAuthorExpandToggler } from '../../actions/biblioActions';
+import { openBiblioAuthorReorder } from '../../actions/biblioActions';
 import { biblioRevertField } from '../../actions/biblioActions';
 import { biblioRevertFieldArray } from '../../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../../actions/biblioActions';
@@ -85,6 +86,12 @@ export const datasetXrefPrefixes = ['PDB', 'GEO'];
 export const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'pubmed_publication_status', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 export const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
 export const fieldsDatePublished = [ 'date_published', 'date_published_start', 'date_published_end' ];
+
+// The reference has unsaved work. BiblioSubmitUpdateButton paints the Update button with this and
+// ReorderAuthorsButton is gated on it, so both must read exactly the same thing: a reorder saved
+// while any edit is pending would be silently discarded by the refetch that follows the save.
+export const hasUnsavedChanges = (referenceJsonHasChange) =>
+  Object.keys(referenceJsonHasChange || {}).length > 0;
 
 
 export const fieldTypeDict = {}
@@ -308,7 +315,7 @@ const BiblioSubmitUpdateButton = () => {
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
   let updatedFlag = '';
-  if (Object.keys(referenceJsonHasChange).length > 0) { updatedFlag = 'updated-biblio-button'; }
+  if (hasUnsavedChanges(referenceJsonHasChange)) { updatedFlag = 'updated-biblio-button'; }
 
   function generateCrossReferenceUpdateJson(crossRefDict, referenceCurie) {
     let crossRefCurie = crossRefDict['curie']
@@ -1614,6 +1621,25 @@ const BiblioEditor = () => {
 } // const BiblioEditor
 
 
+// Inline with the author expand radios rather than a full-width biblio-button row: that idiom
+// means "add another row to this list" (add authors, add affiliations), which this is not.
+// A button rather than a fourth radio, because the radios are view modes that stay selected while
+// this one navigates away -- as a radio it would deselect itself on return and read as broken.
+const ReorderAuthorsButton = () => {
+  const dispatch = useDispatch();
+  const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
+  const blocked = hasUnsavedChanges(referenceJsonHasChange);
+  // a disabled <Button> swallows mouse events in every browser, so the tooltip has to sit on a
+  // wrapper -- otherwise the curator gets a dead control and no reason for it
+  return (
+    <span title={blocked
+      ? 'Save or revert your changes before reordering authors'
+      : 'Reorder authors'}>
+      <Button size="sm" variant="outline-secondary" disabled={blocked}
+        onClick={() => dispatch(openBiblioAuthorReorder())} >reorder</Button>
+    </span>);
+}
+
 export const AuthorExpandToggler = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const authorExpand = useSelector(state => state.biblio.authorExpand);
@@ -1656,6 +1682,7 @@ export const AuthorExpandToggler = ({displayOrEditor}) => {
           id='biblio-author-expand-toggler-detailed'
           onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
         />
+        {(displayOrEditor === 'editor') ? <ReorderAuthorsButton /> : null}
       </Col>
     </Row>);
 } // const AuthorExpandToggler

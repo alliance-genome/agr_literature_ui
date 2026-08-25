@@ -1,0 +1,44 @@
+/* Row spacing for the author reorder screen (SCRUM-6449).
+ *
+ * The editor's row classes are tuned for multi-line field groups: .row-even / .row-odd add
+ * padding-bottom: 1rem and .Col-general adds 5px padding plus a 2px border. On a flat list of
+ * one-line author rows that reads as a huge gap between neighbours, which is exactly the
+ * comparison a reorder screen exists to make. Tightened here rather than in App.css so the
+ * editor is untouched.
+ *
+ * Compound selectors (two classes) outrank the single-class .row-even / .row-odd regardless of
+ * stylesheet order, so no !important is needed. */
+.biblio-reorder-row.row-even,
+.biblio-reorder-row.row-odd {
+  padding-bottom: 0;
+  align-items: center;
+}
+
+.biblio-reorder-row .Col-general {
+  border: none;
+  padding: 2px 10px;
+}
+
+/* Bootstrap's form-control-sm still reserves a full input height; the list is denser than the
+ * rest of the editor, so the order box is trimmed to match the row. */
+.biblio-reorder-row .form-control {
+  padding: 1px 4px;
+  height: auto;
+}
+
+/* The header sits directly above the list, so it does not need the editor's row spacing. */
+.biblio-reorder-header {
+  padding-bottom: 0;
+  margin-bottom: 0.25rem;
+}
+
+/* Modal view. Wider than Bootstrap's xl and capped by viewport height so a long author list
+ * scrolls inside the body rather than pushing the buttons off screen. */
+.biblio-reorder-modal {
+  max-width: 90vw;
+}
+
+.biblio-reorder-modal .modal-body {
+  max-height: 80vh;
+  overflow-y: auto;
+}

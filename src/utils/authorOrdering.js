@@ -29,6 +29,24 @@ export const maxAuthorOrder = (...lists) =>
     return typeof order === 'number' && order > max ? order : max;
   }, 0);
 
+// Insert-and-reshuffle: the single ordering primitive behind both the drag and the
+// order-number paths in BiblioAuthorReorder, so the two interactions cannot diverge in
+// behaviour. Removing before inserting is what makes it a move rather than a swap --
+// everything between origin and destination shifts by one and nobody is displaced out.
+//
+// toOrder is 1-based and clamped, so a typed 0 or 999 lands at an end rather than dropping the
+// author or leaving a hole. A non-finite toOrder (an empty or half-typed input) returns the list
+// unchanged rather than treating NaN as position 0, which is what a bare splice would do.
+export const moveAuthorTo = (list, fromIndex, toOrder) => {
+  const next = (list || []).slice();
+  if (!Number.isFinite(fromIndex) || fromIndex < 0 || fromIndex >= next.length) { return next; }
+  if (!Number.isFinite(toOrder)) { return next; }
+  const target = Math.min(Math.max(Math.trunc(toOrder), 1), next.length);
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(target - 1, 0, moved);
+  return next;
+};
+
 // Returns null for anything that is not a string, which buildPayload turns into "omit the
 // field". The code this replaced did authorDict['orcid'].toUpperCase() and threw a TypeError
 // on, say, the {curie: ...} shape the reducer still carries commented-out handling for

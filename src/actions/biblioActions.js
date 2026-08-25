@@ -794,6 +794,25 @@ export const changeBiblioSupplementExpandToggler = (e) => {
   };
 };
 
+export const openBiblioAuthorReorder = () => {
+  return {
+    type: 'BIBLIO_AUTHOR_REORDER_OPEN'
+  };
+};
+
+export const closeBiblioAuthorReorder = () => {
+  return {
+    type: 'BIBLIO_AUTHOR_REORDER_CLOSE'
+  };
+};
+
+export const setBiblioAuthorReorderFullScreen = (fullScreen) => {
+  return {
+    type: 'BIBLIO_AUTHOR_REORDER_FULL_SCREEN',
+    payload: fullScreen
+  };
+};
+
 export const changeBiblioActionToggler = (e, biblioActionTogglerSelected) => {
   console.log('action change biblio action toggler radio ' + e.target.id + ' to ' + biblioActionTogglerSelected);
   return {

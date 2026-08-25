@@ -48,6 +48,8 @@ const initialState = {
   getReferenceCurieFlag: true,
   meshExpand: 'short',
   authorExpand: 'first',
+  authorReorderOpen: false,
+  authorReorderFullScreen: false,
   supplementExpand: 'tarball',
   hasPmid: false,
   updateAlert: 0,
@@ -889,6 +891,29 @@ export default function(state = initialState, action) {
         ...state,
         meshExpand: action.payload
       }
+    case 'BIBLIO_AUTHOR_REORDER_OPEN':
+      // Deliberately not a value of authorExpand (BiblioDisplay reads that same field and has no
+      // matching branch) and not a biblioAction (that one is URL-synced via ?action= and bound to
+      // the action toggler this screen has to suppress). See the 2026-08-25 design.
+      return {
+        ...state,
+        authorReorderOpen: true
+      }
+
+    case 'BIBLIO_AUTHOR_REORDER_CLOSE':
+      return {
+        ...state,
+        authorReorderOpen: false
+      }
+
+    case 'BIBLIO_AUTHOR_REORDER_FULL_SCREEN':
+      // Session-level so reopening does not flash the modal before the remembered view loads; the
+      // durable copy lives in the biblio_author_reorder person_setting.
+      return {
+        ...state,
+        authorReorderFullScreen: action.payload
+      }
+
     case 'CHANGE_BIBLIO_AUTHOR_EXPAND_TOGGLER':
       // console.log(action.payload);
       return {
