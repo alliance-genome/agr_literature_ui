@@ -91,6 +91,21 @@ export const buildAuthorSavePlan = (authors, referenceCurie) => {
     }
 
     if (isNew) {
+      // A row added with "add authors" and never typed into is dropped: the create branch used to
+      // fire on author_id === 'new' alone, so any Update click (the button is a plain div, always
+      // clickable, purple or not) POSTed name: '', first_name: '', last_name: '', and the blank
+      // author came back on every reload.
+      //
+      // needsChange, not an emptiness test, to read the same as every other collection in
+      // BiblioEditor's updateBiblio (mod_reference_types :348, relations :386,
+      // mod_corpus_associations :413, cross_references :449) and as the patch branch below.
+      // The known gap: typing a name and deleting it again leaves needsChange true, so that row
+      // is still created blank. Consistency across the five guards was judged worth more than
+      // closing it here.
+      //
+      // Dropped entirely, not merely skipped in creates: absent from finalSequence too, so the
+      // flatten never tries to order an author that was never created.
+      if (!authorDict.needsChange) { continue; }
       const createIndex = creates.length;
       creates.push({
         payload: {

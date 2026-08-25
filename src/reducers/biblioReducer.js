@@ -552,9 +552,9 @@ export default function(state = initialState, action) {
 
       return {
         ...state,
+        referenceJsonHasChange: hasChangeAuthorFieldDelete,
         referenceJsonLive: {
           ...state.referenceJsonLive,
-          referenceJsonHasChange: hasChangeAuthorFieldDelete,
           [fieldAuthorDelete]: deleteAuthorChange
         }
       }
@@ -876,11 +876,11 @@ export default function(state = initialState, action) {
         ...state,
         referenceJsonDb: {
           ...state.referenceJsonDb,
-          [authorInfoNewAffArray]: newAuthorAffiliationDb
+          [fieldAuthorInfoNewAff]: authorInfoNewAffDb
         },
         referenceJsonLive: {
           ...state.referenceJsonLive,
-          [authorInfoNewAffArray]: newAuthorAffiliationLive
+          [fieldAuthorInfoNewAff]: authorInfoNewAffLive
         }
       }
     case 'CHANGE_BIBLIO_MESH_EXPAND_TOGGLER':
