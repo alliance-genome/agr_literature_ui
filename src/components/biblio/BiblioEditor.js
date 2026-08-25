@@ -1652,7 +1652,7 @@ export const AuthorExpandToggler = ({displayOrEditor}) => {
           inline
           checked={detailedChecked}
           type='radio'
-          label='detailed'
+          label={displayOrEditor === 'editor' ? 'edit' : 'detailed'}
           id='biblio-author-expand-toggler-detailed'
           onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
         />
