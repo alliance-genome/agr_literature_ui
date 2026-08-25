@@ -296,7 +296,6 @@ const BiblioTagging = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
 
   const [showMore, setShowMore] = useState(false);	// showMore true means the Show More text is showing in the citation view.  The default is the other view.
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const email = useSelector(state => state.isLogged.email);
@@ -312,33 +311,27 @@ const BiblioTagging = () => {
     maxCount: 10
   });
 
+  // One effect, reading load()'s return value rather than reacting to the settings state in a
+  // second one. The two-effect shape this replaces needed a settingsLoaded flag to stop the second
+  // effect firing before the load resolved and creating a duplicate row in the db; taking the
+  // result directly removes both the flag and the hazard.
+  //
+  // `picked` comes from pickDefaultSetting inside the hook, which reads default_setting. The
+  // hand-rolled pick this replaces looked for `is_default`, a field the API does not return, so it
+  // always fell through to settings[0] -- correct only while exactly one row exists.
   useEffect(() => {
-    if (accessToken && email) {
-      load().finally(() => setSettingsLoaded(true));
-    }
-  }, [accessToken, email, load]);
-
-  useEffect(() => {
-    if (!settingsLoaded) return;    // only proceed once settings are actually loaded, or it will create another setting in db
-
-    // If settings exist, select default or first one
-    if (settings.length > 0) {
-      const activeSetting = settings.find(s => s.is_default) || settings[0];
-      setSelectedSettingId(activeSetting.person_setting_id);
-      setShowMore(Boolean(activeSetting.json_settings.showMore));
-      return;
-    }
-
-    // If no settings exist after loading, create one with default value
-    (async () => {
-      try {
-        const created = await create("Bibliography Summary", { showMore: false });
-        setSelectedSettingId(created.person_setting_id);
-      } catch (err) {
-        console.error("Failed to create default setting:", err);
+    if (!accessToken || !email) { return; }
+    load().then(({ existing, picked }) => {
+      if (existing.length > 0) {
+        const activeSetting = picked || existing[0];
+        setSelectedSettingId(activeSetting.person_setting_id);
+        setShowMore(Boolean(activeSetting.json_settings.showMore));
+        return;
       }
-    })();
-  }, [settingsLoaded, settings]);
+      return create("Bibliography Summary", { showMore: false })
+        .then((created) => setSelectedSettingId(created.person_setting_id));
+    }).catch((err) => console.error("Failed to load or create biblio summary setting:", err));
+  }, [accessToken, email, load, create, setSelectedSettingId]);
 
   const toggle = async () => {
     const newValue = !showMore;
