@@ -8,7 +8,8 @@ const controlStyle = { width: '13em', marginRight: '2em' };
 
 // Presentational: every value comes in as a prop and every change goes back out.
 const LogFilterBar = ({
-  ownMod, modsInData, directories, filters, onChange, onReset, onRefresh
+  showScopeControls = true, ownMod, modsInData, directories,
+  filters, onChange, onReset, onRefresh
 }) => {
   const set = (key) => (value) => onChange({ ...filters, [key]: value });
   const isLatestOnly = filters.mode === 'latest';
@@ -16,6 +17,7 @@ const LogFilterBar = ({
   return (
     <div style={{ textAlign: 'left', paddingBottom: '1em' }}>
       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1em' }}>
+        {showScopeControls && (
         <ButtonGroup aria-label="MOD scope" size="sm">
           {ownMod && (
             <Button
@@ -35,7 +37,9 @@ const LogFilterBar = ({
             onClick={() => set('scope')('shared')}
           >Shared</Button>
         </ButtonGroup>
+        )}
 
+        {showScopeControls && (
         <div>
           <Form.Label htmlFor="logs-mod" style={{ marginRight: '0.5em', marginBottom: 0 }}>
             Another MOD
@@ -53,6 +57,7 @@ const LogFilterBar = ({
             ))}
           </Form.Control>
         </div>
+        )}
 
         <ButtonGroup aria-label="Version mode" size="sm">
           <Button
@@ -72,7 +77,7 @@ const LogFilterBar = ({
           id="logs-include-shared"
           label="Include shared (no-MOD) files"
           checked={filters.includeShared}
-          disabled={filters.scope !== 'mod'}
+          disabled={showScopeControls && filters.scope !== 'mod'}
           onChange={(e) => set('includeShared')(e.target.checked)}
         />
 

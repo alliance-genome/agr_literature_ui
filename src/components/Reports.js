@@ -13,6 +13,7 @@ import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/to
 import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportObsoleteEntities, setQcreportRecactedPapers, setQcreportDuplicateOrcids } from '../actions/reportsActions';
 import { fetchMLModelsIfNeeded } from '../actions/mlModelsActions';
 import ModelsTable from './reports/ModelsTable';
+import LogsBrowser from './logs/LogsBrowser';
 
 import { api } from "../api";
 import { AgGridReact } from 'ag-grid-react';
@@ -1046,6 +1047,9 @@ const ReportsContainer = () => {
                 <ModelsTable modSection="All" />
               </Tab>
             )}
+            <Tab eventKey="all_logs" title="Report Logs">
+              <LogsBrowser lockedMod="All" />
+            </Tab>
           </Tabs>
         </Tab>
         {mods.map(mod => (
@@ -1073,6 +1077,9 @@ const ReportsContainer = () => {
                   <ModelsTable modSection={mod} />
                 </Tab>
               )}
+              <Tab eventKey={`${mod}_logs`} title="Report Logs">
+                <LogsBrowser lockedMod={mod} />
+              </Tab>
             </Tabs>
           </Tab>
         ))}
