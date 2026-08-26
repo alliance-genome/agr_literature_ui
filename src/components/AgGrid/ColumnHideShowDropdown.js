@@ -78,11 +78,14 @@ const ColumnHideShowDropdown = ({
 }) => {
   const handleChecked = useCallback(
     (key, event) => {
-      const newItems = [...items];
+      // Replace the toggled entry instead of mutating it: `items` is often the
+      // parent's memoized default list itself (getInitialItems), and mutating
+      // shared objects would corrupt "Restore Default" / reset paths.
+      const newItems = items.map((i) =>
+        i.id === key ? { ...i, checked: event.target.checked } : i
+      );
       const item = newItems.find((i) => i.id === key);
       if (!item) return;
-
-      item.checked = event.target.checked;
 
       const api = getGridApi();
       api?.applyColumnState?.({ state: [{ colId: item.field, hide: !item.checked }] });
