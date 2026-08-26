@@ -311,7 +311,8 @@ const TopicEntityCreateSGD = () => {
     if (entityResult?.curie) {
       updateJson["entity"] = entityResult.curie;
     }
-    updateJson["updated_by"] = uid;
+    // updated_by is stamped server-side from the authenticated user; the uid
+    // here is the Cognito token sub, which is not a users.id (SCRUM-6459).
 
     const array = [accessToken, subPath, updateJson, method];
     dispatch(setBiblioUpdatingEntityAdd(1));

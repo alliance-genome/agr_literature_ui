@@ -714,7 +714,8 @@ const TopicEntityCreate = () => {
       if (entityResult) {
         updateJson["entity"] = entityResult.curie;
       }
-      updateJson["updated_by"] = uid;
+      // updated_by is stamped server-side from the authenticated user; the uid
+      // here is the Cognito token sub, which is not a users.id (SCRUM-6459).
       let array = [accessToken, subPath, updateJson, method];
       dispatch(setBiblioUpdatingEntityAdd(1));
       await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
