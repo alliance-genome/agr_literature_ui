@@ -30,8 +30,13 @@ const BiblioAuthorReorderPanel = ({
       <Col className="Col-general" sm="12" style={{ gap: '0.5rem' }}>
         <strong style={{ flex: 1, whiteSpace: 'nowrap' }}>Reorder authors</strong>
         <span style={{ display: 'flex', gap: '0.5rem' }}>
+          {/* preventDefault stops the browser moving focus here on mousedown. Without it, pressing
+              Undo blurs a focused order box, blur commits that move and pushes it onto the undo
+              history, and the click then pops the entry it just created -- so Undo appears to do
+              nothing while the move the curator meant to reverse is untouched. */}
           <Button variant="outline-secondary" disabled={saving || !canUndo}
             title="Undo the last move; Cancel discards them all"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={onUndo}><FontAwesomeIcon icon={faStepBackward} /> Undo one</Button>
           <Button variant="primary" disabled={saving || !changed || order.length === 0}
             onClick={onSave}>

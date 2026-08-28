@@ -96,6 +96,22 @@ const BiblioAuthorReorder = () => {
   }, [fullScreen, selectedSettingId, savePayloadTo, create, dispatch]);
 
   const saving = biblioUpdating > 0;
+
+  // Deliberately computed from the committed order only, NOT from `pending`. Curators read the
+  // LIST to decide what will be saved, not the number boxes, so the button has to track the list:
+  // enabling Save while the rows sit unmoved would promise a change the list does not show.
+  //
+  // That leaves Save looking disabled while a number is typed but not yet committed, which reads
+  // like a bug and is not one. Pressing it works: the mousedown blurs the input, blur commits the
+  // move, the list reorders and the button enables, all before the click dispatches. Verified by
+  // hand in both Chrome and Firefox -- one click, correct order saved. Do not "fix" the appearance
+  // by feeding `pending` into this; that trades a button which looks wrong for a button which
+  // means the wrong thing.
+  //
+  // It does rely on mousedown over a disabled button blurring the focused input. Should a browser
+  // ever keep focus there instead, Save would silently do nothing on that browser, and the fix is
+  // to commit `pending` from a mousedown handler on the wrapping span -- the button itself, being
+  // disabled, receives no mouse events at all.
   const changed = order.some((authorDict, i) => authorDict.author_id !== initialIds.current[i]);
 
   const applyMove = (fromIndex, toOrder) => {
@@ -124,6 +140,10 @@ const BiblioAuthorReorder = () => {
   };
 
   const onUndo = () => {
+    // Abandon a half-typed box along with the move being undone. The button suppresses the focus
+    // change that would otherwise commit it (see BiblioAuthorReorderPanel), so without this the
+    // typed value would survive the undo and sit against a row that has just moved underneath it.
+    setPending(null);
     if (history.length === 0) { return; }
     setErrorMessage('');
     setOrder(history[history.length - 1]);
