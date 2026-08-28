@@ -19,8 +19,9 @@ import { faStepBackward, faCheck, faTimes, faExpand, faCompress } from '@fortawe
 import './biblioAuthorReorder.css';
 
 const BiblioAuthorReorderPanel = ({
-  order, pending, errorMessage, dragMax, dragEnabled, saving, changed, canUndo, fullScreen,
-  onPendingChange, onCommitPending, onDragStart, onDropAt, onUndo, onSave, onCancel, onToggleView,
+  order, pending, errorMessage, dragMax, dragEnabled, dragActive, saving, changed, canUndo,
+  fullScreen, onPendingChange, onCommitPending, onDragStart, onDragEnd, onDropAt, onUndo, onSave,
+  onCancel, onToggleView,
 }) => (
   <>
     {/* Centring is three-part -- an equal-weight spacer either side of the button group -- so the
@@ -78,8 +79,14 @@ const BiblioAuthorReorderPanel = ({
         className={`Row-general biblio-reorder-row ${(index % 2 === 0) ? 'row-even' : 'row-odd'}`}
         draggable={dragEnabled && !saving}
         onDragStart={() => onDragStart(index)}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={() => onDropAt(index)}
+        onDragEnd={onDragEnd}
+        // preventDefault is what marks a row as a valid drop target, so it is conditional on one
+        // of OUR rows being dragged. Unconditionally, every row accepts any drag source -- a file,
+        // a link, selected text -- and dropping one would move whichever author dragIndex still
+        // pointed at. Rows are inert for foreign drags now, which the browser handles as it does
+        // anywhere else in the app.
+        onDragOver={(e) => { if (dragActive) { e.preventDefault(); } }}
+        onDrop={(e) => { if (!dragActive) { return; } e.preventDefault(); onDropAt(index); }}
         style={{ cursor: (dragEnabled && !saving) ? 'move' : 'default' }}
       >
         <Col sm="1">

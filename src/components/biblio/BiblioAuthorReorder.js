@@ -133,6 +133,10 @@ const BiblioAuthorReorder = () => {
     applyMove(fromIndex, toOrder);
   };
 
+  // A drag released outside the list, or cancelled with Escape, fires no drop -- without this the
+  // stale index would survive and aim a later drop at the wrong author.
+  const onDragEnd = () => setDragIndex(null);
+
   const onDropAt = (toIndex) => {
     if (dragIndex === null) { return; }
     applyMove(dragIndex, toIndex + 1);
@@ -170,6 +174,7 @@ const BiblioAuthorReorder = () => {
     <BiblioAuthorReorderPanel
       order={order} pending={pending} errorMessage={errorMessage}
       dragMax={AUTHOR_DRAG_MAX} dragEnabled={order.length <= AUTHOR_DRAG_MAX}
+      dragActive={dragIndex !== null} onDragEnd={onDragEnd}
       saving={saving} changed={changed} canUndo={history.length > 0} fullScreen={fullScreen}
       onPendingChange={(authorId, value) => setPending({ authorId, value })}
       onCommitPending={onCommitPending}
