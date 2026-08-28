@@ -395,7 +395,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         updateAlert: 0,
-        updateMessages: []
+        updateMessages: [],
+        // updateFailure decides whether the alert renders as a failure, and nothing else ever
+        // reset it: UPDATE_BUTTON_BIBLIO only adds to it. So one failed save made every later
+        // alert in the session red, successful ones included. Dismissing the alert is the point
+        // at which the curator has acknowledged the failure, so it clears here with the rest.
+        updateFailure: 0
       }
 
     case 'FILE_UPLOAD_RESULT':
