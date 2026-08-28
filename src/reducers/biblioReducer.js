@@ -821,8 +821,22 @@ export default function(state = initialState, action) {
               revertValue[indexStoreAuthorRevert] = revertNewAuthorDict
               break } } } }
       let hasChangeFieldRevert = state.referenceJsonHasChange
+      // Dirty keys are space-joined paths -- 'title', 'authors 3', 'authors 3 last_name' -- so a
+      // bare startsWith compared characters where it meant to compare path segments: reverting
+      // 'authors 3' also cleared 'authors 30 name', 'authors 31 orcid', and so on for every author
+      // 10..19, 30..39. Those edits stayed in referenceJsonLive and still saved, but the dirty map
+      // no longer knew about them, so on a 30+ author reference a single revert could empty it
+      // while real edits were pending -- greying the Update button and opening the reorder gate,
+      // whose refetch then discarded them.
+      //
+      // Requiring the following space makes 'authors 3 ' fail against 'authors 30 name', where the
+      // next character is '0'. The equality arm keeps whole-field reverts ('title') and the delete
+      // keys, which have no subfield segment. date_published/_start/_end are the same collision
+      // waiting to happen; they are safe only because date reverts use BIBLIO_REVERT_DATE_PUBLISHED
+      // and never reach this loop, and this makes them safe if that ever changes.
+      const revertPrefix = fieldIdRevert + ' '
       for (const fieldRevertEntry in hasChangeFieldRevert) {
-        if (fieldRevertEntry.startsWith(fieldIdRevert)) {
+        if ((fieldRevertEntry === fieldIdRevert) || fieldRevertEntry.startsWith(revertPrefix)) {
           delete hasChangeFieldRevert[fieldRevertEntry] } }
       const pmidBoolRevert = checkHasPmid(state.referenceJsonLive)
       return {
