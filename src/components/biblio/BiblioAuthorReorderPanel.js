@@ -32,7 +32,7 @@ const BiblioAuthorReorderPanel = ({
         <span style={{ display: 'flex', gap: '0.5rem' }}>
           <Button variant="outline-secondary" disabled={saving || !canUndo}
             title="Undo the last move; Cancel discards them all"
-            onClick={onUndo}><FontAwesomeIcon icon={faStepBackward} /> undo one</Button>
+            onClick={onUndo}><FontAwesomeIcon icon={faStepBackward} /> Undo one</Button>
           <Button variant="primary" disabled={saving || !changed || order.length === 0}
             onClick={onSave}>
             <FontAwesomeIcon icon={faCheck} /> {saving ? 'Saving...' : 'Save order'}
@@ -43,10 +43,15 @@ const BiblioAuthorReorderPanel = ({
             <FontAwesomeIcon icon={faTimes} /> Cancel</Button>
         </span>
         <span style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          {/* Labelled, unlike a one-shot action button, because this one is a toggle: the icon
+              alone cannot say which way it points. The label names the destination, not the
+              current state. Kept size="sm" and out of the centred group -- it changes the
+              presentation, not the data. */}
           <Button variant="outline-secondary" size="sm" disabled={saving}
             title={fullScreen ? 'Show in a window' : 'Expand to the full page'}
             onClick={onToggleView}>
             <FontAwesomeIcon icon={fullScreen ? faCompress : faExpand} />
+            {' '}{fullScreen ? 'Shrink' : 'Expand'}
           </Button>
         </span>
       </Col>
