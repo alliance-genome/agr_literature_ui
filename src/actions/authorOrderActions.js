@@ -193,7 +193,12 @@ export const saveAuthorReorder = (referenceCurie, ordering) => async (dispatch) 
   } catch (error) {
     console.error('author reorder save error:', error);
     const message = errorMessage('author/reorder', error);
-    report(message);
+    // Not through report(): that raises the editor's update alert, which the reorder screen's own
+    // <Alert> already covers and which the curator cannot see or dismiss from behind the modal.
+    // Dispatched directly rather than on reporter's 500ms delay too -- the delay exists to keep
+    // the editor's refetch timing consistent, and a silent decrement has nothing to stay in step
+    // with. Waiting would leave the screen disabled for half a second after the error appeared.
+    dispatch({ type: 'BIBLIO_UPDATING_DONE' });
     return { ok: false, message };
   }
 };

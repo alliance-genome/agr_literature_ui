@@ -373,6 +373,17 @@ export default function(state = initialState, action) {
         referenceJsonHasChange: hasChangeUpdateButton,
         biblioUpdating: state.biblioUpdating - 1
       }
+    case 'BIBLIO_UPDATING_DONE':
+      // Decrement only. UPDATE_BUTTON_BIBLIO also raises the editor's alert, which is the wrong
+      // place for a failure the author reorder screen already shows in context: that alert renders
+      // inside BiblioEditor, hidden behind the reorder modal's backdrop while it matters, then
+      // surfaces on the editor afterwards. This keeps the counter contract (exactly one report per
+      // call) without the alert.
+      return {
+        ...state,
+        biblioUpdating: state.biblioUpdating - 1
+      }
+
     case 'SET_BIBLIO_UPDATING':
       console.log('SET_BIBLIO_UPDATING reducer ' + action.payload);
       return {
