@@ -124,14 +124,29 @@ const BiblioAuthorReorder = () => {
     setOrder(next);
   };
 
-  const onCommitPending = (authorId) => {
-    if (!pending || pending.authorId !== authorId) { return; }
-    const fromIndex = order.findIndex((authorDict) => authorDict.author_id === authorId);
+  // The row's check button is the only path from a typed or stepped number to an actual move.
+  // Blur deliberately does not commit: the stepper arrows may never focus the input, so a
+  // focus-based trigger left arrow-clicking with no way to take effect at all.
+  const onApplyPending = () => {
+    if (!pending) { return; }
+    const fromIndex = order.findIndex((authorDict) => authorDict.author_id === pending.authorId);
     const toOrder = parseInt(pending.value, 10);
     setPending(null);
     if (fromIndex < 0 || Number.isNaN(toOrder)) { return; }
     applyMove(fromIndex, toOrder);
   };
+
+  const onCancelPending = () => setPending(null);
+
+  // A pending value only counts as unresolved once it is a valid number AND differs from the row's
+  // current position. Typing back the number a row already has, or emptying the box, leaves nothing
+  // to apply -- so it must not lock the list or grey out Save. The discard button stays available
+  // in those states regardless, which is what clears the box.
+  const pendingIndex = pending
+    ? order.findIndex((authorDict) => authorDict.author_id === pending.authorId) : -1;
+  const pendingTypedOrder = pending ? parseInt(pending.value, 10) : NaN;
+  const pendingApplicable = pendingIndex >= 0 && !Number.isNaN(pendingTypedOrder)
+    && pendingTypedOrder !== pendingIndex + 1;
 
   // A drag released outside the list, or cancelled with Escape, fires no drop -- without this the
   // stale index would survive and aim a later drop at the wrong author.
@@ -177,7 +192,8 @@ const BiblioAuthorReorder = () => {
       dragActive={dragIndex !== null} onDragEnd={onDragEnd}
       saving={saving} changed={changed} canUndo={history.length > 0} fullScreen={fullScreen}
       onPendingChange={(authorId, value) => setPending({ authorId, value })}
-      onCommitPending={onCommitPending}
+      onApplyPending={onApplyPending} onCancelPending={onCancelPending}
+      pendingApplicable={pendingApplicable}
       onDragStart={setDragIndex} onDropAt={onDropAt}
       onUndo={onUndo} onSave={onSave} onCancel={onCancel} onToggleView={onToggleView}
     />

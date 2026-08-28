@@ -72,3 +72,18 @@
   max-height: none;
   overflow-y: auto;
 }
+
+/* The order column sizes to its content, and the number box inside it is a FIXED width. The
+ * stepper arrows must never move: they sit at the right edge of the box, and if the box shrank to
+ * make room for the apply and discard buttons, a second click at the same spot would land on
+ * discard. So the buttons extend to the right and push the author name along instead. */
+.biblio-reorder-row .biblio-reorder-order-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.biblio-reorder-row .biblio-reorder-order-input {
+  flex: 0 0 56px;
+  width: 56px;
+}
