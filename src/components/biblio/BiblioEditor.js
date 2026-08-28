@@ -1628,13 +1628,39 @@ const BiblioEditor = () => {
 const ReorderAuthorsButton = () => {
   const dispatch = useDispatch();
   const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
-  const blocked = hasUnsavedChanges(referenceJsonHasChange);
+  const biblioUpdating = useSelector(state => state.biblio.biblioUpdating);
+  const getReferenceCurieFlag = useSelector(state => state.biblio.getReferenceCurieFlag);
+
+  // Three signals, not just the dirty map. UPDATE_BUTTON_BIBLIO empties referenceJsonHasChange on
+  // the FIRST 'update success' of a multi-call save (biblioReducer.js), so between that report and
+  // the end of the save the reference reads clean while referenceJsonLive is still the pre-save
+  // state -- deleteMe rows included, since a delete only flags the row and never removes it.
+  // Seeding the reorder screen there puts a deleted author's id into the ordering payload, which
+  // the API rejects as "not on that reference"; an author created in the same save is missing from
+  // the seed instead and trips the absent-from-payload rule. So also wait for the calls to finish
+  // (biblioUpdating) and for the refetch they trigger to land (getReferenceCurieFlag, true from
+  // save success until BIBLIO_GET_REFERENCE_CURIE clears it).
+  //
+  // Filtering deleteMe rows out of the list instead would be wrong: the payload must name every
+  // ordered author of the reference, so omitting one 422s for the opposite reason. Blocking entry
+  // is the fix, not filtering.
+  //
+  // These clauses stay here rather than in hasUnsavedChanges: BiblioSubmitUpdateButton uses that
+  // helper to paint the Update button purple, and it must not go purple merely because a save is
+  // in flight.
+  const hasUnsavedEdits = hasUnsavedChanges(referenceJsonHasChange);
+  const awaitingSavedData = biblioUpdating > 0 || getReferenceCurieFlag;
+  const blocked = hasUnsavedEdits || awaitingSavedData;
+
   // a disabled <Button> swallows mouse events in every browser, so the tooltip has to sit on a
-  // wrapper -- otherwise the curator gets a dead control and no reason for it
+  // wrapper -- otherwise the curator gets a dead control and no reason for it. The message has to
+  // distinguish the two cases, or a grey button after a successful save reads as broken.
+  let blockedTitle = 'Reorder authors';
+  if (hasUnsavedEdits) { blockedTitle = 'Save or revert your changes before reordering authors'; }
+  else if (awaitingSavedData) { blockedTitle = 'Waiting for the save to finish'; }
+
   return (
-    <span title={blocked
-      ? 'Save or revert your changes before reordering authors'
-      : 'Reorder authors'}>
+    <span title={blockedTitle}>
       <Button size="sm" variant="outline-secondary" disabled={blocked}
         onClick={() => dispatch(openBiblioAuthorReorder())} >reorder</Button>
     </span>);

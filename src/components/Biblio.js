@@ -260,20 +260,17 @@ const BiblioActionRouter = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const authorReorderOpen = useSelector(state => state.biblio.authorReorderOpen);
-  const authorReorderFullScreen = useSelector(state => state.biblio.authorReorderFullScreen);
   switch (biblioAction) {
     case 'display':
       return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);
     case 'editor':
-      // BiblioAuthorReorder is always the SECOND child, in both views, so React never sees it
-      // change position and its working state (order, undo history) survives the modal <-> full
-      // screen toggle. Only the first slot flips. Moving it instead would silently reset the
-      // arrangement on every toggle. In modal view the editor stays mounted behind the backdrop;
-      // in full screen it is not rendered at all, action toggler included.
+      // Both reorder views are modals, so the editor always renders behind and BiblioAuthorReorder
+      // never changes position in the tree -- its working state (order, undo history) survives the
+      // windowed <-> full screen toggle for free, and the backdrop is what makes the screen
+      // exclusive in both.
       return (<>
-        { (authorReorderOpen && authorReorderFullScreen && accessToken !== null)
-          ? null
-          : (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }</>) }
+        <Container><BiblioActionToggler /><RetractionBanner /></Container>
+        { accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }
         { (authorReorderOpen && accessToken !== null) ? <BiblioAuthorReorder /> : null }
       </>);
     case 'entity':

@@ -158,15 +158,27 @@ const BiblioAuthorReorder = () => {
     />
   );
 
-  if (fullScreen) { return (<Container>{panel}</Container>); }
-
+  // Both views are the same Modal, differing only by dialog class. Full screen as an in-page
+  // render could not hide the nav bar or the reference id box: NavigationBar is rendered by
+  // AppWithRouterAccess, an ancestor of this subtree, and BiblioIdQuery sits above the router in
+  // Biblio.js -- neither is reachable from here. A modal sidesteps that entirely by escaping
+  // layout, and its backdrop (z-index 1040/1050, over the navbar's 1030) covers both. So the
+  // reference cannot be changed from either view.
+  //
   // backdrop="static" + keyboard={false}: a stray click outside or an Escape would discard the
-  // arrangement silently. Cancel is the deliberate exit. The backdrop also covers BiblioIdQuery,
-  // which the full-page view does not -- known gap, see SCRUM-6449.
+  // arrangement silently. Cancel is the deliberate exit.
+  //
+  // centered only for the windowed view: Bootstrap's .modal-dialog is top-anchored with
+  // margin: 1.75rem auto, so the space below varies with the list height while the gap above
+  // stays fixed. Centring splits it evenly. The full-screen variant sets its own margin.
   return (
     <Modal show size="xl" backdrop="static" keyboard={false} onHide={onCancel}
-      dialogClassName="biblio-reorder-modal">
-      <Modal.Body>{panel}</Modal.Body>
+      centered={!fullScreen}
+      dialogClassName={fullScreen ? 'biblio-reorder-modal-full' : 'biblio-reorder-modal'}>
+      {/* Container, matching BiblioEditor.js:1613, so the list is the same width as the editor
+          the curator just came from rather than stretching to the viewport. The two views then
+          differ only in height -- which is the point of expanding on a long author list. */}
+      <Modal.Body><Container>{panel}</Container></Modal.Body>
     </Modal>);
 }; // const BiblioAuthorReorder
 

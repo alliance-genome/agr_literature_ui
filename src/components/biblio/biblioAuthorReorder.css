@@ -32,13 +32,43 @@
   margin-bottom: 0.25rem;
 }
 
-/* Modal view. Wider than Bootstrap's xl and capped by viewport height so a long author list
- * scrolls inside the body rather than pushing the buttons off screen. */
-.biblio-reorder-modal {
-  max-width: 90vw;
-}
+/* Windowed view. Wider than Bootstrap's xl and capped by viewport height so a long author list
+ * scrolls inside the body rather than pushing the buttons off screen. Vertical centring comes from
+ * the Modal's `centered` prop rather than from here.
+ *
+ * Compound `.modal-dialog.x` selectors throughout: this file is bundled BEFORE bootstrap.min.css
+ * (imported at index.js:6), so a single-class rule loses to Bootstrap's own on equal specificity
+ * no matter what it says. Two classes outrank .modal-dialog regardless of order. */
+/* No width override: size="xl" gives .modal-xl's 1140px, which is Bootstrap's own .container
+ * max-width, so the windowed dialog already matches the editor. */
 
 .biblio-reorder-modal .modal-body {
   max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Full screen view: the same modal filling the viewport, so the backdrop covers the nav bar and
+ * the reference id box. Bootstrap 4 has no `fullscreen` prop -- that arrived in Bootstrap 5.
+ *
+ * height: 100% rather than 100vh, deliberately. .modal is already position: fixed with height:
+ * 100%, so 100% fills it exactly. 100vh instead measures the viewport, which stacks on top of any
+ * margin still in effect and overflows the container -- producing a gap top and bottom plus a
+ * second scrollbar. */
+.modal-dialog.biblio-reorder-modal-full {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+}
+
+.biblio-reorder-modal-full .modal-content {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+/* the content box already fills the viewport, so the body scrolls to fill rather than to a cap */
+.biblio-reorder-modal-full .modal-body {
+  max-height: none;
   overflow-y: auto;
 }

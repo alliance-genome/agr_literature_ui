@@ -961,6 +961,10 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
+        // reference-scoped, like everything else cleared here: reordering reference A must not
+        // still be open when reference B loads. authorReorderFullScreen deliberately survives --
+        // it is a remembered preference, not reference state.
+        authorReorderOpen: false,
         referenceFiles: [],
         referenceFilesLoading: false,
         topicEntityTags: [],
