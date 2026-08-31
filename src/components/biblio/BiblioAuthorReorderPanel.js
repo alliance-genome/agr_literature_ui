@@ -31,13 +31,8 @@ const BiblioAuthorReorderPanel = ({
       <Col className="Col-general" sm="12" style={{ gap: '0.5rem' }}>
         <strong style={{ flex: 1, whiteSpace: 'nowrap' }}>Reorder authors</strong>
         <span style={{ display: 'flex', gap: '0.5rem' }}>
-          {/* preventDefault stops the browser moving focus here on mousedown. Without it, pressing
-              Undo blurs a focused order box, blur commits that move and pushes it onto the undo
-              history, and the click then pops the entry it just created -- so Undo appears to do
-              nothing while the move the curator meant to reverse is untouched. */}
           <Button variant="outline-secondary" disabled={saving || !canUndo}
             title="Undo the last move; Cancel discards them all"
-            onMouseDown={(e) => e.preventDefault()}
             onClick={onUndo}><FontAwesomeIcon icon={faStepBackward} /> Undo one</Button>
           <Button variant="primary"
             disabled={saving || !changed || order.length === 0 || pendingApplicable}
@@ -75,11 +70,17 @@ const BiblioAuthorReorderPanel = ({
     )}
 
     {order.map((authorDict, index) => {
-      // A number only counts as an edit once it differs from the row's current position, so
-      // stepping back to where you started makes the buttons go away on their own.
+      // A number only counts as an edit once applying it would actually move the row, so stepping
+      // back to where you started makes the check go away on its own. Taken from the host rather
+      // than recomputed here: an earlier local version compared the raw typed value while the host
+      // compared the clamped one, and the two disagreed at the ends of the range.
       const isPendingRow = !!pending && pending.authorId === authorDict.author_id;
-      const typedOrder = isPendingRow ? parseInt(pending.value, 10) : NaN;
-      const canApply = !Number.isNaN(typedOrder) && typedOrder !== index + 1;
+      const canApply = isPendingRow && pendingApplicable;
+      // The draggable attribute is the affordance, not the gate: dragstart bubbles, so a drag
+      // begun another way (dragging selected author-name text, or a natively draggable node inside
+      // a name) would otherwise set dragIndex and make every row a drop target -- bypassing the
+      // long-list cutoff, the mid-save lock and the unapplied-number lock alike.
+      const dragAllowed = dragEnabled && !saving && !pendingApplicable;
       // one edit at a time: every other box is inert while one is unresolved, so a change cannot
       // be stranded by clicking into a different row
       const inputDisabled = saving || (pendingApplicable && !isPendingRow);
@@ -87,8 +88,8 @@ const BiblioAuthorReorderPanel = ({
       <Row
         key={authorDict.author_id}
         className={`Row-general biblio-reorder-row ${(index % 2 === 0) ? 'row-even' : 'row-odd'}`}
-        draggable={dragEnabled && !saving && !pendingApplicable}
-        onDragStart={() => onDragStart(index)}
+        draggable={dragAllowed}
+        onDragStart={() => { if (dragAllowed) { onDragStart(index); } }}
         onDragEnd={onDragEnd}
         // preventDefault is what marks a row as a valid drop target, so it is conditional on one
         // of OUR rows being dragged. Unconditionally, every row accepts any drag source -- a file,
@@ -97,9 +98,9 @@ const BiblioAuthorReorderPanel = ({
         // anywhere else in the app.
         onDragOver={(e) => { if (dragActive) { e.preventDefault(); } }}
         onDrop={(e) => { if (!dragActive) { return; } e.preventDefault(); onDropAt(index); }}
-        style={{ cursor: (dragEnabled && !saving && !pendingApplicable) ? 'move' : 'default' }}
+        style={{ cursor: dragAllowed ? 'move' : 'default' }}
       >
-        <Col xs="auto" className="biblio-reorder-order-col">
+        <Col xs="auto">
           {/* No onBlur commit. The check is the only way a typed or stepped number takes effect,
               so nothing is applied by a focus change the curator did not think of as an action --
               which also makes this work when the stepper arrows never focus the input at all.
@@ -115,6 +116,7 @@ const BiblioAuthorReorderPanel = ({
               min="1"
               max={order.length}
               className="biblio-reorder-order-input"
+              aria-label={`Order for author ${index + 1}`}
               disabled={inputDisabled}
               value={isPendingRow ? pending.value : String(index + 1)}
               onChange={(e) => onPendingChange(authorDict.author_id, e.target.value)}
@@ -127,9 +129,11 @@ const BiblioAuthorReorderPanel = ({
                     BiblioFileManagement, BiblioWorkflow), taken from the variant rather than
                     hardcoded again here. */}
                 <Button size="sm" variant="outline-success" disabled={!canApply}
-                  title="Apply this order" onClick={onApplyPending}>
+                  title="Apply this order" aria-label="Apply this order"
+                  onClick={onApplyPending}>
                   <FontAwesomeIcon icon={faCheck} /></Button>
-                <Button size="sm" variant="outline-secondary" title="Discard this number"
+                <Button size="sm" variant="outline-secondary"
+                  title="Discard this number" aria-label="Discard this number"
                   onClick={onCancelPending}><FontAwesomeIcon icon={faTimes} /></Button>
               </>
             ) : null}

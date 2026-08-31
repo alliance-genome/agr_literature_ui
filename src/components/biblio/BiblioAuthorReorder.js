@@ -78,7 +78,9 @@ const BiblioAuthorReorder = () => {
         const row = picked || existing[0];
         dispatch(setBiblioAuthorReorderFullScreen(Boolean(row.json_settings?.fullScreen)));
       } else {
-        seed({ name: VIEW_SETTING_NAME, payload: { fullScreen: false } });
+        // returned, so a rejection reaches the catch below instead of escaping as an unhandled
+        // promise rejection -- seed re-throws, and load's "no person found" branch reaches here
+        return seed({ name: VIEW_SETTING_NAME, payload: { fullScreen: false } });
       }
     }).catch((error) => console.error('Failed to load author reorder view setting:', error));
   }, [accessToken, email, load, seed, dispatch]);
@@ -113,6 +115,11 @@ const BiblioAuthorReorder = () => {
     // -- pushing it would make undo look broken by needing two clicks to do anything
     if (sameOrder(next, order)) { return; }
     setErrorMessage('');
+    // Any committed move renumbers the rows, so a number typed against an old position no longer
+    // means what the curator typed. Clearing here covers the drag path too: without it, dragging
+    // while a harmless same-position value sat in a box turned it into a different position and
+    // locked the whole list with no keystroke.
+    setPending(null);
     setHistory(history.concat([order]));
     setOrder(next);
   };
@@ -131,15 +138,23 @@ const BiblioAuthorReorder = () => {
 
   const onCancelPending = () => setPending(null);
 
-  // A pending value only counts as unresolved once it is a valid number AND differs from the row's
-  // current position. Typing back the number a row already has, or emptying the box, leaves nothing
-  // to apply -- so it must not lock the list or grey out Save. The discard button stays available
-  // in those states regardless, which is what clears the box.
+  // A pending value only counts as unresolved once it is a valid number AND would actually move
+  // the row. Typing back the number a row already has, or emptying the box, leaves nothing to apply
+  // -- so it must not lock the list or grey out Save. The discard button stays available in those
+  // states regardless, which is what clears the box.
+  //
+  // Compared against the CLAMPED destination, because that is what moveAuthorTo will use. Against
+  // the raw typed value, 999 on the last row of ten counted as applicable: the list locked and the
+  // check rendered enabled, then clicking it clamped to 10, matched the current order and did
+  // nothing, with no feedback. The panel takes this value rather than recomputing it, so the two
+  // cannot drift apart again.
   const pendingIndex = pending
     ? order.findIndex((authorDict) => authorDict.author_id === pending.authorId) : -1;
   const pendingTypedOrder = pending ? parseInt(pending.value, 10) : NaN;
-  const pendingApplicable = pendingIndex >= 0 && !Number.isNaN(pendingTypedOrder)
-    && pendingTypedOrder !== pendingIndex + 1;
+  const pendingTargetOrder = Number.isNaN(pendingTypedOrder) ? NaN
+    : Math.min(Math.max(Math.trunc(pendingTypedOrder), 1), order.length);
+  const pendingApplicable = pendingIndex >= 0 && !Number.isNaN(pendingTargetOrder)
+    && pendingTargetOrder !== pendingIndex + 1;
 
   // A drag released outside the list, or cancelled with Escape, fires no drop -- without this the
   // stale index would survive and aim a later drop at the wrong author.
@@ -152,9 +167,9 @@ const BiblioAuthorReorder = () => {
   };
 
   const onUndo = () => {
-    // Abandon a half-typed box along with the move being undone. The button suppresses the focus
-    // change that would otherwise commit it (see BiblioAuthorReorderPanel), so without this the
-    // typed value would survive the undo and sit against a row that has just moved underneath it.
+    // Undoing renumbers the rows, so a typed number would afterwards refer to a position the
+    // curator never chose. Abandon it with the move being reversed. (applyMove clears pending for
+    // the same reason, but onUndo pops history directly rather than going through it.)
     setPending(null);
     if (history.length === 0) { return; }
     setErrorMessage('');

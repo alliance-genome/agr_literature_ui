@@ -67,9 +67,14 @@
   border-radius: 0;
 }
 
-/* the content box already fills the viewport, so the body scrolls to fill rather than to a cap */
+/* The content box already fills the viewport, so the body scrolls to fill rather than to a cap.
+ * min-height: 0 because .modal-body is a flex item of a column .modal-content: a flex item's
+ * automatic minimum size is its content, which would push the body past the viewport instead of
+ * scrolling inside it. Overflow other than visible is supposed to zero that automatically; this
+ * states it rather than relying on the browser getting the implication right. */
 .biblio-reorder-modal-full .modal-body {
   max-height: none;
+  min-height: 0;
   overflow-y: auto;
 }
 
