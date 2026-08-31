@@ -101,17 +101,10 @@ const BiblioAuthorReorder = () => {
   // LIST to decide what will be saved, not the number boxes, so the button has to track the list:
   // enabling Save while the rows sit unmoved would promise a change the list does not show.
   //
-  // That leaves Save looking disabled while a number is typed but not yet committed, which reads
-  // like a bug and is not one. Pressing it works: the mousedown blurs the input, blur commits the
-  // move, the list reorders and the button enables, all before the click dispatches. Verified by
-  // hand in both Chrome and Firefox -- one click, correct order saved. Do not "fix" the appearance
-  // by feeding `pending` into this; that trades a button which looks wrong for a button which
-  // means the wrong thing.
-  //
-  // It does rely on mousedown over a disabled button blurring the focused input. Should a browser
-  // ever keep focus there instead, Save would silently do nothing on that browser, and the fix is
-  // to commit `pending` from a mousedown handler on the wrapping span -- the button itself, being
-  // disabled, receives no mouse events at all.
+  // A typed or stepped number therefore does not make this true. It cannot: an unapplied number is
+  // not part of the order, so saving would ignore it. The row's own check button applies it first,
+  // and `pendingApplicable` below disables Save until that happens, so there is no state where
+  // Save is available and would silently drop a visible edit.
   const changed = order.some((authorDict, i) => authorDict.author_id !== initialIds.current[i]);
 
   const applyMove = (fromIndex, toOrder) => {
