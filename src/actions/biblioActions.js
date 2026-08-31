@@ -731,26 +731,42 @@ export const fetchDataContextData = async () => {
   //                                 ATP:0000325 experimentally studied data
   //   ATP:0000326 marker data    -> ATP:0000328 expression marker
   //                                 ATP:0000327 genetic marker
-  // Fetched from the ontology rather than hardcoded so new or renamed terms
-  // appear without a UI deploy. Fallback mirrors the confirmed 2026-08-31 tree.
+  //
+  // Curators pick a LEAF only: the two groupings are organisational, not
+  // curation choices. Rather than hardcode which curies are groupings, we take
+  // all descendants and subtract the root's direct children -- those are exactly
+  // the intermediate nodes. So renaming or adding a grouping needs no UI change.
+  //
+  // Note the /<direct_children_only>/<include_self>/<include_names> path form is
+  // required: the short /search_descendants/<curie> form returns bare curie
+  // strings, not {curie, name} objects.
   const fallbackDataContextData = [
-    { curie: "ATP:0000324", name: "mentioned data" },
     { curie: "ATP:0000360", name: "background information" },
     { curie: "ATP:0000325", name: "experimentally studied data" },
-    { curie: "ATP:0000326", name: "marker data" },
     { curie: "ATP:0000328", name: "expression marker" },
     { curie: "ATP:0000327", name: "genetic marker" },
   ];
 
-  const url = `/ontology/search_descendants/ATP:0000323`;
+  const allUrl = `/ontology/search_descendants/ATP:0000323/false/false/true`;
+  const groupingsUrl = `/ontology/search_descendants/ATP:0000323/true/false/true`;
 
   try {
-    const response = await api.get(url);
-    if (Array.isArray(response.data) && response.data.length > 0) {
-      return response.data;
-    } else {
+    const [allRes, groupingsRes] = await Promise.all([
+      api.get(allUrl),
+      api.get(groupingsUrl),
+    ]);
+
+    const all = Array.isArray(allRes.data) ? allRes.data : [];
+    const groupings = Array.isArray(groupingsRes.data) ? groupingsRes.data : [];
+    if (all.length === 0) {
       return fallbackDataContextData;
     }
+
+    const groupingCuries = new Set(groupings.map((t) => t.curie));
+    const leaves = all.filter((t) => t && t.curie && !groupingCuries.has(t.curie));
+    // If the shape ever changes such that everything is filtered out, prefer the
+    // known-good list over an empty dropdown.
+    return leaves.length > 0 ? leaves : fallbackDataContextData;
   } catch (error) {
     console.error("Error occurred in fetchDataContextData:", error);
     return fallbackDataContextData;

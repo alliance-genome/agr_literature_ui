@@ -32,9 +32,9 @@ import { debounce } from 'lodash';
 import Alert from "react-bootstrap/Alert";
 
 // SCRUM-5697. data_context is a hierarchy under ATP:0000323, so the options come
-// from the ontology (fetchDataContextData) rather than a literal list here --
-// same arrangement as the display_tag dropdown. The default is the leaf the WB
-// topic classifiers use.
+// from the ontology (fetchDataContextData) rather than a literal list here.
+// Only leaves are offered -- "mentioned data" and "marker data" are groupings,
+// not curation choices. The default is the leaf the WB topic classifiers use.
 const DEFAULT_DATA_CONTEXT = "ATP:0000325";
 
 const TopicEntityCreate = () => {
