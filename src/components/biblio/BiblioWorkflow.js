@@ -12,6 +12,7 @@ import { faCheck, faExclamation, faCheckCircle, faTimesCircle, faHourglass, faCi
 import { patchWorkflowTag, deleteWorkflowTag, transitionWorkflowTag } from './WorkflowTagService';
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
+import ColumnHideShowDropdown from '../AgGrid/ColumnHideShowDropdown';
 import TopicFilter from '../AgGrid/TopicFilter';
 import EntityCountsByMod from './shared/EntityCountsByMod';
 
@@ -1764,6 +1765,13 @@ const BiblioWorkflow = () => {
       <div style={containerStyle}>
         <div className="d-flex justify-content-start align-items-center" style={{ paddingBottom: '10px', justifyContent: 'flex-start', width: '80%' }}>
           <div className="d-flex align-items-start" style={{ gap: '14px' }}>
+            <ColumnHideShowDropdown
+              items={items}
+              setItems={setItems}
+              getGridApi={getGridApi}
+              getInitialItems={getInitialItems}
+              toggleId="dropdown-wft-curation-columns"
+            />
             <Button
               variant="outline-secondary"
               size="sm"

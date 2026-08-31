@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import { api } from "../../api";
 import {
@@ -32,9 +32,6 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import InputGroup from 'react-bootstrap/InputGroup';
 import _ from "lodash";
-import DateRangePicker from '@wojtekmaj/react-daterange-picker'
-import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
-import 'react-calendar/dist/Calendar.css';
 import LoadingOverlay from "../LoadingOverlay";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheckSquare, faMinusSquare} from "@fortawesome/free-solid-svg-icons";
@@ -138,25 +135,135 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
+// Only commit years the backend can actually search. Two failure modes
+// otherwise: (1) a native date input holds intermediate values while the
+// year is being typed ("2026" passes through "0026"), and (2) the year
+// segment accepts 5-6 digit years regardless of the input's min/max.
+// date_created is compared in Elasticsearch as an epoch long in
+// nanoseconds, which only represents 1677-09-21..2262-04-11 — anything
+// outside 500s with 'long overflow' / 'Unable to obtain Instant'. These
+// whole-year bounds sit safely inside that and cover all real dates.
+const MIN_SEARCHABLE_YEAR = 1678;
+const MAX_SEARCHABLE_YEAR = 2261;
+const MIN_SEARCHABLE_DATE = `${MIN_SEARCHABLE_YEAR}-01-01`;
+const MAX_SEARCHABLE_DATE = `${MAX_SEARCHABLE_YEAR}-12-31`;
+function hasSearchableYear(dateStr){
+    const year = parseInt(dateStr.split('-')[0], 10);
+    return year >= MIN_SEARCHABLE_YEAR && year <= MAX_SEARCHABLE_YEAR;
+}
+
 const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     const dispatch = useDispatch();
+
+    // Local state backing the two native <input type="date"> fields so the
+    // curator can type freely; the range is committed on Enter/blur, or
+    // shortly after a change settles (a calendar pick never blurs the input).
+    const [startInput, setStartInput] = useState('');
+    const [endInput, setEndInput] = useState('');
+    // Set when a commit was actually attempted (blur/Enter/settle timer) and
+    // declined, flagging the field(s) at fault — not derived from render
+    // state, so half-built ranges and mid-typed years don't flash red while
+    // the curator is still editing.
+    const [declinedStart, setDeclinedStart] = useState(false);
+    const [declinedEnd, setDeclinedEnd] = useState(false);
+    const commitTimerRef = useRef(null);
+
+    function clearPendingCommit(){
+        if (commitTimerRef.current){
+            clearTimeout(commitTimerRef.current);
+            commitTimerRef.current = null;
+        }
+    }
+
+    // Cancel a scheduled commit if the facet unmounts (e.g. panel collapsed).
+    useEffect(() => clearPendingCommit, []);
+
+    // Keep the typed inputs in sync with the stored range so the Day/Week/
+    // Month/Year buttons and the clear (x) button are reflected here too.
+    // Anything landing here reflects a successful commit or an external
+    // change, so any declined flags are moot.
+    useEffect(() => {
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
+        if (Array.isArray(currentValue) && currentValue.length === 2){
+            setStartInput(currentValue[0] || '');
+            setEndInput(currentValue[1] || '');
+        } else {
+            setStartInput('');
+            setEndInput('');
+        }
+    }, [currentValue]);
+
+
+    function commitTypedRange(startStr, endStr){
+        clearPendingCommit();
+        // Both cleared -> remove the filter entirely (unless there is none).
+        if (!startStr && !endStr){
+            setDeclinedStart(false);
+            setDeclinedEnd(false);
+            if (currentValue !== ''){
+                dispatch(setValueFunction(''));
+                dispatch(setSearchResultsPage(1));
+                dispatch(searchReferences());
+            }
+            return;
+        }
+        // Need both ends present, valid, with searchable years, and in order
+        // to form a range; otherwise decline and flag the field(s) at fault.
+        // An out-of-order range means the curator is mid-edit (e.g. moved the
+        // start forward before touching the end, when tabbing between the
+        // boxes commits on blur) — swapping and committing it would let the
+        // currentValue sync effect rewrite the boxes with values never typed
+        // (YYYY-MM-DD compares lexicographically).
+        const startOk = Boolean(startStr) && !isNaN(Date.parse(startStr)) && hasSearchableYear(startStr);
+        const endOk = Boolean(endStr) && !isNaN(Date.parse(endStr)) && hasSearchableYear(endStr);
+        const outOfOrder = startOk && endOk && startStr > endStr;
+        if (!startOk || !endOk || outOfOrder){
+            setDeclinedStart(!startOk || outOfOrder);
+            setDeclinedEnd(!endOk || outOfOrder);
+            return;
+        }
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
+        // Skip the no-op re-search when the committed range is unchanged
+        // (e.g. blur right after the settle timer already committed).
+        if (Array.isArray(currentValue) && currentValue[0] === startStr && currentValue[1] === endStr){
+            return;
+        }
+        dispatch(setValueFunction([startStr, endStr]));
+        dispatch(setSearchResultsPage(1));
+        dispatch(searchReferences());
+    }
+
+    // A calendar pick fires onChange but keeps focus in the input, so nothing
+    // would blur and commit the range. Schedule a commit once the value stops
+    // changing; the delay also absorbs segment-by-segment keyboard edits, and
+    // the plausible-year guard holds back mid-typed years that survive it.
+    function handleDateInputChange(nextStart, nextEnd){
+        setStartInput(nextStart);
+        setEndInput(nextEnd);
+        // The curator is editing again — withdraw any declined flags until
+        // the next commit attempt (settle timer, blur, or Enter) re-judges.
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
+        clearPendingCommit();
+        commitTimerRef.current = setTimeout(() => {
+            commitTimerRef.current = null;
+            commitTypedRange(nextStart, nextEnd);
+        }, 800);
+    }
+
+    function handleInputKeyDown(e){
+        if (e.key === 'Enter'){
+            e.preventDefault();
+            e.target.blur(); // blur handler performs the commit
+        }
+    }
 
     function formatDateRange(dateRange){
             let dateStart=dateRange[0].getFullYear()+"-"+parseInt(dateRange[0].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[0].getDate().toString().padStart(2,'0');
             let dateEnd=dateRange[1].getFullYear()+"-"+parseInt(dateRange[1].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[1].getDate().toString().padStart(2,'0');
             return [dateStart,dateEnd];
-    }
-
-    function formatToUTCString(dateRange){
-        if (dateRange !== ''){
-            let dateStart = new Date (dateRange[0]);
-            let offset = dateStart.getTimezoneOffset();
-            let parsedDateStart = new Date(Date.parse(dateRange[0])  + (offset * 60000));
-            let parsedDateEnd = new Date(Date.parse(dateRange[1]) + (offset * 60000));
-            return [parsedDateStart, parsedDateEnd];
-        }else{
-            return '';
-        }
     }
 
     function handleFixedTimeClick(timeframe){
@@ -181,19 +288,6 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         dispatch(searchReferences());
     }
 
-    function handleDateChange(newDateRangeArr){
-        if (newDateRangeArr === null) {
-            dispatch(setValueFunction(''));
-            dispatch(setSearchResultsPage(1));
-            dispatch(searchReferences());
-        }
-        else if(!isNaN(Date.parse(newDateRangeArr[0])) && !isNaN(Date.parse(newDateRangeArr[1]))){
-            dispatch(setValueFunction(formatDateRange(newDateRangeArr)));
-            dispatch(setSearchResultsPage(1));
-            dispatch(searchReferences());
-        }
-    }
-
     return(
         <div key={facetName} style={{textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em"}}>
             <h5>{facetName}</h5>
@@ -203,7 +297,52 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                 <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
                 <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
             </ButtonGroup>
-            <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
+            {/* "from" and "to" stacked on their own rows: the facet sidebar is
+                too narrow for both date inputs side by side (curator request). */}
+            <div style={{marginTop: "0.4em"}}>
+                <InputGroup size="sm">
+                    <InputGroup.Text style={{width: "3.2em", justifyContent: "center"}}>from</InputGroup.Text>
+                    <Form.Control
+                        type="date"
+                        aria-label={`${facetName} start date`}
+                        value={startInput}
+                        className="date-facet-input"
+                        isInvalid={declinedStart}
+                        min={MIN_SEARCHABLE_DATE}
+                        max={MAX_SEARCHABLE_DATE}
+                        onChange={(e) => handleDateInputChange(e.target.value, endInput)}
+                        onBlur={() => commitTypedRange(startInput, endInput)}
+                        onKeyDown={handleInputKeyDown}
+                    />
+                </InputGroup>
+                <InputGroup size="sm" style={{marginTop: "0.25em"}}>
+                    <InputGroup.Text style={{width: "3.2em", justifyContent: "center"}}>to</InputGroup.Text>
+                    <Form.Control
+                        type="date"
+                        aria-label={`${facetName} end date`}
+                        value={endInput}
+                        className="date-facet-input"
+                        isInvalid={declinedEnd}
+                        min={MIN_SEARCHABLE_DATE}
+                        max={MAX_SEARCHABLE_DATE}
+                        onChange={(e) => handleDateInputChange(startInput, e.target.value)}
+                        onBlur={() => commitTypedRange(startInput, endInput)}
+                        onKeyDown={handleInputKeyDown}
+                    />
+                    <Button
+                        variant="outline-secondary"
+                        aria-label={`Clear ${facetName} date range`}
+                        title="Clear dates"
+                        onClick={() => {
+                            setStartInput('');
+                            setEndInput('');
+                            commitTypedRange('', '');
+                        }}
+                    >
+                        &times;
+                    </Button>
+                </InputGroup>
+            </div>
         </div>
     )
 }
