@@ -20,8 +20,8 @@ import './biblioAuthorReorder.css';
 
 const BiblioAuthorReorderPanel = ({
   order, pending, errorMessage, dragMax, dragEnabled, dragActive, saving, changed, canUndo,
-  fullScreen, pendingApplicable, onPendingChange, onApplyPending, onCancelPending, onDragStart,
-  onDragEnd, onDropAt, onUndo, onSave, onCancel, onToggleView,
+  fullScreen, pendingApplicable, viewToggleReady, onPendingChange, onApplyPending, onCancelPending,
+  onDragStart, onDragEnd, onDropAt, onUndo, onSave, onCancel, onToggleView,
 }) => (
   <>
     {/* Centring is three-part -- an equal-weight spacer either side of the button group -- so the
@@ -49,7 +49,7 @@ const BiblioAuthorReorderPanel = ({
               alone cannot say which way it points. The label names the destination, not the
               current state. Kept size="sm" and out of the centred group -- it changes the
               presentation, not the data. */}
-          <Button variant="outline-secondary" size="sm" disabled={saving}
+          <Button variant="outline-secondary" size="sm" disabled={saving || !viewToggleReady}
             title={fullScreen ? 'Show in a window' : 'Expand to the full page'}
             onClick={onToggleView}>
             <FontAwesomeIcon icon={fullScreen ? faCompress : faExpand} />

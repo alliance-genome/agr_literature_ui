@@ -61,6 +61,13 @@ const BiblioAuthorReorder = () => {
   // (it just leaves too), so a revert control would duplicate it, while this recovers from one
   // misjudged drop without discarding every good move before it.
   const [history, setHistory] = useState([]);
+  // Gates the view toggle until the bootstrap below has settled. Clicking Expand while the initial
+  // GET is still out took the create() fallback -- selectedSettingId is null and settings is still
+  // empty, so create's maxCount guard passes -- and then load() resolved against a response that
+  // predated that row and seeded a second one. Two rows for a maxCount: 1 component, and because
+  // seed marks its row default while create does not, pickDefaultSetting preferred the seeded
+  // fullScreen: false from then on and the curator's Expand was silently lost.
+  const [viewSettingLoaded, setViewSettingLoaded] = useState(false);
 
   const { load, seed, create, selectedSettingId, savePayloadTo } = usePersonSettings({
     token: accessToken, email, componentName: VIEW_SETTING_COMPONENT, maxCount: 1,
@@ -72,7 +79,8 @@ const BiblioAuthorReorder = () => {
   // creates duplicate rows. `picked` comes from pickDefaultSetting inside the hook, so this also
   // avoids the is_default / default_setting mismatch hand-rolled at Biblio.js:322.
   useEffect(() => {
-    if (!accessToken || !email) { return; }
+    // nothing to load or persist without an identity, so the toggle should not stay gated
+    if (!accessToken || !email) { setViewSettingLoaded(true); return; }
     load().then(({ existing, picked }) => {
       if (existing.length > 0) {
         const row = picked || existing[0];
@@ -82,7 +90,8 @@ const BiblioAuthorReorder = () => {
         // promise rejection -- seed re-throws, and load's "no person found" branch reaches here
         return seed({ name: VIEW_SETTING_NAME, payload: { fullScreen: false } });
       }
-    }).catch((error) => console.error('Failed to load author reorder view setting:', error));
+    }).catch((error) => console.error('Failed to load author reorder view setting:', error))
+      .finally(() => setViewSettingLoaded(true));
   }, [accessToken, email, load, seed, dispatch]);
 
   const onToggleView = useCallback(async () => {
@@ -199,6 +208,7 @@ const BiblioAuthorReorder = () => {
       dragMax={AUTHOR_DRAG_MAX} dragEnabled={order.length <= AUTHOR_DRAG_MAX}
       dragActive={dragIndex !== null} onDragEnd={onDragEnd}
       saving={saving} changed={changed} canUndo={history.length > 0} fullScreen={fullScreen}
+      viewToggleReady={viewSettingLoaded}
       onPendingChange={(authorId, value) => setPending({ authorId, value })}
       onApplyPending={onApplyPending} onCancelPending={onCancelPending}
       pendingApplicable={pendingApplicable}

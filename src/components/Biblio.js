@@ -325,10 +325,13 @@ const BiblioTagging = () => {
         setShowMore(Boolean(activeSetting.json_settings.showMore));
         return;
       }
-      return create("Bibliography Summary", { showMore: false })
-        .then((created) => setSelectedSettingId(created.person_setting_id));
+      // seed rather than create: seed's deps are stable, while create's include settings.length,
+      // which both load() and create() change -- so create in this dependency array re-entered an
+      // effect that was restructured to be one-shot. seed also sets selectedSettingId itself and
+      // marks its row default, which is what pickDefaultSetting looks for.
+      return seed({ name: "Bibliography Summary", payload: { showMore: false } });
     }).catch((err) => console.error("Failed to load or create biblio summary setting:", err));
-  }, [accessToken, email, load, create, setSelectedSettingId]);
+  }, [accessToken, email, load, seed, setSelectedSettingId]);
 
   const toggle = async () => {
     const newValue = !showMore;
