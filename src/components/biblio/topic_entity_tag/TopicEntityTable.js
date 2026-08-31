@@ -413,6 +413,7 @@ const TopicEntityTable = () => {
       { headerName: 'No Data', field: 'no_data', id: 6, checked: true },
       { headerName: 'Data', field: 'has_data', id: 32, checked: true },
       { headerName: 'Data Novelty', field: 'data_novelty', id: 7, checked: false },
+      { headerName: 'Data Context', field: 'data_context_name', id: 33, checked: false },
       { headerName: 'Confidence Score', field: 'confidence_score', id: 8, checked: false },
       { headerName: 'Confidence Level', field: 'confidence_level', id: 9, checked: false },
       { headerName: 'Created By', field: 'created_by', id: 10, checked: true },
@@ -450,6 +451,7 @@ const TopicEntityTable = () => {
       { headerName: 'No Data', field: 'no_data', id: 6, checked: false },
       { headerName: 'Data', field: 'has_data', id: 32, checked: false },
       { headerName: 'Data Novelty', field: 'data_novelty', id: 7, checked: false },
+      { headerName: 'Data Context', field: 'data_context_name', id: 33, checked: false },
       { headerName: 'Confidence Score', field: 'confidence_score', id: 8, checked: false },
       { headerName: 'Confidence Level', field: 'confidence_level', id: 9, checked: false },
       { headerName: 'Created By', field: 'created_by', id: 10, checked: true },
@@ -548,6 +550,7 @@ const TopicEntityTable = () => {
         cellDataType: 'text'
       },
       { headerName: 'Data Novelty', field: 'data_novelty', filter: true, valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty, onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.data_novelty}`) },
+      { headerName: 'Data Context', field: 'data_context_name', filter: true, comparator: caseInsensitiveComparator, onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.data_context}`) },
       { headerName: 'Confidence Score', field: 'confidence_score', filter: true },
       { headerName: 'Confidence Level', field: 'confidence_level', filter: true },
       { headerName: 'Created By', field: 'created_by', filter: true },

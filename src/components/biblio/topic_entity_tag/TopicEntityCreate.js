@@ -30,6 +30,18 @@ import Spinner from "react-bootstrap/Spinner";
 import { debounce } from 'lodash';
 import Alert from "react-bootstrap/Alert";
 
+// SCRUM-5697. The four disjoint data_context terms, in the order curators read
+// them. Unlike the table's Data Novelty column these labels cannot come from the
+// API (the editor needs them before a tag exists), so they live here; the display
+// side reads data_context_name off the tag instead.
+const DATA_CONTEXT_OPTIONS = [
+  { curie: "ATP:0000325", name: "experimentally studied data" },
+  { curie: "ATP:0000360", name: "background information" },
+  { curie: "ATP:0000328", name: "expression marker" },
+  { curie: "ATP:0000327", name: "genetic marker" },
+];
+const DEFAULT_DATA_CONTEXT = "ATP:0000325";
+
 const TopicEntityCreate = () => {
   const debugMode = false;
 
@@ -71,7 +83,8 @@ const TopicEntityCreate = () => {
   const [isVisibleMessageFailureSetCurationStatusToCurated, setIsVisibleMessageFailureSetCurationStatusToCurated] = useState("");
   const [rows, setRows] = useState([
     { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", noteText: "", entityResultList: [],
-      newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false }
+      newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false,
+      dataContextSelect: DEFAULT_DATA_CONTEXT }
   ]);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const inputRefs = useRef([]);
@@ -219,6 +232,7 @@ const TopicEntityCreate = () => {
           newDataCheckbox: editRow.data_novelty === 'ATP:0000321' ? true : false,
           newToDbCheckbox: editRow.data_novelty === 'ATP:0000228' ? true : false,
           newToFieldCheckbox: editRow.data_novelty === 'ATP:0000229' ? true : false,
+          dataContextSelect: editRow.data_context || DEFAULT_DATA_CONTEXT,
 	  confidence_score: editRow.confidence_score || null,
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",
@@ -306,6 +320,7 @@ const TopicEntityCreate = () => {
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
 	data_novelty: dataNoveltyAtp,
+	data_context: row.dataContextSelect || DEFAULT_DATA_CONTEXT,
 	confidence_score: null,
 	confidence_level: null,
 	topic_entity_tag_source_id: topicEntitySourceId || null
@@ -341,7 +356,8 @@ const TopicEntityCreate = () => {
       newToDbCheckbox: false,
       newToFieldCheckbox: false,
       noDataCheckbox: false,
-      entityAdditionDoneCheckbox: false
+      entityAdditionDoneCheckbox: false,
+      dataContextSelect: DEFAULT_DATA_CONTEXT
     };
   }
 
@@ -828,7 +844,7 @@ const TopicEntityCreate = () => {
           topic
         </Col>
         <Col className="div-grey-border" sm="1">
-          checkbox
+          checkbox / data context
         </Col>
         <Col className="div-grey-border" sm="1">
           entity type
@@ -973,6 +989,21 @@ const TopicEntityCreate = () => {
                     }}
                   />
                   <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
+                  <Form.Control
+                    as="select"
+                    size="sm"
+                    id={`dataContextSelect-${index}`}
+                    title="Data context"
+                    style={{ marginTop: '6px', fontSize: '0.75rem' }}
+                    value={row.dataContextSelect || DEFAULT_DATA_CONTEXT}
+                    onChange={(e) => handleRowChange(index, 'dataContextSelect', e.target.value)}
+                  >
+                    {DATA_CONTEXT_OPTIONS.map((option) => (
+                      <option key={option.curie} value={option.curie}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </Form.Control>
                 </div>
               </Col>
               <Col sm="1">
