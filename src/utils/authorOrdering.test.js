@@ -128,7 +128,7 @@ describe('buildAuthorSavePlan', () => {
   test('a create still forces a flatten even when the survivors are already contiguous', () => {
     const authors = [
       { author_id: 1, author_order: 1 },
-      { author_id: 'new', author_order: 2, name: 'Fresh', orcid: null },
+      { author_id: 'new', author_order: 2, name: 'Fresh', orcid: null, needsChange: true },
     ];
     // the create lands at a provisional order above everything, so only the flatten
     // brings it down to its intended position
@@ -139,7 +139,7 @@ describe('buildAuthorSavePlan', () => {
     const authors = [
       { author_id: 1, author_order: 1 },
       { author_id: 2, author_order: 2, deleteMe: true },
-      { author_id: 'new', author_order: 3, name: 'Fresh', orcid: null },
+      { author_id: 'new', author_order: 3, name: 'Fresh', orcid: null, needsChange: true },
     ];
     const plan = buildAuthorSavePlan(authors, curie);
     expect(plan.creates).toHaveLength(1);
@@ -151,8 +151,8 @@ describe('buildAuthorSavePlan', () => {
   test('two new authors get distinct provisional orders', () => {
     const authors = [
       { author_id: 1, author_order: 1 },
-      { author_id: 'new', author_order: 2, name: 'X', orcid: null },
-      { author_id: 'new', author_order: 3, name: 'Y', orcid: null },
+      { author_id: 'new', author_order: 2, name: 'X', orcid: null, needsChange: true },
+      { author_id: 'new', author_order: 3, name: 'Y', orcid: null, needsChange: true },
     ];
     const orders = buildAuthorSavePlan(authors, curie).creates.map((c) => c.payload.author_order);
     expect(orders).toEqual([4, 5]);

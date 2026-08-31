@@ -10,6 +10,7 @@ import BiblioEntity from './biblio/BiblioEntity';
 import BiblioWorkflow from './biblio/BiblioWorkflow';
 import BiblioFileManagement from './biblio/BiblioFileManagement';
 import BiblioRawTetData from './biblio/BiblioRawTetData';
+import BiblioAuthorReorder from './biblio/BiblioAuthorReorder';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString, RowDisplayCrossReferences } from './biblio/BiblioDisplay';
@@ -258,11 +259,20 @@ const BiblioActionToggler = () => {
 const BiblioActionRouter = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const authorReorderOpen = useSelector(state => state.biblio.authorReorderOpen);
   switch (biblioAction) {
     case 'display':
       return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);
     case 'editor':
-      return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }</>);
+      // Both reorder views are modals, so the editor always renders behind and BiblioAuthorReorder
+      // never changes position in the tree -- its working state (order, undo history) survives the
+      // windowed <-> full screen toggle for free, and the backdrop is what makes the screen
+      // exclusive in both.
+      return (<>
+        <Container><BiblioActionToggler /><RetractionBanner /></Container>
+        { accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }
+        { (authorReorderOpen && accessToken !== null) ? <BiblioAuthorReorder /> : null }
+      </>);
     case 'entity':
       return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     case 'workflow':
@@ -283,7 +293,6 @@ const BiblioTagging = () => {
   const biblioAction = useSelector(state => state.biblio.biblioAction);
 
   const [showMore, setShowMore] = useState(false);	// showMore true means the Show More text is showing in the citation view.  The default is the other view.
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const email = useSelector(state => state.isLogged.email);
@@ -299,33 +308,30 @@ const BiblioTagging = () => {
     maxCount: 10
   });
 
+  // One effect, reading load()'s return value rather than reacting to the settings state in a
+  // second one. The two-effect shape this replaces needed a settingsLoaded flag to stop the second
+  // effect firing before the load resolved and creating a duplicate row in the db; taking the
+  // result directly removes both the flag and the hazard.
+  //
+  // `picked` comes from pickDefaultSetting inside the hook, which reads default_setting. The
+  // hand-rolled pick this replaces looked for `is_default`, a field the API does not return, so it
+  // always fell through to settings[0] -- correct only while exactly one row exists.
   useEffect(() => {
-    if (accessToken && email) {
-      load().finally(() => setSettingsLoaded(true));
-    }
-  }, [accessToken, email, load]);
-
-  useEffect(() => {
-    if (!settingsLoaded) return;    // only proceed once settings are actually loaded, or it will create another setting in db
-
-    // If settings exist, select default or first one
-    if (settings.length > 0) {
-      const activeSetting = settings.find(s => s.is_default) || settings[0];
-      setSelectedSettingId(activeSetting.person_setting_id);
-      setShowMore(Boolean(activeSetting.json_settings.showMore));
-      return;
-    }
-
-    // If no settings exist after loading, create one with default value
-    (async () => {
-      try {
-        const created = await create("Bibliography Summary", { showMore: false });
-        setSelectedSettingId(created.person_setting_id);
-      } catch (err) {
-        console.error("Failed to create default setting:", err);
+    if (!accessToken || !email) { return; }
+    load().then(({ existing, picked }) => {
+      if (existing.length > 0) {
+        const activeSetting = picked || existing[0];
+        setSelectedSettingId(activeSetting.person_setting_id);
+        setShowMore(Boolean(activeSetting.json_settings.showMore));
+        return;
       }
-    })();
-  }, [settingsLoaded, settings]);
+      // seed rather than create: seed's deps are stable, while create's include settings.length,
+      // which both load() and create() change -- so create in this dependency array re-entered an
+      // effect that was restructured to be one-shot. seed also sets selectedSettingId itself and
+      // marks its row default, which is what pickDefaultSetting looks for.
+      return seed({ name: "Bibliography Summary", payload: { showMore: false } });
+    }).catch((err) => console.error("Failed to load or create biblio summary setting:", err));
+  }, [accessToken, email, load, seed, setSelectedSettingId]);
 
   const toggle = async () => {
     const newValue = !showMore;

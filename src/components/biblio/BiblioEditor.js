@@ -36,6 +36,7 @@ import { biblioAddNewRowDict } from '../../actions/biblioActions';
 import { updateButtonBiblio } from '../../actions/biblioActions';
 import { closeBiblioUpdateAlert } from '../../actions/biblioActions';
 import { changeBiblioAuthorExpandToggler } from '../../actions/biblioActions';
+import { openBiblioAuthorReorder } from '../../actions/biblioActions';
 import { biblioRevertField } from '../../actions/biblioActions';
 import { biblioRevertFieldArray } from '../../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../../actions/biblioActions';
@@ -85,6 +86,12 @@ export const datasetXrefPrefixes = ['PDB', 'GEO'];
 export const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'pubmed_publication_status', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 export const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
 export const fieldsDatePublished = [ 'date_published', 'date_published_start', 'date_published_end' ];
+
+// The reference has unsaved work. BiblioSubmitUpdateButton paints the Update button with this and
+// ReorderAuthorsButton is gated on it, so both must read exactly the same thing: a reorder saved
+// while any edit is pending would be silently discarded by the refetch that follows the save.
+export const hasUnsavedChanges = (referenceJsonHasChange) =>
+  Object.keys(referenceJsonHasChange || {}).length > 0;
 
 
 export const fieldTypeDict = {}
@@ -308,7 +315,7 @@ const BiblioSubmitUpdateButton = () => {
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
   let updatedFlag = '';
-  if (Object.keys(referenceJsonHasChange).length > 0) { updatedFlag = 'updated-biblio-button'; }
+  if (hasUnsavedChanges(referenceJsonHasChange)) { updatedFlag = 'updated-biblio-button'; }
 
   function generateCrossReferenceUpdateJson(crossRefDict, referenceCurie) {
     let crossRefCurie = crossRefDict['curie']
@@ -1614,6 +1621,51 @@ const BiblioEditor = () => {
 } // const BiblioEditor
 
 
+// Inline with the author expand radios rather than a full-width biblio-button row: that idiom
+// means "add another row to this list" (add authors, add affiliations), which this is not.
+// A button rather than a fourth radio, because the radios are view modes that stay selected while
+// this one navigates away -- as a radio it would deselect itself on return and read as broken.
+const ReorderAuthorsButton = () => {
+  const dispatch = useDispatch();
+  const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
+  const biblioUpdating = useSelector(state => state.biblio.biblioUpdating);
+  const getReferenceCurieFlag = useSelector(state => state.biblio.getReferenceCurieFlag);
+
+  // Three signals, not just the dirty map. UPDATE_BUTTON_BIBLIO empties referenceJsonHasChange on
+  // the FIRST 'update success' of a multi-call save (biblioReducer.js), so between that report and
+  // the end of the save the reference reads clean while referenceJsonLive is still the pre-save
+  // state -- deleteMe rows included, since a delete only flags the row and never removes it.
+  // Seeding the reorder screen there puts a deleted author's id into the ordering payload, which
+  // the API rejects as "not on that reference"; an author created in the same save is missing from
+  // the seed instead and trips the absent-from-payload rule. So also wait for the calls to finish
+  // (biblioUpdating) and for the refetch they trigger to land (getReferenceCurieFlag, true from
+  // save success until BIBLIO_GET_REFERENCE_CURIE clears it).
+  //
+  // Filtering deleteMe rows out of the list instead would be wrong: the payload must name every
+  // ordered author of the reference, so omitting one 422s for the opposite reason. Blocking entry
+  // is the fix, not filtering.
+  //
+  // These clauses stay here rather than in hasUnsavedChanges: BiblioSubmitUpdateButton uses that
+  // helper to paint the Update button purple, and it must not go purple merely because a save is
+  // in flight.
+  const hasUnsavedEdits = hasUnsavedChanges(referenceJsonHasChange);
+  const awaitingSavedData = biblioUpdating > 0 || getReferenceCurieFlag;
+  const blocked = hasUnsavedEdits || awaitingSavedData;
+
+  // a disabled <Button> swallows mouse events in every browser, so the tooltip has to sit on a
+  // wrapper -- otherwise the curator gets a dead control and no reason for it. The message has to
+  // distinguish the two cases, or a grey button after a successful save reads as broken.
+  let blockedTitle = 'Reorder authors';
+  if (hasUnsavedEdits) { blockedTitle = 'Save or revert your changes before reordering authors'; }
+  else if (awaitingSavedData) { blockedTitle = 'Waiting for the save to finish'; }
+
+  return (
+    <span title={blockedTitle}>
+      <Button size="sm" variant="outline-secondary" disabled={blocked}
+        onClick={() => dispatch(openBiblioAuthorReorder())} >reorder</Button>
+    </span>);
+}
+
 export const AuthorExpandToggler = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const authorExpand = useSelector(state => state.biblio.authorExpand);
@@ -1652,10 +1704,11 @@ export const AuthorExpandToggler = ({displayOrEditor}) => {
           inline
           checked={detailedChecked}
           type='radio'
-          label='detailed'
+          label={displayOrEditor === 'editor' ? 'edit' : 'detailed'}
           id='biblio-author-expand-toggler-detailed'
           onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
         />
+        {(displayOrEditor === 'editor') ? <ReorderAuthorsButton /> : null}
       </Col>
     </Row>);
 } // const AuthorExpandToggler
