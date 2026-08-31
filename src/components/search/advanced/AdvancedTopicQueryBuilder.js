@@ -14,14 +14,17 @@ import {
 import { changeFieldEntityEntityList, fetchTaxonData, clearTaxonData } from '../../../actions/biblioActions';
 import {
   TET_FIELD_DEFS,
+  WFT_CATEGORY_DEFS,
   FIELD_DEF_BY_KEY,
   isRangeField,
   createFieldRow,
   createLeaf,
+  createWftLeaf,
   createEmptyTree,
   normalizeToFlatTree,
   needsFlatNormalization,
   isLeaf,
+  isWftLeaf,
   isAdvancedQueryEmpty,
   compileAdvancedQuery,
   describeCompiledQuery,
@@ -511,6 +514,150 @@ const TagCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
   );
 };
 
+// Grouped workflow-tag options for the Workflow card's value dropdown: one group
+// per workflow facet category (same grouping as the facet panel), buckets from the
+// MOD-scoped vocab fetch, falling back to the facet panel's aggregation until it
+// arrives. Bucket names are resolved ATP labels supplied by the backend (SCRUM-6398).
+const useWorkflowOptions = () => {
+  const vocab = useSelector((s) => s.search.advancedFacetsVocab);
+  const searchFacets = useSelector((s) => s.search.searchFacets);
+  return useMemo(() => WFT_CATEGORY_DEFS.map(({ key, label }) => {
+    const fromVocab = vocab?.[key]?.buckets;
+    const buckets = (Array.isArray(fromVocab) && fromVocab.length > 0)
+      ? fromVocab
+      : (searchFacets?.[key]?.buckets || []);
+    return {
+      label,
+      options: buckets.map((b) => ({
+        value: b.key,
+        label: b.name && b.name !== b.key ? `${b.name} (${b.key})` : b.key,
+      })),
+    };
+  }).filter((g) => g.options.length > 0), [vocab, searchFacets]);
+};
+
+// One Workflow condition = one workflow tag the paper must (or must not) have
+// (SCRUM-6398). Values within the card are OR (any listed tag matches); the card
+// combines with Tag cards through the tree-level operator, so topic and workflow
+// criteria mix in a single query. Mirrors the TagCard layout with a green accent
+// so mixed trees scan easily.
+const WorkflowCard = ({ leaf, index, onChange, onRemove, canRemove }) => {
+  const groups = useWorkflowOptions();
+  const row = (Array.isArray(leaf.fields) && leaf.fields[0])
+    ? leaf.fields[0]
+    : { field: 'workflow_tag_id', values: [] };
+  const values = Array.isArray(row.values) ? row.values : [];
+  const setValues = (newValues) =>
+    onChange({ ...leaf, fields: [{ ...row, field: 'workflow_tag_id', values: newValues }] });
+  const addChip = (value, label) => {
+    const v = String(value || '').trim();
+    if (!v || values.some((c) => c.value === v)) return;
+    setValues([...values, { value: v, label: label || v }]);
+  };
+  const removeChip = (idx) => setValues(values.filter((_c, i) => i !== idx));
+
+  return (
+    <div style={{
+      border: '1px solid #d1e7dd', borderRadius: '12px',
+      padding: '14px 16px', margin: '12px 0', backgroundColor: '#fff',
+      boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
+    }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        flexWrap: 'wrap', gap: '8px', marginBottom: '10px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#059669',
+            color: '#fff', fontSize: '0.75rem', fontWeight: 700,
+          }}>{index + 1}</span>
+          <span style={{ fontWeight: 700 }}>Workflow {index + 1}</span>
+          <span style={{
+            fontSize: '0.68rem', color: '#0f5132', backgroundColor: '#d1e7dd',
+            border: '1px solid #badbcc', borderRadius: '10px', padding: '2px 8px',
+          }}>paper has any of these workflow tags</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <Form.Check
+            type="checkbox"
+            id={`tetv-wft-exclude-${index}`}
+            label={<span style={{ fontSize: '0.8rem' }} title="paper must NOT have any of these workflow tags">exclude</span>}
+            checked={!!leaf.negate}
+            style={{ marginBottom: 0 }}
+            onChange={(e) => onChange({ ...leaf, negate: e.target.checked })}
+          />
+          <Button
+            variant="link" size="sm"
+            className="tetv-adv-remove-btn"
+            onClick={onRemove} disabled={!canRemove}
+            title={canRemove ? 'Remove workflow condition' : 'A query needs at least one condition'}
+            style={{ textDecoration: 'none', padding: 0, fontSize: '0.8rem' }}
+          ><FontAwesomeIcon icon={faTrashAlt} style={{ marginRight: '5px' }} />Remove condition</Button>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{
+          maxWidth: '11rem', minWidth: '9rem', flex: '0 0 auto',
+          fontSize: '0.875rem', color: '#334155',
+        }}>Workflow tag</span>
+        <span style={{ color: '#94a3b8', fontWeight: 600, flex: '0 0 auto' }}>=</span>
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px',
+          border: '1px solid #e3e8ef', borderRadius: '8px', backgroundColor: '#fbfcfe',
+          padding: '4px 8px', minHeight: '36px',
+        }}>
+          {values.map((chip, idx) => (
+            <React.Fragment key={chip.value}>
+              {idx > 0 && (
+                <span style={{
+                  fontSize: '0.62rem', fontWeight: 600, color: '#6c757d',
+                  backgroundColor: '#e9ecef', borderRadius: '10px', padding: '1px 7px',
+                  letterSpacing: '0.02em',
+                }}>or</span>
+              )}
+              <ValueChip chip={chip} onRemove={() => removeChip(idx)} />
+            </React.Fragment>
+          ))}
+          {groups.length > 0 ? (
+            <Form.Control
+              as="select"
+              size="sm"
+              aria-label="add workflow tag"
+              style={{
+                width: 'auto', maxWidth: '20rem', flex: '0 0 auto',
+                border: '1px dashed #cbd5e1', borderRadius: '14px',
+                color: '#64748b', backgroundColor: 'transparent', fontSize: '0.8rem',
+                height: 'auto', paddingTop: '2px', paddingBottom: '2px',
+              }}
+              value=""
+              onChange={(e) => {
+                for (const g of groups) {
+                  const opt = g.options.find((o) => o.value === e.target.value);
+                  if (opt) { addChip(opt.value, opt.label); return; }
+                }
+              }}
+            >
+              <option value="">{values.length ? 'add workflow tag…' : '— select workflow tag —'}</option>
+              {groups.map((g) => (
+                <optgroup key={g.label} label={g.label}>
+                  {g.options
+                    .filter((o) => !values.some((c) => c.value === o.value))
+                    .map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                </optgroup>
+              ))}
+            </Form.Control>
+          ) : (
+            <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>loading workflow tags…</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdvancedTopicQueryBuilder = () => {
   const dispatch = useDispatch();
   const tree = useSelector((s) => s.search.advancedTopicQuery);
@@ -566,6 +713,7 @@ const AdvancedTopicQueryBuilder = () => {
   const setTag = (idx, newLeaf) =>
     update({ ...tree, children: tags.map((t, i) => (i === idx ? newLeaf : t)) });
   const addTag = () => update({ ...tree, children: [...tags, createLeaf()] });
+  const addWorkflow = () => update({ ...tree, children: [...tags, createWftLeaf()] });
   const removeTag = (idx) =>
     update({ ...tree, children: tags.filter((_t, i) => i !== idx) });
   const reset = () => update(createEmptyTree());
@@ -594,10 +742,12 @@ const AdvancedTopicQueryBuilder = () => {
         maxHeight: '65vh', overflowY: 'auto',
       }}>
         <p style={{ marginBottom: '8px' }}>
-          Build a query over Topic sub-facets. Each <b>Tag</b> is one topic-entity tag the
-          paper must have; fields inside a Tag apply to that <b>same</b> tag. Add another Tag
-          for a requirement on a <b>different</b> tag of the same paper. Corpus, date and
-          workflow facets still apply. Facet counts are not shown in advanced mode.
+          Build a query over Topic sub-facets and Workflow tags. Each <b>Tag</b> is one
+          topic-entity tag the paper must have; fields inside a Tag apply to that{' '}
+          <b>same</b> tag. Add another Tag for a requirement on a <b>different</b> tag of
+          the same paper, or a <b>Workflow condition</b> for a workflow tag the paper must
+          (or must not) carry. Corpus and date facets — and any workflow facet checkboxes —
+          still apply. Facet counts are not shown in advanced mode.
         </p>
         <div style={{ fontWeight: 600, marginTop: '2px' }}>The building blocks</div>
         <ul style={{ margin: '2px 0 6px', paddingLeft: '18px' }}>
@@ -616,8 +766,17 @@ const AdvancedTopicQueryBuilder = () => {
           <li>
             <b>Multiple Tags</b> put requirements on <b>different</b> tags of the same
             paper. The <b>“paper must match”</b> selector (shown once you add a second
-            Tag) sets how tags combine: <b>ALL Tags (AND)</b> = the paper must have
-            every tag; <b>ANY Tag (OR)</b> = the paper must have at least one.
+            condition) sets how conditions combine: <b>ALL conditions (AND)</b> = the
+            paper must satisfy every card; <b>ANY condition (OR)</b> = at least one.
+          </li>
+          <li>
+            <b>Workflow condition</b> (green card) requires a <b>workflow tag</b> on the
+            paper — pick tags from the same categories as the Workflow Tags facet (file
+            workflow, reference classification, entity extraction, …). Multiple tags on
+            one card are <b>OR</b>; the card combines with Tag cards through the
+            paper-must-match selector, so you can mix topic and workflow criteria in one
+            query (e.g. Topic = disease model AND file converted to text). Check{' '}
+            <b>exclude</b> to require the paper has <b>no</b> matching workflow tag.
           </li>
           <li>
             <b>Exclude (paper must NOT have this tag)</b> — check this on a Tag to
@@ -677,6 +836,15 @@ const AdvancedTopicQueryBuilder = () => {
             validated (this keeps confirmed and un-reviewed predictions while dropping
             “validated wrong”).
           </li>
+          <li>
+            <b>Disease-model papers whose file is converted to text</b> — Tag 1: Topic =
+            disease model; Workflow 1: pick “file converted to text” from the File
+            workflow group; paper must match = ALL conditions (AND).
+          </li>
+          <li>
+            <b>Gene-expression papers not yet manually indexed</b> — Tag 1: Topic = gene
+            expression; Workflow 1 with “exclude” checked: manual indexing complete.
+          </li>
         </ol>
       </Popover.Content>
     </Popover>
@@ -692,7 +860,7 @@ const AdvancedTopicQueryBuilder = () => {
         borderTopLeftRadius: '9px', borderTopRightRadius: '9px', flexWrap: 'wrap',
       }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 600, letterSpacing: '0.01em' }}>Advanced Topic query</span>
+          <span style={{ fontWeight: 600, letterSpacing: '0.01em' }}>Advanced Topic &amp; Workflow query</span>
           {/* A native <button> (not a role="button" span) so it's keyboard-
               operable: react-bootstrap v1's OverlayTrigger only binds onClick, and
               a button fires that on Enter/Space where a span would not. */}
@@ -721,7 +889,7 @@ const AdvancedTopicQueryBuilder = () => {
             label={
               <span
                 style={{ fontSize: '0.8rem' }}
-                title="Match only positive (has-data) tags — adds has-data=yes to every tag condition. See help for details."
+                title="Match only positive (has-data) tags — adds has-data=yes to every Topic tag condition (workflow conditions are unaffected). See help for details."
               >Exclude no-data tags</span>
             }
             style={{ marginBottom: 0 }}
@@ -746,36 +914,60 @@ const AdvancedTopicQueryBuilder = () => {
               value={tree.operator}
               onChange={(e) => update({ ...tree, operator: e.target.value })}
             >
-              <option value="AND">ALL Tags (AND)</option>
-              <option value="OR">ANY Tag (OR)</option>
+              <option value="AND">ALL conditions (AND)</option>
+              <option value="OR">ANY condition (OR)</option>
             </Form.Control>
             <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
               {tree.operator === 'AND'
-                ? 'Paper must contain every Tag below'
-                : 'Paper must contain at least one Tag below'}
+                ? 'Paper must satisfy every condition below'
+                : 'Paper must satisfy at least one condition below'}
             </span>
           </div>
         )}
 
         {tags.map((leaf, idx) => (
-          <TagCard
-            key={idx}
-            leaf={leaf}
-            index={idx}
-            onChange={(newLeaf) => setTag(idx, newLeaf)}
-            onRemove={() => removeTag(idx)}
-            canRemove={tags.length > 1}
-          />
+          isWftLeaf(leaf) ? (
+            <WorkflowCard
+              key={idx}
+              leaf={leaf}
+              index={idx}
+              onChange={(newLeaf) => setTag(idx, newLeaf)}
+              onRemove={() => removeTag(idx)}
+              canRemove={tags.length > 1}
+            />
+          ) : (
+            <TagCard
+              key={idx}
+              leaf={leaf}
+              index={idx}
+              onChange={(newLeaf) => setTag(idx, newLeaf)}
+              onRemove={() => removeTag(idx)}
+              canRemove={tags.length > 1}
+            />
+          )
         ))}
 
-        <Button
-          variant="outline-primary"
-          onClick={addTag}
-          style={{
-            width: '100%', marginTop: '4px', borderStyle: 'dashed',
-            borderRadius: '10px', fontSize: '0.85rem',
-          }}
-        ><FontAwesomeIcon icon={faPlus} style={{ marginRight: '6px' }} />Add another Tag (different tag on same paper)</Button>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
+          <Button
+            variant="outline-primary"
+            onClick={addTag}
+            style={{
+              flex: '1 1 16rem', borderStyle: 'dashed',
+              borderRadius: '10px', fontSize: '0.85rem',
+            }}
+          ><FontAwesomeIcon icon={faPlus} style={{ marginRight: '6px' }} />Add another Tag (different tag on same paper)</Button>
+          {/* Workflow conditions in the same tree (SCRUM-6398): the paper-must-match
+              operator combines them with the Tag cards, so topic and workflow
+              criteria mix in one query. */}
+          <Button
+            variant="outline-success"
+            onClick={addWorkflow}
+            style={{
+              flex: '1 1 16rem', borderStyle: 'dashed',
+              borderRadius: '10px', fontSize: '0.85rem',
+            }}
+          ><FontAwesomeIcon icon={faPlus} style={{ marginRight: '6px' }} />Add Workflow condition (workflow tag on paper)</Button>
+        </div>
       </div>
 
       {/* Sticky footer: query preview + Run/Reset, kept in view while editing (#4). */}

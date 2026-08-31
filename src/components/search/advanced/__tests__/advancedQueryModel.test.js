@@ -3,15 +3,18 @@ import {
   isAdvancedQueryEmpty,
   createEmptyTree,
   createFieldRow,
+  createWftLeaf,
   flattenAdvancedForGrid,
   normalizeToFlatTree,
   needsFlatNormalization,
   describeCompiledQuery,
   isLeaf,
+  isWftLeaf,
   buildValueLabeler,
   ENTITY_TYPE_OPTIONS,
   VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
   FIELD_DEF_BY_KEY,
+  WFT_CATEGORY_DEFS,
   entityTypeNameForCurie,
 } from '../advancedQueryModel';
 
@@ -539,5 +542,103 @@ describe('flattenAdvancedForGrid (grid integration, SCRUM-6228)', () => {
   test('returns undefined for an empty/null compiled tree', () => {
     expect(flattenAdvancedForGrid(null)).toBeUndefined();
     expect(flattenAdvancedForGrid(compileAdvancedQuery(createEmptyTree()))).toBeUndefined();
+  });
+});
+
+describe('workflow conditions (wft leaves, SCRUM-6398)', () => {
+  const wftLeaf = (values, negate = false) => ({
+    type: 'wft',
+    negate,
+    fields: [{ field: 'workflow_tag_id', values: values.map((v) => ({ value: v, label: v })) }],
+  });
+
+  test('createWftLeaf seeds a single empty workflow_tag_id row', () => {
+    expect(createWftLeaf()).toEqual({
+      type: 'wft',
+      negate: false,
+      fields: [{ field: 'workflow_tag_id', values: [] }],
+    });
+    expect(isLeaf(createWftLeaf())).toBe(true);
+    expect(isWftLeaf(createWftLeaf())).toBe(true);
+    expect(isWftLeaf(createEmptyTree().children[0])).toBe(false);
+  });
+
+  test('wft leaf compiles with its type and OR-ed values', () => {
+    expect(compileAdvancedQuery(wftLeaf(['ATP:0000162', 'ATP:0000163']))).toEqual({
+      type: 'wft',
+      negate: false,
+      match: { workflow_tag_id: ['ATP:0000162', 'ATP:0000163'] },
+    });
+  });
+
+  test('mixed tet + wft tree compiles both leaf types under one operator', () => {
+    const tree = {
+      operator: 'AND',
+      children: [leaf({ topic: 'ATP:0000018' }), wftLeaf(['ATP:0000162'])],
+    };
+    const out = compileAdvancedQuery(tree);
+    expect(out.children.map((c) => c.type)).toEqual(['tet', 'wft']);
+  });
+
+  test('excludeNoData never injects has_data into wft leaves', () => {
+    const tree = {
+      operator: 'AND',
+      excludeNoData: true,
+      children: [leaf({ topic: 'ATP:1' }), wftLeaf(['ATP:0000162'])],
+    };
+    const out = compileAdvancedQuery(tree);
+    expect(out.children[0].match.has_data).toEqual(['yes']);
+    expect(out.children[1].match).toEqual({ workflow_tag_id: ['ATP:0000162'] });
+  });
+
+  test('negated wft leaf keeps its negate flag; empty one collapses', () => {
+    expect(compileAdvancedQuery(wftLeaf(['ATP:0000162'], true)).negate).toBe(true);
+    expect(compileAdvancedQuery(wftLeaf([]))).toBeNull();
+    expect(isAdvancedQueryEmpty({ operator: 'AND', children: [createWftLeaf()] })).toBe(true);
+  });
+
+  test('preview renders workflow_tag with chip labels', () => {
+    const tree = {
+      operator: 'AND',
+      children: [{
+        type: 'wft',
+        negate: false,
+        fields: [{
+          field: 'workflow_tag_id',
+          values: [{ value: 'ATP:0000162', label: 'file converted to text (ATP:0000162)' }],
+        }],
+      }],
+    };
+    const preview = describeCompiledQuery(compileAdvancedQuery(tree), buildValueLabeler(tree));
+    expect(preview).toBe('(workflow_tag = "file converted to text (ATP:0000162)")');
+  });
+
+  test('normalizeToFlatTree preserves wft leaves from a saved tree', () => {
+    const saved = {
+      operator: 'OR',
+      children: [
+        { operator: 'AND', children: [leaf({ topic: 'ATP:1' }), wftLeaf(['ATP:0000162'])] },
+      ],
+    };
+    const flat = normalizeToFlatTree(saved);
+    expect(flat.children.map((c) => c.type)).toEqual(['tet', 'wft']);
+    expect(needsFlatNormalization(flat)).toBe(false);
+  });
+
+  test('wft leaves do not leak into the TET grid filter', () => {
+    const tree = {
+      operator: 'AND',
+      children: [leaf({ topic: 'ATP:1' }), wftLeaf(['ATP:0000162'])],
+    };
+    const flat = flattenAdvancedForGrid(compileAdvancedQuery(tree));
+    expect(flat).toEqual({ topics: ['ATP:1'] });
+  });
+
+  test('WFT_CATEGORY_DEFS mirrors the workflow facet categories', () => {
+    expect(WFT_CATEGORY_DEFS.map((d) => d.key)).toEqual([
+      'file_workflow', 'reference_classification', 'entity_extraction',
+      'manual_indexing', 'curation_classification', 'community_curation',
+      'first_pass_curation', 'email_extraction',
+    ]);
   });
 });

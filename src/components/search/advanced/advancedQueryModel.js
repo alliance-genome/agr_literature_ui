@@ -113,6 +113,26 @@ export const FIELD_DEF_BY_KEY = TET_FIELD_DEFS.reduce((acc, def) => {
   return acc;
 }, {});
 
+// Workflow-tag conditions in the same tree (SCRUM-6398). A Workflow card is a
+// leaf of type 'wft' carrying a single field row (workflow_tag_id) whose chip
+// values are ATP workflow-tag curies; values OR within the card, cards combine
+// with the tree operator alongside Topic Tag cards. The value dropdown is
+// grouped by the same workflow categories as the facet panel — each key is a
+// search aggregation whose buckets seed that group's options. BACKEND CONTRACT
+// (build_tet_advanced_query): a {type:'wft', match:{workflow_tag_id:[...]}}
+// leaf compiles to a nested workflow_tags query, MOD-scoped like the flat
+// workflow facet path.
+export const WFT_CATEGORY_DEFS = [
+  { key: 'file_workflow', label: 'File workflow' },
+  { key: 'reference_classification', label: 'Reference classification' },
+  { key: 'entity_extraction', label: 'Entity extraction' },
+  { key: 'manual_indexing', label: 'Manual indexing' },
+  { key: 'curation_classification', label: 'Curation classification' },
+  { key: 'community_curation', label: 'Community curation' },
+  { key: 'first_pass_curation', label: 'First pass curation' },
+  { key: 'email_extraction', label: 'Email extraction' },
+];
+
 export const isRangeField = (key) => !!(FIELD_DEF_BY_KEY[key] && FIELD_DEF_BY_KEY[key].range);
 
 // Factory helpers — every new node is a fresh object so React state updates stay immutable.
@@ -133,6 +153,13 @@ export const createFieldRow = (field = 'topic') => ({
   max: 1,
 });
 export const createLeaf = () => ({ type: 'tet', negate: false, fields: [createFieldRow()] });
+// A Workflow condition reuses the leaf/fields row plumbing with a single fixed
+// field, so chips, compile, dedupe and save/restore all work unchanged (SCRUM-6398).
+export const createWftLeaf = () => ({
+  type: 'wft',
+  negate: false,
+  fields: [{ field: 'workflow_tag_id', values: [] }],
+});
 export const createGroup = () => ({ operator: 'OR', children: [createLeaf()] });
 // The Tag-card UI keeps a FLAT tree: leaves (one per Tag) directly under the root,
 // combined with the top-level operator. The compiler still supports nested groups,
@@ -153,7 +180,8 @@ export const createEmptyTree = () => ({
   children: [createLeaf()],
 });
 
-export const isLeaf = (node) => !!node && node.type === 'tet';
+export const isLeaf = (node) => !!node && (node.type === 'tet' || node.type === 'wft');
+export const isWftLeaf = (node) => !!node && node.type === 'wft';
 
 // Collapse duplicate field rows within a leaf so the one-row-per-field invariant
 // the flat Tag builder relies on holds for restored queries too. A query saved
@@ -283,10 +311,12 @@ export const compileAdvancedQuery = (node, exclude) => {
   if (isLeaf(node)) {
     const match = compileLeafMatch(node);
     if (!match) return null;
-    if (excludeNoData && !node.negate && !('has_data' in match)) {
+    // has_data is an attribute of topic-entity tags only; a Workflow condition
+    // (wft leaf) has no polarity, so the excludeNoData default never touches it.
+    if (excludeNoData && !isWftLeaf(node) && !node.negate && !('has_data' in match)) {
       match.has_data = ['yes'];
     }
-    return { type: 'tet', negate: !!node.negate, match };
+    return { type: node.type, negate: !!node.negate, match };
   }
   const children = (node.children || [])
     .map((child) => compileAdvancedQuery(child, excludeNoData))
@@ -327,15 +357,17 @@ export const buildValueLabeler = (tree) => {
 // distinct fields on one tag as `AND`, tags/groups per the node operator.
 export const describeCompiledQuery = (node, labelFor = (_f, v) => v) => {
   if (!node) return '';
-  if (node.type === 'tet') {
+  if (node.type === 'tet' || node.type === 'wft') {
     const parts = Object.entries(node.match).map(([field, vals]) => {
       if (field === 'confidence_score') {
         return `confidence_score in [${vals[0]}, ${vals[1]}]`;
       }
+      // The wft leaf's only field reads better as "workflow_tag" than the raw key.
+      const shownField = field === 'workflow_tag_id' ? 'workflow_tag' : field;
       const shown = (vals || []).map((v) => `"${labelFor(field, v)}"`);
       return shown.length === 1
-        ? `${field} = ${shown[0]}`
-        : `${field} in (${shown.join(', ')})`;
+        ? `${shownField} = ${shown[0]}`
+        : `${shownField} in (${shown.join(', ')})`;
     });
     const body = parts.join(' AND ');
     return node.negate ? `NOT (${body})` : `(${body})`;
@@ -382,6 +414,9 @@ export const flattenAdvancedForGrid = (compiled) => {
   let scoreMax = null;
   const walk = (node) => {
     if (!node) return;
+    // Workflow conditions constrain the search but have no TET-grid equivalent;
+    // skip them like the other unmapped sub-facets (SCRUM-6398).
+    if (node.type === 'wft') return;
     if (node.type === 'tet') {
       const keys = node.negate ? GRID_NEGATED_KEYS : GRID_POSITIVE_KEYS;
       Object.entries(node.match || {}).forEach(([field, values]) => {
