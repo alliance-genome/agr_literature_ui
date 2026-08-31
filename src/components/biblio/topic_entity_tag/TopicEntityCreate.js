@@ -15,6 +15,7 @@ import {
   setEditTag,
   biblioQueryReferenceCurie,
   fetchTaxonData,
+  fetchDataContextData,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
 
@@ -30,16 +31,10 @@ import Spinner from "react-bootstrap/Spinner";
 import { debounce } from 'lodash';
 import Alert from "react-bootstrap/Alert";
 
-// SCRUM-5697. The four disjoint data_context terms, in the order curators read
-// them. Unlike the table's Data Novelty column these labels cannot come from the
-// API (the editor needs them before a tag exists), so they live here; the display
-// side reads data_context_name off the tag instead.
-const DATA_CONTEXT_OPTIONS = [
-  { curie: "ATP:0000325", name: "experimentally studied data" },
-  { curie: "ATP:0000360", name: "background information" },
-  { curie: "ATP:0000328", name: "expression marker" },
-  { curie: "ATP:0000327", name: "genetic marker" },
-];
+// SCRUM-5697. data_context is a hierarchy under ATP:0000323, so the options come
+// from the ontology (fetchDataContextData) rather than a literal list here --
+// same arrangement as the display_tag dropdown. The default is the leaf the WB
+// topic classifiers use.
 const DEFAULT_DATA_CONTEXT = "ATP:0000325";
 
 const TopicEntityCreate = () => {
@@ -86,6 +81,7 @@ const TopicEntityCreate = () => {
       newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false,
       dataContextSelect: DEFAULT_DATA_CONTEXT }
   ]);
+  const [dataContextOptions, setDataContextOptions] = useState([]);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const inputRefs = useRef([]);
 
@@ -196,6 +192,7 @@ const TopicEntityCreate = () => {
   };
 
   useEffect(() => {
+    fetchDataContextData().then((data) => setDataContextOptions(data));
     getDescendantATPIds("ATP:0000005").then((data) => setGeneDescendants(data));
     getDescendantATPIds("ATP:0000006").then((data) => setAlleleDescendants(data));
   }, []);
@@ -998,7 +995,7 @@ const TopicEntityCreate = () => {
                     value={row.dataContextSelect || DEFAULT_DATA_CONTEXT}
                     onChange={(e) => handleRowChange(index, 'dataContextSelect', e.target.value)}
                   >
-                    {DATA_CONTEXT_OPTIONS.map((option) => (
+                    {dataContextOptions.map((option) => (
                       <option key={option.curie} value={option.curie}>
                         {option.name}
                       </option>

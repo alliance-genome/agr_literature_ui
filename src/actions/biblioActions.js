@@ -725,6 +725,38 @@ export const fetchDisplayTagData = async () => {
   }
 };
 
+export const fetchDataContextData = async () => {
+  // SCRUM-5697. data_context is a hierarchy under ATP:0000323 "data context":
+  //   ATP:0000324 mentioned data -> ATP:0000360 background information
+  //                                 ATP:0000325 experimentally studied data
+  //   ATP:0000326 marker data    -> ATP:0000328 expression marker
+  //                                 ATP:0000327 genetic marker
+  // Fetched from the ontology rather than hardcoded so new or renamed terms
+  // appear without a UI deploy. Fallback mirrors the confirmed 2026-08-31 tree.
+  const fallbackDataContextData = [
+    { curie: "ATP:0000324", name: "mentioned data" },
+    { curie: "ATP:0000360", name: "background information" },
+    { curie: "ATP:0000325", name: "experimentally studied data" },
+    { curie: "ATP:0000326", name: "marker data" },
+    { curie: "ATP:0000328", name: "expression marker" },
+    { curie: "ATP:0000327", name: "genetic marker" },
+  ];
+
+  const url = `/ontology/search_descendants/ATP:0000323`;
+
+  try {
+    const response = await api.get(url);
+    if (Array.isArray(response.data) && response.data.length > 0) {
+      return response.data;
+    } else {
+      return fallbackDataContextData;
+    }
+  } catch (error) {
+    console.error("Error occurred in fetchDataContextData:", error);
+    return fallbackDataContextData;
+  }
+};
+
 export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   const createBiblioQueryReferenceCurie = async () => {
