@@ -19,7 +19,9 @@ import {
   SEARCH_LOAD_SAVED_SEARCH_STATE,
   SEARCH_SET_SEARCH_MODE,
   SEARCH_SET_ADVANCED_TOPIC_QUERY,
-  SEARCH_SET_ADVANCED_FACETS_VOCAB
+  SEARCH_SET_ADVANCED_FACETS_VOCAB,
+  SEARCH_SET_GRID_PREFERENCES,
+  SEARCH_APPLY_GRID_PREFERENCES
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -80,7 +82,14 @@ const initialState = {
   // panel; 'advanced' uses the query builder. advancedTopicQuery holds the
   // builder's UI tree (null until the builder seeds a default).
   searchMode: 'facet',
-  advancedTopicQuery: null
+  advancedTopicQuery: null,
+  // Topic grid preferences (SCRUM: grid options in saved settings).
+  // gridPreferences is the grid's live mirror (checkbox toggles, topic/source
+  // visibility, column order + widths) that Save Current Search snapshots.
+  // gridPreferencesApplied = { prefs, nonce } is set only when a saved search
+  // restores grid prefs; the grid watches the nonce to apply them exactly once.
+  gridPreferences: null,
+  gridPreferencesApplied: null
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -319,6 +328,22 @@ export default function(state = initialState, action) {
       return {
         ...state,
         advancedTopicQuery: action.payload
+      }
+
+    case SEARCH_SET_GRID_PREFERENCES:
+      return {
+        ...state,
+        gridPreferences: action.payload
+      }
+
+    case SEARCH_APPLY_GRID_PREFERENCES:
+      return {
+        ...state,
+        gridPreferences: action.payload,
+        gridPreferencesApplied: {
+          prefs: action.payload,
+          nonce: ((state.gridPreferencesApplied && state.gridPreferencesApplied.nonce) || 0) + 1
+        }
       }
 
         case 'SEARCH_SET_DATE_PUBMED_ADDED':

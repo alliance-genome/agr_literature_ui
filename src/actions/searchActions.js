@@ -42,6 +42,8 @@ export const SEARCH_LOAD_SAVED_SEARCH_STATE = 'SEARCH_LOAD_SAVED_SEARCH_STATE';
 export const SEARCH_SET_SEARCH_MODE = 'SEARCH_SET_SEARCH_MODE';
 export const SEARCH_SET_ADVANCED_TOPIC_QUERY = 'SEARCH_SET_ADVANCED_TOPIC_QUERY';
 export const SEARCH_SET_ADVANCED_FACETS_VOCAB = 'SEARCH_SET_ADVANCED_FACETS_VOCAB';
+export const SEARCH_SET_GRID_PREFERENCES = 'SEARCH_SET_GRID_PREFERENCES';
+export const SEARCH_APPLY_GRID_PREFERENCES = 'SEARCH_APPLY_GRID_PREFERENCES';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions","data_novelty"];
 
@@ -716,4 +718,19 @@ export const setSearchMode = (mode) => ({
 export const setAdvancedTopicQuery = (tree) => ({
   type: SEARCH_SET_ADVANCED_TOPIC_QUERY,
   payload: tree
+});
+
+// Topic grid preferences (checkbox toggles, topic/source visibility, column
+// order and widths). setGridPreferences is the grid's live mirror into Redux —
+// it's what "Save Current Search" captures. applyGridPreferences is dispatched
+// when a saved search is loaded: it also bumps gridPreferencesApplied's nonce,
+// which the grid watches to overwrite its own state with the restored values.
+export const setGridPreferences = (prefs) => ({
+  type: SEARCH_SET_GRID_PREFERENCES,
+  payload: prefs
+});
+
+export const applyGridPreferences = (prefs) => ({
+  type: SEARCH_APPLY_GRID_PREFERENCES,
+  payload: prefs
 });

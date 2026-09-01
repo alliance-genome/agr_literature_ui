@@ -121,6 +121,8 @@ export default function TetGridToolbar({
   allSources,
   sourceFilterModel,
   setSourceFilterModel,
+  hasCustomColumnLayout = false,
+  onResetColumnLayout,
 }) {
   // Topics multi-select state — selected = currently visible (NOT hidden)
   const topicOptions = useMemo(
@@ -208,6 +210,16 @@ export default function TetGridToolbar({
             })
           }
         />
+        {hasCustomColumnLayout && onResetColumnLayout && (
+          <button
+            type="button"
+            className="tetv-multiselect-action"
+            title="Discard the custom column order/widths and return to automatic sizing"
+            onClick={onResetColumnLayout}
+          >
+            Reset column layout
+          </button>
+        )}
       </span>
 
       <span className="tetv-toolbar-group tetv-toolbar-select">
