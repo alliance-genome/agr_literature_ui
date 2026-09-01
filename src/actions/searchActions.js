@@ -119,6 +119,11 @@ export const fetchAdvancedFacetsVocab = () => {
       acc[key] = ADVANCED_VOCAB_LIMIT;
       return acc;
     }, {});
+    // Workflow-tag vocabulary for the builder's Workflow condition dropdown
+    // (SCRUM-6398). The workflow categories are post-processed groupings of ONE
+    // nested aggregation, so the lift goes on that aggregation's key — category
+    // keys (file_workflow, ...) are not ES aggregation keys and would be inert.
+    facets_limits['workflow_tags.workflow_tag_id.keyword'] = ADVANCED_VOCAB_LIMIT;
     // Source methods are aggregated only within a corpus/MOD scope, so the aggregation
     // returns them only when a MOD is selected. The dedicated endpoint carries the full
     // list with its owning MOD, so use it to fill/scope source methods when the
