@@ -166,6 +166,32 @@ function estimateIdsColumnWidth(rows, selectedPrefixes) {
   );
 }
 
+// Clamp autosized columns that grew past their cap. Done via setColumnWidths,
+// not a colDef maxWidth, so the fill-extra pass can still expand these columns
+// to absorb blank space and a curator can still drag the border wider. Sources
+// columns have colId === topic curie (no `__suffix`); the biocurator assessment
+// column is `<curie>__val`.
+function autosizeCapFor(colId) {
+  if (!colId) return null;
+  if (!colId.includes('__')) return SOURCES_AUTOSIZE_CAP;
+  if (colId.endsWith('__val')) return VALIDATION_AUTOSIZE_CAP;
+  return null;
+}
+
+function clampAutosizedColumns(api, cols) {
+  const overCap = (cols || [])
+    .map((c) => {
+      const cid = c?.getColId?.() || '';
+      const cap = autosizeCapFor(cid);
+      if (cap === null) return null;
+      return (c.getActualWidth?.() || 0) > cap
+        ? { key: cid, newWidth: cap }
+        : null;
+    })
+    .filter(Boolean);
+  if (overCap.length > 0) api.setColumnWidths?.(overCap, false);
+}
+
 // useState whose value is mirrored into an external store object so it survives
 // the component being unmounted/remounted. On (re)mount the initial value is
 // read back from the store; an effect keeps the store in sync on every change.
@@ -538,8 +564,11 @@ export default function TetValidationGrid({
   );
   const columnStateRef = useRef(columnState);
   const setColumnState = useCallback((next) => {
-    columnStateRef.current = next;
-    setColumnStateRaw(next);
+    // Preserve the useState contract: support functional updates, resolved
+    // against the ref (which always holds the latest value).
+    const value = typeof next === 'function' ? next(columnStateRef.current) : next;
+    columnStateRef.current = value;
+    setColumnStateRaw(value);
   }, [setColumnStateRaw]);
   // True while the autosize/fill-extra passes are running. Used to render a
   // light overlay so the curator knows the layout is still adjusting and
@@ -711,28 +740,7 @@ export default function TetValidationGrid({
     const colIds = cols.map((c) => c.getColId?.()).filter(Boolean);
     if (colIds.length === 0) return;
     gridApi.autoSizeColumns?.(colIds, false);
-    // Clamp the columns autosize grew past their cap. Done here, not via a
-    // colDef maxWidth, so the rAF fill below can still expand these columns to
-    // absorb blank space and a curator can still drag the column border wider.
-    // Sources columns have colId === topic curie (no `__suffix`); the
-    // biocurator assessment column is `<curie>__val`.
-    const autosizeCapFor = (colId) => {
-      if (!colId) return null;
-      if (!colId.includes('__')) return SOURCES_AUTOSIZE_CAP;
-      if (colId.endsWith('__val')) return VALIDATION_AUTOSIZE_CAP;
-      return null;
-    };
-    const overCap = cols
-      .map((c) => {
-        const cid = c.getColId?.() || '';
-        const cap = autosizeCapFor(cid);
-        if (cap === null) return null;
-        return (c.getActualWidth?.() || 0) > cap
-          ? { key: cid, newWidth: cap }
-          : null;
-      })
-      .filter(Boolean);
-    if (overCap.length > 0) gridApi.setColumnWidths?.(overCap, false);
+    clampAutosizedColumns(gridApi, cols);
     requestAnimationFrame(() => {
       const wrapper = topScrollRef.current?.closest('.tetv-grid-wrapper');
       const viewport = wrapper?.querySelector('.ag-center-cols-viewport');
@@ -792,7 +800,15 @@ export default function TetValidationGrid({
           .map(({ colId, width }) => ({ colId, width })),
         applyOrder: false,
       });
-      gridApi.autoSizeColumns?.(unknown.map((c) => c.colId), false);
+      const unknownIds = unknown.map((c) => c.colId);
+      gridApi.autoSizeColumns?.(unknownIds, false);
+      // Same caps as the full autosize pass, so a fresh Sources/assessment
+      // column can't balloon past its limit just because it wasn't in the
+      // saved layout (PR #644 review).
+      clampAutosizedColumns(
+        gridApi,
+        unknownIds.map((id) => gridApi.getColumn?.(id)).filter(Boolean)
+      );
     }
     return true;
   }, [gridApi]);

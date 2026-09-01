@@ -13,6 +13,18 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons';
 import { defaultSpeciesCurieForMod, speciesName } from '../../refs_tet_validation/helpers/speciesUtils';
 import { getTaxonData } from './TaxonUtils';
 import { setQuickTopicStagedCount } from './quickTopicStaged';
+import { topicDefaultTaxonCurie } from './topicDefaultSpecies';
+import {
+  NOVELTY_UNSPECIFIED,
+  DEFAULT_NEW_NOVELTY,
+  ASSESSMENT_COLUMNS,
+  COLUMN_BY_KEY,
+  computeCellState,
+  applyChecked,
+  applyUnchecked,
+  conflictsWithValidated,
+  stagedTagsFor,
+} from './quickTopicAssessment';
 
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
@@ -24,53 +36,6 @@ const PREFS_KEY = 'quickTopicAddition.prefs';
 const loadPrefs = () => {
   try { return JSON.parse(window.localStorage.getItem(PREFS_KEY)) || {}; }
   catch { return {}; }
-};
-
-// Data-novelty ATP terms, matching the TET editor (getDataNoveltyAtpArray).
-const NOVELTY_UNSPECIFIED = 'ATP:0000335';
-const DEFAULT_NEW_NOVELTY = 'ATP:0000321';
-
-// The five assessment columns of the quick-add grid (SCRUM-6113). Each column is
-// a clickable box (blank / ? / ✓). Checking a column stages a biocurator tag:
-// positives carry the column's data novelty, "No Data" is a negated tag. The
-// grid state is server-computed (tet_info_assessment_states) and the curator's
-// clicks stage local overrides that are only written on Submit.
-const ASSESSMENT_COLUMNS = [
-  { key: 'has_data', header: 'Has data', kind: 'has', novelty: NOVELTY_UNSPECIFIED, negated: false },
-  { key: 'new_data', header: 'New data', kind: 'new', novelty: 'ATP:0000321', negated: false },
-  { key: 'new_to_db', header: 'New to DB', kind: 'new', novelty: 'ATP:0000228', negated: false },
-  { key: 'new_to_field', header: 'New to Field', kind: 'new', novelty: 'ATP:0000229', negated: false },
-  { key: 'no_data', header: 'No Data', kind: 'no', novelty: null, negated: true },
-];
-const COLUMN_BY_KEY = Object.fromEntries(ASSESSMENT_COLUMNS.map((c) => [c.key, c]));
-const POSITIVE_COLUMNS = ['has_data', 'new_data', 'new_to_db', 'new_to_field'];
-const NEW_COLUMNS = ['new_data', 'new_to_db', 'new_to_field'];
-
-// Effective display state of one column for a row: the curator's staged override
-// wins, otherwise the server-computed state. Only a biocurator tag ('validated')
-// or a staged click ('checked') renders as a ✓; a prediction/author tag is '?'.
-const computeCellState = (stagedMap, rowData, colKey) => {
-  const override = stagedMap?.[rowData.topic_curie]?.[colKey];
-  if (override === 'checked') { return 'checked'; }
-  if (override === 'cleared') { return 'blank'; }
-  const backend = (rowData.assessment_states || {})[colKey];
-  if (backend === 'validated') { return 'validated'; }
-  if (backend === 'unvalidated') { return 'unvalidated'; }
-  return 'blank';
-};
-
-// Stage a column as checked in one row's override map, applying the cross-check
-// rules: "No Data" and the positive columns are mutually exclusive, and any
-// New* column implies "Has data". New to DB and New to Field may coexist.
-const applyChecked = (cur, colKey) => {
-  cur[colKey] = 'checked';
-  if (colKey === 'no_data') {
-    POSITIVE_COLUMNS.forEach((c) => { cur[c] = 'cleared'; });
-  } else {
-    cur.no_data = 'cleared';
-    if (colKey !== 'has_data') { cur.has_data = 'checked'; }
-  }
-  return cur;
 };
 
 // Default row order: predicted topics first (for fast triage), then alphabetical.
@@ -155,6 +120,12 @@ const QuickTopicAddition = () => {
   topicRowsRef.current = topicRows;
 
   // Apply the grid-level part of a preference payload (column layout + filters).
+  // ORDERING IS LOAD-BEARING: applySettingsToGrid restores the Definition/
+  // Synonyms toggles first and defers this call (setTimeout 0) until the
+  // columnDefs rebuild has flushed, because applyColumnState({applyOrder:true})
+  // pushes any column absent from the saved state to the far right — a saved
+  // state captured with Synonyms hidden would otherwise detach a re-shown
+  // Synonyms column from its position.
   const applyGridLayout = useCallback((payload) => {
     const api = gridApiRef.current;
     if (!api || !payload) { return; }
@@ -366,11 +337,39 @@ const QuickTopicAddition = () => {
   // topic_curie -> chosen taxon curie (per-row override of the default).
   const speciesSelectionRef = useRef({});
 
-  // Species chosen for a topic's tag: the per-row override, else the default.
+  // Species chosen for a topic's tag: the per-row override, else the topic's
+  // hard-coded (MOD, topic) default (SCRUM-6168), else the MOD-wide default.
   const speciesForRow = useCallback((topicCurie) => {
-    const curie = speciesSelectionRef.current[topicCurie] || defaultSpeciesCurie;
+    const curie = speciesSelectionRef.current[topicCurie]
+      || topicDefaultTaxonCurie(accessLevel, topicCurie)
+      || defaultSpeciesCurie;
     return curie ? { curie, name: speciesName(curieToNameTaxon, curie) } : null;
-  }, [defaultSpeciesCurie, curieToNameTaxon]);
+  }, [accessLevel, defaultSpeciesCurie, curieToNameTaxon]);
+
+  // Same per-topic default for the species cell, resolved through a ref like
+  // the other cell inputs so columnDefs stay stable.
+  const topicDefaultRef = useRef(null);
+  topicDefaultRef.current = (topicCurie) => topicDefaultTaxonCurie(accessLevel, topicCurie);
+
+  // A different paper must never inherit staged assessments or per-row species
+  // overrides from the previous one. Today the component unmounts during a
+  // reference switch (Biblio swaps in LoadingElement while fetching), so this
+  // is a defensive reset for the day that stops being true (PR #644 review).
+  useEffect(() => {
+    setStaged({});
+    speciesSelectionRef.current = {};
+  }, [referenceCurie]);
+
+  // Auto-dismiss informational notifications (staged-N, submit confirmations)
+  // so they don't sit under the toolbar shifting the grid down; warnings and
+  // errors stay until the curator closes them.
+  useEffect(() => {
+    if (!notification || notification.variant === 'warning' || notification.variant === 'danger') {
+      return undefined;
+    }
+    const t = setTimeout(() => setNotification(null), 6000);
+    return () => clearTimeout(t);
+  }, [notification]);
 
   const fetchTopics = useCallback(async () => {
     if (!referenceCurie || !accessLevel) { return; }
@@ -547,18 +546,31 @@ const QuickTopicAddition = () => {
   stagedRef.current = staged;
 
   // Toggle one assessment cell for a row. A biocurator-validated cell is already
-  // recorded and is a no-op; a staged ✓ toggles back off; anything else stages a
-  // ✓ with the cross-check rules applied.
+  // recorded and is a no-op; a click contradicting a validated opposite-polarity
+  // assessment is refused with an explanation (Submit cannot retract the
+  // recorded tag, so staging it would write a contradiction); a staged ✓
+  // toggles back off with its implications; anything else stages a ✓ with the
+  // cross-check rules applied.
   const onCellRef = useRef();
   onCellRef.current = (colKey, rowData) => {
     const state = computeCellState(stagedRef.current, rowData, colKey);
     if (state === 'validated') { return; }
+    if (state !== 'checked' && conflictsWithValidated(rowData, colKey)) {
+      setNotification({
+        variant: 'warning',
+        message: `"${rowData.topic_name}" already has a biocurator-validated `
+          + `${colKey === 'no_data' ? 'positive' : 'No Data'} assessment. `
+          + `Staging "${COLUMN_BY_KEY[colKey].header}" would contradict it — `
+          + 'retract the existing tag in the Topic Entity editor first.',
+      });
+      return;
+    }
     setStaged((prev) => {
       const cur = { ...(prev[rowData.topic_curie] || {}) };
       if (state === 'checked') {
-        delete cur[colKey];
+        applyUnchecked(cur, colKey);
       } else {
-        applyChecked(cur, colKey);
+        applyChecked(cur, colKey, rowData.assessment_states || {});
       }
       const next = { ...prev };
       if (Object.keys(cur).length === 0) { delete next[rowData.topic_curie]; }
@@ -574,51 +586,36 @@ const QuickTopicAddition = () => {
       setNotification({ variant: 'warning', message: 'No topics ticked. Tick the topics you want to assess first.' });
       return;
     }
+    // Partition before the state update (the updater must stay pure): drop
+    // rows already recorded by a biocurator, and rows where the bulk column
+    // would contradict a validated opposite-polarity assessment — the same
+    // guard as the single-cell click path (PR #644 review, finding 1).
+    const eligible = rows.filter((r) => (r.assessment_states || {})[bulkCol] !== 'validated');
+    const conflicted = eligible.filter((r) => conflictsWithValidated(r, bulkCol));
+    const toStage = eligible.filter((r) => !conflictsWithValidated(r, bulkCol));
+    const skippedConflicts = conflicted.length;
+    const stagedCount = toStage.length;
     setStaged((prev) => {
       const next = { ...prev };
-      rows.forEach((r) => {
-        // Already recorded by a biocurator — nothing to stage.
-        if ((r.assessment_states || {})[bulkCol] === 'validated') { return; }
+      toStage.forEach((r) => {
         const cur = { ...(next[r.topic_curie] || {}) };
-        applyChecked(cur, bulkCol);
+        applyChecked(cur, bulkCol, r.assessment_states || {});
         next[r.topic_curie] = cur;
       });
       return next;
     });
     gridApiRef.current?.deselectAll();
     setNotification({
-      variant: 'info',
-      message: `Staged "${COLUMN_BY_KEY[bulkCol].header}" for ${rows.length} topic(s). Review and click Submit to save.`,
+      variant: skippedConflicts > 0 ? 'warning' : 'info',
+      message: `Staged "${COLUMN_BY_KEY[bulkCol].header}" for ${stagedCount} topic(s).`
+        + (skippedConflicts > 0
+          ? ` Skipped ${skippedConflicts} topic(s) whose biocurator-validated assessment it would contradict.`
+          : '')
+        + ' Review and click Submit to save.',
     });
   };
 
-  // The biocurator tags a row's staged edits would create on Submit. Skips any
-  // column already validated by a biocurator (no duplicate), and drops the bare
-  // "Has data" tag when a more specific New* column is also set for the row.
-  const stagedTagsForRow = useCallback((row) => {
-    const s = staged[row.topic_curie];
-    if (!s) { return []; }
-    const backend = row.assessment_states || {};
-    const checked = (c) => {
-      const o = s[c];
-      if (o === 'checked') { return true; }
-      if (o === 'cleared') { return false; }
-      return backend[c] === 'validated';
-    };
-    const newCol = (c) => checked(c) && backend[c] !== 'validated';
-    const tags = [];
-    if (checked('no_data') && backend.no_data !== 'validated') {
-      tags.push({ kind: 'no', novelty: null, label: 'No Data' });
-    }
-    NEW_COLUMNS.forEach((c) => {
-      if (newCol(c)) { tags.push({ kind: 'new', novelty: COLUMN_BY_KEY[c].novelty, label: COLUMN_BY_KEY[c].header }); }
-    });
-    const anyNewEffective = NEW_COLUMNS.some((c) => checked(c));
-    if (newCol('has_data') && !anyNewEffective) {
-      tags.push({ kind: 'has', novelty: NOVELTY_UNSPECIFIED, label: 'Has data' });
-    }
-    return tags;
-  }, [staged]);
+  const stagedTagsForRow = useCallback((row) => stagedTagsFor(staged, row), [staged]);
 
   // Topics with at least one staged tag to create.
   const stagedSummary = useMemo(() => (
@@ -656,7 +653,9 @@ const QuickTopicAddition = () => {
       return;
     }
     const total = items.reduce((n, x) => n + x.tags.length, 0);
-    setSubmitState({ items, status: 'submitting', progress: { done: 0, total }, errors: [] });
+    // The modal renders progress + errors only; the work list stays in this
+    // local (not in state, which would pin the pre-submit rows until close).
+    setSubmitState({ status: 'submitting', progress: { done: 0, total }, errors: [] });
     const errors = [];
     let done = 0;
     for (const { row, tags } of items) {
@@ -787,7 +786,10 @@ const QuickTopicAddition = () => {
             return <span style={{ color: '#98a2b3', fontSize: 12 }}>—</span>;
           }
           const topic = params.data.topic_curie;
-          const current = speciesSelectionRef.current[topic] || defaultSpeciesCurieRef.current || opts[0].curie;
+          const current = speciesSelectionRef.current[topic]
+            || topicDefaultRef.current(topic)
+            || defaultSpeciesCurieRef.current
+            || opts[0].curie;
           return (
             <select
               // key on the resolved value so the uncontrolled default re-applies
@@ -1021,6 +1023,10 @@ const QuickTopicAddition = () => {
           <AgGridReact
             rowData={topicRows}
             columnDefs={columnDefs}
+            // The grid unmounts behind the loading spinner; clear the ref so
+            // nothing calls into a destroyed API before the remount's
+            // onGridReady replaces it (PR #644 review).
+            onGridPreDestroyed={() => { gridApiRef.current = null; }}
             rowHeight={44}
             rowSelection="multiple"
             showDisabledCheckboxes={true}

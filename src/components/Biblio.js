@@ -605,6 +605,15 @@ const BiblioIdQuery = () => {
   const [showAlert, setShowAlert] = useState(false);
     
   const loadReference = (refCurie) => {
+    // Loading another paper unmounts Quick Topic Addition and discards staged
+    // (unsubmitted) assessments — same guard as the tab-switch radios.
+    if (biblioAction === 'quicktopic' && getQuickTopicStagedCount() > 0) {
+      const ok = window.confirm(
+        'You have staged topic assessments in Quick Topic Addition that have not been submitted. '
+        + 'Load a different reference and discard them?'
+      );
+      if (!ok) { return; }
+    }
     let biblioActionTogglerSelected = 'display';
     if (biblioAction === 'editor') {
       biblioActionTogglerSelected = 'editor'; }
@@ -616,6 +625,8 @@ const BiblioIdQuery = () => {
       biblioActionTogglerSelected = 'filemanagement'; }
     else if (biblioAction === 'rawtopicentity') {
       biblioActionTogglerSelected = 'rawtopicentity'; }
+    else if (biblioAction === 'quicktopic') {
+      biblioActionTogglerSelected = 'quicktopic'; }
     let newUrl = "/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + refCurie
     setIdQuery('');
     history.push(newUrl);
