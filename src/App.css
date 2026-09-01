@@ -456,6 +456,22 @@
   padding: 2px 0px 4px 2px;
 }
 
+/* Mode-selector row: use the full viewport width so all options sit on one
+   line on wide monitors (wrapping only when genuinely narrow), instead of
+   being capped by the Bootstrap container and wrapping early. Full-bleed via
+   negative margins keeps it centered without a hard-coded width. */
+.biblio-mode-radios {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
 .radio-span:hover {
   background-color: var(--light-blue);
   border-radius: 10px;
@@ -803,21 +819,39 @@ em {
   padding-right: 0.5rem;
 }
 
-/* Workflow editor curation table: make the row-drag handle an obvious, easy
-   grab target (rows only reorder when the handle itself is dragged; dragging
-   the row text just selects text because cell text selection is enabled). */
-.wft-curation-grid .ag-row-drag {
+/* Quick Topic Addition: keep cell content vertically centered. */
+.quick-topic-grid .ag-row .ag-cell {
+  display: flex;
+  align-items: center;
+}
+
+/* AG Grid adds an extra wrapper around a cell while its drag handle is shown.
+   Keep both wrapped and unwrapped renderers centered so sorting/filtering does
+   not shift topic text or assessment controls toward the top of the row. */
+.quick-topic-grid .ag-row .ag-cell-wrapper {
+  width: 100%;
+  align-items: center;
+}
+
+/* Workflow editor curation table + Quick Topic Addition: make the row-drag
+   handle an obvious, easy grab target (rows only reorder when the handle
+   itself is dragged; dragging the row text just selects text because cell
+   text selection is enabled). */
+.wft-curation-grid .ag-row-drag,
+.quick-topic-grid .ag-row-drag {
   cursor: grab;
   padding: 0 10px;
   margin: 0 -4px;
   color: #667085;
 }
-.wft-curation-grid .ag-row-drag:hover {
+.wft-curation-grid .ag-row-drag:hover,
+.quick-topic-grid .ag-row-drag:hover {
   color: #1570ef;
   background: #eff6ff;
   border-radius: 4px;
 }
-.wft-curation-grid .ag-row-drag:active {
+.wft-curation-grid .ag-row-drag:active,
+.quick-topic-grid .ag-row-drag:active {
   cursor: grabbing;
 }
 
