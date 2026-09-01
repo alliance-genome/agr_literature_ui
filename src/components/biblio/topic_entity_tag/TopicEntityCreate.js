@@ -37,6 +37,15 @@ import Alert from "react-bootstrap/Alert";
 // not curation choices. The default is the leaf the WB topic classifiers use.
 const DEFAULT_DATA_CONTEXT = "ATP:0000325";
 
+// Labels for data_context terms that are NOT selectable but can still appear on a
+// tag: the root and the two groupings. Pipelines write these (WB entity extraction
+// sends the root), so the editor has to be able to display them.
+const dataContextNameMap = {
+  "ATP:0000323": "data context",
+  "ATP:0000324": "mentioned data",
+  "ATP:0000326": "marker data",
+};
+
 const TopicEntityCreate = () => {
   const debugMode = false;
 
@@ -996,6 +1005,19 @@ const TopicEntityCreate = () => {
                     value={row.dataContextSelect || DEFAULT_DATA_CONTEXT}
                     onChange={(e) => handleRowChange(index, 'dataContextSelect', e.target.value)}
                   >
+                    {/* A tag written by a pipeline can carry a term the curator
+                        dropdown does not offer -- the WB entity-extraction models
+                        send ATP:0000323 "data context", and only leaves are
+                        selectable. Without a matching <option> the browser would
+                        display the first one instead, and saving would silently
+                        rewrite the stored value. Show it as a disabled option so it
+                        renders truthfully but cannot be chosen. */}
+                    {row.dataContextSelect &&
+                      !dataContextOptions.some((o) => o.curie === row.dataContextSelect) && (
+                      <option key={row.dataContextSelect} value={row.dataContextSelect} disabled>
+                        {dataContextNameMap[row.dataContextSelect] || row.dataContextSelect}
+                      </option>
+                    )}
                     {dataContextOptions.map((option) => (
                       <option key={option.curie} value={option.curie}>
                         {option.name}
