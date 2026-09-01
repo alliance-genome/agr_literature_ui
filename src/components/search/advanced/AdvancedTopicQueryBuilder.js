@@ -133,8 +133,16 @@ const useFieldOptions = (fieldKey) => {
   if (def && Array.isArray(def.options)) return def.options;
   if (!Array.isArray(buckets)) return null;
   return buckets.map((b) => {
-    const name = b.name || curieNameCache.get(String(b.key || '').toUpperCase());
-    return { value: b.key, label: name ? `${name} (${b.key})` : b.key };
+    const rawKey = String(b.key || '');
+    const upperKey = rawKey.toUpperCase();
+    const name = b.name || curieNameCache.get(upperKey);
+    // Ontology curies display uppercase ("ATP:0000128") to match how they are
+    // written everywhere else (and the workflow dropdown); the topics
+    // aggregation stores lowercase keys. Display only — `value` keeps the raw
+    // bucket key, since the search filter term-matches the indexed casing.
+    const isOntologyCurie = upperKey.startsWith('ATP:') || upperKey.startsWith('ECO:');
+    const shownKey = isOntologyCurie ? upperKey : rawKey;
+    return { value: b.key, label: name ? `${name} (${shownKey})` : shownKey };
   });
 };
 
