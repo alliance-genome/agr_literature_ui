@@ -40,7 +40,7 @@ const BreadCrumbs = () => {
     const advancedTopicQuery = useSelector(state => state.search.advancedTopicQuery);
     const dispatch = useDispatch();
 
-    // The advanced Topic query is "active" when the builder mode is on and the tree
+    // The advanced query is "active" when the builder mode is on and the tree
     // compiles to a non-empty query. Show it as a removable breadcrumb whose tooltip
     // is the same SQL-like preview the builder shows (SCRUM-6228).
     const advancedCompiled = searchMode === 'advanced'
@@ -50,6 +50,22 @@ const BreadCrumbs = () => {
     const advancedPreview = advancedActive
         ? `PAPER WHERE ${describeCompiledQuery(advancedCompiled, buildValueLabeler(advancedTopicQuery))}`
         : '';
+    // Name the breadcrumb for what the query actually holds: topic conditions,
+    // workflow conditions, or a mix (SCRUM-6398).
+    const advancedLabel = (() => {
+        if (!advancedActive) { return ''; }
+        const kinds = new Set();
+        const walk = (n) => {
+            if (!n) { return; }
+            if (n.type === 'tet') { kinds.add('topic'); return; }
+            if (n.type === 'wft') { kinds.add('workflow'); return; }
+            (n.children || []).forEach(walk);
+        };
+        walk(advancedCompiled);
+        const what = kinds.size === 2 ? 'topic & workflow'
+            : kinds.has('workflow') ? 'workflow' : 'topic';
+        return `Advanced ${what} query (active)`;
+    })();
 
     const getDisplayName = (facet, value) => {
         const valueRename = RENAME_FACET_VALUES[facet]?.[value];
@@ -238,7 +254,7 @@ const BreadCrumbs = () => {
                         {advancedActive &&
                             <BreadcrumbItem
                                 key="advanced_topic_query_breadcrumb"
-                                label="Advanced topic query (active)"
+                                label={advancedLabel}
                                 variant="outline-primary"
                                 tooltip={advancedPreview}
                                 onRemove={handleRemoveAdvancedQuery}

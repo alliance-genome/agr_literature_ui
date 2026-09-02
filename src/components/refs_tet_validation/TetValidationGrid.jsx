@@ -42,6 +42,7 @@ import {
   getCuratorSourceId,
   setTopicEntitySourceId,
 } from '../../actions/biblioActions';
+import { setGridPreferences } from '../../actions/searchActions';
 import {
   compareInnerColumnValues,
   innerColumnFilterValues,
@@ -163,6 +164,32 @@ function estimateIdsColumnWidth(rows, selectedPrefixes) {
     ID_COLUMN_MIN_WIDTH,
     Math.ceil(longestIdLength * ID_COLUMN_CHAR_WIDTH + ID_COLUMN_PADDING)
   );
+}
+
+// Clamp autosized columns that grew past their cap. Done via setColumnWidths,
+// not a colDef maxWidth, so the fill-extra pass can still expand these columns
+// to absorb blank space and a curator can still drag the border wider. Sources
+// columns have colId === topic curie (no `__suffix`); the biocurator assessment
+// column is `<curie>__val`.
+function autosizeCapFor(colId) {
+  if (!colId) return null;
+  if (!colId.includes('__')) return SOURCES_AUTOSIZE_CAP;
+  if (colId.endsWith('__val')) return VALIDATION_AUTOSIZE_CAP;
+  return null;
+}
+
+function clampAutosizedColumns(api, cols) {
+  const overCap = (cols || [])
+    .map((c) => {
+      const cid = c?.getColId?.() || '';
+      const cap = autosizeCapFor(cid);
+      if (cap === null) return null;
+      return (c.getActualWidth?.() || 0) > cap
+        ? { key: cid, newWidth: cap }
+        : null;
+    })
+    .filter(Boolean);
+  if (overCap.length > 0) api.setColumnWidths?.(overCap, false);
 }
 
 // useState whose value is mirrored into an external store object so it survives
@@ -518,6 +545,31 @@ export default function TetValidationGrid({
     'selectedIdPrefixes',
     null
   );
+  // User column arrangement: [{ colId, width }] in display order, captured when
+  // the curator drags a column (or sub-column) or resizes one. While set, it is
+  // applied instead of the autosize passes so a hand-tuned layout survives
+  // remounts, and it is mirrored into Redux so Save Current Search persists it.
+  // null = the curator hasn't arranged columns; autosize behaves as before.
+  //
+  // The value lives in BOTH state and a ref: the state drives the Redux mirror
+  // and the toolbar's reset affordance, while the apply/layout callbacks read
+  // the ref so their identity stays stable — otherwise every user resize
+  // (which captures new state) would re-trigger the scheduled layout passes,
+  // flashing the resize overlay and snapping a mid-drag column back to the
+  // previous snapshot (PR #644 review).
+  const [columnState, setColumnStateRaw] = usePersistentState(
+    persistStore,
+    'columnState',
+    null
+  );
+  const columnStateRef = useRef(columnState);
+  const setColumnState = useCallback((next) => {
+    // Preserve the useState contract: support functional updates, resolved
+    // against the ref (which always holds the latest value).
+    const value = typeof next === 'function' ? next(columnStateRef.current) : next;
+    columnStateRef.current = value;
+    setColumnStateRaw(value);
+  }, [setColumnStateRaw]);
   // True while the autosize/fill-extra passes are running. Used to render a
   // light overlay so the curator knows the layout is still adjusting and
   // mid-resize column widths aren't a bug.
@@ -688,28 +740,7 @@ export default function TetValidationGrid({
     const colIds = cols.map((c) => c.getColId?.()).filter(Boolean);
     if (colIds.length === 0) return;
     gridApi.autoSizeColumns?.(colIds, false);
-    // Clamp the columns autosize grew past their cap. Done here, not via a
-    // colDef maxWidth, so the rAF fill below can still expand these columns to
-    // absorb blank space and a curator can still drag the column border wider.
-    // Sources columns have colId === topic curie (no `__suffix`); the
-    // biocurator assessment column is `<curie>__val`.
-    const autosizeCapFor = (colId) => {
-      if (!colId) return null;
-      if (!colId.includes('__')) return SOURCES_AUTOSIZE_CAP;
-      if (colId.endsWith('__val')) return VALIDATION_AUTOSIZE_CAP;
-      return null;
-    };
-    const overCap = cols
-      .map((c) => {
-        const cid = c.getColId?.() || '';
-        const cap = autosizeCapFor(cid);
-        if (cap === null) return null;
-        return (c.getActualWidth?.() || 0) > cap
-          ? { key: cid, newWidth: cap }
-          : null;
-      })
-      .filter(Boolean);
-    if (overCap.length > 0) gridApi.setColumnWidths?.(overCap, false);
+    clampAutosizedColumns(gridApi, cols);
     requestAnimationFrame(() => {
       const wrapper = topScrollRef.current?.closest('.tetv-grid-wrapper');
       const viewport = wrapper?.querySelector('.ag-center-cols-viewport');
@@ -736,6 +767,75 @@ export default function TetValidationGrid({
     });
   }, [gridApi]);
 
+  // Re-impose the curator's saved column order + widths. Returns false when
+  // there is no saved arrangement (caller then autosizes).
+  //
+  // applyOrder is only safe when the saved state covers EVERY current column:
+  // AG Grid's sortColsLikeKeys appends any column absent from the state array
+  // after all matched ones, which would rip a newly-appeared column (a conf
+  // score/level sub-column just toggled on, or a topic from a new search) out
+  // of its topic group and render a duplicate group header (PR #644 review).
+  // With partial coverage we overlay the saved widths only — maintainColumnOrder
+  // has already slotted new columns next to their group siblings — and autosize
+  // the columns the saved layout doesn't know about so they don't sit at raw
+  // colDef widths.
+  const applySavedColumnState = useCallback(() => {
+    const saved = columnStateRef.current;
+    if (!gridApi || !Array.isArray(saved) || saved.length === 0) {
+      return false;
+    }
+    const savedIds = new Set(saved.map((c) => c.colId));
+    const current = gridApi.getColumnState?.() || [];
+    const unknown = current.filter((c) => c.colId && !savedIds.has(c.colId));
+    if (unknown.length === 0) {
+      gridApi.applyColumnState?.({
+        state: saved.map(({ colId, width }) => ({ colId, width })),
+        applyOrder: true,
+      });
+    } else {
+      const currentIds = new Set(current.map((c) => c.colId));
+      gridApi.applyColumnState?.({
+        state: saved
+          .filter((c) => currentIds.has(c.colId))
+          .map(({ colId, width }) => ({ colId, width })),
+        applyOrder: false,
+      });
+      const unknownIds = unknown.map((c) => c.colId);
+      gridApi.autoSizeColumns?.(unknownIds, false);
+      // Same caps as the full autosize pass, so a fresh Sources/assessment
+      // column can't balloon past its limit just because it wasn't in the
+      // saved layout (PR #644 review).
+      clampAutosizedColumns(
+        gridApi,
+        unknownIds.map((id) => gridApi.getColumn?.(id)).filter(Boolean)
+      );
+    }
+    return true;
+  }, [gridApi]);
+
+  // Single layout entry point: a hand-arranged (or settings-restored) column
+  // state takes precedence over the autosize passes — otherwise every remount
+  // and data refresh would wipe the curator's widths. Reads the ref, so its
+  // identity is stable across columnState captures and the layout effect below
+  // does not re-fire on the user's own resizes.
+  const layoutColumns = useCallback(() => {
+    if (!applySavedColumnState()) {
+      autoSizeAndFill();
+    }
+  }, [applySavedColumnState, autoSizeAndFill]);
+
+  // Capture the arrangement after a user-driven move or resize. Programmatic
+  // sources (autosizeColumns, api/applyColumnState, flex) are ignored so the
+  // autosize passes never freeze themselves into a "user" layout.
+  const captureColumnState = useCallback(
+    (api) => {
+      const cols = api?.getColumnState?.() || [];
+      const next = cols.map(({ colId, width }) => ({ colId, width }));
+      if (next.length > 0) setColumnState(next);
+    },
+    [setColumnState]
+  );
+
   useEffect(() => {
     if (!gridApi || rows.length === 0) return undefined;
     let cancelled = false;
@@ -754,13 +854,13 @@ export default function TetValidationGrid({
           if (cancelled) return;
           handles.t1 = setTimeout(() => {
             if (cancelled) return;
-            autoSizeAndFill();
+            layoutColumns();
             // Second pass — after the first autoSize has flushed and any
             // dependent layout has settled, re-run to catch columns whose
             // cells finished rendering after the first pass.
             handles.t2 = setTimeout(() => {
               if (cancelled) return;
-              autoSizeAndFill();
+              layoutColumns();
               setIsResizing(false);
             }, 200);
           }, baseWait);
@@ -787,17 +887,18 @@ export default function TetValidationGrid({
     // this dep the Sources fill-extra pass would never recalculate after
     // the user adds/removes prefixes, leaving topic columns mis-sized.
     selectedIdPrefixes,
-    autoSizeAndFill,
+    layoutColumns,
   ]);
 
   // Toggling fullscreen changes the available viewport width, so the
   // Sources fill-extra pass needs to recompute. Re-run autosize on the
-  // next frame after the layout has switched.
+  // next frame after the layout has switched. (With a user-arranged column
+  // state, layoutColumns re-applies the saved widths instead.)
   useEffect(() => {
     if (!gridApi) return undefined;
     setIsResizing(true);
     const id = requestAnimationFrame(() => {
-      autoSizeAndFill();
+      layoutColumns();
       requestAnimationFrame(() => setIsResizing(false));
     });
     return () => cancelAnimationFrame(id);
@@ -957,6 +1058,92 @@ export default function TetValidationGrid({
     userTouchedHiddenRef.current = true;
     setHiddenTopicCuries(next);
   }, [setHiddenTopicCuries, userTouchedHiddenRef]);
+
+  // ---- Grid preferences save/restore (SCRUM: grid options in saved settings) ----
+  //
+  // Restore: when a saved search carries grid preferences, the settings loader
+  // dispatches applyGridPreferences, which bumps gridPreferencesApplied.nonce.
+  // Applying by nonce (persisted across remounts) means each restore lands
+  // exactly once, whether the grid was mounted at load time or mounts later.
+  const gridPreferencesApplied = useSelector(
+    (s) => s.search.gridPreferencesApplied
+  );
+  const lastAppliedPrefsNonceRef = usePersistentRef(
+    persistStore,
+    'lastAppliedPrefsNonce',
+    0
+  );
+  useEffect(() => {
+    if (!gridPreferencesApplied) return;
+    const { prefs, nonce } = gridPreferencesApplied;
+    if (!prefs || nonce === lastAppliedPrefsNonceRef.current) return;
+    lastAppliedPrefsNonceRef.current = nonce;
+    if (prefs.displayOptions) {
+      setDisplayOptions((prev) => ({ ...prev, ...prefs.displayOptions }));
+    }
+    if (Array.isArray(prefs.hiddenTopicCuries)) {
+      // Mark the restored topic visibility as a deliberate choice, and seed the
+      // topics key it was saved under, so the facet-default effect above doesn't
+      // clobber it when the restored search's topics prop arrives.
+      userTouchedHiddenRef.current = true;
+      if (typeof prefs.topicsKey === 'string') {
+        lastTopicsKeyRef.current = prefs.topicsKey;
+      }
+      setHiddenTopicCuries(new Set(prefs.hiddenTopicCuries));
+    }
+    if (prefs.sourceFilterModel !== undefined) {
+      setSourceFilterModel(prefs.sourceFilterModel);
+    }
+    // Symmetric with save: a search saved on automatic sizing restores to
+    // automatic sizing, clearing any interim hand-arranged layout (PR #644
+    // review) — not just overwriting when the saved search carries one.
+    setColumnState(
+      Array.isArray(prefs.columnState) && prefs.columnState.length > 0
+        ? prefs.columnState
+        : null
+    );
+    // If the grid is already live, re-impose the restored layout (or drop back
+    // to autosize) now — the scheduled layout effect reads a stable callback
+    // and won't re-fire just because columnState changed.
+    if (gridApi) {
+      setIsResizing(true);
+      requestAnimationFrame(() => {
+        layoutColumns();
+        requestAnimationFrame(() => setIsResizing(false));
+      });
+    }
+  }, [
+    gridPreferencesApplied,
+    lastAppliedPrefsNonceRef,
+    lastTopicsKeyRef,
+    userTouchedHiddenRef,
+    setDisplayOptions,
+    setHiddenTopicCuries,
+    setSourceFilterModel,
+    setColumnState,
+    gridApi,
+    layoutColumns,
+  ]);
+
+  // Save: mirror every savable grid option into Redux so Save Current Search
+  // (SearchPreferencesUtils.buildSearchSettingsState) captures the arrangement —
+  // toolbar checkboxes, topic/source visibility, and column order + widths.
+  useEffect(() => {
+    dispatch(setGridPreferences({
+      displayOptions,
+      hiddenTopicCuries: [...hiddenTopicCuries].sort(),
+      sourceFilterModel,
+      columnState,
+      topicsKey: lastTopicsKeyRef.current,
+    }));
+  }, [
+    dispatch,
+    displayOptions,
+    hiddenTopicCuries,
+    sourceFilterModel,
+    columnState,
+    lastTopicsKeyRef,
+  ]);
 
   const visibleTopicColumns = useMemo(
     () => topicColumns.filter((t) => !hiddenTopicCuries.has(t.curie)),
@@ -1607,6 +1794,16 @@ export default function TetValidationGrid({
         allSources={allSources}
         sourceFilterModel={sourceFilterModel}
         setSourceFilterModel={setSourceFilterModel}
+        hasCustomColumnLayout={Array.isArray(columnState) && columnState.length > 0}
+        onResetColumnLayout={() => {
+          // Back to automatic sizing: clear the arrangement and rerun autosize.
+          setColumnState(null);
+          setIsResizing(true);
+          requestAnimationFrame(() => {
+            autoSizeAndFill();
+            requestAnimationFrame(() => setIsResizing(false));
+          });
+        }}
       />
       <BulkActionBar
         selectedCount={selectedRefCuries.size}
@@ -1687,16 +1884,35 @@ export default function TetValidationGrid({
             setSelectedRefCuries(next);
           }}
           onGridReady={onGridReady}
+          // Keep the curator's drag order when columnDefs are rebuilt (toolbar
+          // toggles, topic visibility changes) instead of resetting to the
+          // definition order.
+          maintainColumnOrder
+          onColumnMoved={(e) => {
+            // Only completed, user-driven drags; AgGrid fires interim events
+            // while the column is still being dragged.
+            if (e.finished && e.source === 'uiColumnMoved') {
+              captureColumnState(e.api);
+            }
+          }}
+          onColumnResized={(e) => {
+            // Only user drag-resizes: autosizeColumns / api sources would
+            // otherwise freeze the automatic layout into a "user" arrangement.
+            if (e.finished && e.source === 'uiColumnResized') {
+              captureColumnState(e.api);
+            }
+          }}
           onFirstDataRendered={() => {
             // AgGrid signals first paint complete — run autosize on the
             // next frame so we measure cells that are now in the DOM.
             // With ~50 rows this is the only reliable signal that all
             // cells have laid out; the row-count-scaled fallback in the
             // useEffect above still runs as a safety net. We keep the
-            // resizing overlay on until autosize has flushed.
+            // resizing overlay on until autosize has flushed. A saved
+            // column arrangement is applied instead of autosize.
             setIsResizing(true);
             requestAnimationFrame(() => {
-              autoSizeAndFill();
+              layoutColumns();
               requestAnimationFrame(() => setIsResizing(false));
             });
           }}

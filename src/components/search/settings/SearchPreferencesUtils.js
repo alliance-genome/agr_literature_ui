@@ -17,6 +17,7 @@ import {
   setDateCreated,
   setSearchMode,
   setAdvancedTopicQuery,
+  applyGridPreferences,
   searchReferences,
 } from '../../../actions/searchActions';
 
@@ -56,6 +57,12 @@ export const buildSearchSettingsState = (reduxState) => {
     // Advanced Topic query builder (SCRUM-6228)
     searchMode: s.searchMode || 'facet',
     advancedTopicQuery: s.advancedTopicQuery ?? null,
+
+    // Topic grid preferences: toolbar checkboxes, topic/source visibility,
+    // column + sub-column order and column widths. The grid mirrors its state
+    // into Redux (setGridPreferences) whenever it changes, so this captures the
+    // current arrangement even when the grid tab isn't the active view.
+    gridPreferences: s.gridPreferences ?? null,
 
     mod_abbreviation,
   };
@@ -105,6 +112,7 @@ export const applySearchSettingsFromJson = (
     applyToSingleTag = true,
     searchMode = 'facet',
     advancedTopicQuery = null,
+    gridPreferences = null,
   } = state;
 
   // 1) basic fields
@@ -152,6 +160,12 @@ export const applySearchSettingsFromJson = (
   // 6) advanced Topic query builder (SCRUM-6228): restore mode + tree
   dispatch(setSearchMode(searchMode === 'advanced' ? 'advanced' : 'facet'));
   dispatch(setAdvancedTopicQuery(advancedTopicQuery ?? null));
+
+  // 6b) Topic grid preferences: dispatch only when the saved search carries
+  // them, so legacy saved searches leave the grid's current arrangement alone.
+  if (gridPreferences) {
+    dispatch(applyGridPreferences(gridPreferences));
+  }
 
   // 7) trigger the search (optional)
   if (runSearch) {
