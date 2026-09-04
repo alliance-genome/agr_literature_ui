@@ -200,7 +200,8 @@ const LaboratoryWbDisplay = ({ laboratory }) => {
             // The API resolves the curie against the A-team resource descriptors
             // and serves the link as `url` (per-page links under pages[].url).
             // `pages` on its own is a list of page NAMES, not URLs.
-            const href = x.url || (Array.isArray(x.pages) && x.pages[0]?.url) || null;
+            // pages[0].url first, matching IdsCell.jsx and PersonDisplay.
+            const href = (Array.isArray(x.pages) && x.pages[0]?.url) || x.url || null;
             const isObsolete = x.is_obsolete === true;
             // Only override styling for an obsolete xref -- color:inherit plus
             // textDecoration:none on a live one stops it reading as a link.

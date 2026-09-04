@@ -79,8 +79,11 @@ const fullName = (n) => [n.first_name, n.middle_name, n.last_name].filter(Boolea
 // pages[].url), so the UI never builds these itself -- the MOD URL templates
 // live in the a-team database, not here.
 const xrefHref = (x) => {
-  if (x.url) return x.url;
+  // pages[0].url before url, matching IdsCell.jsx / SearchResults: a page URL is
+  // the more specific link, and for SGD person xrefs it is the only one -- that
+  // loader stores the colleague's absolute obj_url as the page entry.
   if (Array.isArray(x.pages) && x.pages[0]?.url) return x.pages[0].url;
+  if (x.url) return x.url;
   return null;
 };
 

@@ -258,7 +258,13 @@ const Person = () => {
                 className="mb-3"
               >
                 <Tab eventKey="display" title="Display">
-                  {activeTab === 'display' && <PersonDisplay person={personData} />}
+                  {/* Keyed by curie like the editor: Display holds fetched lineage
+                      in component state, so without a remount a new search would
+                      show the previous person's connections under the new header
+                      until the requests land. */}
+                  {activeTab === 'display' && (
+                    <PersonDisplay key={personData.curie} person={personData} />
+                  )}
                 </Tab>
                 <Tab eventKey="editor" title="Editor">
                   {activeTab === 'editor' && (
