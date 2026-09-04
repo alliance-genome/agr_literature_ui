@@ -44,6 +44,19 @@ const prefixMod = (group) => {
   return null;
 };
 
+// Structural observer detection: ANY group ending in 'Observer' is treated as
+// an observer group and excluded from prefix inference, whether or not it is
+// in the explicit map. The map only supplies the sponsoring MOD; an
+// observer-shaped group we don't recognize (a renamed group, an eighth MOD
+// onboarded before this list is updated) FAILS CLOSED — read-only with no MOD
+// scope — instead of falling through to prefix inference and getting the full
+// curator UI (SCRUM-6431 review).
+const isObserverGroup = (group) => group.endsWith('Observer');
+
+// Guarded lookup: `group in map` walks the prototype chain (a group literally
+// named "constructor" would resolve to a function).
+const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+
 /**
  * Resolve Cognito groups into the UI's role state.
  *
@@ -59,14 +72,18 @@ export function resolveCognitoRoles(groups, devOrStageOrProd) {
   let mod = 'No';
   let isDeveloper = false;
   let isTester = false;
+  let observerSeen = false;
   let observerMod = null;
   let hasWriteCapableGroup = false;
 
   for (const group of groupList) {
-    if (group in OBSERVER_GROUP_TO_MOD) {
-      // Observer groups resolve ONLY via the explicit map — they are excluded
-      // from prefix inference so they can never grant curator-mod status.
-      if (observerMod === null) { observerMod = OBSERVER_GROUP_TO_MOD[group]; }
+    if (isObserverGroup(group)) {
+      // Observer-shaped groups never reach prefix inference. The MOD comes
+      // only from the explicit map; unmapped ones stay read-only, un-scoped.
+      observerSeen = true;
+      if (observerMod === null && hasOwn(OBSERVER_GROUP_TO_MOD, group)) {
+        observerMod = OBSERVER_GROUP_TO_MOD[group];
+      }
       continue;
     }
     if (group.endsWith('Developer')) { isDeveloper = true; }
@@ -80,7 +97,7 @@ export function resolveCognitoRoles(groups, devOrStageOrProd) {
     }
   }
 
-  const isObserver = observerMod !== null && !hasWriteCapableGroup && !isDeveloper;
-  if (isObserver) { mod = observerMod; }
+  const isObserver = observerSeen && !hasWriteCapableGroup && !isDeveloper;
+  if (isObserver && observerMod !== null) { mod = observerMod; }
   return { mod, isDeveloper, isTester, isObserver };
 }

@@ -42,6 +42,7 @@ const BiblioFileManagement = () => {
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   let accessLevel = cognitoMod;
 
   if (testerMod !== 'No') {
@@ -65,10 +66,12 @@ const BiblioFileManagement = () => {
     .filter(item => item.corpus === 'inside_corpus')
     .map(item => item.mod_abbreviation);
 
-  // determine if user can upload files
+  // determine if user can upload files. Observers reach this view for reading
+  // and downloading (their accessLevel is their sponsoring MOD), but are
+  // read-only: no upload, and no add-to-corpus either (SCRUM-6431).
   let canUploadFiles = false;
 
-  if (accessLevel !== 'No') {
+  if (!cognitoObserver && accessLevel !== 'No') {
     if (accessLevel === null || modsInCorpus.includes(accessLevel)) {
       canUploadFiles = true;
     }
@@ -90,7 +93,7 @@ const BiblioFileManagement = () => {
             <FileUpload main_or_supp="main" />
             <FileUpload main_or_supp="supplement" />
           </>
-        ) : (
+        ) : cognitoObserver ? null : (
           <AddToCorpus accessLevel={accessLevel} referenceCurie={referenceJsonLive.curie} />
         )}
         <OpenAccess />
