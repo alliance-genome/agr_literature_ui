@@ -14,8 +14,8 @@ import { api } from '../api';
 import PersonEditor from './person/PersonEditor';
 import PersonDisplay from './person/PersonDisplay';
 
-const VALID_TABS = ['editor', 'display'];
-const DEFAULT_TAB = 'editor';
+const VALID_TABS = ['display', 'editor'];
+const DEFAULT_TAB = 'display';
 
 const classifyInput = (raw) => {
   const trimmed = (raw || '').trim();
@@ -257,13 +257,13 @@ const Person = () => {
                 id="person-view-tabs"
                 className="mb-3"
               >
+                <Tab eventKey="display" title="Display">
+                  {activeTab === 'display' && <PersonDisplay person={personData} />}
+                </Tab>
                 <Tab eventKey="editor" title="Editor">
                   {activeTab === 'editor' && (
                     <PersonEditor key={personData.curie} person={personData} />
                   )}
-                </Tab>
-                <Tab eventKey="display" title="Display">
-                  {activeTab === 'display' && <PersonDisplay person={personData} />}
                 </Tab>
               </Tabs>
             </>

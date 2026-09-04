@@ -1,5 +1,4 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
 import Card from 'react-bootstrap/Card';
 import Badge from 'react-bootstrap/Badge';
 
@@ -77,11 +76,8 @@ const personRoles = (lp) => {
 };
 
 const LaboratoryWbDisplay = ({ laboratory }) => {
-  const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
-  const testerMod = useSelector((s) => s.isLogged.testerMod);
-  const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
-  const personHref = (curie) =>
-    '/person?personCurie=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=display' : '');
+  // Display is the Person page's default tab, so no ?tab= is needed.
+  const personHref = (curie) => '/person?personCurie=' + encodeURIComponent(curie);
 
   if (!laboratory) return null;
   const lab = laboratory;

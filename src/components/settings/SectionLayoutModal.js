@@ -1,21 +1,26 @@
-// src/components/settings/PersonEditorLayoutModal.js
+// src/components/settings/SectionLayoutModal.js
 //
-// Graphical preference modal for arranging the Person Editor's sections in a 2D
-// grid, modeled on BiblioLayoutPreferenceModal.
+// Graphical preference modal for arranging a page's card sections in a 2D grid,
+// modeled on BiblioLayoutPreferenceModal.
+//
+// The section list, starting arrangement and settings namespace are supplied by
+// the caller (`sectionDefs` / `defaultLayout` / `componentName`), so one modal
+// serves every page that has this layout feature -- the Person Editor and the
+// Person Display save to different namespaces but share this component.
 //
 // The modal body contains:
 //   1. A react-grid-layout canvas with one schematic, draggable/resizable box per
-//      section (the WB editor's ten card headers).
+//      section.
 //   2. A list of the user's named layouts (create / load / save-here / rename /
 //      set-default / delete), persisted per-user via usePersonSettings under the
-//      `person_editor_layout` component namespace.
+//      caller's component namespace.
 //
 // Unlike the Biblio modal, the saved payload also carries the section visibility
 // (`hidden`) and the metadata toggles (`showTimestamps`, `showCurator`), which are
-// controlled on the editor page itself. Those values are passed in via `current`
-// so "Save As New" / "Save Here" capture the live page state, and `onApplyPrefs`
+// controlled on the page itself. Those values are passed in via `current` so
+// "Save As New" / "Save Here" capture the live page state, and `onApplyPrefs`
 // pushes a loaded layout's full preferences (layout + visibility + toggles) back
-// to the editor.
+// to the page.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Button, Form, Spinner, Alert } from 'react-bootstrap';
@@ -27,12 +32,7 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import { usePersonSettings } from './usePersonSettings';
-import {
-  SECTION_DEFS,
-  DEFAULT_LAYOUT,
-  LAYOUT_COLS,
-  PERSON_EDITOR_LAYOUT_COMPONENT_NAME,
-} from '../person/personEditorSections';
+import { LAYOUT_COLS } from '../person/personSections';
 
 const ReactGridLayout = WidthProvider(GridLayout);
 
@@ -56,7 +56,10 @@ const prefsFromSetting = (s) => {
   };
 };
 
-const PersonEditorLayoutModal = ({
+const SectionLayoutModal = ({
+  sectionDefs,
+  defaultLayout,
+  componentName,
   onApplyPrefs,
   current,
   onToggleSection,
@@ -71,10 +74,10 @@ const PersonEditorLayoutModal = ({
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
 
   const [showModal, setShowModal] = useState(false);
-  const [workingLayout, setWorkingLayout] = useState(DEFAULT_LAYOUT);
+  const [workingLayout, setWorkingLayout] = useState(defaultLayout);
   // Mirror of workingLayout so drag/resize-stop handlers can read the latest full
   // layout (including hidden sections' coords) without waiting for a state flush.
-  const workingRef = useRef(DEFAULT_LAYOUT);
+  const workingRef = useRef(defaultLayout);
   useEffect(() => { workingRef.current = workingLayout; }, [workingLayout]);
   const [newName, setNewName] = useState('');
   const [nameEdits, setNameEdits] = useState({});
@@ -93,7 +96,7 @@ const PersonEditorLayoutModal = ({
   } = usePersonSettings({
     token: accessToken,
     email,
-    componentName: PERSON_EDITOR_LAYOUT_COMPONENT_NAME,
+    componentName,
     maxCount,
   });
 
@@ -178,12 +181,12 @@ const PersonEditorLayoutModal = ({
   const handleLoad = useCallback(
     (setting) => {
       const prefs = prefsFromSetting(setting);
-      setWorkingLayout(prefs.layout || DEFAULT_LAYOUT);
+      setWorkingLayout(prefs.layout || defaultLayout);
       setSelectedSettingId(setting.person_setting_id);
       if (typeof onApplyPrefs === 'function') onApplyPrefs(prefs);
       notify(`Loaded "${setting.setting_name || setting.name}".`, 'info');
     },
-    [setSelectedSettingId, onApplyPrefs, notify]
+    [setSelectedSettingId, onApplyPrefs, notify, defaultLayout]
   );
 
   const handleSaveHere = useCallback(
@@ -293,33 +296,33 @@ const PersonEditorLayoutModal = ({
   /* ---------- footer ---------- */
 
   const handleResetCanvas = useCallback(() => {
-    setWorkingLayout(DEFAULT_LAYOUT);
+    setWorkingLayout(defaultLayout);
     if (typeof onApplyPrefs === 'function') {
       onApplyPrefs({
-        layout: DEFAULT_LAYOUT,
+        layout: defaultLayout,
         hidden: Array.isArray(current?.hidden) ? current.hidden : [],
         showTimestamps: current?.showTimestamps !== false,
         showCurator: current?.showCurator !== false,
       });
     }
     notify('Layout reset to the default stacked arrangement.', 'info');
-  }, [onApplyPrefs, current, notify]);
+  }, [onApplyPrefs, current, notify, defaultLayout]);
 
   const hasSettings = (settings || []).length > 0;
 
   const labelById = useMemo(() => {
     const m = {};
-    for (const s of SECTION_DEFS) m[s.id] = s.label;
+    for (const s of sectionDefs) m[s.id] = s.label;
     return m;
-  }, []);
+  }, [sectionDefs]);
   const indexById = useMemo(() => {
     const m = {};
-    SECTION_DEFS.forEach((s, i) => { m[s.id] = i; });
+    sectionDefs.forEach((s, i) => { m[s.id] = i; });
     return m;
-  }, []);
+  }, [sectionDefs]);
 
   const hiddenIds = current?.hidden || [];
-  const visibleSectionDefs = SECTION_DEFS.filter((s) => !hiddenIds.includes(s.id));
+  const visibleSectionDefs = sectionDefs.filter((s) => !hiddenIds.includes(s.id));
   const visibleLayout = workingLayout.filter((it) => !hiddenIds.includes(it.i));
 
   return (
@@ -409,7 +412,7 @@ const PersonEditorLayoutModal = ({
           <Form.Group className="mb-4">
             <Form.Label>Visible sections</Form.Label>
             <div className="d-flex flex-wrap align-items-center" style={{ gap: '0.5rem 1.75rem' }}>
-              {SECTION_DEFS.map((s) => (
+              {sectionDefs.map((s) => (
                 <Form.Check
                   key={s.id}
                   type="checkbox"
@@ -571,4 +574,4 @@ const PersonEditorLayoutModal = ({
   );
 };
 
-export default PersonEditorLayoutModal;
+export default SectionLayoutModal;
