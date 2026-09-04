@@ -197,18 +197,22 @@ const LaboratoryWbDisplay = ({ laboratory }) => {
           <FieldRow label="xref" />
         ) : (
           xrefs.map((x, i) => {
-            const firstPage = Array.isArray(x.pages) && x.pages[0] ? x.pages[0] : null;
+            // The API resolves the curie against the A-team resource descriptors
+            // and serves the link as `url` (per-page links under pages[].url).
+            // `pages` on its own is a list of page NAMES, not URLs.
+            const href = x.url || (Array.isArray(x.pages) && x.pages[0]?.url) || null;
             const isObsolete = x.is_obsolete === true;
-            const valStyle = {
-              textDecoration: isObsolete ? 'line-through' : 'none',
-              color: isObsolete ? '#888' : 'inherit',
-            };
+            // Only override styling for an obsolete xref -- color:inherit plus
+            // textDecoration:none on a live one stops it reading as a link.
+            const valStyle = isObsolete
+              ? { textDecoration: 'line-through', color: '#888' }
+              : undefined;
             const editTs = tsLabel(x.updated_by, x.date_updated);
             const ts = [isObsolete ? 'obsolete' : null, editTs].filter(Boolean).join(' · ') || null;
             return (
               <FieldRow key={x.laboratory_cross_reference_id ?? i} label={x.curie_prefix || 'xref'} ts={ts}>
-                {firstPage ? (
-                  <a href={firstPage} target="_blank" rel="noreferrer noopener" style={valStyle}>
+                {href ? (
+                  <a href={href} target="_blank" rel="noreferrer noopener" style={valStyle}>
                     {x.curie}
                   </a>
                 ) : (
