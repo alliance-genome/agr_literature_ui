@@ -554,7 +554,14 @@ const OpenAccess = () => {
                 :
                 null
             }
-            {(cognitoObserver || (licenseToShow !== '' && lastUpdatedBy === '')) ?
+            {/* Observers: read-only, and only when the lastUpdatedBy block
+                above hasn't already shown the license (it renders for any
+                curator-licensed reference, so an unconditional span here
+                would double the license text) (SCRUM-6431). */}
+            {cognitoObserver ?
+                (lastUpdatedBy === '' ? <span>{licenseToShow}</span> : null)
+                :
+             (licenseToShow !== '' && lastUpdatedBy === '') ?
                 <span>{licenseToShow}</span>
                 :
                 <>
