@@ -156,7 +156,17 @@ const LineageRow = ({ label, row, meta, status, dim = false }) => {
   );
 };
 
-const PersonDisplay = ({ person }) => {
+const PersonDisplay = ({ person: personProp }) => {
+  // The parent fetches the record once per lookup and does not refetch when the
+  // tab changes, and PersonEditor saves deltas to its own local state without
+  // telling anyone. So edits made in the editor would not show here. Hold the
+  // record in state, seeded from the prop so there is no empty first paint, and
+  // re-read it from the API on mount -- the tab switch is the refresh point.
+  // A refetch (rather than replaying the editor's saves) also picks up values
+  // the editor never sent: date_updated, address_last_updated, anything set by
+  // a DB trigger, and edits made in another browser tab or by another curator.
+  const [person, setPerson] = useState(personProp);
+
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
@@ -212,6 +222,24 @@ const PersonDisplay = ({ person }) => {
     if (showTimestamps && date) parts.push(formatTimestamp(date));
     return parts.length ? parts.join(' · ') : null;
   };
+
+  // Keep in step if the parent reloads the same curie (a repeated search), which
+  // does not remount us because Person.js keys this component by curie.
+  useEffect(() => { setPerson(personProp); }, [personProp]);
+
+  // ---- refresh the record on mount, so edits made in the Editor tab show here ----
+  useEffect(() => {
+    const curie = personProp?.curie;
+    if (!curie) return undefined;
+    let cancelled = false;
+    api.get('/person/' + curie)
+      .then((r) => {
+        // Keep the record we already have if the response is not a person.
+        if (!cancelled && r?.data?.curie) setPerson(r.data);
+      })
+      .catch(() => { /* keep the record we already have */ });
+    return () => { cancelled = true; };
+  }, [personProp?.curie]);
 
   // ---- Lineage — not nested in the person record; fetched when the section shows ----
   const lineageVisible = !hiddenSections.has('lineage');
