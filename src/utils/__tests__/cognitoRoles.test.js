@@ -74,4 +74,11 @@ describe('resolveCognitoRoles (SCRUM-6431)', () => {
     expect(resolveCognitoRoles(['POTester'], 'prod').isTester).toBe(true);
     expect(resolveCognitoRoles(['POTester'], 'dev').isTester).toBe(false);
   });
+
+  test('observer suppresses tester (no MOD re-scoping via the tester dropdown)', () => {
+    expect(resolveCognitoRoles(['FlyBaseObserver', 'Tester'], 'dev'))
+      .toEqual({ mod: 'FB', isDeveloper: false, isTester: false, isObserver: true });
+    // A curator+tester is unaffected by an extra observer group.
+    expect(resolveCognitoRoles(['FlyBaseObserver', 'FlyBaseCurator', 'Tester'], 'dev').isTester).toBe(true);
+  });
 });

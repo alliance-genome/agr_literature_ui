@@ -99,5 +99,8 @@ export function resolveCognitoRoles(groups, devOrStageOrProd) {
 
   const isObserver = observerSeen && !hasWriteCapableGroup && !isDeveloper;
   if (isObserver && observerMod !== null) { mod = observerMod; }
-  return { mod, isDeveloper, isTester, isObserver };
+  // An observer never gets tester powers: the tester dropdown swaps the
+  // effective MOD (testerMod), which would let an observer re-scope
+  // themselves to another MOD's content. Most-restrictive role wins.
+  return { mod, isDeveloper, isTester: isObserver ? false : isTester, isObserver };
 }
