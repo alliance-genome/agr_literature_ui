@@ -133,6 +133,7 @@ const RetractionBanner = () => {
 const BiblioActionToggler = () => {
   const dispatch = useDispatch();
   const biblioAction = useSelector(state => state.biblio.biblioAction);
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
 
   // Warn before leaving Quick Topic Addition with staged, unsubmitted
   // assessments (switching tabs unmounts the grid and discards them).
@@ -202,6 +203,29 @@ const BiblioActionToggler = () => {
 //     dispatch(changeBiblioActionToggler(e))
 //     history.push("/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie);
 //   }
+
+  // Observers are read-only: the display tab is their only mode. The curation
+  // tabs are hidden (not just disabled) and BiblioActionRouter independently
+  // forces the display view, so a hand-typed ?action=editor URL shows display
+  // too. The API rejects observer mutations regardless (SCRUM-6431).
+  if (cognitoObserver) {
+    return (
+      <Form>
+      <div key={`default-radio`} className="mb-3 biblio-mode-radios">
+        <div className='radio-span'>
+          <Form.Check
+            inline
+            className={radioFormDisplayClassname}
+            checked='checked'
+            type='radio'
+            label='biblio display'
+            id='biblio-toggler-display'
+            onChange={(e) => toggleAction(e, 'display')}
+          />
+        </div>
+      </div>
+      </Form>);
+  }
 
   return (
     <Form>
@@ -289,9 +313,14 @@ const BiblioActionToggler = () => {
 
 
 const BiblioActionRouter = () => {
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
+  const rawBiblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const authorReorderOpen = useSelector(state => state.biblio.authorReorderOpen);
+  // Observers are read-only: every curation action falls back to the display
+  // view, so a hand-typed ?action=editor URL cannot open an editor. The API
+  // rejects observer mutations independently (SCRUM-6431).
+  const biblioAction = cognitoObserver ? 'display' : rawBiblioAction;
   switch (biblioAction) {
     case 'display':
       return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);

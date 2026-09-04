@@ -1,0 +1,86 @@
+// Explicit Cognito group -> role/MOD resolution (SCRUM-6431).
+//
+// Historically the SIGN_IN reducer inferred MOD affiliation from group-name
+// prefixes (startsWith('Fly') -> FB, ...), which would silently grant the new
+// read-only <Mod>Observer groups (SCRUM-6429) the full curator UI. Observer
+// groups are resolved through the explicit mapping below and NEVER through
+// prefix inference; the legacy prefix inference is retained for the
+// curator/developer/staff groups it has always served, so existing roles are
+// unchanged.
+//
+// Mirrors the server-side policy (agr_literature_service api/observer.py):
+// a user is an observer only when they carry an observer group and NO
+// write-capable group — any curator/developer/admin group supersedes observer
+// membership. The observer's cognitoMod is their sponsoring MOD, so search
+// corpus scoping and MOD-restricted full-text downloads work, while the
+// isObserver flag hides every curation/mutation interface. The API enforces
+// read-only independently (403 on mutating requests), so UI hiding is a
+// convenience, not the security boundary.
+
+export const OBSERVER_GROUP_TO_MOD = {
+  SGDObserver: 'SGD',
+  RGDObserver: 'RGD',
+  MGIObserver: 'MGI',
+  ZFINObserver: 'ZFIN',
+  XenbaseObserver: 'XB',
+  FlyBaseObserver: 'FB',
+  WormBaseObserver: 'WB',
+};
+
+// Groups that carry write-capable or elevated access; their presence means the
+// user is NOT an observer regardless of observer-group membership.
+const ADMIN_GROUPS = ['SuperAdmin', 'AdminGroup', 'AllianceDeveloper'];
+
+// The legacy prefix inference, unchanged, applied only to non-observer groups.
+const MOD_PREFIXES = [
+  ['SGD', 'SGD'], ['RGD', 'RGD'], ['MGI', 'MGI'], ['ZFIN', 'ZFIN'],
+  ['Xen', 'XB'], ['Fly', 'FB'], ['Worm', 'WB'],
+];
+
+const prefixMod = (group) => {
+  for (const [prefix, mod] of MOD_PREFIXES) {
+    if (group.startsWith(prefix)) { return mod; }
+  }
+  return null;
+};
+
+/**
+ * Resolve Cognito groups into the UI's role state.
+ *
+ * @param {string[]} groups - the token's cognito:groups claim
+ * @param {string} devOrStageOrProd - REACT_APP_DEV_OR_STAGE_OR_PROD
+ * @returns {{ mod: string, isDeveloper: boolean, isTester: boolean,
+ *             isObserver: boolean }}
+ *   mod: MOD abbreviation or 'No'. For an observer this is the sponsoring MOD
+ *   (content scope); isObserver distinguishes it from write-capable roles.
+ */
+export function resolveCognitoRoles(groups, devOrStageOrProd) {
+  const groupList = groups || [];
+  let mod = 'No';
+  let isDeveloper = false;
+  let isTester = false;
+  let observerMod = null;
+  let hasWriteCapableGroup = false;
+
+  for (const group of groupList) {
+    if (group in OBSERVER_GROUP_TO_MOD) {
+      // Observer groups resolve ONLY via the explicit map — they are excluded
+      // from prefix inference so they can never grant curator-mod status.
+      if (observerMod === null) { observerMod = OBSERVER_GROUP_TO_MOD[group]; }
+      continue;
+    }
+    if (group.endsWith('Developer')) { isDeveloper = true; }
+    if (group === 'Tester' && devOrStageOrProd !== 'prod') { isTester = true; }
+    else if (group === 'POTester' && devOrStageOrProd === 'prod') { isTester = true; }
+    if (ADMIN_GROUPS.includes(group)) { hasWriteCapableGroup = true; }
+    const inferred = prefixMod(group);
+    if (inferred) {
+      mod = inferred;
+      hasWriteCapableGroup = true;
+    }
+  }
+
+  const isObserver = observerMod !== null && !hasWriteCapableGroup && !isDeveloper;
+  if (isObserver) { mod = observerMod; }
+  return { mod, isDeveloper, isTester, isObserver };
+}
