@@ -74,12 +74,13 @@ const Section = ({ title, children }) => (
 
 const fullName = (n) => [n.first_name, n.middle_name, n.last_name].filter(Boolean).join(' ');
 
+// The API resolves a cross-reference curie against the A-team resource
+// descriptors and serves the link as `url` (with any per-page links under
+// pages[].url), so the UI never builds these itself -- the MOD URL templates
+// live in the a-team database, not here.
 const xrefHref = (x) => {
-  if (Array.isArray(x.pages) && x.pages[0]) return x.pages[0];
-  if (x.curie_prefix === 'ORCID') {
-    const id = (x.curie || '').replace(/^ORCID:/i, '');
-    return id ? `https://orcid.org/${id}` : null;
-  }
+  if (x.url) return x.url;
+  if (Array.isArray(x.pages) && x.pages[0]?.url) return x.pages[0].url;
   return null;
 };
 
@@ -414,10 +415,12 @@ const PersonDisplay = ({ person }) => {
           const label = x.curie_prefix || 'xref';
           const value = x.curie || '';
           const isObsolete = x.is_obsolete === true;
-          const valStyle = {
-            textDecoration: isObsolete ? 'line-through' : 'none',
-            color: isObsolete ? '#888' : 'inherit',
-          };
+          // Only override styling for an obsolete xref. Setting color:inherit +
+          // textDecoration:none on a live one is what made ORCID render as plain
+          // text instead of a link.
+          const valStyle = isObsolete
+            ? { textDecoration: 'line-through', color: '#888' }
+            : undefined;
           const editTs = metaLabel(x.updated_by, x.date_updated);
           const obsoleteNote = isObsolete ? 'obsolete' : null;
           const ts = [obsoleteNote, editTs].filter(Boolean).join(' · ') || null;
