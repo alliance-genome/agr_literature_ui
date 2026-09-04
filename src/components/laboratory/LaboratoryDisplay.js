@@ -1,5 +1,4 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
 import Card from 'react-bootstrap/Card';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -151,9 +150,9 @@ const personRoles = (lp) => {
   return roles;
 };
 
-const PersonnelCard = ({ list, effectiveMod }) => {
-  const personHref = (curie) =>
-    '/person?personCurie=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=wbdisplay' : '');
+const PersonnelCard = ({ list }) => {
+  // Display is the Person page's default tab, so no ?tab= is needed.
+  const personHref = (curie) => '/person?personCurie=' + encodeURIComponent(curie);
   return (
     <Card className="mb-3">
       <Card.Header>Personnel</Card.Header>
@@ -187,10 +186,6 @@ const PersonnelCard = ({ list, effectiveMod }) => {
 };
 
 const LaboratoryDisplay = ({ laboratory }) => {
-  const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
-  const testerMod = useSelector((s) => s.isLogged.testerMod);
-  const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
-
   if (!laboratory) return null;
   const status = laboratory.status || 'unknown';
   const statusVariant = status === 'active' ? 'success' : 'secondary';
@@ -223,7 +218,7 @@ const LaboratoryDisplay = ({ laboratory }) => {
         <Col md={6}>
           <AlleleDesignationsCard list={laboratory.allele_designations} />
           <CrossReferencesCard list={laboratory.cross_references} />
-          <PersonnelCard list={laboratory.lab_persons} effectiveMod={effectiveMod} />
+          <PersonnelCard list={laboratory.lab_persons} />
         </Col>
       </Row>
 

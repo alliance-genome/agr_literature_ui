@@ -1,12 +1,14 @@
-// src/components/person/personEditorSections.js
+// src/components/person/personSections.js
 //
-// Shared definitions for the layout-driven Person "Editor" tab.
+// Shared section definitions for BOTH layout-driven Person tabs -- "Editor" and
+// "Display".
 //
-// The editor mirrors the WB editor's ten card sections, but lets the user
-// arrange those sections in a 2D grid (via PersonEditorLayoutModal), hide
-// individual sections, and toggle the per-field timestamp / curator metadata.
-// The arrangement + visibility + toggles are persisted per-user under the
-// `person_editor_layout` component namespace.
+// Each tab lets the user arrange these sections in a 2D grid (via
+// SectionLayoutModal), hide individual sections, and toggle the per-field
+// timestamp / curator metadata. The two tabs share this section list so the
+// settings checklist reads identically in each, but persist to SEPARATE
+// namespaces -- a curator's editing arrangement is independent of their reading
+// arrangement.
 //
 // The grid geometry is identical to the BiblioEditor layout feature, so we reuse
 // its generic helpers (layoutToCssGrid / columnFloorForLayout / maxColumnsPerRow)
@@ -21,8 +23,10 @@ import {
 
 export { LAYOUT_COLS, layoutToCssGrid, columnFloorForLayout, maxColumnsPerRow };
 
-// componentName namespace used with usePersonSettings / the /person_setting API.
+// componentName namespaces used with usePersonSettings / the /person_setting API.
+// Separate per tab: arranging the Editor must not disturb the Display.
 export const PERSON_EDITOR_LAYOUT_COMPONENT_NAME = 'person_editor_layout';
+export const PERSON_DISPLAY_LAYOUT_COMPONENT_NAME = 'person_display_layout';
 
 // The sections, in their natural (default) top-to-bottom order. The ids are used
 // both as react-grid-layout keys and as the keys of the editor's `sectionRows`
@@ -62,13 +66,13 @@ export const defaultHiddenSections = (effectiveMod) =>
       .map((s) => s.id),
   );
 
-// Default arrangement: the ten sections stacked full-width, preserving the
-// editor's original single-column appearance. Used when the user has no saved
+// Default arrangement: every section stacked full-width, preserving each tab's
+// original single-column appearance. Used when the user has no saved
 // layout, and as the starting canvas state in the preference modal.
 //
 // Heights are intentionally one row each so the modal canvas stays compact (with
-// ten sections, taller boxes make the canvas scroll a lot). The editor itself
-// ignores `h` — sections are laid out by column position with auto-sized rows —
+// eleven sections, taller boxes make the canvas scroll a lot). The pages
+// themselves ignore `h` — sections are laid out by column position with auto-sized rows —
 // so the canvas height carries no real meaning beyond the schematic.
 export const DEFAULT_LAYOUT = SECTION_DEFS.map((s, i) => ({
   i: s.id,
