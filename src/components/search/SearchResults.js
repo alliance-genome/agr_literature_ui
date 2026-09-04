@@ -54,11 +54,15 @@ const SearchResultItem = ({ reference }) => {
   const TETRedirect = ({ curie }) => {
     const history = useHistory(); // Correct usage of useHistory
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+    // Observers are read-only: don't advertise the TET editor (the biblio
+    // router would coerce it to display anyway) (SCRUM-6431). The image
+    // indicator stays: file management is an observer-permitted read view.
+    const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
     const goToTET = () => {
         history.push(`/Biblio/?action=entity&referenceCurie=${curie}`); // Use backticks for template literals
     };
     return (
-         isSignedIn ?  <Button  className="redirect-TET-button"  onClick={goToTET}  >
+         (isSignedIn && !cognitoObserver) ?  <Button  className="redirect-TET-button"  onClick={goToTET}  >
                           <FontAwesomeIcon icon={faPenSquare} id="TET_icon_id" size='2x'/>
                           <p id="TET_text_id">TET</p>
                       </Button>  : null

@@ -133,6 +133,7 @@ const RetractionBanner = () => {
 const BiblioActionToggler = () => {
   const dispatch = useDispatch();
   const biblioAction = useSelector(state => state.biblio.biblioAction);
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
 
   // Warn before leaving Quick Topic Addition with staged, unsubmitted
   // assessments (switching tabs unmounts the grid and discards them).
@@ -202,6 +203,44 @@ const BiblioActionToggler = () => {
 //     dispatch(changeBiblioActionToggler(e))
 //     history.push("/Biblio/?action=" + biblioActionTogglerSelected + "&referenceCurie=" + referenceCurie);
 //   }
+
+  // Observers are read-only: they get the display tab plus file management
+  // (their UI path for viewing figures and downloading full text / derived
+  // files, which the ticket explicitly grants) — file management's upload and
+  // add-to-corpus controls are separately hidden for observers. The curation
+  // tabs are hidden here and BiblioActionRouter independently coerces any
+  // other ?action= to display, so hand-typed editor URLs show display too.
+  // The API rejects observer mutations regardless (SCRUM-6431).
+  if (cognitoObserver) {
+    const observerAction = biblioAction === 'filemanagement' ? 'filemanagement' : 'display';
+    return (
+      <Form>
+      <div key={`default-radio`} className="mb-3 biblio-mode-radios">
+        <div className='radio-span'>
+          <Form.Check
+            inline
+            className={observerAction === 'display' ? 'radio-form underlined' : 'radio-form'}
+            checked={observerAction === 'display' ? 'checked' : ''}
+            type='radio'
+            label='biblio display'
+            id='biblio-toggler-display'
+            onChange={(e) => toggleAction(e, 'display')}
+          />
+        </div>
+        <div className='radio-span'>
+          <Form.Check
+            inline
+            className={observerAction === 'filemanagement' ? 'radio-form underlined' : 'radio-form'}
+            checked={observerAction === 'filemanagement' ? 'checked' : ''}
+            type='radio'
+            label='file management'
+            id='biblio-toggler-filemanagement'
+            onChange={(e) => toggleAction(e, 'filemanagement')}
+          />
+        </div>
+      </div>
+      </Form>);
+  }
 
   return (
     <Form>
@@ -289,9 +328,17 @@ const BiblioActionToggler = () => {
 
 
 const BiblioActionRouter = () => {
-  const biblioAction = useSelector(state => state.biblio.biblioAction);
+  const rawBiblioAction = useSelector(state => state.biblio.biblioAction);
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const authorReorderOpen = useSelector(state => state.biblio.authorReorderOpen);
+  // Observers are read-only: only the display and file-management views are
+  // reachable (file management is their figure-viewing / download path); any
+  // other action — e.g. a hand-typed ?action=editor URL — coerces to display.
+  // The API rejects observer mutations independently (SCRUM-6431).
+  const OBSERVER_ACTIONS = ['display', 'filemanagement'];
+  const biblioAction = (cognitoObserver && !OBSERVER_ACTIONS.includes(rawBiblioAction))
+    ? 'display' : rawBiblioAction;
   switch (biblioAction) {
     case 'display':
       return (<Container><BiblioActionToggler /><RetractionBanner /><RowDivider /><BiblioDisplay /></Container>);
