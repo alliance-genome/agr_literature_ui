@@ -153,7 +153,7 @@ const personRoles = (lp) => {
 
 const PersonnelCard = ({ list, effectiveMod }) => {
   const personHref = (curie) =>
-    '/person?personCurie=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=wbdisplay' : '');
+    '/person?personCurie=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=display' : '');
   return (
     <Card className="mb-3">
       <Card.Header>Personnel</Card.Header>

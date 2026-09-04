@@ -87,7 +87,7 @@ const labRoles = (lp) => {
   return roles;
 };
 
-const PersonWbDisplay = ({ person }) => {
+const PersonDisplay = ({ person }) => {
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
@@ -113,8 +113,6 @@ const PersonWbDisplay = ({ person }) => {
 
   const hasAddress =
     person.street_address || person.city || person.state || person.postal_code || person.country;
-  const cityLine = [person.city, person.state].filter(Boolean).join(', ');
-  const cityZip = [cityLine, person.postal_code].filter(Boolean).join(' ');
 
   return (
     <div style={{ textAlign: 'left' }}>
@@ -326,4 +324,4 @@ const PersonWbDisplay = ({ person }) => {
   );
 };
 
-export default PersonWbDisplay;
+export default PersonDisplay;

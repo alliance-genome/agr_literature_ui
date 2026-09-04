@@ -81,7 +81,7 @@ const LaboratoryWbDisplay = ({ laboratory }) => {
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
   const personHref = (curie) =>
-    '/person?personCurie=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=wbdisplay' : '');
+    '/person?personCurie=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=display' : '');
 
   if (!laboratory) return null;
   const lab = laboratory;
