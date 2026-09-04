@@ -291,15 +291,23 @@ describe('excludeNoData default (facet "exclude negative" parity, SCRUM-6228)', 
       .toEqual({ topic: ['ATP:1'] });
   });
 
-  test('does not inject into excluded (negated) leaves', () => {
+  test('injects into excluded (negated) leaves too (SCRUM-6400)', () => {
+    // NOT (topic AND has_data = yes): a paper is excluded only when a
+    // data-carrying tag matches; ticking exclude must not drop the clause.
     const out = compileAdvancedQuery(treeWith({ topic: ['ATP:1'] }, true, true));
     expect(out.negate).toBe(true);
-    expect(out.match).toEqual({ topic: ['ATP:1'] });
+    expect(out.match).toEqual({ topic: ['ATP:1'], has_data: ['yes'] });
   });
 
   test('an explicit Has data field overrides the default', () => {
     expect(compileAdvancedQuery(treeWith({ topic: ['ATP:1'], has_data: ['no'] }, true)).match)
       .toEqual({ topic: ['ATP:1'], has_data: ['no'] });
+  });
+
+  test('an explicit Has data field overrides the default on excluded leaves', () => {
+    const out = compileAdvancedQuery(treeWith({ topic: ['ATP:1'], has_data: ['no'] }, true, true));
+    expect(out.negate).toBe(true);
+    expect(out.match).toEqual({ topic: ['ATP:1'], has_data: ['no'] });
   });
 
   test('never makes an empty tree runnable', () => {

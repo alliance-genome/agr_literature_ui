@@ -800,7 +800,9 @@ const AdvancedTopicQueryBuilder = () => {
             <b>Has data</b> distinguishes positive tags (has data) from negated tags
             (no data). The tree-wide <b>Exclude no-data tags</b> toggle (off by
             default) adds has-data=yes to every tag condition — the facet search’s
-            “exclude negative”. Turn it on for positive-only results, or add an
+            “exclude negative”. On an <b>excluded</b> Tag this means only
+            data-carrying tags exclude a paper (a paper whose only matching tag is
+            no-data is kept). Turn it on for positive-only results, or add an
             explicit <b>Has data</b> field to a Tag (set to <b>no</b>) to control a
             single tag.
           </li>
@@ -955,12 +957,15 @@ const AdvancedTopicQueryBuilder = () => {
           )
         ))}
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
+        {/* Stacked full-width, not side by side: with the workflow button off to
+            the right, curators missed it entirely (curator feedback on
+            SCRUM-6398) — under each other both options read as equal choices. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
           <Button
             variant="outline-primary"
             onClick={addTag}
             style={{
-              flex: '1 1 16rem', borderStyle: 'dashed',
+              width: '100%', borderStyle: 'dashed',
               borderRadius: '10px', fontSize: '0.85rem',
             }}
           ><FontAwesomeIcon icon={faPlus} style={{ marginRight: '6px' }} />Add another Tag (different tag on same paper)</Button>
@@ -971,7 +976,7 @@ const AdvancedTopicQueryBuilder = () => {
             variant="outline-success"
             onClick={addWorkflow}
             style={{
-              flex: '1 1 16rem', borderStyle: 'dashed',
+              width: '100%', borderStyle: 'dashed',
               borderRadius: '10px', fontSize: '0.85rem',
             }}
           ><FontAwesomeIcon icon={faPlus} style={{ marginRight: '6px' }} />Add Workflow condition (workflow tag on paper)</Button>

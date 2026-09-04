@@ -299,12 +299,15 @@ const compileLeafMatch = (leaf) => {
 // away; a node with a single effective child returns that child directly;
 // returns null when the whole tree is empty (caller then omits tet_advanced_query).
 //
-// When the tree's excludeNoData flag is on, each positive (non-excluded) leaf that
-// does not already pin has_data gets has_data = yes injected, so results only match
-// tags that have data — the same default the facet search applies as "exclude
-// negative". The flag lives on the tree root; `exclude` propagates it to leaves.
-// Injection is skipped for excluded (negated) leaves and for any leaf that already
-// carries an explicit Has data field, so those override the default (SCRUM-6228).
+// When the tree's excludeNoData flag is on, each leaf that does not already pin
+// has_data gets has_data = yes injected, so only tags that have data count — the
+// same default the facet search applies as "exclude negative". This applies to
+// excluded (negated) leaves too: NOT (topic AND has_data = yes) drops a paper
+// only when a DATA-carrying tag matches, while a paper whose only matching tag
+// is no-data is kept, consistent with "no-data tags don't count" (SCRUM-6400;
+// previously negated leaves were skipped and the clause silently vanished).
+// The flag lives on the tree root; `exclude` propagates it to leaves. A leaf
+// carrying an explicit Has data field overrides the default (SCRUM-6228).
 export const compileAdvancedQuery = (node, exclude) => {
   if (!node) return null;
   const excludeNoData = exclude === undefined ? node.excludeNoData === true : exclude;
@@ -313,7 +316,7 @@ export const compileAdvancedQuery = (node, exclude) => {
     if (!match) return null;
     // has_data is an attribute of topic-entity tags only; a Workflow condition
     // (wft leaf) has no polarity, so the excludeNoData default never touches it.
-    if (excludeNoData && !isWftLeaf(node) && !node.negate && !('has_data' in match)) {
+    if (excludeNoData && !isWftLeaf(node) && !('has_data' in match)) {
       match.has_data = ['yes'];
     }
     return { type: node.type, negate: !!node.negate, match };

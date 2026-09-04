@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { api } from "../../../api";
-import { getCuratorSourceId, fetchTopicEntityTags } from '../../../actions/biblioActions';
+import { getCuratorSourceId, fetchTopicEntityTags, setAllTopics } from '../../../actions/biblioActions';
+import TopicFilter from '../../AgGrid/TopicFilter';
 import { AgGridReact } from 'ag-grid-react';
 import { handleGridCopy } from '../../../utils/gridCopyHandler';
 import AgGridTablePreferenceControls from '../../settings/AgGridTablePreferenceControls';
@@ -134,7 +135,16 @@ const QuickTopicAddition = () => {
       api.applyColumnState({ state: columnState, applyOrder: true });
     }
     if (api.setFilterModel) {
-      api.setFilterModel(filterModel && Object.keys(filterModel).length > 0 ? filterModel : null);
+      // Preferences saved before topic_name switched to TopicFilter hold a text
+      // filter model on that column. AG Grid derives "filter active" from the
+      // model being non-null (regardless of doesFilterPass), so restoring the
+      // stale object would show a filter icon that filters nothing, suppress
+      // the managed row-drag handles, and re-persist itself on the next save.
+      // Drop any topic_name model that isn't the TopicFilter's array shape.
+      const safeFilterModel = filterModel && Object.fromEntries(
+        Object.entries(filterModel).filter(([colId, m]) => colId !== 'topic_name' || Array.isArray(m))
+      );
+      api.setFilterModel(safeFilterModel && Object.keys(safeFilterModel).length > 0 ? safeFilterModel : null);
     }
     api.onFilterChanged?.();
   }, []);
@@ -404,6 +414,10 @@ const QuickTopicAddition = () => {
         .sort(defaultTopicOrder);
       // Re-apply the active custom order (manual drag or loaded preference), if any.
       setTopicRows(orderRows(rows, savedRowOrderRef.current));
+      // Feed the shared Topic filter vocabulary (redux biblio.allTopics), the
+      // same way the WF editor and the TET table do for their grids — the
+      // TopicFilter popup reads it (SCRUM-6400).
+      dispatch(setAllTopics([...new Set(rows.map((r) => r.topic_name).filter(Boolean))]));
 
       // Enrich with definition/synonyms in one bulk lookup (SCRUM-6168). This is
       // best-effort: if it fails, the topic list still renders without them.
@@ -431,7 +445,7 @@ const QuickTopicAddition = () => {
     } finally {
       setLoading(false);
     }
-  }, [referenceCurie, accessLevel]);
+  }, [referenceCurie, accessLevel, dispatch]);
 
   useEffect(() => { fetchTopics(); }, [fetchTopics]);
 
@@ -761,7 +775,11 @@ const QuickTopicAddition = () => {
         flex: 2,
         minWidth: 200,
         sortable: true,
-        filter: true,
+        // Same Select-topic multi-select filter as the WF editor's curation
+        // table (SCRUM-6400). Its array model rides through the existing
+        // table-preference save/restore (getFilterModel/setFilterModel), so a
+        // curator's topic selection persists with their saved setting.
+        filter: TopicFilter,
         wrapText: true,
         autoHeight: true,
         cellStyle: { textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.2em', paddingTop: 4, paddingBottom: 4 },
