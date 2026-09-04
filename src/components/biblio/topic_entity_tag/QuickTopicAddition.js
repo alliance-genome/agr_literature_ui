@@ -135,7 +135,16 @@ const QuickTopicAddition = () => {
       api.applyColumnState({ state: columnState, applyOrder: true });
     }
     if (api.setFilterModel) {
-      api.setFilterModel(filterModel && Object.keys(filterModel).length > 0 ? filterModel : null);
+      // Preferences saved before topic_name switched to TopicFilter hold a text
+      // filter model on that column. AG Grid derives "filter active" from the
+      // model being non-null (regardless of doesFilterPass), so restoring the
+      // stale object would show a filter icon that filters nothing, suppress
+      // the managed row-drag handles, and re-persist itself on the next save.
+      // Drop any topic_name model that isn't the TopicFilter's array shape.
+      const safeFilterModel = filterModel && Object.fromEntries(
+        Object.entries(filterModel).filter(([colId, m]) => colId !== 'topic_name' || Array.isArray(m))
+      );
+      api.setFilterModel(safeFilterModel && Object.keys(safeFilterModel).length > 0 ? safeFilterModel : null);
     }
     api.onFilterChanged?.();
   }, []);
