@@ -800,7 +800,9 @@ const AdvancedTopicQueryBuilder = () => {
             <b>Has data</b> distinguishes positive tags (has data) from negated tags
             (no data). The tree-wide <b>Exclude no-data tags</b> toggle (off by
             default) adds has-data=yes to every tag condition — the facet search’s
-            “exclude negative”. Turn it on for positive-only results, or add an
+            “exclude negative”. On an <b>excluded</b> Tag this means only
+            data-carrying tags exclude a paper (a paper whose only matching tag is
+            no-data is kept). Turn it on for positive-only results, or add an
             explicit <b>Has data</b> field to a Tag (set to <b>no</b>) to control a
             single tag.
           </li>
