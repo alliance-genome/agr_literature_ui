@@ -11,17 +11,11 @@ import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 
 import { api } from '../api';
-import PersonCcDisplay from './person/PersonCcDisplay';
 import PersonEditor from './person/PersonEditor';
-import PersonCcEditor from './person/PersonCcEditor';
-import PersonJson from './person/PersonJson';
-import PersonCompact from './person/PersonCompact';
-import PersonTree from './person/PersonTree';
-import PersonWbDisplay from './person/PersonWbDisplay';
-import PersonWbEditor from './person/PersonWbEditor';
+import PersonDisplay from './person/PersonDisplay';
 
-const VALID_TABS = ['editor', 'ccdisplay', 'cceditor', 'json', 'compact', 'tree', 'wbdisplay', 'wbeditor'];
-const DEFAULT_TAB = 'editor';
+const VALID_TABS = ['display', 'editor'];
+const DEFAULT_TAB = 'display';
 
 const classifyInput = (raw) => {
   const trimmed = (raw || '').trim();
@@ -263,34 +257,18 @@ const Person = () => {
                 id="person-view-tabs"
                 className="mb-3"
               >
+                <Tab eventKey="display" title="Display">
+                  {/* Keyed by curie like the editor: Display holds fetched lineage
+                      in component state, so without a remount a new search would
+                      show the previous person's connections under the new header
+                      until the requests land. */}
+                  {activeTab === 'display' && (
+                    <PersonDisplay key={personData.curie} person={personData} />
+                  )}
+                </Tab>
                 <Tab eventKey="editor" title="Editor">
                   {activeTab === 'editor' && (
                     <PersonEditor key={personData.curie} person={personData} />
-                  )}
-                </Tab>
-                <Tab eventKey="ccdisplay" title="CC Display">
-                  {activeTab === 'ccdisplay' && <PersonCcDisplay person={personData} />}
-                </Tab>
-                <Tab eventKey="cceditor" title="CC Editor">
-                  {activeTab === 'cceditor' && (
-                    <PersonCcEditor key={personData.curie} person={personData} />
-                  )}
-                </Tab>
-                <Tab eventKey="json" title="JSON">
-                  {activeTab === 'json' && <PersonJson person={personData} />}
-                </Tab>
-                <Tab eventKey="compact" title="Compact">
-                  {activeTab === 'compact' && <PersonCompact person={personData} />}
-                </Tab>
-                <Tab eventKey="tree" title="Tree">
-                  {activeTab === 'tree' && <PersonTree person={personData} />}
-                </Tab>
-                <Tab eventKey="wbdisplay" title="WB display">
-                  {activeTab === 'wbdisplay' && <PersonWbDisplay person={personData} />}
-                </Tab>
-                <Tab eventKey="wbeditor" title="WB editor">
-                  {activeTab === 'wbeditor' && (
-                    <PersonWbEditor key={personData.curie} person={personData} />
                   )}
                 </Tab>
               </Tabs>

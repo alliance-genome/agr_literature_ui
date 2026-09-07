@@ -843,6 +843,33 @@ const Facets = () => {
                         </Button>
 			<Collapse in={openFacets.has(facetCategory)}>
                             <div>
+				{facetCategory === 'Workflow Tags' && (
+				   <>
+				     {/* Advanced Workflow search entry point (SCRUM-6398): the same
+				         global facet/advanced switch as Topics and Entities — the
+				         query builder holds Workflow conditions alongside Topic Tags
+				         so mixed criteria combine in one AND/OR tree. The workflow
+				         checkboxes below stay usable in both modes and AND with the
+				         builder's conditions. */}
+				     <div style={{ marginLeft: '30px', marginBottom: '6px' }}>
+				       <ButtonGroup size="sm">
+				         <Button
+				           variant={searchMode === 'facet' ? 'primary' : 'outline-secondary'}
+				           onClick={() => dispatch(setSearchMode('facet'))}
+				         >Facets</Button>
+				         <Button
+				           variant={searchMode === 'advanced' ? 'primary' : 'outline-secondary'}
+				           onClick={() => dispatch(setSearchMode('advanced'))}
+				         >Advanced query</Button>
+				       </ButtonGroup>
+				       {searchMode === 'advanced' && (
+				         <div style={{ fontSize: '0.72rem', color: '#6c757d', marginTop: '2px' }}>
+				           Checkbox selections below also apply, combined (AND) with the query builder.
+				         </div>
+				       )}
+				     </div>
+				   </>
+				)}
 				{facetCategory === 'Topics and Entities' && (
 				   <>
 				     {/* Advanced Topic search toggle (SCRUM-6228): sits next to the

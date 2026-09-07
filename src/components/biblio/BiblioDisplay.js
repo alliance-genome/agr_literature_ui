@@ -131,7 +131,11 @@ const RowDisplayModAssociation = ({fieldIndex, fieldName, referenceJsonLive, ref
 
 export const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
-    let anyUpdatedFlag = ''; let xref_list = '';
+    // Built as JSX elements, NOT an HTML string: curies like
+    // DOI:10.1002/(SICI)...<391::AID-BIES6>3.0.CO;2-R contain <...>, which an
+    // innerHTML string (with its unquoted href) parses as a tag, shredding the
+    // link markup. React escapes text and attributes correctly.
+    let anyUpdatedFlag = ''; const xrefElements = [];
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
       const [prefix] = splitCurie(crossRefDict['curie']);
       if (datasetXrefPrefixes.includes(prefix)) { continue; }
@@ -162,15 +166,20 @@ export const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonL
 	url = crossRefDict.pages[0].url;
       }
 
-      if (xref_list !== '') { xref_list += " | "; }
-      xref_list += `<span style="color: red">${isObsolete}</span> <a href=${url}  rel="noreferrer noopener" target="_blank">${valueLiveCurie}</a>`;
+      xrefElements.push(
+        <span key={index}>
+          {xrefElements.length > 0 && ' | '}
+          {isObsolete && <span style={{ color: 'red' }}>{isObsolete} </span>}
+          <a href={url} rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a>
+        </span>
+      );
     }
-    if (xref_list === '') { return null; }
+    if (xrefElements.length === 0) { return null; }
     return (
         <Row key='resources_for_curation' className="Row-general" xs={2} md={4} lg={6}>
             <Col className='Col-general Col-display Col-display-left'>cross_references</Col>
             <Col className={`Col-general Col-display Col-display-right ${anyUpdatedFlag}`} lg={{ span: 10 }}>
-                <div dangerouslySetInnerHTML={{ __html: xref_list }}></div>
+                <div>{xrefElements}</div>
             </Col>
         </Row>
     ); }
@@ -179,7 +188,8 @@ export const RowDisplayCrossReferences = ({fieldIndex, fieldName, referenceJsonL
 
 export const RowDisplayDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJsonDb}) => {
   if ('cross_references' in referenceJsonLive && referenceJsonLive['cross_references'] !== null) {
-    let anyUpdatedFlag = ''; let xref_list = '';
+    // JSX elements, not an innerHTML string — see RowDisplayCrossReferences.
+    let anyUpdatedFlag = ''; const xrefElements = [];
     for (const[index, crossRefDict] of referenceJsonLive['cross_references'].entries()) {
       const [prefix] = splitCurie(crossRefDict['curie']);
       if (!datasetXrefPrefixes.includes(prefix)) { continue; }
@@ -209,15 +219,20 @@ export const RowDisplayDatasets = ({fieldIndex, fieldName, referenceJsonLive, re
         url = crossRefDict.pages[0].url;
       }
 
-      if (xref_list !== '') { xref_list += " | "; }
-      xref_list += `<span style="color: red">${isObsolete}</span> <a href=${url}  rel="noreferrer noopener" target="_blank">${valueLiveCurie}</a>`;
+      xrefElements.push(
+        <span key={index}>
+          {xrefElements.length > 0 && ' | '}
+          {isObsolete && <span style={{ color: 'red' }}>{isObsolete} </span>}
+          <a href={url} rel="noreferrer noopener" target="_blank">{valueLiveCurie}</a>
+        </span>
+      );
     }
-    if (xref_list === '') { return null; }
+    if (xrefElements.length === 0) { return null; }
     return (
         <Row key='datasets' className="Row-general" xs={2} md={4} lg={6}>
             <Col className='Col-general Col-display Col-display-left'>datasets</Col>
             <Col className={`Col-general Col-display Col-display-right ${anyUpdatedFlag}`} lg={{ span: 10 }}>
-                <div dangerouslySetInnerHTML={{ __html: xref_list }}></div>
+                <div>{xrefElements}</div>
             </Col>
         </Row>
     ); }

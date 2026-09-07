@@ -16,9 +16,15 @@ import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie
 import { roleFlagDisabled } from '../../utils/labPersonRoles';
 import PersonCuriePicker from './PersonCuriePicker';
 import LabCuriePicker from './LabCuriePicker';
-import PersonEditorLayoutModal from '../settings/PersonEditorLayoutModal';
-import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './personEditorSections';
-import './personEditorSections.css';
+import SectionLayoutModal from '../settings/SectionLayoutModal';
+import {
+  SECTION_DEFS,
+  DEFAULT_LAYOUT,
+  PERSON_EDITOR_LAYOUT_COMPONENT_NAME,
+  layoutToCssGrid,
+  defaultHiddenSections,
+} from './personSections';
+import './personSections.css';
 
 // person_lineage.relationship is a vocabulary term: read shape is the object
 // {value,label,is_obsolete} (or null), write is the term id (int). Keep it a STRING in
@@ -339,7 +345,7 @@ const PersonEditor = ({ person }) => {
   const p = person ?? {};
 
   // Effective MOD (testerMod overrides cognitoMod) drives per-section default
-  // visibility — see SECTION_DEFS `mods` gating in personEditorSections.js.
+  // visibility — see SECTION_DEFS `mods` gating in personSections.js.
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
@@ -1968,13 +1974,13 @@ const PersonEditor = ({ person }) => {
 
   const sectionsRender = grid ? (
     <div
-      className={`person-editor-grid${wideLayout ? ' person-editor-grid--wide' : ''}`}
+      className={`person-section-grid${wideLayout ? ' person-section-grid--wide' : ''}`}
       style={{ '--person-col-floor': `${grid.colFloor}px` }}
     >
       {orderedIds.map((id) => (
         <div
           key={id}
-          className="person-editor-section"
+          className="person-section"
           style={grid.styles[id] || { gridColumn: '1 / -1' }}
         >
           {sectionRows[id]}
@@ -1995,7 +2001,10 @@ const PersonEditor = ({ person }) => {
       </div>
 
       <div className="d-flex justify-content-end mb-3">
-        <PersonEditorLayoutModal
+        <SectionLayoutModal
+          sectionDefs={SECTION_DEFS}
+          defaultLayout={DEFAULT_LAYOUT}
+          componentName={PERSON_EDITOR_LAYOUT_COMPONENT_NAME}
           onApplyPrefs={applyPrefs}
           current={{
             layout: activeLayout,
