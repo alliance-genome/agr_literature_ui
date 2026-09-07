@@ -15,6 +15,7 @@ import {
   setEditTag,
   biblioQueryReferenceCurie,
   fetchTaxonData,
+  fetchDataContextData,
   changeBiblioActionToggler,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
@@ -30,6 +31,21 @@ import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
 import { debounce } from 'lodash';
 import Alert from "react-bootstrap/Alert";
+
+// SCRUM-5697. data_context is a hierarchy under ATP:0000323, so the options come
+// from the ontology (fetchDataContextData) rather than a literal list here.
+// Only leaves are offered -- "mentioned data" and "marker data" are groupings,
+// not curation choices. The default is the leaf the WB topic classifiers use.
+const DEFAULT_DATA_CONTEXT = "ATP:0000325";
+
+// Labels for data_context terms that are NOT selectable but can still appear on a
+// tag: the root and the two groupings. Pipelines write these (WB entity extraction
+// sends the root), so the editor has to be able to display them.
+const dataContextNameMap = {
+  "ATP:0000323": "data context",
+  "ATP:0000324": "mentioned data",
+  "ATP:0000326": "marker data",
+};
 
 const TopicEntityCreate = () => {
   const debugMode = false;
@@ -72,8 +88,10 @@ const TopicEntityCreate = () => {
   const [isVisibleMessageFailureSetCurationStatusToCurated, setIsVisibleMessageFailureSetCurationStatusToCurated] = useState("");
   const [rows, setRows] = useState([
     { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", noteText: "", entityResultList: [],
-      newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false }
+      newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false,
+      dataContextSelect: DEFAULT_DATA_CONTEXT }
   ]);
+  const [dataContextOptions, setDataContextOptions] = useState([]);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const inputRefs = useRef([]);
 
@@ -184,6 +202,7 @@ const TopicEntityCreate = () => {
   };
 
   useEffect(() => {
+    fetchDataContextData().then((data) => setDataContextOptions(data));
     getDescendantATPIds("ATP:0000005").then((data) => setGeneDescendants(data));
     getDescendantATPIds("ATP:0000006").then((data) => setAlleleDescendants(data));
   }, []);
@@ -220,6 +239,7 @@ const TopicEntityCreate = () => {
           newDataCheckbox: editRow.data_novelty === 'ATP:0000321' ? true : false,
           newToDbCheckbox: editRow.data_novelty === 'ATP:0000228' ? true : false,
           newToFieldCheckbox: editRow.data_novelty === 'ATP:0000229' ? true : false,
+          dataContextSelect: editRow.data_context || DEFAULT_DATA_CONTEXT,
 	  confidence_score: editRow.confidence_score || null,
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",
@@ -307,6 +327,7 @@ const TopicEntityCreate = () => {
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
 	data_novelty: dataNoveltyAtp,
+	data_context: row.dataContextSelect || DEFAULT_DATA_CONTEXT,
 	confidence_score: null,
 	confidence_level: null,
 	topic_entity_tag_source_id: topicEntitySourceId || null
@@ -342,7 +363,8 @@ const TopicEntityCreate = () => {
       newToDbCheckbox: false,
       newToFieldCheckbox: false,
       noDataCheckbox: false,
-      entityAdditionDoneCheckbox: false
+      entityAdditionDoneCheckbox: false,
+      dataContextSelect: DEFAULT_DATA_CONTEXT
     };
   }
 
@@ -839,7 +861,7 @@ const TopicEntityCreate = () => {
           topic
         </Col>
         <Col className="div-grey-border" sm="1">
-          checkbox
+          checkbox / data context
         </Col>
         <Col className="div-grey-border" sm="1">
           entity type
@@ -984,6 +1006,34 @@ const TopicEntityCreate = () => {
                     }}
                   />
                   <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
+                  <Form.Control
+                    as="select"
+                    size="sm"
+                    id={`dataContextSelect-${index}`}
+                    title="Data context"
+                    style={{ marginTop: '6px', fontSize: '0.75rem' }}
+                    value={row.dataContextSelect || DEFAULT_DATA_CONTEXT}
+                    onChange={(e) => handleRowChange(index, 'dataContextSelect', e.target.value)}
+                  >
+                    {/* A tag written by a pipeline can carry a term the curator
+                        dropdown does not offer -- the WB entity-extraction models
+                        send ATP:0000323 "data context", and only leaves are
+                        selectable. Without a matching <option> the browser would
+                        display the first one instead, and saving would silently
+                        rewrite the stored value. Show it as a disabled option so it
+                        renders truthfully but cannot be chosen. */}
+                    {row.dataContextSelect &&
+                      !dataContextOptions.some((o) => o.curie === row.dataContextSelect) && (
+                      <option key={row.dataContextSelect} value={row.dataContextSelect} disabled>
+                        {dataContextNameMap[row.dataContextSelect] || row.dataContextSelect}
+                      </option>
+                    )}
+                    {dataContextOptions.map((option) => (
+                      <option key={option.curie} value={option.curie}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </Form.Control>
                 </div>
               </Col>
               <Col sm="1">

@@ -27,6 +27,7 @@ export default (props) => {
                 negated: validation === 'positive' ? props.data.negated : !props.data.negated,
                 note: null,
                 data_novelty: props.data.data_novelty,
+                data_context: props.data.data_context,
                 reference_curie: referenceCurie,
                 species: props.data.species,
                 topic: props.data.topic,

@@ -114,6 +114,8 @@ export default function BulkValidationModal({
       entity_type: null,
       species: species?.curie || null,
       data_novelty: 'ATP:0000335',
+      // Matches CURATOR_VALIDATION_DATA_CONTEXT on the server's /validate path.
+      data_context: 'ATP:0000325',
       confidence_score: null,
       confidence_level: null,
       note: note.trim() || null,

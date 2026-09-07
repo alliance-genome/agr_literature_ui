@@ -725,6 +725,54 @@ export const fetchDisplayTagData = async () => {
   }
 };
 
+export const fetchDataContextData = async () => {
+  // SCRUM-5697. data_context is a hierarchy under ATP:0000323 "data context":
+  //   ATP:0000324 mentioned data -> ATP:0000360 background information
+  //                                 ATP:0000325 experimentally studied data
+  //   ATP:0000326 marker data    -> ATP:0000328 expression marker
+  //                                 ATP:0000327 genetic marker
+  //
+  // Curators pick a LEAF only: the two groupings are organisational, not
+  // curation choices. Rather than hardcode which curies are groupings, we take
+  // all descendants and subtract the root's direct children -- those are exactly
+  // the intermediate nodes. So renaming or adding a grouping needs no UI change.
+  //
+  // Note the /<direct_children_only>/<include_self>/<include_names> path form is
+  // required: the short /search_descendants/<curie> form returns bare curie
+  // strings, not {curie, name} objects.
+  const fallbackDataContextData = [
+    { curie: "ATP:0000360", name: "background information" },
+    { curie: "ATP:0000325", name: "experimentally studied data" },
+    { curie: "ATP:0000328", name: "expression marker" },
+    { curie: "ATP:0000327", name: "genetic marker" },
+  ];
+
+  const allUrl = `/ontology/search_descendants/ATP:0000323/false/false/true`;
+  const groupingsUrl = `/ontology/search_descendants/ATP:0000323/true/false/true`;
+
+  try {
+    const [allRes, groupingsRes] = await Promise.all([
+      api.get(allUrl),
+      api.get(groupingsUrl),
+    ]);
+
+    const all = Array.isArray(allRes.data) ? allRes.data : [];
+    const groupings = Array.isArray(groupingsRes.data) ? groupingsRes.data : [];
+    if (all.length === 0) {
+      return fallbackDataContextData;
+    }
+
+    const groupingCuries = new Set(groupings.map((t) => t.curie));
+    const leaves = all.filter((t) => t && t.curie && !groupingCuries.has(t.curie));
+    // If the shape ever changes such that everything is filtered out, prefer the
+    // known-good list over an empty dropdown.
+    return leaves.length > 0 ? leaves : fallbackDataContextData;
+  } catch (error) {
+    console.error("Error occurred in fetchDataContextData:", error);
+    return fallbackDataContextData;
+  }
+};
+
 export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   const createBiblioQueryReferenceCurie = async () => {
