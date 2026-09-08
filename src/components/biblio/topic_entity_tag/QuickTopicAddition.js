@@ -26,6 +26,7 @@ import {
   conflictsWithValidated,
   stagedTagsFor,
 } from './quickTopicAssessment';
+import { defaultDataContext } from './dataContextDefaults';
 
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
@@ -545,12 +546,19 @@ const QuickTopicAddition = () => {
       entity_type: null,
       species: species?.curie || null,
       data_novelty,
+      // SCRUM-5697. Quick add always creates a topic-only tag (entity and
+      // entity_type are null above), so the shape argument is false. Sending it
+      // rather than letting the server default apply is what keeps a WB
+      // quick-add on ATP:0000323, matching the term the backfill gave WB's
+      // existing topic-only tags -- otherwise re-adding an existing topic never
+      // matches it and inserts a duplicate instead of returning 409.
+      data_context: defaultDataContext(accessLevel, false),
       confidence_score: null,
       confidence_level: null,
       note: note?.trim() || null,
     };
     await api.post('/topic_entity_tag/', payload);
-  }, [referenceCurie, sourceId]);
+  }, [referenceCurie, sourceId, accessLevel]);
 
   // Refs so AG Grid cell renderers read current values without rebuilding
   // columnDefs (which would reset column sort/width state).

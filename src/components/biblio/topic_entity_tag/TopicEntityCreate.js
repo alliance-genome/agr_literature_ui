@@ -19,6 +19,7 @@ import {
   changeBiblioActionToggler,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
+import { defaultDataContext } from "./dataContextDefaults";
 
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
@@ -35,8 +36,9 @@ import Alert from "react-bootstrap/Alert";
 // SCRUM-5697. data_context is a hierarchy under ATP:0000323, so the options come
 // from the ontology (fetchDataContextData) rather than a literal list here.
 // Only leaves are offered -- "mentioned data" and "marker data" are groupings,
-// not curation choices. The default is the leaf the WB topic classifiers use.
-const DEFAULT_DATA_CONTEXT = "ATP:0000325";
+// not curation choices. The default comes from defaultDataContext, which is
+// per-MOD: WB topic tags take the ATP:0000323 root and everything else takes
+// experimentally studied data.
 
 // Labels for data_context terms that are NOT selectable but can still appear on a
 // tag: the root and the two groupings. Pipelines write these (WB entity extraction
@@ -89,7 +91,7 @@ const TopicEntityCreate = () => {
   const [rows, setRows] = useState([
     { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", noteText: "", entityResultList: [],
       newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false,
-      dataContextSelect: DEFAULT_DATA_CONTEXT }
+      dataContextSelect: "" }
   ]);
   const [dataContextOptions, setDataContextOptions] = useState([]);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
@@ -239,7 +241,7 @@ const TopicEntityCreate = () => {
           newDataCheckbox: editRow.data_novelty === 'ATP:0000321' ? true : false,
           newToDbCheckbox: editRow.data_novelty === 'ATP:0000228' ? true : false,
           newToFieldCheckbox: editRow.data_novelty === 'ATP:0000229' ? true : false,
-          dataContextSelect: editRow.data_context || DEFAULT_DATA_CONTEXT,
+          dataContextSelect: editRow.data_context || "",
 	  confidence_score: editRow.confidence_score || null,
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",
@@ -327,7 +329,7 @@ const TopicEntityCreate = () => {
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
 	data_novelty: dataNoveltyAtp,
-	data_context: row.dataContextSelect || DEFAULT_DATA_CONTEXT,
+	data_context: row.dataContextSelect || defaultDataContext(accessLevel, Boolean(entityCurie)),
 	confidence_score: null,
 	confidence_level: null,
 	topic_entity_tag_source_id: topicEntitySourceId || null
@@ -364,7 +366,7 @@ const TopicEntityCreate = () => {
       newToFieldCheckbox: false,
       noDataCheckbox: false,
       entityAdditionDoneCheckbox: false,
-      dataContextSelect: DEFAULT_DATA_CONTEXT
+      dataContextSelect: ""
     };
   }
 
@@ -448,6 +450,18 @@ const TopicEntityCreate = () => {
       return newRows;
     });
   };
+
+  // SCRUM-5697. The data_context a row will be saved with. Derived rather than
+  // stored in row state for two reasons: an untouched row then follows the
+  // entity field as it is filled in (WB splits on exactly that), and a late
+  // accessLevel from redux cannot leave a stale default behind. Once the curator
+  // picks a term, dataContextSelect holds it and wins.
+  //
+  // entityText is the display-time proxy for "has an entity"; the payload uses
+  // the resolved entity curie instead, since that is what decides the shape of
+  // the tag actually sent.
+  const rowDataContext = (row) =>
+    row.dataContextSelect || defaultDataContext(accessLevel, Boolean(row.entityText));
 
   const handleRowChange = (index, field, value) => {
     setRows((prevRows) => {
@@ -1012,20 +1026,22 @@ const TopicEntityCreate = () => {
                     id={`dataContextSelect-${index}`}
                     title="Data context"
                     style={{ marginTop: '6px', fontSize: '0.75rem' }}
-                    value={row.dataContextSelect || DEFAULT_DATA_CONTEXT}
+                    value={rowDataContext(row)}
                     onChange={(e) => handleRowChange(index, 'dataContextSelect', e.target.value)}
                   >
-                    {/* A tag written by a pipeline can carry a term the curator
-                        dropdown does not offer -- the WB entity-extraction models
-                        send ATP:0000323 "data context", and only leaves are
-                        selectable. Without a matching <option> the browser would
-                        display the first one instead, and saving would silently
-                        rewrite the stored value. Show it as a disabled option so it
-                        renders truthfully but cannot be chosen. */}
-                    {row.dataContextSelect &&
-                      !dataContextOptions.some((o) => o.curie === row.dataContextSelect) && (
-                      <option key={row.dataContextSelect} value={row.dataContextSelect} disabled>
-                        {dataContextNameMap[row.dataContextSelect] || row.dataContextSelect}
+                    {/* The effective term is not always one the dropdown offers.
+                        A pipeline-written tag can carry a grouping or the root --
+                        the WB entity-extraction models send ATP:0000323 -- and a
+                        WB topic-only row now *defaults* to that root, since only
+                        leaves are selectable. Without a matching <option> the
+                        browser would display the first one instead, and saving
+                        would silently rewrite the stored value. Show it as a
+                        disabled option so it renders truthfully but cannot be
+                        chosen. */}
+                    {rowDataContext(row) &&
+                      !dataContextOptions.some((o) => o.curie === rowDataContext(row)) && (
+                      <option key={rowDataContext(row)} value={rowDataContext(row)} disabled>
+                        {dataContextNameMap[rowDataContext(row)] || rowDataContext(row)}
                       </option>
                     )}
                     {dataContextOptions.map((option) => (
