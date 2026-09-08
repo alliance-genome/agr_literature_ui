@@ -329,7 +329,12 @@ const TopicEntityCreate = () => {
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
 	data_novelty: dataNoveltyAtp,
-	data_context: row.dataContextSelect || defaultDataContext(accessLevel, Boolean(entityCurie)),
+	// rowDataContext, not the entityCurie argument: patchEntities and the
+	// topic-only branch of createEntities both pass entityCurie=null and attach
+	// the entity afterwards, so keying off it saved the WB root for a row the
+	// dropdown was showing as experimentally studied. Using the same helper the
+	// <select> renders makes display and payload agree by construction.
+	data_context: rowDataContext(row),
 	confidence_score: null,
 	confidence_level: null,
 	topic_entity_tag_source_id: topicEntitySourceId || null
@@ -462,6 +467,9 @@ const TopicEntityCreate = () => {
   // the tag actually sent.
   const rowDataContext = (row) =>
     row.dataContextSelect || defaultDataContext(accessLevel, Boolean(row.entityText));
+
+  // Declared before initializeUpdateJson uses it. Both are only invoked from
+  // event handlers, so the const is initialised by then either way.
 
   const handleRowChange = (index, field, value) => {
     setRows((prevRows) => {
