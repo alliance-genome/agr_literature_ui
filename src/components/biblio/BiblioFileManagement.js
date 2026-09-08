@@ -42,6 +42,7 @@ const BiblioFileManagement = () => {
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   let accessLevel = cognitoMod;
 
   if (testerMod !== 'No') {
@@ -65,10 +66,12 @@ const BiblioFileManagement = () => {
     .filter(item => item.corpus === 'inside_corpus')
     .map(item => item.mod_abbreviation);
 
-  // determine if user can upload files
+  // determine if user can upload files. Observers reach this view for reading
+  // and downloading (their accessLevel is their sponsoring MOD), but are
+  // read-only: no upload, and no add-to-corpus either (SCRUM-6431).
   let canUploadFiles = false;
 
-  if (accessLevel !== 'No') {
+  if (!cognitoObserver && accessLevel !== 'No') {
     if (accessLevel === null || modsInCorpus.includes(accessLevel)) {
       canUploadFiles = true;
     }
@@ -90,9 +93,9 @@ const BiblioFileManagement = () => {
             <FileUpload main_or_supp="main" />
             <FileUpload main_or_supp="supplement" />
           </>
-        ) : (
+        ) : !cognitoObserver ? (
           <AddToCorpus accessLevel={accessLevel} referenceCurie={referenceJsonLive.curie} />
-        )}
+        ) : null}
         <OpenAccess />
         <Workflow workflowRefreshTrigger={workflowRefreshTrigger} />
         <RowDivider />
@@ -149,6 +152,8 @@ const AddToCorpus = ({ accessLevel, referenceCurie }) => {
 const Workflow = ({ workflowRefreshTrigger }) => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  // Observers are read-only: no workflow transitions (SCRUM-6431).
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const referenceCurie = referenceJsonLive["curie"]
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
@@ -230,8 +235,8 @@ const Workflow = ({ workflowRefreshTrigger }) => {
   // currently we can only transition from "file upload in progress" to "file unavailable"
   const isMainPDFuploaded = modFileStatus[accessLevel]['atpName'] === 'files uploaded';
   const isDeveloperWithoutTester = cognitoDeveloper === true && testerMod === 'No';
-  const hideFileUnavailableButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
-  const hideInProgressButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file unavailable');
+  const hideFileUnavailableButton = cognitoObserver || isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
+  const hideInProgressButton = cognitoObserver || isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file unavailable');
 
   const handleWorkflowTransition = (newStatusId, alertMessage) => {
     let postData = {
@@ -312,6 +317,8 @@ const Workflow = ({ workflowRefreshTrigger }) => {
 const OpenAccess = () => {
 
   const dispatch = useDispatch();
+  // Observers never get the license editor — read-only span always (SCRUM-6431).
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const [licenseData, setLicenseData] = useState([]);
   const [resourceLicenses, setResourceLicenses] = useState({ curie: null, list: [] });
   const [newLicense, setNewLicense] = useState('');
@@ -547,7 +554,14 @@ const OpenAccess = () => {
                 :
                 null
             }
-            {licenseToShow !== '' && lastUpdatedBy === '' ?
+            {/* Observers: read-only, and only when the lastUpdatedBy block
+                above hasn't already shown the license (it renders for any
+                curator-licensed reference, so an unconditional span here
+                would double the license text) (SCRUM-6431). */}
+            {cognitoObserver ?
+                (lastUpdatedBy === '' ? <span>{licenseToShow}</span> : null)
+                :
+             (licenseToShow !== '' && lastUpdatedBy === '') ?
                 <span>{licenseToShow}</span>
                 :
                 <>
@@ -955,6 +969,10 @@ const FileEditor = ({ onFileStatusChange }) => {
 
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  // hasAccess (below) is a READ/download predicate; observers satisfy it for
+  // open-access, figure and own-MOD/PMC files but must never get the edit
+  // controls (pdf_type / publication status PATCH, delete) (SCRUM-6431).
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const fileUploadingShowSuccess = useSelector(state => state.biblio.fileUploadingShowSuccess);
@@ -1102,6 +1120,9 @@ const FileEditor = ({ onFileStatusChange }) => {
   };
 
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
+    // Read (download links) and write (edit/delete controls) separate here:
+    // hasAccess keeps the downloads, canEdit gates the mutations.
+    const canEdit = hasAccess && !cognitoObserver;
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
         (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation
@@ -1144,7 +1165,7 @@ const FileEditor = ({ onFileStatusChange }) => {
           <Col className="Col-general Col-display" lg={{ span: 1 }}>
             <Form.Control
               as="select"
-              disabled={!hasAccess}
+              disabled={!canEdit}
               value={referenceFile.pdf_type ?? ''}
               onChange={(event) => {
                 const newValue = event.target.value === "" ? null : event.target.value;
@@ -1165,7 +1186,7 @@ const FileEditor = ({ onFileStatusChange }) => {
           <Col className="Col-general Col-display" lg={{ span: 1 }}>
             <Form.Control
               as="select"
-              disabled={!hasAccess}
+              disabled={!canEdit}
               value={referenceFile.file_publication_status}
               onChange={(event) => {
                 const newValue = event.target.value;
@@ -1181,7 +1202,7 @@ const FileEditor = ({ onFileStatusChange }) => {
             </Form.Control>
           </Col>
           <Col className="Col-general Col-display-right" lg={{ span: 1 }}>
-            <Button variant="outline-dark" disabled={!hasAccess} onClick={() => deleteReferencefile(referenceFile.referencefile_id)}>
+            <Button variant="outline-dark" disabled={!canEdit} onClick={() => deleteReferencefile(referenceFile.referencefile_id)}>
               <FontAwesomeIcon icon={faTrash} />
             </Button>
           </Col>

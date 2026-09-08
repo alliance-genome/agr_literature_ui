@@ -21,6 +21,10 @@ if (devOrStageOrProd === 'prod') { }
 
 const NavigationBar = () => {
   const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+  // Observers are read-only (SCRUM-6431): hide the curation-centric pages.
+  // Read pages (Search, Biblio display, Resources, Reports, Download, Swagger)
+  // stay; the API rejects observer mutations independently.
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const [expanded, setExpanded] = useState(false);
 
   const closeMenu = useCallback(() => setExpanded(false), []);
@@ -44,17 +48,17 @@ const NavigationBar = () => {
       <Nav className="mx-auto navbar-main-links">
         <Nav.Link className="navbar_link">{homeLabel}</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/search" onClick={closeMenu}>Search</Nav.Link>
-        <Nav.Link className="navbar_link" as={Link} to="/biblio" onClick={closeMenu}>Biblio Edit</Nav.Link>
-        <Nav.Link className="navbar_link" as={Link} to="/sort" onClick={closeMenu}>Sort</Nav.Link>
-        <Nav.Link className="navbar_link" as={Link} to="/tracker" onClick={closeMenu}>Tracker</Nav.Link>
+        <Nav.Link className="navbar_link" as={Link} to="/biblio" onClick={closeMenu}>{cognitoObserver ? 'Biblio' : 'Biblio Edit'}</Nav.Link>
+        {!cognitoObserver && <Nav.Link className="navbar_link" as={Link} to="/sort" onClick={closeMenu}>Sort</Nav.Link>}
+        {!cognitoObserver && <Nav.Link className="navbar_link" as={Link} to="/tracker" onClick={closeMenu}>Tracker</Nav.Link>}
         <Nav.Link className="navbar_link" as={Link} to="/resources" onClick={closeMenu}>Resources</Nav.Link>
-        <Nav.Link className="navbar_link" as={Link} to="/lab" onClick={closeMenu}>Lab</Nav.Link>
-        <Nav.Link className="navbar_link" as={Link} to="/person" onClick={closeMenu}>Person</Nav.Link>
-        <Nav.Link className="navbar_link" as={Link} to="/create" onClick={closeMenu}>Create</Nav.Link>
-        <Nav.Link className="navbar_link" as={Link} to="/merge" onClick={closeMenu}>Merge</Nav.Link>
+        {!cognitoObserver && <Nav.Link className="navbar_link" as={Link} to="/lab" onClick={closeMenu}>Lab</Nav.Link>}
+        {!cognitoObserver && <Nav.Link className="navbar_link" as={Link} to="/person" onClick={closeMenu}>Person</Nav.Link>}
+        {!cognitoObserver && <Nav.Link className="navbar_link" as={Link} to="/create" onClick={closeMenu}>Create</Nav.Link>}
+        {!cognitoObserver && <Nav.Link className="navbar_link" as={Link} to="/merge" onClick={closeMenu}>Merge</Nav.Link>}
         <Nav.Link className="navbar_link" as={Link} to="/reports" onClick={closeMenu}>Reports</Nav.Link>
         <Nav.Link className="navbar_link" as={Link} to="/download" onClick={closeMenu}>Download</Nav.Link>
-        <Nav.Link className="navbar_link" as={Link} to="/bulkSubmission" onClick={closeMenu}>Bulk Submission</Nav.Link>
+        {!cognitoObserver && <Nav.Link className="navbar_link" as={Link} to="/bulkSubmission" onClick={closeMenu}>Bulk Submission</Nav.Link>}
         <Nav.Link className="navbar_link" as="a" href={process.env.REACT_APP_RESTAPI + "/docs"} target="_blank">Swagger</Nav.Link>
       </Nav>
       <Nav className="navbar-right-links">

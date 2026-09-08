@@ -1,4 +1,5 @@
 import jwt_decode from 'jwt-decode';
+import { resolveCognitoRoles } from '../utils/cognitoRoles';
 import {
   SHOW_REAUTH_MODAL,
   HIDE_REAUTH_MODAL,
@@ -15,6 +16,7 @@ const INTIAL_STATE = {
   cognitoMod: 'No',
   cognitoDeveloper: false,
   cognitoTester: false,
+  cognitoObserver: false,
   testerMod: 'No',
   accessToken: null,
   uid: null,
@@ -32,24 +34,12 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
       return { ...state, testerMod: action.payload }
     case 'SIGN_IN':
       const jsonToken = jwt_decode(action.payload.accessToken);
-      let cognitoMod = 'No';
-      let cognitoDeveloper = false;
-      let cognitoTester = false;
-      // Cognito uses 'cognito:groups' claim for groups (same group names as Okta)
+      // Cognito uses 'cognito:groups' claim for groups (same group names as Okta).
+      // Roles resolve through the explicit, tested mapping in utils/cognitoRoles:
+      // <Mod>Observer groups yield a read-only role scoped to the sponsoring MOD
+      // and are never fed through the legacy prefix inference (SCRUM-6431).
       const groups = jsonToken['cognito:groups'] || jsonToken.Groups || [];
-      if (groups && groups.length > 0) {
-        for (const group of groups) {
-          if (group.endsWith('Developer')) { cognitoDeveloper = true; }
-          if (group === 'Tester' && devOrStageOrProd !== 'prod') { cognitoTester = true; }
-            else if (group === 'POTester' && devOrStageOrProd === 'prod') { cognitoTester = true; }
-          if (group.startsWith('SGD')) { cognitoMod = 'SGD'; }
-            else if (group.startsWith('RGD')) { cognitoMod = 'RGD'; }
-            else if (group.startsWith('MGI')) { cognitoMod = 'MGI'; }
-            else if (group.startsWith('ZFIN')) { cognitoMod = 'ZFIN'; }
-            else if (group.startsWith('Xen')) { cognitoMod = 'XB'; }
-            else if (group.startsWith('Fly')) { cognitoMod = 'FB'; }
-            else if (group.startsWith('Worm')) { cognitoMod = 'WB'; } }
-      }
+      const roles = resolveCognitoRoles(groups, devOrStageOrProd);
       return {
         ...state,
         isSignedIn: true,
@@ -57,9 +47,10 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         userId: action.payload.userId,
         accessToken: action.payload.accessToken,
         testerMod: 'No',
-        cognitoMod: cognitoMod,
-        cognitoDeveloper: cognitoDeveloper,
-        cognitoTester: cognitoTester,
+        cognitoMod: roles.mod,
+        cognitoDeveloper: roles.isDeveloper,
+        cognitoTester: roles.isTester,
+        cognitoObserver: roles.isObserver,
         cognitoGroups: groups,
         uid: jsonToken.sub || jsonToken.uid,
         email: action.payload.email,
@@ -77,6 +68,7 @@ const loggedReducer = (state = INTIAL_STATE, action) => {
         cognitoMod: 'No',
         cognitoDeveloper: false,
         cognitoTester: false,
+        cognitoObserver: false,
         testerMod: 'No',
         uid: null,
         accessToken: null,

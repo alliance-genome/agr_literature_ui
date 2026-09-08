@@ -49,6 +49,11 @@ const PersonSettingsControls = ({
   const email = reduxState?.isLogged?.email;
   const cognitoMod = reduxState?.isLogged?.cognitoMod;
   const testerMod = reduxState?.isLogged?.testerMod;
+  // Observers cannot persist settings (the API rejects the POST), but they
+  // still need the seeded DEFAULT state applied — for search that's the
+  // MOD-scoped default query. Apply-without-persist below; controls hidden
+  // (SCRUM-6431).
+  const cognitoObserver = reduxState?.isLogged?.cognitoObserver;
   const accessLevel =
     testerMod && testerMod !== 'No' ? testerMod : cognitoMod;
 
@@ -212,6 +217,18 @@ const PersonSettingsControls = ({
             statePayload = seedStateTransform(statePayload, { accessLevel, reduxState });
           }
 
+          // Observers: apply the default state WITHOUT persisting it — the
+          // seeding POST would 403 (read-only role) and previously aborted
+          // this whole effect, leaving no default facets and no initial
+          // search (SCRUM-6431).
+          if (cognitoObserver) {
+            applySettingsFromJson({ state: statePayload }, dispatch, {
+              runSearch: true,
+              preserveExistingFacetsIfEmpty: true,
+            });
+            return;
+          }
+
           const payload = { meta: buildMeta(), state: statePayload };
 
           const created = await seed({
@@ -249,6 +266,12 @@ const PersonSettingsControls = ({
   
   }, [accessToken, email]);
   
+  // Observers get the default state applied (above) but cannot save, rename or
+  // load settings — hide the controls instead of offering buttons that 403.
+  if (cognitoObserver) {
+    return null;
+  }
+
   return (
     <div
       className="d-flex align-items-center"

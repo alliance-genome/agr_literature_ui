@@ -49,15 +49,23 @@ console.log("UI_SW -> " + process.env.REACT_APP_SWAGGERUI);
 console.log("UI_DSP -> " + process.env.REACT_APP_DEV_OR_STAGE_OR_PROD);
 console.log(Router);
 
-// PrivateRoute component for protected routes - redirects to login if not authenticated
-const PrivateRoute = ({ component: Component, ...rest }) => {
+// PrivateRoute component for protected routes - redirects to login if not authenticated.
+// observerBlocked: curation pages an observer must not reach even via a
+// hand-typed URL or stale bookmark — matches the links hidden from the navbar;
+// the API rejects observer mutations independently (SCRUM-6431).
+const PrivateRoute = ({ component: Component, observerBlocked = false, ...rest }) => {
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+    const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
     return (
         <Route
             {...rest}
             render={(props) =>
                 isSignedIn ? (
-                    <Component {...props} />
+                    (observerBlocked && cognitoObserver) ? (
+                        <Redirect to={{ pathname: '/search' }} />
+                    ) : (
+                        <Component {...props} />
+                    )
                 ) : (
                     <Redirect to={{
                         pathname: '/login',
@@ -129,22 +137,22 @@ const AppWithRouterAccess = () => {
                     <PrivateRoute path='/' exact={true} component={Search}/>
                     <PrivateRoute path='/search' component={Search} />
                     <PrivateRoute path='/biblio' component={Biblio} />
-                    <PrivateRoute path='/sort' component={Sort} />
+                    <PrivateRoute path='/sort' observerBlocked component={Sort} />
                     <PrivateRoute path='/flags' component={Flags} />
                     <PrivateRoute path='/files' component={Files} />
                     <PrivateRoute path='/mining' component={Mining} />
                     <PrivateRoute path='/ontomate' component={Ontomate} />
                     <PrivateRoute path='/textpresso' component={Textpresso} />
-                    <PrivateRoute path='/create' component={Create} />
-                    <PrivateRoute path='/merge' component={Merge} />
+                    <PrivateRoute path='/create' observerBlocked component={Create} />
+                    <PrivateRoute path='/merge' observerBlocked component={Merge} />
                     <PrivateRoute path='/reports' component={Reports} />
                     <PrivateRoute path='/download' component={Download} />
-                    <PrivateRoute path='/bulkSubmission' component={BulkSubmission} />
+                    <PrivateRoute path='/bulkSubmission' observerBlocked component={BulkSubmission} />
                     <PrivateRoute path='/about' component={About} />
-                    <PrivateRoute path='/tracker' component={Tracker} />
+                    <PrivateRoute path='/tracker' observerBlocked component={Tracker} />
                     <PrivateRoute path='/resources' component={Resources} />
-                    <PrivateRoute path='/lab' component={Laboratory} />
-                    <PrivateRoute path='/person' component={Person} />
+                    <PrivateRoute path='/lab' observerBlocked component={Laboratory} />
+                    <PrivateRoute path='/person' observerBlocked component={Person} />
                 </Route>
             </Switch>
         </div>
