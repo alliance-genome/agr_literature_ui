@@ -659,6 +659,9 @@ const RowDisplayRetractionStatus = ({fieldName, referenceJsonLive, referenceJson
 
 const BiblioDisplay = () => {
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  // Observers are read-only: no Update Biblio Data submit machinery — it
+  // PATCHes the reference and was gated only on having a token (SCRUM-6431).
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   if (!('date_created' in referenceJsonLive)) {
@@ -721,7 +724,7 @@ const BiblioDisplay = () => {
       rowOrderedElements.push(<RowDisplayReferencefiles key="referencefiles" displayOrEditor="display" />); }
   } // for (const [fieldIndex, fieldName] of fieldsOrdered.entries())
 
-  return (<Container>{ accessToken !== null && <BiblioSubmitUpdateRouter /> }{rowOrderedElements}</Container>);
+  return (<Container>{ accessToken !== null && !cognitoObserver && <BiblioSubmitUpdateRouter /> }{rowOrderedElements}</Container>);
 } // const BiblioDisplay
 
 
