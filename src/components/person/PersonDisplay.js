@@ -13,7 +13,7 @@ import {
   layoutToCssGrid,
   defaultHiddenSections,
 } from './personSections';
-import './personSections.css';
+import '../sectionGrid.css';
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -550,13 +550,13 @@ const PersonDisplay = ({ person: personProp }) => {
 
   const sectionsRender = grid ? (
     <div
-      className={`person-section-grid${wideLayout ? ' person-section-grid--wide' : ''}`}
-      style={{ '--person-col-floor': `${grid.colFloor}px` }}
+      className={`section-grid${wideLayout ? ' section-grid--wide' : ''}`}
+      style={{ '--section-col-floor': `${grid.colFloor}px` }}
     >
       {orderedIds.map((id) => (
         <div
           key={id}
-          className="person-section"
+          className="section-grid__item"
           style={grid.styles[id] || { gridColumn: '1 / -1' }}
         >
           {sectionRows[id]}

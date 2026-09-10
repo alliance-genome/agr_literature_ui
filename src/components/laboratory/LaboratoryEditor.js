@@ -22,7 +22,7 @@ import {
 import { useVocabulary } from '../../hooks/useVocabulary';
 import { useCheckPatterns } from '../../hooks/useCheckPatterns';
 import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie';
-import './laboratorySections.css';
+import '../sectionGrid.css';
 
 // lab_position is a vocabulary term: read shape is the object {value,label,is_obsolete}
 // (or null); write is the term id (int). Extract the id and keep it as a STRING in
@@ -1077,11 +1077,11 @@ const LaboratoryEditor = ({ laboratory }) => {
 
   const sectionsRender = grid ? (
     <div
-      className={`laboratory-section-grid${wideLayout ? ' laboratory-section-grid--wide' : ''}`}
-      style={{ '--laboratory-col-floor': `${grid.colFloor}px` }}
+      className={`section-grid${wideLayout ? ' section-grid--wide' : ''}`}
+      style={{ '--section-col-floor': `${grid.colFloor}px` }}
     >
       {orderedIds.map((id) => (
-        <div key={id} className="laboratory-section" style={grid.styles[id] || { gridColumn: '1 / -1' }}>
+        <div key={id} className="section-grid__item" style={grid.styles[id] || { gridColumn: '1 / -1' }}>
           {sectionRows[id]}
         </div>
       ))}

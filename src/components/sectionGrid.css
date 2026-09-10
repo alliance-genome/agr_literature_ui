@@ -1,9 +1,14 @@
-/* Layout grid shared by the section-arranged Person Editor and Person Display.
-   The per-section `grid-column` is applied inline from the saved layout;
-   here we set the shared grid track and the responsive collapse.
+/* Layout grid for the section-arranged record pages -- Person and Laboratory,
+   Display and Editor alike. Person and Laboratory each carried a byte-identical
+   copy of these rules under its own prefix; this is that shared copy.
+
+   The per-section `grid-column` is applied inline from the saved layout; here we
+   set the shared grid track and the responsive collapse. Biblio still has its
+   own copy under .biblio-editor-* names.
+
    Mirrors biblioEditorSections.css. */
 
-.person-section-grid {
+.section-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   column-gap: 1rem;
@@ -12,24 +17,24 @@
   align-items: start;
 }
 
-.person-section {
+.section-grid__item {
   min-width: 0; /* allow field rows to shrink/reflow in narrow columns */
 }
 
 /* Side-by-side arrangement: switch to a full-width (fluid) container so columns
    get real estate instead of being squished inside the capped container. Each of
    the 12 tracks has a minimum width (supplied per-arrangement via the
-   --person-col-floor custom property), so a section's minimum scales with its
+   --section-col-floor custom property), so a section's minimum scales with its
    span. We intentionally do NOT use overflow-x:auto on the grid -- that would clip
    inline dropdown menus -- and let the browser scroll the page instead. */
-.person-section-grid--wide {
-  grid-template-columns: repeat(12, minmax(var(--person-col-floor, 120px), 1fr));
+.section-grid--wide {
+  grid-template-columns: repeat(12, minmax(var(--section-col-floor, 120px), 1fr));
 }
 
 /* Bootstrap field rows carry negative gutters that can spill past a bare
    container; mirror a column's 15px padding on each side-by-side section so those
    gutters are absorbed within the section instead of overflowing the grid. */
-.person-section-grid--wide .person-section {
+.section-grid--wide .section-grid__item {
   padding-left: 15px;
   padding-right: 15px;
 }
@@ -37,7 +42,7 @@
 /* On narrow screens, drop the grid and stack sections full-width in source order
    so labels/inputs stay readable. */
 @media (max-width: 768px) {
-  .person-section-grid {
+  .section-grid {
     display: block;
   }
 }

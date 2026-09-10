@@ -13,7 +13,7 @@ import {
   layoutToCssGrid,
   defaultHiddenSections,
 } from './laboratorySections';
-import './laboratorySections.css';
+import '../sectionGrid.css';
 
 const formatTimestamp = (s) => {
   if (!s) return '';
@@ -380,13 +380,13 @@ const LaboratoryDisplay = ({ laboratory: laboratoryProp }) => {
 
   const sectionsRender = grid ? (
     <div
-      className={`laboratory-section-grid${wideLayout ? ' laboratory-section-grid--wide' : ''}`}
-      style={{ '--laboratory-col-floor': `${grid.colFloor}px` }}
+      className={`section-grid${wideLayout ? ' section-grid--wide' : ''}`}
+      style={{ '--section-col-floor': `${grid.colFloor}px` }}
     >
       {orderedIds.map((id) => (
         <div
           key={id}
-          className="laboratory-section"
+          className="section-grid__item"
           style={grid.styles[id] || { gridColumn: '1 / -1' }}
         >
           {sectionRows[id]}
