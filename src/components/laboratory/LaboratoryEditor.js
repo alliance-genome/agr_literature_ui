@@ -11,12 +11,18 @@ import { api } from '../../api';
 import { roleFlagDisabled } from '../../utils/labPersonRoles';
 import PersonCuriePicker from '../person/PersonCuriePicker';
 import { enumDict } from '../biblio/BiblioEditor';
-import LaboratoryEditorLayoutModal from '../settings/LaboratoryEditorLayoutModal';
-import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './laboratoryEditorSections';
+import SectionLayoutModal from '../settings/SectionLayoutModal';
+import {
+  SECTION_DEFS,
+  DEFAULT_LAYOUT,
+  LABORATORY_EDITOR_LAYOUT_COMPONENT_NAME,
+  layoutToCssGrid,
+  defaultHiddenSections,
+} from './laboratorySections';
 import { useVocabulary } from '../../hooks/useVocabulary';
 import { useCheckPatterns } from '../../hooks/useCheckPatterns';
 import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie';
-import './laboratoryEditorSections.css';
+import './laboratorySections.css';
 
 // lab_position is a vocabulary term: read shape is the object {value,label,is_obsolete}
 // (or null); write is the term id (int). Extract the id and keep it as a STRING in
@@ -1071,11 +1077,11 @@ const LaboratoryEditor = ({ laboratory }) => {
 
   const sectionsRender = grid ? (
     <div
-      className={`laboratory-editor-grid${wideLayout ? ' laboratory-editor-grid--wide' : ''}`}
+      className={`laboratory-section-grid${wideLayout ? ' laboratory-section-grid--wide' : ''}`}
       style={{ '--laboratory-col-floor': `${grid.colFloor}px` }}
     >
       {orderedIds.map((id) => (
-        <div key={id} className="laboratory-editor-section" style={grid.styles[id] || { gridColumn: '1 / -1' }}>
+        <div key={id} className="laboratory-section" style={grid.styles[id] || { gridColumn: '1 / -1' }}>
           {sectionRows[id]}
         </div>
       ))}
@@ -1091,7 +1097,10 @@ const LaboratoryEditor = ({ laboratory }) => {
         list rows save once their required fields are filled.
       </div>
       <div className="d-flex justify-content-end mb-3">
-        <LaboratoryEditorLayoutModal
+        <SectionLayoutModal
+          sectionDefs={SECTION_DEFS}
+          defaultLayout={DEFAULT_LAYOUT}
+          componentName={LABORATORY_EDITOR_LAYOUT_COMPONENT_NAME}
           onApplyPrefs={applyPrefs}
           current={{ layout: activeLayout, hidden: Array.from(hiddenSections), showTimestamps, showCurator }}
           onToggleSection={toggleSection}

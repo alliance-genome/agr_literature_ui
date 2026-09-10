@@ -170,10 +170,8 @@ const PersonDisplay = ({ person: personProp }) => {
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
-  // The Laboratory page still has its own ccdisplay/wbdisplay tabs, so WB
-  // curators keep being sent to its WB variant.
-  const labHref = (curie) =>
-    '/lab?q=' + encodeURIComponent(curie) + (effectiveMod === 'WB' ? '&tab=wbdisplay' : '');
+  // Display is the Laboratory page's default tab, so no ?tab= is needed.
+  const labHref = (curie) => '/lab?q=' + encodeURIComponent(curie);
 
   // ---- layout / visibility / metadata-toggle state (restored from saved prefs) ----
   // Mirrors PersonEditor, but persisted under its own component namespace so a

@@ -1,11 +1,12 @@
-// src/components/laboratory/laboratoryEditorSections.js
+// src/components/laboratory/laboratorySections.js
 //
-// Shared definitions for the layout-driven Laboratory "Editor" tab. Mirrors
-// personEditorSections.js: the editor lets the user arrange its card sections in
-// a 2D grid (via LaboratoryEditorLayoutModal), hide individual sections, and
-// toggle the per-field timestamp / curator metadata. The arrangement + visibility
-// + toggles are persisted per-user under the `laboratory_editor_layout` component
-// namespace.
+// Shared section definitions for BOTH layout-driven Laboratory tabs -- "Display"
+// and "Editor". Mirrors personSections.js: each tab lets the user arrange these
+// sections in a 2D grid (via SectionLayoutModal), hide individual sections, and
+// toggle the per-field timestamp / curator metadata. The two tabs share this
+// list so the settings checklist reads identically in each, but persist to
+// SEPARATE namespaces -- a curator's reading arrangement is independent of their
+// editing arrangement.
 //
 // The grid geometry is identical to the BiblioEditor / PersonEditor layout
 // feature, so we reuse its generic helpers rather than re-implementing them.
@@ -19,8 +20,10 @@ import {
 
 export { LAYOUT_COLS, layoutToCssGrid, columnFloorForLayout, maxColumnsPerRow };
 
-// componentName namespace used with usePersonSettings / the /person_setting API.
+// componentName namespaces used with usePersonSettings / the /person_setting API.
+// Separate per tab: arranging the Editor must not disturb the Display.
 export const LABORATORY_EDITOR_LAYOUT_COMPONENT_NAME = 'laboratory_editor_layout';
+export const LABORATORY_DISPLAY_LAYOUT_COMPONENT_NAME = 'laboratory_display_layout';
 
 // The sections, in their natural (default) top-to-bottom order. The ids are both
 // the layout keys and the keys of the editor's `sectionRows` bucket. Cross
