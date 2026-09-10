@@ -32,7 +32,9 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import { usePersonSettings } from './usePersonSettings';
-import { LAYOUT_COLS } from '../person/personSections';
+// LAYOUT_COLS originates here; personSections/laboratorySections only
+// re-export it. A shared modal should not reach through one caller's module.
+import { LAYOUT_COLS } from '../biblio/biblioEditorSections';
 
 const ReactGridLayout = WidthProvider(GridLayout);
 
@@ -72,6 +74,12 @@ const SectionLayoutModal = ({
   const testerMod = useSelector((state) => state.isLogged.testerMod);
   const email = useSelector((state) => state.isLogged.email);
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
+
+  // Element ids are derived from the caller's namespace rather than hardcoded:
+  // this modal is shared, so a fixed "person-" prefix put id="person-..." in the
+  // DOM on the Laboratory page, and two modals rendered together would collide
+  // on duplicate ids -- which silently sends a label's click to the first match.
+  const idPrefix = (componentName || 'section-layout').replace(/_/g, '-');
 
   const [showModal, setShowModal] = useState(false);
   const [workingLayout, setWorkingLayout] = useState(defaultLayout);
@@ -416,7 +424,7 @@ const SectionLayoutModal = ({
                 <Form.Check
                   key={s.id}
                   type="checkbox"
-                  id={`person-section-toggle-${s.id}`}
+                  id={`${idPrefix}-section-toggle-${s.id}`}
                   label={s.label}
                   checked={!(current?.hidden || []).includes(s.id)}
                   onChange={() => onToggleSection && onToggleSection(s.id)}
@@ -432,14 +440,14 @@ const SectionLayoutModal = ({
             <div className="d-flex flex-wrap align-items-center" style={{ gap: '0.5rem 2.5rem' }}>
               <Form.Check
                 type="switch"
-                id="person-show-timestamps"
+                id={`${idPrefix}-show-timestamps`}
                 label="Show timestamps"
                 checked={current?.showTimestamps !== false}
                 onChange={(e) => onToggleTimestamps && onToggleTimestamps(e.target.checked)}
               />
               <Form.Check
                 type="switch"
-                id="person-show-curator"
+                id={`${idPrefix}-show-curator`}
                 label="Show curator"
                 checked={current?.showCurator !== false}
                 onChange={(e) => onToggleCurator && onToggleCurator(e.target.checked)}
