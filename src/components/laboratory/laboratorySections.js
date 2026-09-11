@@ -11,14 +11,12 @@
 // The grid geometry is identical to the BiblioEditor / PersonEditor layout
 // feature, so we reuse its generic helpers rather than re-implementing them.
 
-import {
-  LAYOUT_COLS,
-  layoutToCssGrid,
-  columnFloorForLayout,
-  maxColumnsPerRow,
-} from '../biblio/biblioEditorSections';
+import { LAYOUT_COLS, layoutToCssGrid } from '../biblio/biblioEditorSections';
 
-export { LAYOUT_COLS, layoutToCssGrid, columnFloorForLayout, maxColumnsPerRow };
+// Re-exported for the tabs that build their grid from these. The other geometry
+// helpers (columnFloorForLayout, maxColumnsPerRow) are imported straight from
+// biblioEditorSections by the code that needs them, so they are not relayed here.
+export { LAYOUT_COLS, layoutToCssGrid };
 
 // componentName namespaces used with usePersonSettings / the /person_setting API.
 // Separate per tab: arranging the Editor must not disturb the Display.
@@ -26,7 +24,7 @@ export const LABORATORY_EDITOR_LAYOUT_COMPONENT_NAME = 'laboratory_editor_layout
 export const LABORATORY_DISPLAY_LAYOUT_COMPONENT_NAME = 'laboratory_display_layout';
 
 // The sections, in their natural (default) top-to-bottom order. The ids are both
-// the layout keys and the keys of the editor's `sectionRows` bucket. Cross
+// the layout keys and the keys of each tab's `sectionRows` bucket. Cross
 // references sit last by default.
 export const SECTION_DEFS = [
   { id: 'profile', label: 'Profile' },
@@ -52,7 +50,7 @@ export const defaultHiddenSections = (effectiveMod) =>
       .map((s) => s.id),
   );
 
-// Default arrangement: sections stacked full-width, preserving the editor's
+// Default arrangement: sections stacked full-width, preserving each tab's
 // original single-column appearance.
 export const DEFAULT_LAYOUT = SECTION_DEFS.map((s, i) => ({
   i: s.id,

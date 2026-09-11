@@ -5,8 +5,8 @@
 //
 // The section list, starting arrangement and settings namespace are supplied by
 // the caller (`sectionDefs` / `defaultLayout` / `componentName`), so one modal
-// serves every page that has this layout feature -- the Person Editor and the
-// Person Display save to different namespaces but share this component.
+// serves every page that has this layout feature: the Person and Laboratory
+// tabs, Editor and Display alike, each saving to its own namespace.
 //
 // The modal body contains:
 //   1. A react-grid-layout canvas with one schematic, draggable/resizable box per
@@ -38,7 +38,7 @@ import { LAYOUT_COLS } from '../biblio/biblioEditorSections';
 
 const ReactGridLayout = WidthProvider(GridLayout);
 
-// A rotating palette so the ten boxes are visually distinguishable on the canvas.
+// A rotating palette so the boxes are visually distinguishable on the canvas.
 const SECTION_PALETTE = [
   '#e9f2ff', '#eaf7ee', '#fff4e6', '#fdeaf1', '#f0eafb',
   '#e6f7fa', '#fbf6e0', '#eef0f2', '#f9e9e9', '#eafbf1',
@@ -137,7 +137,7 @@ const SectionLayoutModal = ({
       })
       .catch((err) => {
         const msg = err?.response?.data?.detail || err?.message || String(err);
-        console.error('Failed to load Person editor layout preferences:', msg);
+        console.error(`Failed to load ${componentName} preferences:`, msg);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, email, load]);

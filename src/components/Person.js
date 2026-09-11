@@ -82,7 +82,7 @@ const Person = () => {
         } else {
           multi = res.data;
         }
-      } else if (res.data && typeof res.data === 'object' && (res.data.curie || res.data.person_id)) {
+      } else if (res.data && typeof res.data === 'object' && res.data.curie) {
         record = res.data;
       }
 

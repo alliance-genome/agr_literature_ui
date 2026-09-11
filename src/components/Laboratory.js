@@ -115,7 +115,7 @@ const Laboratory = () => {
       if (Array.isArray(res.data)) {
         if (res.data.length === 1) record = res.data[0];
         else if (res.data.length > 1) multi = res.data;
-      } else if (res.data && typeof res.data === 'object' && (res.data.curie || res.data.laboratory_id)) {
+      } else if (res.data && typeof res.data === 'object' && res.data.curie) {
         record = res.data;
       }
 
