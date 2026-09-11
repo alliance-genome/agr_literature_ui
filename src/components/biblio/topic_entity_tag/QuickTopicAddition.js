@@ -372,7 +372,7 @@ const QuickTopicAddition = () => {
   }, [referenceCurie]);
 
   // Auto-dismiss informational notifications (staged-N, submit confirmations)
-  // so they don't sit under the toolbar shifting the grid down; warnings and
+  // so they don't sit above the heading shifting the grid down; warnings and
   // errors stay until the curator closes them.
   useEffect(() => {
     if (!notification || notification.variant === 'warning' || notification.variant === 'danger') {
@@ -663,7 +663,9 @@ const QuickTopicAddition = () => {
   const closeSubmit = () => setSubmitState(null);
 
   // Submit the staged edits directly — no confirmation step and no note field
-  // (curators add notes in the TET editor). Shows a progress/result modal only.
+  // (curators add notes in the TET editor). A modal shows progress while
+  // submitting and the error list on failure; full success closes it and
+  // shows a dismissible green row instead (SCRUM-6457).
   const submitStaged = async () => {
     if (!sourceId) {
       setNotification({ variant: 'danger', message: 'Curator source not resolved yet — please retry in a moment.' });
@@ -677,6 +679,7 @@ const QuickTopicAddition = () => {
     const total = items.reduce((n, x) => n + x.tags.length, 0);
     // The modal renders progress + errors only; the work list stays in this
     // local (not in state, which would pin the pre-submit rows until close).
+    setNotification(null); // a stale success row must not sit above fresh results
     setSubmitState({ status: 'submitting', progress: { done: 0, total }, errors: [] });
     const errors = [];
     let done = 0;
@@ -699,7 +702,21 @@ const QuickTopicAddition = () => {
         setSubmitState((s) => (s ? { ...s, progress: { done: nextDone, total } } : s));
       }
     }
-    setSubmitState((s) => (s ? { ...s, status: 'done', errors } : s));
+    if (errors.length === 0) {
+      // Full success needs no acknowledgment (SCRUM-6457): close the progress
+      // modal and show the same pale-green dismissible row the other tabs use
+      // (e.g. "Update success" on the biblio editor), so the curator can carry
+      // on without an extra click.
+      setSubmitState(null);
+      setNotification({
+        variant: 'success',
+        message: `Created ${total} of ${total} tag${total === 1 ? '' : 's'}.`,
+      });
+    } else {
+      // Failures keep the modal: the per-tag error list needs reading and
+      // must not auto-fade.
+      setSubmitState((s) => (s ? { ...s, status: 'done', errors } : s));
+    }
     setStaged({});
     fetchTopics();
     if (errors.length < total) {
@@ -931,6 +948,11 @@ const QuickTopicAddition = () => {
 
   return (
     <div style={{ padding: '10px 20px' }}>
+      {notification && (
+        <Alert variant={notification.variant} dismissible onClose={() => setNotification(null)}>
+          {notification.message}
+        </Alert>
+      )}
       <h4 style={{ textAlign: 'center' }}>Quick Topic Addition</h4>
       <div style={{ display: 'flex', gap: '20px', margin: '10px 0', alignItems: 'center', flexWrap: 'wrap' }}>
         <Form.Check
@@ -1031,12 +1053,6 @@ const QuickTopicAddition = () => {
           </Button>
         </div>
       </div>
-
-      {notification && (
-        <Alert variant={notification.variant} dismissible onClose={() => setNotification(null)}>
-          {notification.message}
-        </Alert>
-      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '30px' }}><Spinner animation="border" /></div>
