@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import HelpDocLink, { HELP_DOC_URLS } from '../../HelpDocLink';
 import { api } from "../../../api";
 import { getCuratorSourceId, fetchTopicEntityTags, setAllTopics } from '../../../actions/biblioActions';
 import TopicFilter from '../../AgGrid/TopicFilter';
@@ -953,7 +954,7 @@ const QuickTopicAddition = () => {
           {notification.message}
         </Alert>
       )}
-      <h4 style={{ textAlign: 'center' }}>Quick Topic Addition</h4>
+      <h4 style={{ textAlign: 'center' }}>Quick Topic Addition <HelpDocLink url={HELP_DOC_URLS.topicEntityTagging} title="Open the Topic and Entity Tagging help documentation (see the Quick Topic Addition section)" /></h4>
       <div style={{ display: 'flex', gap: '20px', margin: '10px 0', alignItems: 'center', flexWrap: 'wrap' }}>
         <Form.Check
           type="checkbox"
