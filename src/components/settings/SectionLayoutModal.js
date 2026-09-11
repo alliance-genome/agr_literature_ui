@@ -62,6 +62,10 @@ const SectionLayoutModal = ({
   sectionDefs,
   defaultLayout,
   componentName,
+  // Names the tab this modal belongs to -- "Display" or "Editor". Drives the
+  // button tooltip, the dialog title and the body copy from one value, so a
+  // Display tab cannot end up describing itself as an editor.
+  pageLabel = 'Section',
   onApplyPrefs,
   current,
   onToggleSection,
@@ -338,7 +342,7 @@ const SectionLayoutModal = ({
       <Button
         variant="outline-primary"
         size="sm"
-        title="Editor settings"
+        title={`${pageLabel} settings`}
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '6px' }} />
@@ -356,7 +360,7 @@ const SectionLayoutModal = ({
         size="lg"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Editor Settings</Modal.Title>
+          <Modal.Title>{pageLabel} Settings</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
@@ -368,7 +372,8 @@ const SectionLayoutModal = ({
 
           <p className="text-muted">
             Drag and resize the sections to arrange them, choose which sections are visible, and set
-            the timestamp / curator display. Changes apply to the editor as you make them. Save them
+            the timestamp / curator display. Changes apply to the {pageLabel.toLowerCase()} as you
+            make them. Save them
             as a named entry below to reuse later; your default is applied automatically.
           </p>
 

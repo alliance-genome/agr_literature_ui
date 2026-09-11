@@ -596,6 +596,7 @@ const PersonDisplay = ({ person: personProp }) => {
             sectionDefs={SECTION_DEFS}
             defaultLayout={DEFAULT_LAYOUT}
             componentName={PERSON_DISPLAY_LAYOUT_COMPONENT_NAME}
+            pageLabel="Display"
             onApplyPrefs={applyPrefs}
             current={{
               layout: activeLayout,

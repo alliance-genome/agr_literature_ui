@@ -2005,6 +2005,7 @@ const PersonEditor = ({ person }) => {
           sectionDefs={SECTION_DEFS}
           defaultLayout={DEFAULT_LAYOUT}
           componentName={PERSON_EDITOR_LAYOUT_COMPONENT_NAME}
+          pageLabel="Editor"
           onApplyPrefs={applyPrefs}
           current={{
             layout: activeLayout,

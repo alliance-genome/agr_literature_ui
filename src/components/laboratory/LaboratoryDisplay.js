@@ -426,6 +426,7 @@ const LaboratoryDisplay = ({ laboratory: laboratoryProp }) => {
             sectionDefs={SECTION_DEFS}
             defaultLayout={DEFAULT_LAYOUT}
             componentName={LABORATORY_DISPLAY_LAYOUT_COMPONENT_NAME}
+            pageLabel="Display"
             onApplyPrefs={applyPrefs}
             current={{
               layout: activeLayout,

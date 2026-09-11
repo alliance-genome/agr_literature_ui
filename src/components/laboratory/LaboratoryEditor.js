@@ -1101,6 +1101,7 @@ const LaboratoryEditor = ({ laboratory }) => {
           sectionDefs={SECTION_DEFS}
           defaultLayout={DEFAULT_LAYOUT}
           componentName={LABORATORY_EDITOR_LAYOUT_COMPONENT_NAME}
+          pageLabel="Editor"
           onApplyPrefs={applyPrefs}
           current={{ layout: activeLayout, hidden: Array.from(hiddenSections), showTimestamps, showCurator }}
           onToggleSection={toggleSection}
