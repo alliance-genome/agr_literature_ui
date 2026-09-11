@@ -3,6 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
 
 // Curator help documentation on the LITERATURE Confluence space (SCRUM-6538).
+// Central registry of curator doc URLs: some entries (validation, aiCuration)
+// are not linked from the UI yet and are kept here for upcoming placements.
 export const HELP_DOC_URLS = {
   topicEntityTagging: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/760610818/Topic+and+Entity+Tagging',
   biblioEditor: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1460142082/Biblio+Editor+Tab+Help',

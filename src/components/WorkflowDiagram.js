@@ -3,6 +3,7 @@ import { Spinner } from 'react-bootstrap';
 import * as d3 from 'd3';
 import { api } from '../api';
 import { computeLayout, renderDiagram, setupZoom } from './workflowDiagramLayout';
+import HelpDocLink, { HELP_DOC_URLS } from './HelpDocLink';
 import './WorkflowDiagram.css';
 
 
@@ -561,6 +562,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
       <svg ref={svgRef} />
       {/* Controls panel */}
       <div className="workflow-diagram-controls">
+        <HelpDocLink url={HELP_DOC_URLS.workflowDiagram} title="Open the Workflow Diagram help documentation" style={{ verticalAlign: 'baseline', alignSelf: 'center' }} />
         <button
           className="workflow-diagram-btn"
           onClick={() => resetZoomRef.current && resetZoomRef.current()}
