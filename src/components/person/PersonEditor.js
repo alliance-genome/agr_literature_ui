@@ -24,7 +24,7 @@ import {
   layoutToCssGrid,
   defaultHiddenSections,
 } from './personSections';
-import './personSections.css';
+import '../sectionGrid.css';
 
 // person_lineage.relationship is a vocabulary term: read shape is the object
 // {value,label,is_obsolete} (or null), write is the term id (int). Keep it a STRING in
@@ -1974,13 +1974,13 @@ const PersonEditor = ({ person }) => {
 
   const sectionsRender = grid ? (
     <div
-      className={`person-section-grid${wideLayout ? ' person-section-grid--wide' : ''}`}
-      style={{ '--person-col-floor': `${grid.colFloor}px` }}
+      className={`section-grid${wideLayout ? ' section-grid--wide' : ''}`}
+      style={{ '--section-col-floor': `${grid.colFloor}px` }}
     >
       {orderedIds.map((id) => (
         <div
           key={id}
-          className="person-section"
+          className="section-grid__item"
           style={grid.styles[id] || { gridColumn: '1 / -1' }}
         >
           {sectionRows[id]}
@@ -2005,6 +2005,7 @@ const PersonEditor = ({ person }) => {
           sectionDefs={SECTION_DEFS}
           defaultLayout={DEFAULT_LAYOUT}
           componentName={PERSON_EDITOR_LAYOUT_COMPONENT_NAME}
+          pageLabel="Editor"
           onApplyPrefs={applyPrefs}
           current={{
             layout: activeLayout,

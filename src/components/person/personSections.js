@@ -14,14 +14,12 @@
 // its generic helpers (layoutToCssGrid / columnFloorForLayout / maxColumnsPerRow)
 // rather than re-implementing them here.
 
-import {
-  LAYOUT_COLS,
-  layoutToCssGrid,
-  columnFloorForLayout,
-  maxColumnsPerRow,
-} from '../biblio/biblioEditorSections';
+import { LAYOUT_COLS, layoutToCssGrid } from '../biblio/biblioEditorSections';
 
-export { LAYOUT_COLS, layoutToCssGrid, columnFloorForLayout, maxColumnsPerRow };
+// Re-exported for the tabs that build their grid from these. The other geometry
+// helpers (columnFloorForLayout, maxColumnsPerRow) are imported straight from
+// biblioEditorSections by the code that needs them, so they are not relayed here.
+export { LAYOUT_COLS, layoutToCssGrid };
 
 // componentName namespaces used with usePersonSettings / the /person_setting API.
 // Separate per tab: arranging the Editor must not disturb the Display.
@@ -29,7 +27,7 @@ export const PERSON_EDITOR_LAYOUT_COMPONENT_NAME = 'person_editor_layout';
 export const PERSON_DISPLAY_LAYOUT_COMPONENT_NAME = 'person_display_layout';
 
 // The sections, in their natural (default) top-to-bottom order. The ids are used
-// both as react-grid-layout keys and as the keys of the editor's `sectionRows`
+// both as react-grid-layout keys and as the keys of each tab's `sectionRows`
 // bucket; the labels appear on the canvas boxes and the checklist.
 //
 // An optional `mods` array gates a section's DEFAULT visibility to specific MOD
@@ -55,7 +53,7 @@ export const SECTION_DEFS = [
 /**
  * The set of section ids hidden by default for the given effective MOD: every
  * section whose `mods` gate excludes that MOD. Sections without a `mods` gate are
- * never in the set (shown for all). Used as the editor's initial visibility and as
+ * never in the set (shown for all). Used as each tab's initial visibility and as
  * the reactive default when the MOD changes (until the user/a saved setting makes
  * an explicit choice).
  */

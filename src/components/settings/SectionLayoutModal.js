@@ -5,8 +5,8 @@
 //
 // The section list, starting arrangement and settings namespace are supplied by
 // the caller (`sectionDefs` / `defaultLayout` / `componentName`), so one modal
-// serves every page that has this layout feature -- the Person Editor and the
-// Person Display save to different namespaces but share this component.
+// serves every page that has this layout feature: the Person and Laboratory
+// tabs, Editor and Display alike, each saving to its own namespace.
 //
 // The modal body contains:
 //   1. A react-grid-layout canvas with one schematic, draggable/resizable box per
@@ -32,11 +32,13 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import { usePersonSettings } from './usePersonSettings';
-import { LAYOUT_COLS } from '../person/personSections';
+// LAYOUT_COLS originates here; personSections/laboratorySections only
+// re-export it. A shared modal should not reach through one caller's module.
+import { LAYOUT_COLS } from '../biblio/biblioEditorSections';
 
 const ReactGridLayout = WidthProvider(GridLayout);
 
-// A rotating palette so the ten boxes are visually distinguishable on the canvas.
+// A rotating palette so the boxes are visually distinguishable on the canvas.
 const SECTION_PALETTE = [
   '#e9f2ff', '#eaf7ee', '#fff4e6', '#fdeaf1', '#f0eafb',
   '#e6f7fa', '#fbf6e0', '#eef0f2', '#f9e9e9', '#eafbf1',
@@ -60,6 +62,10 @@ const SectionLayoutModal = ({
   sectionDefs,
   defaultLayout,
   componentName,
+  // Names the tab this modal belongs to -- "Display" or "Editor". Drives the
+  // button tooltip, the dialog title and the body copy from one value, so a
+  // Display tab cannot end up describing itself as an editor.
+  pageLabel = 'Section',
   onApplyPrefs,
   current,
   onToggleSection,
@@ -72,6 +78,12 @@ const SectionLayoutModal = ({
   const testerMod = useSelector((state) => state.isLogged.testerMod);
   const email = useSelector((state) => state.isLogged.email);
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
+
+  // Element ids are derived from the caller's namespace rather than hardcoded:
+  // this modal is shared, so a fixed "person-" prefix put id="person-..." in the
+  // DOM on the Laboratory page, and two modals rendered together would collide
+  // on duplicate ids -- which silently sends a label's click to the first match.
+  const idPrefix = (componentName || 'section-layout').replace(/_/g, '-');
 
   const [showModal, setShowModal] = useState(false);
   const [workingLayout, setWorkingLayout] = useState(defaultLayout);
@@ -129,7 +141,7 @@ const SectionLayoutModal = ({
       })
       .catch((err) => {
         const msg = err?.response?.data?.detail || err?.message || String(err);
-        console.error('Failed to load Person editor layout preferences:', msg);
+        console.error(`Failed to load ${componentName} preferences:`, msg);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, email, load]);
@@ -330,7 +342,7 @@ const SectionLayoutModal = ({
       <Button
         variant="outline-primary"
         size="sm"
-        title="Editor settings"
+        title={`${pageLabel} settings`}
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '6px' }} />
@@ -348,7 +360,7 @@ const SectionLayoutModal = ({
         size="lg"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Editor Settings</Modal.Title>
+          <Modal.Title>{pageLabel} Settings</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
@@ -360,7 +372,8 @@ const SectionLayoutModal = ({
 
           <p className="text-muted">
             Drag and resize the sections to arrange them, choose which sections are visible, and set
-            the timestamp / curator display. Changes apply to the editor as you make them. Save them
+            the timestamp / curator display. Changes apply to the {pageLabel.toLowerCase()} as you
+            make them. Save them
             as a named entry below to reuse later; your default is applied automatically.
           </p>
 
@@ -416,7 +429,7 @@ const SectionLayoutModal = ({
                 <Form.Check
                   key={s.id}
                   type="checkbox"
-                  id={`person-section-toggle-${s.id}`}
+                  id={`${idPrefix}-section-toggle-${s.id}`}
                   label={s.label}
                   checked={!(current?.hidden || []).includes(s.id)}
                   onChange={() => onToggleSection && onToggleSection(s.id)}
@@ -432,14 +445,14 @@ const SectionLayoutModal = ({
             <div className="d-flex flex-wrap align-items-center" style={{ gap: '0.5rem 2.5rem' }}>
               <Form.Check
                 type="switch"
-                id="person-show-timestamps"
+                id={`${idPrefix}-show-timestamps`}
                 label="Show timestamps"
                 checked={current?.showTimestamps !== false}
                 onChange={(e) => onToggleTimestamps && onToggleTimestamps(e.target.checked)}
               />
               <Form.Check
                 type="switch"
-                id="person-show-curator"
+                id={`${idPrefix}-show-curator`}
                 label="Show curator"
                 checked={current?.showCurator !== false}
                 onChange={(e) => onToggleCurator && onToggleCurator(e.target.checked)}
