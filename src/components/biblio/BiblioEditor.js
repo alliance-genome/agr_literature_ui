@@ -75,7 +75,7 @@ const DELETE_TOOLTIP = 'Stage deletion - the database delete happens when you pr
 // Right-edge controls use a left-placed bootstrap tooltip so the text does not
 // clip at the window edge (native title tooltips always open at the cursor).
 const LeftTip = ({ tip, children }) => (
-  <OverlayTrigger placement="left" delay={{ show: 250, hide: 0 }} overlay={<Tooltip id="biblio-editor-tooltip">{tip}</Tooltip>}>
+  <OverlayTrigger placement="left" delay={{ show: 250, hide: 0 }} overlay={<Tooltip id="biblio-editor-tooltip" className="biblio-editor-tooltip">{tip}</Tooltip>}>
     {children}
   </OverlayTrigger>
 );
