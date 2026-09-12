@@ -52,15 +52,3 @@
     display: block;
   }
 }
-
-/* Light native-style tooltip for the editor's revert/trash/obsolete controls
-   (matches the browser-default tooltip look used elsewhere, e.g. the TET table) */
-.biblio-editor-tooltip .tooltip-inner {
-  background-color: #f2f2f2;
-  color: #212529;
-  border: 1px solid #c6c6c6;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-.biblio-editor-tooltip.bs-tooltip-left .arrow::before {
-  border-left-color: #c6c6c6;
-}
