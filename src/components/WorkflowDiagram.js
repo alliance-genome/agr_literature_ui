@@ -562,7 +562,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
       <svg ref={svgRef} />
       {/* Controls panel */}
       <div className="workflow-diagram-controls">
-        <HelpDocLink url={HELP_DOC_URLS.workflowDiagram} title="Open the Workflow Diagram help documentation" style={{ verticalAlign: 'baseline', alignSelf: 'center' }} />
+        <HelpDocLink url={HELP_DOC_URLS.workflowDiagram} title="Open the Workflow Diagram help documentation" style={{ verticalAlign: 'baseline' }} />
         <button
           className="workflow-diagram-btn"
           onClick={() => resetZoomRef.current && resetZoomRef.current()}
