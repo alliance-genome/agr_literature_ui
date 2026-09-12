@@ -1,5 +1,6 @@
 // import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import HelpDocLink, { HELP_DOC_URLS } from '../HelpDocLink';
 
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -54,6 +55,7 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
+import LightTip from '../LightTip';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUndo } from '@fortawesome/free-solid-svg-icons'
@@ -65,6 +67,15 @@ import {useEffect, useState, Fragment} from "react";
 import BiblioLayoutPreferenceModal from '../settings/BiblioLayoutPreferenceModal';
 import { SECTION_DEFS, sectionIdForFieldIndex, layoutToCssGrid } from './biblioEditorSections';
 import './biblioEditorSections.css';
+
+const REVERT_TOOLTIP = 'Revert - discard unsaved edits to this row and restore the saved database value';
+const DELETE_TOOLTIP = 'Stage deletion - the database delete happens when you press Update Biblio Data';
+
+// Right-edge controls open their tooltip to the left so the text does not
+// clip at the window edge (native title tooltips always open at the cursor).
+const LeftTip = ({ tip, children }) => (
+  <LightTip tip={tip} placement="left">{children}</LightTip>
+);
 
 
 // if passing an object with <Redirect push to={{ pathname: "/Biblio", state: { pie: "the pie" } }} />, would access new state with
@@ -511,7 +522,7 @@ const BiblioSubmitUpdateButton = () => {
   return (
        <Row className="form-group row" >
          <Col className="form-label col-form-label" sm="2" ></Col>
-         <Col sm="10" ><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => dispatch(validateFormUpdateBiblio())}>Update Biblio Data</div></Col>
+         <Col sm="10" ><LightTip tip="Save all staged changes to the database"><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => dispatch(validateFormUpdateBiblio())}>Update Biblio Data</div></LightTip></Col>
        </Row>
   );
 } // const BiblioSubmitUpdateButton
@@ -533,10 +544,10 @@ const ColEditorSelect = ({fieldType, fieldName, value, colSize, updatedFlag, dis
               </Form.Control>
             </Col>); }
 
-const ColEditorCheckbox = ({colSize, label, updatedFlag, disabled, fieldKey, checked, dispatchAction}) => {
+const ColEditorCheckbox = ({colSize, label, updatedFlag, disabled, fieldKey, checked, dispatchAction, title}) => {
   const dispatch = useDispatch();
   return (  <Col sm={colSize} className={`Col-checkbox ${updatedFlag}`} >
-              <Form.Check inline className={`ColEditorCheckbox`} checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} />
+              {title ? (<LeftTip tip={title}><span style={{ display: 'inline-flex' }}><Form.Check inline className={`ColEditorCheckbox`} checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} /></span></LeftTip>) : <Form.Check inline className={`ColEditorCheckbox`} checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} />}
             </Col>); }
 
 const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
@@ -557,7 +568,7 @@ const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
   const label = getLabel(fieldName);
   let otherColSize = 9;
-  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+  let revertElement = (<Col sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
   if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
   let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={label} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
   if (fieldType === 'select') {
@@ -580,7 +591,7 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
       let fieldType = 'input';
       for (const [index, valueLive] of referenceJsonLive[fieldName].entries()) {
         let otherColSize = 9;
-        let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+        let revertElement = (<Col sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
         if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
         let valueDb = ''; let updatedFlag = '';
         if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
@@ -617,7 +628,7 @@ const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb})
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
   let otherColSize = 5;
-  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertDatePublished(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+  let revertElement = (<Col sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertDatePublished(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
   if (disabled) { revertElement = (<></>); otherColSize = 6; }
   return ( <Form.Group as={Row} key={fieldName} >
              <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
@@ -689,9 +700,9 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
     for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
       let otherColSize = 5;
 //       let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
       if ('mod_reference_type_id' in modRefDict && modRefDict['mod_reference_type_id'] !== 'new') {
-        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldModReferenceReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
+        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" aria-label="Delete row" onClick={(e) => dispatch(deleteFieldModReferenceReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}</Col>); }
       if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 6; }
       let valueLiveModAbbreviation = modRefDict['mod_abbreviation']; let valueDbModAbbreviation = ''; let updatedFlagModAbbreviation = '';
       let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
@@ -767,33 +778,18 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 	  let otherColSizeB = 4;
 	  let buttonsElement = (
 	    <Col className="Col-editor-buttons" sm="1">
-              <Button
-	        id={`revert ${fieldName} ${index}`}
-	        variant="outline-secondary"
-	        onClick={(e) => dispatch(biblioRevertFieldArray(e))}
-	      >
-		<FontAwesomeIcon icon={faUndo} />
-              </Button>{' '}
+              <LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`}
+	        variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}
 	    </Col>
 	  );
 	  if ('mod_corpus_association_id' in modAssociationDict &&
 	      modAssociationDict['mod_corpus_association_id'] !== 'new') {
             buttonsElement = (
 	      <Col className="Col-editor-buttons" sm="1">
-		<Button
-		  id={`revert ${fieldName} ${index}`}
-		  variant="outline-secondary"
-		  onClick={(e) => dispatch(biblioRevertFieldArray(e))}
-		>
-		  <FontAwesomeIcon icon={faUndo} />
-		</Button>{' '}
-		<Button
-		  id={`delete ${fieldName} ${index}`}
-		  variant="outline-secondary"
-		  onClick={(e) => dispatch(deleteFieldModAssociationReferenceJson(e))}
-		>
-		  <FontAwesomeIcon icon={faTrashAlt} />
-		</Button>{' '}
+		<LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`}
+		  variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}
+		<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete ${fieldName} ${index}`}
+		  variant="outline-secondary" aria-label="Delete row" onClick={(e) => dispatch(deleteFieldModAssociationReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}
               </Col>
 	    );
 	  }
@@ -969,9 +965,9 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
       if (datasetXrefPrefixes.includes(curiePrefix)) { continue; }
       let otherColSize = 6;
 //       let buttonsElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
       if ('cross_reference_id' in crossRefDict && crossRefDict['cross_reference_id'] !== 'new') {
-        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
+        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" aria-label="Delete row" onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}</Col>); }
       if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 7; }
 
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
@@ -1019,7 +1015,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
             <Col sm={otherColSize}>
               <Form.Control as="input" key={`colElement cross_references ${index} curieId`} id={`cross_references ${index} curie id`}  type="cross_references" value={valueLiveCurieId} className={`form-control ${updatedFlagCurieId}`} disabled={disabled} placeholder="curie" onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))} onBlur={ (e) => validateXref('reference', xrefPatterns, valueLiveCuriePrefix, valueLiveCurieId) } />
             </Col>
-            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" title="Obsolete = this ID is no longer valid for the paper. Uncheck and press Update Biblio Data to make it valid again." updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
             {buttonsElement}
           </Form.Group>); } } }
   if (disabled === '') {
@@ -1057,9 +1053,9 @@ const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
       const [livePrefix] = splitCurie(crossRefDict['curie']);
       if (!datasetXrefPrefixes.includes(livePrefix)) { continue; }
       let otherColSize = 6;
-      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert cross_references ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
       if ('cross_reference_id' in crossRefDict && crossRefDict['cross_reference_id'] !== 'new') {
-        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
+        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert cross_references ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete cross_references ${index}`} variant="outline-secondary" aria-label="Delete row" onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}</Col>); }
       if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 7; }
 
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
@@ -1107,7 +1103,7 @@ const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
             <Col sm={otherColSize}>
               <Form.Control as="input" key={`colElement cross_references ${index} curieId`} id={`cross_references ${index} curie id`} type="cross_references" value={valueLiveCurieId} className={`form-control ${updatedFlagCurieId}`} disabled={disabled} placeholder="curie" onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))} onBlur={ (e) => validateXref('reference', xrefPatterns, valueLiveCuriePrefix, valueLiveCurieId) } />
             </Col>
-            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" title="Obsolete = this ID is no longer valid for the paper. Uncheck and press Update Biblio Data to make it valid again." updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
             {buttonsElement}
           </Form.Group>); } } }
   return (<>{rowDatasetsElements}</>); }
@@ -1125,7 +1121,7 @@ const RowEditorReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, 
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
     for (const[index, comcorDict] of referenceJsonLive[fieldName].entries()) {
       let otherColSize = 6;
-      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let revertElement = (<Col sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
       if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 7; }
       let valueLiveCurie = comcorDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
       // const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
@@ -1219,7 +1215,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 
         let otherColSizeName = 7; let otherColSizeNames = 5; let otherColSizeAffiliation = 10;
 //         let buttonsElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-        let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldAuthorsReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>);
+        let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" aria-label="Delete row" onClick={(e) => dispatch(deleteFieldAuthorsReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}</Col>);
         // if (disabled === 'disabled') { buttonsElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
         let disabledName = disabled
         // if first or last name, make name be concatenation of both and disable editing name
@@ -1499,9 +1495,7 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
           </Form.Control>
         </Col>
         <Col sm="1">
-          <Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >
-            <FontAwesomeIcon icon={faUndo} />
-          </Button>
+          <LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName}`} variant="outline-secondary" aria-label="Revert row" onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>
         </Col>
       </Form.Group>
     </>
@@ -1613,7 +1607,8 @@ const BiblioEditor = () => {
   return (<Container fluid={wideLayout}>
             <ModalGeneric showGenericModal={biblioEditorModalText !== '' ? true : false} genericModalHeader="Biblio Editor Error"
                           genericModalBody={biblioEditorModalText} onHideAction={setBiblioEditorModalText('')} />
-            <div className="d-flex justify-content-end mb-2">
+            <div className="d-flex justify-content-end align-items-center mb-2">
+              <HelpDocLink url={HELP_DOC_URLS.biblioEditor} title="Open the Biblio Editor help documentation" style={{ marginRight: '12px', verticalAlign: 'baseline' }} />
               <BiblioLayoutPreferenceModal onApplyLayout={setActiveLayout} />
             </div>
             <Form><BiblioSubmitUpdateRouter />{sectionsRender}</Form>
