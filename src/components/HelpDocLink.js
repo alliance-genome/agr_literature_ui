@@ -1,6 +1,7 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+import LightTip from './LightTip';
 
 // Curator help documentation on the LITERATURE Confluence space (SCRUM-6538).
 // Central registry of curator doc URLs: some entries (validation, aiCuration)
@@ -23,11 +24,13 @@ export const HELP_DOC_URLS = {
 // Small question-mark icon that opens the given help doc in a new tab.
 const HelpDocLink = ({ url, title = 'Open help documentation', style = {} }) => {
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" title={title}
-       aria-label={title} style={{ fontSize: '0.85em', verticalAlign: 'super', ...style }}
-       onClick={(e) => e.stopPropagation()} >
-      <FontAwesomeIcon icon={faQuestionCircle} />
-    </a>
+    <LightTip tip={title}>
+      <a href={url} target="_blank" rel="noopener noreferrer"
+         aria-label={title} style={{ fontSize: '0.85em', verticalAlign: 'super', ...style }}
+         onClick={(e) => e.stopPropagation()} >
+        <FontAwesomeIcon icon={faQuestionCircle} />
+      </a>
+    </LightTip>
   );
 };
 
