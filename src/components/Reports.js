@@ -712,7 +712,6 @@ const QCReportObsoleteEntities = ({modSection}) => {
 
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>QC Reports <HelpDocLink url={HELP_DOC_URLS.abcReportsPage} title="Open the ABC Reports Page help documentation" /></h3>
       <div>
         <Container fluid style={{ width: '90%' }}>
           <Row>
@@ -1038,7 +1037,6 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
 
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>QC Reports <HelpDocLink url={HELP_DOC_URLS.abcReportsPage} title="Open the ABC Reports Page help documentation" /></h3>
       <div>
         <Container fluid style={{ width: '90%' }}>
           <Row>
@@ -1131,6 +1129,9 @@ const ReportsContainer = () => {
           <Tab key={mod} eventKey={mod} title={mod}>
             <Tabs mountOnEnter="true" defaultActiveKey={`${mod}_qcreport`} id={`${mod}_reports-tabs`}>
               <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
+                {/* Tab-level heading: the individual report components only carry
+                    their own h4 titles. */}
+                <h3 style={{ marginBottom: '30px' }}>QC Reports <HelpDocLink url={HELP_DOC_URLS.abcReportsPage} title="Open the ABC Reports Page help documentation" /></h3>
                 <QCReportObsoleteEntities modSection={mod} />
                   <hr/>
                 <QCReportRetractedPapers modSection={mod} />
