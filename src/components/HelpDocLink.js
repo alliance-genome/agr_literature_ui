@@ -8,6 +8,7 @@ import LightTip from './LightTip';
 // are not linked from the UI yet and are kept here for upcoming placements.
 export const HELP_DOC_URLS = {
   topicEntityTagging: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/760610818/Topic+and+Entity+Tagging',
+  modCorpusSorting: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/565051399/MOD+corpus+sorting',
   biblioEditor: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1460142082/Biblio+Editor+Tab+Help',
   abcReportsPage: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1337163777/ABC+Reports+Page',
   workflowStatistics: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1460535297/Workflow+Statistics',
