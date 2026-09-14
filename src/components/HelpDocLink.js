@@ -23,15 +23,17 @@ export const HELP_DOC_URLS = {
 };
 
 // Small question-mark icon that opens the given help doc in a new tab.
-// Uses the regular (outline) icon in the surrounding text color so every help ?
-// in the app looks the same as the search-bar and grid-header ones (SCRUM-5898).
+// Uses the regular (outline) icon in the surrounding text color, at the same
+// fixed 20px size as the search-bar and query-builder help icons, so every
+// help ? in the app looks the same regardless of the surrounding font size
+// (SCRUM-5898).
 const HelpDocLink = ({ url, title = 'Open help documentation', style = {} }) => {
   return (
     <LightTip tip={title}>
       <a href={url} target="_blank" rel="noopener noreferrer"
-         aria-label={title} style={{ fontSize: '0.85em', verticalAlign: 'super', color: 'inherit', ...style }}
+         aria-label={title} style={{ verticalAlign: 'super', color: 'inherit', lineHeight: 1, ...style }}
          onClick={(e) => e.stopPropagation()} >
-        <FontAwesomeIcon icon={faQuestionCircle} />
+        <FontAwesomeIcon icon={faQuestionCircle} style={{ width: '20px', height: '20px' }} />
       </a>
     </LightTip>
   );
