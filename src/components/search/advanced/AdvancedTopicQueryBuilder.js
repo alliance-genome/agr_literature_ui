@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Button, Form, InputGroup, OverlayTrigger, Popover } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashAlt, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons';
 import { api } from '../../../api';
 import './AdvancedTopicQueryBuilder.css';
 import {
@@ -875,6 +876,8 @@ const AdvancedTopicQueryBuilder = () => {
               operable: react-bootstrap v1's OverlayTrigger only binds onClick, and
               a button fires that on Enter/Space where a span would not. */}
           <OverlayTrigger trigger="click" placement="bottom-start" rootClose overlay={helpPopover}>
+            {/* Black-and-white outline ?, matching the search-bar and grid-header
+                help icons (SCRUM-5898). */}
             <button
               type="button"
               aria-label="How to use the advanced query builder"
@@ -882,12 +885,12 @@ const AdvancedTopicQueryBuilder = () => {
               title="How to use — AND/OR, tags, and examples"
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: '20px', height: '20px', borderRadius: '50%', border: 'none', padding: 0,
-                backgroundColor: '#0d6efd', color: '#fff',
-                fontSize: '0.75rem', fontWeight: 700, lineHeight: 1, cursor: 'pointer',
-                boxShadow: '0 1px 2px rgba(13, 110, 253, 0.35)',
+                border: 'none', padding: 0, background: 'none', color: 'inherit',
+                lineHeight: 1, cursor: 'pointer',
               }}
-            >?</button>
+            >
+              <FontAwesomeIcon icon={faQuestionCircle} style={{ width: '20px', height: '20px' }} />
+            </button>
           </OverlayTrigger>
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>

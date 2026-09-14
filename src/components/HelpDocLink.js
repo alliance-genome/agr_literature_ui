@@ -1,6 +1,6 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons';
 import LightTip from './LightTip';
 
 // Curator help documentation on the LITERATURE Confluence space (SCRUM-6538).
@@ -22,11 +22,13 @@ export const HELP_DOC_URLS = {
 };
 
 // Small question-mark icon that opens the given help doc in a new tab.
+// Uses the regular (outline) icon in the surrounding text color so every help ?
+// in the app looks the same as the search-bar and grid-header ones (SCRUM-5898).
 const HelpDocLink = ({ url, title = 'Open help documentation', style = {} }) => {
   return (
     <LightTip tip={title}>
       <a href={url} target="_blank" rel="noopener noreferrer"
-         aria-label={title} style={{ fontSize: '0.85em', verticalAlign: 'super', ...style }}
+         aria-label={title} style={{ fontSize: '0.85em', verticalAlign: 'super', color: 'inherit', ...style }}
          onClick={(e) => e.stopPropagation()} >
         <FontAwesomeIcon icon={faQuestionCircle} />
       </a>
