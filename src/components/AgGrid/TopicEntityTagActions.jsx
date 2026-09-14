@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {useDispatch, useSelector} from "react-redux";
 import { api } from "../../api";
+import LightTip from '../LightTip';
 import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
 import { Spinner } from 'react-bootstrap';
@@ -43,7 +44,7 @@ export default (props) => {
           }
         }
         return(
-            props.data.validating_tags.length > 0 ? <Button  size ='sm' variant={ (filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id) ? 'danger' : 'primary'} onClick={() => filterTags()}><FontAwesomeIcon icon={faSearch} /></Button> : null
+            props.data.validating_tags.length > 0 ? <LightTip tip="Show this tag together with the tags that validate it"><Button  size ='sm' aria-label="Show validating tags" variant={ (filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id) ? 'danger' : 'primary'} onClick={() => filterTags()}><FontAwesomeIcon icon={faSearch} /></Button></LightTip> : null
         )
     }
 
@@ -155,9 +156,9 @@ export default (props) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button onClick={() => handleDeleteClick()} size='sm'><FontAwesomeIcon icon={faTrashAlt}/></Button>
+            <LightTip tip="Delete this tag"><Button onClick={() => handleDeleteClick()} size='sm' aria-label="Delete this tag"><FontAwesomeIcon icon={faTrashAlt}/></Button></LightTip>
             &nbsp;
-            <Button onClick={() => handleEditClick(props.data)} size='sm' variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button>
+            <LightTip tip="Edit this tag in the form above"><Button onClick={() => handleEditClick(props.data)} size='sm' aria-label="Edit this tag" variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button></LightTip>
             &nbsp;
             <ValidatedTagsButton/>
         </div> : <ValidatedTagsButton/>}

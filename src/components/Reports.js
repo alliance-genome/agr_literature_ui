@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import HelpDocLink, { HELP_DOC_URLS } from './HelpDocLink';
 import { Spinner, Tabs, Tab, Button, ButtonGroup } from 'react-bootstrap';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -407,7 +408,7 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
 const WorkflowStatModTablesContainer = ({modSection}) => {
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
+      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics <HelpDocLink url={HELP_DOC_URLS.workflowStatistics} title="Open the Workflow Statistics help documentation" /></h3>
                   <WorkflowStatTableCounters
                     workflowProcessAtpId="ATP:0000140"
                     title="File Upload Current Status"
@@ -598,7 +599,7 @@ const WorkflowStatTablesContainer = ({modSection}) => {
   }
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
+      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics <HelpDocLink url={HELP_DOC_URLS.workflowStatistics} title="Open the Workflow Statistics help documentation" /></h3>
       <WorkflowStatTableCounters
         workflowProcessAtpId="ATP:0000140"
         title="File Upload Current Status"
@@ -711,12 +712,12 @@ const QCReportObsoleteEntities = ({modSection}) => {
 
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>QC Reports</h3>
+      <h3 style={{ marginBottom: '30px' }}>QC Reports <HelpDocLink url={HELP_DOC_URLS.abcReportsPage} title="Open the ABC Reports Page help documentation" /></h3>
       <div>
         <Container fluid style={{ width: '90%' }}>
           <Row>
             <Col>
-              <h4 style={{ textAlign: 'left' }}>TET Table Deleted or Obsoleted Entities</h4>
+              <h4 style={{ textAlign: 'left' }}>TET Table Deleted or Obsoleted Entities <HelpDocLink url={HELP_DOC_URLS.qcObsoleteEntities} title="Open the help documentation for this report" /></h4>
             </Col>
           </Row>
           <Row>
@@ -832,7 +833,7 @@ const QCReportRetractedPapers = ({modSection}) => {
             <Container fluid style={{ width: '90%' }}>
                 <Row>
                     <Col>
-                        <h4 style={{ textAlign: 'left' }}>Retracted References with Manual Tags</h4>
+                        <h4 style={{ textAlign: 'left' }}>Retracted References with Manual Tags <HelpDocLink url={HELP_DOC_URLS.qcRetractedRefs} title="Open the help documentation for this report" /></h4>
                     </Col>
                 </Row>
                 <Row>
@@ -919,7 +920,7 @@ const QCObsoletePmids = ({ modSection }) => {
     <Container fluid style={{ width: '90%' }}>
       <Row style={{ paddingTop: '1em', paddingBottom: '0.5em' }}>
         <Col>
-          <h4 style={{ textAlign: 'left' }}>PMIDs obsoleted this month</h4>
+          <h4 style={{ textAlign: 'left' }}>PMIDs obsoleted this month <HelpDocLink url={HELP_DOC_URLS.qcObsoletePmids} title="Open the help documentation for this report" /></h4>
         </Col>
       </Row>
 
@@ -1037,12 +1038,12 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
 
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>QC Reports</h3>
+      <h3 style={{ marginBottom: '30px' }}>QC Reports <HelpDocLink url={HELP_DOC_URLS.abcReportsPage} title="Open the ABC Reports Page help documentation" /></h3>
       <div>
         <Container fluid style={{ width: '90%' }}>
           <Row>
             <Col>
-              <h4 style={{ textAlign: 'left' }}>Duplicate ORCIDs</h4>
+              <h4 style={{ textAlign: 'left' }}>Duplicate ORCIDs <HelpDocLink url={HELP_DOC_URLS.qcDuplicateOrcids} title="Open the help documentation for this report" /></h4>
             </Col>
           </Row>
           <Row>

@@ -17,6 +17,7 @@ import { api } from "../api";
 import Modal from 'react-bootstrap/Modal';
 import { AsyncTypeahead } from "react-bootstrap-typeahead";
 import ReferencesToSort from './ReferencesToSort';
+import HelpDocLink, { HELP_DOC_URLS } from './HelpDocLink';
 import PropTypes from 'prop-types';
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
@@ -415,7 +416,7 @@ const Sort = () => {
 
   return (
     <div>
-      <h3>References for {accessLevel}</h3>
+      <h3>References for {accessLevel} <HelpDocLink url={HELP_DOC_URLS.modCorpusSorting} title="Open the MOD corpus sorting help documentation" /></h3>
       <Form>
         <Form.Check
           inline

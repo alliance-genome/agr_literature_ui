@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import HelpDocLink, { HELP_DOC_URLS } from "../../HelpDocLink";
 import { api } from "../../../api";
 import useAbortableSearch from "../../../hooks/useAbortableSearch";
 import { isSuccess } from "../../../api/httpStatus";
@@ -832,7 +833,8 @@ const TopicEntityCreate = () => {
       {/* Title and "No TET data" Button */}
       <Row className="form-group row mb-3" style={{ alignItems: "center" }}>
         <Col sm="12" style={{ display: "flex", alignItems: "center" }}>
-          <h3 style={{ marginRight: "10px" }}>Entity and Topic Addition</h3>
+          <h3 style={{ marginRight: "4px" }}>Entity and Topic Addition</h3>
+          <HelpDocLink url={HELP_DOC_URLS.topicEntityTagging} title="Open the Topic and Entity Tagging help documentation" style={{ marginRight: "10px" }} />
 
           {["inProgress", "complete"].map((statusKey) => {
             const workflowTagId = statusKey === "inProgress" ? "ATP:0000276" : "ATP:0000275";
