@@ -207,7 +207,7 @@ const QuickTopicAddition = () => {
     // (clientY minus the body viewport's bounding rect) while rowTop is
     // row-container-relative, so add the vertical scroll offset or the guard
     // blocks all downward drags once this fixed-height grid is scrolled.
-    const scrollTop = event.api.getVerticalPixelRange?.().top ?? 0;
+    const scrollTop = event.api.getVerticalPixelRange?.()?.top ?? 0;
     const next = dragReorder(topicRowsRef.current, dragged.topic_curie,
       overNode.data.topic_curie, {
         pointerY: event.y + scrollTop,
