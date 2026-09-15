@@ -28,6 +28,7 @@ import {
   stagedTagsFor,
 } from './quickTopicAssessment';
 import { defaultDataContext } from './dataContextDefaults';
+import { dragReorder } from './quickTopicRowDrag';
 
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
@@ -197,21 +198,23 @@ const QuickTopicAddition = () => {
   const getRowId = useCallback((params) => params.data.topic_curie, []);
   const onRowDragMove = useCallback((event) => {
     const dragged = event.node?.data;
-    const over = event.overNode?.data;
-    if (!dragged || !over || dragged.topic_curie === over.topic_curie) { return; }
+    const overNode = event.overNode;
+    if (!dragged || !overNode?.data) { return; }
     if (sortActiveRef.current) { return; }
-    setTopicRows((rows) => {
-      const from = rows.findIndex((r) => r.topic_curie === dragged.topic_curie);
-      const to = rows.findIndex((r) => r.topic_curie === over.topic_curie);
-      if (from < 0 || to < 0 || from === to) { return rows; }
-      const next = [...rows];
-      next.splice(from, 1);
-      next.splice(to, 0, dragged);
-      // Keep the manual order across topic refetches this session; it is only
-      // persisted when the curator saves it to a preference setting.
-      savedRowOrderRef.current = next.map((r) => r.topic_curie);
-      return next;
-    });
+    // dragReorder's midpoint guard keeps the live reorder stable with
+    // variable-height (autoHeight) rows; without it a short row dragged over
+    // a tall one oscillates on every mousemove.
+    const next = dragReorder(topicRowsRef.current, dragged.topic_curie,
+      overNode.data.topic_curie, {
+        pointerY: event.y,
+        overTop: overNode.rowTop,
+        overHeight: overNode.rowHeight,
+      });
+    if (!next) { return; }
+    // Keep the manual order across topic refetches this session; it is only
+    // persisted when the curator saves it to a preference setting.
+    savedRowOrderRef.current = next.map((r) => r.topic_curie);
+    setTopicRows(next);
     // The focus ring otherwise stays parked on a fixed row index while the
     // rows shift underneath it during the live reorder.
     event.api.clearFocusedCell?.();
