@@ -272,7 +272,9 @@ const PersonDisplay = ({ person: personProp }) => {
   const names = person.names ?? [];
   const xrefs = person.cross_references ?? [];
   const webpages = person.webpage ?? [];
-  const institutions = person.institution ?? [];
+  const institutions = person.institutions ?? [];
+  const activeInstitutions = institutions.filter((i) => !i.date_made_old_institution);
+  const oldInstitutions = institutions.filter((i) => !!i.date_made_old_institution);
   const notes = person.notes ?? [];
   const labPersons = person.lab_persons ?? [];
 
@@ -374,12 +376,36 @@ const PersonDisplay = ({ person: personProp }) => {
 
   sectionRows.institutions = (
     <Section title="Institutions">
-      {institutions.length === 0 ? (
+      {activeInstitutions.length === 0 && oldInstitutions.length === 0 ? (
         <FieldRow label="institution" />
       ) : (
-        institutions.map((inst, i) => (
-          <FieldRow key={i} label="institution" ts={recordTs}>{inst}</FieldRow>
-        ))
+        <>
+          {activeInstitutions.map((inst, i) => (
+            <FieldRow
+              key={inst.person_institution_id ?? i}
+              label="institution"
+              ts={metaLabel(inst.updated_by, inst.date_updated)}
+            >
+              {inst.institution}
+            </FieldRow>
+          ))}
+          {oldInstitutions.map((inst, i) => {
+            const oldNote = showTimestamps
+              ? `old since ${formatTimestamp(inst.date_made_old_institution)}`
+              : 'old';
+            const editTs = metaLabel(inst.updated_by, inst.date_updated);
+            const ts = editTs ? `${oldNote} · ${editTs}` : oldNote;
+            return (
+              <FieldRow
+                key={`old-${inst.person_institution_id ?? i}`}
+                label="old_institution"
+                ts={ts}
+              >
+                <span style={muted}>{inst.institution}</span>
+              </FieldRow>
+            );
+          })}
+        </>
       )}
     </Section>
   );
