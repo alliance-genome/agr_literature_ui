@@ -28,6 +28,7 @@ import {
   stagedTagsFor,
 } from './quickTopicAssessment';
 import { defaultDataContext } from './dataContextDefaults';
+import { dragReorder } from './quickTopicRowDrag';
 
 // Whole Paper topic is handled separately in the workflow editor; exclude it here.
 const WHOLE_PAPER_TOPIC = "ATP:0000002";
@@ -122,6 +123,24 @@ const QuickTopicAddition = () => {
   const topicRowsRef = useRef(topicRows);
   topicRowsRef.current = topicRows;
 
+  // With unmanaged dragging the grid no longer hides the handles while
+  // sorted, but reordering under an active sort has no visible effect (the
+  // sort wins) and would silently scramble the unsorted order, so suppress
+  // dragging for exactly that case, and only that case. The flag is derived
+  // from actual grid column state, not just the sortChanged event: the grid
+  // unmounts behind the loading spinner on every refetch and remounts
+  // unsorted without firing sortChanged, so an event-only flag would go stale
+  // and keep the handles hidden after Submit. Re-sync wherever column state
+  // changes programmatically.
+  const [sortActive, setSortActive] = useState(false);
+  const sortActiveRef = useRef(false);
+  const syncSortActive = useCallback((api) => {
+    const active = (api?.getColumnState?.() || []).some((c) => c.sort);
+    sortActiveRef.current = active;
+    setSortActive(active);
+  }, []);
+  const onSortChanged = useCallback((event) => syncSortActive(event.api), [syncSortActive]);
+
   // Apply the grid-level part of a preference payload (column layout + filters).
   // ORDERING IS LOAD-BEARING: applySettingsToGrid restores the Definition/
   // Synonyms toggles first and defers this call (setTimeout 0) until the
@@ -140,8 +159,8 @@ const QuickTopicAddition = () => {
       // Preferences saved before topic_name switched to TopicFilter hold a text
       // filter model on that column. AG Grid derives "filter active" from the
       // model being non-null (regardless of doesFilterPass), so restoring the
-      // stale object would show a filter icon that filters nothing, suppress
-      // the managed row-drag handles, and re-persist itself on the next save.
+      // stale object would show a filter icon that filters nothing and
+      // re-persist itself on the next save.
       // Drop any topic_name model that isn't the TopicFilter's array shape.
       const safeFilterModel = filterModel && Object.fromEntries(
         Object.entries(filterModel).filter(([colId, m]) => colId !== 'topic_name' || Array.isArray(m))
@@ -149,13 +168,15 @@ const QuickTopicAddition = () => {
       api.setFilterModel(safeFilterModel && Object.keys(safeFilterModel).length > 0 ? safeFilterModel : null);
     }
     api.onFilterChanged?.();
-  }, []);
+    syncSortActive(api);
+  }, [syncSortActive]);
 
   const onGridReady = useCallback((params) => {
     gridApiRef.current = params.api;
     setIsGridReady(true);
     if (lastSettingsRef.current) { applyGridLayout(lastSettingsRef.current); }
-  }, [applyGridLayout]);
+    syncSortActive(params.api);
+  }, [applyGridLayout, syncSortActive]);
   // Auto-height cells can retain AG Grid's initial estimated height until an
   // interaction such as filtering forces a second measurement. Recalculate
   // once the first set of cells has rendered so row height is stable from the
@@ -167,20 +188,44 @@ const QuickTopicAddition = () => {
     setSelectedCount(gridApiRef.current?.getSelectedRows().length || 0);
   }, []);
 
-  // After a managed row drag, mirror the grid's new row order back into
-  // topicRows so everything that iterates it (staged summary, submit modal)
+  // Unmanaged row dragging: managed dragging hides the drag handles whenever
+  // any filter is active, but curators specifically re-order their *filtered*
+  // topic list. onRowDragMove live-reorders the full topicRows array around
+  // the hovered row (AG Grid's documented pattern for dragging while
+  // filtered), so everything that iterates it (staged summary, submit modal)
   // follows the curator's order. getRowId keeps selection/staged cell state
-  // attached to the right rows across the state update.
+  // attached to the right rows across the state updates.
   const getRowId = useCallback((params) => params.data.topic_curie, []);
-  const onRowDragEnd = useCallback(() => {
-    const api = gridApiRef.current;
-    if (!api) { return; }
-    const reordered = [];
-    api.forEachNode((node) => { reordered.push(node.data); });
-    setTopicRows(reordered);
+  const onRowDragMove = useCallback((event) => {
+    const dragged = event.node?.data;
+    const overNode = event.overNode;
+    if (!dragged || !overNode?.data) { return; }
+    if (sortActiveRef.current) { return; }
+    // dragReorder's midpoint guard keeps the live reorder stable with
+    // variable-height (autoHeight) rows; without it a short row dragged over
+    // a tall one oscillates on every mousemove. event.y is viewport-relative
+    // (clientY minus the body viewport's bounding rect) while rowTop is
+    // row-container-relative, so add the vertical scroll offset or the guard
+    // blocks all downward drags once this fixed-height grid is scrolled.
+    const scrollTop = event.api.getVerticalPixelRange?.()?.top ?? 0;
+    const next = dragReorder(topicRowsRef.current, dragged.topic_curie,
+      overNode.data.topic_curie, {
+        pointerY: event.y + scrollTop,
+        overTop: overNode.rowTop,
+        overHeight: overNode.rowHeight,
+      });
+    if (!next) { return; }
     // Keep the manual order across topic refetches this session; it is only
-    // persisted when the curator saves it to a preference setting.
-    savedRowOrderRef.current = reordered.map((r) => r.topic_curie);
+    // persisted when the curator saves it to a preference setting. Also sync
+    // topicRowsRef immediately: it is otherwise assigned during render, and a
+    // second rowDragMove landing before React flushes would compute from the
+    // pre-move array and undo this one.
+    savedRowOrderRef.current = next.map((r) => r.topic_curie);
+    topicRowsRef.current = next;
+    setTopicRows(next);
+    // The focus ring otherwise stays parked on a fixed row index while the
+    // rows shift underneath it during the live reorder.
+    event.api.clearFocusedCell?.();
   }, []);
 
   // ----- Table preference settings (same person-settings backend as the TET
@@ -264,8 +309,9 @@ const QuickTopicAddition = () => {
     api?.resetColumnState?.();
     api?.setFilterModel?.(null);
     api?.onFilterChanged?.();
+    syncSortActive(api);
     setTopicRows((prev) => [...prev].sort(defaultTopicOrder));
-  }, [applySettingsToGrid]);
+  }, [applySettingsToGrid, syncSortActive]);
 
   // External (toggle) filters, layered on top of AG Grid's own column filters
   // and the quick-filter text box.
@@ -781,9 +827,10 @@ const QuickTopicAddition = () => {
       {
         headerName: '',
         colId: 'rowDrag',
-        // Keep a dedicated gutter for row reordering. AG Grid hides the handle
-        // while sorted/filtered, but the column remains so topic text does not
-        // jump horizontally when the handle disappears.
+        // Keep a dedicated gutter for row reordering. Dragging is unmanaged so
+        // the handle stays available while filters are active; it is hidden
+        // only while sorted (suppressRowDrag), and the column remains so topic
+        // text does not jump horizontally when the handle disappears.
         rowDrag: true,
         width: 42,
         minWidth: 42,
@@ -1074,10 +1121,11 @@ const QuickTopicAddition = () => {
             rowSelection="multiple"
             showDisabledCheckboxes={true}
             suppressRowClickSelection={true}
-            rowDragManaged={true}
+            suppressRowDrag={sortActive}
             animateRows={true}
             getRowId={getRowId}
-            onRowDragEnd={onRowDragEnd}
+            onRowDragMove={onRowDragMove}
+            onSortChanged={onSortChanged}
             onGridReady={onGridReady}
             onFirstDataRendered={onFirstDataRendered}
             onSelectionChanged={onSelectionChanged}
