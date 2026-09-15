@@ -59,6 +59,22 @@ describe('dragReorder', () => {
     });
   });
 
+  describe('scrolled grid (pointer normalised into row-container space)', () => {
+    // The scrolled-by-400px scenario from review: hovered row at rowTop=488
+    // (midpoint 510), raw viewport-relative event.y of 120. The raw value
+    // wrongly blocks the downward move; only the caller-normalised pointer
+    // (event.y + getVerticalPixelRange().top = 520) may cross the midpoint.
+    it('a raw viewport-relative pointer blocks a legitimate downward move', () => {
+      expect(dragReorder(rows('A', 'B'), 'A', 'B',
+        { pointerY: 120, overTop: 488, overHeight: 44 })).toBeNull();
+    });
+
+    it('the scroll-normalised pointer crosses the midpoint and moves', () => {
+      expect(order(dragReorder(rows('A', 'B'), 'A', 'B',
+        { pointerY: 120 + 400, overTop: 488, overHeight: 44 }))).toEqual(['B', 'A']);
+    });
+  });
+
   describe('no-ops and fallbacks', () => {
     it('returns null when hovering the dragged row itself', () => {
       expect(dragReorder(rows('A', 'B'), 'A', 'A',

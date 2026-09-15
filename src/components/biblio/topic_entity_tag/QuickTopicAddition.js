@@ -203,17 +203,25 @@ const QuickTopicAddition = () => {
     if (sortActiveRef.current) { return; }
     // dragReorder's midpoint guard keeps the live reorder stable with
     // variable-height (autoHeight) rows; without it a short row dragged over
-    // a tall one oscillates on every mousemove.
+    // a tall one oscillates on every mousemove. event.y is viewport-relative
+    // (clientY minus the body viewport's bounding rect) while rowTop is
+    // row-container-relative, so add the vertical scroll offset or the guard
+    // blocks all downward drags once this fixed-height grid is scrolled.
+    const scrollTop = event.api.getVerticalPixelRange?.().top ?? 0;
     const next = dragReorder(topicRowsRef.current, dragged.topic_curie,
       overNode.data.topic_curie, {
-        pointerY: event.y,
+        pointerY: event.y + scrollTop,
         overTop: overNode.rowTop,
         overHeight: overNode.rowHeight,
       });
     if (!next) { return; }
     // Keep the manual order across topic refetches this session; it is only
-    // persisted when the curator saves it to a preference setting.
+    // persisted when the curator saves it to a preference setting. Also sync
+    // topicRowsRef immediately: it is otherwise assigned during render, and a
+    // second rowDragMove landing before React flushes would compute from the
+    // pre-move array and undo this one.
     savedRowOrderRef.current = next.map((r) => r.topic_curie);
+    topicRowsRef.current = next;
     setTopicRows(next);
     // The focus ring otherwise stays parked on a fixed row index while the
     // rows shift underneath it during the live reorder.

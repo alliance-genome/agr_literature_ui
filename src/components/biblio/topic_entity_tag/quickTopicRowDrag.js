@@ -18,9 +18,13 @@
 // back, flickering on every event. This mirrors what AG Grid's managed
 // RowDragFeature does internally.
 //
-// geometry: { pointerY, overTop, overHeight } in the grid's row-container
-// pixel space (RowDragEvent.y / RowNode.rowTop / RowNode.rowHeight). When any
-// of them is missing the guard is skipped and the swap happens immediately.
+// geometry: { pointerY, overTop, overHeight }, ALL in the grid's row-container
+// pixel space (RowNode.rowTop / RowNode.rowHeight). The caller is responsible
+// for normalising the pointer into that space: RowDragEvent.y is relative to
+// the body viewport, so it must have the vertical scroll offset added
+// (api.getVerticalPixelRange().top) before being passed as pointerY. When any
+// of the three is missing the guard is skipped and the swap happens
+// immediately.
 export const dragReorder = (rows, draggedCurie, overCurie, geometry = {}) => {
   if (!Array.isArray(rows) || draggedCurie === overCurie) { return null; }
   const from = rows.findIndex((r) => r.topic_curie === draggedCurie);
