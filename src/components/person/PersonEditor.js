@@ -62,11 +62,13 @@ const errDetail = (err) => {
 // the meta pencil). Snap = JSON of the fields.
 const nameFields = (r) => ({ first_name: r.first_name || '', middle_name: r.middle_name || '', last_name: r.last_name || '', is_primary: !!r.is_primary });
 const emailFields = (r) => ({ email_address: r.email_address || '', invalidated: !!r.invalidated });
+const instFields = (r) => ({ institution: r.institution || '', invalidated: !!r.invalidated });
 const noteFields = (r) => ({ note: r.note || '' });
 const xrefFields = (r) => ({ curie_prefix: r.curie_prefix || '', curie: r.curie || '', is_obsolete: !!r.is_obsolete });
 const labFields = (r) => ({ labCurie: r.labCurie || '', alum: !!r.alum, is_pi: !!r.is_pi, former_pi: !!r.former_pi });
 const nameSnap = (r) => JSON.stringify(nameFields(r));
 const emailSnap = (r) => JSON.stringify(emailFields(r));
+const instSnap = (r) => JSON.stringify(instFields(r));
 const noteSnap = (r) => JSON.stringify(noteFields(r));
 const xrefSnap = (r) => JSON.stringify(xrefFields(r));
 const labSnap = (r) => JSON.stringify(labFields(r));
@@ -466,12 +468,11 @@ const PersonEditor = ({ person }) => {
       });
   };
 
-  // ---- person string-array save (institution / webpage) ----
+  // ---- person string-array save (webpage) ----
   // Saved as one array via PATCH /person, but each ROW tracks its own last-saved
   // value (_savedValue) so only the row you changed shows "unsaved", not the whole
   // section.
   const [savedArrays, setSavedArrays] = useState({
-    institution: (p.institution ?? []).filter(Boolean),
     webpage: (p.webpage ?? []).filter(Boolean),
   });
   const arraysEqual = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
@@ -585,11 +586,33 @@ const PersonEditor = ({ person }) => {
   const initialUrls = (p.webpage ?? []).map((u) => ({ url: u ?? '', _savedValue: u ?? '', _status: null, _error: null }));
   const [urls, updateUrl, removeUrl, setUrls] = useAutoGrowList(initialUrls, emptyUrl, urlIsEmpty);
 
-  // Institutions — saved as the person.institution array; per-row _savedValue tracks dirty.
-  const emptyInst = () => ({ value: '', _savedValue: '', _status: null, _error: null });
-  const instIsEmpty = (it) => !it.value;
-  const initialInsts = (p.institution ?? []).map((it) => ({ value: it ?? '', _savedValue: it ?? '', _status: null, _error: null }));
-  const [insts, updateInst, removeInst, setInsts] = useAutoGrowList(initialInsts, emptyInst, instIsEmpty);
+  // Institutions — person_institution child rows, like emails. An institution the
+  // person has left is kept and marked old (date_made_old_institution) rather
+  // than deleted, and the same institution may appear twice (one old, one
+  // active) because people return to institutions.
+  const emptyInst = () => {
+    const r = {
+      institution: '', invalidated: false, _origOldDate: null,
+      _ts: null, _by: null, _created: null, _id: null, _status: null, _error: null,
+    };
+    return { ...r, _saved: instFields(r), _savedKey: instSnap(r) };
+  };
+  const instIsEmpty = (it) => !it.institution;
+  const initialInsts = (p.institutions ?? []).map((it) => {
+    const r = {
+      institution: it.institution ?? '',
+      invalidated: !!it.date_made_old_institution,
+      _origOldDate: it.date_made_old_institution ?? null,
+      _ts: it.date_updated ?? null,
+      _by: it.updated_by ?? null,
+      _created: it.date_created ?? null,
+      _id: it.person_institution_id ?? null,
+      _status: null,
+      _error: null,
+    };
+    return { ...r, _saved: instFields(r), _savedKey: instSnap(r) };
+  });
+  const [insts, updateInst, removeInst] = useAutoGrowList(initialInsts, emptyInst, instIsEmpty);
 
   // Cross references — page url is API-only, not editable, not shown
   const emptyXref = () => {
@@ -886,6 +909,12 @@ const PersonEditor = ({ person }) => {
 
   // Create (POST, when complete) or update (PATCH) one child row; tracks status on
   // the row itself. `after` runs on success (e.g. refetch a collection).
+  // NOTE: the .then below writes a FIXED set of row fields. Any other field the
+  // SERVER owns (a timestamp it assigns or normalizes, a value it rewrites) must
+  // be pulled back explicitly via `applyResp`, or the row keeps its pre-save
+  // value until the page is reloaded. This bit both saveEmail and saveInst:
+  // each sent a client-computed date_made_old_* but never adopted the stored
+  // value, so "old since" never rendered. See saveLab for the pattern.
   const persistChild = ({ list, update, i, idKey, endpoint, createPath, completeFn, bodyFn, snap, savedOf, after, override, applyResp }) => {
     const row = { ...list[i], ...(override || {}) };
     // Guard against a second save firing while one is in flight — otherwise a
@@ -989,8 +1018,44 @@ const PersonEditor = ({ person }) => {
       return body;
     },
     snap: emailSnap, savedOf: emailFields,
+    // The row computes a client-side old-date to SEND, but the server is the
+    // authority on what was stored. Without this the row keeps its pre-save
+    // _origOldDate (null on the first tick), so "old since" only appeared after
+    // a reload -- "created" showed because that came from the initial load.
+    applyResp: (d) => ({
+      _origOldDate: d.date_made_old_email ?? null,
+      _created: d.date_created ?? null,
+    }),
   });
   const deleteEmail = (i) => deleteChild({ list: emails, update: updateEmail, remove: removeEmail, i, endpoint: '/person_email' });
+
+  // Institutions — same child-row persistence as emails. No uniqueness check on
+  // the API side, so re-adding an institution the person has returned to is fine.
+  const saveInst = (i, override) => persistChild({
+    list: insts, update: updateInst, i, override,
+    idKey: 'person_institution_id', endpoint: '/person_institution', createPath: `/person_institution/person/${p.curie}`,
+    completeFn: (r) => !!(r.institution || '').trim(),
+    bodyFn: (r, isCreate, changed) => {
+      const full = {
+        institution: (r.institution || '').trim(),
+        // checked => mark old (keep an existing old-date, else now); unchecked => clear.
+        date_made_old_institution: r.invalidated ? (r._origOldDate || new Date().toISOString()) : null,
+      };
+      if (isCreate) return full;
+      const body = {};
+      if (changed.includes('institution')) body.institution = full.institution;
+      if (changed.includes('invalidated')) body.date_made_old_institution = full.date_made_old_institution;
+      return body;
+    },
+    snap: instSnap, savedOf: instFields,
+    // See the note on saveEmail's applyResp: adopt the server's stored dates so
+    // "old since" renders immediately instead of only after a reload.
+    applyResp: (d) => ({
+      _origOldDate: d.date_made_old_institution ?? null,
+      _created: d.date_created ?? null,
+    }),
+  });
+  const deleteInst = (i) => deleteChild({ list: insts, update: updateInst, remove: removeInst, i, endpoint: '/person_institution' });
   // Email is optional, but if one is entered it must be a valid address. An empty
   // field just doesn't save; a non-empty invalid one shows a validation error.
   const handleEmailBlur = (i) => {
@@ -1092,8 +1157,11 @@ const PersonEditor = ({ person }) => {
   };
   const labelForUrl = (u, i) =>
     i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (add)' : 'webpage';
-  const labelForInst = (it, i) =>
-    i === insts.length - 1 && instIsEmpty(it) ? 'institution (add)' : 'institution';
+  const labelForInst = (it, i) => {
+    if (i === insts.length - 1 && instIsEmpty(it)) return 'institution (add)';
+    if (it.invalidated) return 'old_institution';
+    return 'institution';
+  };
   const labelForXref = (x, i) =>
     i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : x.curie_prefix || 'xref';
   const labelForNote = (n, i) =>
@@ -1366,24 +1434,54 @@ const PersonEditor = ({ person }) => {
     <Card className="mb-3">
       <Card.Header>Institutions</Card.Header>
       <Card.Body>
-        {insts.map((it, i) => (
-          <FieldLine
-            key={i}
-            label={labelForInst(it, i)}
-            ts={recordTs}
-            status={stringRowStatus(it, 'value')}
-            error={it._error}
-            onDismissError={() => updateInst(i, { _error: null })}
-            trail={<RemoveBtn onClick={() => removeStringArrayRow({ list: insts, setList: setInsts, remove: removeInst, field: 'institution', valueKey: 'value', i })} />}
-          >
-            <HlControl
-              value={it.value}
-              savedValue={it._savedValue}
-              onChange={(ev) => updateInst(i, { value: ev.target.value })}
-              onBlur={() => saveStringArray({ list: insts, setList: setInsts, field: 'institution', valueKey: 'value', i })}
-            />
-          </FieldLine>
-        ))}
+        {insts.map((it, i) => {
+          // Mirrors the Email section: created + old-since show only for a row
+          // that's old and has dates from the DB.
+          const showDates = showTimestamps && it.invalidated && !!(it._created || it._origOldDate);
+          const dateSlotBase = { ...tsStyle, flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+          return (
+            <FieldLine
+              key={i}
+              label={labelForInst(it, i)}
+              ts={metaLabel(it._by, it._ts)}
+              status={childStatus(it, instSnap)}
+              error={it._error}
+              onDismissError={() => updateInst(i, { _error: null })}
+              trail={<RemoveBtn onClick={() => deleteInst(i)} />}
+            >
+              <div style={inlineRow}>
+                <HlControl
+                  placeholder="institution"
+                  value={it.institution}
+                  savedValue={it._saved?.institution}
+                  onChange={(ev) => updateInst(i, { institution: ev.target.value })}
+                  onBlur={() => saveInst(i)}
+                  style={{ flex: '1 1 200px', minWidth: 200 }}
+                />
+                {showDates && (
+                  <span style={{ ...dateSlotBase, fontSize: '0.75em', width: 340 }}>
+                    {[
+                      it._created ? `created ${formatTimestamp(it._created)}` : null,
+                      it._origOldDate ? `old since ${formatTimestamp(it._origOldDate)}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+                <HlCheck
+                  type="checkbox"
+                  id={`person-institution-old-${i}`}
+                  label="mark as old"
+                  checked={it.invalidated}
+                  savedValue={it._saved?.invalidated}
+                  onChange={(ev) => {
+                    updateInst(i, { invalidated: ev.target.checked });
+                    saveInst(i, { invalidated: ev.target.checked });
+                  }}
+                  style={{ whiteSpace: 'nowrap' }}
+                />
+              </div>
+            </FieldLine>
+          );
+        })}
       </Card.Body>
     </Card>
   );
