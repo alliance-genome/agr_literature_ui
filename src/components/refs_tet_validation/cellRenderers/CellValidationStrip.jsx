@@ -29,6 +29,7 @@ export default function CellValidationStrip({
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const accessLevelMod =
     testerMod && testerMod !== 'No' ? testerMod : cognitoMod;
+  const topicEntitySourceId = useSelector((s) => s.biblio.topicEntitySourceId);
   const modToTaxon = useSelector((s) => s.biblio.modToTaxon);
   const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
   // pending = null | { kind, note, status, errorMessage?,
@@ -100,6 +101,9 @@ export default function CellValidationStrip({
           curation_status: pending.curStatus || null,
           curation_tag: pending.curTag || null,
           note: pending.curNote.trim() || null,
+          // SCRUM-6518: attribute this manual edit to the ABC curator source.
+          // TetValidationGrid resolves it into redux for this screen.
+          ...(topicEntitySourceId ? { tag_source_id: topicEntitySourceId } : {}),
         };
         debug.log('[CellValidationStrip] submit curation_status', curPayload);
         const cur = await api.post('/curation_status/', curPayload);

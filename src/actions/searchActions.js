@@ -137,7 +137,7 @@ export const fetchAdvancedFacetsVocab = () => {
       })
         .then(res => (res.data && res.data.aggregations) ? res.data.aggregations : {})
         .catch(() => ({})),
-      api.get('/topic_entity_tag/source/all')
+      api.get('/tag_source/all')
         .then(res => Array.isArray(res.data) ? res.data : [])
         .catch(() => [])
     ]).then(([aggregations, sources]) => {

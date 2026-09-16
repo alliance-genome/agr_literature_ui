@@ -50,7 +50,7 @@ describe('evidenceAssertionLabel (curated map first, backend name as fallback)',
       {
         tets: [
           {
-            topic_entity_tag_source: {
+            tag_source: {
               source_evidence_assertion_name: 'some resolved label',
             },
           },

@@ -98,7 +98,7 @@ const ReferencesToSort = ({
             'topic': "ATP:0000123",   // species
             'entity_type': "ATP:0000123", // species
             'entity_id_validation': "alliance",
-            'topic_entity_tag_source_id': topicEntitySourceId
+            'tag_source_id': topicEntitySourceId
           };
           subPath = 'topic_entity_tag/';
           method = 'POST';

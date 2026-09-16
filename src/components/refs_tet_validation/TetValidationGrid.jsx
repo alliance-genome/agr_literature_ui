@@ -489,7 +489,7 @@ export default function TetValidationGrid({
           if (label) s.add(label);
         });
       } else {
-        for (const t of r.tets || []) s.add(sourceLabel(t.topic_entity_tag_source));
+        for (const t of r.tets || []) s.add(sourceLabel(t.tag_source));
       }
     }
     return [...s].sort();

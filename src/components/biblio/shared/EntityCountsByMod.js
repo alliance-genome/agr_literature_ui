@@ -81,7 +81,7 @@ const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
   const countsByMod = useMemo(() => {
     const byMod = {};
     for (const tag of topicEntityTags || []) {
-      const mod = tag?.topic_entity_tag_source?.secondary_data_provider_abbreviation;
+      const mod = tag?.tag_source?.secondary_data_provider_abbreviation;
       const entityType = tag?.entity_type_name;
       const entity = tag?.entity; // entity curie; unique key for counting
       // Skip rows without a MOD, entity type, or an actual entity (e.g. topic-only tags)

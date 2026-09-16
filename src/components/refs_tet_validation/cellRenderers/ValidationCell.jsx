@@ -43,14 +43,14 @@ function deriveValidationSummary(tets) {
     if (!groups.has(key)) {
       groups.set(key, { name, negated, sources: new Map(), species: new Set() });
     }
-    const src = t.topic_entity_tag_source?.source_method;
+    const src = t.tag_source?.source_method;
     if (src) {
       // Keep a Map source_method → label so the tooltip shows the full
       // source label (method / data-provider) while the icon shows just
       // the first letter.
       const lab = `${src}${
-        t.topic_entity_tag_source?.secondary_data_provider_abbreviation
-          ? ` / ${t.topic_entity_tag_source.secondary_data_provider_abbreviation}`
+        t.tag_source?.secondary_data_provider_abbreviation
+          ? ` / ${t.tag_source.secondary_data_provider_abbreviation}`
           : ''
       }`;
       groups.get(key).sources.set(src, lab);

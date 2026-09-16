@@ -16,7 +16,7 @@ import ColumnHideShowDropdown from '../AgGrid/ColumnHideShowDropdown';
 import TopicFilter from '../AgGrid/TopicFilter';
 import EntityCountsByMod from './shared/EntityCountsByMod';
 
-import { setAllTopics } from '../../actions/biblioActions';
+import { setAllTopics, setTopicEntitySourceId, getCuratorSourceId } from '../../actions/biblioActions';
 
 
 const MANUAL_INDEXING_TBD = "ATP:0000359"; // manual indexing status TBD
@@ -110,6 +110,7 @@ const BiblioWorkflow = () => {
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const email = useSelector((state) => state.isLogged.email);
+  const topicEntitySourceId = useSelector(state => state.biblio.topicEntitySourceId);
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
 
   const [items, setItems] = useState([]);
@@ -262,6 +263,18 @@ const BiblioWorkflow = () => {
   useEffect(() => {
     fetchPreCurationWorkflow();
   }, [fetchPreCurationWorkflow]);
+
+  // SCRUM-6518. Resolve the ABC curator source once, so every curation status
+  // write from this tab can be attributed. Mirrors TetValidationGrid, and
+  // reuses the same redux slot, so whichever screen loads first pays for it.
+  useEffect(() => {
+    if (accessLevel && accessToken && !topicEntitySourceId) {
+      (async () => {
+        const id = await getCuratorSourceId(accessLevel, accessToken);
+        dispatch(setTopicEntitySourceId(id));
+      })();
+    }
+  }, [accessLevel, accessToken, topicEntitySourceId, dispatch]);
 
   // fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
@@ -1582,11 +1595,17 @@ const BiblioWorkflow = () => {
   };
 
   const updateCurationStatus = (subPath, method, json_data) => {
+    // SCRUM-6518: attribute manual curation status edits to the ABC curator
+    // source, so they are distinguishable from a loader's report. DELETE sends
+    // json_data === null, and an unresolved source must never block the edit.
+    const data = (json_data && topicEntitySourceId)
+      ? { ...json_data, tag_source_id: topicEntitySourceId }
+      : json_data;
     return new Promise((resolve, reject) => {
       api.request({
         url: subPath,
         method,
-        data: json_data,
+        data,
       })
       .then((res) => {
         const isValid = isSuccess(res.status);
@@ -1598,7 +1617,7 @@ const BiblioWorkflow = () => {
         }
       })
       .catch((err) => {
-        const errorMessage = (<>API error: reload page to see what's in the database.<br/><br/>Debug:<br/>url: {subPath}<br/>payload: {JSON.stringify(json_data)}<br/>error: {err.toString()}</>)
+        const errorMessage = (<>API error: reload page to see what's in the database.<br/><br/>Debug:<br/>url: {subPath}<br/>payload: {JSON.stringify(data)}<br/>error: {err.toString()}</>)
         setApiErrorMessage(errorMessage);
         setShowApiErrorModal(true);
         console.error(errorMessage);

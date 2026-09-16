@@ -299,7 +299,7 @@ const TopicEntityCreateSGD = () => {
     const entityResult = entityResultList[0];
       
     let updateJson = initializeUpdateJson(refCurie, row);
-    delete updateJson["topic_entity_tag_source_id"];
+    delete updateJson["tag_source_id"];
     delete updateJson["reference_curie"];
 
     updateJson["entity_id_validation"] = row.entityTypeSelect === "" ? null : "alliance";
@@ -474,7 +474,7 @@ const TopicEntityCreateSGD = () => {
     updateJson["confidence_score"] = null;  
     updateJson["confidence_level"] = null;
     updateJson["data_novelty"] = null;
-    updateJson["topic_entity_tag_source_id"] = topicEntitySourceId;
+    updateJson["tag_source_id"] = topicEntitySourceId;
 
     if (row.tetdisplayTagSelect && row.tetdisplayTagSelect !== "") {
        updateJson["display_tag"] = row.tetdisplayTagSelect;

@@ -24,7 +24,7 @@ export function groupTetsByTopicAndSource(tets) {
   const byTopic = new Map();
   for (const tet of asTets(tets)) {
     const topicKey = normalizeCurie(tet.topic);
-    const label = sourceLabel(tet.topic_entity_tag_source);
+    const label = sourceLabel(tet.tag_source);
     if (!byTopic.has(topicKey)) byTopic.set(topicKey, new Map());
     const bySource = byTopic.get(topicKey);
     if (!bySource.has(label)) bySource.set(label, []);
@@ -33,9 +33,12 @@ export function groupTetsByTopicAndSource(tets) {
   return byTopic;
 }
 
+// 'professional_biocurator' is the only curator validation_type. The old
+// 'professional_curator' spelling was wrong — validation edges key on
+// professional_biocurator — and is normalised away by the SCRUM-6518
+// migration, which ships ahead of this code.
 const CURATOR_VALIDATION_TYPES = new Set([
   'professional_biocurator',
-  'professional_curator',
 ]);
 
 /** True for any TET whose source is a professional-biocurator source —
@@ -45,7 +48,7 @@ export function isCuratorSourceTet(tet) {
   return (
     !!tet &&
     CURATOR_VALIDATION_TYPES.has(
-      tet?.topic_entity_tag_source?.validation_type
+      tet?.tag_source?.validation_type
     )
   );
 }
@@ -55,7 +58,7 @@ export function isCuratorValidationTet(tet) {
     !!tet &&
     !tet.entity &&
     CURATOR_VALIDATION_TYPES.has(
-      tet.topic_entity_tag_source?.validation_type
+      tet.tag_source?.validation_type
     )
   );
 }

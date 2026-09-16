@@ -17,7 +17,7 @@ export default function SourcesCell(params) {
         renderEntry={(e) => {
           const description =
             e.source_description ||
-            e.tets?.[0]?.topic_entity_tag_source?.description ||
+            e.tets?.[0]?.tag_source?.description ||
             null;
           const label = e.sourceLabel || e.source_label;
           return (
