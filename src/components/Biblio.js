@@ -13,6 +13,7 @@ import { getQuickTopicStagedCount } from './biblio/topic_entity_tag/quickTopicSt
 import BiblioFileManagement from './biblio/BiblioFileManagement';
 import BiblioRawTetData from './biblio/BiblioRawTetData';
 import BiblioAuthorReorder from './biblio/BiblioAuthorReorder';
+import BiblioPerson from './biblio/BiblioPerson';
 import NoAccessAlert from './biblio/NoAccessAlert';
 
 import { RowDisplayString, RowDisplayCrossReferences } from './biblio/BiblioDisplay';
@@ -352,6 +353,11 @@ const BiblioActionRouter = () => {
         { accessToken === null ? <NoAccessAlert /> : <BiblioEditor /> }
         { (authorReorderOpen && accessToken !== null) ? <BiblioAuthorReorder /> : null }
       </>);
+    case 'person':
+      // No BiblioActionToggler: this screen is always full page (the radios are view
+      // modes that stay selected, and person is a place you go and come back from),
+      // so it carries its own "Back to editor" control instead.
+      return (<>{ accessToken === null ? <NoAccessAlert /> : <BiblioPerson /> }</>);
     case 'entity':
       return (<><Container><BiblioActionToggler /><RetractionBanner /></Container>{ accessToken === null ? <NoAccessAlert /> : <BiblioTagging /> }</>);
     case 'workflow':
