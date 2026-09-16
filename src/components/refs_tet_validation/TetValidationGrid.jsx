@@ -288,9 +288,9 @@ export default function TetValidationGrid({
     };
   }, []);
 
-  const topicEntitySourceId = useSelector(
-    (s) => s.biblio.topicEntitySourceId
-  );
+  // No selector for topicEntitySourceId here: this component only WRITES the
+  // shared slot (the effect below). CellValidationStrip and BulkValidationModal
+  // read it from redux themselves.
   const effectiveMod = mod || accessLevel;
 
   const {
@@ -375,15 +375,30 @@ export default function TetValidationGrid({
   );
 
   // Ensure curator source id is loaded so the validation strip can submit
-  // Not guarded on `!topicEntitySourceId`: the slot is shared with the biblio
-  // screens, so a stale id from a previous MOD would otherwise be reused here
-  // (and, since SCRUM-6518, stamped onto curation status writes).
+  // SCRUM-6518. Resolve the ABC curator source so every curation status write
+  // can be attributed.
+  //
+  // Deliberately NOT guarded on an already-resolved id: effectiveMod follows accessLevel, which follows
+  // testerMod, which DevToolsDropdown switches at runtime with no reload, so a
+  // guard would keep the previous MOD's id in the shared redux slot and stamp
+  // it onto the new MOD's edits.
+  //
+  // Removing that guard opens three races, all closed here: the slot is
+  // cleared synchronously so a write during the in-flight window is
+  // UNATTRIBUTED rather than attributed to the previous MOD (a wrong
+  // tag_source_id is worse than an absent one); `cancelled` stops an
+  // out-of-order response from two rapid MOD switches landing last; and the
+  // accessToken guard keeps a pre-auth mount from resolving to undefined.
   useEffect(() => {
-    if (!effectiveMod) return;
+    if (!effectiveMod || !accessToken) return;
+    let cancelled = false;
+    dispatch(setTopicEntitySourceId(undefined));
     (async () => {
-      dispatch(setTopicEntitySourceId(await getCuratorSourceId(effectiveMod)));
+      const id = await getCuratorSourceId(effectiveMod);
+      if (!cancelled) dispatch(setTopicEntitySourceId(id));
     })();
-  }, [effectiveMod, dispatch]);
+    return () => { cancelled = true; };
+  }, [effectiveMod, accessToken, dispatch]);
 
   // Load taxon data once — the validation cell shows a species badge per TET
   // and the validation modals seed a default species from the MOD-to-taxon

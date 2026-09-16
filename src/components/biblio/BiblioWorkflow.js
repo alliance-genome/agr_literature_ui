@@ -265,19 +265,29 @@ const BiblioWorkflow = () => {
   }, [fetchPreCurationWorkflow]);
 
   // SCRUM-6518. Resolve the ABC curator source so every curation status write
-  // from this tab can be attributed.
+  // can be attributed.
   //
   // Deliberately NOT guarded on `!topicEntitySourceId`: accessLevel follows
   // testerMod, which DevToolsDropdown switches at runtime with no reload, so a
-  // guard would keep the previous MOD's source id in the shared redux slot and
-  // stamp it onto the new MOD's edits (found in review). Re-resolving on every
-  // accessLevel change matches what TopicEntityCreate already does.
+  // guard would keep the previous MOD's id in the shared redux slot and stamp
+  // it onto the new MOD's edits.
+  //
+  // Removing that guard opens three races, all closed here: the slot is
+  // cleared synchronously so a write during the in-flight window is
+  // UNATTRIBUTED rather than attributed to the previous MOD (a wrong
+  // tag_source_id is worse than an absent one); `cancelled` stops an
+  // out-of-order response from two rapid MOD switches landing last; and the
+  // accessToken guard keeps a pre-auth mount from resolving to undefined.
   useEffect(() => {
-    if (!accessLevel) return;
+    if (!accessLevel || !accessToken) return;
+    let cancelled = false;
+    dispatch(setTopicEntitySourceId(undefined));
     (async () => {
-      dispatch(setTopicEntitySourceId(await getCuratorSourceId(accessLevel)));
+      const id = await getCuratorSourceId(accessLevel);
+      if (!cancelled) dispatch(setTopicEntitySourceId(id));
     })();
-  }, [accessLevel, dispatch]);
+    return () => { cancelled = true; };
+  }, [accessLevel, accessToken, dispatch]);
 
   // fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
