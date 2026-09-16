@@ -211,6 +211,6 @@ describe('validationState', () => {
           },
         },
       ])
-    ).not.toBe('positive');
+    ).toBe('unvalidated');
   });
 });

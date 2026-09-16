@@ -264,17 +264,20 @@ const BiblioWorkflow = () => {
     fetchPreCurationWorkflow();
   }, [fetchPreCurationWorkflow]);
 
-  // SCRUM-6518. Resolve the ABC curator source once, so every curation status
-  // write from this tab can be attributed. Mirrors TetValidationGrid, and
-  // reuses the same redux slot, so whichever screen loads first pays for it.
+  // SCRUM-6518. Resolve the ABC curator source so every curation status write
+  // from this tab can be attributed.
+  //
+  // Deliberately NOT guarded on `!topicEntitySourceId`: accessLevel follows
+  // testerMod, which DevToolsDropdown switches at runtime with no reload, so a
+  // guard would keep the previous MOD's source id in the shared redux slot and
+  // stamp it onto the new MOD's edits (found in review). Re-resolving on every
+  // accessLevel change matches what TopicEntityCreate already does.
   useEffect(() => {
-    if (accessLevel && accessToken && !topicEntitySourceId) {
-      (async () => {
-        const id = await getCuratorSourceId(accessLevel, accessToken);
-        dispatch(setTopicEntitySourceId(id));
-      })();
-    }
-  }, [accessLevel, accessToken, topicEntitySourceId, dispatch]);
+    if (!accessLevel) return;
+    (async () => {
+      dispatch(setTopicEntitySourceId(await getCuratorSourceId(accessLevel)));
+    })();
+  }, [accessLevel, dispatch]);
 
   // fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(

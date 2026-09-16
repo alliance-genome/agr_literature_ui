@@ -375,14 +375,15 @@ export default function TetValidationGrid({
   );
 
   // Ensure curator source id is loaded so the validation strip can submit
+  // Not guarded on `!topicEntitySourceId`: the slot is shared with the biblio
+  // screens, so a stale id from a previous MOD would otherwise be reused here
+  // (and, since SCRUM-6518, stamped onto curation status writes).
   useEffect(() => {
-    if (effectiveMod && accessToken && !topicEntitySourceId) {
-      (async () => {
-        const id = await getCuratorSourceId(effectiveMod, accessToken);
-        dispatch(setTopicEntitySourceId(id));
-      })();
-    }
-  }, [effectiveMod, accessToken, topicEntitySourceId, dispatch]);
+    if (!effectiveMod) return;
+    (async () => {
+      dispatch(setTopicEntitySourceId(await getCuratorSourceId(effectiveMod)));
+    })();
+  }, [effectiveMod, dispatch]);
 
   // Load taxon data once — the validation cell shows a species badge per TET
   // and the validation modals seed a default species from the MOD-to-taxon

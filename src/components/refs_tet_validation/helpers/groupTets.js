@@ -33,13 +33,11 @@ export function groupTetsByTopicAndSource(tets) {
   return byTopic;
 }
 
-// 'professional_biocurator' is the only curator validation_type. The old
-// 'professional_curator' spelling was wrong — validation edges key on
-// professional_biocurator — and is normalised away by the SCRUM-6518
-// migration, which ships ahead of this code.
-const CURATOR_VALIDATION_TYPES = new Set([
-  'professional_biocurator',
-]);
+/** The only curator validation_type. The old 'professional_curator' spelling
+ *  never matched what validation edges key on and is normalised away by the
+ *  SCRUM-6518 migration, which ships ahead of this code. Named to match the
+ *  API's CURATOR_VALIDATION_TYPE in tag_source_crud.py. */
+const CURATOR_VALIDATION_TYPE = 'professional_biocurator';
 
 /** True for any TET whose source is a professional-biocurator source —
  *  regardless of entity. Useful to hide curator-submitted rows from the
@@ -47,9 +45,7 @@ const CURATOR_VALIDATION_TYPES = new Set([
 export function isCuratorSourceTet(tet) {
   return (
     !!tet &&
-    CURATOR_VALIDATION_TYPES.has(
-      tet?.tag_source?.validation_type
-    )
+    tet?.tag_source?.validation_type === CURATOR_VALIDATION_TYPE
   );
 }
 
@@ -57,9 +53,7 @@ export function isCuratorValidationTet(tet) {
   return (
     !!tet &&
     !tet.entity &&
-    CURATOR_VALIDATION_TYPES.has(
-      tet.tag_source?.validation_type
-    )
+    tet.tag_source?.validation_type === CURATOR_VALIDATION_TYPE
   );
 }
 
