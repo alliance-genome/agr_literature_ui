@@ -13,6 +13,7 @@ import {
 } from "../../actions/biblioActions";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faEdit, faTrashAlt, faSearch} from "@fortawesome/free-solid-svg-icons";
+import {isCuratorSourceTet} from "../refs_tet_validation/helpers/groupTets";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -35,6 +36,7 @@ export default (props) => {
 
     const ValidatedTagsButton = () => {
         const filteredTags = useSelector(state => state.biblio.filteredTags);
+        const allTags = useSelector(state => state.biblio.topicEntityTags);
         const filterTags = () => {
           if(filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id){
               dispatch(setFilteredTags(null));
@@ -45,14 +47,19 @@ export default (props) => {
         }
         // A curator-created tag is its own (self) professional-biocurator validation, so
         // its magnifying glass only means something when a SECOND manual validation
-        // exists — another curator tag validating it, which moves the rollup off
-        // "validated_right_self" (displayed as ''). Author tags can still appear in
+        // exists — another curator tag validating it. Author tags can still appear in
         // validating_tags on curator rows even though authors only validate pipelines,
         // and showing the glass for those edges confused curators (SCRUM-4501).
-        const isCuratorCreatedTag = ['professional_biocurator', 'professional_curator']
-            .includes(props.data.topic_entity_tag_source?.validation_type);
+        // The rollup moving off "validated_right_self" (displayed as '') proves a second
+        // professional_biocurator-typed validation, but the abc curator grid-validation
+        // source is typed professional_curator for some MODs and the backend rollup
+        // closure ignores that type — so also look for curator-sourced tags directly
+        // among the validating tags.
+        const isCuratorCreatedTag = isCuratorSourceTet(props.data);
         const hasSecondCuratorValidation = ['validated_right', 'validated_wrong', 'validation_conflict']
-            .includes(props.data.validation_by_professional_biocurator);
+            .includes(props.data.validation_by_professional_biocurator) ||
+            (allTags || []).some(tag => props.data.validating_tags.includes(tag.topic_entity_tag_id) &&
+                isCuratorSourceTet(tag));
         const showButton = props.data.validating_tags.length > 0 &&
             (!isCuratorCreatedTag || hasSecondCuratorValidation);
         return(
