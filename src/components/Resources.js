@@ -117,7 +117,10 @@ const Resources = () => {
     { headerName: 'Cross References', field: 'cross_references', cellRenderer: CrossReferencesCellRenderer },
     { headerName: 'Editors', field: 'editors', valueFormatter: editorsFormatter },
     { headerName: 'Copyright License Id', field: 'copyright_license_id' },
-    { headerName: 'Copyright License', field: 'copyright_license' },
+    // copyright_license is a nested object; render its name rather than
+    // "[object Object]" (valueGetter so filter/sort see the string too)
+    { headerName: 'Copyright License', colId: 'copyright_license',
+      valueGetter: (params) => params.data?.copyright_license?.name ?? '' },
     { headerName: 'License List', field: 'license_list', valueFormatter: arrayFormatter },
     { headerName: 'License Start Year', field: 'license_start_year' },
     { headerName: 'Alliance Permission', colId: 'alliance_permission',
