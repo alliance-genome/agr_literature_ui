@@ -46,8 +46,12 @@ const editorsFormatter = (params) => {
 // 2010-2014 / 2014-2025), so each formatter labels every entry with its year
 // range when one exists.
 const permissionYearRange = (perm) => {
-  if (perm.start_year == null && perm.end_year == null) return '';
-  return `${perm.start_year ?? ''}-${perm.end_year ?? ''}`;
+  // '' and null both mean "no bound", matching BiblioFileManagement's
+  // normalisation of the same fields
+  const start = perm.start_year || '';
+  const end = perm.end_year || '';
+  if (!start && !end) return '';
+  return `${start}-${end}`;
 };
 
 const withYearRange = (perm, text) => {
