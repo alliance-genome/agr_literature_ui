@@ -43,8 +43,20 @@ export default (props) => {
               dispatch(setFilteredTags( {validating_tags: props.data.validating_tags, validated_tag: props.data.topic_entity_tag_id}));
           }
         }
+        // A curator-created tag is its own (self) professional-biocurator validation, so
+        // its magnifying glass only means something when a SECOND manual validation
+        // exists — another curator tag validating it, which moves the rollup off
+        // "validated_right_self" (displayed as ''). Author tags can still appear in
+        // validating_tags on curator rows even though authors only validate pipelines,
+        // and showing the glass for those edges confused curators (SCRUM-4501).
+        const isCuratorCreatedTag = ['professional_biocurator', 'professional_curator']
+            .includes(props.data.topic_entity_tag_source?.validation_type);
+        const hasSecondCuratorValidation = ['validated_right', 'validated_wrong', 'validation_conflict']
+            .includes(props.data.validation_by_professional_biocurator);
+        const showButton = props.data.validating_tags.length > 0 &&
+            (!isCuratorCreatedTag || hasSecondCuratorValidation);
         return(
-            props.data.validating_tags.length > 0 ? <LightTip tip="Show this tag together with the tags that validate it"><Button  size ='sm' aria-label="Show validating tags" variant={ (filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id) ? 'danger' : 'primary'} onClick={() => filterTags()}><FontAwesomeIcon icon={faSearch} /></Button></LightTip> : null
+            showButton ? <LightTip tip="Show this tag together with the tags that validate it"><Button  size ='sm' aria-label="Show validating tags" variant={ (filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id) ? 'danger' : 'primary'} onClick={() => filterTags()}><FontAwesomeIcon icon={faSearch} /></Button></LightTip> : null
         )
     }
 
