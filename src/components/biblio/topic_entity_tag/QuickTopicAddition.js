@@ -587,7 +587,7 @@ const QuickTopicAddition = () => {
       reference_curie: referenceCurie,
       topic: topicCurie,
       negated,
-      topic_entity_tag_source_id: sourceId,
+      tag_source_id: sourceId,
       force_insertion: true,
       entity: null,
       entity_type: null,

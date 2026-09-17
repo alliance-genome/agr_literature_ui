@@ -51,7 +51,7 @@ export default (props) => {
 
 
     const handleDeleteClick = async () => {
-        let mod = props.data.topic_entity_tag_source.secondary_data_provider_abbreviation;
+        let mod = props.data.tag_source.secondary_data_provider_abbreviation;
         if (mod !== accessLevel) {
             console.error("Permission denied. Cannot delete this row.");
             return;
@@ -113,9 +113,9 @@ export default (props) => {
     // Only ABC-created tags may be edited or deleted: block imported/historic MOD tags
     // by requiring the source to be the ABC literature system professional_biocurator
     // (SCRUM-6304). secondary_data_provider_abbreviation still restricts to the curator's MOD.
-    let show_del = props.data.topic_entity_tag_source.source_method === 'abc_literature_system' &&
-        props.data.topic_entity_tag_source.validation_type === 'professional_biocurator' &&
-        props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel;
+    let show_del = props.data.tag_source.source_method === 'abc_literature_system' &&
+        props.data.tag_source.validation_type === 'professional_biocurator' &&
+        props.data.tag_source.secondary_data_provider_abbreviation === accessLevel;
     return (
     <span>
     { show_del   ?

@@ -160,15 +160,15 @@ export const changeFieldDatePublishedRange = (datePublishedRange) => {
 
 export const getCuratorSourceId = async (mod) => {
   try {
-    // /source/{source_type}/{source_method}/{mod_abbreviation}
-    const res = await api.get('/topic_entity_tag/source/ATP:0000036/abc_literature_system/' + mod + '/' + mod);
-    return res.data.topic_entity_tag_source_id;
+    // GET /tag_source/{source_evidence_assertion}/{source_method}/{data_provider}/{secondary_data_provider_abbreviation}
+    const res = await api.get('/tag_source/ATP:0000036/abc_literature_system/' + mod + '/' + mod);
+    return res.data.tag_source_id;
   } catch (error) {
     if (error.response?.status === 404) {
       try {
-        // POST /topic_entity_tag/source returns the full TopicEntityTagSourceSchemaShow
+        // POST /tag_source returns the full TagSourceSchemaShow
         // object on 201 — extract the id field, matching the GET above.
-        const res = await api.post('/topic_entity_tag/source', {
+        const res = await api.post('/tag_source', {
           "source_evidence_assertion": "ATP:0000036",
           "source_method": "abc_literature_system",
           "validation_type": "professional_biocurator",
@@ -178,7 +178,7 @@ export const getCuratorSourceId = async (mod) => {
           "created_by": "00u1mhf3mf28xjpPt5d7",
           "updated_by": "00u1mhf3mf28xjpPt5d7",
         });
-        return res.data.topic_entity_tag_source_id;
+        return res.data.tag_source_id;
       } catch (error) {
         return undefined;
       }

@@ -338,7 +338,7 @@ const TopicEntityCreate = () => {
 	data_context: rowDataContext(row),
 	confidence_score: null,
 	confidence_level: null,
-	topic_entity_tag_source_id: topicEntitySourceId || null
+	tag_source_id: topicEntitySourceId || null
     }
     if (entityCurie) {
 	json_data['entity_type'] = row.entityTypeSelect;
@@ -610,6 +610,8 @@ const TopicEntityCreate = () => {
     let subPath = "/curation_status/";
     let method = "PATCH";
     let json_data = { 'curation_status': 'ATP:0000239' };
+    // SCRUM-6518: attribute this manual edit to the ABC curator source.
+    if (topicEntitySourceId) { json_data["tag_source_id"] = topicEntitySourceId; }
     if (curation_status_id === 'new') {
       method = "POST";
       json_data["mod_abbreviation"] = accessLevel;
@@ -748,7 +750,7 @@ const TopicEntityCreate = () => {
     } else {
       let entityResult = entityResultList[0];
       let updateJson = initializeUpdateJson(refCurie, row, null, null, dataNoveltyAtpArray[0]);
-      delete updateJson["topic_entity_tag_source_id"];	// initializeUpdateJson populates this but API will fail if sent with PATCH request
+      delete updateJson["tag_source_id"];	// initializeUpdateJson populates this but API will fail if sent with PATCH request
       delete updateJson["reference_curie"];		// initializeUpdateJson populates this but API will fail if sent with PATCH request
       updateJson["entity_id_validation"] = (row.entityTypeSelect) === "" ? null : "alliance";
       updateJson["entity_type"] = (row.entityTypeSelect) === "" ? null : row.entityTypeSelect;

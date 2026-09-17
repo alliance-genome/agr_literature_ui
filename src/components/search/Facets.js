@@ -413,7 +413,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
         if (facetsToInclude.includes('source_methods')) {
-            api.get('/topic_entity_tag/source/all')
+            api.get('/tag_source/all')
                 .then(response => {
                     const data = response.data;
                     const mapping = {};

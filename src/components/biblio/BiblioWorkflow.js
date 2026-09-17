@@ -16,7 +16,7 @@ import ColumnHideShowDropdown from '../AgGrid/ColumnHideShowDropdown';
 import TopicFilter from '../AgGrid/TopicFilter';
 import EntityCountsByMod from './shared/EntityCountsByMod';
 
-import { setAllTopics } from '../../actions/biblioActions';
+import { setAllTopics, setTopicEntitySourceId, getCuratorSourceId } from '../../actions/biblioActions';
 
 
 const MANUAL_INDEXING_TBD = "ATP:0000359"; // manual indexing status TBD
@@ -110,6 +110,7 @@ const BiblioWorkflow = () => {
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const email = useSelector((state) => state.isLogged.email);
+  const topicEntitySourceId = useSelector(state => state.biblio.topicEntitySourceId);
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
 
   const [items, setItems] = useState([]);
@@ -262,6 +263,31 @@ const BiblioWorkflow = () => {
   useEffect(() => {
     fetchPreCurationWorkflow();
   }, [fetchPreCurationWorkflow]);
+
+  // SCRUM-6518. Resolve the ABC curator source so every curation status write
+  // can be attributed.
+  //
+  // Deliberately NOT guarded on `!topicEntitySourceId`: accessLevel follows
+  // testerMod, which DevToolsDropdown switches at runtime with no reload, so a
+  // guard would keep the previous MOD's id in the shared redux slot and stamp
+  // it onto the new MOD's edits.
+  //
+  // Removing that guard opens three races, all closed here: the slot is
+  // cleared synchronously so a write during the in-flight window is
+  // UNATTRIBUTED rather than attributed to the previous MOD (a wrong
+  // tag_source_id is worse than an absent one); `cancelled` stops an
+  // out-of-order response from two rapid MOD switches landing last; and the
+  // accessToken guard keeps a pre-auth mount from resolving to undefined.
+  useEffect(() => {
+    if (!accessLevel || !accessToken) return;
+    let cancelled = false;
+    dispatch(setTopicEntitySourceId(undefined));
+    (async () => {
+      const id = await getCuratorSourceId(accessLevel);
+      if (!cancelled) dispatch(setTopicEntitySourceId(id));
+    })();
+    return () => { cancelled = true; };
+  }, [accessLevel, accessToken, dispatch]);
 
   // fetch overview for manual indexing + community curation
   const fetchIndexingWorkflowOverview = useCallback(
@@ -1582,11 +1608,17 @@ const BiblioWorkflow = () => {
   };
 
   const updateCurationStatus = (subPath, method, json_data) => {
+    // SCRUM-6518: attribute manual curation status edits to the ABC curator
+    // source, so they are distinguishable from a loader's report. DELETE sends
+    // json_data === null, and an unresolved source must never block the edit.
+    const data = (json_data && topicEntitySourceId)
+      ? { ...json_data, tag_source_id: topicEntitySourceId }
+      : json_data;
     return new Promise((resolve, reject) => {
       api.request({
         url: subPath,
         method,
-        data: json_data,
+        data,
       })
       .then((res) => {
         const isValid = isSuccess(res.status);
@@ -1598,7 +1630,7 @@ const BiblioWorkflow = () => {
         }
       })
       .catch((err) => {
-        const errorMessage = (<>API error: reload page to see what's in the database.<br/><br/>Debug:<br/>url: {subPath}<br/>payload: {JSON.stringify(json_data)}<br/>error: {err.toString()}</>)
+        const errorMessage = (<>API error: reload page to see what's in the database.<br/><br/>Debug:<br/>url: {subPath}<br/>payload: {JSON.stringify(data)}<br/>error: {err.toString()}</>)
         setApiErrorMessage(errorMessage);
         setShowApiErrorModal(true);
         console.error(errorMessage);

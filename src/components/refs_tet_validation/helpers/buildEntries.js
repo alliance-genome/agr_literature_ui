@@ -39,7 +39,7 @@ export function evidenceAssertionLabel(entries, curie) {
   for (const e of entries || []) {
     const name =
       e?.source_evidence_assertion_name ||
-      e?.tets?.[0]?.topic_entity_tag_source?.source_evidence_assertion_name;
+      e?.tets?.[0]?.tag_source?.source_evidence_assertion_name;
     if (name) return name;
   }
   return evidenceAssertionName(curie);
@@ -53,7 +53,7 @@ export function groupEntriesByEvidence(entries) {
   for (const e of entries || []) {
     const key =
       e.source_evidence_assertion ||
-      e.tets?.[0]?.topic_entity_tag_source?.source_evidence_assertion ||
+      e.tets?.[0]?.tag_source?.source_evidence_assertion ||
       '';
     if (!m.has(key)) m.set(key, []);
     m.get(key).push(e);
@@ -110,7 +110,7 @@ export function buildEntries(tets, sourceFilterModel) {
     // Curator-submitted tags are surfaced in the Validation column;
     // exclude them from the Sources column to avoid duplication.
     if (isCuratorSourceTet(t)) continue;
-    const lab = sourceLabel(t.topic_entity_tag_source);
+    const lab = sourceLabel(t.tag_source);
     if (
       sourceFilterModel &&
       Array.isArray(sourceFilterModel) &&

@@ -288,9 +288,9 @@ export default function TetValidationGrid({
     };
   }, []);
 
-  const topicEntitySourceId = useSelector(
-    (s) => s.biblio.topicEntitySourceId
-  );
+  // No selector for topicEntitySourceId here: this component only WRITES the
+  // shared slot (the effect below). CellValidationStrip and BulkValidationModal
+  // read it from redux themselves.
   const effectiveMod = mod || accessLevel;
 
   const {
@@ -375,14 +375,30 @@ export default function TetValidationGrid({
   );
 
   // Ensure curator source id is loaded so the validation strip can submit
+  // SCRUM-6518. Resolve the ABC curator source so every curation status write
+  // can be attributed.
+  //
+  // Deliberately NOT guarded on an already-resolved id: effectiveMod follows accessLevel, which follows
+  // testerMod, which DevToolsDropdown switches at runtime with no reload, so a
+  // guard would keep the previous MOD's id in the shared redux slot and stamp
+  // it onto the new MOD's edits.
+  //
+  // Removing that guard opens three races, all closed here: the slot is
+  // cleared synchronously so a write during the in-flight window is
+  // UNATTRIBUTED rather than attributed to the previous MOD (a wrong
+  // tag_source_id is worse than an absent one); `cancelled` stops an
+  // out-of-order response from two rapid MOD switches landing last; and the
+  // accessToken guard keeps a pre-auth mount from resolving to undefined.
   useEffect(() => {
-    if (effectiveMod && accessToken && !topicEntitySourceId) {
-      (async () => {
-        const id = await getCuratorSourceId(effectiveMod, accessToken);
-        dispatch(setTopicEntitySourceId(id));
-      })();
-    }
-  }, [effectiveMod, accessToken, topicEntitySourceId, dispatch]);
+    if (!effectiveMod || !accessToken) return;
+    let cancelled = false;
+    dispatch(setTopicEntitySourceId(undefined));
+    (async () => {
+      const id = await getCuratorSourceId(effectiveMod);
+      if (!cancelled) dispatch(setTopicEntitySourceId(id));
+    })();
+    return () => { cancelled = true; };
+  }, [effectiveMod, accessToken, dispatch]);
 
   // Load taxon data once — the validation cell shows a species badge per TET
   // and the validation modals seed a default species from the MOD-to-taxon
@@ -489,7 +505,7 @@ export default function TetValidationGrid({
           if (label) s.add(label);
         });
       } else {
-        for (const t of r.tets || []) s.add(sourceLabel(t.topic_entity_tag_source));
+        for (const t of r.tets || []) s.add(sourceLabel(t.tag_source));
       }
     }
     return [...s].sort();

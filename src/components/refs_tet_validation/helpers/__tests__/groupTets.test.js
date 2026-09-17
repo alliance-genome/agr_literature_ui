@@ -31,7 +31,7 @@ describe('groupTetsByTopicAndSource', () => {
       topic_entity_tag_id: 1,
       topic: 'ATP:001',
       negated: false,
-      topic_entity_tag_source: {
+      tag_source: {
         source_method: 'textpresso',
         secondary_data_provider_abbreviation: 'WB',
       },
@@ -40,7 +40,7 @@ describe('groupTetsByTopicAndSource', () => {
       topic_entity_tag_id: 2,
       topic: 'ATP:001',
       negated: true,
-      topic_entity_tag_source: {
+      tag_source: {
         source_method: 'manual',
         secondary_data_provider_abbreviation: 'WB',
       },
@@ -49,7 +49,7 @@ describe('groupTetsByTopicAndSource', () => {
       topic_entity_tag_id: 3,
       topic: 'ATP:002',
       negated: false,
-      topic_entity_tag_source: {
+      tag_source: {
         source_method: 'textpresso',
         secondary_data_provider_abbreviation: 'WB',
       },
@@ -69,7 +69,7 @@ describe('groupTetsByTopicAndSource', () => {
         topic_entity_tag_id: 10,
         topic: 'ATP:001',
         negated: false,
-        topic_entity_tag_source: {
+        tag_source: {
           source_method: 'textpresso',
           secondary_data_provider_abbreviation: 'WB',
         },
@@ -78,7 +78,7 @@ describe('groupTetsByTopicAndSource', () => {
         topic_entity_tag_id: 11,
         topic: 'ATP:001',
         negated: false,
-        topic_entity_tag_source: {
+        tag_source: {
           source_method: 'textpresso',
           secondary_data_provider_abbreviation: 'WB',
         },
@@ -186,17 +186,31 @@ describe('cellPredicate', () => {
 });
 
 describe('validationState', () => {
-  test('treats professional_curator topic validations as validated', () => {
+  test('treats professional_biocurator topic validations as validated', () => {
     expect(
       validationState([
         {
           negated: false,
           entity: null,
-          topic_entity_tag_source: {
-            validation_type: 'professional_curator',
+          tag_source: {
+            validation_type: 'professional_biocurator',
           },
         },
       ])
     ).toBe('positive');
+  });
+
+  test('ignores the retired professional_curator spelling', () => {
+    expect(
+      validationState([
+        {
+          negated: false,
+          entity: null,
+          tag_source: {
+            validation_type: 'professional_curator',
+          },
+        },
+      ])
+    ).toBe('unvalidated');
   });
 });
