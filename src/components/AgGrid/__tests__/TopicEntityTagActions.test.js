@@ -17,7 +17,7 @@ const baseRow = {
   topic_entity_tag_id: 1,
   validating_tags: [2],
   validation_by_professional_biocurator: '',
-  topic_entity_tag_source: {
+  tag_source: {
     source_method: 'some_pipeline',
     validation_type: null,
     secondary_data_provider_abbreviation: 'WB',
@@ -33,7 +33,7 @@ const renderActions = (rowOverrides = {}, topicEntityTags = []) =>
 
 const curatorRow = {
   validation_by_professional_biocurator: '',
-  topic_entity_tag_source: {
+  tag_source: {
     source_method: 'abc_literature_system',
     validation_type: 'professional_biocurator',
     secondary_data_provider_abbreviation: 'SGD',
@@ -56,7 +56,7 @@ describe('validating-tags magnifying glass (SCRUM-4501)', () => {
     // validating_tags, but the professional-biocurator rollup is self-only.
     const authorTag = {
       topic_entity_tag_id: 2,
-      topic_entity_tag_source: { validation_type: 'author' },
+      tag_source: { validation_type: 'author' },
     };
     renderActions(curatorRow, [authorTag]);
     expect(screen.queryByRole('button', { name: 'Show validating tags' })).toBeNull();
@@ -75,13 +75,14 @@ describe('validating-tags magnifying glass (SCRUM-4501)', () => {
     }
   );
 
-  test('shows for a curator tag validated by a professional_curator-typed grid validation', () => {
-    // Some MODs' abc curator source is typed professional_curator, which the backend
-    // professional-biocurator rollup ignores — the rollup stays self ('') even though
-    // a second curator validated the tag. The direct validating-tags lookup catches it.
+  test('shows for a curator tag whose second curator validation the rollup has not reflected', () => {
+    // The direct validating-tags lookup covers a second curator validation the
+    // backend rollup has not (yet) counted, while the rollup still reads self ('').
+    // (Originally this covered professional_curator-typed sources; SCRUM-6518
+    // normalised that spelling away, so only the rollup-lag case remains.)
     const gridValidationTag = {
       topic_entity_tag_id: 2,
-      topic_entity_tag_source: { validation_type: 'professional_curator' },
+      tag_source: { validation_type: 'professional_biocurator' },
     };
     renderActions(curatorRow, [gridValidationTag]);
     expect(screen.getByRole('button', { name: 'Show validating tags' })).toBeInTheDocument();
@@ -90,7 +91,7 @@ describe('validating-tags magnifying glass (SCRUM-4501)', () => {
   test('ignores curator tags that are not among the validating tags', () => {
     const unrelatedCuratorTag = {
       topic_entity_tag_id: 99,
-      topic_entity_tag_source: { validation_type: 'professional_curator' },
+      tag_source: { validation_type: 'professional_biocurator' },
     };
     renderActions(curatorRow, [unrelatedCuratorTag]);
     expect(screen.queryByRole('button', { name: 'Show validating tags' })).toBeNull();
