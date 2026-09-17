@@ -51,10 +51,10 @@ export default (props) => {
         // validating_tags on curator rows even though authors only validate pipelines,
         // and showing the glass for those edges confused curators (SCRUM-4501).
         // The rollup moving off "validated_right_self" (displayed as '') proves a second
-        // professional_biocurator-typed validation, but the abc curator grid-validation
-        // source is typed professional_curator for some MODs and the backend rollup
-        // closure ignores that type — so also look for curator-sourced tags directly
-        // among the validating tags.
+        // professional_biocurator-typed validation; the direct lookup below also counts
+        // curator-sourced tags among the validating tags in case the rollup has not
+        // (yet) reflected them. (It originally also covered professional_curator-typed
+        // sources, a spelling the SCRUM-6518 migration normalised away.)
         const isCuratorCreatedTag = isCuratorSourceTet(props.data);
         const hasSecondCuratorValidation = ['validated_right', 'validated_wrong', 'validation_conflict']
             .includes(props.data.validation_by_professional_biocurator) ||
