@@ -20,7 +20,7 @@ import {
   changeBiblioActionToggler,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
-import { defaultDataContext } from "./dataContextDefaults";
+import { defaultDataContext, hidesDataContextPulldown } from "./dataContextDefaults";
 
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
@@ -466,8 +466,13 @@ const TopicEntityCreate = () => {
   // entityText is the display-time proxy for "has an entity"; the payload uses
   // the resolved entity curie instead, since that is what decides the shape of
   // the tag actually sent.
+  //
+  // SCRUM-6553. When the pulldown is hidden (FB) dataContextSelect is ignored,
+  // not just unreachable: editing a tag preloads its stored data_context into
+  // row state, and FB wants every save to carry the default regardless.
   const rowDataContext = (row) =>
-    row.dataContextSelect || defaultDataContext(accessLevel, Boolean(row.entityText));
+    (!hidesDataContextPulldown(accessLevel) && row.dataContextSelect) ||
+    defaultDataContext(accessLevel, Boolean(row.entityText));
 
   // Declared before initializeUpdateJson uses it. Both are only invoked from
   // event handlers, so the const is initialised by then either way.
@@ -1032,6 +1037,9 @@ const TopicEntityCreate = () => {
                     }}
                   />
                   <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
+                  {/* SCRUM-6553. FB never sees the pulldown; rowDataContext keeps
+                      sending their default (experimentally studied) regardless. */}
+                  {!hidesDataContextPulldown(accessLevel) && (
                   <Form.Control
                     as="select"
                     size="sm"
@@ -1062,6 +1070,7 @@ const TopicEntityCreate = () => {
                       </option>
                     ))}
                   </Form.Control>
+                  )}
                 </div>
               </Col>
               <Col sm="1">
