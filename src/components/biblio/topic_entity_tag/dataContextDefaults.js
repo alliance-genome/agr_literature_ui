@@ -24,3 +24,11 @@ export const defaultDataContext = (modAbbreviation, hasEntity) =>
   modAbbreviation === "WB" && !hasEntity
     ? DATA_CONTEXT_ROOT
     : DATA_CONTEXT_EXPERIMENTALLY_STUDIED;
+
+// SCRUM-6553. FB asked not to see the data context pulldown at all -- their
+// tags uniformly take experimentally studied (backfill rule 4 above), so a
+// choice is only a chance to diverge from it. Hiding the pulldown also means
+// the saved value must ignore anything already in row state (an edited tag
+// preloads its stored data_context) and always fall back to defaultDataContext.
+export const hidesDataContextPulldown = (modAbbreviation) =>
+  modAbbreviation === "FB";

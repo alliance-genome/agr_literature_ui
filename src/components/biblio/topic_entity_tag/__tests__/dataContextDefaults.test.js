@@ -2,6 +2,7 @@ import {
   DATA_CONTEXT_ROOT,
   DATA_CONTEXT_EXPERIMENTALLY_STUDIED,
   defaultDataContext,
+  hidesDataContextPulldown,
 } from '../dataContextDefaults';
 
 describe('defaultDataContext', () => {
@@ -30,5 +31,23 @@ describe('defaultDataContext', () => {
     expect(defaultDataContext(undefined, false)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
     expect(defaultDataContext(null, false)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
     expect(defaultDataContext('', false)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
+  });
+});
+
+describe('hidesDataContextPulldown (SCRUM-6553)', () => {
+  test('FB hides the pulldown', () => {
+    expect(hidesDataContextPulldown('FB')).toBe(true);
+  });
+
+  test.each(['WB', 'MGI', 'SGD', 'ZFIN', 'RGD', 'XB'])('%s keeps the pulldown', (mod) => {
+    expect(hidesDataContextPulldown(mod)).toBe(false);
+  });
+
+  test('an unresolved mod keeps the pulldown', () => {
+    // Hiding is an FB-specific accommodation; with no accessLevel yet there is
+    // no reason to take the choice away.
+    expect(hidesDataContextPulldown(undefined)).toBe(false);
+    expect(hidesDataContextPulldown(null)).toBe(false);
+    expect(hidesDataContextPulldown('')).toBe(false);
   });
 });
