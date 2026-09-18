@@ -54,20 +54,108 @@ export const matchQueryForAuthor = (author) => {
  * heavily across a paper's authors, so parsing a place once and referencing it
  * from a dozen authors is the whole point.
  *
- * Only `institution` is seeded, from the raw string. The address is left blank for
- * the curator: the cgi shows the affiliation for reference rather than parsing it,
- * and a comma-split heuristic is wrong often enough on real affiliation strings
- * that curators would stop trusting the prefill.
+ * `institution` keeps the whole raw line, and parseAffiliation additionally fills
+ * whatever address fields it can read off it. The parse only adds -- nothing it
+ * fails to place is dropped, so a curator who disagrees with it edits rather than
+ * retypes.
  */
+// Countries as they actually appear at the end of affiliation strings in this corpus,
+// including the abbreviations. Deliberately a list rather than a pattern: "USA" and
+// "Japan" look nothing alike, and anything clever enough to match both would also
+// match half the institution names.
+const COUNTRIES = new Set([
+  'usa', 'u.s.a', 'us', 'united states', 'united states of america',
+  'uk', 'u.k', 'united kingdom', 'england', 'scotland', 'wales', 'northern ireland',
+  'canada', 'japan', 'china', 'germany', 'france', 'italy', 'spain', 'portugal',
+  'australia', 'new zealand', 'netherlands', 'the netherlands', 'belgium', 'switzerland',
+  'austria', 'sweden', 'denmark', 'norway', 'finland', 'iceland', 'ireland',
+  'israel', 'india', 'south korea', 'korea', 'republic of korea', 'taiwan', 'singapore',
+  'brazil', 'mexico', 'argentina', 'chile', 'russia', 'poland', 'czech republic',
+  'hungary', 'greece', 'turkey', 'south africa', 'egypt', 'thailand',
+]);
+
+// Needed so a bare two-letter segment is only read as a state when it really is one;
+// otherwise any two-letter abbreviation in an address would become a state.
+const US_STATES = new Set([
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN',
+  'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV',
+  'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN',
+  'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC',
+]);
+
+const US_STATE_ZIP = /^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/;
+const US_ZIP = /^\d{5}(?:-\d{4})?$/;
+const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/;
+
+/**
+ * Best-effort address fields read off a raw affiliation string.
+ *
+ * Affiliations are comma-separated and end with the broadest part, so this works
+ * from the right: country, then postal/state, then city. It fills only what it can
+ * identify and leaves the rest blank -- a wrong prefill is worse than an empty one,
+ * because a curator has to notice it before they can fix it.
+ *
+ * `institution` is deliberately NOT returned: the caller keeps the whole raw line
+ * there, so nothing this parser fails to place is lost.
+ */
+export const parseAffiliation = (raw) => {
+  const result = { street: '', city: '', state: '', postal_code: '', country: '' };
+  if (raw === null || raw === undefined) return result;
+
+  // PubMed affiliations routinely end with "Electronic address: someone@place.edu".
+  let text = String(raw).split(/electronic address\s*:/i)[0];
+
+  const segments = text
+    .split(',')
+    .map((part) => part.trim().replace(/\.$/, '').trim())
+    .filter((part) => part && !part.includes('@'));
+
+  if (segments.length === 0) return result;
+
+  const last = () => segments[segments.length - 1];
+
+  if (COUNTRIES.has(last().toLowerCase())) {
+    result.country = segments.pop();
+  }
+
+  if (segments.length > 0) {
+    const tail = last();
+    const stateZip = tail.match(US_STATE_ZIP);
+    if (stateZip) {
+      result.state = stateZip[1];
+      result.postal_code = stateZip[2];
+      segments.pop();
+    } else if (US_ZIP.test(tail) || UK_POSTCODE.test(tail.toUpperCase())) {
+      result.postal_code = tail;
+      segments.pop();
+    } else if (US_STATES.has(tail)) {
+      result.state = tail;
+      segments.pop();
+    }
+  }
+
+  // Only when something is left to be the place itself. "Caltech, USA" leaves one
+  // segment, and that segment is the place, not the city it sits in.
+  if (segments.length >= 2) {
+    result.city = segments.pop();
+  }
+
+  // Whatever is left are the address lines, in the order they were written --
+  // "Division of Biology, Caltech" is an address, and reordering or splitting it
+  // further would only lose the sense of it.
+  result.street = segments.join(', ');
+
+  return result;
+};
+
 const blankStagedInstitution = (number, raw = '') => ({
   number,
   raw,
+  // The whole line, not the leftovers: the parser below fills the address fields but
+  // takes nothing away, so anything it could not place is still here to be edited.
   institution: raw,
-  street: '',
-  city: '',
-  state: '',
-  postal_code: '',
-  country: '',
+  // Supplies street, city, state, postal_code and country -- every address field.
+  ...parseAffiliation(raw),
   // Lab is an existing laboratory picked with LabCuriePicker, not free text:
   // laboratory_person links two independently-created objects by curie.
   lab: null,
@@ -207,19 +295,19 @@ export const validateDraft = (draft, stagedInstitutions) => {
     errors.push('The same institution cannot be both current and old.');
   }
 
+  // Institutions are optional: PersonSchemaPost makes them so, and plenty of authors
+  // give no affiliation a curator would vouch for. person_editor.cgi required one;
+  // that was its convention, not a constraint ABC shares. A chosen one still has to
+  // be usable, so the checks below apply only to what was actually picked.
   const chosen = [draft.instChoice, draft.oldInstChoice].filter(
     (n) => n !== null && n !== undefined,
   );
-  if (chosen.length === 0) {
-    errors.push('Choose a current or old institution.');
-  } else {
-    for (const number of chosen) {
-      const staged = stagedByNumber(stagedInstitutions, number);
-      if (!staged) {
-        errors.push(`Institution ${number} is no longer on the page.`);
-      } else if (!(staged.institution || '').trim()) {
-        errors.push(`Institution ${number} has no name.`);
-      }
+  for (const number of chosen) {
+    const staged = stagedByNumber(stagedInstitutions, number);
+    if (!staged) {
+      errors.push(`Institution ${number} is no longer on the page.`);
+    } else if (!(staged.institution || '').trim()) {
+      errors.push(`Institution ${number} has no name.`);
     }
   }
   return errors;

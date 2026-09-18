@@ -374,24 +374,20 @@ const BiblioPersonAuthorRow = ({
         </Alert>
       ) : null}
 
-      {result ? (
-        <Alert variant={result.ok ? 'success' : 'danger'}>
-          {result.ok
-            ? <>Linked to <PersonLink curie={result.personCurie} />.</>
-            : (
-              <>
-                <div>{result.message}</div>
-                {result.createdPersonCurie ? (
-                  <div>
-                    {/* The person exists even though the rest failed. Saying so is what stops a
-                        curator re-running the create and minting a second AGRKB id for the same
-                        human -- the draft has already pinned itself to this curie. */}
-                    <strong><PersonLink curie={result.createdPersonCurie} /> was created</strong>
-                    {' '}and will not be created again; committing again retries only what failed.
-                  </div>
-                ) : null}
-              </>
-            )}
+      {/* Failures only: a successful commit re-renders the author as a linked row, which
+          says the same thing in the place the curator already reads it. */}
+      {result && !result.ok ? (
+        <Alert variant="danger">
+          <div>{result.message}</div>
+          {result.createdPersonCurie ? (
+            <div>
+              {/* The person exists even though the rest failed. Saying so is what stops a
+                  curator re-running the create and minting a second AGRKB id for the same
+                  human -- the draft has already pinned itself to this curie. */}
+              <strong><PersonLink curie={result.createdPersonCurie} /> was created</strong>
+              {' '}and will not be created again; committing again retries only what failed.
+            </div>
+          ) : null}
         </Alert>
       ) : null}
     </div>

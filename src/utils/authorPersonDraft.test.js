@@ -7,6 +7,7 @@ import {
   buildPersonPayload,
   buildCommitPlan,
   appendStagedInstitution,
+  parseAffiliation,
 } from './authorPersonDraft';
 
 describe('normalizeNameForMatch', () => {
@@ -69,17 +70,30 @@ describe('stagedInstitutionsFromAuthors', () => {
     ]);
   });
 
-  test('seeds only the institution field from the raw string, leaving the rest blank', () => {
-    // person_editor.cgi shows the affiliation for reference and lets the curator fill
-    // the address; no parsing heuristic to second-guess.
+  test('keeps the whole raw line in the institution field', () => {
+    // The parse below fills the address fields, but nothing is taken away from
+    // institution: whatever the parser could not place stays visible and editable
+    // rather than being silently dropped.
     const [first] = stagedInstitutionsFromAuthors(authors);
     expect(first.institution).toBe('Caltech, Pasadena, CA');
-    expect(first.street).toBe('');
-    expect(first.city).toBe('');
-    expect(first.country).toBe('');
+    // The parse also splits the same line across the address fields; institution is
+    // not reduced to the leftovers.
+    expect(first.street).toBe('Caltech');
+    expect(first.city).toBe('Pasadena');
+    expect(first.state).toBe('CA');
     expect(first.webpage).toBe('');
     expect(first.comment).toBe('');
     expect(first.lab).toBe(null);
+  });
+
+  test('fills the address fields it can read off the affiliation', () => {
+    const [caltech] = stagedInstitutionsFromAuthors([
+      { author_id: 1, affiliations: ['Division of Biology, Caltech, Pasadena, CA 91125, USA'] },
+    ]);
+    expect(caltech.city).toBe('Pasadena');
+    expect(caltech.state).toBe('CA');
+    expect(caltech.postal_code).toBe('91125');
+    expect(caltech.country).toBe('USA');
   });
 
   test('treats affiliations differing only in surrounding whitespace as one', () => {
@@ -199,9 +213,11 @@ describe('validateDraft', () => {
     expect(validateDraft(d, staged)).toEqual([expect.stringMatching(/display name/i)]);
   });
 
-  test('requires at least one institution choice, current or old', () => {
-    expect(validateDraft(createDraft({ instChoice: null }), staged))
-      .toEqual([expect.stringMatching(/institution/i)]);
+  test('allows a create with no institution at all', () => {
+    // PersonSchemaPost makes institutions optional, and plenty of authors give no
+    // affiliation the curator can vouch for. person_editor.cgi demanded one; ABC
+    // does not, and neither does this.
+    expect(validateDraft(createDraft({ instChoice: null }), staged)).toEqual([]);
     expect(validateDraft(createDraft({ instChoice: null, oldInstChoice: 2 }), staged))
       .toEqual([]);
   });
@@ -244,7 +260,7 @@ describe('validateDraft', () => {
   });
 
   test('reports every problem at once rather than stopping at the first', () => {
-    const d = createDraft({ instChoice: null });
+    const d = createDraft({ instChoice: 99 });
     d.fields = { ...d.fields, last_name: '', display_name: '' };
     expect(validateDraft(d, staged)).toHaveLength(3);
   });
@@ -506,5 +522,78 @@ describe('buildCommitPlan — not redoing work already committed', () => {
       labLinkedCurie: 'WB:WBPersonOTHER',
     })], staged, NOW);
     expect(plan[0].steps.map((s) => s.kind)).toEqual(['linkLab', 'linkAuthor']);
+  });
+});
+
+describe('parseAffiliation', () => {
+  // Best-effort only. Every field it fills is one the curator would otherwise retype,
+  // and every field it cannot place is left blank rather than guessed -- a wrong
+  // prefill is worse than an empty one, because it has to be noticed before it is
+  // fixed.
+  test('reads a full US affiliation, the rest becoming the street', () => {
+    expect(parseAffiliation('Division of Biology, Caltech, Pasadena, CA 91125, USA'))
+      .toEqual({
+        street: 'Division of Biology, Caltech',
+        city: 'Pasadena', state: 'CA', postal_code: '91125', country: 'USA',
+      });
+  });
+
+  test('reads a country and city with no postal code', () => {
+    expect(parseAffiliation('MRC Laboratory of Molecular Biology, Cambridge, UK'))
+      .toEqual({
+        street: 'MRC Laboratory of Molecular Biology',
+        city: 'Cambridge', state: '', postal_code: '', country: 'UK',
+      });
+  });
+
+  test('keeps the order of the segments it puts in the street', () => {
+    // These are address lines, so "Division of Biology, Caltech" must not come back
+    // reversed or re-sorted -- the order is the address.
+    expect(parseAffiliation('Room 216, Kerckhoff, Caltech, Pasadena, CA 91125, USA').street)
+      .toBe('Room 216, Kerckhoff, Caltech');
+  });
+
+  test('reads a UK postcode', () => {
+    expect(parseAffiliation('Wellcome Trust, Hinxton, CB10 1SA, United Kingdom'))
+      .toMatchObject({ city: 'Hinxton', postal_code: 'CB10 1SA', country: 'United Kingdom' });
+  });
+
+  test('reads a bare US zip with no state', () => {
+    expect(parseAffiliation('Harvard Medical School, Boston, 02115, USA'))
+      .toMatchObject({ city: 'Boston', postal_code: '02115', country: 'USA' });
+  });
+
+  test('takes a bare two-letter state only when it is a real US state', () => {
+    expect(parseAffiliation('Some Lab, Pasadena, CA, USA')).toMatchObject({ city: 'Pasadena', state: 'CA' });
+    // ZZ is not a state, so it must not be mistaken for one -- it falls through to city.
+    expect(parseAffiliation('Some Lab, Springfield, ZZ, USA')).toMatchObject({ state: '' });
+  });
+
+  test('puts a lone segment in the street, with no city to guess at', () => {
+    expect(parseAffiliation('Caltech'))
+      .toEqual({ street: 'Caltech', city: '', state: '', postal_code: '', country: '' });
+    expect(parseAffiliation('HHMI'))
+      .toEqual({ street: 'HHMI', city: '', state: '', postal_code: '', country: '' });
+  });
+
+  test('never consumes the only segment as a city', () => {
+    // "Caltech, USA" leaves one segment once the country is taken. That segment is the
+    // place, not the city it sits in, so it becomes the street instead.
+    expect(parseAffiliation('Caltech, USA')).toEqual({
+      street: 'Caltech', city: '', state: '', postal_code: '', country: 'USA',
+    });
+  });
+
+  test('ignores a trailing contact email', () => {
+    // PubMed affiliations routinely end with "Electronic address: ...".
+    expect(parseAffiliation('Caltech, Pasadena, CA 91125, USA. Electronic address: ann@caltech.edu'))
+      .toMatchObject({ city: 'Pasadena', state: 'CA', postal_code: '91125', country: 'USA' });
+  });
+
+  test('handles blank and missing input', () => {
+    const empty = { street: '', city: '', state: '', postal_code: '', country: '' };
+    expect(parseAffiliation('')).toEqual(empty);
+    expect(parseAffiliation(null)).toEqual(empty);
+    expect(parseAffiliation(undefined)).toEqual(empty);
   });
 });

@@ -13,15 +13,19 @@ import { useHistory } from 'react-router-dom';
 
 import Container from 'react-bootstrap/Container';
 
-import BiblioPersonPanel from './BiblioPersonPanel';
+import BiblioPersonPanel, { WORKFLOW_STATUS_DEFAULT } from './BiblioPersonPanel';
 import { api } from '../../api';
 import { orderedAuthors } from '../../utils/authorOrdering';
 import {
   stagedInstitutionsFromAuthors, appendStagedInstitution, draftFromAuthor,
   matchQueryForAuthor, validateDraft, buildCommitPlan,
 } from '../../utils/authorPersonDraft';
-import { executeCommitPlan, unlinkAuthorPerson } from '../../actions/authorPersonActions';
-import { biblioQueryReferenceCurie } from '../../actions/biblioActions';
+import {
+  executeCommitPlan, unlinkAuthorPerson, linkAuthorToPerson,
+} from '../../actions/authorPersonActions';
+import {
+  biblioQueryReferenceCurie, fetchReferenceFiles, downloadReferencefile,
+} from '../../actions/biblioActions';
 
 // Matches are fetched for every author as the page opens. Three at a time keeps a
 // fifty-author reference from opening fifty sockets at once while still finishing
@@ -33,6 +37,12 @@ const BiblioPerson = () => {
   const history = useHistory();
   const referenceCurie = useSelector((state) => state.biblio.referenceCurie);
   const referenceJsonLive = useSelector((state) => state.biblio.referenceJsonLive);
+  const referenceFiles = useSelector((state) => state.biblio.referenceFiles);
+  const loadingFileNames = useSelector((state) => state.biblio.loadingFileNames);
+  const accessToken = useSelector((state) => state.isLogged.accessToken);
+  const cognitoMod = useSelector((state) => state.isLogged.cognitoMod);
+  const testerMod = useSelector((state) => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : cognitoMod;
 
   // Seeded once from the reference as it stood when the screen opened. A refetch
   // mid-edit must not wipe a half-filled staging area, so these are not recomputed.
@@ -55,16 +65,41 @@ const BiblioPerson = () => {
   const [committing, setCommitting] = useState(false);
   const [commitSummary, setCommitSummary] = useState(null);
   const [unlinking, setUnlinking] = useState({});
+  // Staged like everything else on this screen -- choosing it writes nothing. The
+  // commit button is what would apply it, once the author_person tag exists.
+  const [workflowStatus, setWorkflowStatus] = useState(WORKFLOW_STATUS_DEFAULT);
 
-  // People attached to this reference without an author_order. link_person absorbs
-  // one of these into an author rather than erroring, so the curator should know
-  // they are there before committing.
-  const stubs = Array.isArray(referenceJsonLive.author_person_without_author_order)
-    ? referenceJsonLive.author_person_without_author_order
-    : [];
+  // People attached to this reference without an author_order. Seeded once and then
+  // owned here, because a stub leaves the list the moment it is resolved.
+  //
+  // person_curie is null on these rows for the same reason it is null on the authors:
+  // the reference endpoint serialises AuthorModel through jsonable_encoder and the
+  // model has no person_curie property. Verified against dev4002. So they arrive as a
+  // bare person_id and the curie is resolved below.
+  const [stubs, setStubs] = useState(() => (
+    Array.isArray(referenceJsonLive.author_person_without_author_order)
+      ? referenceJsonLive.author_person_without_author_order
+        .filter((row) => row && row.person_id)
+        .map((row) => ({
+          author_id: row.author_id,
+          person_id: row.person_id,
+          curie: row.person_curie || null,
+          name: '',
+          error: '',
+        }))
+      : []
+  ));
+  const [linkingStub, setLinkingStub] = useState(null);
 
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
+
+  // RowDisplayReferencefiles fetches these on the display tab; this screen never
+  // renders it, so nothing would populate referenceFiles without asking here.
+  useEffect(() => {
+    if (referenceCurie !== '') dispatch(fetchReferenceFiles(referenceCurie));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referenceCurie]);
 
   // Possible people for every author, surname only. Narrowing the query here would
   // drop exactly the aka cases a real matcher exists to find, so the list is wide
@@ -229,6 +264,54 @@ const BiblioPerson = () => {
     }
   }, [drafts]);
 
+  // Stubs arrive as a bare person_id, so resolve each to a curie and name. Without
+  // this the list can only say "person 5824", which names nobody.
+  useEffect(() => {
+    const unresolved = stubs.filter((stub) => !stub.curie && stub.person_id);
+    if (unresolved.length === 0) return;
+    for (const stub of unresolved) {
+      api.get('/person/' + stub.person_id)
+        .then((res) => {
+          if (!mounted.current || !res.data || !res.data.curie) return;
+          setStubs((prev) => prev.map((row) => (row.author_id === stub.author_id
+            ? { ...row, curie: res.data.curie, name: res.data.display_name || '' }
+            : row)));
+        })
+        .catch((error) => console.error('stub person resolve error:', error));
+    }
+  }, [stubs]);
+
+  // Writes immediately: the stub vanishes on success and the author it resolves to
+  // leaves the candidate list, so there is nothing for a staged version to batch with.
+  const onLinkStub = useCallback(async (stub, authorId) => {
+    if (!stub.curie) return;
+    setLinkingStub(stub.author_id);
+    const result = await linkAuthorToPerson(authorId, stub.curie);
+    if (!mounted.current) return;
+    setLinkingStub(null);
+    if (!result.ok) {
+      setStubs((prev) => prev.map((row) => (row.author_id === stub.author_id
+        ? { ...row, error: result.message } : row)));
+      return;
+    }
+    // link_person absorbed the stub row into the author, so it is gone server-side too.
+    setStubs((prev) => prev.filter((row) => row.author_id !== stub.author_id));
+    // The author now has a person, which both shows its linked row and takes it out of
+    // every remaining stub's dropdown.
+    setDrafts((prev) => ({
+      ...prev,
+      [authorId]: {
+        ...prev[authorId],
+        isLinked: true,
+        existingPersonId: stub.person_id,
+        existingPersonCurie: stub.curie,
+        existingPersonName: stub.name || '',
+        mode: 'none',
+        selectedPerson: null,
+      },
+    }));
+  }, []);
+
   // A person picked from the typeahead rather than the match list is not in
   // personDetails yet, so fetch it -- the compare panel is useless without it.
   useEffect(() => {
@@ -257,9 +340,23 @@ const BiblioPerson = () => {
   // when three of those four were already committed and would be skipped.
   const plannedCount = buildCommitPlan(authors.map((a) => drafts[a.author_id]), staged).length;
 
+  // Only authors with no person can take one of these stubs. uq_author_ref_person
+  // allows a person one author per reference, so offering a linked author would only
+  // earn a 409.
+  const availableAuthors = authors.filter((author) => {
+    const draft = drafts[author.author_id];
+    return draft && !draft.isLinked;
+  });
+
   const onCommit = async () => {
     const plans = buildCommitPlan(authors.map((a) => drafts[a.author_id]), staged);
-    if (plans.length === 0) return;
+    const statusChanged = workflowStatus !== WORKFLOW_STATUS_DEFAULT;
+    if (plans.length === 0 && !statusChanged) return;
+    if (plans.length === 0) {
+      // Status-only press. Nothing to send, and nowhere to send the status to yet.
+      setCommitSummary({ total: 0, applied: 0, failed: 0, statusUnsaved: true });
+      return;
+    }
     setCommitting(true);
     // Results are keyed by author and only the planned authors are re-run, so the
     // messages from an earlier commit stay put rather than vanishing and being
@@ -268,7 +365,14 @@ const BiblioPerson = () => {
 
     const collected = await executeCommitPlan(plans, (result) => {
       if (!mounted.current) return;
-      setResults((prev) => ({ ...prev, [result.authorId]: result }));
+      // Only failures are kept. A success now shows as the author's linked row, so a
+      // green banner repeating it would just be the same news twice.
+      setResults((prev) => {
+        const next = { ...prev };
+        if (result.ok) delete next[result.authorId];
+        else next[result.authorId] = result;
+        return next;
+      });
       // Pin whatever this run actually achieved, even when a later step failed, so a
       // second commit redoes none of it:
       //   createdPersonCurie -- MATI's counter does not roll back, so re-creating
@@ -283,20 +387,63 @@ const BiblioPerson = () => {
         const pinned = { ...draft };
         if (result.createdPersonCurie) pinned.createdPersonCurie = result.createdPersonCurie;
         if (result.labLinkedCurie) pinned.labLinkedCurie = result.labLinkedCurie;
-        if (result.ok) pinned.committedPersonCurie = result.personCurie;
+        if (result.ok) {
+          pinned.committedPersonCurie = result.personCurie;
+          // A committed author IS a linked author, so it renders as one -- the same
+          // row a freshly loaded page shows for a pre-existing link, remove button
+          // and all. Leaving it in its editing state with a success banner beside it
+          // would mean two different presentations of the identical fact.
+          pinned.isLinked = true;
+          pinned.existingPersonCurie = result.personCurie;
+          pinned.existingPersonName =
+            (draft.selectedPerson && draft.selectedPerson.name) || draft.fields.display_name || '';
+        }
         return { ...prev, [result.authorId]: pinned };
       });
     });
 
     if (!mounted.current) return;
     const applied = collected.filter((r) => r.ok).length;
-    setCommitSummary({ total: collected.length, applied, failed: collected.length - applied });
+    setCommitSummary({
+      total: collected.length,
+      applied,
+      failed: collected.length - applied,
+      statusUnsaved: statusChanged,
+    });
     setCommitting(false);
     // Refetch so the editor and the "already linked" badges here reflect the new
     // author.person_id values rather than the state the screen opened with.
     if (applied > 0 && referenceCurie !== '') {
       dispatch(biblioQueryReferenceCurie(referenceCurie));
     }
+  };
+
+  // Main files only: the curator wants the paper itself, not the supplements, figures
+  // or the additional-files tarball. Access mirrors the display tab's predicate for a
+  // main PDF -- a mod-scoped file needs a matching mod, unless the reference is open
+  // access or the user is a developer.
+  const mainFiles = (Array.isArray(referenceFiles) ? referenceFiles : [])
+    .filter((file) => file && file.file_class === 'main')
+    .map((file) => {
+      const mods = (file.referencefile_mods || [])
+        .map((rfm) => rfm && rfm.mod_abbreviation);
+      const modAllows = mods.length === 0
+        || mods.some((mod) => mod === null || mod === accessLevel);
+      const allowed = accessLevel !== 'No' && (
+        modAllows
+        || referenceJsonLive.copyright_license_open_access === true
+        || accessLevel === 'developer'
+      );
+      return {
+        id: file.referencefile_id,
+        filename: `${file.display_name}.${file.file_extension}`,
+        allowed,
+        mods: mods.filter(Boolean),
+      };
+    });
+
+  const onDownloadFile = (fileId, filename) => {
+    dispatch(downloadReferencefile(fileId, filename, accessToken));
   };
 
   const onBack = () => {
@@ -307,6 +454,11 @@ const BiblioPerson = () => {
     <Container fluid>
       <BiblioPersonPanel
         referenceCurie={referenceCurie}
+        title={referenceJsonLive.title || ''}
+        crossReferences={referenceJsonLive.cross_references || []}
+        mainFiles={mainFiles}
+        loadingFileNames={loadingFileNames}
+        onDownloadFile={onDownloadFile}
         authors={authors}
         stubs={stubs}
         staged={staged}
@@ -321,6 +473,8 @@ const BiblioPerson = () => {
         committing={committing}
         commitSummary={commitSummary}
         plannedCount={plannedCount}
+        workflowStatus={workflowStatus}
+        onWorkflowStatusChange={setWorkflowStatus}
         unlinking={unlinking}
         blockedReason=""
         onStagedChange={onStagedChange}
@@ -329,6 +483,9 @@ const BiblioPerson = () => {
         onToggleShowAll={onToggleShowAll}
         onToggleMatches={onToggleMatches}
         onRemoveLink={onRemoveLink}
+        availableAuthors={availableAuthors}
+        linkingStub={linkingStub}
+        onLinkStub={onLinkStub}
         onCommit={onCommit}
         onBack={onBack}
       />

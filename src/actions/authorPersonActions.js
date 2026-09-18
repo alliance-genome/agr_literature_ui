@@ -120,3 +120,21 @@ export const unlinkAuthorPerson = async (authorId) => {
     return { ok: false, message: apiErrorMessage('author/' + authorId, error) };
   }
 };
+
+/**
+ * Link one author to one person.
+ *
+ * The same PATCH the commit plan's linkAuthor step makes, exposed on its own for the
+ * person-only list, where a curator resolves one stub at a time rather than staging a
+ * batch. link_person absorbs the person-only row into the chosen author, so this one
+ * call both makes the link and clears the stub.
+ */
+export const linkAuthorToPerson = async (authorId, personCurie) => {
+  try {
+    await api.patch('/author/' + authorId, { person_curie: personCurie });
+    return { ok: true, message: '' };
+  } catch (error) {
+    console.error('author person link error:', error);
+    return { ok: false, message: apiErrorMessage('author/' + authorId, error) };
+  }
+};

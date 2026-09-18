@@ -25,6 +25,20 @@
   flex: 0 0 5.5rem;
 }
 
+/* Labels for the reference context lines (title / cross references / main pdfs).
+ * Fixed width so the three values line up under each other, and muted so the label
+ * recedes behind the thing it names.
+ *
+ * Note for anyone tempted to use <em> here: App.css restyles em as a search
+ * highlight (yellow background, upright), so it is not available as emphasis. */
+.biblio-person-reflabel {
+  display: inline-block;
+  min-width: 8rem;
+  color: #666;
+  font-size: 0.8rem;
+  vertical-align: top;
+}
+
 .biblio-person-author-head {
   display: flex;
   align-items: center;
@@ -62,6 +76,18 @@
 .biblio-person .row > [class*='col'] {
   padding-left: 0.15rem;
   padding-right: 0.15rem;
+}
+
+/* The gap between the screen's four top-level sections -- reference header, people
+ * who are not authors, authors, institutions. Much larger than the rhythm inside a
+ * section, which stays tight; the contrast is what makes the sections read as
+ * separate rather than as one long list.
+ *
+ * Top margin only, on each section, so the gaps stay even when a section is absent:
+ * the stubs list does not render at all when there are none, and Authors then
+ * supplies its own spacing from the header. */
+.biblio-person-section {
+  margin-top: 2rem;
 }
 
 .biblio-person-staged-inst {

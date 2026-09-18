@@ -32,8 +32,8 @@ const BiblioPersonInstitutionStaging = ({ staged, onChange, onAdd, disabled }) =
   );
 
   return (
-    <div className="biblio-person-staging">
-      <Row style={{ marginTop: '0.6rem' }}>
+    <div className="biblio-person-staging biblio-person-section">
+      <Row>
         <Col sm="12">
           <strong>Institutions</strong>{' '}
           <span className="biblio-person-muted">
@@ -83,7 +83,7 @@ const BiblioPersonInstitutionStaging = ({ staged, onChange, onAdd, disabled }) =
                 value={inst.lab}
                 valueLabel={inst.labLabel}
                 disabled={disabled}
-                placeholder="lab (optional)"
+                placeholder="lab"
                 onChange={(picked) => onChange(inst.number, {
                   lab: picked ? picked.curie : null,
                   labLabel: picked ? (picked.strain_designation || picked.name || '') : '',

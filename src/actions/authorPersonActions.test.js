@@ -1,5 +1,7 @@
 import { api } from '../api';
-import { executeCommitPlan, unlinkAuthorPerson } from './authorPersonActions';
+import {
+  executeCommitPlan, unlinkAuthorPerson, linkAuthorToPerson,
+} from './authorPersonActions';
 
 jest.mock('../api', () => ({ api: { post: jest.fn(), patch: jest.fn() } }));
 
@@ -210,5 +212,30 @@ describe('unlinkAuthorPerson', () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain('person-only');
+  });
+});
+
+describe('linkAuthorToPerson', () => {
+  test('patches the author with the person curie', async () => {
+    api.patch.mockResolvedValue({ data: {} });
+
+    const result = await linkAuthorToPerson(4412, 'AGRKB:12');
+
+    expect(api.patch).toHaveBeenCalledWith('/author/4412', { person_curie: 'AGRKB:12' });
+    expect(result.ok).toBe(true);
+  });
+
+  test('surfaces the conflict when that person is already another author here', async () => {
+    // uq_author_ref_person allows one author per person per reference, so this is a
+    // normal outcome the curator has to see, not an unexpected error.
+    api.patch.mockRejectedValue({
+      response: { data: { detail: 'Person is already author #2 on this reference; unlink there first' } },
+      message: 'Request failed',
+    });
+
+    const result = await linkAuthorToPerson(4412, 'AGRKB:12');
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('already author #2');
   });
 });
