@@ -16,6 +16,7 @@ import Container from 'react-bootstrap/Container';
 import BiblioPersonPanel, { WORKFLOW_STATUS_DEFAULT } from './BiblioPersonPanel';
 import { api } from '../../api';
 import { orderedAuthors } from '../../utils/authorOrdering';
+import { mainFilesForCurator } from '../../utils/mainReferenceFiles';
 import {
   stagedInstitutionsFromAuthors, appendStagedInstitution, draftFromAuthor,
   matchQueryForAuthor, validateDraft, buildCommitPlan,
@@ -97,6 +98,18 @@ const BiblioPerson = () => {
 
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
+
+  // person_ids a resolve has already been attempted for, successfully or not.
+  //
+  // Both resolve effects below read the same state they write, so without this each
+  // resolution re-runs the effect and re-fires a request for every id still
+  // outstanding -- N + (N-1) + ... requests for one page open. Worse, an id that can
+  // never resolve (404, or a payload with no curie) stays outstanding forever, so
+  // from then on ANY change to drafts re-fires the whole batch, including every
+  // keystroke in an author's name field. Recording the attempt rather than the
+  // success is what stops that: a failed resolve is not retried, it just stays
+  // unresolved and the UI says so.
+  const resolveAttempted = useRef(new Set());
 
   // RowDisplayReferencefiles fetches these on the display tab; this screen never
   // renders it, so nothing would populate referenceFiles without asking here.
@@ -248,9 +261,11 @@ const BiblioPerson = () => {
   // cannot say to whom or offer a link to the record.
   useEffect(() => {
     const unresolved = Object.values(drafts)
-      .filter((d) => d && d.isLinked && !d.existingPersonCurie && d.existingPersonId);
+      .filter((d) => d && d.isLinked && !d.existingPersonCurie && d.existingPersonId)
+      .filter((d) => !resolveAttempted.current.has(d.existingPersonId));
     if (unresolved.length === 0) return;
     for (const draft of unresolved) {
+      resolveAttempted.current.add(draft.existingPersonId);
       api.get('/person/' + draft.existingPersonId)
         .then((res) => {
           if (!mounted.current || !res.data || !res.data.curie) return;
@@ -271,9 +286,12 @@ const BiblioPerson = () => {
   // Stubs arrive as a bare person_id, so resolve each to a curie and name. Without
   // this the list can only say "person 5824", which names nobody.
   useEffect(() => {
-    const unresolved = stubs.filter((stub) => !stub.curie && stub.person_id);
+    const unresolved = stubs
+      .filter((stub) => !stub.curie && stub.person_id)
+      .filter((stub) => !resolveAttempted.current.has(stub.person_id));
     if (unresolved.length === 0) return;
     for (const stub of unresolved) {
+      resolveAttempted.current.add(stub.person_id);
       api.get('/person/' + stub.person_id)
         .then((res) => {
           if (!mounted.current || !res.data || !res.data.curie) return;
@@ -438,29 +456,12 @@ const BiblioPerson = () => {
     }
   };
 
-  // Main files only: the curator wants the paper itself, not the supplements, figures
-  // or the additional-files tarball. Access mirrors the display tab's predicate for a
-  // main PDF -- a mod-scoped file needs a matching mod, unless the reference is open
-  // access or the user is a developer.
-  const mainFiles = (Array.isArray(referenceFiles) ? referenceFiles : [])
-    .filter((file) => file && file.file_class === 'main')
-    .map((file) => {
-      const mods = (file.referencefile_mods || [])
-        .map((rfm) => rfm && rfm.mod_abbreviation);
-      const modAllows = mods.length === 0
-        || mods.some((mod) => mod === null || mod === accessLevel);
-      const allowed = accessLevel !== 'No' && (
-        modAllows
-        || referenceJsonLive.copyright_license_open_access === true
-        || accessLevel === 'developer'
-      );
-      return {
-        id: file.referencefile_id,
-        filename: `${file.display_name}.${file.file_extension}`,
-        allowed,
-        mods: mods.filter(Boolean),
-      };
-    });
+  // Main files only, with the display tab's own access rule -- see mainReferenceFiles,
+  // where it lives so the two copies cannot drift again without a test failing.
+  const mainFiles = mainFilesForCurator(referenceFiles, {
+    accessLevel,
+    openAccess: referenceJsonLive.copyright_license_open_access === true,
+  });
 
   const onDownloadFile = (fileId, filename) => {
     dispatch(downloadReferencefile(fileId, filename, accessToken));

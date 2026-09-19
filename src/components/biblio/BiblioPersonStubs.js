@@ -49,20 +49,27 @@ const BiblioPersonStubs = ({
               {stub.name ? <span> ({stub.name})</span> : null}
             </Col>
             <Col sm="5">
+              {/* Also disabled until the curie resolves. The link is a PATCH carrying
+                  person_curie -- person_id is never accepted -- so until it lands there
+                  is nothing to send, and an enabled select would take a choice, snap
+                  back to the placeholder and do nothing at all. */}
               <Form.Control
                 as="select"
                 size="sm"
                 value=""
-                disabled={disabled || linkingStub === stub.author_id || availableAuthors.length === 0}
+                disabled={disabled || linkingStub === stub.author_id
+                  || availableAuthors.length === 0 || !stub.curie}
                 aria-label={`author for person ${stub.curie || stub.person_id}`}
                 onChange={(e) => {
                   if (e.target.value) onLinkStub(stub, Number(e.target.value));
                 }}
               >
                 <option value="">
-                  {availableAuthors.length === 0
-                    ? '(every author already has a person)'
-                    : 'choose the author this person is…'}
+                  {!stub.curie
+                    ? 'looking this person up…'
+                    : availableAuthors.length === 0
+                      ? '(every author already has a person)'
+                      : 'choose the author this person is…'}
                 </option>
                 {availableAuthors.map((author) => (
                   <option key={author.author_id} value={author.author_id}>
