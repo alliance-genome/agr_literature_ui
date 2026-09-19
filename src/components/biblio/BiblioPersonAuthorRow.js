@@ -182,9 +182,17 @@ const BiblioPersonAuthorRow = ({
             linked to{' '}
             {draft.existingPersonCurie
               ? <PersonLink curie={draft.existingPersonCurie} />
-              // The curie is still being resolved from person_id; say so rather than
-              // rendering a dead link or an empty space that reads as a glitch.
-              : <span className="biblio-person-muted">person {draft.existingPersonId}…</span>}
+              // Still resolving from person_id, or -- since nothing retries it -- it
+              // never will. Either way better than a dead link, but the two must not
+              // look alike: an ellipsis on a terminal failure claims a request that
+              // will never land.
+              : draft.resolveFailed
+                ? (
+                  <span style={{ color: '#a00' }}>
+                    person {draft.existingPersonId} (lookup failed)
+                  </span>
+                )
+                : <span className="biblio-person-muted">person {draft.existingPersonId}…</span>}
             {draft.existingPersonName ? ` (${draft.existingPersonName})` : ''}
             {' '}
             {/* A button, not a checkbox. Every checkbox on this screen stages something

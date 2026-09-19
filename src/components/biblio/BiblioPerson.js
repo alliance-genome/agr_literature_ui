@@ -89,6 +89,7 @@ const BiblioPerson = () => {
           person_id: row.person_id,
           curie: row.person_curie || null,
           name: '',
+          resolveFailed: false,
           error: '',
         }))
       : []
@@ -96,8 +97,15 @@ const BiblioPerson = () => {
   const [linkingStub, setLinkingStub] = useState(null);
   const [removingStub, setRemovingStub] = useState(null);
 
+  // Set true on mount as well as cleared on unmount. Clearing only would be correct
+  // today but is a landmine: StrictMode's simulated unmount/remount would leave this
+  // false on a live component, and with resolveAttempted already populated no person
+  // would ever resolve and nothing would say why.
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   // person_ids a resolve has already been attempted for, successfully or not.
   //
@@ -108,7 +116,8 @@ const BiblioPerson = () => {
   // from then on ANY change to drafts re-fires the whole batch, including every
   // keystroke in an author's name field. Recording the attempt rather than the
   // success is what stops that: a failed resolve is not retried, it just stays
-  // unresolved and the UI says so.
+  // unresolved -- and both rows label that terminal state rather than leaving an
+  // ellipsis implying a request still in flight.
   const resolveAttempted = useRef(new Set());
 
   // RowDisplayReferencefiles fetches these on the display tab; this screen never
@@ -266,9 +275,20 @@ const BiblioPerson = () => {
     if (unresolved.length === 0) return;
     for (const draft of unresolved) {
       resolveAttempted.current.add(draft.existingPersonId);
+      // Nothing retries this, so a failure is terminal and has to be recorded rather
+      // than only logged -- otherwise the row sits on "…" forever, claiming a request
+      // that will never land.
+      const markFailed = () => {
+        if (!mounted.current) return;
+        setDrafts((prev) => ({
+          ...prev,
+          [draft.authorId]: { ...prev[draft.authorId], resolveFailed: true },
+        }));
+      };
       api.get('/person/' + draft.existingPersonId)
         .then((res) => {
-          if (!mounted.current || !res.data || !res.data.curie) return;
+          if (!mounted.current) return;
+          if (!res.data || !res.data.curie) { markFailed(); return; }
           setPersonDetails((d) => ({ ...d, [res.data.curie]: res.data }));
           setDrafts((prev) => ({
             ...prev,
@@ -276,10 +296,14 @@ const BiblioPerson = () => {
               ...prev[draft.authorId],
               existingPersonCurie: res.data.curie,
               existingPersonName: res.data.display_name || '',
+              resolveFailed: false,
             },
           }));
         })
-        .catch((error) => console.error('linked person resolve error:', error));
+        .catch((error) => {
+          console.error('linked person resolve error:', error);
+          markFailed();
+        });
     }
   }, [drafts]);
 
@@ -292,14 +316,28 @@ const BiblioPerson = () => {
     if (unresolved.length === 0) return;
     for (const stub of unresolved) {
       resolveAttempted.current.add(stub.person_id);
+      const markFailed = () => {
+        if (!mounted.current) return;
+        setStubs((prev) => prev.map((row) => (row.author_id === stub.author_id
+          ? { ...row, resolveFailed: true } : row)));
+      };
       api.get('/person/' + stub.person_id)
         .then((res) => {
-          if (!mounted.current || !res.data || !res.data.curie) return;
+          if (!mounted.current) return;
+          if (!res.data || !res.data.curie) { markFailed(); return; }
           setStubs((prev) => prev.map((row) => (row.author_id === stub.author_id
-            ? { ...row, curie: res.data.curie, name: res.data.display_name || '' }
+            ? {
+              ...row,
+              curie: res.data.curie,
+              name: res.data.display_name || '',
+              resolveFailed: false,
+            }
             : row)));
         })
-        .catch((error) => console.error('stub person resolve error:', error));
+        .catch((error) => {
+          console.error('stub person resolve error:', error);
+          markFailed();
+        });
     }
   }, [stubs]);
 

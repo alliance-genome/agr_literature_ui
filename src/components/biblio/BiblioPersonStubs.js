@@ -41,6 +41,12 @@ const BiblioPersonStubs = ({
               {stub.curie ? (
                 <a href={`/person?personCurie=${encodeURIComponent(stub.curie)}`}
                   target="_blank" rel="noopener noreferrer">{stub.curie}</a>
+              ) : stub.resolveFailed ? (
+                // Terminal: nothing retries the lookup, so say that rather than leave
+                // an ellipsis implying a request still in flight.
+                <span style={{ color: '#a00', fontSize: '0.85rem' }}>
+                  person {stub.person_id} — could not look this person up
+                </span>
               ) : (
                 // Resolving person_id -> curie; the reference payload carries no curie
                 // for these rows, so there is nothing to link to until it lands.
@@ -66,7 +72,9 @@ const BiblioPersonStubs = ({
               >
                 <option value="">
                   {!stub.curie
-                    ? 'looking this person up…'
+                    ? (stub.resolveFailed
+                      ? 'could not look this person up — reload to retry'
+                      : 'looking this person up…')
                     : availableAuthors.length === 0
                       ? '(every author already has a person)'
                       : 'choose the author this person is…'}
