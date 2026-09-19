@@ -439,7 +439,13 @@ const SectionLayoutModal = ({
             </div>
           </Form.Group>
 
-          {/* Metadata toggles */}
+          {/* Metadata toggles.
+              Only for pages that have per-field timestamp / curator metadata to show.
+              A page without it (the Biblio Person screen) passes neither handler, and
+              rendering the switches anyway would put two controls on screen that look
+              live and change nothing. The saved payload still carries the two values
+              either way, so a layout saved on one page stays readable on another. */}
+          {(onToggleTimestamps || onToggleCurator) ? (
           <Form.Group className="mb-4">
             <Form.Label>Metadata</Form.Label>
             <div className="d-flex flex-wrap align-items-center" style={{ gap: '0.5rem 2.5rem' }}>
@@ -459,6 +465,7 @@ const SectionLayoutModal = ({
               />
             </div>
           </Form.Group>
+          ) : null}
 
           {/* Create new settings */}
           <Form.Group className="mb-4">
