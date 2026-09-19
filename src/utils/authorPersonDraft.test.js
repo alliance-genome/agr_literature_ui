@@ -182,6 +182,48 @@ describe('draftFromAuthor', () => {
     expect(d.isLinked).toBe(false);
     expect(d.existingPersonId).toBe(null);
   });
+
+  test('picks the staged institution matching the author own affiliation', () => {
+    // The paper already says where each author is. Making the curator re-pick it from
+    // a dropdown is asking them to retype what was extracted for them.
+    const staged = stagedInstitutionsFromAuthors([
+      { author_id: 1, affiliations: ['Caltech'] },
+      { author_id: 2, affiliations: ['MRC LMB'] },
+    ]);
+    expect(draftFromAuthor({ author_id: 2, affiliations: ['MRC LMB'] }, staged).instChoice).toBe(2);
+    expect(draftFromAuthor({ author_id: 1, affiliations: ['Caltech'] }, staged).instChoice).toBe(1);
+  });
+
+  test('matches an affiliation that differs only by surrounding whitespace', () => {
+    // stagedInstitutionsFromAuthors trims when deduplicating, so the lookup has to too
+    // or an author whose string has a stray space matches nothing.
+    const staged = stagedInstitutionsFromAuthors([{ author_id: 1, affiliations: ['Caltech'] }]);
+    expect(draftFromAuthor({ author_id: 1, affiliations: ['  Caltech  '] }, staged).instChoice).toBe(1);
+  });
+
+  test('takes the first affiliation when an author lists several', () => {
+    // Only one can be the current institution, and the first is the one the paper
+    // leads with. The rest stay available in the dropdown.
+    const staged = stagedInstitutionsFromAuthors([
+      { author_id: 1, affiliations: ['Caltech', 'HHMI'] },
+    ]);
+    expect(draftFromAuthor({ author_id: 1, affiliations: ['HHMI', 'Caltech'] }, staged).instChoice)
+      .toBe(2);
+  });
+
+  test('leaves the choice empty with no affiliation, no match, or no staged list', () => {
+    const staged = stagedInstitutionsFromAuthors([{ author_id: 1, affiliations: ['Caltech'] }]);
+    expect(draftFromAuthor({ author_id: 1 }, staged).instChoice).toBe(null);
+    expect(draftFromAuthor({ author_id: 1, affiliations: ['Nowhere'] }, staged).instChoice).toBe(null);
+    expect(draftFromAuthor({ author_id: 1, affiliations: ['Caltech'] }).instChoice).toBe(null);
+  });
+
+  test('never guesses an old institution', () => {
+    // The paper says where someone is, never where they used to be.
+    const staged = stagedInstitutionsFromAuthors([{ author_id: 1, affiliations: ['Caltech'] }]);
+    expect(draftFromAuthor({ author_id: 1, affiliations: ['Caltech'] }, staged).oldInstChoice)
+      .toBe(null);
+  });
 });
 
 describe('validateDraft', () => {

@@ -21,7 +21,7 @@ import {
   matchQueryForAuthor, validateDraft, buildCommitPlan,
 } from '../../utils/authorPersonDraft';
 import {
-  executeCommitPlan, unlinkAuthorPerson, linkAuthorToPerson,
+  executeCommitPlan, unlinkAuthorPerson, linkAuthorToPerson, deleteAuthorRow,
 } from '../../actions/authorPersonActions';
 import {
   biblioQueryReferenceCurie, fetchReferenceFiles, downloadReferencefile,
@@ -49,8 +49,11 @@ const BiblioPerson = () => {
   const [authors] = useState(() => orderedAuthors(referenceJsonLive.authors));
   const [staged, setStaged] = useState(() => stagedInstitutionsFromAuthors(authors));
   const [drafts, setDrafts] = useState(() => {
+    // Seeded against the same staged list, so every author starts on the institution
+    // its own affiliation produced rather than on "(none)".
+    const seededStaged = stagedInstitutionsFromAuthors(authors);
     const seeded = {};
-    for (const author of authors) seeded[author.author_id] = draftFromAuthor(author);
+    for (const author of authors) seeded[author.author_id] = draftFromAuthor(author, seededStaged);
     return seeded;
   });
 
@@ -90,6 +93,7 @@ const BiblioPerson = () => {
       : []
   ));
   const [linkingStub, setLinkingStub] = useState(null);
+  const [removingStub, setRemovingStub] = useState(null);
 
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
@@ -312,6 +316,22 @@ const BiblioPerson = () => {
     }));
   }, []);
 
+  // The person does not belong on this reference at all. DELETE, not unlink: a
+  // person-only row has no author_order, so clearing its person_id would leave
+  // ck_author_person_or_order unsatisfiable and the API refuses it.
+  const onRemoveStub = useCallback(async (stub) => {
+    setRemovingStub(stub.author_id);
+    const result = await deleteAuthorRow(stub.author_id);
+    if (!mounted.current) return;
+    setRemovingStub(null);
+    if (!result.ok) {
+      setStubs((prev) => prev.map((row) => (row.author_id === stub.author_id
+        ? { ...row, error: result.message } : row)));
+      return;
+    }
+    setStubs((prev) => prev.filter((row) => row.author_id !== stub.author_id));
+  }, []);
+
   // A person picked from the typeahead rather than the match list is not in
   // personDetails yet, so fetch it -- the compare panel is useless without it.
   useEffect(() => {
@@ -485,7 +505,9 @@ const BiblioPerson = () => {
         onRemoveLink={onRemoveLink}
         availableAuthors={availableAuthors}
         linkingStub={linkingStub}
+        removingStub={removingStub}
         onLinkStub={onLinkStub}
+        onRemoveStub={onRemoveStub}
         onCommit={onCommit}
         onBack={onBack}
       />

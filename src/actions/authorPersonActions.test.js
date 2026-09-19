@@ -1,9 +1,9 @@
 import { api } from '../api';
 import {
-  executeCommitPlan, unlinkAuthorPerson, linkAuthorToPerson,
+  executeCommitPlan, unlinkAuthorPerson, linkAuthorToPerson, deleteAuthorRow,
 } from './authorPersonActions';
 
-jest.mock('../api', () => ({ api: { post: jest.fn(), patch: jest.fn() } }));
+jest.mock('../api', () => ({ api: { post: jest.fn(), patch: jest.fn(), delete: jest.fn() } }));
 
 const createPlan = (authorId = 41, over = {}) => ({
   authorId,
@@ -237,5 +237,31 @@ describe('linkAuthorToPerson', () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain('already author #2');
+  });
+});
+
+describe('deleteAuthorRow', () => {
+  test('deletes the author row', async () => {
+    // How a person-only row is removed. Clearing its person_id instead would leave
+    // ck_author_person_or_order unsatisfiable, which is why the API refuses to unlink
+    // one -- for these rows removal IS deletion.
+    api.delete.mockResolvedValue({ data: null });
+
+    const result = await deleteAuthorRow(10001396);
+
+    expect(api.delete).toHaveBeenCalledWith('/author/10001396');
+    expect(result.ok).toBe(true);
+  });
+
+  test('reports the API message when the delete is refused', async () => {
+    api.delete.mockRejectedValue({
+      response: { data: { detail: 'not allowed' } },
+      message: 'Request failed',
+    });
+
+    const result = await deleteAuthorRow(10001396);
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('not allowed');
   });
 });

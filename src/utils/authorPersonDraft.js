@@ -219,8 +219,23 @@ const displayNameForAuthor = (author) => {
  * already made instead of creating a second one. Person curies come from MATI,
  * whose counter does not roll back, so a duplicate create permanently burns an id.
  */
-export const draftFromAuthor = (author) => {
+export const draftFromAuthor = (author, stagedInstitutions) => {
   const a = author || {};
+
+  // The paper already says where this author is, so pre-select the matching staged
+  // institution rather than making the curator re-pick what was extracted for them.
+  // Trimmed on both sides, because stagedInstitutionsFromAuthors trims when it
+  // deduplicates and an untrimmed lookup would miss its own entry.
+  //
+  // Only the first affiliation, and only the current slot: one institution can be
+  // current, and nothing in an affiliation list says which places someone has left.
+  const firstAffiliation = (Array.isArray(a.affiliations) ? a.affiliations : [])
+    .map((value) => (value === null || value === undefined ? '' : String(value).trim()))
+    .find(Boolean) || '';
+  const matched = firstAffiliation
+    ? (Array.isArray(stagedInstitutions) ? stagedInstitutions : [])
+      .find((inst) => inst && String(inst.raw).trim() === firstAffiliation)
+    : null;
   // Store the bare id; buildPersonPayload re-applies the ORCID: prefix, so editing
   // and rebuilding cannot produce ORCID:ORCID:...
   const orcid = typeof a.orcid === 'string'
@@ -246,7 +261,7 @@ export const draftFromAuthor = (author) => {
       orcid,
       email: '',
     },
-    instChoice: null,
+    instChoice: matched ? matched.number : null,
     oldInstChoice: null,
     createdPersonCurie: null,
   };

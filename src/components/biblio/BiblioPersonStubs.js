@@ -13,9 +13,12 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
+import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 
-const BiblioPersonStubs = ({ stubs, availableAuthors, linkingStub, onLinkStub, disabled }) => {
+const BiblioPersonStubs = ({
+  stubs, availableAuthors, linkingStub, removingStub, onLinkStub, onRemoveStub, disabled,
+}) => {
   if (stubs.length === 0) return null;
 
   return (
@@ -32,7 +35,7 @@ const BiblioPersonStubs = ({ stubs, availableAuthors, linkingStub, onLinkStub, d
       </Row>
 
       {stubs.map((stub) => (
-        <div key={stub.author_id} className="biblio-person-author">
+        <div key={stub.author_id} className="biblio-person-author biblio-person-stub-row">
           <Row>
             <Col sm="5">
               {stub.curie ? (
@@ -73,7 +76,21 @@ const BiblioPersonStubs = ({ stubs, availableAuthors, linkingStub, onLinkStub, d
             <Col sm="2">
               {linkingStub === stub.author_id
                 ? <span className="biblio-person-muted"><Spinner animation="border" size="sm" /> linking…</span>
-                : null}
+                : (
+                  /* Deletes the row rather than clearing its person: a person-only row
+                     has no author_order, so clearing person_id would leave
+                     ck_author_person_or_order unsatisfiable and the API refuses it.
+                     For these, removal IS deletion -- which is also what the curator
+                     means when the person does not belong on the paper. */
+                  <Button
+                    size="sm"
+                    variant="outline-danger"
+                    disabled={disabled || removingStub === stub.author_id}
+                    onClick={() => onRemoveStub(stub)}
+                  >
+                    {removingStub === stub.author_id ? 'removing…' : 'remove'}
+                  </Button>
+                )}
             </Col>
           </Row>
           {stub.error ? (

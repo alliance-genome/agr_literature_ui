@@ -45,10 +45,16 @@
   gap: 0.4rem;
 }
 
-/* Buttons that sit on an author's header line (remove) have to match the line's
- * density, not Bootstrap's default button padding, or one author's row grows taller
- * than the rest and the list stops scanning cleanly. */
-.biblio-person-author-head .btn {
+/* Buttons that sit on a single-line row (remove, on an author's header line and on a
+ * person-only row) have to match that line's density, not Bootstrap's default button
+ * padding -- even size="sm" is tall enough to push the row open and add separation
+ * the surrounding rows do not have.
+ *
+ * Deliberately not `.biblio-person-author .btn`: that would also catch "clear
+ * selection" and "confirm selection" inside the expanded suggestions panel, which are
+ * real actions on their own line and should stay full size. */
+.biblio-person-author-head .btn,
+.biblio-person-stub-row .btn {
   padding: 0 0.35rem;
   font-size: 0.8rem;
   line-height: 1.4;

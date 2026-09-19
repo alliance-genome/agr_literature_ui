@@ -49,6 +49,7 @@ const BiblioPersonPanel = ({
   plannedCount, unlinking, workflowStatus, onWorkflowStatusChange,
   onStagedChange, onAddInstitution, onDraftChange, onToggleShowAll, onToggleMatches,
   onCommit, onBack, onRemoveLink, availableAuthors, linkingStub, onLinkStub,
+  removingStub, onRemoveStub,
 }) => {
   const invalidCount = Object.values(errorsByAuthor).filter((e) => e.length > 0).length;
   const statusChanged = workflowStatus !== WORKFLOW_STATUS_DEFAULT;
@@ -64,7 +65,7 @@ const BiblioPersonPanel = ({
               button is what writes, and it is the status half of the button that is not
               wired yet. */}
           <span title={WORKFLOW_NOT_WIRED} style={{ whiteSpace: 'nowrap' }}>
-            <span className="biblio-person-muted">status </span>
+            <span className="biblio-person-muted">Workflow status (not wired up) </span>
             <Form.Control
               as="select"
               size="sm"
@@ -72,15 +73,16 @@ const BiblioPersonPanel = ({
               disabled={committing}
               onChange={(e) => onWorkflowStatusChange(e.target.value)}
               aria-label="author to person workflow status"
+              // The editor's own convention for a staged-but-unsaved value: purple
+              // until it is written, plain once it matches what is stored. Says the
+              // same thing a "(not saved yet)" note did, without the words.
+              className={statusChanged ? 'updated' : ''}
               style={{ width: 'auto', display: 'inline-block' }}
             >
               {WORKFLOW_STATUS_PLACEHOLDER.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </Form.Control>
-            {statusChanged
-              ? <span className="biblio-person-muted"> (not saved yet)</span>
-              : null}
           </span>
 
           {/* One button that names exactly what it is about to do, rather than a button
@@ -204,7 +206,9 @@ const BiblioPersonPanel = ({
         stubs={stubs}
         availableAuthors={availableAuthors}
         linkingStub={linkingStub}
+        removingStub={removingStub}
         onLinkStub={onLinkStub}
+        onRemoveStub={onRemoveStub}
         disabled={committing}
       />
 

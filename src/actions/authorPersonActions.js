@@ -138,3 +138,21 @@ export const linkAuthorToPerson = async (authorId, personCurie) => {
     return { ok: false, message: apiErrorMessage('author/' + authorId, error) };
   }
 };
+
+/**
+ * Delete an author row outright.
+ *
+ * This is how a person-only row is removed when the person does not belong on the
+ * reference at all. Clearing its person_id instead would leave
+ * ck_author_person_or_order unsatisfiable -- which is exactly why the API refuses to
+ * unlink one -- so for these rows removal is deletion.
+ */
+export const deleteAuthorRow = async (authorId) => {
+  try {
+    await api.delete('/author/' + authorId);
+    return { ok: true, message: '' };
+  } catch (error) {
+    console.error('author row delete error:', error);
+    return { ok: false, message: apiErrorMessage('author/' + authorId, error) };
+  }
+};
