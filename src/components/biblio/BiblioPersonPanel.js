@@ -105,6 +105,13 @@ const BiblioPersonPanel = ({
     });
   };
 
+  // Everything the header points at -- the per-author error marks and the per-author
+  // commit results -- lives inside the Authors section, which is now hideable. Hide it
+  // with an invalid draft and Commit is disabled by marks that render nowhere, with no
+  // clue that unhiding is the way out. Both messages say so.
+  const authorsHidden = hiddenSections.has('authors');
+  const hiddenHint = authorsHidden ? ' — the Authors section is hidden' : '';
+
   // ---- one bucket per section, keyed by the ids in SECTION_DEFS ----
   const sectionRows = {};
 
@@ -308,7 +315,8 @@ const BiblioPersonPanel = ({
             variant="primary"
             disabled={committing || (plannedCount === 0 && !statusChanged)
               || invalidCount > 0 || !!blockedReason}
-            title={blockedReason || (invalidCount > 0 ? 'Fix the problems marked below first' : '')}
+            title={blockedReason
+              || (invalidCount > 0 ? `Fix the problems marked below first${hiddenHint}` : '')}
             onClick={onCommit}
           >
             {committing
@@ -333,7 +341,10 @@ const BiblioPersonPanel = ({
             sectionDefs={SECTION_DEFS}
             defaultLayout={DEFAULT_LAYOUT}
             componentName={BIBLIO_PERSON_LAYOUT_COMPONENT_NAME}
-            pageLabel="Person"
+            // Names the surface, not the record. "Person" alone rendered "Changes
+            // apply to the person", which on a screen whose whole job is editing person
+            // records reads as an edit to a record rather than to the layout.
+            pageLabel="Person screen"
             onApplyPrefs={applyPrefs}
             current={{ layout: activeLayout, hidden: Array.from(hiddenSections) }}
             onToggleSection={toggleSection}
@@ -352,7 +363,8 @@ const BiblioPersonPanel = ({
             <>
               {commitSummary.applied} of {commitSummary.total} applied
               {commitSummary.failed > 0
-                ? `, ${commitSummary.failed} left as-is — see the messages below. Committing again retries only what failed.`
+                ? `, ${commitSummary.failed} left as-is — see the messages below${hiddenHint}. `
+                  + 'Committing again retries only what failed.'
                 : '.'}
             </>
           ) : null}

@@ -370,9 +370,13 @@ const SectionLayoutModal = ({
             </Alert>
           )}
 
+          {/* The timestamp / curator clause is gated on the same condition as the
+              fieldset itself -- otherwise a page without those toggles describes a
+              control that is not on the screen. */}
           <p className="text-muted">
-            Drag and resize the sections to arrange them, choose which sections are visible, and set
-            the timestamp / curator display. Changes apply to the {pageLabel.toLowerCase()} as you
+            Drag and resize the sections to arrange them, choose which sections are visible
+            {(onToggleTimestamps || onToggleCurator) ? ', and set the timestamp / curator display' : ''}.
+            {' '}Changes apply to the {pageLabel.toLowerCase()} as you
             make them. Save them
             as a named entry below to reuse later; your default is applied automatically.
           </p>
