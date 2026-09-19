@@ -1,0 +1,156 @@
+/* Density rules for the Person screen.
+ *
+ * The screen shows every author of a reference fully expanded, so vertical space is
+ * the scarce resource: person_editor.cgi fits an author's whole form in a couple of
+ * lines and this has to as well, or a twelve-author paper becomes a scroll marathon.
+ * Bootstrap's default form spacing is far too generous for that, so it is overridden
+ * here in one place rather than with inline styles on every control. */
+
+/* .App sets text-align: center on the whole app (App.css), which every descendant
+ * inherits; .Col-general quietly undoes it with text-align: left, which is why
+ * dropping that class to normalise padding left this screen centred. Undo it once
+ * here for the whole screen instead of per-column. */
+.biblio-person {
+  text-align: left;
+}
+
+/* The count and the create checkbox lead every author line, so they are fixed-width
+ * columns rather than content-sized: "12 possible" and "0 possible" must put the
+ * author's name at the same x position, or the list reads as ragged. */
+.biblio-person-slot-possible {
+  flex: 0 0 7.5rem;
+}
+
+.biblio-person-slot-create {
+  flex: 0 0 5.5rem;
+}
+
+/* Labels for the reference context lines (title / cross references / main pdfs).
+ * Fixed width so the three values line up under each other, and muted so the label
+ * recedes behind the thing it names.
+ *
+ * Note for anyone tempted to use <em> here: App.css restyles em as a search
+ * highlight (yellow background, upright), so it is not available as emphasis. */
+.biblio-person-reflabel {
+  display: inline-block;
+  min-width: 8rem;
+  color: #666;
+  font-size: 0.8rem;
+  vertical-align: top;
+}
+
+.biblio-person-author-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Buttons that sit on a single-line row (remove, on an author's header line and on a
+ * person-only row) have to match that line's density, not Bootstrap's default button
+ * padding -- even size="sm" is tall enough to push the row open and add separation
+ * the surrounding rows do not have.
+ *
+ * Deliberately not `.biblio-person-author .btn`: that would also catch "clear
+ * selection" and "confirm selection" inside the expanded suggestions panel, which are
+ * real actions on their own line and should stay full size. */
+.biblio-person-author-head .btn,
+.biblio-person-stub-row .btn {
+  padding: 0 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.biblio-person .form-control,
+.biblio-person .form-control-sm {
+  padding: 0.1rem 0.3rem;
+  height: auto;
+  font-size: 0.85rem;
+}
+
+.biblio-person textarea.form-control {
+  line-height: 1.2;
+}
+
+/* Bootstrap rows carry negative side margins and each column its own gutter; at this
+ * density the gutters are most of the width. */
+.biblio-person .row {
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0.15rem;
+}
+
+.biblio-person .row > [class*='col'] {
+  padding-left: 0.15rem;
+  padding-right: 0.15rem;
+}
+
+/* The gap between the screen's four top-level sections -- reference header, people
+ * who are not authors, authors, institutions. Much larger than the rhythm inside a
+ * section, which stays tight; the contrast is what makes the sections read as
+ * separate rather than as one long list.
+ *
+ * Top margin only, on each section, so the gaps stay even when a section is absent:
+ * the stubs list does not render at all when there are none, and Authors then
+ * supplies its own spacing from the header. */
+.biblio-person-section {
+  margin-top: 2rem;
+}
+
+.biblio-person-staged-inst {
+  border: 1px solid #ddd;
+  padding: 0.25rem 0.35rem;
+  margin-bottom: 0.3rem;
+}
+
+.biblio-person-author {
+  border: 1px solid #ccc;
+  padding: 0.3rem 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+/* The raw affiliation and the "N possible" toggle are reference material, not the
+ * thing being filled in, so they recede. */
+.biblio-person-muted {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+/* The possible-people count is collapsed by default and acts as a disclosure
+ * control, so it has to read as clickable without being a full button. */
+.biblio-person-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #06c;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.biblio-person-toggle:disabled {
+  color: #999;
+  cursor: default;
+}
+
+/* The typeahead is a third-party control; shrink its input to match the rest. */
+.biblio-person .rbt-input-multi,
+.biblio-person .rbt-input-main {
+  font-size: 0.85rem;
+  padding: 0.1rem 0.3rem;
+  min-height: 0;
+}
+
+.biblio-person .alert {
+  padding: 0.25rem 0.5rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.biblio-person .form-check {
+  min-height: 0;
+  margin-bottom: 0.05rem;
+}
+
+.biblio-person .form-check-label {
+  font-size: 0.85rem;
+}

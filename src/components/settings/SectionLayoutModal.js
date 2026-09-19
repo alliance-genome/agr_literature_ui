@@ -370,9 +370,13 @@ const SectionLayoutModal = ({
             </Alert>
           )}
 
+          {/* The timestamp / curator clause is gated on the same condition as the
+              fieldset itself -- otherwise a page without those toggles describes a
+              control that is not on the screen. */}
           <p className="text-muted">
-            Drag and resize the sections to arrange them, choose which sections are visible, and set
-            the timestamp / curator display. Changes apply to the {pageLabel.toLowerCase()} as you
+            Drag and resize the sections to arrange them, choose which sections are visible
+            {(onToggleTimestamps || onToggleCurator) ? ', and set the timestamp / curator display' : ''}.
+            {' '}Changes apply to the {pageLabel.toLowerCase()} as you
             make them. Save them
             as a named entry below to reuse later; your default is applied automatically.
           </p>
@@ -439,7 +443,13 @@ const SectionLayoutModal = ({
             </div>
           </Form.Group>
 
-          {/* Metadata toggles */}
+          {/* Metadata toggles.
+              Only for pages that have per-field timestamp / curator metadata to show.
+              A page without it (the Biblio Person screen) passes neither handler, and
+              rendering the switches anyway would put two controls on screen that look
+              live and change nothing. The saved payload still carries the two values
+              either way, so a layout saved on one page stays readable on another. */}
+          {(onToggleTimestamps || onToggleCurator) ? (
           <Form.Group className="mb-4">
             <Form.Label>Metadata</Form.Label>
             <div className="d-flex flex-wrap align-items-center" style={{ gap: '0.5rem 2.5rem' }}>
@@ -459,6 +469,7 @@ const SectionLayoutModal = ({
               />
             </div>
           </Form.Group>
+          ) : null}
 
           {/* Create new settings */}
           <Form.Group className="mb-4">
