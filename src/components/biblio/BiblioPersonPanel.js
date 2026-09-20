@@ -311,12 +311,16 @@ const BiblioPersonPanel = ({
           {/* One button that names exactly what it is about to do, rather than a button
               per status: four statuses times commit-or-not is a matrix, and it leaves
               "commit nothing but set the status" with nowhere to live. */}
+          {/* Title on the wrapper, not the button. A disabled control swallows pointer
+              events, so a title on it renders no tooltip in Firefox or Safari -- which
+              is precisely the state this message exists for. ReorderAuthorsButton in
+              BiblioEditor already wraps for this reason. */}
+          <span title={blockedReason
+            || (invalidCount > 0 ? `Fix the problems marked below first${hiddenHint}` : '')}>
           <Button
             variant="primary"
             disabled={committing || (plannedCount === 0 && !statusChanged)
               || invalidCount > 0 || !!blockedReason}
-            title={blockedReason
-              || (invalidCount > 0 ? `Fix the problems marked below first${hiddenHint}` : '')}
             onClick={onCommit}
           >
             {committing
@@ -331,6 +335,7 @@ const BiblioPersonPanel = ({
                 </>
               )}
           </Button>
+          </span>
           <Button variant="outline-secondary" disabled={committing} onClick={onBack}>
             <FontAwesomeIcon icon={faTimes} /> Back to editor
           </Button>
@@ -356,6 +361,17 @@ const BiblioPersonPanel = ({
           button just ran, so they belong beside it rather than wherever the curator has
           dragged a section to. */}
       {blockedReason ? <Alert variant="warning">{blockedReason}</Alert> : null}
+
+      {/* The only blocked state with nothing else on screen to explain it. When Authors
+          is visible its per-author errors are right there in red; hidden, the button
+          just greys out while still reading "Commit 3". */}
+      {invalidCount > 0 && authorsHidden ? (
+        <Alert variant="danger">
+          Commit is blocked by {invalidCount === 1 ? 'a problem' : `${invalidCount} problems`} in
+          the Authors section, which is hidden. Show it from the settings gear to see
+          {invalidCount === 1 ? ' it' : ' them'}.
+        </Alert>
+      ) : null}
 
       {commitSummary ? (
         <Alert variant={commitSummary.failed > 0 || commitSummary.statusUnsaved ? 'warning' : 'success'}>
