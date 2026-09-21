@@ -1,4 +1,5 @@
 // import { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import HelpDocLink, { HELP_DOC_URLS } from '../HelpDocLink';
 
@@ -1661,6 +1662,26 @@ const ReorderAuthorsButton = () => {
     </span>);
 }
 
+// Sibling of ReorderAuthorsButton, and deliberately NOT gated on unsaved edits the way
+// that one is. Reorder has to seed itself from referenceJsonLive and send an ordering
+// payload naming every author, so a half-saved state corrupts it. The person screen
+// reads only author identity and writes author.person_curie server-side, then refetches
+// -- an unsaved citation edit cannot make that wrong, and blocking on it would strand a
+// curator who has one field dirty.
+const PersonAuthorsButton = () => {
+  const history = useHistory();
+  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  return (
+    // Margin on the wrapper, not a spacer between the two: ReorderAuthorsButton's span is
+    // its tooltip target and must stay tight to its own button.
+    <span title="Link these authors to people, or create people from them"
+      style={{ marginLeft: '0.75rem' }}>
+      <Button size="sm" variant="outline-secondary"
+        onClick={() => history.push('/Biblio/?action=person&referenceCurie=' + referenceCurie)}
+        >person</Button>
+    </span>);
+}
+
 export const AuthorExpandToggler = ({displayOrEditor}) => {
   const dispatch = useDispatch();
   const authorExpand = useSelector(state => state.biblio.authorExpand);
@@ -1704,6 +1725,7 @@ export const AuthorExpandToggler = ({displayOrEditor}) => {
           onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
         />
         {(displayOrEditor === 'editor') ? <ReorderAuthorsButton /> : null}
+        {(displayOrEditor === 'editor') ? <PersonAuthorsButton /> : null}
       </Col>
     </Row>);
 } // const AuthorExpandToggler
