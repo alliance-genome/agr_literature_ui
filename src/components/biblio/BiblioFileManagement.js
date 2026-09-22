@@ -875,13 +875,12 @@ const CONVERTED_FILE_CLASSES = {
   ]
 };
 
-// All converted file classes (for filtering). 'tei' stays listed so tei files
-// are kept out of the file table, even though tei links are no longer rendered
-// in the Converted Files column.
+// All converted file classes (for filtering). Raw tei files no longer exist —
+// deleted from the DB and S3 (SCRUM-5954); only their derived markdown
+// (_tei-suffixed converted rows) remains.
 const ALL_CONVERTED_FILE_CLASSES = [
   ...CONVERTED_FILE_CLASSES.main,
-  ...CONVERTED_FILE_CLASSES.supplement,
-  'tei'
+  ...CONVERTED_FILE_CLASSES.supplement
 ];
 
 // Display labels for converted file types
@@ -902,7 +901,7 @@ const CONVERTED_FILE_LABELS = {
 // these yields the source display_name used as the grouping key.
 const METHOD_SUFFIXES = ['_grobid', '_docling', '_marker', '_merged', '_nxml', '_tei'];
 
-// Create a mapping of base display_name to converted files (markdown and TEI)
+// Create a mapping of base display_name to converted markdown files.
 // Converted files have names like "PMC123_grobid" but we need to map to "PMC123"
 export const getConvertedFilesMap = (referenceFiles) => {
   const map = {};
@@ -942,8 +941,8 @@ const getMethodSuffix = (displayName) =>
   METHOD_SUFFIXES.find((suffix) => displayName.endsWith(suffix)) || null;
 
 // Ordered {file, label} entries for the Converted Files column of a row,
-// in merged, grobid, docling, marker order. Raw tei files are never included,
-// but tei-derived markdown (_tei suffix) is, on main/supplement rows.
+// in merged, grobid, docling, marker order. Legacy tei-derived markdown
+// (_tei suffix) is included on main/supplement rows.
 // A main PDF and an nXML file often share the same display_name, so the class
 // lists alone would show the same conversion on both rows; the _nxml suffix
 // pins nXML-derived markdown to its nXML source row and keeps it off the
@@ -1212,7 +1211,7 @@ const FileEditor = ({ onFileStatusChange }) => {
   };
           
   let rowReferencefileElements = [];
-  // Filter out all converted files (TEI and markdown) from the main display
+  // Filter out all converted markdown files from the main display
   const canDisplayImages = referenceJsonLive["effective_image_permission"]?.["can_display_images"] === true;
   const hasReferenceFileAccess = (referenceFile) => (
     referenceJsonLive["copyright_license_open_access"] === true ||

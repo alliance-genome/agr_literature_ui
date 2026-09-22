@@ -101,21 +101,10 @@ describe('getConvertedFileEntries', () => {
     ]);
   });
 
-  test('does not include raw tei files (tei is no longer displayed)', () => {
-    const merged = makeFile('PMC123_merged', 'converted_merged_main');
-    const tei = makeFile('PMC123', 'tei', 'tei');
-    const mainRow = makeFile('PMC123', 'main', 'pdf');
-    const map = getConvertedFilesMap([mainRow, merged, tei]);
-    expect(getConvertedFileEntries(mainRow, map)).toEqual([
-      { file: merged, label: 'merged' },
-    ]);
-  });
-
-  test('includes tei-derived markdown (_tei suffix) on the main row', () => {
+  test('includes legacy tei-derived markdown (_tei suffix) on the main row', () => {
     const teiMd = makeFile('PMC123_tei', 'converted_merged_main');
-    const tei = makeFile('PMC123', 'tei', 'tei');
     const mainRow = makeFile('PMC123', 'main', 'pdf');
-    const map = getConvertedFilesMap([mainRow, tei, teiMd]);
+    const map = getConvertedFilesMap([mainRow, teiMd]);
     expect(getConvertedFileEntries(mainRow, map)).toEqual([
       { file: teiMd, label: 'merged' },
     ]);
