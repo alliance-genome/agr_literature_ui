@@ -892,7 +892,7 @@ const TopicEntityCreate = () => {
           topic
         </Col>
         <Col className="div-grey-border" sm="1">
-          checkbox / data context
+          data context / novelty
         </Col>
         <Col className="div-grey-border" sm="1">
           entity type
