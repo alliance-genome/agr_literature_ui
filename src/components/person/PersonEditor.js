@@ -198,6 +198,11 @@ const FieldLine = ({ label, children, ts, trail, status, error, onDismissError }
                   flex: 1,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  // Explicit: this div is wider than its text, so without it the
+                  // text-align: center that .App sets app-wide is inherited and the
+                  // label floats mid-column -- obvious as soon as one of the two
+                  // halves is toggled off and the slack appears.
+                  textAlign: 'right',
                 }}
               >
                 {metaContent}

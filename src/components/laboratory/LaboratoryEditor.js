@@ -161,7 +161,11 @@ const FieldLine = ({ label, children, ts, trail, status, error, onDismissError }
           </div>
           {showMeta && (
             <div style={{ width: META_COL_WIDTH, flexShrink: 0, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div style={{ ...tsStyle, whiteSpace: 'nowrap', paddingTop: 8, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ ...tsStyle, whiteSpace: 'nowrap', paddingTop: 8, flex: 1,
+                overflow: 'hidden', textOverflow: 'ellipsis',
+                // See PersonEditor: without this the div inherits .App's
+                // text-align: center and the label floats mid-column.
+                textAlign: 'right' }}>
                 {metaContent}
               </div>
               <div style={{ width: TRASH_SLOT_WIDTH, paddingTop: 4, display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>

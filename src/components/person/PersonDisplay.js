@@ -44,7 +44,8 @@ const FieldRow = ({ label, children, ts }) => (
           {children ?? <span style={muted}>—</span>}
         </div>
         {ts && (
-          <span style={{ ...tsStyle, whiteSpace: 'nowrap', paddingTop: 2 }}>{ts}</span>
+          <span style={{ ...tsStyle, whiteSpace: 'nowrap', paddingTop: 2, marginLeft: 'auto',
+            textAlign: 'right' }}>{ts}</span>
         )}
       </div>
     </div>
