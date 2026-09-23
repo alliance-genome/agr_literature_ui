@@ -18,6 +18,7 @@ import Spinner from 'react-bootstrap/Spinner';
 
 const BiblioPersonStubs = ({
   stubs, availableAuthors, linkingStub, removingStub, onLinkStub, onRemoveStub, disabled,
+  metaLabel, metaSlotClass,
 }) => {
   if (stubs.length === 0) return null;
 
@@ -27,7 +28,7 @@ const BiblioPersonStubs = ({
           surrounds it, and a margin here too would double the gap at the top. */}
       <Row>
         <Col sm="12">
-          <strong>People on this reference who are not an author</strong>{' '}
+          <strong>People on this Reference who are not an Author</strong>{' '}
           <span className="biblio-person-muted">
             — pick the author each one is, and the two are joined straight away.
           </span>
@@ -37,7 +38,7 @@ const BiblioPersonStubs = ({
       {stubs.map((stub) => (
         <div key={stub.author_id} className="biblio-person-author biblio-person-stub-row">
           <Row>
-            <Col sm="5">
+            <Col sm="4">
               {stub.curie ? (
                 <a href={`/person?personCurie=${encodeURIComponent(stub.curie)}`}
                   target="_blank" rel="noopener noreferrer">{stub.curie}</a>
@@ -54,7 +55,7 @@ const BiblioPersonStubs = ({
               )}
               {stub.name ? <span> ({stub.name})</span> : null}
             </Col>
-            <Col sm="5">
+            <Col sm="4">
               {/* Also disabled until the curie resolves. The link is a PATCH carrying
                   person_curie -- person_id is never accepted -- so until it lands there
                   is nothing to send, and an enabled select would take a choice, snap
@@ -106,6 +107,17 @@ const BiblioPersonStubs = ({
                     {removingStub === stub.author_id ? 'removing…' : 'remove'}
                   </Button>
                 )}
+            </Col>
+            {/* Last on the row, matching the author section and the person and
+                laboratory screens. */}
+            {/* Same fixed slot as the author rows, so the two sections line up with
+                each other as well as within themselves. A Col is already a flex item,
+                so the class's flex basis overrides the Bootstrap width. */}
+            <Col
+              className={`biblio-person-muted ${metaSlotClass}`}
+              title={(metaLabel && metaLabel(stub.updated_by, stub.date_updated)) || ''}
+            >
+              {metaLabel ? metaLabel(stub.updated_by, stub.date_updated) : null}
             </Col>
           </Row>
           {stub.error ? (

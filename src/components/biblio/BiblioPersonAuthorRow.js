@@ -104,7 +104,7 @@ const ComparePanel = ({ person, fields }) => {
 const BiblioPersonAuthorRow = ({
   author, draft, staged, matches, matchState, selectedPersonDetail,
   errors, result, disabled, matchesOpen, showAllMatches, unlinking,
-  onToggleMatches, onToggleShowAll, onChange, onRemoveLink,
+  onToggleMatches, onToggleShowAll, onChange, onRemoveLink, metaLabel, metaSlotClass,
 }) => {
   // isLinked, not the curie: an author loaded from the reference carries person_id but
   // no curie until it is resolved, and treating that gap as "unlinked" is what made a
@@ -218,6 +218,17 @@ const BiblioPersonAuthorRow = ({
             {draft.selectedPerson.name ? `(${draft.selectedPerson.name})` : ''}{' '}
             <button type="button" className="biblio-person-toggle"
               disabled={disabled} onClick={onToggleMatches}>change</button>
+          </span>
+        ) : null}
+
+        {/* Last on the line, like the person and laboratory screens: who last touched
+            this author row and when. Hidden entirely when both toggles are off. */}
+        {metaLabel && metaLabel(author.updated_by, author.date_updated) ? (
+          <span
+            className={`biblio-person-muted ${metaSlotClass}`}
+            title={metaLabel(author.updated_by, author.date_updated)}
+          >
+            {metaLabel(author.updated_by, author.date_updated)}
           </span>
         ) : null}
       </div>
