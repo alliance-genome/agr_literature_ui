@@ -19,6 +19,7 @@ import BiblioPersonInstitutionStaging from './BiblioPersonInstitutionStaging';
 import BiblioPersonAuthorRow from './BiblioPersonAuthorRow';
 import BiblioPersonStubs from './BiblioPersonStubs';
 import SectionLayoutModal from '../settings/SectionLayoutModal';
+import { metaLabelFor } from '../../utils/recordMeta';
 import {
   SECTION_DEFS,
   DEFAULT_LAYOUT,
@@ -74,6 +75,21 @@ const BiblioPersonPanel = ({
   // ---- layout / visibility state (restored from saved prefs) ----
   const [activeLayout, setActiveLayout] = useState(null);
   const [hiddenSections, setHiddenSections] = useState(() => defaultHiddenSections(effectiveMod));
+  // Who last touched each author row and when, same two toggles the person and
+  // laboratory screens carry. Default on, as they do.
+  const [showTimestamps, setShowTimestamps] = useState(true);
+  const [showCurator, setShowCurator] = useState(true);
+  const metaLabel = metaLabelFor({ showCurator, showTimestamps });
+  // The slot only reserves room for what is actually being shown. Derived here beside
+  // the label so the two can never disagree about which halves are on.
+  // With neither toggle on there is no slot at all -- not a narrow empty one. The
+  // author row happened to get this right by testing the label, but the stub row
+  // rendered its column unconditionally and kept 8.5rem of empty space on every row.
+  const showMeta = showCurator || showTimestamps;
+  const metaSlotClass = `biblio-person-slot-meta ${
+    showCurator && showTimestamps ? 'biblio-person-slot-meta-both'
+      : showCurator ? 'biblio-person-slot-meta-curator'
+        : 'biblio-person-slot-meta-time'}`;
   // Once the user or a loaded setting decides visibility, stop letting the MOD default
   // override it.
   const visibilityDecidedRef = useRef(false);
@@ -90,9 +106,8 @@ const BiblioPersonPanel = ({
       setHiddenSections(new Set(prefs.hidden));
       visibilityDecidedRef.current = true;
     }
-    // showTimestamps / showCurator are deliberately ignored: this screen has no
-    // per-field metadata to toggle, so a layout saved elsewhere carrying them applies
-    // its arrangement here and drops the rest.
+    if (typeof prefs.showTimestamps === 'boolean') setShowTimestamps(prefs.showTimestamps);
+    if (typeof prefs.showCurator === 'boolean') setShowCurator(prefs.showCurator);
   };
 
   const toggleSection = (id) => {
@@ -198,6 +213,9 @@ const BiblioPersonPanel = ({
       onLinkStub={onLinkStub}
       onRemoveStub={onRemoveStub}
       disabled={committing}
+      metaLabel={metaLabel}
+      metaSlotClass={metaSlotClass}
+      showMeta={showMeta}
     />
   );
 
@@ -234,6 +252,9 @@ const BiblioPersonPanel = ({
           onRemoveLink={() => onRemoveLink(author.author_id)}
           onToggleShowAll={() => onToggleShowAll(author.author_id)}
           onChange={(patch) => onDraftChange(author.author_id, patch)}
+          metaLabel={metaLabel}
+          metaSlotClass={metaSlotClass}
+          showMeta={showMeta}
         />
       ))}
     </div>
@@ -281,7 +302,7 @@ const BiblioPersonPanel = ({
           a curator must never be able to hide or reorder the button that writes. */}
       <Row className="biblio-person-header">
         <Col sm="12" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <strong style={{ flex: 1, whiteSpace: 'nowrap' }}>Author → person · {referenceCurie}</strong>
+          <strong style={{ flex: 1, whiteSpace: 'nowrap' }}>Author → Person · {referenceCurie}</strong>
           {/* Enabled, and not misleading for being so: this dropdown never writes on its
               own in the finished design either -- it stages the intended status, the way
               every other dropdown and checkbox on this screen stages something. The
@@ -340,8 +361,6 @@ const BiblioPersonPanel = ({
             <FontAwesomeIcon icon={faTimes} /> Back to editor
           </Button>
 
-          {/* No onToggleTimestamps / onToggleCurator: this screen has no per-field
-              metadata, and the modal hides that group when neither is supplied. */}
           <SectionLayoutModal
             sectionDefs={SECTION_DEFS}
             defaultLayout={DEFAULT_LAYOUT}
@@ -351,8 +370,15 @@ const BiblioPersonPanel = ({
             // records reads as an edit to a record rather than to the layout.
             pageLabel="Person screen"
             onApplyPrefs={applyPrefs}
-            current={{ layout: activeLayout, hidden: Array.from(hiddenSections) }}
+            current={{
+              layout: activeLayout,
+              hidden: Array.from(hiddenSections),
+              showTimestamps,
+              showCurator,
+            }}
             onToggleSection={toggleSection}
+            onToggleTimestamps={setShowTimestamps}
+            onToggleCurator={setShowCurator}
           />
         </Col>
       </Row>

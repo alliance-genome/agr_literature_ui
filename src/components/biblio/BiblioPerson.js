@@ -91,6 +91,12 @@ const BiblioPerson = () => {
           name: '',
           resolveFailed: false,
           error: '',
+          // Carried through explicitly, like every other field here. This is a
+          // projection rather than a spread of the author row, so anything the UI
+          // needs has to be named -- these two were added to the display later and
+          // silently rendered nothing until they were listed here.
+          updated_by: row.updated_by,
+          date_updated: row.date_updated,
         }))
       : []
   ));

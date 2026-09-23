@@ -39,6 +39,44 @@
   vertical-align: top;
 }
 
+/* The who/when at the end of each row.
+ *
+ * Fixed width, because updated_by is not a uniform string -- an AGRKB curie on a row a
+ * curator touched, a script name like "pubmed_search_new_references" on one an import
+ * touched -- so a content-sized slot makes every row a different shape.
+ *
+ * But fixed at WHICH width depends on what the toggles are showing: reserving room for
+ * both halves when only one is on leaves a column of empty space on every row. The
+ * widths below are sized to the longest real content of each combination -- the
+ * timestamp is a constant 19 characters, the curator is up to ~28 -- so the slot is
+ * only ever as wide as it has to be. Anything longer still truncates, with the whole
+ * value kept on the element's title. */
+.biblio-person-slot-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Right-justified, to match what the person and laboratory screens do. The slot is
+     wider than its text, and .biblio-person sets text-align: left, so without this the
+     label sits at the left of its own column and lines up with nothing.
+     margin-left: auto is for the stub rows, where no flex: 1 sibling exists to push
+     the slot to the end of the line; on the author header one already does, and auto
+     is a no-op there. */
+  margin-left: auto;
+  text-align: right;
+}
+
+.biblio-person-slot-meta-both {
+  flex: 0 0 21rem;
+}
+
+.biblio-person-slot-meta-curator {
+  flex: 0 0 12rem;
+}
+
+.biblio-person-slot-meta-time {
+  flex: 0 0 8.5rem;
+}
+
 .biblio-person-author-head {
   display: flex;
   align-items: center;
