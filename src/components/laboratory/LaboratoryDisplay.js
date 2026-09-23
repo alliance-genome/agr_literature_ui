@@ -14,22 +14,8 @@ import {
   defaultHiddenSections,
 } from './laboratorySections';
 import '../sectionGrid.css';
+import { formatTimestamp, metaLabelFor } from '../../utils/recordMeta';
 
-const formatTimestamp = (s) => {
-  if (!s) return '';
-  try {
-    const str = String(s);
-    const d = new Date(str);
-    if (Number.isNaN(d.getTime())) return str;
-    const hasTime = /T?\d{2}:\d{2}/.test(str);
-    if (hasTime) {
-      return d.toISOString().slice(0, 19).replace('T', ' ');
-    }
-    return d.toISOString().slice(0, 10);
-  } catch {
-    return String(s);
-  }
-};
 
 const muted = { color: '#888' };
 const labelColStyle = {
@@ -166,12 +152,7 @@ const LaboratoryDisplay = ({ laboratory: laboratoryProp }) => {
   };
 
   // Compose the per-field metadata string honoring the two toggles independently.
-  const metaLabel = (by, date) => {
-    const parts = [];
-    if (showCurator && by) parts.push(by);
-    if (showTimestamps && date) parts.push(formatTimestamp(date));
-    return parts.length ? parts.join(' · ') : null;
-  };
+  const metaLabel = metaLabelFor({ showCurator, showTimestamps });
 
   if (!laboratory) return null;
 

@@ -25,6 +25,7 @@ import {
   defaultHiddenSections,
 } from './personSections';
 import '../sectionGrid.css';
+import { formatTimestamp, metaLabelFor } from '../../utils/recordMeta';
 
 // person_lineage.relationship is a vocabulary term: read shape is the object
 // {value,label,is_obsolete} (or null), write is the term id (int). Keep it a STRING in
@@ -35,21 +36,6 @@ const relationshipValue = (rel) => {
   return v == null || v === '' ? '' : String(v);
 };
 
-const formatTimestamp = (s) => {
-  if (!s) return '';
-  try {
-    const str = String(s);
-    const d = new Date(str);
-    if (Number.isNaN(d.getTime())) return str;
-    const hasTime = /T?\d{2}:\d{2}/.test(str);
-    if (hasTime) {
-      return d.toISOString().slice(0, 19).replace('T', ' ');
-    }
-    return d.toISOString().slice(0, 10);
-  } catch {
-    return String(s);
-  }
-};
 
 // Pull a human-readable message out of an Axios error.
 const errDetail = (err) => {
@@ -398,12 +384,7 @@ const PersonEditor = ({ person }) => {
   };
 
   // Compose the per-field metadata string honoring the two toggles independently.
-  const metaLabel = (by, date) => {
-    const parts = [];
-    if (showCurator && by) parts.push(by);
-    if (showTimestamps && date) parts.push(formatTimestamp(date));
-    return parts.length ? parts.join(' · ') : null;
-  };
+  const metaLabel = metaLabelFor({ showCurator, showTimestamps });
 
   // ---- person scalar/toggle save-on-blur ----
   // Editable person scalars are controlled here; each saves on blur (text) or change
