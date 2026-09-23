@@ -82,6 +82,10 @@ const BiblioPersonPanel = ({
   const metaLabel = metaLabelFor({ showCurator, showTimestamps });
   // The slot only reserves room for what is actually being shown. Derived here beside
   // the label so the two can never disagree about which halves are on.
+  // With neither toggle on there is no slot at all -- not a narrow empty one. The
+  // author row happened to get this right by testing the label, but the stub row
+  // rendered its column unconditionally and kept 8.5rem of empty space on every row.
+  const showMeta = showCurator || showTimestamps;
   const metaSlotClass = `biblio-person-slot-meta ${
     showCurator && showTimestamps ? 'biblio-person-slot-meta-both'
       : showCurator ? 'biblio-person-slot-meta-curator'
@@ -211,6 +215,7 @@ const BiblioPersonPanel = ({
       disabled={committing}
       metaLabel={metaLabel}
       metaSlotClass={metaSlotClass}
+      showMeta={showMeta}
     />
   );
 
@@ -249,6 +254,7 @@ const BiblioPersonPanel = ({
           onChange={(patch) => onDraftChange(author.author_id, patch)}
           metaLabel={metaLabel}
           metaSlotClass={metaSlotClass}
+          showMeta={showMeta}
         />
       ))}
     </div>

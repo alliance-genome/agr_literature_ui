@@ -18,9 +18,11 @@ import Spinner from 'react-bootstrap/Spinner';
 
 const BiblioPersonStubs = ({
   stubs, availableAuthors, linkingStub, removingStub, onLinkStub, onRemoveStub, disabled,
-  metaLabel, metaSlotClass,
+  metaLabel, metaSlotClass, showMeta,
 }) => {
   if (stubs.length === 0) return null;
+
+  const stubMeta = (stub) => (metaLabel ? metaLabel(stub.updated_by, stub.date_updated) : null);
 
   return (
     <div className="biblio-person-section">
@@ -108,17 +110,20 @@ const BiblioPersonStubs = ({
                   </Button>
                 )}
             </Col>
-            {/* Last on the row, matching the author section and the person and
-                laboratory screens. */}
-            {/* Same fixed slot as the author rows, so the two sections line up with
-                each other as well as within themselves. A Col is already a flex item,
-                so the class's flex basis overrides the Bootstrap width. */}
-            <Col
-              className={`biblio-person-muted ${metaSlotClass}`}
-              title={(metaLabel && metaLabel(stub.updated_by, stub.date_updated)) || ''}
-            >
-              {metaLabel ? metaLabel(stub.updated_by, stub.date_updated) : null}
-            </Col>
+            {/* Last on the row, in the same fixed slot the author rows use, so the two
+                sections line up with each other as well as within themselves. A Col is
+                already a flex item, so the class's flex basis overrides the Bootstrap
+                width. Rendered on the toggles rather than on whether this row has a
+                value, so every row keeps the same shape -- and not at all when both
+                toggles are off, which used to leave an empty 8.5rem column here. */}
+            {showMeta ? (
+              <Col
+                className={`biblio-person-muted ${metaSlotClass}`}
+                title={stubMeta(stub) || ''}
+              >
+                {stubMeta(stub)}
+              </Col>
+            ) : null}
           </Row>
           {stub.error ? (
             <Alert variant="danger">{stub.error}</Alert>

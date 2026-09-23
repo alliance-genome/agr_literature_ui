@@ -1,8 +1,27 @@
 import { formatTimestamp, metaLabelFor } from './recordMeta';
 
 describe('formatTimestamp', () => {
+  // Every expectation here is timezone-independent by design: the API sends naive
+  // timestamps with no offset, so the only correct rendering is the one it sent.
+  // Run the suite under TZ=America/Los_Angeles to check -- an implementation that
+  // round-trips through Date shifts these by the viewer's offset and fails.
   test('renders a datetime as YYYY-MM-DD HH:MM:SS', () => {
     expect(formatTimestamp('2026-09-22T18:42:55.226785')).toBe('2026-09-22 18:42:55');
+  });
+
+  test('renders the same value whatever the viewer timezone', () => {
+    // The naive string is what the server recorded. Converting it by the reader's
+    // offset invents a different moment -- and rolls the date over near midnight.
+    expect(formatTimestamp('2026-09-22T23:30:00')).toBe('2026-09-22 23:30:00');
+    expect(formatTimestamp('2026-09-22T00:30:00')).toBe('2026-09-22 00:30:00');
+  });
+
+  test('accepts a space separator as well as T', () => {
+    expect(formatTimestamp('2026-09-22 18:42:55')).toBe('2026-09-22 18:42:55');
+  });
+
+  test('accepts a time without seconds', () => {
+    expect(formatTimestamp('2026-09-22T18:42')).toBe('2026-09-22 18:42');
   });
 
   test('renders a bare date without a time', () => {

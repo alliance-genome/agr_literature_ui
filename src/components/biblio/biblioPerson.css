@@ -55,6 +55,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Right-justified, to match what the person and laboratory screens do. The slot is
+     wider than its text, and .biblio-person sets text-align: left, so without this the
+     label sits at the left of its own column and lines up with nothing.
+     margin-left: auto is for the stub rows, where no flex: 1 sibling exists to push
+     the slot to the end of the line; on the author header one already does, and auto
+     is a no-op there. */
+  margin-left: auto;
+  text-align: right;
 }
 
 .biblio-person-slot-meta-both {

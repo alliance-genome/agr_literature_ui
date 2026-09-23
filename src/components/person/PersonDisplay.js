@@ -16,7 +16,6 @@ import {
 import '../sectionGrid.css';
 import { formatTimestamp, metaLabelFor } from '../../utils/recordMeta';
 
-
 const muted = { color: '#888' };
 const labelColStyle = {
   width: 200,
