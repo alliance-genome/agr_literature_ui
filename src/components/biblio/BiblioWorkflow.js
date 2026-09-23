@@ -102,6 +102,17 @@ const orderCurationRows = (rows, order) => {
 };
 
 
+// With getRowId set, a refetched rowData array is applied as an in-place UPDATE
+// of the existing row nodes, and AG Grid then re-renders only the cells whose
+// own value changed. Cells whose renderer params depend on ANOTHER field are
+// left with stale params: the Curation Tag dropdown and the Note placeholder
+// are enabled by curation_status, so after a curator set a topic's first status
+// and the table refetched, the tag dropdown stayed disabled until a page reload
+// (reported on SCRUM-6518; the Whole Paper grid has no getRowId, so it was fine).
+// Force every cell to re-evaluate its params whenever the row data is updated.
+export const refreshCellsOnRowDataUpdated = (event) => { event.api.refreshCells({ force: true }); };
+
+
 const BiblioWorkflow = () => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
@@ -1860,6 +1871,7 @@ const BiblioWorkflow = () => {
             }}
             popupParent={document.body}
             onCellValueChanged={onCellValueChanged}
+            onRowDataUpdated={refreshCellsOnRowDataUpdated}
             onGridReady={onGridReady}
           />
         </div>
