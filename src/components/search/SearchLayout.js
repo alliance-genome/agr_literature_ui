@@ -13,6 +13,7 @@ import SearchOptions from "./SearchOptions";
 import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
 import AdvancedTopicQueryBuilder from './advanced/AdvancedTopicQueryBuilder';
+import SearchDisplaySettings from './settings/SearchDisplaySettings';
 import { compileAdvancedQuery, flattenAdvancedForGrid } from './advanced/advancedQueryModel';
 import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
 import TetGridErrorBoundary from '../refs_tet_validation/TetGridErrorBoundary';
@@ -415,7 +416,7 @@ const SearchLayout = () => {
                                     </div>
                                 )}
                                 {referenceIds.length > 0 && (
-                                    <div className="tetv-view-switchbar">
+                                    <div className="tetv-view-switchbar" style={{ display: 'flex', alignItems: 'center' }}>
                                         <ToggleButtonGroup
                                             type="radio"
                                             name="tetv-view"
@@ -431,6 +432,11 @@ const SearchLayout = () => {
                                                 <FontAwesomeIcon icon={faThLarge} /> Topic grid
                                             </ToggleButton>
                                         </ToggleButtonGroup>
+                                        {/* Card display profile (SCRUM-6512): far right of the
+                                            switchbar, separate from the saved-search controls. */}
+                                        <div style={{ marginLeft: 'auto' }}>
+                                            <SearchDisplaySettings />
+                                        </div>
                                     </div>
                                 )}
                                 <div style={{ display: view === 'list' ? 'block' : 'none' }}>

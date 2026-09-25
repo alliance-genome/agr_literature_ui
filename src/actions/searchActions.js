@@ -44,6 +44,7 @@ export const SEARCH_SET_ADVANCED_TOPIC_QUERY = 'SEARCH_SET_ADVANCED_TOPIC_QUERY'
 export const SEARCH_SET_ADVANCED_FACETS_VOCAB = 'SEARCH_SET_ADVANCED_FACETS_VOCAB';
 export const SEARCH_SET_GRID_PREFERENCES = 'SEARCH_SET_GRID_PREFERENCES';
 export const SEARCH_APPLY_GRID_PREFERENCES = 'SEARCH_APPLY_GRID_PREFERENCES';
+export const SEARCH_SET_DISPLAY_PREFS = 'SEARCH_SET_DISPLAY_PREFS';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions","data_novelty"];
 
@@ -737,5 +738,14 @@ export const setGridPreferences = (prefs) => ({
 
 export const applyGridPreferences = (prefs) => ({
   type: SEARCH_APPLY_GRID_PREFERENCES,
+  payload: prefs
+});
+
+// Search-card display profile (SCRUM-6512): section order/visibility, per-prefix
+// xref selection, icon visibility and the author->person link. Lives in its own
+// person_settings namespace ('search_display'), deliberately separate from saved
+// searches — a display profile says how cards LOOK, not what to search for.
+export const setSearchDisplayPrefs = (prefs) => ({
+  type: SEARCH_SET_DISPLAY_PREFS,
   payload: prefs
 });

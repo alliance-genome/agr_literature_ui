@@ -175,7 +175,7 @@ const SectionLayoutModal = ({
       (s) => (s.setting_name || s.name || '').trim().toLowerCase() === clean.toLowerCase()
     );
     if (exists) {
-      notify(`Settings named "${clean}" already exist.`, 'warning');
+      notify(`A layout named "${clean}" already exists.`, 'warning');
       return;
     }
     try {
@@ -183,10 +183,10 @@ const SectionLayoutModal = ({
       await load();
       if (created?.person_setting_id) setSelectedSettingId(created.person_setting_id);
       setNewName('');
-      notify(`Settings "${clean}" created.`, 'success');
+      notify(`Layout "${clean}" created.`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
-      notify(`Failed to create settings: ${msg}`, 'danger');
+      notify(`Failed to create layout: ${msg}`, 'danger');
     }
   }, [newName, settings, create, buildPayload, load, setSelectedSettingId, notify]);
 
@@ -210,10 +210,10 @@ const SectionLayoutModal = ({
         if (setting.default_setting && typeof onApplyPrefs === 'function') {
           onApplyPrefs(prefsFromSetting({ json_settings: payload }));
         }
-        notify(`Saved current settings to "${setting.setting_name || setting.name}".`, 'success');
+        notify(`Saved current layout to "${setting.setting_name || setting.name}".`, 'success');
       } catch (err) {
         const msg = err?.response?.data?.detail || err?.message || String(err);
-        notify(`Failed to save settings: ${msg}`, 'danger');
+        notify(`Failed to save layout: ${msg}`, 'danger');
       }
     },
     [savePayloadTo, buildPayload, load, onApplyPrefs, notify]
@@ -226,7 +226,7 @@ const SectionLayoutModal = ({
         const prefs = prefsFromSetting(setting);
         if (prefs.layout) setWorkingLayout(prefs.layout);
         if (typeof onApplyPrefs === 'function') onApplyPrefs(prefs);
-        notify(`"${setting.setting_name || setting.name}" are now your default settings.`, 'success');
+        notify(`"${setting.setting_name || setting.name}" is now your default layout.`, 'success');
       } catch (err) {
         const msg = err?.response?.data?.detail || err?.message || String(err);
         notify(`Failed to set default: ${msg}`, 'danger');
@@ -239,7 +239,7 @@ const SectionLayoutModal = ({
     async (id) => {
       try {
         await remove(id);
-        notify('Settings deleted.', 'success');
+        notify('Layout deleted.', 'success');
       } catch (err) {
         const msg = err?.response?.data?.detail || err?.message || String(err);
         notify(`Failed to delete settings: ${msg}`, 'danger');
@@ -342,11 +342,11 @@ const SectionLayoutModal = ({
       <Button
         variant="outline-primary"
         size="sm"
-        title={`${pageLabel} settings`}
+        title={`${pageLabel} layout`}
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '6px' }} />
-        Settings
+        Layout
       </Button>
 
       <Modal
@@ -360,7 +360,7 @@ const SectionLayoutModal = ({
         size="lg"
       >
         <Modal.Header closeButton>
-          <Modal.Title>{pageLabel} Settings</Modal.Title>
+          <Modal.Title>{pageLabel} Layout</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
@@ -473,11 +473,11 @@ const SectionLayoutModal = ({
 
           {/* Create new settings */}
           <Form.Group className="mb-4">
-            <Form.Label>Save current settings as a new entry</Form.Label>
+            <Form.Label>Save current layout as a new entry</Form.Label>
             <div className="d-flex gap-2">
               <Form.Control
                 type="text"
-                placeholder="Enter settings name"
+                placeholder="Enter layout name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
@@ -498,16 +498,16 @@ const SectionLayoutModal = ({
             </div>
             {!canCreateMore && (
               <Form.Text className="text-warning">
-                Maximum number of saved settings reached. Delete one to create another.
+                Maximum number of saved layouts reached. Delete one to create another.
               </Form.Text>
             )}
           </Form.Group>
 
           {/* Existing settings */}
           <div>
-            <h6>Saved Settings</h6>
+            <h6>Saved Layouts</h6>
             {!hasSettings ? (
-              <p className="text-muted mb-0">No settings saved yet. Create one above.</p>
+              <p className="text-muted mb-0">No layouts saved yet. Create one above.</p>
             ) : (
               <div className="list-group">
                 {settings.map((setting) => {
@@ -557,10 +557,10 @@ const SectionLayoutModal = ({
                       </div>
 
                       <div className="d-flex flex-wrap gap-2">
-                        <Button variant="outline-secondary" size="sm" disabled={busy} title="Load these settings" onClick={() => handleLoad(setting)}>
+                        <Button variant="outline-secondary" size="sm" disabled={busy} title="Load this layout" onClick={() => handleLoad(setting)}>
                           Load
                         </Button>
-                        <Button variant="outline-success" size="sm" disabled={busy} title="Overwrite with the current settings" onClick={() => handleSaveHere(setting)}>
+                        <Button variant="outline-success" size="sm" disabled={busy} title="Overwrite with the current layout" onClick={() => handleSaveHere(setting)}>
                           Save Here
                         </Button>
                         {!isDefault && (

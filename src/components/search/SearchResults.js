@@ -15,6 +15,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilePdf, faPenSquare, faImage} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
+import { normalizeDisplayPrefs, xrefPrefix } from './settings/searchDisplayPrefs';
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -31,6 +32,10 @@ const MatchingTextBox = (highlight) => {
 const SearchResultItem = ({ reference }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const crossReferenceResults = useSelector(state => state.search.crossReferenceResults);
+  // Display profile (SCRUM-6512): section order/visibility, xref prefix
+  // selection, icons and the author->person link. null (no profile loaded)
+  // normalizes to the defaults, which render the card exactly as before.
+  const displayPrefs = useSelector(state => normalizeDisplayPrefs(state.search.searchDisplayPrefs));
   const dispatch = useDispatch();
 
   const FileDownloadIcon = ({curie}) => {
@@ -125,63 +130,115 @@ const SearchResultItem = ({ reference }) => {
       return '';
   };
 
-  // Show every cross-reference, including dataset xrefs (PDB, GEO, ...), so curators
-  // can see the xref that matched their search.
-  const displayedXrefs = reference.cross_references || [];
+  // Show every cross-reference type by default, including dataset xrefs
+  // (PDB, GEO, ...), so curators can see the xref that matched their search.
+  // The display profile can hide individual prefixes (SCRUM-6512).
+  const displayedXrefs = (reference.cross_references || []).filter(
+    (xref) => !displayPrefs.hiddenXrefPrefixes.includes(xrefPrefix(xref.curie))
+  );
+
+  const icons = displayPrefs.showIcons ? (
+    <>
+      <TETRedirect curie={reference.curie}/>
+      <FileDownloadIcon curie = {reference.curie}/>
+      {reference.image_count > 0 && (
+          <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
+      )}
+    </>
+  ) : null;
+
+  const showSection = (id) => !displayPrefs.hiddenSections.includes(id);
+
+  // The card's customizable sections, rendered below the title in the
+  // profile's order. Hiding the xref section keeps the action icons (they only
+  // share a row); hiding a section that has no content is a no-op.
+  const sectionRenderers = {
+    xrefs: () => (
+      (showSection('xrefs') || icons) &&
+      <Row key="xrefs"><Col><div className="searchRow-xref">
+          {showSection('xrefs') && (
+          <ul>
+              <li>
+                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
+                        onClick={() => {
+                            dispatch(setReferenceCurie(reference.curie));
+                            dispatch(setGetReferenceCurieFlag(true));
+                        }}>
+                      {reference.curie}
+                  </Link>
+              </li>
+              {displayedXrefs.map((xref, i) => (
+                  <li key={i}>
+	<span className="obsolete">
+	    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
+	</span>
+                      <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
+                          {xref.curie}
+                      </a>
+                      {xref.curie.startsWith('PMID:') && (
+                          <div>
+                              <a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`}
+                                 rel="noreferrer noopener" target="_blank">
+                                  EuropePMC
+                              </a>
+                          </div>
+                      )}
+                  </li>
+              ))}
+          </ul>
+          )}
+          {icons}
+      </div></Col></Row>
+    ),
+    authors: () => (
+      showSection('authors') &&
+      <div key="authors" className="searchRow-other">Authors : {(reference.authors || []).map((author, i) => (
+          <span key={i}>
+              {i ? ' ' : ''}
+              {displayPrefs.linkAuthorsToPerson ? (
+                  // Author -> person curation lives on the Biblio person screen
+                  // (author/person reconciliation); it is linkable from anywhere
+                  // by referenceCurie (SCRUM-6512).
+                  <Link to={{pathname: "/Biblio", search: "?action=person&referenceCurie=" + reference.curie}}
+                        title="Open the person screen for this reference">
+                      <span dangerouslySetInnerHTML={{__html: author.name}} />
+                  </Link>
+              ) : (
+                  <span dangerouslySetInnerHTML={{__html: author.name}} />
+              )}
+          </span>
+      ))}</div>
+    ),
+    pubDate: () => (
+      showSection('pubDate') &&
+      <div key="pubDate" className="searchRow-other">Publication Date: {reference.date_published}</div>
+    ),
+    abstract: () => (
+      showSection('abstract') &&
+      <div key="abstract" className="searchRow-other">
+        Abstract:
+        <div style={{ cursor: 'pointer' }} onClick={toggleAbstract}>
+          <span dangerouslySetInnerHTML={{ __html: isExpanded ? formatAbstract(reference.abstract) : truncateAbstract(reference.abstract, 500) }} />
+          <span style={{ color: 'blue', textDecoration: 'underline', marginLeft: '10px' }}>
+            {isExpanded ? 'Show Less' : 'Show More'}
+          </span>
+        </div>
+      </div>
+    ),
+    matchingText: () => (
+      showSection('matchingText') && reference.highlight
+        ? <MatchingTextBox key="matchingText" matches={reference.highlight}/>
+        : null
+    ),
+  };
 
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" >
         <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
-          <Row><Col><div className="searchRow-xref">
-              <ul>
-                  <li>
-                      <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
-                            onClick={() => {
-                                dispatch(setReferenceCurie(reference.curie));
-                                dispatch(setGetReferenceCurieFlag(true));
-                            }}>
-                          {reference.curie}
-                      </Link>
-                  </li>
-                  {displayedXrefs.map((xref, i) => (
-                      <li key={i}>
-		<span className="obsolete">
-		    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
-		</span>
-                          <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
-                              {xref.curie}
-                          </a>
-                          {xref.curie.startsWith('PMID:') && (
-                              <div>
-                                  <a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`}
-                                     rel="noreferrer noopener" target="_blank">
-                                      EuropePMC
-                                  </a>
-                              </div>
-                          )}
-                      </li>
-                  ))}
-              </ul>
-              <TETRedirect curie={reference.curie}/>
-            <FileDownloadIcon curie = {reference.curie}/>
-            {reference.image_count > 0 && (
-                <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
-            )}
-
-          </div></Col></Row>
-          <div className="searchRow-other">Authors : <span dangerouslySetInnerHTML={{__html: reference.authors ? reference.authors.map((author, i) => ((i ? ' ' : '') + author.name)) : ''}} /></div>
-        <div className="searchRow-other">Publication Date: {reference.date_published}</div>
-        <div className="searchRow-other">
-          Abstract:
-          <div style={{ cursor: 'pointer' }} onClick={toggleAbstract}>
-            <span dangerouslySetInnerHTML={{ __html: isExpanded ? formatAbstract(reference.abstract) : truncateAbstract(reference.abstract, 500) }} />
-            <span style={{ color: 'blue', textDecoration: 'underline', marginLeft: '10px' }}>
-              {isExpanded ? 'Show Less' : 'Show More'}
-            </span>
-          </div>
-        </div>
-        {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}
+        {displayPrefs.sectionOrder.map((id) =>
+          sectionRenderers[id] ? sectionRenderers[id]() : null
+        )}
       </Col>
     </Row>
   );
