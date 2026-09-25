@@ -21,7 +21,8 @@ import {
   SEARCH_SET_ADVANCED_TOPIC_QUERY,
   SEARCH_SET_ADVANCED_FACETS_VOCAB,
   SEARCH_SET_GRID_PREFERENCES,
-  SEARCH_APPLY_GRID_PREFERENCES
+  SEARCH_APPLY_GRID_PREFERENCES,
+  SEARCH_SET_DISPLAY_PREFS
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -89,7 +90,10 @@ const initialState = {
   // gridPreferencesApplied = { prefs, nonce } is set only when a saved search
   // restores grid prefs; the grid watches the nonce to apply them exactly once.
   gridPreferences: null,
-  gridPreferencesApplied: null
+  gridPreferencesApplied: null,
+  // Search-card display profile (SCRUM-6512). null = user has no loaded profile
+  // yet; the cards fall back to the built-in defaults (everything visible).
+  searchDisplayPrefs: null
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -334,6 +338,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         gridPreferences: action.payload
+      }
+
+    case SEARCH_SET_DISPLAY_PREFS:
+      return {
+        ...state,
+        searchDisplayPrefs: action.payload
       }
 
     case SEARCH_APPLY_GRID_PREFERENCES:
