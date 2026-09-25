@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -35,7 +35,11 @@ const SearchResultItem = ({ reference }) => {
   // Display profile (SCRUM-6512): section order/visibility, xref prefix
   // selection, icons and the author->person link. null (no profile loaded)
   // normalizes to the defaults, which render the card exactly as before.
-  const displayPrefs = useSelector(state => normalizeDisplayPrefs(state.search.searchDisplayPrefs));
+  // Select the raw value and memoize the normalization: normalizing inside the
+  // selector returns a fresh object per call, and useSelector's === comparison
+  // would then re-render every card on any dispatch anywhere in the app.
+  const rawDisplayPrefs = useSelector(state => state.search.searchDisplayPrefs);
+  const displayPrefs = useMemo(() => normalizeDisplayPrefs(rawDisplayPrefs), [rawDisplayPrefs]);
   const dispatch = useDispatch();
 
   const FileDownloadIcon = ({curie}) => {

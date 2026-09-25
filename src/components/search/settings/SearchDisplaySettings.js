@@ -70,21 +70,19 @@ const SearchDisplaySettings = () => {
     [dispatch]
   );
 
-  // Apply the user's default profile once auth is available. Loading is a GET
-  // (observer-permitted); only the save/create controls are role-gated below.
+  // Refresh the saved-profile list when the modal opens. The DEFAULT profile
+  // is applied by useSearchDisplayProfile (mounted in SearchLayout), NOT here:
+  // this component unmounts with the results switchbar on every search, and a
+  // load-and-apply on mount re-applied the default over the user's working
+  // profile each time (review finding). Loading is a GET (observer-permitted);
+  // only the save/create controls are role-gated below.
   useEffect(() => {
-    if (!accessToken || !email) return;
-    load()
-      .then(({ picked }) => {
-        const stored = picked?.json_settings?.state;
-        if (stored) applyPrefs(stored);
-      })
-      .catch((err) => {
-        const msg = err?.response?.data?.detail || err?.message || String(err);
-        console.error('Failed to load search display profile:', msg);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, email, load]);
+    if (!showModal || !accessToken || !email) return;
+    load().catch((err) => {
+      const msg = err?.response?.data?.detail || err?.message || String(err);
+      console.error('Failed to load search display profiles:', msg);
+    });
+  }, [showModal, accessToken, email, load]);
 
   // The prefixes offered for selection: everything visible in the current
   // results plus anything the profile already hides (so a hidden prefix can be

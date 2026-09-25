@@ -50,6 +50,7 @@ jest.mock('../BreadCrumbs', () => () => null);
 jest.mock('../SearchPagination', () => () => null);
 jest.mock('../Facets', () => () => null);
 jest.mock('../settings/SearchDisplaySettings', () => () => null);
+jest.mock('../settings/useSearchDisplayProfile', () => () => {});
 
 function setSearchState(next) {
   mockState.search = { ...mockState.search, ...next };
