@@ -192,7 +192,7 @@ const SearchDisplaySettings = () => {
       (s) => (s.setting_name || s.name || '').trim().toLowerCase() === clean.toLowerCase()
     );
     if (exists) {
-      notify(`A profile named "${clean}" already exists.`, 'warning');
+      notify(`A layout named "${clean}" already exists.`, 'warning');
       return;
     }
     try {
@@ -200,10 +200,10 @@ const SearchDisplaySettings = () => {
       await load();
       if (created?.person_setting_id) setSelectedSettingId(created.person_setting_id);
       setNewName('');
-      notify(`Display profile "${clean}" created.`, 'success');
+      notify(`Layout "${clean}" created.`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
-      notify(`Failed to create profile: ${msg}`, 'danger');
+      notify(`Failed to create layout: ${msg}`, 'danger');
     }
   }, [newName, settings, create, buildPayload, load, setSelectedSettingId, notify]);
 
@@ -219,17 +219,17 @@ const SearchDisplaySettings = () => {
     try {
       await savePayloadTo(setting.person_setting_id, buildPayload());
       await load();
-      notify(`Saved current display to "${setting.setting_name || setting.name}".`, 'success');
+      notify(`Saved current layout to "${setting.setting_name || setting.name}".`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
-      notify(`Failed to save profile: ${msg}`, 'danger');
+      notify(`Failed to save layout: ${msg}`, 'danger');
     }
   };
 
   const handleMakeDefault = async (setting) => {
     try {
       await makeDefault(setting.person_setting_id);
-      notify(`"${setting.setting_name || setting.name}" is now your default display.`, 'success');
+      notify(`"${setting.setting_name || setting.name}" is now your default layout.`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
       notify(`Failed to set default: ${msg}`, 'danger');
@@ -239,10 +239,10 @@ const SearchDisplaySettings = () => {
   const handleDelete = async (id) => {
     try {
       await remove(id);
-      notify('Display profile deleted.', 'success');
+      notify('Layout deleted.', 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
-      notify(`Failed to delete profile: ${msg}`, 'danger');
+      notify(`Failed to delete layout: ${msg}`, 'danger');
     }
   };
 
@@ -262,7 +262,7 @@ const SearchDisplaySettings = () => {
       const id = setting.person_setting_id;
       const val = (nameEdits[id] || '').trim();
       if (!val) {
-        notify('Profile name cannot be empty.', 'warning');
+        notify('Layout name cannot be empty.', 'warning');
         return;
       }
       try {
@@ -312,7 +312,7 @@ const SearchDisplaySettings = () => {
           <p className="text-muted">
             Drag the sections to arrange their order on each search-result card
             and choose which sections are visible. Changes apply immediately;
-            save them as a named profile to reuse later. Display profiles are
+            save them as a named layout to reuse later. Card layouts are
             separate from saved searches.
           </p>
 
@@ -440,11 +440,11 @@ const SearchDisplaySettings = () => {
           {!cognitoObserver && (
             <>
               <Form.Group className="mb-4">
-                <Form.Label>Save current display as a new profile</Form.Label>
+                <Form.Label>Save current layout as a new entry</Form.Label>
                 <div className="d-flex gap-2">
                   <Form.Control
                     type="text"
-                    placeholder="Enter profile name"
+                    placeholder="Enter layout name"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     onKeyDown={(e) => {
@@ -465,15 +465,15 @@ const SearchDisplaySettings = () => {
                 </div>
                 {!canCreateMore && (
                   <Form.Text className="text-warning">
-                    Maximum number of saved profiles reached. Delete one to create another.
+                    Maximum number of saved layouts reached. Delete one to create another.
                   </Form.Text>
                 )}
               </Form.Group>
 
               <div>
-                <h6>Saved Display Profiles</h6>
+                <h6>Saved Layouts</h6>
                 {(settings || []).length === 0 ? (
-                  <p className="text-muted mb-0">No profiles saved yet. Create one above.</p>
+                  <p className="text-muted mb-0">No layouts saved yet. Create one above.</p>
                 ) : (
                   <div className="list-group">
                     {settings.map((setting) => {
@@ -483,7 +483,7 @@ const SearchDisplaySettings = () => {
                       return (
                         <div key={id} className="list-group-item d-flex justify-content-between align-items-center">
                           <div className="d-flex align-items-center flex-grow-1 me-3">
-                            <span className="me-2" title={isDefault ? 'Default profile' : ''}>
+                            <span className="me-2" title={isDefault ? 'Default layout' : ''}>
                               {isDefault ? '★' : ''}
                             </span>
                             {isEditing ? (
@@ -519,10 +519,10 @@ const SearchDisplaySettings = () => {
                             )}
                           </div>
                           <div className="d-flex flex-wrap gap-2">
-                            <Button variant="outline-secondary" size="sm" disabled={busy} title="Load this profile" onClick={() => handleLoad(setting)}>
+                            <Button variant="outline-secondary" size="sm" disabled={busy} title="Load this layout" onClick={() => handleLoad(setting)}>
                               Load
                             </Button>
-                            <Button variant="outline-success" size="sm" disabled={busy} title="Overwrite with the current display" onClick={() => handleSaveHere(setting)}>
+                            <Button variant="outline-success" size="sm" disabled={busy} title="Overwrite with the current layout" onClick={() => handleSaveHere(setting)}>
                               Save Here
                             </Button>
                             {!isDefault && (
