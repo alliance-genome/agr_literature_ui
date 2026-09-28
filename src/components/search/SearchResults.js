@@ -196,22 +196,28 @@ const SearchResultItem = ({ reference }) => {
     ),
     authors: () => (
       showSection('authors') &&
-      <div key="authors" className="searchRow-other">Authors : {(reference.authors || []).map((author, i) => (
-          <span key={i}>
-              {i ? ' ' : ''}
-              {displayPrefs.linkAuthorsToPerson ? (
-                  // Author -> person curation lives on the Biblio person screen
-                  // (author/person reconciliation); it is linkable from anywhere
-                  // by referenceCurie (SCRUM-6512).
-                  <Link to={{pathname: "/Biblio", search: "?action=person&referenceCurie=" + reference.curie}}
-                        title="Open the person screen for this reference">
-                      <span dangerouslySetInnerHTML={{__html: author.name}} />
-                  </Link>
-              ) : (
+      <div key="authors" className="searchRow-other">
+          {displayPrefs.linkAuthorsToPerson ? (
+              // The "Authors :" label (not the names) links to the Biblio person
+              // screen, where author -> person curation lives; it is linkable
+              // from anywhere by referenceCurie. The individual names stay plain
+              // text, reserved for a future link to each author's own person
+              // record (curator request, SCRUM-6512).
+              <Link to={{pathname: "/Biblio", search: "?action=person&referenceCurie=" + reference.curie}}
+                    title="Open the person screen for this reference">
+                  Authors :
+              </Link>
+          ) : (
+              'Authors :'
+          )}
+          {' '}
+          {(reference.authors || []).map((author, i) => (
+              <span key={i}>
+                  {i ? ' ' : ''}
                   <span dangerouslySetInnerHTML={{__html: author.name}} />
-              )}
-          </span>
-      ))}</div>
+              </span>
+          ))}
+      </div>
     ),
     pubDate: () => (
       showSection('pubDate') &&

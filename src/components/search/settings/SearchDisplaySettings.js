@@ -1,9 +1,9 @@
 // Display settings for the search-result cards (SCRUM-6512).
 //
-// A "Display settings" button (far right of the list/topic-grid switchbar)
-// opens a modal that edits the card display profile: section order and
-// visibility, per-prefix cross-reference selection, the action icons, and the
-// author -> person-screen link. Every change applies to the cards immediately
+// A "Layout" button (far right of the list/topic-grid switchbar) opens a
+// modal that edits the card display profile: section order and visibility,
+// per-prefix cross-reference selection, the action icons, and the
+// "Authors :" -> person-screen link. Every change applies to the cards immediately
 // via Redux; named profiles persist per-user through person_settings under the
 // 'search_display' namespace — separate from saved searches on purpose, so a
 // curator like Cecilia can keep one "author curation" card layout while
@@ -283,11 +283,11 @@ const SearchDisplaySettings = () => {
       <Button
         variant="outline-primary"
         size="sm"
-        title="Customize how search-result cards display"
+        title="Customize the search-result card layout"
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '4px' }} />
-        Display settings
+        Layout
       </Button>
 
       <Modal
@@ -301,7 +301,7 @@ const SearchDisplaySettings = () => {
         size="lg"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Search Card Display Settings</Modal.Title>
+          <Modal.Title>Search Card Layout</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {message && (
@@ -429,7 +429,7 @@ const SearchDisplaySettings = () => {
               <Form.Check
                 type="switch"
                 id="search-display-author-links"
-                label="Link authors to the person screen"
+                label={'Link "Authors :" to the person screen'}
                 checked={prefs.linkAuthorsToPerson}
                 onChange={(e) => applyPrefs({ ...prefs, linkAuthorsToPerson: e.target.checked })}
               />
@@ -554,10 +554,10 @@ const SearchDisplaySettings = () => {
             disabled={busy}
             onClick={() => {
               applyPrefs(DEFAULT_DISPLAY_PREFS);
-              notify('Display reset to the default card layout.', 'info');
+              notify('Reset to the default card layout.', 'info');
             }}
           >
-            Reset Display
+            Reset Layout
           </Button>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Close

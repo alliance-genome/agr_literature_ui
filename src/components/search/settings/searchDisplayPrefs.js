@@ -2,9 +2,10 @@
 //
 // One profile object describes how a search-result card renders: which sections
 // show, in what vertical order, which cross-reference prefixes are listed,
-// whether the action icons (TET / PDF / images) show, and whether author names
-// link to the person screen. SearchResults renders from it; the Display
-// settings modal edits it; named profiles persist per-user via person_settings
+// whether the action icons (TET / PDF / images) show, and whether the
+// "Authors :" label links to the person screen (the names themselves stay
+// plain, reserved for a future link to individual person records). SearchResults
+// renders from it; the Layout modal edits it; named profiles persist per-user via person_settings
 // under the 'search_display' namespace — a namespace deliberately separate from
 // 'reference_search' saved searches, so what to search for and how cards look
 // are saved and loaded independently.
