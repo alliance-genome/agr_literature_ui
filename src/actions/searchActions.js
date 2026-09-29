@@ -46,7 +46,14 @@ export const SEARCH_SET_GRID_PREFERENCES = 'SEARCH_SET_GRID_PREFERENCES';
 export const SEARCH_APPLY_GRID_PREFERENCES = 'SEARCH_APPLY_GRID_PREFERENCES';
 export const SEARCH_SET_DISPLAY_PREFS = 'SEARCH_SET_DISPLAY_PREFS';
 
-const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions","data_novelty"];
+const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions", "data_novelty", "large_scale_tag"];
+
+// Map a TET facet label to its nested ES field. Most labels are plural and
+// strip the trailing 's' (topics -> topic); data_novelty and large_scale_tag
+// are already the field name.
+const NON_PLURAL_TET_FACETS = ["data_novelty", "large_scale_tag"];
+const tetFacetField = (label) =>
+  `topic_entity_tags.${NON_PLURAL_TET_FACETS.includes(label) ? label : label.slice(0, -1)}.keyword`;
 
 // Upper bound for the Advanced query builder's value dropdowns. The facet panel
 // paginates (INITIAL_FACETS_LIMIT with Show More/All), and every search overwrites
@@ -179,7 +186,7 @@ function processCombinedTETFacets(data, tetNestedFacetsValues) {
         Object.fromEntries(
             non_empty_facets.map(
 
-                tet_facet_label => [tet_facet_label === 'data_novelty' ? `topic_entity_tags.${tet_facet_label}.keyword`: `topic_entity_tags.${tet_facet_label.slice(0, -1)}.keyword`, data[tet_facet_label][0]]
+                tet_facet_label => [tetFacetField(tet_facet_label), data[tet_facet_label][0]]
             )
         )
     );
@@ -239,9 +246,7 @@ const getSearchParams = (state) => {
   } else {
       TET_FACETS_LIST.forEach(key => {
 	  if (data[key]) {
-	      const facetType = key.slice(0, -1); // topics => topic
-	      const keyword = `topic_entity_tags.${facetType}.keyword`;
-	      processSingleFacet(data[key], keyword, tetNestedFacetsValues);
+	      processSingleFacet(data[key], tetFacetField(key), tetNestedFacetsValues);
 	  }
       });
   }

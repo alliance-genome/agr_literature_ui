@@ -70,6 +70,7 @@ export const RENAME_FACETS = {
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
     "data_novelty": "Data Novelty",
+    "large_scale_tag": "Large-scale study",
     "file_workflow": "File workflow",
     "reference_classification": "Reference classification",
     "entity_extraction": "Entity extraction",
@@ -121,6 +122,9 @@ export const RENAME_FACET_VALUES = {
     "has_image": {
         "true": "Yes",
         "false": "No"
+    },
+    "large_scale_tag": {
+        "true": "Yes"
     }
 }
 
@@ -131,7 +135,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
     "Images": ["can display image", "has image"],
-    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
+    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty", "large_scale_tag"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
@@ -569,7 +573,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
                 let key = facetToInclude.replaceAll(' ', '_');
-                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty',
+                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'large_scale_tag',
                         'file_workflow', 'manual_indexing', 'reference_classification',
 		                'entity_extraction', 'curation_classification', 'community_curation', 'first_pass_curation', 'email_extraction',
                         'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag',
@@ -645,7 +649,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                             </Col>                                                                                                                    
                                             <Col xs={3} sm={3}>                                                                                                       
                                                 <Badge variant="secondary">                                                                                           
-                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty'].includes(key) &&
+                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'large_scale_tag'].includes(key) &&
                                                         bucket.docs_count !== undefined ?
                                                         bucket.docs_count.doc_count.toLocaleString() :
                                                         bucket.doc_count.toLocaleString()}                                                                            
