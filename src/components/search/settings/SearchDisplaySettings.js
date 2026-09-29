@@ -2,8 +2,8 @@
 //
 // A "Layout" button (far right of the list/topic-grid switchbar) opens a
 // modal that edits the card display profile: section order and visibility,
-// per-prefix cross-reference selection, the action icons, and the
-// "Authors :" -> person-screen link. Every change applies to the cards immediately
+// per-prefix cross-reference selection, the action icons, and the person icon
+// (paper's authors on the person screen). Every change applies to the cards immediately
 // via Redux; named profiles persist per-user through person_settings under the
 // 'search_display' namespace — separate from saved searches on purpose, so a
 // curator like Cecilia can keep one "author curation" card layout while
@@ -428,10 +428,10 @@ const SearchDisplaySettings = () => {
               />
               <Form.Check
                 type="switch"
-                id="search-display-author-links"
-                label={'Link "Authors :" to the person screen'}
-                checked={prefs.linkAuthorsToPerson}
-                onChange={(e) => applyPrefs({ ...prefs, linkAuthorsToPerson: e.target.checked })}
+                id="search-display-person-icon"
+                label="Show person icon (opens the paper's authors on the person screen)"
+                checked={prefs.showPersonIcon}
+                onChange={(e) => applyPrefs({ ...prefs, showPersonIcon: e.target.checked })}
               />
             </div>
           </Form.Group>

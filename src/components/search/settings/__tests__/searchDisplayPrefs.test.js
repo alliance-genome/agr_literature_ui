@@ -17,7 +17,7 @@ describe('searchDisplayPrefs (SCRUM-6512)', () => {
     expect(d.hiddenSections).toEqual([]);
     expect(d.hiddenXrefPrefixes).toEqual([]);
     expect(d.showIcons).toBe(true);
-    expect(d.linkAuthorsToPerson).toBe(true);
+    expect(d.showPersonIcon).toBe(true);
   });
 
   test('a saved order is preserved and unknown ids are dropped', () => {
@@ -36,8 +36,17 @@ describe('searchDisplayPrefs (SCRUM-6512)', () => {
   test('partial payloads keep the other defaults', () => {
     const p = normalizeDisplayPrefs({ showIcons: false });
     expect(p.showIcons).toBe(false);
-    expect(p.linkAuthorsToPerson).toBe(true);
+    expect(p.showPersonIcon).toBe(true);
     expect(p.hiddenXrefPrefixes).toEqual([]);
+  });
+
+  test('legacy linkAuthorsToPerson migrates to showPersonIcon', () => {
+    expect(normalizeDisplayPrefs({ linkAuthorsToPerson: false }).showPersonIcon).toBe(false);
+    expect(normalizeDisplayPrefs({ linkAuthorsToPerson: true }).showPersonIcon).toBe(true);
+    // an explicit new key wins over the legacy one
+    expect(
+      normalizeDisplayPrefs({ showPersonIcon: true, linkAuthorsToPerson: false }).showPersonIcon
+    ).toBe(true);
   });
 
   test('xrefPrefix takes the curie prefix', () => {

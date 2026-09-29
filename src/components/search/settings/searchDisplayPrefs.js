@@ -2,9 +2,10 @@
 //
 // One profile object describes how a search-result card renders: which sections
 // show, in what vertical order, which cross-reference prefixes are listed,
-// whether the action icons (TET / PDF / images) show, and whether the
-// "Authors :" label links to the person screen (the names themselves stay
-// plain, reserved for a future link to individual person records). SearchResults
+// whether the action icons (TET / PDF / images) show, and whether the person
+// icon shows (it opens the paper's authors on the Biblio person screen; author
+// names stay plain text, reserved for a future link to individual person
+// records). SearchResults
 // renders from it; the Layout modal edits it; named profiles persist per-user via person_settings
 // under the 'search_display' namespace — a namespace deliberately separate from
 // 'reference_search' saved searches, so what to search for and how cards look
@@ -30,7 +31,7 @@ export const DEFAULT_DISPLAY_PREFS = {
   // profile has never seen (new MOD, new resource type) defaults to visible
   // instead of silently vanishing.
   hiddenXrefPrefixes: [],
-  linkAuthorsToPerson: true,
+  showPersonIcon: true,
 };
 
 // The prefix an xref curie is selected by: "PMID:123" -> "PMID".
@@ -54,6 +55,9 @@ export const normalizeDisplayPrefs = (raw) => {
       .filter((id) => known.includes(id)),
     showIcons: p.showIcons !== false,
     hiddenXrefPrefixes: Array.isArray(p.hiddenXrefPrefixes) ? p.hiddenXrefPrefixes : [],
-    linkAuthorsToPerson: p.linkAuthorsToPerson !== false,
+    // showPersonIcon replaced linkAuthorsToPerson (the "Authors :" label link,
+    // now a rail icon): honor the legacy key when a saved profile predates it.
+    showPersonIcon:
+      (p.showPersonIcon !== undefined ? p.showPersonIcon : p.linkAuthorsToPerson) !== false,
   };
 };

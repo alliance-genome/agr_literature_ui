@@ -12,7 +12,7 @@ import {Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFilePdf, faPenSquare, faImage} from "@fortawesome/free-solid-svg-icons";
+import {faFilePdf, faPenSquare, faImage, faPeopleArrows} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
 import { normalizeDisplayPrefs, xrefPrefix } from './settings/searchDisplayPrefs';
@@ -92,6 +92,19 @@ const SearchResultItem = ({ reference }) => {
     );
   };
 
+  const PersonRedirect = ({ curie }) => {
+    const history = useHistory();
+    const goToPerson = () => {
+        history.push(`/Biblio/?action=person&referenceCurie=${curie}`);
+    };
+    return (
+        <Button title="Open this paper's authors on the person screen"
+                onClick={goToPerson}>
+            <FontAwesomeIcon icon={faPeopleArrows} size='3x'/>
+        </Button>
+    );
+  };
+
   function toggleAbstract() {
     setIsExpanded(!isExpanded);
   }
@@ -145,14 +158,22 @@ const SearchResultItem = ({ reference }) => {
   // any section): they used to be absolutely positioned in the xref row, which
   // overlapped the card text once sections could be hidden or reordered
   // (curator finding). Children ordered to match the old left-to-right cluster:
-  // images, TET, PDF.
-  const icons = displayPrefs.showIcons ? (
+  // person, images, TET, PDF. The person icon (its own toggle, separate from
+  // the other action icons) replaced the "Authors :" label link.
+  const icons = (displayPrefs.showIcons || displayPrefs.showPersonIcon) ? (
     <>
-      {reference.image_count > 0 && (
-          <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
+      {displayPrefs.showPersonIcon && (
+          <PersonRedirect curie={reference.curie}/>
       )}
-      <TETRedirect curie={reference.curie}/>
-      <FileDownloadIcon curie = {reference.curie}/>
+      {displayPrefs.showIcons && (
+          <>
+              {reference.image_count > 0 && (
+                  <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
+              )}
+              <TETRedirect curie={reference.curie}/>
+              <FileDownloadIcon curie = {reference.curie}/>
+          </>
+      )}
     </>
   ) : null;
 
@@ -196,29 +217,16 @@ const SearchResultItem = ({ reference }) => {
       </div></Col></Row>
     ),
     authors: () => (
+      // Author names are plain text, reserved for a future link to each
+      // author's own person record; the route to the Biblio person screen is
+      // the person icon in the card's action rail (SCRUM-6512).
       showSection('authors') &&
-      <div key="authors" className="searchRow-other">
-          {displayPrefs.linkAuthorsToPerson ? (
-              // The "Authors :" label (not the names) links to the Biblio person
-              // screen, where author -> person curation lives; it is linkable
-              // from anywhere by referenceCurie. The individual names stay plain
-              // text, reserved for a future link to each author's own person
-              // record (curator request, SCRUM-6512).
-              <Link to={{pathname: "/Biblio", search: "?action=person&referenceCurie=" + reference.curie}}
-                    title="Open the person screen for this reference">
-                  Authors :
-              </Link>
-          ) : (
-              'Authors :'
-          )}
-          {' '}
-          {(reference.authors || []).map((author, i) => (
-              <span key={i}>
-                  {i ? ' ' : ''}
-                  <span dangerouslySetInnerHTML={{__html: author.name}} />
-              </span>
-          ))}
-      </div>
+      <div key="authors" className="searchRow-other">Authors : {(reference.authors || []).map((author, i) => (
+          <span key={i}>
+              {i ? ' ' : ''}
+              <span dangerouslySetInnerHTML={{__html: author.name}} />
+          </span>
+      ))}</div>
     ),
     pubDate: () => (
       showSection('pubDate') &&
