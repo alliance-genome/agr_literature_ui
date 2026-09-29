@@ -141,26 +141,29 @@ const SearchResultItem = ({ reference }) => {
     (xref) => !displayPrefs.hiddenXrefPrefixes.includes(xrefPrefix(xref.curie))
   );
 
+  // The action icons live in a card-level rail beside the sections (not inside
+  // any section): they used to be absolutely positioned in the xref row, which
+  // overlapped the card text once sections could be hidden or reordered
+  // (curator finding). Children ordered to match the old left-to-right cluster:
+  // images, TET, PDF.
   const icons = displayPrefs.showIcons ? (
     <>
-      <TETRedirect curie={reference.curie}/>
-      <FileDownloadIcon curie = {reference.curie}/>
       {reference.image_count > 0 && (
           <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
       )}
+      <TETRedirect curie={reference.curie}/>
+      <FileDownloadIcon curie = {reference.curie}/>
     </>
   ) : null;
 
   const showSection = (id) => !displayPrefs.hiddenSections.includes(id);
 
   // The card's customizable sections, rendered below the title in the
-  // profile's order. Hiding the xref section keeps the action icons (they only
-  // share a row); hiding a section that has no content is a no-op.
+  // profile's order. Hiding a section that has no content is a no-op.
   const sectionRenderers = {
     xrefs: () => (
-      (showSection('xrefs') || icons) &&
+      showSection('xrefs') &&
       <Row key="xrefs"><Col><div className="searchRow-xref">
-          {showSection('xrefs') && (
           <ul>
               <li>
                   <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
@@ -190,8 +193,6 @@ const SearchResultItem = ({ reference }) => {
                   </li>
               ))}
           </ul>
-          )}
-          {icons}
       </div></Col></Row>
     ),
     authors: () => (
@@ -245,10 +246,15 @@ const SearchResultItem = ({ reference }) => {
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" >
-        <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
-        {displayPrefs.sectionOrder.map((id) =>
-          sectionRenderers[id] ? sectionRenderers[id]() : null
-        )}
+        <div className="d-flex">
+          <div className="search-card-body">
+            <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+            {displayPrefs.sectionOrder.map((id) =>
+              sectionRenderers[id] ? sectionRenderers[id]() : null
+            )}
+          </div>
+          {icons && <div className="search-card-icons">{icons}</div>}
+        </div>
       </Col>
     </Row>
   );
