@@ -3,6 +3,7 @@ import {
   DEFAULT_DISPLAY_PREFS,
   normalizeDisplayPrefs,
   xrefPrefix,
+  journalInfoFromCitation,
 } from '../searchDisplayPrefs';
 
 describe('searchDisplayPrefs (SCRUM-6512)', () => {
@@ -47,6 +48,42 @@ describe('searchDisplayPrefs (SCRUM-6512)', () => {
     expect(
       normalizeDisplayPrefs({ showPersonIcon: true, linkAuthorsToPerson: false }).showPersonIcon
     ).toBe(true);
+  });
+
+  test('a profile saved before the journal section gets it appended, visible', () => {
+    const p = normalizeDisplayPrefs({
+      sectionOrder: ['abstract', 'authors', 'pubDate', 'xrefs', 'matchingText'],
+      hiddenSections: [],
+    });
+    expect(p.sectionOrder[p.sectionOrder.length - 1]).toBe('journal');
+    expect(p.hiddenSections).not.toContain('journal');
+  });
+
+  test('journalInfoFromCitation takes the text after the title', () => {
+    const citation =
+      'Libourel C; Roux F, (2026) A receptor-like kinase mediates plant-plant '
+      + 'interactions. Journal of experimental botany 77(14):4710-4724';
+    expect(
+      journalInfoFromCitation(
+        citation,
+        'A receptor-like kinase mediates plant-plant interactions.'
+      )
+    ).toBe('Journal of experimental botany 77(14):4710-4724');
+    // markup in the reference title is stripped before matching
+    expect(
+      journalInfoFromCitation(
+        citation,
+        'A receptor-like kinase mediates <i>plant-plant</i> interactions.'
+      )
+    ).toBe('Journal of experimental botany 77(14):4710-4724');
+  });
+
+  test('journalInfoFromCitation falls back to the full citation', () => {
+    const citation = 'Someone A, (2026) A different title. Some Journal 1:2-3';
+    expect(journalInfoFromCitation(citation, 'Title not in the citation')).toBe(citation);
+    expect(journalInfoFromCitation(citation, null)).toBe(citation);
+    expect(journalInfoFromCitation('', 'Anything')).toBe('');
+    expect(journalInfoFromCitation(null, null)).toBe('');
   });
 
   test('xrefPrefix takes the curie prefix', () => {

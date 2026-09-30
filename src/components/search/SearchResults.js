@@ -15,7 +15,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilePdf, faPenSquare, faImage, faPeopleArrows} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
-import { normalizeDisplayPrefs, xrefPrefix } from './settings/searchDisplayPrefs';
+import { normalizeDisplayPrefs, xrefPrefix, journalInfoFromCitation } from './settings/searchDisplayPrefs';
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -239,6 +239,17 @@ const SearchResultItem = ({ reference }) => {
       showSection('pubDate') &&
       <div key="pubDate" className="searchRow-other">Publication Date: {reference.date_published}</div>
     ),
+    journal: () => {
+      // Journal info from the citation (curator request): lets corpus calls
+      // that hinge on the journal (e.g. eLife's review model) happen from the
+      // card without toggling to the biblio display.
+      const journal = journalInfoFromCitation(reference.citation, reference.title);
+      return (
+        showSection('journal') && journal
+          ? <div key="journal" className="searchRow-other">Journal: {journal}</div>
+          : null
+      );
+    },
     abstract: () => (
       showSection('abstract') &&
       <div key="abstract" className="searchRow-other">

@@ -19,6 +19,7 @@ export const CARD_SECTIONS = [
   { id: 'xrefs', label: 'Cross-references' },
   { id: 'authors', label: 'Authors' },
   { id: 'pubDate', label: 'Publication date' },
+  { id: 'journal', label: 'Journal' },
   { id: 'abstract', label: 'Abstract' },
   { id: 'matchingText', label: 'Matching text' },
 ];
@@ -36,6 +37,28 @@ export const DEFAULT_DISPLAY_PREFS = {
 
 // The prefix an xref curie is selected by: "PMID:123" -> "PMID".
 export const xrefPrefix = (curie) => String(curie || '').split(':')[0];
+
+// Journal info for the card's Journal section (curator request: e.g. eLife is
+// excluded from the corpus by review model, so seeing the journal on the card
+// saves a trip to the biblio display). The search index has no journal field —
+// only the full citation, "Authors, (Year) Title. Journal Vol(Issue):Pages" —
+// so take the text after the title, which the card already knows. The title
+// appears in the citation as plain text; strip any markup (<i> etc.) from the
+// reference title before matching. When the title cannot be found (entity or
+// punctuation mismatch), fall back to the full citation rather than guessing.
+export const journalInfoFromCitation = (citation, title) => {
+  const cit = String(citation || '').trim();
+  if (!cit) return '';
+  const plainTitle = String(title || '').replace(/<[^>]+>/g, '').trim();
+  if (plainTitle) {
+    const idx = cit.indexOf(plainTitle);
+    if (idx >= 0) {
+      const tail = cit.slice(idx + plainTitle.length).replace(/^[.\s]+/, '').trim();
+      if (tail) return tail;
+    }
+  }
+  return cit;
+};
 
 // Merge a stored profile over the defaults, tolerating older/partial payloads:
 // unknown section ids are dropped, sections missing from a saved order are
