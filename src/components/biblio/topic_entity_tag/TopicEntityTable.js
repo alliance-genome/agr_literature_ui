@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
+  Alert,
   Spinner,
   Button,
   ButtonGroup,
@@ -301,6 +302,7 @@ const TopicEntityTable = () => {
   // rather than fetching a second copy.
   const rawTopicEntityTags = useSelector((state) => state.biblio.topicEntityTags);
   const isLoadingData = useSelector((state) => state.biblio.topicEntityTagsLoading);
+  const totalTagCount = useSelector((state) => state.biblio.topicEntityTagsTotalCount);
 
   // Apply the table's display transforms without mutating the redux state.
   const topicEntityTags = useMemo(
@@ -839,6 +841,18 @@ const TopicEntityTable = () => {
             />
           </Col>
         </Row>
+
+        {!isLoadingData && totalTagCount > topicEntityTags.length && (
+          <Row>
+            <Col>
+              <Alert variant="warning" className="py-2 mb-2">
+                Displaying {topicEntityTags.length.toLocaleString()} of {totalTagCount.toLocaleString()} topic
+                and entity tags. Tags are sorted by source method so curated tags are included; the tags not
+                shown here are from bulk data loads.
+              </Alert>
+            </Col>
+          </Row>
+        )}
 
         <Row>
           <Col>

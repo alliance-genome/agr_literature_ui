@@ -1043,16 +1043,23 @@ export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
   };
 };
 
-export const setTopicEntityTags = (tags, referenceCurie) => {
+export const setTopicEntityTags = (tags, referenceCurie, totalCount) => {
   return {
     type: 'SET_TOPIC_ENTITY_TAGS',
-    payload: { tags, referenceCurie }
+    payload: { tags, referenceCurie, totalCount }
   };
 };
 
 // Module-level cache to prevent concurrent duplicate fetches
 let pendingTopicEntityTagsRequest = null;
 let pendingTopicEntityTagsCurie = null;
+
+// One page is fetched; bulk-loaded papers (e.g. the ZFIN large-scale loads,
+// SCRUM-6614) can exceed this, so the fetch also asks for the true total and
+// sorts by source_method — curated sources like abc_literature_system sort
+// before the *_reference_curation bulk loads, so anything truncated is
+// bulk-loaded rows, never curator-entered tags.
+const TET_FETCH_PAGE_SIZE = 8000;
 
 // Load all topic entity tags for a reference into the redux store so that any
 // reference-based (Biblio) page can reuse them (e.g. the entity counts summary)
@@ -1083,12 +1090,20 @@ export const fetchTopicEntityTags = (referenceCurie, forceRefresh = false) => {
 
     pendingTopicEntityTagsRequest = (async () => {
       try {
-        const url = '/topic_entity_tag/by_reference/' + referenceCurie + '?page=1&page_size=8000';
-        const response = await api.get(url);
+        const baseUrl = '/topic_entity_tag/by_reference/' + referenceCurie;
+        const url = baseUrl + '?page=1&page_size=' + TET_FETCH_PAGE_SIZE + '&sort_by=source_method';
+        // The count request tells the table when the page cap truncated the
+        // tags; if it fails, fall back to the fetched length (no banner).
+        const [response, countResponse] = await Promise.all([
+          api.get(url),
+          api.get(baseUrl + '?count_only=true').catch(() => null)
+        ]);
         const tags = response.data || [];
+        const totalCount =
+          countResponse && typeof countResponse.data === 'number' ? countResponse.data : tags.length;
         // Only dispatch if this is still the curie we want
         if (getState().biblio.referenceCurie === referenceCurie) {
-          dispatch(setTopicEntityTags(tags, referenceCurie));
+          dispatch(setTopicEntityTags(tags, referenceCurie, totalCount));
         }
         return tags;
       } catch (error) {
