@@ -162,6 +162,11 @@ const SearchLayout = () => {
         if (nonEmpty(fv.source_methods)) f.source_methods = fv.source_methods;
         if (nonEmpty(fv.source_evidence_assertions)) f.source_evidence_assertions = fv.source_evidence_assertions;
         if (nonEmpty(fv.data_novelty)) f.data_novelty = fv.data_novelty;
+        // fv.large_scale_tag is deliberately NOT forwarded: the grid reads
+        // tags from the database, and large_scale_tag only exists on the
+        // synthetic summary tags the search indexer mints (SCRUM-6614) -
+        // there is no DB column to filter on, and the grid should keep
+        // showing a large-scale paper's real tags in full.
         if (nonEmpty(fv.entity_types)) f.entity_types = fv.entity_types;
         if (nonEmpty(fv.entities)) f.entities = fv.entities;
         if (nonEmpty(neg.confidence_levels)) f.negated_confidence_levels = neg.confidence_levels;
