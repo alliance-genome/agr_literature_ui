@@ -5,11 +5,11 @@
 // whether the action icons (TET / PDF / images) show, and whether the person
 // icon shows (it opens the paper's authors on the Biblio person screen; author
 // names stay plain text, reserved for a future link to individual person
-// records). SearchResults
-// renders from it; the Layout modal edits it; named profiles persist per-user via person_settings
-// under the 'search_display' namespace — a namespace deliberately separate from
-// 'reference_search' saved searches, so what to search for and how cards look
-// are saved and loaded independently.
+// records). SearchResults renders from it; the Layout modal edits it; named
+// profiles persist per-user via person_settings under the 'search_display'
+// namespace — a namespace deliberately separate from 'reference_search' saved
+// searches, so what to search for and how cards look are saved and loaded
+// independently.
 
 export const SEARCH_DISPLAY_COMPONENT = 'search_display';
 

@@ -318,7 +318,7 @@ const BiblioLayoutPreferenceModal = ({ onApplyLayout, maxCount = 10 }) => {
 
           {/* Create new layout */}
           <Form.Group className="mb-4">
-            <Form.Label>Save current arrangement as a new layout</Form.Label>
+            <Form.Label>Save as a new layout</Form.Label>
             <div className="d-flex gap-2">
               <Form.Control
                 type="text"

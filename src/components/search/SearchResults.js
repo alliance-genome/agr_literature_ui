@@ -94,14 +94,21 @@ const SearchResultItem = ({ reference }) => {
 
   const PersonRedirect = ({ curie }) => {
     const history = useHistory();
+    // Gate like the TET button (SCRUM-6431): the biblio router only routes
+    // signed-in non-observers to the person screen — observers are coerced to
+    // the display view and signed-out users get NoAccessAlert, so advertising
+    // the icon to them is misleading (review finding).
+    const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+    const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
     const goToPerson = () => {
         history.push(`/Biblio/?action=person&referenceCurie=${curie}`);
     };
     return (
+        (isSignedIn && !cognitoObserver) ?
         <Button title="Open this paper's authors on the person screen"
                 onClick={goToPerson}>
             <FontAwesomeIcon icon={faPeopleArrows} size='3x'/>
-        </Button>
+        </Button> : null
     );
   };
 

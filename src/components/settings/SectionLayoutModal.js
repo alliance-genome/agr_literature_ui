@@ -474,7 +474,7 @@ const SectionLayoutModal = ({
 
           {/* Create new settings */}
           <Form.Group className="mb-4">
-            <Form.Label>Save current layout as a new entry</Form.Label>
+            <Form.Label>Save as a new layout</Form.Label>
             <div className="d-flex gap-2">
               <Form.Control
                 type="text"

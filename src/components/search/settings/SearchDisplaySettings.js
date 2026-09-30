@@ -3,8 +3,8 @@
 // A "Layout" button (far right of the list/topic-grid switchbar) opens a
 // modal that edits the card display profile: section order and visibility,
 // per-prefix cross-reference selection, the action icons, and the person icon
-// (paper's authors on the person screen). Every change applies to the cards immediately
-// via Redux; named profiles persist per-user through person_settings under the
+// (paper's authors on the person screen). Every change applies to the cards
+// immediately via Redux; named profiles persist per-user through person_settings under the
 // 'search_display' namespace — separate from saved searches on purpose, so a
 // curator like Cecilia can keep one "author curation" card layout while
 // switching between many saved searches.
@@ -440,7 +440,7 @@ const SearchDisplaySettings = () => {
           {!cognitoObserver && (
             <>
               <Form.Group className="mb-4">
-                <Form.Label>Save current layout as a new entry</Form.Label>
+                <Form.Label>Save as a new layout</Form.Label>
                 <div className="d-flex gap-2">
                   <Form.Control
                     type="text"

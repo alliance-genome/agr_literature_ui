@@ -771,6 +771,13 @@ em {
   flex-shrink: 0;
   padding: 10px 4px 10px 12px;
 }
+/* On phone-width screens a horizontal rail of up to four buttons (~250px)
+   would crowd out the card text: stack the icons vertically instead. */
+@media (max-width: 575.98px) {
+  .search-card-icons{
+    flex-direction: column;
+  }
+}
 
 .redirect-TET-button{
   width: 65px;
