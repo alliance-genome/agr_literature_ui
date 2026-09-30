@@ -42,14 +42,17 @@ export const xrefPrefix = (curie) => String(curie || '').split(':')[0];
 // excluded from the corpus by review model, so seeing the journal on the card
 // saves a trip to the biblio display). The search index has no journal field —
 // only the full citation, "Authors, (Year) Title. Journal Vol(Issue):Pages" —
-// so take the text after the title, which the card already knows. The title
-// appears in the citation as plain text; strip any markup (<i> etc.) from the
-// reference title before matching. When the title cannot be found (entity or
-// punctuation mismatch), fall back to the full citation rather than guessing.
+// so take the text after the title, which the card already knows. Both the
+// citation and the title can carry markup (<i>species</i> names), and often
+// with different tag placement, so strip markup from BOTH before matching —
+// the result renders as plain text either way. When the title still cannot be
+// found, fall back to the (stripped) full citation rather than guessing.
+const stripMarkup = (s) => String(s || '').replace(/<[^>]+>/g, '');
+
 export const journalInfoFromCitation = (citation, title) => {
-  const cit = String(citation || '').trim();
+  const cit = stripMarkup(citation).trim();
   if (!cit) return '';
-  const plainTitle = String(title || '').replace(/<[^>]+>/g, '').trim();
+  const plainTitle = stripMarkup(title).trim();
   if (plainTitle) {
     const idx = cit.indexOf(plainTitle);
     if (idx >= 0) {

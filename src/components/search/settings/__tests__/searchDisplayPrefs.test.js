@@ -78,10 +78,32 @@ describe('searchDisplayPrefs (SCRUM-6512)', () => {
     ).toBe('Journal of experimental botany 77(14):4710-4724');
   });
 
-  test('journalInfoFromCitation falls back to the full citation', () => {
-    const citation = 'Someone A, (2026) A different title. Some Journal 1:2-3';
-    expect(journalInfoFromCitation(citation, 'Title not in the citation')).toBe(citation);
-    expect(journalInfoFromCitation(citation, null)).toBe(citation);
+  test('journalInfoFromCitation strips markup from the citation too', () => {
+    // Real-world shape (curator screenshot): the citation itself carries <i>
+    // tags, with placement that differs from the title's own markup.
+    const citation =
+      'Chen X; Zhao G, (2027) Ribosome engineering enhances genetic code expansion '
+      + 'in <i>Saccharomyces cerevisiae</i>. Synthetic and systems biotechnology 18:76-84';
+    expect(
+      journalInfoFromCitation(
+        citation,
+        'Ribosome engineering enhances genetic code expansion in <i>Saccharomyces cerevisiae</i>.'
+      )
+    ).toBe('Synthetic and systems biotechnology 18:76-84');
+    // differing tag placement between title and citation still matches
+    expect(
+      journalInfoFromCitation(
+        'A B, (2027) Production of ent-</i>kaurene in yeast. Some Journal 18:63-74',
+        'Production of <i>ent</i>-kaurene in yeast.'
+      )
+    ).toBe('Some Journal 18:63-74');
+  });
+
+  test('journalInfoFromCitation falls back to the stripped full citation', () => {
+    const citation = 'Someone A, (2026) A different <i>title</i>. Some Journal 1:2-3';
+    const stripped = 'Someone A, (2026) A different title. Some Journal 1:2-3';
+    expect(journalInfoFromCitation(citation, 'Title not in the citation')).toBe(stripped);
+    expect(journalInfoFromCitation(citation, null)).toBe(stripped);
     expect(journalInfoFromCitation('', 'Anything')).toBe('');
     expect(journalInfoFromCitation(null, null)).toBe('');
   });
