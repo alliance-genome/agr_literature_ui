@@ -15,16 +15,16 @@
 // boxes for ordering (single column — a card is a vertical stack, so only the
 // order is draggable, not the size), a flex-wrap checkbox row for visibility,
 // and a saved-profile list with load / save-here / rename / set-default /
-// delete. Each box also carries aria-labeled up/down buttons: the canvas
-// itself has no keyboard support, so the buttons keep reordering reachable
-// for keyboard and screen-reader users (review finding).
+// delete. Reordering is drag-only, like the other layout canvases: the boxes
+// briefly carried keyboard-reachable up/down buttons as an accessibility
+// fallback, but curators found them visually heavy and asked for their
+// removal — keyboard reordering across all the layout modals is a known
+// follow-up.
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Modal, Button, Form, Spinner, Alert } from 'react-bootstrap';
 import { FaGear } from 'react-icons/fa6';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 
 import GridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -144,22 +144,6 @@ const SearchDisplaySettings = () => {
     let vi = 0;
     const order = prefs.sectionOrder.map((id) =>
       prefs.hiddenSections.includes(id) ? id : draggedOrder[vi++]
-    );
-    applyPrefs({ ...prefs, sectionOrder: order });
-  };
-
-  // Keyboard-reachable reordering (the canvas is mouse-only): move a section
-  // one step among the visible slots — the same semantics as a drag.
-  const moveVisibleSection = (id, delta) => {
-    const vis = [...visibleOrder];
-    const from = vis.indexOf(id);
-    const to = from + delta;
-    if (from < 0 || to < 0 || to >= vis.length) return;
-    vis.splice(from, 1);
-    vis.splice(to, 0, id);
-    let vi = 0;
-    const order = prefs.sectionOrder.map((sid) =>
-      prefs.hiddenSections.includes(sid) ? sid : vis[vi++]
     );
     applyPrefs({ ...prefs, sectionOrder: order });
   };
@@ -332,39 +316,11 @@ const SearchDisplaySettings = () => {
               compactType="vertical"
               isDraggable
               isResizable={false}
-              draggableCancel=".search-display-order-btn"
               onDragStop={handleDragStop}
             >
-              {visibleOrder.map((id, idx) => (
-                <div
-                  key={id}
-                  style={{
-                    ...sectionBoxStyle(sectionColor(id)),
-                    justifyContent: 'space-between',
-                    padding: '0 6px',
-                  }}
-                >
-                  <span style={{ flexGrow: 1, textAlign: 'center' }}>{sectionLabel(id)}</span>
-                  <span className="d-flex" style={{ gap: '4px' }}>
-                    <Button
-                      variant="outline-secondary" size="sm"
-                      className="search-display-order-btn py-0 px-1"
-                      aria-label={`Move ${sectionLabel(id)} up`}
-                      disabled={idx === 0}
-                      onClick={() => moveVisibleSection(id, -1)}
-                    >
-                      <FontAwesomeIcon icon={faArrowUp} />
-                    </Button>
-                    <Button
-                      variant="outline-secondary" size="sm"
-                      className="search-display-order-btn py-0 px-1"
-                      aria-label={`Move ${sectionLabel(id)} down`}
-                      disabled={idx === visibleOrder.length - 1}
-                      onClick={() => moveVisibleSection(id, 1)}
-                    >
-                      <FontAwesomeIcon icon={faArrowDown} />
-                    </Button>
-                  </span>
+              {visibleOrder.map((id) => (
+                <div key={id} style={sectionBoxStyle(sectionColor(id))}>
+                  {sectionLabel(id)}
                 </div>
               ))}
             </ReactGridLayout>
