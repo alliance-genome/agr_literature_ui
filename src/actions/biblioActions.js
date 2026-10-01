@@ -1043,10 +1043,10 @@ export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
   };
 };
 
-export const setTopicEntityTags = (tags, referenceCurie, truncated = false) => {
+export const setTopicEntityTags = (tags, referenceCurie) => {
   return {
     type: 'SET_TOPIC_ENTITY_TAGS',
-    payload: { tags, referenceCurie, truncated }
+    payload: { tags, referenceCurie }
   };
 };
 
@@ -1099,13 +1099,9 @@ export const fetchTopicEntityTags = (referenceCurie, forceRefresh = false) => {
         const url = baseUrl + '?page=1&page_size=' + TET_FETCH_PAGE_SIZE + '&sort_by=source_method';
         const response = await api.get(url);
         const tags = response.data || [];
-        // A full page means the cap truncated the list: the consumers that
-        // aggregate over it (EntityCountsByMod) show a hint instead of
-        // silently undercounting bulk-loaded tags (review finding).
-        const truncated = tags.length >= TET_FETCH_PAGE_SIZE;
         // Only dispatch if this is still the curie we want
         if (getState().biblio.referenceCurie === referenceCurie) {
-          dispatch(setTopicEntityTags(tags, referenceCurie, truncated));
+          dispatch(setTopicEntityTags(tags, referenceCurie));
         }
         return tags;
       } catch (error) {

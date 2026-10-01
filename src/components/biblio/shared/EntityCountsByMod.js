@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useMemo, useState } from 'react';
+import { useSelector } from 'react-redux';
 import Spinner from 'react-bootstrap/Spinner';
 
-import { fetchTopicEntityTags } from '../../../actions/biblioActions';
+import { api } from '../../../api';
 
 // Centered panel, sized to match the workflow tables (which center an 80%-wide
 // grid). The card itself stays left-aligned inside so multiple MOD rows are easy
@@ -50,10 +50,10 @@ const capitalizeFirst = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(
  * by MOD and entity type. There is no distinction between manual and automated
  * tags. The MOD is taken from each tag's secondary data provider.
  *
- * Data is loaded into (and read from) the redux store so any reference-based
- * (Biblio) page can reuse it. The component is self-contained so it can be
- * dropped into the workflow editor, the topic/entity editor, the biblio
- * display, or any other place in the future.
+ * The counts come from GET /topic_entity_tag/entity_counts_by_mod/<curie>
+ * (SCRUM-6620): the server counts distinct entities per (owning MOD, entity
+ * type) over the WHOLE tag set — the previous client-side aggregation over
+ * the 8,000-row capped fetch undercounted large-scale papers.
  *
  * Acceptance criteria honored here:
  *   - counts of entities associated with a paper for each MOD
@@ -62,38 +62,35 @@ const capitalizeFirst = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(
  *   - entity types listed in alphabetical order
  */
 const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
-  const dispatch = useDispatch();
-
   const storeReferenceCurie = useSelector((state) => state.biblio.referenceCurie);
   const referenceCurie = referenceCurieProp || storeReferenceCurie;
 
-  const topicEntityTags = useSelector((state) => state.biblio.topicEntityTags);
-  const topicEntityTagsLoading = useSelector((state) => state.biblio.topicEntityTagsLoading);
-  const topicEntityTagsCurie = useSelector((state) => state.biblio.topicEntityTagsCurie);
-  // The counts aggregate over the one-page tag fetch, which caps at 8,000
-  // rows (source_method-sorted so curator tags survive). On a larger paper
-  // say so rather than silently undercounting bulk-loaded tags; moving these
-  // counts server-side is the tracked follow-up (review finding).
-  const topicEntityTagsTruncated = useSelector((state) => state.biblio.topicEntityTagsTruncated);
-
+  const [counts, setCounts] = useState(null); // null = loading
   useEffect(() => {
-    if (referenceCurie) {
-      dispatch(fetchTopicEntityTags(referenceCurie));
-    }
-  }, [dispatch, referenceCurie]);
+    if (!referenceCurie) return undefined;
+    let cancelled = false;
+    setCounts(null);
+    api.get(`/topic_entity_tag/entity_counts_by_mod/${referenceCurie}`)
+      .then((res) => {
+        if (!cancelled) setCounts(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch((err) => {
+        console.error('Failed to load entity counts by MOD:', err);
+        if (!cancelled) setCounts([]);
+      });
+    return () => { cancelled = true; };
+  }, [referenceCurie]);
 
-  // Group unique entities by MOD then by entity type.
+  // Group the server rows by MOD. Two entity-type curies can share a display
+  // name; their counts are summed under it.
   const countsByMod = useMemo(() => {
     const byMod = {};
-    for (const tag of topicEntityTags || []) {
-      const mod = tag?.tag_source?.secondary_data_provider_abbreviation;
-      const entityType = tag?.entity_type_name;
-      const entity = tag?.entity; // entity curie; unique key for counting
-      // Skip rows without a MOD, entity type, or an actual entity (e.g. topic-only tags)
-      if (!mod || !entityType || !entity) continue;
+    for (const row of counts || []) {
+      const mod = row.mod_abbreviation;
+      const name = row.entity_type_name || row.entity_type;
+      if (!mod || !name || !row.entity_count) continue;
       if (!byMod[mod]) byMod[mod] = {};
-      if (!byMod[mod][entityType]) byMod[mod][entityType] = new Set();
-      byMod[mod][entityType].add(entity);
+      byMod[mod][name] = (byMod[mod][name] || 0) + row.entity_count;
     }
 
     return Object.keys(byMod)
@@ -101,15 +98,15 @@ const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
       .map((mod) => ({
         mod,
         entityTypes: Object.keys(byMod[mod])
-          .map((name) => ({ name, count: byMod[mod][name].size }))
+          .map((name) => ({ name, count: byMod[mod][name] }))
           .filter((entityType) => entityType.count > 0)
           .sort((a, b) => a.name.localeCompare(b.name))
       }))
       .filter((modGroup) => modGroup.entityTypes.length > 0);
-  }, [topicEntityTags]);
+  }, [counts]);
 
   // Loading the data for this reference for the first time
-  if (topicEntityTagsLoading && topicEntityTagsCurie !== referenceCurie) {
+  if (counts === null) {
     return (
       <div style={panelWrapperStyle}>
         <div style={panelStyle}>
@@ -152,12 +149,6 @@ const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
             ))}
           </tbody>
         </table>
-        {topicEntityTagsTruncated && (
-          <div className="text-muted" style={{ fontSize: '0.8em', textAlign: 'center', padding: '0 6px 6px' }}>
-            Counted from the first 8,000 tags — this paper has more; bulk-loaded
-            tags beyond that are not included.
-          </div>
-        )}
       </div>
     </div>
   );

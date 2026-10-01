@@ -56,10 +56,16 @@ export default (props) => {
         // (yet) reflected them. (It originally also covered professional_curator-typed
         // sources, a spelling the SCRUM-6518 migration normalised away.)
         const isCuratorCreatedTag = isCuratorSourceTet(props.data);
+        // has_curator_validating_tag is computed server-side over ALL
+        // validating tags (SCRUM-6620); the scan over the redux tag list is
+        // only a fallback for rows serialized by an older backend, and it is
+        // capped at 8,000 rows, so it can miss bulk-loaded validating tags.
         const hasSecondCuratorValidation = ['validated_right', 'validated_wrong', 'validation_conflict']
             .includes(props.data.validation_by_professional_biocurator) ||
-            (allTags || []).some(tag => props.data.validating_tags.includes(tag.topic_entity_tag_id) &&
-                isCuratorSourceTet(tag));
+            props.data.has_curator_validating_tag === true ||
+            (props.data.has_curator_validating_tag === undefined &&
+                (allTags || []).some(tag => props.data.validating_tags.includes(tag.topic_entity_tag_id) &&
+                    isCuratorSourceTet(tag)));
         const showButton = props.data.validating_tags.length > 0 &&
             (!isCuratorCreatedTag || hasSecondCuratorValidation);
         return(
