@@ -324,6 +324,7 @@ export default function(state = initialState, action) {
         ...state,
         topicEntityTags: action.payload.tags,
         topicEntityTagsCurie: action.payload.referenceCurie,
+        topicEntityTagsTruncated: !!action.payload.truncated,
         topicEntityTagsLoading: false
       }
 

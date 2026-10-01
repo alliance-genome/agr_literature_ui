@@ -275,16 +275,41 @@ const SearchResultItem = ({ reference }) => {
   // large_scale_tags with resolved ATP names. Rendered outside the
   // customizable sections: saved section orders predate this and it is a
   // data-completeness signal, not a layout choice.
-  const largeScaleBadges = (reference.large_scale_tags || []).length > 0 && (
+  // One badge per (entity type, topic): the indexer mints one summary tag per
+  // sub-group (also split by data_provider, SEA group and owning MOD), so a
+  // paper whose alleles span two providers would otherwise show two allele
+  // badges that read like a bug (review finding). Sum the counts for display.
+  const largeScaleSummaries = (() => {
+    const byKey = new Map();
+    for (const tag of reference.large_scale_tags || []) {
+      const key = `${tag.entity_type || ''}|${tag.topic || ''}`;
+      const entry = byKey.get(key) || {
+        name: tag.entity_type_name || tag.topic_name || tag.entity_type || 'association',
+        count: 0,
+        hasCount: false,
+      };
+      if (tag.entity_count != null) {
+        entry.count += tag.entity_count;
+        entry.hasCount = true;
+      }
+      byKey.set(key, entry);
+    }
+    return [...byKey.values()];
+  })();
+
+  // "gene" -> "genes", "protein complex" -> "protein complexes"; names that
+  // are already plural ("species") pass through.
+  const pluralizeEntityName = (name) =>
+    name.endsWith('s') ? name : (/(sh|ch|x|z)$/.test(name) ? `${name}es` : `${name}s`);
+
+  const largeScaleBadges = largeScaleSummaries.length > 0 && (
     <div className="searchRow-other">
-      {reference.large_scale_tags.map((tag, i) => {
-        const name = tag.entity_type_name || tag.topic_name || tag.entity_type || 'association';
-        const plural = name.endsWith('s') ? name : `${name}s`;
-        const count = tag.entity_count != null ? `${tag.entity_count.toLocaleString()} ` : '';
+      {largeScaleSummaries.map((summary, i) => {
+        const count = summary.hasCount ? `${summary.count.toLocaleString()} ` : '';
         return (
           <Badge key={i} variant="info" style={{ marginRight: '6px' }}
                  title="This paper's associations of this type exceed the display threshold; the full list is in the database and on the Biblio page.">
-            {`${count}${plural} (large-scale study)`}
+            {`${count}${pluralizeEntityName(summary.name)} (large-scale study)`}
           </Badge>
         );
       })}

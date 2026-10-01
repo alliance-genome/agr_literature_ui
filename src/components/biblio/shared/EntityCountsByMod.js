@@ -70,6 +70,11 @@ const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
   const topicEntityTags = useSelector((state) => state.biblio.topicEntityTags);
   const topicEntityTagsLoading = useSelector((state) => state.biblio.topicEntityTagsLoading);
   const topicEntityTagsCurie = useSelector((state) => state.biblio.topicEntityTagsCurie);
+  // The counts aggregate over the one-page tag fetch, which caps at 8,000
+  // rows (source_method-sorted so curator tags survive). On a larger paper
+  // say so rather than silently undercounting bulk-loaded tags; moving these
+  // counts server-side is the tracked follow-up (review finding).
+  const topicEntityTagsTruncated = useSelector((state) => state.biblio.topicEntityTagsTruncated);
 
   useEffect(() => {
     if (referenceCurie) {
@@ -147,6 +152,12 @@ const EntityCountsByMod = ({ referenceCurie: referenceCurieProp }) => {
             ))}
           </tbody>
         </table>
+        {topicEntityTagsTruncated && (
+          <div className="text-muted" style={{ fontSize: '0.8em', textAlign: 'center', padding: '0 6px 6px' }}>
+            Counted from the first 8,000 tags — this paper has more; bulk-loaded
+            tags beyond that are not included.
+          </div>
+        )}
       </div>
     </div>
   );
