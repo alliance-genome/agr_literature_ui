@@ -69,7 +69,10 @@ const PreCurationLegend = () => (
 );
 
 export const timestampToDateFormatter = (params) => {
-  if (params.value === null) { return ''; }	// e.g. aggregated_curation_status_and_tet_info without tet
+  // == null also covers undefined: infinite-row-model loading stubs have no
+  // data yet, and formatting undefined printed "NaN-NaN-NaN NaN:NaN:NaN AM"
+  // in the date columns while a block loaded (SCRUM-6618).
+  if (params.value == null) { return ''; }	// e.g. aggregated_curation_status_and_tet_info without tet
   if (params.value === '') { return ''; }	// e.g. indexing priority
   const date = new Date(params.value + 'Z');	// force treat it as UTC
   const pad = (n) => n.toString().padStart(2, '0');

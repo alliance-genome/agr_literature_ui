@@ -133,10 +133,11 @@ export default (props) => {
 
 
     // Infinite row model (SCRUM-6618): cell renderers mount for loading row
-    // stubs whose data is undefined until the block arrives — rendering
-    // nothing until then. Without this guard the undefined read below crashed
-    // React and blanked the whole Biblio page.
-    if (!props.data) return null;
+    // stubs whose data is undefined until the block arrives. Without this
+    // guard the undefined read below crashed React and blanked the whole
+    // Biblio page; showing "Loading…" in the first column is the standard
+    // infinite-model row-loading indicator.
+    if (!props.data) return <span className="text-muted">Loading…</span>;
 
     // Only ABC-created tags may be edited or deleted: block imported/historic MOD tags
     // by requiring the source to be the ABC literature system professional_biocurator
