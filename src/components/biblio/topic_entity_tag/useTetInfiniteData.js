@@ -162,6 +162,35 @@ const useTetInfiniteData = (referenceCurie) => {
     },
   }), [referenceCurie, fetchCount]);
 
+  // Fetch EVERY row for the current view (TSV export): pages of 5000 until a
+  // short page. With applyFilters=false this is the full unfiltered tag set —
+  // exports are no longer capped at the old 8,000-row fetch limit.
+  const fetchAllRows = useCallback(async ({
+    sortModel, filterModel, extraColumnFilters, applyFilters = true,
+  } = {}) => {
+    const pageSize = 5000;
+    const columnFilters = applyFilters
+      ? { ...columnFiltersFromModel(filterModel), ...(extraColumnFilters || {}) }
+      : {};
+    const { sort_by, desc_sort } = sortParamsFromModel(sortModel);
+    const all = [];
+    for (let page = 1; ; page += 1) {
+      const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+      if (sort_by) {
+        query.set('sort_by', sort_by);
+        query.set('desc_sort', String(!!desc_sort));
+      }
+      if (Object.keys(columnFilters).length > 0) {
+        query.set('column_filters', JSON.stringify(columnFilters));
+      }
+      const res = await api.get(`/topic_entity_tag/by_reference/${referenceCurie}?${query.toString()}`);
+      const rows = (res.data || []).map(toTableRow);
+      all.push(...rows);
+      if (rows.length < pageSize) break;
+    }
+    return all;
+  }, [referenceCurie]);
+
   const fetchDistinctValues = useCallback(async (column) => {
     const res = await api.get(
       `/topic_entity_tag/by_reference/${referenceCurie}?column_only=${encodeURIComponent(column)}`
@@ -178,7 +207,10 @@ const useTetInfiniteData = (referenceCurie) => {
 
   const refresh = useCallback(() => setRefreshVersion((v) => v + 1), []);
 
-  return { makeDatasource, fetchDistinctValues, fetchCurieToName, totalCount, refresh, refreshVersion };
+  return {
+    makeDatasource, fetchAllRows, fetchDistinctValues, fetchCurieToName,
+    totalCount, refresh, refreshVersion,
+  };
 };
 
 export default useTetInfiniteData;

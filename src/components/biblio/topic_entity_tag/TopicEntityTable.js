@@ -40,7 +40,12 @@ import BiblioPreferenceControls from '../../settings/BiblioPreferenceControls';
 /* --------------------------------------------------
    Download helpers (exported)
 -------------------------------------------------- */
-export const handleDownload = (option, gridRef, colDefs, rowData, fileNameFront) => {
+// `fetchRows` (optional): async ({filtered}) => rows. Supplied by tables on
+// the infinite row model (SCRUM-6618), where the grid only holds the loaded
+// blocks — the export pages the full (optionally filtered) set from the
+// server instead, with no row cap. Without it, rows come from the grid's
+// client-side model as before.
+export const handleDownload = async (option, gridRef, colDefs, rowData, fileNameFront, fetchRows) => {
   const api = gridRef.current?.api;
   if (!api) {
     console.error('Grid API not available for download');
@@ -68,7 +73,14 @@ export const handleDownload = (option, gridRef, colDefs, rowData, fileNameFront)
     fields.splice(entityIndex + 1, 0, 'entity');
   }
 
-  if (option === 'allColumns' || option === 'multiHeader') {
+  if (fetchRows) {
+    try {
+      dataToDownload = await fetchRows({ filtered: option !== 'withoutFilters' });
+    } catch (error) {
+      console.error('Failed to fetch rows for download:', error);
+      return;
+    }
+  } else if (option === 'allColumns' || option === 'multiHeader') {
     api.forEachNode((node) => dataToDownload.push(node.data));
   } else if (option === 'withoutFilters') {
     dataToDownload = [...(rowData || [])];
@@ -146,7 +158,7 @@ export const DownloadAllColumnsButton = ({
   </Button>
 );
 
-export const DownloadDropdownOptionsButton = ({ gridRef, colDefs, rowData, fileNameFront }) => (
+export const DownloadDropdownOptionsButton = ({ gridRef, colDefs, rowData, fileNameFront, fetchRows }) => (
   <Dropdown className="ms-auto">
     <Dropdown.Toggle variant="primary" id="dropdown-download-options">
       Download Options
@@ -154,17 +166,17 @@ export const DownloadDropdownOptionsButton = ({ gridRef, colDefs, rowData, fileN
 
     <Dropdown.Menu>
       <Dropdown.Item
-        onClick={() => handleDownload('displayedData', gridRef, colDefs, rowData, fileNameFront)}
+        onClick={() => handleDownload('displayedData', gridRef, colDefs, rowData, fileNameFront, fetchRows)}
       >
         Download Displayed Data
       </Dropdown.Item>
       <Dropdown.Item
-        onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront)}
+        onClick={() => handleDownload('allColumns', gridRef, colDefs, rowData, fileNameFront, fetchRows)}
       >
         Download All Columns
       </Dropdown.Item>
       <Dropdown.Item
-        onClick={() => handleDownload('withoutFilters', gridRef, colDefs, rowData, fileNameFront)}
+        onClick={() => handleDownload('withoutFilters', gridRef, colDefs, rowData, fileNameFront, fetchRows)}
       >
         Download Without Filters
       </Dropdown.Item>
@@ -366,6 +378,7 @@ const TopicEntityTable = () => {
   // (50k+ tags) are fully navigable without a 50k-row payload.
   const {
     makeDatasource,
+    fetchAllRows,
     fetchDistinctValues,
     fetchCurieToName,
     totalCount,
@@ -798,6 +811,22 @@ const TopicEntityTable = () => {
 
   const fileNameFront = `${referenceCurie}_tet_data`;
 
+  // TSV export under the infinite row model: the grid only holds loaded
+  // blocks, so exports page the full set from the server — honoring the
+  // grid's current sort + filters when `filtered`, and nothing otherwise.
+  const fetchExportRows = useCallback(async ({ filtered }) => {
+    const api = getGridApi();
+    const sortModel = (api?.getColumnState?.() || [])
+      .filter((s) => s.sort)
+      .map((s) => ({ colId: s.colId, sort: s.sort }));
+    return fetchAllRows({
+      sortModel: filtered ? sortModel : undefined,
+      filterModel: filtered ? api?.getFilterModel?.() : undefined,
+      extraColumnFilters: filtered ? (externalColumnFilters || undefined) : undefined,
+      applyFilters: filtered,
+    });
+  }, [getGridApi, fetchAllRows, externalColumnFilters]);
+
   return (
     <div>
       {selectedCurie && (
@@ -868,6 +897,7 @@ const TopicEntityTable = () => {
                 colDefs={colDefs}
                 rowData={topicEntityTags}
                 fileNameFront={fileNameFront}
+                fetchRows={fetchExportRows}
               />
             </div>
           </Col>
