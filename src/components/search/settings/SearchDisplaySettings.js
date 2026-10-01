@@ -462,7 +462,23 @@ const SearchDisplaySettings = () => {
                               {isDefault ? '★' : ''}
                             </span>
                             {isCurrent && (
-                              <span className="badge bg-info me-2" title="The layout the cards are currently using">
+                              // Inline-styled pill: the app runs Bootstrap 4,
+                              // where the BS5 classes used before (bg-info,
+                              // me-2) are inert — the badge rendered dark and
+                              // flush against the name (curator feedback).
+                              <span
+                                style={{
+                                  backgroundColor: '#d1ecf1',
+                                  color: '#0c5460',
+                                  borderRadius: '10px',
+                                  padding: '2px 10px',
+                                  marginRight: '12px',
+                                  fontSize: '0.8em',
+                                  fontWeight: 600,
+                                  whiteSpace: 'nowrap',
+                                }}
+                                title="The layout the cards are currently using"
+                              >
                                 current{profileDirty ? ' (modified)' : ''}
                               </span>
                             )}
