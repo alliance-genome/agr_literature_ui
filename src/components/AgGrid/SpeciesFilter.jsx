@@ -1,61 +1,26 @@
-import { useGridFilter } from 'ag-grid-react';
-import React, { useCallback, useEffect, useState } from 'react';
-import {useSelector} from "react-redux";
+import React from 'react';
+import { useSelector } from 'react-redux';
+import MultiFilter from './MultiFilter';
 
-
-export default ({ model: rawModel, onModelChange }) => {
-    const model = Array.isArray(rawModel) ? rawModel : null;
-    const [closeFilter, setCloseFilter] = useState();
-    const [unappliedModel, setUnappliedModel] = useState(model);
+// `items` arrives via colDef.filterParams (SCRUM-6618): curie-valued
+// {value, label} options for server-side filtering. Without it, fall back to
+// the taxon map scoped to the loaded tags' species — the model was already
+// curie-valued in the hand-rolled checkbox filter this wrapper replaced.
+const SpeciesFilter = ({ model, onModelChange, items }) => {
     const curieToNameTaxon = useSelector(state => state.biblio.curieToNameTaxon);
     const allSpecies = useSelector(state => state.biblio.allSpecies);
-    const doesFilterPass = useCallback((params) => {
-        // doesFilterPass only gets called if the filter is active
-        return model ? model.includes(params.data.species) : true;
-    }, [model]);
-
-    const afterGuiAttached = useCallback(({ hidePopup }) => {
-        setCloseFilter(() => hidePopup);
-    }, []);
-
-    // register filter handlers with the grid
-    useGridFilter({
-        doesFilterPass,
-        afterGuiAttached,
-    });
-
-    useEffect(() => {
-        setUnappliedModel(model);
-    }, [model]);
-
-    const onSpeciesChange = ({ target: { value,checked } } ) => {
-        let newModel = [];
-        if(checked){
-            newModel = unappliedModel ? unappliedModel.concat([value]) : [value];
-        }
-        else{
-            newModel = unappliedModel.filter(f => f !== value)
-        }
-        setUnappliedModel(newModel.length===0 ? null : newModel);
-    };
-
-    const onClick = () => {
-        onModelChange(unappliedModel);
-        if (closeFilter) {
-            closeFilter();
-        }
-    };
-
+    const fallback = Object.entries(curieToNameTaxon || {})
+        .filter(([curie]) => (allSpecies || []).includes(curie))
+        .map(([curie, name]) => ({ value: curie, label: name }));
     return (
-        <div className="custom-filter">
-            <div>Select Species</div><hr/>
-            {Object.entries(curieToNameTaxon).filter(([key, value]) => allSpecies.includes(key)).map( ([key,value]) => {
-                return  <div key={key}>
-                            <input type="checkbox" id={key} value ={key} onChange={onSpeciesChange}/>
-                            <label htmlFor={key}> {value}</label>
-                        </div>
-            })}
-            <hr/><button onClick={onClick}>Apply</button>
-        </div>
+        <MultiFilter
+            model={model}
+            onModelChange={onModelChange}
+            items={items && items.length > 0 ? items : fallback}
+            label="species_name"
+            valueField="species"
+        />
     );
 };
+
+export default SpeciesFilter;

@@ -56,10 +56,16 @@ export default (props) => {
         // (yet) reflected them. (It originally also covered professional_curator-typed
         // sources, a spelling the SCRUM-6518 migration normalised away.)
         const isCuratorCreatedTag = isCuratorSourceTet(props.data);
+        // has_curator_validating_tag is computed server-side over ALL
+        // validating tags (SCRUM-6620); the scan over the redux tag list is
+        // only a fallback for rows serialized by an older backend, and it is
+        // capped at 8,000 rows, so it can miss bulk-loaded validating tags.
         const hasSecondCuratorValidation = ['validated_right', 'validated_wrong', 'validation_conflict']
             .includes(props.data.validation_by_professional_biocurator) ||
-            (allTags || []).some(tag => props.data.validating_tags.includes(tag.topic_entity_tag_id) &&
-                isCuratorSourceTet(tag));
+            props.data.has_curator_validating_tag === true ||
+            (props.data.has_curator_validating_tag === undefined &&
+                (allTags || []).some(tag => props.data.validating_tags.includes(tag.topic_entity_tag_id) &&
+                    isCuratorSourceTet(tag)));
         const showButton = props.data.validating_tags.length > 0 &&
             (!isCuratorCreatedTag || hasSecondCuratorValidation);
         return(
@@ -96,10 +102,13 @@ export default (props) => {
 
             // status_code=status.HTTP_204_NO_CONTENT
             if (response.status === 204) {
-                // remove the deleted item from the state so that the UI updates
-                props.api.applyTransaction({ remove: [ props.api.getRowNode(props.node.id).data ] });
-                // Force a complete table refresh by toggling the update counter
-                // We increment then immediately decrement to trigger the useEffect
+                // No applyTransaction here: the TET table runs the infinite
+                // row model (SCRUM-6618), which has no client-side transactions
+                // — and getRowNode(...).data threw before the counter toggle,
+                // so the table never refreshed. The toggle below is the whole
+                // mechanism now: TopicEntityTable reinstalls the datasource on
+                // the 1 -> 0 transition, purging the block cache and refetching
+                // without the deleted row.
                 dispatch(setBiblioUpdatingEntityAdd(1));
                 setTimeout(() => {
                     dispatch(setBiblioUpdatingEntityAdd(0));
@@ -128,6 +137,13 @@ export default (props) => {
         }
     }
 
+
+    // Infinite row model (SCRUM-6618): cell renderers mount for loading row
+    // stubs whose data is undefined until the block arrives. Without this
+    // guard the undefined read below crashed React and blanked the whole
+    // Biblio page; showing "Loading…" in the first column is the standard
+    // infinite-model row-loading indicator.
+    if (!props.data) return <span className="text-muted">Loading…</span>;
 
     // Only ABC-created tags may be edited or deleted: block imported/historic MOD tags
     // by requiring the source to be the ABC literature system professional_biocurator

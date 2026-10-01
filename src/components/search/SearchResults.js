@@ -8,7 +8,7 @@ import {
     setGetReferenceCurieFlag,
     setReferenceCurie
 } from '../../actions/biblioActions';
-import {Modal} from 'react-bootstrap';
+import {Badge, Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
@@ -269,12 +269,60 @@ const SearchResultItem = ({ reference }) => {
     ),
   };
 
+  // Genome-scale summary badges (SCRUM-6614). The indexer collapses TET
+  // groups above the large-scale threshold into one summary tag per
+  // (entity type, topic); the API surfaces them on the hit as
+  // large_scale_tags with resolved ATP names. Rendered outside the
+  // customizable sections: saved section orders predate this and it is a
+  // data-completeness signal, not a layout choice.
+  // One badge per (entity type, topic): the indexer mints one summary tag per
+  // sub-group (also split by data_provider, SEA group and owning MOD), so a
+  // paper whose alleles span two providers would otherwise show two allele
+  // badges that read like a bug (review finding). Sum the counts for display.
+  const largeScaleSummaries = (() => {
+    const byKey = new Map();
+    for (const tag of reference.large_scale_tags || []) {
+      const key = `${tag.entity_type || ''}|${tag.topic || ''}`;
+      const entry = byKey.get(key) || {
+        name: tag.entity_type_name || tag.topic_name || tag.entity_type || 'association',
+        count: 0,
+        hasCount: false,
+      };
+      if (tag.entity_count != null) {
+        entry.count += tag.entity_count;
+        entry.hasCount = true;
+      }
+      byKey.set(key, entry);
+    }
+    return [...byKey.values()];
+  })();
+
+  // "gene" -> "genes", "protein complex" -> "protein complexes"; names that
+  // are already plural ("species") pass through.
+  const pluralizeEntityName = (name) =>
+    name.endsWith('s') ? name : (/(sh|ch|x|z)$/.test(name) ? `${name}es` : `${name}s`);
+
+  const largeScaleBadges = largeScaleSummaries.length > 0 && (
+    <div className="searchRow-other">
+      {largeScaleSummaries.map((summary, i) => {
+        const count = summary.hasCount ? `${summary.count.toLocaleString()} ` : '';
+        return (
+          <Badge key={i} variant="info" style={{ marginRight: '6px' }}
+                 title="This paper's associations of this type exceed the display threshold; the full list is in the database and on the Biblio page.">
+            {`${count}${pluralizeEntityName(summary.name)} (large-scale study)`}
+          </Badge>
+        );
+      })}
+    </div>
+  );
+
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" >
         <div className="d-flex">
           <div className="search-card-body">
             <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+            {largeScaleBadges}
             {displayPrefs.sectionOrder.map((id) =>
               sectionRenderers[id] ? sectionRenderers[id]() : null
             )}

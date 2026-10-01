@@ -22,7 +22,8 @@ import {
   SEARCH_SET_ADVANCED_FACETS_VOCAB,
   SEARCH_SET_GRID_PREFERENCES,
   SEARCH_APPLY_GRID_PREFERENCES,
-  SEARCH_SET_DISPLAY_PREFS
+  SEARCH_SET_DISPLAY_PREFS,
+  SEARCH_SET_DISPLAY_PROFILE_NAME
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -93,7 +94,12 @@ const initialState = {
   gridPreferencesApplied: null,
   // Search-card display profile (SCRUM-6512). null = user has no loaded profile
   // yet; the cards fall back to the built-in defaults (everything visible).
-  searchDisplayPrefs: null
+  searchDisplayPrefs: null,
+  // Which saved layout the current display came from (null = built-in
+  // default) and whether it has been tweaked since (curator feedback: the
+  // page gave no indication of which layout you are looking at).
+  searchDisplayProfileName: null,
+  searchDisplayProfileDirty: false
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -341,9 +347,20 @@ export default function(state = initialState, action) {
       }
 
     case SEARCH_SET_DISPLAY_PREFS:
+      // Every prefs write marks the display as modified; the load/save/create
+      // flows dispatch SEARCH_SET_DISPLAY_PROFILE_NAME right after, which
+      // clears the flag — so only standalone tweaks leave it set.
       return {
         ...state,
-        searchDisplayPrefs: action.payload
+        searchDisplayPrefs: action.payload,
+        searchDisplayProfileDirty: true
+      }
+
+    case SEARCH_SET_DISPLAY_PROFILE_NAME:
+      return {
+        ...state,
+        searchDisplayProfileName: action.payload,
+        searchDisplayProfileDirty: false
       }
 
     case SEARCH_APPLY_GRID_PREFERENCES:

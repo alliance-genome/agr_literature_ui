@@ -32,7 +32,7 @@ import 'react-resizable/css/styles.css';
 
 import { usePersonSettings } from '../../settings/usePersonSettings';
 import { colorForIndex, sectionBoxStyle } from '../../settings/SectionLayoutModal';
-import { setSearchDisplayPrefs } from '../../../actions/searchActions';
+import { setSearchDisplayPrefs, setSearchDisplayProfileName } from '../../../actions/searchActions';
 import {
   CARD_SECTIONS,
   DEFAULT_DISPLAY_PREFS,
@@ -60,6 +60,21 @@ const SearchDisplaySettings = () => {
   const cognitoObserver = useSelector((state) => state.isLogged.cognitoObserver);
   const rawPrefs = useSelector((state) => state.search.searchDisplayPrefs);
   const searchResults = useSelector((state) => state.search.searchResults);
+  // Which saved layout the display came from, folded into the Layout button
+  // as "Layout: <name>" — the same idiom as the saved-search control's
+  // "Setting: <name>" (curator feedback: nothing said which layout you are
+  // looking at; a detached muted label read as stray text). A trailing *
+  // means modified since loading/saving; the built-in default shows plain
+  // "Layout" to keep the common case quiet.
+  const profileName = useSelector((state) => state.search.searchDisplayProfileName);
+  const profileDirty = useSelector((state) => state.search.searchDisplayProfileDirty);
+  const layoutButtonLabel = profileName
+    ? `Layout: ${profileName}${profileDirty ? '*' : ''}`
+    : (profileDirty ? 'Layout*' : 'Layout');
+  const layoutButtonTitle =
+    (profileName ? `Active card layout: ${profileName}` : 'Active card layout: built-in default')
+    + (profileDirty ? ' (modified since loading)' : '')
+    + ' — click to customize';
 
   const prefs = useMemo(() => normalizeDisplayPrefs(rawPrefs), [rawPrefs]);
 
@@ -184,18 +199,20 @@ const SearchDisplaySettings = () => {
       await load();
       if (created?.person_setting_id) setSelectedSettingId(created.person_setting_id);
       setNewName('');
+      dispatch(setSearchDisplayProfileName(clean));
       notify(`Layout "${clean}" created.`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
       notify(`Failed to create layout: ${msg}`, 'danger');
     }
-  }, [newName, settings, create, buildPayload, load, setSelectedSettingId, notify]);
+  }, [newName, settings, create, buildPayload, load, setSelectedSettingId, notify, dispatch]);
 
   const handleLoad = (setting) => {
     const stored = setting?.json_settings?.state;
     if (!stored) return;
     applyPrefs(stored);
     setSelectedSettingId(setting.person_setting_id);
+    dispatch(setSearchDisplayProfileName(setting.setting_name || setting.name || null));
     notify(`Loaded "${setting.setting_name || setting.name}".`, 'info');
   };
 
@@ -203,6 +220,7 @@ const SearchDisplaySettings = () => {
     try {
       await savePayloadTo(setting.person_setting_id, buildPayload());
       await load();
+      dispatch(setSearchDisplayProfileName(setting.setting_name || setting.name || null));
       notify(`Saved current layout to "${setting.setting_name || setting.name}".`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
@@ -267,11 +285,11 @@ const SearchDisplaySettings = () => {
       <Button
         variant="outline-primary"
         size="sm"
-        title="Customize the search-result card layout"
+        title={layoutButtonTitle}
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '4px' }} />
-        Layout
+        {layoutButtonLabel}
       </Button>
 
       <Modal
@@ -436,12 +454,18 @@ const SearchDisplaySettings = () => {
                       const id = setting.person_setting_id;
                       const isDefault = !!setting.default_setting;
                       const isEditing = Object.prototype.hasOwnProperty.call(nameEdits, id);
+                      const isCurrent = (setting.setting_name || setting.name) === profileName;
                       return (
                         <div key={id} className="list-group-item d-flex justify-content-between align-items-center">
                           <div className="d-flex align-items-center flex-grow-1 me-3">
                             <span className="me-2" title={isDefault ? 'Default layout' : ''}>
                               {isDefault ? '★' : ''}
                             </span>
+                            {isCurrent && (
+                              <span className="badge bg-info me-2" title="The layout the cards are currently using">
+                                current{profileDirty ? ' (modified)' : ''}
+                              </span>
+                            )}
                             {isEditing ? (
                               <div className="d-flex flex-grow-1 align-items-center">
                                 <Form.Control
@@ -510,6 +534,7 @@ const SearchDisplaySettings = () => {
             disabled={busy}
             onClick={() => {
               applyPrefs(DEFAULT_DISPLAY_PREFS);
+              dispatch(setSearchDisplayProfileName(null));
               notify('Reset to the default card layout.', 'info');
             }}
           >

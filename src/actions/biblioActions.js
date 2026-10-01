@@ -1054,6 +1054,13 @@ export const setTopicEntityTags = (tags, referenceCurie) => {
 let pendingTopicEntityTagsRequest = null;
 let pendingTopicEntityTagsCurie = null;
 
+// One page is fetched; bulk-loaded papers (e.g. the ZFIN large-scale loads,
+// SCRUM-6614) can exceed this, so the fetch also asks for the true total and
+// sorts by source_method — curated sources like abc_literature_system sort
+// before the *_reference_curation bulk loads, so anything truncated is
+// bulk-loaded rows, never curator-entered tags.
+const TET_FETCH_PAGE_SIZE = 8000;
+
 // Load all topic entity tags for a reference into the redux store so that any
 // reference-based (Biblio) page can reuse them (e.g. the entity counts summary)
 // without each component issuing its own request.
@@ -1083,7 +1090,14 @@ export const fetchTopicEntityTags = (referenceCurie, forceRefresh = false) => {
 
     pendingTopicEntityTagsRequest = (async () => {
       try {
-        const url = '/topic_entity_tag/by_reference/' + referenceCurie + '?page=1&page_size=8000';
+        const baseUrl = '/topic_entity_tag/by_reference/' + referenceCurie;
+        // The source_method sort keeps curated tags inside the page cap. The
+        // TET table pages server-side (SCRUM-6618) and the entity counts and
+        // curator-validation gating are server-computed (SCRUM-6620) — this
+        // fetch now feeds only the setAll* filter lists, QuickTopicAddition,
+        // and the older-backend fallbacks in the Actions cell and
+        // EntityCountsByMod. Removing it is SCRUM-6620's last step.
+        const url = baseUrl + '?page=1&page_size=' + TET_FETCH_PAGE_SIZE + '&sort_by=source_method';
         const response = await api.get(url);
         const tags = response.data || [];
         // Only dispatch if this is still the curie we want
