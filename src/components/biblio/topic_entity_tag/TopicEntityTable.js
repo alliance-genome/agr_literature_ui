@@ -26,6 +26,7 @@ import {
 import TopicEntityTagActions from '../../AgGrid/TopicEntityTagActions.jsx';
 import ValidationByCurator from '../../AgGrid/ValidationByCurator.jsx';
 import SpeciesFilter from '../../AgGrid/SpeciesFilter.jsx';
+import MultiFilter from '../../AgGrid/MultiFilter.jsx';
 import EntityTypeFilter from '../../AgGrid/EntityTypeFilter.jsx';
 import TopicFilter from '../../AgGrid/TopicFilter.jsx';
 import EntityFilter from '../../AgGrid/EntityFilter.jsx';
@@ -577,7 +578,7 @@ const TopicEntityTable = () => {
         field: 'topic_name',
         comparator: caseInsensitiveComparator,
         filter: TopicFilter,
-        filterParams: { items: filterOptions.topic || [] },
+        filterParams: { items: filterOptions.topic || [], serverMode: true },
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.topic}`)
       },
       {
@@ -585,7 +586,7 @@ const TopicEntityTable = () => {
         field: 'entity_type_name',
         comparator: caseInsensitiveComparator,
         filter: EntityTypeFilter,
-        filterParams: { items: filterOptions.entity_type || [] },
+        filterParams: { items: filterOptions.entity_type || [], serverMode: true },
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.entity_type}`)
       },
       {
@@ -593,7 +594,7 @@ const TopicEntityTable = () => {
         field: 'species_name',
         comparator: caseInsensitiveComparator,
         filter: SpeciesFilter,
-        filterParams: { items: filterOptions.species || [] },
+        filterParams: { items: filterOptions.species || [], serverMode: true },
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.species}`)
       },
       {
@@ -601,22 +602,43 @@ const TopicEntityTable = () => {
         field: 'entity_name',
         comparator: caseInsensitiveComparator,
         filter: EntityFilter,
-        filterParams: { items: filterOptions.entity || [] },
+        filterParams: { items: filterOptions.entity || [], serverMode: true },
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.entity}`)
       },
+      // no_data / has_data are computed in toTableRow, not DB columns: a
+      // server-side sort or filter on them would 404/422 and blank the grid
+      // (review finding). negated is the underlying DB field if filtering is
+      // ever wanted here.
       {
         headerName: 'No Data',
         field: 'no_data',
-        filter: true,
+        sortable: false,
+        filter: false,
         cellDataType: 'text'
       },
       {
         headerName: 'Data',
         field: 'has_data',
-        filter: true,
+        sortable: false,
+        filter: false,
         cellDataType: 'text'
       },
-      { headerName: 'Data Novelty', field: 'data_novelty', filter: true, valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty, onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.data_novelty}`) },
+      // Data novelty displays mapped names but the DB holds ATP curies, so a
+      // text filter typed against the display would match nothing: use the
+      // set filter with the known curie->name options instead.
+      {
+        headerName: 'Data Novelty',
+        field: 'data_novelty',
+        filter: MultiFilter,
+        filterParams: {
+          items: Object.entries(dataNoveltyMap).map(([value, label]) => ({ value, label })),
+          label: 'data_novelty',
+          valueField: 'data_novelty',
+          serverMode: true,
+        },
+        valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty,
+        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.data_novelty}`)
+      },
       { headerName: 'Data Context', field: 'data_context_name', filter: true, comparator: caseInsensitiveComparator, onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.data_context}`) },
       { headerName: 'Confidence Score', field: 'confidence_score', filter: true },
       { headerName: 'Confidence Level', field: 'confidence_level', filter: true },
@@ -632,7 +654,10 @@ const TopicEntityTable = () => {
       { headerName: 'Date Created', field: 'date_created', filter: true, valueFormatter: timestampToDateFormatter },
       { headerName: 'Updated By', field: 'updated_by', filter: true },
       { headerName: 'Date Updated', field: 'date_updated', filter: true, valueFormatter: timestampToDateFormatter },
-      { headerName: 'Author Response', field: 'validation_by_author', filter: true },
+      // The cell shows agree/disagree/no entry but the DB holds
+      // validated_right/... — a text filter on the display terms would match
+      // nothing server-side (review finding).
+      { headerName: 'Author Response', field: 'validation_by_author', filter: false },
       { headerName: 'Validation By Professional Biocurator', field: 'validation_by_professional_biocurator', filter: true, cellRenderer: ValidationByCurator },
       { headerName: 'Display Tag', field: 'display_tag_name', filter: true, comparator: caseInsensitiveComparator },
       { headerName: 'Source Secondary Data Provider', field: 'tag_source.secondary_data_provider_abbreviation', filter: true },
@@ -651,7 +676,9 @@ const TopicEntityTable = () => {
       { headerName: 'Source Date Updated', field: 'tag_source.date_updated', filter: true, valueFormatter: timestampToDateFormatter },
       { headerName: 'Source Date Created', field: 'tag_source.date_created', filter: true, valueFormatter: timestampToDateFormatter },
       { headerName: 'Model ID', field: 'ml_model_id', filter: true },
-      { headerName: 'Model Version', field: 'ml_model_version', filter: true },
+      // ml_model_version comes off the ml_model relationship, not a TET/source
+      // column — server-side sort/filter on it would fail (review finding).
+      { headerName: 'Model Version', field: 'ml_model_version', sortable: false, filter: false },
       { headerName: 'Topic Entity Tag Id', field: 'topic_entity_tag_id', filter: true },
       { headerName: 'Topic Entity Tag Source Id', field: 'tag_source.tag_source_id', filter: true }
     ],
@@ -920,7 +947,7 @@ const TopicEntityTable = () => {
           <Row>
             <Col>
               <div className="text-muted" style={{ paddingBottom: '4px' }}>
-                {totalCount.toLocaleString()} topic and entity tags
+                {totalCount.toLocaleString()} matching topic and entity tags
               </div>
             </Col>
           </Row>

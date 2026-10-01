@@ -1043,10 +1043,10 @@ export const fetchReferenceFiles = (referenceCurie, forceRefresh = false) => {
   };
 };
 
-export const setTopicEntityTags = (tags, referenceCurie, totalCount) => {
+export const setTopicEntityTags = (tags, referenceCurie) => {
   return {
     type: 'SET_TOPIC_ENTITY_TAGS',
-    payload: { tags, referenceCurie, totalCount }
+    payload: { tags, referenceCurie }
   };
 };
 
@@ -1091,19 +1091,17 @@ export const fetchTopicEntityTags = (referenceCurie, forceRefresh = false) => {
     pendingTopicEntityTagsRequest = (async () => {
       try {
         const baseUrl = '/topic_entity_tag/by_reference/' + referenceCurie;
+        // The source_method sort keeps curated tags inside the page cap. The
+        // TET table itself no longer reads this list (it pages server-side,
+        // SCRUM-6618) — this fetch feeds EntityCountsByMod and the Actions
+        // cell's related-tag lookup until they are migrated, so the old
+        // truncation-banner count request is gone.
         const url = baseUrl + '?page=1&page_size=' + TET_FETCH_PAGE_SIZE + '&sort_by=source_method';
-        // The count request tells the table when the page cap truncated the
-        // tags; if it fails, fall back to the fetched length (no banner).
-        const [response, countResponse] = await Promise.all([
-          api.get(url),
-          api.get(baseUrl + '?count_only=true').catch(() => null)
-        ]);
+        const response = await api.get(url);
         const tags = response.data || [];
-        const totalCount =
-          countResponse && typeof countResponse.data === 'number' ? countResponse.data : tags.length;
         // Only dispatch if this is still the curie we want
         if (getState().biblio.referenceCurie === referenceCurie) {
-          dispatch(setTopicEntityTags(tags, referenceCurie, totalCount));
+          dispatch(setTopicEntityTags(tags, referenceCurie));
         }
         return tags;
       } catch (error) {

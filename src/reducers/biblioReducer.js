@@ -42,7 +42,6 @@ const initialState = {
   topicEntityTags: [],
   topicEntityTagsLoading: false,
   topicEntityTagsCurie: '',
-  topicEntityTagsTotalCount: 0,
   // loadingQuery: true,
   isLoading: true,
   queryFailure: false,
@@ -325,10 +324,6 @@ export default function(state = initialState, action) {
         ...state,
         topicEntityTags: action.payload.tags,
         topicEntityTagsCurie: action.payload.referenceCurie,
-        topicEntityTagsTotalCount:
-          typeof action.payload.totalCount === 'number'
-            ? action.payload.totalCount
-            : (action.payload.tags || []).length,
         topicEntityTagsLoading: false
       }
 
@@ -1005,7 +1000,6 @@ export default function(state = initialState, action) {
         topicEntityTags: [],
         topicEntityTagsLoading: false,
         topicEntityTagsCurie: '',
-        topicEntityTagsTotalCount: 0,
         tetPageSize: defaultTetPageSize,
         allSpecies: [],
         allEntities: [],

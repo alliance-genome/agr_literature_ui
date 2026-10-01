@@ -1,6 +1,8 @@
 import {
   columnFiltersFromModel,
   dbColumnForColId,
+  sortColumnForColId,
+  sortParamsFromModel,
   toTableRow,
 } from '../useTetInfiniteData';
 
@@ -13,9 +15,23 @@ describe('TET infinite data mappers (SCRUM-6618)', () => {
     expect(dbColumnForColId('display_tag_name')).toBe('display_tag');
     expect(dbColumnForColId('tag_source.secondary_data_provider_abbreviation'))
       .toBe('secondary_data_provider');
+    expect(dbColumnForColId('tag_source.source_evidence_assertion_name'))
+      .toBe('tag_source.source_evidence_assertion');
     // raw columns pass through, including tag_source.* ones
     expect(dbColumnForColId('confidence_level')).toBe('confidence_level');
     expect(dbColumnForColId('tag_source.source_method')).toBe('tag_source.source_method');
+  });
+
+  test('sort columns drop the tag_source prefix (the sort endpoint resolves bare attrs)', () => {
+    expect(sortColumnForColId('tag_source.source_method')).toBe('source_method');
+    expect(sortColumnForColId('tag_source.source_evidence_assertion_name'))
+      .toBe('source_evidence_assertion');
+    expect(sortColumnForColId('tag_source.secondary_data_provider_abbreviation'))
+      .toBe('secondary_data_provider');
+    expect(sortColumnForColId('topic_name')).toBe('topic');
+    expect(sortParamsFromModel([{ colId: 'tag_source.source_method', sort: 'desc' }]))
+      .toEqual({ sort_by: 'source_method', desc_sort: true });
+    expect(sortParamsFromModel([])).toEqual({});
   });
 
   test('MultiFilter array models become values filters on the DB column', () => {
