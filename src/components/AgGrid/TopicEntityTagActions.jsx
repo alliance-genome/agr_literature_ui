@@ -96,10 +96,13 @@ export default (props) => {
 
             // status_code=status.HTTP_204_NO_CONTENT
             if (response.status === 204) {
-                // remove the deleted item from the state so that the UI updates
-                props.api.applyTransaction({ remove: [ props.api.getRowNode(props.node.id).data ] });
-                // Force a complete table refresh by toggling the update counter
-                // We increment then immediately decrement to trigger the useEffect
+                // No applyTransaction here: the TET table runs the infinite
+                // row model (SCRUM-6618), which has no client-side transactions
+                // — and getRowNode(...).data threw before the counter toggle,
+                // so the table never refreshed. The toggle below is the whole
+                // mechanism now: TopicEntityTable reinstalls the datasource on
+                // the 1 -> 0 transition, purging the block cache and refetching
+                // without the deleted row.
                 dispatch(setBiblioUpdatingEntityAdd(1));
                 setTimeout(() => {
                     dispatch(setBiblioUpdatingEntityAdd(0));
