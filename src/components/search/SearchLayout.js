@@ -423,7 +423,13 @@ const SearchLayout = () => {
                                     </div>
                                 )}
                                 {referenceIds.length > 0 && (
-                                    <div className="tetv-view-switchbar" style={{ display: 'flex', alignItems: 'center' }}>
+                                    <div className="tetv-view-switchbar" style={{ alignItems: 'center' }}>
+                                        {/* Equal flex spacers keep the view toggle centered over
+                                            the results (a margin-left:auto on the Layout button
+                                            absorbed the centering and jammed the toggle against
+                                            the facets); the Layout button sits at the far right,
+                                            separate from the saved-search controls (SCRUM-6512). */}
+                                        <div style={{ flex: '1 1 0' }} />
                                         <ToggleButtonGroup
                                             type="radio"
                                             name="tetv-view"
@@ -439,9 +445,7 @@ const SearchLayout = () => {
                                                 <FontAwesomeIcon icon={faThLarge} /> Topic grid
                                             </ToggleButton>
                                         </ToggleButtonGroup>
-                                        {/* Card display profile (SCRUM-6512): far right of the
-                                            switchbar, separate from the saved-search controls. */}
-                                        <div style={{ marginLeft: 'auto' }}>
+                                        <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-end' }}>
                                             <SearchDisplaySettings />
                                         </div>
                                     </div>

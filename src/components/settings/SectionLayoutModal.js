@@ -39,11 +39,28 @@ import { LAYOUT_COLS } from '../biblio/biblioEditorSections';
 const ReactGridLayout = WidthProvider(GridLayout);
 
 // A rotating palette so the boxes are visually distinguishable on the canvas.
-const SECTION_PALETTE = [
+// Exported with the box style so every customization modal that arranges
+// sections (this one, the search-card display settings) draws its boxes in the
+// same visual language.
+export const SECTION_PALETTE = [
   '#e9f2ff', '#eaf7ee', '#fff4e6', '#fdeaf1', '#f0eafb',
   '#e6f7fa', '#fbf6e0', '#eef0f2', '#f9e9e9', '#eafbf1',
 ];
-const colorForIndex = (i) => SECTION_PALETTE[i % SECTION_PALETTE.length];
+export const colorForIndex = (i) => SECTION_PALETTE[i % SECTION_PALETTE.length];
+export const sectionBoxStyle = (background) => ({
+  background,
+  border: '1px solid #b8c2cc',
+  borderRadius: '6px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontWeight: 600,
+  color: '#37485b',
+  cursor: 'move',
+  userSelect: 'none',
+  textAlign: 'center',
+  padding: '0 4px',
+});
 
 const normalizeLayout = (l) =>
   (l || []).map(({ i, x, y, w, h }) => ({ i, x, y, w, h }));
@@ -402,23 +419,7 @@ const SectionLayoutModal = ({
               onResizeStop={applyLayoutLive}
             >
               {visibleSectionDefs.map((s) => (
-                <div
-                  key={s.id}
-                  style={{
-                    background: colorForIndex(indexById[s.id]),
-                    border: '1px solid #b8c2cc',
-                    borderRadius: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 600,
-                    color: '#37485b',
-                    cursor: 'move',
-                    userSelect: 'none',
-                    textAlign: 'center',
-                    padding: '0 4px',
-                  }}
-                >
+                <div key={s.id} style={sectionBoxStyle(colorForIndex(indexById[s.id]))}>
                   {labelById[s.id] || s.id}
                 </div>
               ))}
@@ -473,7 +474,7 @@ const SectionLayoutModal = ({
 
           {/* Create new settings */}
           <Form.Group className="mb-4">
-            <Form.Label>Save current layout as a new entry</Form.Label>
+            <Form.Label>Save as a new layout</Form.Label>
             <div className="d-flex gap-2">
               <Form.Control
                 type="text"

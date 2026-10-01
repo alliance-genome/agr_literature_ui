@@ -12,10 +12,10 @@ import {Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFilePdf, faPenSquare, faImage} from "@fortawesome/free-solid-svg-icons";
+import {faFilePdf, faPenSquare, faImage, faPeopleArrows} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
-import { normalizeDisplayPrefs, xrefPrefix } from './settings/searchDisplayPrefs';
+import { normalizeDisplayPrefs, xrefPrefix, journalInfoFromCitation } from './settings/searchDisplayPrefs';
 
 const MatchingTextBox = (highlight) => {
   return (
@@ -92,6 +92,26 @@ const SearchResultItem = ({ reference }) => {
     );
   };
 
+  const PersonRedirect = ({ curie }) => {
+    const history = useHistory();
+    // Gate like the TET button (SCRUM-6431): the biblio router only routes
+    // signed-in non-observers to the person screen — observers are coerced to
+    // the display view and signed-out users get NoAccessAlert, so advertising
+    // the icon to them is misleading (review finding).
+    const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+    const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
+    const goToPerson = () => {
+        history.push(`/Biblio/?action=person&referenceCurie=${curie}`);
+    };
+    return (
+        (isSignedIn && !cognitoObserver) ?
+        <Button title="Open this paper's authors on the person screen"
+                onClick={goToPerson}>
+            <FontAwesomeIcon icon={faPeopleArrows} size='3x'/>
+        </Button> : null
+    );
+  };
+
   function toggleAbstract() {
     setIsExpanded(!isExpanded);
   }
@@ -141,12 +161,25 @@ const SearchResultItem = ({ reference }) => {
     (xref) => !displayPrefs.hiddenXrefPrefixes.includes(xrefPrefix(xref.curie))
   );
 
-  const icons = displayPrefs.showIcons ? (
+  // The action icons live in a card-level rail beside the sections (not inside
+  // any section): they used to be absolutely positioned in the xref row, which
+  // overlapped the card text once sections could be hidden or reordered
+  // (curator finding). Children ordered to match the old left-to-right cluster:
+  // person, images, TET, PDF. The person icon (its own toggle, separate from
+  // the other action icons) replaced the "Authors :" label link.
+  const icons = (displayPrefs.showIcons || displayPrefs.showPersonIcon) ? (
     <>
-      <TETRedirect curie={reference.curie}/>
-      <FileDownloadIcon curie = {reference.curie}/>
-      {reference.image_count > 0 && (
-          <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
+      {displayPrefs.showPersonIcon && (
+          <PersonRedirect curie={reference.curie}/>
+      )}
+      {displayPrefs.showIcons && (
+          <>
+              {reference.image_count > 0 && (
+                  <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
+              )}
+              <TETRedirect curie={reference.curie}/>
+              <FileDownloadIcon curie = {reference.curie}/>
+          </>
       )}
     </>
   ) : null;
@@ -154,13 +187,11 @@ const SearchResultItem = ({ reference }) => {
   const showSection = (id) => !displayPrefs.hiddenSections.includes(id);
 
   // The card's customizable sections, rendered below the title in the
-  // profile's order. Hiding the xref section keeps the action icons (they only
-  // share a row); hiding a section that has no content is a no-op.
+  // profile's order. Hiding a section that has no content is a no-op.
   const sectionRenderers = {
     xrefs: () => (
-      (showSection('xrefs') || icons) &&
+      showSection('xrefs') &&
       <Row key="xrefs"><Col><div className="searchRow-xref">
-          {showSection('xrefs') && (
           <ul>
               <li>
                   <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
@@ -190,26 +221,17 @@ const SearchResultItem = ({ reference }) => {
                   </li>
               ))}
           </ul>
-          )}
-          {icons}
       </div></Col></Row>
     ),
     authors: () => (
+      // Author names are plain text, reserved for a future link to each
+      // author's own person record; the route to the Biblio person screen is
+      // the person icon in the card's action rail (SCRUM-6512).
       showSection('authors') &&
       <div key="authors" className="searchRow-other">Authors : {(reference.authors || []).map((author, i) => (
           <span key={i}>
               {i ? ' ' : ''}
-              {displayPrefs.linkAuthorsToPerson ? (
-                  // Author -> person curation lives on the Biblio person screen
-                  // (author/person reconciliation); it is linkable from anywhere
-                  // by referenceCurie (SCRUM-6512).
-                  <Link to={{pathname: "/Biblio", search: "?action=person&referenceCurie=" + reference.curie}}
-                        title="Open the person screen for this reference">
-                      <span dangerouslySetInnerHTML={{__html: author.name}} />
-                  </Link>
-              ) : (
-                  <span dangerouslySetInnerHTML={{__html: author.name}} />
-              )}
+              <span dangerouslySetInnerHTML={{__html: author.name}} />
           </span>
       ))}</div>
     ),
@@ -217,6 +239,17 @@ const SearchResultItem = ({ reference }) => {
       showSection('pubDate') &&
       <div key="pubDate" className="searchRow-other">Publication Date: {reference.date_published}</div>
     ),
+    journal: () => {
+      // Journal info from the citation (curator request): lets corpus calls
+      // that hinge on the journal (e.g. eLife's review model) happen from the
+      // card without toggling to the biblio display.
+      const journal = journalInfoFromCitation(reference.citation, reference.title);
+      return (
+        showSection('journal') && journal
+          ? <div key="journal" className="searchRow-other">Journal: {journal}</div>
+          : null
+      );
+    },
     abstract: () => (
       showSection('abstract') &&
       <div key="abstract" className="searchRow-other">
@@ -239,10 +272,15 @@ const SearchResultItem = ({ reference }) => {
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" >
-        <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
-        {displayPrefs.sectionOrder.map((id) =>
-          sectionRenderers[id] ? sectionRenderers[id]() : null
-        )}
+        <div className="d-flex">
+          <div className="search-card-body">
+            <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+            {displayPrefs.sectionOrder.map((id) =>
+              sectionRenderers[id] ? sectionRenderers[id]() : null
+            )}
+          </div>
+          {icons && <div className="search-card-icons">{icons}</div>}
+        </div>
       </Col>
     </Row>
   );
