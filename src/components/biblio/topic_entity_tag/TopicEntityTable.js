@@ -392,11 +392,11 @@ const TopicEntityTable = () => {
     refreshVersion,
   } = useTetInfiniteData(referenceCurie);
 
-  // Ensure the store has the tags for this reference — still needed by the
-  // consumers that aggregate over the whole set (EntityCountsByMod, the
-  // Actions cell's related-tag lookup); the table itself reads blocks from
-  // the datasource. Migrating those consumers off the full fetch is the
-  // follow-up that removes this. After an add/edit completes
+  // Ensure the store has the tags for this reference — the table itself reads
+  // blocks from the datasource; this list now feeds only the setAll* filter
+  // lists, QuickTopicAddition, and the older-backend fallbacks in the Actions
+  // cell and EntityCountsByMod (SCRUM-6620). Removing it once those are
+  // migrated is SCRUM-6620's last step. After an add/edit completes
   // (biblioUpdatingEntityAdd back to 0), also purge the grid's block cache.
   const prevUpdatingRef = useRef(biblioUpdatingEntityAdd);
   useEffect(() => {

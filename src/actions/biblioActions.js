@@ -1092,10 +1092,11 @@ export const fetchTopicEntityTags = (referenceCurie, forceRefresh = false) => {
       try {
         const baseUrl = '/topic_entity_tag/by_reference/' + referenceCurie;
         // The source_method sort keeps curated tags inside the page cap. The
-        // TET table itself no longer reads this list (it pages server-side,
-        // SCRUM-6618) — this fetch feeds EntityCountsByMod and the Actions
-        // cell's related-tag lookup until they are migrated, so the old
-        // truncation-banner count request is gone.
+        // TET table pages server-side (SCRUM-6618) and the entity counts and
+        // curator-validation gating are server-computed (SCRUM-6620) — this
+        // fetch now feeds only the setAll* filter lists, QuickTopicAddition,
+        // and the older-backend fallbacks in the Actions cell and
+        // EntityCountsByMod. Removing it is SCRUM-6620's last step.
         const url = baseUrl + '?page=1&page_size=' + TET_FETCH_PAGE_SIZE + '&sort_by=source_method';
         const response = await api.get(url);
         const tags = response.data || [];
