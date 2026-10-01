@@ -371,7 +371,12 @@ const TopicEntityTable = () => {
     dispatch(fetchTaxonData());
   }, [dispatch]);
 
-  const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
+  // Never hand out a destroyed grid api: stale refs after an unmount/remount
+  // otherwise produce "grid has been destroyed" warnings on every call.
+  const getGridApi = useCallback(() => {
+    const api = apiRef.current || gridRef.current?.api || null;
+    return api && !api.isDestroyed?.() ? api : null;
+  }, []);
 
   // Server-side (infinite) row model data layer (SCRUM-6618): the table no
   // longer loads the full tag set — each scrolled/paged block is fetched with
@@ -579,7 +584,7 @@ const TopicEntityTable = () => {
         comparator: caseInsensitiveComparator,
         filter: TopicFilter,
         filterParams: { items: filterOptions.topic || [], serverMode: true },
-        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.topic}`)
+        onCellClicked: (p) => p.data && handleCurieClick(`${p.value}:${p.data.topic}`)
       },
       {
         headerName: 'Entity Type',
@@ -587,7 +592,7 @@ const TopicEntityTable = () => {
         comparator: caseInsensitiveComparator,
         filter: EntityTypeFilter,
         filterParams: { items: filterOptions.entity_type || [], serverMode: true },
-        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.entity_type}`)
+        onCellClicked: (p) => p.data && handleCurieClick(`${p.value}:${p.data.entity_type}`)
       },
       {
         headerName: 'Species',
@@ -595,7 +600,7 @@ const TopicEntityTable = () => {
         comparator: caseInsensitiveComparator,
         filter: SpeciesFilter,
         filterParams: { items: filterOptions.species || [], serverMode: true },
-        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.species}`)
+        onCellClicked: (p) => p.data && handleCurieClick(`${p.value}:${p.data.species}`)
       },
       {
         headerName: 'Entity',
@@ -603,7 +608,7 @@ const TopicEntityTable = () => {
         comparator: caseInsensitiveComparator,
         filter: EntityFilter,
         filterParams: { items: filterOptions.entity || [], serverMode: true },
-        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.entity}`)
+        onCellClicked: (p) => p.data && handleCurieClick(`${p.value}:${p.data.entity}`)
       },
       // no_data / has_data are computed in toTableRow, not DB columns: a
       // server-side sort or filter on them would 404/422 and blank the grid
@@ -636,10 +641,10 @@ const TopicEntityTable = () => {
           valueField: 'data_novelty',
           serverMode: true,
         },
-        valueGetter: (p) => dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty,
-        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.data_novelty}`)
+        valueGetter: (p) => (p.data ? (dataNoveltyMap[p.data.data_novelty] || p.data.data_novelty) : ''),
+        onCellClicked: (p) => p.data && handleCurieClick(`${p.value}:${p.data.data_novelty}`)
       },
-      { headerName: 'Data Context', field: 'data_context_name', filter: true, comparator: caseInsensitiveComparator, onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.data_context}`) },
+      { headerName: 'Data Context', field: 'data_context_name', filter: true, comparator: caseInsensitiveComparator, onCellClicked: (p) => p.data && handleCurieClick(`${p.value}:${p.data.data_context}`) },
       { headerName: 'Confidence Score', field: 'confidence_score', filter: true },
       { headerName: 'Confidence Level', field: 'confidence_level', filter: true },
       { headerName: 'Created By', field: 'created_by', filter: true },
@@ -667,7 +672,7 @@ const TopicEntityTable = () => {
         field: 'tag_source.source_evidence_assertion_name',
         filter: true,
         comparator: caseInsensitiveComparator,
-        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.tag_source.source_evidence_assertion}`)
+        onCellClicked: (p) => p.data && handleCurieClick(`${p.value}:${p.data.tag_source.source_evidence_assertion}`)
       },
       { headerName: 'Source Method', field: 'tag_source.source_method', filter: true },
       { headerName: 'Source Validation Type', field: 'tag_source.validation_type', filter: true },

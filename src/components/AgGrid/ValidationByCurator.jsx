@@ -17,6 +17,9 @@ export default (props) => {
     const topicEntitySourceId = useSelector(state => state.biblio.topicEntitySourceId);
     const accessLevel = (testerMod !== 'No') ? testerMod : cognitoMod;
 
+    // Infinite row model (SCRUM-6618): loading row stubs have no data yet.
+    if (!props.data) return null;
+
     const checkBoxElement = () => {
         const handleValidationClick = async (validation) => {
             let payload = {

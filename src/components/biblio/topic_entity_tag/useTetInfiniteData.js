@@ -36,6 +36,16 @@ const COLUMN_BY_COL_ID = {
 
 export const dbColumnForColId = (colId) => COLUMN_BY_COL_ID[colId] || colId;
 
+// Columns the server cannot sort/filter: computed display fields and
+// relationship lookups. Their colDefs disable the UI, but saved tet_table
+// preferences can replay old sort/filter state onto the grid — sending those
+// to the server 404s/422s the block fetch and the table comes up empty, so
+// the request builders drop them instead of trusting the grid state.
+const UNSORTABLE_COL_IDS = new Set(['no_data', 'has_data', 'ml_model_version']);
+const UNFILTERABLE_COL_IDS = new Set([
+  'no_data', 'has_data', 'ml_model_version', 'validation_by_author',
+]);
+
 // The sort endpoint resolves bare attribute names (TopicEntityTagModel first,
 // then TagSourceModel), so a source column sorts as e.g. "source_method" —
 // unlike column_filters, whose contract keeps the "tag_source." prefix.
@@ -70,7 +80,7 @@ export const toTableRow = (orig) => {
 export const columnFiltersFromModel = (filterModel) => {
   const filters = {};
   for (const [colId, model] of Object.entries(filterModel || {})) {
-    if (model == null) continue;
+    if (model == null || UNFILTERABLE_COL_IDS.has(colId)) continue;
     const column = dbColumnForColId(colId);
     if (Array.isArray(model)) {
       if (model.length > 0) filters[column] = { values: model };
@@ -89,7 +99,7 @@ export const columnFiltersFromModel = (filterModel) => {
 };
 
 export const sortParamsFromModel = (sortModel) => {
-  const first = (sortModel || [])[0];
+  const first = (sortModel || []).find((s) => s && !UNSORTABLE_COL_IDS.has(s.colId));
   if (!first) return {};
   return { sort_by: sortColumnForColId(first.colId), desc_sort: first.sort === 'desc' };
 };
