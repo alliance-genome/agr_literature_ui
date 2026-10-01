@@ -45,6 +45,7 @@ export const SEARCH_SET_ADVANCED_FACETS_VOCAB = 'SEARCH_SET_ADVANCED_FACETS_VOCA
 export const SEARCH_SET_GRID_PREFERENCES = 'SEARCH_SET_GRID_PREFERENCES';
 export const SEARCH_APPLY_GRID_PREFERENCES = 'SEARCH_APPLY_GRID_PREFERENCES';
 export const SEARCH_SET_DISPLAY_PREFS = 'SEARCH_SET_DISPLAY_PREFS';
+export const SEARCH_SET_DISPLAY_PROFILE_NAME = 'SEARCH_SET_DISPLAY_PROFILE_NAME';
 
 const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions", "data_novelty", "large_scale_tag"];
 
@@ -753,4 +754,14 @@ export const applyGridPreferences = (prefs) => ({
 export const setSearchDisplayPrefs = (prefs) => ({
   type: SEARCH_SET_DISPLAY_PREFS,
   payload: prefs
+});
+
+// The name of the saved layout the current display came from (null = the
+// built-in default), shown next to the Layout button so curators can tell
+// which layout they are looking at (curator feedback on SCRUM-6512).
+// Dispatching this also clears the modified flag that every prefs change
+// sets, so "loaded/saved X" and "X, then tweaked" are distinguishable.
+export const setSearchDisplayProfileName = (name) => ({
+  type: SEARCH_SET_DISPLAY_PROFILE_NAME,
+  payload: name
 });

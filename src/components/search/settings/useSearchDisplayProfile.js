@@ -17,7 +17,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { usePersonSettings } from '../../settings/usePersonSettings';
-import { setSearchDisplayPrefs } from '../../../actions/searchActions';
+import { setSearchDisplayPrefs, setSearchDisplayProfileName } from '../../../actions/searchActions';
 import {
   SEARCH_DISPLAY_COMPONENT,
   normalizeDisplayPrefs,
@@ -43,6 +43,11 @@ export default function useSearchDisplayProfile() {
       .then(({ picked }) => {
         const stored = picked?.json_settings?.state;
         dispatch(setSearchDisplayPrefs(normalizeDisplayPrefs(stored)));
+        // Record which layout this is (null = built-in default), so the
+        // switchbar indicator can name it (curator feedback).
+        dispatch(setSearchDisplayProfileName(
+          stored ? (picked.setting_name || picked.name || null) : null
+        ));
       })
       .catch((err) => {
         const msg = err?.response?.data?.detail || err?.message || String(err);
