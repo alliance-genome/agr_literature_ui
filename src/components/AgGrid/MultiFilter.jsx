@@ -2,14 +2,23 @@ import { useGridFilter } from 'ag-grid-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import Select from 'react-select';
 
-const MultiFilter = ({ model: rawModel, onModelChange, items, label }) => {
+// `items` may be plain strings (legacy: display names, matched client-side via
+// `label`) or {value, label} objects (SCRUM-6618: curie values with resolved
+// name labels, for grids whose filtering happens server-side). The filter
+// model is always the array of selected item VALUES. `valueField` names the
+// row field the values match (defaults to `label` for the legacy string mode).
+const MultiFilter = ({ model: rawModel, onModelChange, items, label, valueField }) => {
     const model = Array.isArray(rawModel) ? rawModel : null;
     const [closeFilter, setCloseFilter] = useState();
     const [unappliedModel, setUnappliedModel] = useState(model);
+    const options = (items || []).map((item) =>
+        item && typeof item === 'object' ? item : { value: item, label: item }
+    );
     const doesFilterPass = useCallback((params) => {
-        // doesFilterPass only gets called if the filter is active
-        return model ? model.includes(params.data[label]) : true;
-    }, [model, label]);
+        // doesFilterPass only gets called if the filter is active; with the
+        // infinite row model the server has already filtered and this never runs.
+        return model ? model.includes(params.data[valueField || label]) : true;
+    }, [model, label, valueField]);
 
     const afterGuiAttached = useCallback(({ hidePopup }) => {
         setCloseFilter(() => hidePopup);
@@ -62,30 +71,30 @@ const MultiFilter = ({ model: rawModel, onModelChange, items, label }) => {
         }),
     };
 
-    // const sortedItems = items.slice().sort((a, b) => a.localeCompare(b));
-    const sortedItems = items.slice().sort((a, b) => {
-	if (a === null && b === null) return 0;
-	if (a === null) return 1;
-	if (b === null) return -1;
-	return a.localeCompare(b);
+    const sortedOptions = options.slice().sort((a, b) => {
+	if (a.label === null && b.label === null) return 0;
+	if (a.label === null) return 1;
+	if (b.label === null) return -1;
+	return a.label.localeCompare(b.label);
     });
-    
+    const labelByValue = new Map(options.map((o) => [o.value, o.label]));
+
     return (
         <div className="custom-filter">
             <div>Select {label.replace("_name", "")}</div><hr/>
-            {items.length <= 10 ? (
-                sortedItems.map((item) => {
-                    let DisplayItem = item ? item : 'None';
+            {options.length <= 10 ? (
+                sortedOptions.map((option) => {
+                    const displayLabel = option.label ? option.label : 'None';
                     return (
-                        <div key={item}>
+                        <div key={option.value}>
                             <input
                                 type="checkbox"
-                                id={item}
-                                value={DisplayItem}
+                                id={option.value}
+                                value={option.value ? option.value : 'None'}
                                 onChange={onItemsChangeCheckbox}
-                                checked={unappliedModel && unappliedModel.includes(DisplayItem)}
+                                checked={unappliedModel && unappliedModel.includes(option.value)}
                             />
-                            <label htmlFor={item}> {DisplayItem}</label>
+                            <label htmlFor={option.value}> {displayLabel}</label>
                         </div>
                     );
                 })
@@ -96,9 +105,11 @@ const MultiFilter = ({ model: rawModel, onModelChange, items, label }) => {
                         defaultMenuIsOpen={true}
                         menuIsOpen={true}
                         styles={customStyles}
-                        options={sortedItems.map(item => ({ value: item, label: item }))}
+                        options={sortedOptions.map((o) => ({ value: o.value, label: o.label ? o.label : 'None' }))}
                         onChange={onItemsChangeTypeAhead}
-                        value={unappliedModel ? unappliedModel.map(item => ({ value: item, label: item })) : []}
+                        value={unappliedModel
+                            ? unappliedModel.map((v) => ({ value: v, label: labelByValue.get(v) || v || 'None' }))
+                            : []}
                     />
                 </div>
             )}

@@ -2,7 +2,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  Alert,
   Spinner,
   Button,
   ButtonGroup,
@@ -31,6 +30,7 @@ import EntityTypeFilter from '../../AgGrid/EntityTypeFilter.jsx';
 import TopicFilter from '../../AgGrid/TopicFilter.jsx';
 import EntityFilter from '../../AgGrid/EntityFilter.jsx';
 import { timestampToDateFormatter } from '../BiblioWorkflow';
+import useTetInfiniteData from './useTetInfiniteData';
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
@@ -302,7 +302,6 @@ const TopicEntityTable = () => {
   // rather than fetching a second copy.
   const rawTopicEntityTags = useSelector((state) => state.biblio.topicEntityTags);
   const isLoadingData = useSelector((state) => state.biblio.topicEntityTagsLoading);
-  const totalTagCount = useSelector((state) => state.biblio.topicEntityTagsTotalCount);
 
   // Apply the table's display transforms without mutating the redux state.
   const topicEntityTags = useMemo(
@@ -361,20 +360,38 @@ const TopicEntityTable = () => {
 
   const getGridApi = useCallback(() => apiRef.current || gridRef.current?.api || null, []);
 
-  // Ensure the store has the tags for this reference. On initial load this is a
-  // no-op when Biblio already populated the cache; force a refresh only after an
-  // add/edit completes (biblioUpdatingEntityAdd transitions back to 0).
+  // Server-side (infinite) row model data layer (SCRUM-6618): the table no
+  // longer loads the full tag set — each scrolled/paged block is fetched with
+  // the current sort + filters applied server-side, so large-scale papers
+  // (50k+ tags) are fully navigable without a 50k-row payload.
+  const {
+    makeDatasource,
+    fetchDistinctValues,
+    fetchCurieToName,
+    totalCount,
+    refresh: refreshTetData,
+    refreshVersion,
+  } = useTetInfiniteData(referenceCurie);
+
+  // Ensure the store has the tags for this reference — still needed by the
+  // consumers that aggregate over the whole set (EntityCountsByMod, the
+  // Actions cell's related-tag lookup); the table itself reads blocks from
+  // the datasource. Migrating those consumers off the full fetch is the
+  // follow-up that removes this. After an add/edit completes
+  // (biblioUpdatingEntityAdd back to 0), also purge the grid's block cache.
   const prevUpdatingRef = useRef(biblioUpdatingEntityAdd);
   useEffect(() => {
     if (referenceCurie && biblioUpdatingEntityAdd === 0) {
       const justFinishedUpdate = prevUpdatingRef.current > 0;
       dispatch(fetchTopicEntityTags(referenceCurie, justFinishedUpdate));
+      if (justFinishedUpdate) refreshTetData();
     }
     prevUpdatingRef.current = biblioUpdatingEntityAdd;
-  }, [dispatch, referenceCurie, biblioUpdatingEntityAdd]);
+  }, [dispatch, referenceCurie, biblioUpdatingEntityAdd, refreshTetData]);
 
-  // Keep the shared unique-value lists (used by the column filters) in sync with
-  // the loaded tags.
+  // Keep the shared unique-value lists in sync with the loaded tags: other
+  // pages (QuickTopicAddition, the Topic grid) read these redux keys, so
+  // their shape stays name-based and untouched by the table's own filters.
   useEffect(() => {
     const tags = rawTopicEntityTags || [];
     dispatch(setAllSpecies([...new Set(tags.map((o) => o.species))]));
@@ -382,6 +399,37 @@ const TopicEntityTable = () => {
     dispatch(setAllTopics([...new Set(tags.map((o) => o.topic_name))]));
     dispatch(setAllEntities([...new Set(tags.map((o) => o.entity_name))]));
   }, [dispatch, rawTopicEntityTags]);
+
+  // Dropdown options for the four curie-column filters: distinct raw values
+  // via column_only + one curie->name map for labels. Curie-valued options are
+  // what the server-side column_filters need (names are not in the DB).
+  const [filterOptions, setFilterOptions] = useState({});
+  useEffect(() => {
+    if (!referenceCurie) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [curieToName, ...columnValues] = await Promise.all([
+          fetchCurieToName(),
+          ...['topic', 'entity_type', 'species', 'entity'].map(fetchDistinctValues),
+        ]);
+        if (cancelled) return;
+        const toOptions = (values) =>
+          values
+            .map((value) => ({ value, label: curieToName[value] || value }))
+            .sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+        setFilterOptions({
+          topic: toOptions(columnValues[0]),
+          entity_type: toOptions(columnValues[1]),
+          species: toOptions(columnValues[2]),
+          entity: toOptions(columnValues[3]),
+        });
+      } catch (error) {
+        console.error('Failed to load TET filter options:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [referenceCurie, refreshVersion, fetchCurieToName, fetchDistinctValues]);
 
   const handleCurieClick = (curie) => {
     if (hasTextSelection()) return;
@@ -516,6 +564,7 @@ const TopicEntityTable = () => {
         field: 'topic_name',
         comparator: caseInsensitiveComparator,
         filter: TopicFilter,
+        filterParams: { items: filterOptions.topic || [] },
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.topic}`)
       },
       {
@@ -523,6 +572,7 @@ const TopicEntityTable = () => {
         field: 'entity_type_name',
         comparator: caseInsensitiveComparator,
         filter: EntityTypeFilter,
+        filterParams: { items: filterOptions.entity_type || [] },
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.entity_type}`)
       },
       {
@@ -530,6 +580,7 @@ const TopicEntityTable = () => {
         field: 'species_name',
         comparator: caseInsensitiveComparator,
         filter: SpeciesFilter,
+        filterParams: { items: filterOptions.species || [] },
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.species}`)
       },
       {
@@ -537,6 +588,7 @@ const TopicEntityTable = () => {
         field: 'entity_name',
         comparator: caseInsensitiveComparator,
         filter: EntityFilter,
+        filterParams: { items: filterOptions.entity || [] },
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data.entity}`)
       },
       {
@@ -590,7 +642,7 @@ const TopicEntityTable = () => {
       { headerName: 'Topic Entity Tag Id', field: 'topic_entity_tag_id', filter: true },
       { headerName: 'Topic Entity Tag Source Id', field: 'tag_source.tag_source_id', filter: true }
     ],
-    [caseInsensitiveComparator, dataNoveltyMap]
+    [caseInsensitiveComparator, dataNoveltyMap, filterOptions]
   );
 
   const updateColDefsWithItems = useCallback(
@@ -685,33 +737,24 @@ const TopicEntityTable = () => {
   );
 
   // ---------------------------
-  // External filtering
+  // External filtering (EntityCountsByMod's "show these tags" selection).
+  // Client-side external filters don't run under the infinite row model, so
+  // the tag-id selection becomes a server-side column filter instead.
   // ---------------------------
-  const isExternalFilterPresent = useCallback(() => {
-    return !!(
-      filteredTags &&
-      ((Array.isArray(filteredTags.validating_tags) && filteredTags.validating_tags.length > 0) ||
-        filteredTags.validated_tag != null)
-    );
+  const externalColumnFilters = useMemo(() => {
+    const vt = Array.isArray(filteredTags?.validating_tags) ? filteredTags.validating_tags : [];
+    const ids = filteredTags?.validated_tag != null ? [...vt, filteredTags.validated_tag] : vt;
+    return ids.length > 0 ? { topic_entity_tag_id: { values: ids } } : null;
   }, [filteredTags]);
 
-  const doesExternalFilterPass = useCallback(
-    (node) => {
-      if (!node?.data) return false;
-
-      const vt = Array.isArray(filteredTags?.validating_tags) ? filteredTags.validating_tags : [];
-      const validated = filteredTags?.validated_tag;
-
-      return vt.includes(node.data.topic_entity_tag_id) || validated === node.data.topic_entity_tag_id;
-    },
-    [filteredTags]
-  );
-
+  // (Re)install the datasource whenever anything that changes the server-side
+  // view does: the reference, a post-edit refresh, or the external selection.
+  // Setting a new datasource purges the block cache and refetches from row 0.
   useEffect(() => {
+    if (!isGridReady || !referenceCurie) return;
     const api = getGridApi();
-    api?.onFilterChanged?.();
-    api?.refreshClientSideRowModel?.('filter');
-  }, [filteredTags, getGridApi]);
+    api?.setGridOption?.('datasource', makeDatasource(externalColumnFilters || undefined));
+  }, [isGridReady, referenceCurie, refreshVersion, externalColumnFilters, makeDatasource, getGridApi]);
 
   const onGridReady = useCallback((params) => {
     apiRef.current = params.api;
@@ -753,7 +796,6 @@ const TopicEntityTable = () => {
     []
   );
 
-  const getRowId = useMemo(() => (params) => String(params.data.topic_entity_tag_id), []);
   const fileNameFront = `${referenceCurie}_tet_data`;
 
   return (
@@ -842,14 +884,14 @@ const TopicEntityTable = () => {
           </Col>
         </Row>
 
-        {!isLoadingData && totalTagCount > topicEntityTags.length && (
+        {/* The 8,000-row truncation banner is gone: the infinite row model pages
+            through the full tag set server-side, so every tag is reachable. */}
+        {totalCount != null && (
           <Row>
             <Col>
-              <Alert variant="warning" className="py-2 mb-2">
-                Displaying {topicEntityTags.length.toLocaleString()} of {totalTagCount.toLocaleString()} topic
-                and entity tags. Tags are sorted by source method so curated tags are included; the tags not
-                shown here are from bulk data loads.
-              </Alert>
+              <div className="text-muted" style={{ paddingBottom: '4px' }}>
+                {totalCount.toLocaleString()} topic and entity tags
+              </div>
             </Col>
           </Row>
         )}
@@ -860,7 +902,9 @@ const TopicEntityTable = () => {
               <AgGridReact
                 ref={gridRef}
                 reactiveCustomComponents
-                rowData={topicEntityTags}
+                rowModelType="infinite"
+                cacheBlockSize={500}
+                maxBlocksInCache={10}
                 columnDefs={colDefs}
                 enableCellTextSelection={true}
                 ensureDomOrder={true}
@@ -869,11 +913,8 @@ const TopicEntityTable = () => {
                 pagination
                 paginationPageSize={25}
                 paginationPageSizeSelector={paginationPageSizeSelector}
-                getRowId={getRowId}
                 onGridReady={onGridReady}
                 onColumnResized={onColumnResized}
-                isExternalFilterPresent={isExternalFilterPresent}
-                doesExternalFilterPass={doesExternalFilterPass}
               />
             </div>
           </Col>
