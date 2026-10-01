@@ -56,9 +56,14 @@ const BiblioPreferenceControls = ({
     const api = getGridApi?.();
     if (!api) return;
 
-    // External + internal filter pipeline + UI
+    // External + internal filter pipeline + UI. The client-side refresh only
+    // applies to that row model — the TET table now runs the infinite model
+    // (SCRUM-6618), where onFilterChanged alone triggers the server refetch
+    // and the unguarded call logged an AG Grid error on every settings apply.
     api.onFilterChanged?.();
-    api.refreshClientSideRowModel?.('filter');
+    if (api.getGridOption?.('rowModelType') === 'clientSide') {
+      api.refreshClientSideRowModel?.('filter');
+    }
 
     api.refreshHeader?.();
     api.redrawRows?.();
