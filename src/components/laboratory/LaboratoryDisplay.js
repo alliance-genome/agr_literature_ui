@@ -415,6 +415,7 @@ const LaboratoryDisplay = ({ laboratory: laboratoryProp }) => {
               showTimestamps,
               showCurator,
             }}
+            defaultHidden={defaultHiddenSections(effectiveMod)}
             onToggleSection={toggleSection}
             onToggleTimestamps={setShowTimestamps}
             onToggleCurator={setShowCurator}

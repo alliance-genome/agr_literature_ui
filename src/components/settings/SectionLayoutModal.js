@@ -98,6 +98,10 @@ const SectionLayoutModal = ({
   pageLabel = 'Section',
   onApplyPrefs,
   current,
+  // The page's MOD-derived visibility default (array or Set), used as the
+  // live baseline for the built-in layout's modified indicator. Optional: a
+  // page without it falls back to the hidden set seen when settings loaded.
+  defaultHidden,
   onToggleSection,
   onToggleTimestamps,
   onToggleCurator,
@@ -141,14 +145,22 @@ const SectionLayoutModal = ({
   // that were pushed to it, so later divergence can be detected. `name` is
   // null for the built-in default (after Reset, or when the active layout is
   // deleted); the snapshot is still taken so plain "Layout" can grow a * too.
-  const markActive = useCallback((name, prefs) => {
+  //
+  // `hiddenFollowsMod` marks the untouched built-in baseline: until the user
+  // (or a loaded layout) decides visibility, the pages re-derive the hidden
+  // set from the MOD (`defaultHiddenSections(effectiveMod)`), and a tester
+  // switching MOD after the settings fetch resolves would otherwise flag a
+  // change nobody made. For that baseline the hidden list is compared against
+  // the live `defaultHidden` prop at render time instead of a one-time copy.
+  const markActive = useCallback((name, prefs, hiddenFollowsMod = false) => {
     setActiveName(name || null);
-    setNamedSnapshot(layoutSignature(
-      prefs.layout || currentRef.current?.layout || workingRef.current,
-      prefs.hidden,
-      prefs.showTimestamps,
-      prefs.showCurator
-    ));
+    setNamedSnapshot({
+      layout: prefs.layout || currentRef.current?.layout || workingRef.current,
+      hidden: prefs.hidden,
+      showTimestamps: prefs.showTimestamps,
+      showCurator: prefs.showCurator,
+      hiddenFollowsMod,
+    });
   }, []);
 
   const {
@@ -199,7 +211,7 @@ const SectionLayoutModal = ({
             hidden: cur.hidden,
             showTimestamps: cur.showTimestamps,
             showCurator: cur.showCurator,
-          });
+          }, true);
           return;
         }
         const prefs = prefsFromSetting(picked);
@@ -419,7 +431,15 @@ const SectionLayoutModal = ({
     current?.showTimestamps,
     current?.showCurator
   );
-  const isModified = namedSnapshot !== null && liveSignature !== namedSnapshot;
+  const baselineSignature = namedSnapshot === null ? null : layoutSignature(
+    namedSnapshot.layout,
+    (namedSnapshot.hiddenFollowsMod && defaultHidden != null)
+      ? Array.from(defaultHidden)
+      : namedSnapshot.hidden,
+    namedSnapshot.showTimestamps,
+    namedSnapshot.showCurator
+  );
+  const isModified = baselineSignature !== null && liveSignature !== baselineSignature;
   const layoutButtonLabel = activeName
     ? `Layout: ${activeName}${isModified ? '*' : ''}`
     : (isModified ? 'Layout*' : 'Layout');

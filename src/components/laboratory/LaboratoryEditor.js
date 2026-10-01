@@ -1089,6 +1089,7 @@ const LaboratoryEditor = ({ laboratory }) => {
           pageLabel="Editor"
           onApplyPrefs={applyPrefs}
           current={{ layout: activeLayout, hidden: Array.from(hiddenSections), showTimestamps, showCurator }}
+          defaultHidden={defaultHiddenSections(effectiveMod)}
           onToggleSection={toggleSection}
           onToggleTimestamps={setShowTimestamps}
           onToggleCurator={setShowCurator}

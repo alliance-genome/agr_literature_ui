@@ -376,6 +376,7 @@ const BiblioPersonPanel = ({
               showTimestamps,
               showCurator,
             }}
+            defaultHidden={defaultHiddenSections(effectiveMod)}
             onToggleSection={toggleSection}
             onToggleTimestamps={setShowTimestamps}
             onToggleCurator={setShowCurator}
