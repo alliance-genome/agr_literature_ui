@@ -2,12 +2,14 @@
 //
 // One profile object describes how a search-result card renders: which sections
 // show, in what vertical order, which cross-reference prefixes are listed,
-// whether the action icons (TET / PDF / images) show, and whether author names
-// link to the person screen. SearchResults renders from it; the Display
-// settings modal edits it; named profiles persist per-user via person_settings
-// under the 'search_display' namespace — a namespace deliberately separate from
-// 'reference_search' saved searches, so what to search for and how cards look
-// are saved and loaded independently.
+// whether the action icons (TET / PDF / images) show, and whether the person
+// icon shows (it opens the paper's authors on the Biblio person screen; author
+// names stay plain text, reserved for a future link to individual person
+// records). SearchResults renders from it; the Layout modal edits it; named
+// profiles persist per-user via person_settings under the 'search_display'
+// namespace — a namespace deliberately separate from 'reference_search' saved
+// searches, so what to search for and how cards look are saved and loaded
+// independently.
 
 export const SEARCH_DISPLAY_COMPONENT = 'search_display';
 
@@ -17,6 +19,7 @@ export const CARD_SECTIONS = [
   { id: 'xrefs', label: 'Cross-references' },
   { id: 'authors', label: 'Authors' },
   { id: 'pubDate', label: 'Publication date' },
+  { id: 'journal', label: 'Journal' },
   { id: 'abstract', label: 'Abstract' },
   { id: 'matchingText', label: 'Matching text' },
 ];
@@ -29,11 +32,36 @@ export const DEFAULT_DISPLAY_PREFS = {
   // profile has never seen (new MOD, new resource type) defaults to visible
   // instead of silently vanishing.
   hiddenXrefPrefixes: [],
-  linkAuthorsToPerson: true,
+  showPersonIcon: true,
 };
 
 // The prefix an xref curie is selected by: "PMID:123" -> "PMID".
 export const xrefPrefix = (curie) => String(curie || '').split(':')[0];
+
+// Journal info for the card's Journal section (curator request: e.g. eLife is
+// excluded from the corpus by review model, so seeing the journal on the card
+// saves a trip to the biblio display). The search index has no journal field —
+// only the full citation, "Authors, (Year) Title. Journal Vol(Issue):Pages" —
+// so take the text after the title, which the card already knows. Both the
+// citation and the title can carry markup (<i>species</i> names), and often
+// with different tag placement, so strip markup from BOTH before matching —
+// the result renders as plain text either way. When the title still cannot be
+// found, fall back to the (stripped) full citation rather than guessing.
+const stripMarkup = (s) => String(s || '').replace(/<[^>]+>/g, '');
+
+export const journalInfoFromCitation = (citation, title) => {
+  const cit = stripMarkup(citation).trim();
+  if (!cit) return '';
+  const plainTitle = stripMarkup(title).trim();
+  if (plainTitle) {
+    const idx = cit.indexOf(plainTitle);
+    if (idx >= 0) {
+      const tail = cit.slice(idx + plainTitle.length).replace(/^[.\s]+/, '').trim();
+      if (tail) return tail;
+    }
+  }
+  return cit;
+};
 
 // Merge a stored profile over the defaults, tolerating older/partial payloads:
 // unknown section ids are dropped, sections missing from a saved order are
@@ -53,6 +81,9 @@ export const normalizeDisplayPrefs = (raw) => {
       .filter((id) => known.includes(id)),
     showIcons: p.showIcons !== false,
     hiddenXrefPrefixes: Array.isArray(p.hiddenXrefPrefixes) ? p.hiddenXrefPrefixes : [],
-    linkAuthorsToPerson: p.linkAuthorsToPerson !== false,
+    // showPersonIcon replaced linkAuthorsToPerson (the "Authors :" label link,
+    // now a rail icon): honor the legacy key when a saved profile predates it.
+    showPersonIcon:
+      (p.showPersonIcon !== undefined ? p.showPersonIcon : p.linkAuthorsToPerson) !== false,
   };
 };

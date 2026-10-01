@@ -1,22 +1,37 @@
 // Display settings for the search-result cards (SCRUM-6512).
 //
-// A "Display settings" button (far right of the list/topic-grid switchbar)
-// opens a modal that edits the card display profile: section order and
-// visibility, per-prefix cross-reference selection, the action icons, and the
-// author -> person-screen link. Every change applies to the cards immediately
-// via Redux; named profiles persist per-user through person_settings under the
+// A "Layout" button (far right of the list/topic-grid switchbar) opens a
+// modal that edits the card display profile: section order and visibility,
+// per-prefix cross-reference selection, the action icons, and the person icon
+// (paper's authors on the person screen). Every change applies to the cards
+// immediately via Redux; named profiles persist per-user through person_settings under the
 // 'search_display' namespace — separate from saved searches on purpose, so a
 // curator like Cecilia can keep one "author curation" card layout while
 // switching between many saved searches.
+//
+// The controls deliberately reuse the visual language of the other
+// customization modals (SectionLayoutModal / BiblioLayoutPreferenceModal,
+// curator request): a react-grid-layout canvas of colored, draggable section
+// boxes for ordering (single column — a card is a vertical stack, so only the
+// order is draggable, not the size), a flex-wrap checkbox row for visibility,
+// and a saved-profile list with load / save-here / rename / set-default /
+// delete. Reordering is drag-only, like the other layout canvases: the boxes
+// briefly carried keyboard-reachable up/down buttons as an accessibility
+// fallback, but curators found them visually heavy and asked for their
+// removal — keyboard reordering across all the layout modals is a known
+// follow-up.
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Modal, Button, Form, Spinner, Alert } from 'react-bootstrap';
 import { FaGear } from 'react-icons/fa6';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
+
+import GridLayout, { WidthProvider } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
 import { usePersonSettings } from '../../settings/usePersonSettings';
+import { colorForIndex, sectionBoxStyle } from '../../settings/SectionLayoutModal';
 import { setSearchDisplayPrefs } from '../../../actions/searchActions';
 import {
   CARD_SECTIONS,
@@ -26,8 +41,15 @@ import {
   xrefPrefix,
 } from './searchDisplayPrefs';
 
+const ReactGridLayout = WidthProvider(GridLayout);
+
 const sectionLabel = (id) =>
   (CARD_SECTIONS.find((s) => s.id === id) || { label: id }).label;
+
+// Stable color per section (by its index in CARD_SECTIONS), so a section keeps
+// its color however the user orders the boxes.
+const sectionColor = (id) =>
+  colorForIndex(Math.max(0, CARD_SECTIONS.findIndex((s) => s.id === id)));
 
 const SearchDisplaySettings = () => {
   const dispatch = useDispatch();
@@ -43,6 +65,7 @@ const SearchDisplaySettings = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState('');
+  const [nameEdits, setNameEdits] = useState({});
   const [message, setMessage] = useState(null); // { variant, text }
 
   const {
@@ -51,6 +74,7 @@ const SearchDisplaySettings = () => {
     busy,
     load,
     create,
+    rename,
     remove,
     makeDefault,
     savePayloadTo,
@@ -84,6 +108,8 @@ const SearchDisplaySettings = () => {
     });
   }, [showModal, accessToken, email, load]);
 
+  const canCreateMore = (settings || []).length < 10;
+
   // The prefixes offered for selection: everything visible in the current
   // results plus anything the profile already hides (so a hidden prefix can be
   // re-enabled even when no current result carries it).
@@ -98,21 +124,35 @@ const SearchDisplaySettings = () => {
     return Array.from(found).sort();
   }, [searchResults, prefs.hiddenXrefPrefixes]);
 
+  /* ---------- canvas ---------- */
+
+  // A card is a vertical stack, so the canvas is a single column of boxes for
+  // the visible sections; the box order (top to bottom) is the section order.
+  const visibleOrder = prefs.sectionOrder.filter(
+    (id) => !prefs.hiddenSections.includes(id)
+  );
+  const canvasLayout = visibleOrder.map((id, idx) => ({
+    i: id, x: 0, y: idx, w: 1, h: 1,
+  }));
+
+  // The canvas only shows visible sections; hidden sections keep their slot in
+  // sectionOrder (so re-showing one restores its place). Refill the visible
+  // slots with the dragged order and leave the hidden slots alone.
+  const handleDragStop = (layout) => {
+    const draggedOrder = [...layout].sort((a, b) => a.y - b.y).map((it) => it.i);
+    if (draggedOrder.length !== visibleOrder.length) return;
+    let vi = 0;
+    const order = prefs.sectionOrder.map((id) =>
+      prefs.hiddenSections.includes(id) ? id : draggedOrder[vi++]
+    );
+    applyPrefs({ ...prefs, sectionOrder: order });
+  };
+
   const toggleSection = (id) => {
     const hidden = prefs.hiddenSections.includes(id)
       ? prefs.hiddenSections.filter((s) => s !== id)
       : [...prefs.hiddenSections, id];
     applyPrefs({ ...prefs, hiddenSections: hidden });
-  };
-
-  const moveSection = (id, delta) => {
-    const order = [...prefs.sectionOrder];
-    const from = order.indexOf(id);
-    const to = from + delta;
-    if (from < 0 || to < 0 || to >= order.length) return;
-    order.splice(from, 1);
-    order.splice(to, 0, id);
-    applyPrefs({ ...prefs, sectionOrder: order });
   };
 
   const toggleXrefPrefix = (prefix) => {
@@ -121,6 +161,8 @@ const SearchDisplaySettings = () => {
       : [...prefs.hiddenXrefPrefixes, prefix];
     applyPrefs({ ...prefs, hiddenXrefPrefixes: hidden });
   };
+
+  /* ---------- list actions ---------- */
 
   const buildPayload = useCallback(
     () => ({ meta: { version: '1.0' }, state: prefs }),
@@ -134,7 +176,7 @@ const SearchDisplaySettings = () => {
       (s) => (s.setting_name || s.name || '').trim().toLowerCase() === clean.toLowerCase()
     );
     if (exists) {
-      notify(`A profile named "${clean}" already exists.`, 'warning');
+      notify(`A layout named "${clean}" already exists.`, 'warning');
       return;
     }
     try {
@@ -142,10 +184,10 @@ const SearchDisplaySettings = () => {
       await load();
       if (created?.person_setting_id) setSelectedSettingId(created.person_setting_id);
       setNewName('');
-      notify(`Display profile "${clean}" created.`, 'success');
+      notify(`Layout "${clean}" created.`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
-      notify(`Failed to create profile: ${msg}`, 'danger');
+      notify(`Failed to create layout: ${msg}`, 'danger');
     }
   }, [newName, settings, create, buildPayload, load, setSelectedSettingId, notify]);
 
@@ -161,17 +203,17 @@ const SearchDisplaySettings = () => {
     try {
       await savePayloadTo(setting.person_setting_id, buildPayload());
       await load();
-      notify(`Saved current display to "${setting.setting_name || setting.name}".`, 'success');
+      notify(`Saved current layout to "${setting.setting_name || setting.name}".`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
-      notify(`Failed to save profile: ${msg}`, 'danger');
+      notify(`Failed to save layout: ${msg}`, 'danger');
     }
   };
 
   const handleMakeDefault = async (setting) => {
     try {
       await makeDefault(setting.person_setting_id);
-      notify(`"${setting.setting_name || setting.name}" is now your default display.`, 'success');
+      notify(`"${setting.setting_name || setting.name}" is now your default layout.`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
       notify(`Failed to set default: ${msg}`, 'danger');
@@ -181,28 +223,69 @@ const SearchDisplaySettings = () => {
   const handleDelete = async (id) => {
     try {
       await remove(id);
-      notify('Display profile deleted.', 'success');
+      notify('Layout deleted.', 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
-      notify(`Failed to delete profile: ${msg}`, 'danger');
+      notify(`Failed to delete layout: ${msg}`, 'danger');
     }
   };
+
+  const startRename = (setting) =>
+    setNameEdits((prev) => ({
+      ...prev,
+      [setting.person_setting_id]: setting.setting_name || setting.name || '',
+    }));
+  const cancelRename = (id) =>
+    setNameEdits((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+  const saveRename = useCallback(
+    async (setting) => {
+      const id = setting.person_setting_id;
+      const val = (nameEdits[id] || '').trim();
+      if (!val) {
+        notify('Layout name cannot be empty.', 'warning');
+        return;
+      }
+      try {
+        await rename(id, val);
+        await load();
+        cancelRename(id);
+        notify(`Renamed to "${val}".`, 'success');
+      } catch (err) {
+        const msg = err?.response?.data?.detail || err?.message || String(err);
+        notify(`Failed to rename: ${msg}`, 'danger');
+      }
+    },
+    [nameEdits, rename, load, notify]
+  );
 
   return (
     <>
       <Button
         variant="outline-primary"
         size="sm"
-        title="Customize how search-result cards display"
+        title="Customize the search-result card layout"
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '4px' }} />
-        Display settings
+        Layout
       </Button>
 
-      <Modal show={showModal} onHide={() => { setShowModal(false); setMessage(null); }} centered size="lg">
+      <Modal
+        show={showModal}
+        onHide={() => {
+          setShowModal(false);
+          setMessage(null);
+          setNameEdits({});
+        }}
+        centered
+        size="lg"
+      >
         <Modal.Header closeButton>
-          <Modal.Title>Search Card Display Settings</Modal.Title>
+          <Modal.Title>Search Card Layout</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {message && (
@@ -211,42 +294,52 @@ const SearchDisplaySettings = () => {
             </Alert>
           )}
           <p className="text-muted">
-            Choose which parts of each search-result card are shown and in what
-            order. Changes apply immediately; save them as a named profile to
-            reuse later. Display profiles are separate from saved searches.
+            Drag the sections to arrange their order on each search-result card
+            and choose which sections are visible. Changes apply immediately;
+            save them as a named layout to reuse later. Card layouts are
+            separate from saved searches.
           </p>
 
-          {/* Section order + visibility */}
-          <Form.Group className="mb-4">
-            <Form.Label>Card sections</Form.Label>
-            <div className="list-group">
-              {prefs.sectionOrder.map((id, idx) => (
-                <div key={id} className="list-group-item d-flex align-items-center py-1">
-                  <Form.Check
-                    type="checkbox"
-                    id={`search-display-section-${id}`}
-                    label={sectionLabel(id)}
-                    checked={!prefs.hiddenSections.includes(id)}
-                    onChange={() => toggleSection(id)}
-                    className="flex-grow-1"
-                  />
-                  <Button
-                    variant="outline-secondary" size="sm" className="me-1"
-                    aria-label={`Move ${sectionLabel(id)} up`}
-                    disabled={idx === 0}
-                    onClick={() => moveSection(id, -1)}
-                  >
-                    <FontAwesomeIcon icon={faArrowUp} />
-                  </Button>
-                  <Button
-                    variant="outline-secondary" size="sm"
-                    aria-label={`Move ${sectionLabel(id)} down`}
-                    disabled={idx === prefs.sectionOrder.length - 1}
-                    onClick={() => moveSection(id, 1)}
-                  >
-                    <FontAwesomeIcon icon={faArrowDown} />
-                  </Button>
+          {/* Section order: same canvas as the other layout modals, one column */}
+          <div className="border rounded mb-4" style={{ background: '#f8f9fa', padding: '8px' }}>
+            {visibleOrder.length === 0 && (
+              <div className="text-muted text-center py-3">
+                All sections are hidden. Re-enable a section below to arrange it.
+              </div>
+            )}
+            <ReactGridLayout
+              className="layout"
+              layout={canvasLayout}
+              cols={1}
+              rowHeight={30}
+              margin={[8, 6]}
+              compactType="vertical"
+              isDraggable
+              isResizable={false}
+              onDragStop={handleDragStop}
+            >
+              {visibleOrder.map((id) => (
+                <div key={id} style={sectionBoxStyle(sectionColor(id))}>
+                  {sectionLabel(id)}
                 </div>
+              ))}
+            </ReactGridLayout>
+          </div>
+
+          {/* Section visibility */}
+          <Form.Group className="mb-4">
+            <Form.Label>Visible sections</Form.Label>
+            <div className="d-flex flex-wrap align-items-center" style={{ gap: '0.5rem 1.75rem' }}>
+              {CARD_SECTIONS.map((s) => (
+                <Form.Check
+                  key={s.id}
+                  type="checkbox"
+                  id={`search-display-section-${s.id}`}
+                  label={s.label}
+                  checked={!prefs.hiddenSections.includes(s.id)}
+                  onChange={() => toggleSection(s.id)}
+                  style={{ whiteSpace: 'nowrap' }}
+                />
               ))}
             </div>
           </Form.Group>
@@ -291,10 +384,10 @@ const SearchDisplaySettings = () => {
               />
               <Form.Check
                 type="switch"
-                id="search-display-author-links"
-                label="Link authors to the person screen"
-                checked={prefs.linkAuthorsToPerson}
-                onChange={(e) => applyPrefs({ ...prefs, linkAuthorsToPerson: e.target.checked })}
+                id="search-display-person-icon"
+                label="Show person icon (opens the paper's authors on the person screen)"
+                checked={prefs.showPersonIcon}
+                onChange={(e) => applyPrefs({ ...prefs, showPersonIcon: e.target.checked })}
               />
             </div>
           </Form.Group>
@@ -303,11 +396,11 @@ const SearchDisplaySettings = () => {
           {!cognitoObserver && (
             <>
               <Form.Group className="mb-4">
-                <Form.Label>Save current display as a new profile</Form.Label>
+                <Form.Label>Save as a new layout</Form.Label>
                 <div className="d-flex gap-2">
                   <Form.Control
                     type="text"
-                    placeholder="Enter profile name"
+                    placeholder="Enter layout name"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     onKeyDown={(e) => {
@@ -316,41 +409,86 @@ const SearchDisplaySettings = () => {
                         handleCreate();
                       }
                     }}
-                    disabled={busy}
+                    disabled={busy || !canCreateMore}
                   />
-                  <Button variant="primary" disabled={busy || !(newName || '').trim()} onClick={handleCreate}>
+                  <Button
+                    variant="primary"
+                    disabled={busy || !canCreateMore || !(newName || '').trim()}
+                    onClick={handleCreate}
+                  >
                     {busy ? <Spinner animation="border" size="sm" /> : 'Save As New'}
                   </Button>
                 </div>
+                {!canCreateMore && (
+                  <Form.Text className="text-warning">
+                    Maximum number of saved layouts reached. Delete one to create another.
+                  </Form.Text>
+                )}
               </Form.Group>
 
               <div>
-                <h6>Saved Display Profiles</h6>
+                <h6>Saved Layouts</h6>
                 {(settings || []).length === 0 ? (
-                  <p className="text-muted mb-0">No profiles saved yet. Create one above.</p>
+                  <p className="text-muted mb-0">No layouts saved yet. Create one above.</p>
                 ) : (
                   <div className="list-group">
                     {settings.map((setting) => {
                       const id = setting.person_setting_id;
                       const isDefault = !!setting.default_setting;
+                      const isEditing = Object.prototype.hasOwnProperty.call(nameEdits, id);
                       return (
                         <div key={id} className="list-group-item d-flex justify-content-between align-items-center">
                           <div className="d-flex align-items-center flex-grow-1 me-3">
-                            <span className="me-2" title={isDefault ? 'Default profile' : ''}>
+                            <span className="me-2" title={isDefault ? 'Default layout' : ''}>
                               {isDefault ? '★' : ''}
                             </span>
-                            <span className="flex-grow-1">{setting.setting_name || setting.name}</span>
+                            {isEditing ? (
+                              <div className="d-flex flex-grow-1 align-items-center">
+                                <Form.Control
+                                  type="text"
+                                  size="sm"
+                                  value={nameEdits[id] || ''}
+                                  onChange={(e) =>
+                                    setNameEdits((prev) => ({ ...prev, [id]: e.target.value }))
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      saveRename(setting);
+                                    } else if (e.key === 'Escape') {
+                                      cancelRename(id);
+                                    }
+                                  }}
+                                  disabled={busy}
+                                  className="me-2"
+                                  autoFocus
+                                />
+                                <Button variant="success" size="sm" className="me-1" disabled={busy} onClick={() => saveRename(setting)}>
+                                  ✓
+                                </Button>
+                                <Button variant="secondary" size="sm" disabled={busy} onClick={() => cancelRename(id)}>
+                                  ✕
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="flex-grow-1">{setting.setting_name || setting.name}</span>
+                            )}
                           </div>
                           <div className="d-flex flex-wrap gap-2">
-                            <Button variant="outline-secondary" size="sm" disabled={busy} onClick={() => handleLoad(setting)}>
+                            <Button variant="outline-secondary" size="sm" disabled={busy} title="Load this layout" onClick={() => handleLoad(setting)}>
                               Load
                             </Button>
-                            <Button variant="outline-success" size="sm" disabled={busy} onClick={() => handleSaveHere(setting)}>
+                            <Button variant="outline-success" size="sm" disabled={busy} title="Overwrite with the current layout" onClick={() => handleSaveHere(setting)}>
                               Save Here
                             </Button>
                             {!isDefault && (
                               <Button variant="outline-primary" size="sm" disabled={busy} onClick={() => handleMakeDefault(setting)}>
                                 Set Default
+                              </Button>
+                            )}
+                            {!isEditing && (
+                              <Button variant="outline-secondary" size="sm" disabled={busy} onClick={() => startRename(setting)}>
+                                Rename
                               </Button>
                             )}
                             <Button variant="outline-danger" size="sm" disabled={busy} onClick={() => handleDelete(id)}>
@@ -372,10 +510,10 @@ const SearchDisplaySettings = () => {
             disabled={busy}
             onClick={() => {
               applyPrefs(DEFAULT_DISPLAY_PREFS);
-              notify('Display reset to the default card layout.', 'info');
+              notify('Reset to the default card layout.', 'info');
             }}
           >
-            Reset Display
+            Reset Layout
           </Button>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Close
