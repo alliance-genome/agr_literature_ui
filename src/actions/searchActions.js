@@ -157,8 +157,11 @@ export const fetchAdvancedFacetsVocab = () => {
           const key = item && item.source_method ? String(item.source_method) : '';
           if (!key || seen.has(key)) continue;
           if (hasMod) {
-            const provider = item.data_provider || item.secondary_data_provider_abbreviation;
-            if (!modSet.has(provider)) continue;
+            // A source belongs to the MOD that is its secondary data provider;
+            // data_provider is where the data came from and can be a third party
+            // such as GEO (SCRUM-6338).
+            const owner = item.secondary_data_provider_abbreviation || item.data_provider;
+            if (!modSet.has(owner)) continue;
           }
           seen.add(key);
           sourceBuckets.push({ key });
