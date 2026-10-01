@@ -60,11 +60,21 @@ const SearchDisplaySettings = () => {
   const cognitoObserver = useSelector((state) => state.isLogged.cognitoObserver);
   const rawPrefs = useSelector((state) => state.search.searchDisplayPrefs);
   const searchResults = useSelector((state) => state.search.searchResults);
-  // Which saved layout the display came from, for the switchbar indicator
-  // (curator feedback: nothing said which layout you are looking at).
+  // Which saved layout the display came from, folded into the Layout button
+  // as "Layout: <name>" — the same idiom as the saved-search control's
+  // "Setting: <name>" (curator feedback: nothing said which layout you are
+  // looking at; a detached muted label read as stray text). A trailing *
+  // means modified since loading/saving; the built-in default shows plain
+  // "Layout" to keep the common case quiet.
   const profileName = useSelector((state) => state.search.searchDisplayProfileName);
   const profileDirty = useSelector((state) => state.search.searchDisplayProfileDirty);
-  const activeLayoutLabel = (profileName || 'Default layout') + (profileDirty ? ' (modified)' : '');
+  const layoutButtonLabel = profileName
+    ? `Layout: ${profileName}${profileDirty ? '*' : ''}`
+    : (profileDirty ? 'Layout*' : 'Layout');
+  const layoutButtonTitle =
+    (profileName ? `Active card layout: ${profileName}` : 'Active card layout: built-in default')
+    + (profileDirty ? ' (modified since loading)' : '')
+    + ' — click to customize';
 
   const prefs = useMemo(() => normalizeDisplayPrefs(rawPrefs), [rawPrefs]);
 
@@ -272,24 +282,14 @@ const SearchDisplaySettings = () => {
 
   return (
     <>
-      {/* Active-layout indicator (curator feedback): name the layout the
-          cards are currently using, with "(modified)" once it has been
-          tweaked since loading/saving. */}
-      <span
-        className="text-muted small"
-        style={{ marginRight: '8px', whiteSpace: 'nowrap' }}
-        title="The card layout currently applied to the search results"
-      >
-        {activeLayoutLabel}
-      </span>
       <Button
         variant="outline-primary"
         size="sm"
-        title="Customize the search-result card layout"
+        title={layoutButtonTitle}
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '4px' }} />
-        Layout
+        {layoutButtonLabel}
       </Button>
 
       <Modal
