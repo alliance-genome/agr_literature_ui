@@ -30,10 +30,17 @@ const COLUMN_BY_COL_ID = {
   entity_name: 'entity',
   display_tag_name: 'display_tag',
   data_context_name: 'data_context',
+  'tag_source.source_evidence_assertion_name': 'tag_source.source_evidence_assertion',
   'tag_source.secondary_data_provider_abbreviation': 'secondary_data_provider',
 };
 
 export const dbColumnForColId = (colId) => COLUMN_BY_COL_ID[colId] || colId;
+
+// The sort endpoint resolves bare attribute names (TopicEntityTagModel first,
+// then TagSourceModel), so a source column sorts as e.g. "source_method" —
+// unlike column_filters, whose contract keeps the "tag_source." prefix.
+export const sortColumnForColId = (colId) =>
+  dbColumnForColId(colId).replace(/^tag_source\./, '');
 
 // The display transforms the table applies to every row (previously a useMemo
 // over the redux tag list). Kept here so blocks arrive render-ready.
@@ -81,10 +88,10 @@ export const columnFiltersFromModel = (filterModel) => {
   return filters;
 };
 
-const sortParamsFromModel = (sortModel) => {
+export const sortParamsFromModel = (sortModel) => {
   const first = (sortModel || [])[0];
   if (!first) return {};
-  return { sort_by: dbColumnForColId(first.colId), desc_sort: first.sort === 'desc' };
+  return { sort_by: sortColumnForColId(first.colId), desc_sort: first.sort === 'desc' };
 };
 
 /**
