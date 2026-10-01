@@ -132,6 +132,12 @@ export default (props) => {
     }
 
 
+    // Infinite row model (SCRUM-6618): cell renderers mount for loading row
+    // stubs whose data is undefined until the block arrives — rendering
+    // nothing until then. Without this guard the undefined read below crashed
+    // React and blanked the whole Biblio page.
+    if (!props.data) return null;
+
     // Only ABC-created tags may be edited or deleted: block imported/historic MOD tags
     // by requiring the source to be the ABC literature system professional_biocurator
     // (SCRUM-6304). secondary_data_provider_abbreviation still restricts to the curator's MOD.
