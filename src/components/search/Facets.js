@@ -70,7 +70,7 @@ export const RENAME_FACETS = {
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
     "data_novelty": "Data Novelty",
-    "large_scale_tag": "Large-scale study",
+    "large_scale_tag": "Large-scale data",
     "file_workflow": "File workflow",
     "reference_classification": "Reference classification",
     "entity_extraction": "Entity extraction",
