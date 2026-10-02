@@ -75,6 +75,19 @@ const prefsFromSetting = (s) => {
   };
 };
 
+// Stable signature of a layout's full preferences, for modified-detection on
+// the active-layout indicator: item and list order are normalized so a drag
+// that merely reorders the array (same coordinates) or a differently-ordered
+// hidden list does not read as a change.
+const layoutSignature = (layout, hidden, showTimestamps, showCurator) => JSON.stringify({
+  layout: normalizeLayout(layout || [])
+    .slice()
+    .sort((a, b) => String(a.i).localeCompare(String(b.i))),
+  hidden: [...(hidden || [])].sort(),
+  showTimestamps: showTimestamps !== false,
+  showCurator: showCurator !== false,
+});
+
 const SectionLayoutModal = ({
   sectionDefs,
   defaultLayout,
@@ -85,6 +98,10 @@ const SectionLayoutModal = ({
   pageLabel = 'Section',
   onApplyPrefs,
   current,
+  // The page's MOD-derived visibility default (array or Set), used as the
+  // live baseline for the built-in layout's modified indicator. Optional: a
+  // page without it falls back to the hidden set seen when settings loaded.
+  defaultHidden,
   onToggleSection,
   onToggleTimestamps,
   onToggleCurator,
@@ -111,6 +128,40 @@ const SectionLayoutModal = ({
   const [newName, setNewName] = useState('');
   const [nameEdits, setNameEdits] = useState({});
   const [message, setMessage] = useState(null); // { variant, text }
+  // Which saved layout the page is currently using, shown on the trigger
+  // button as "Layout: <name>" with a trailing * once modified -- the same
+  // idiom as the search-card Layout button (curator request). The snapshot
+  // holds the signature of the preferences last loaded or saved; any live
+  // divergence (drag, visibility, metadata toggles) reads as modified. It is
+  // state, not a ref, because the label is derived from it during render.
+  const [activeName, setActiveName] = useState(null);
+  const [namedSnapshot, setNamedSnapshot] = useState(null);
+  // Latest `current` for the mount-time load effect, which must not re-run
+  // when the page's live prefs change.
+  const currentRef = useRef(current);
+  useEffect(() => { currentRef.current = current; }, [current]);
+
+  // Record which named layout the page is now using and the exact preferences
+  // that were pushed to it, so later divergence can be detected. `name` is
+  // null for the built-in default (after Reset, or when the active layout is
+  // deleted); the snapshot is still taken so plain "Layout" can grow a * too.
+  //
+  // `hiddenFollowsMod` marks the untouched built-in baseline: until the user
+  // (or a loaded layout) decides visibility, the pages re-derive the hidden
+  // set from the MOD (`defaultHiddenSections(effectiveMod)`), and a tester
+  // switching MOD after the settings fetch resolves would otherwise flag a
+  // change nobody made. For that baseline the hidden list is compared against
+  // the live `defaultHidden` prop at render time instead of a one-time copy.
+  const markActive = useCallback((name, prefs, hiddenFollowsMod = false) => {
+    setActiveName(name || null);
+    setNamedSnapshot({
+      layout: prefs.layout || currentRef.current?.layout || workingRef.current,
+      hidden: prefs.hidden,
+      showTimestamps: prefs.showTimestamps,
+      showCurator: prefs.showCurator,
+      hiddenFollowsMod,
+    });
+  }, []);
 
   const {
     settings,
@@ -151,10 +202,22 @@ const SectionLayoutModal = ({
     if (!accessToken || !email) return;
     load()
       .then(({ picked }) => {
-        if (!picked) return;
+        if (!picked) {
+          // No saved default: the page is on the built-in arrangement. Take
+          // that as the baseline so a later tweak reads as modified.
+          const cur = currentRef.current || {};
+          markActive(null, {
+            layout: defaultLayout,
+            hidden: cur.hidden,
+            showTimestamps: cur.showTimestamps,
+            showCurator: cur.showCurator,
+          }, true);
+          return;
+        }
         const prefs = prefsFromSetting(picked);
         if (prefs.layout) setWorkingLayout(prefs.layout);
         if (typeof onApplyPrefs === 'function') onApplyPrefs(prefs);
+        markActive(picked.setting_name || picked.name, prefs);
       })
       .catch((err) => {
         const msg = err?.response?.data?.detail || err?.message || String(err);
@@ -196,16 +259,18 @@ const SectionLayoutModal = ({
       return;
     }
     try {
-      const created = await create(clean, buildPayload());
+      const payload = buildPayload();
+      const created = await create(clean, payload);
       await load();
       if (created?.person_setting_id) setSelectedSettingId(created.person_setting_id);
       setNewName('');
+      markActive(clean, payload);
       notify(`Layout "${clean}" created.`, 'success');
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || String(err);
       notify(`Failed to create layout: ${msg}`, 'danger');
     }
-  }, [newName, settings, create, buildPayload, load, setSelectedSettingId, notify]);
+  }, [newName, settings, create, buildPayload, load, setSelectedSettingId, markActive, notify]);
 
   const handleLoad = useCallback(
     (setting) => {
@@ -213,9 +278,10 @@ const SectionLayoutModal = ({
       setWorkingLayout(prefs.layout || defaultLayout);
       setSelectedSettingId(setting.person_setting_id);
       if (typeof onApplyPrefs === 'function') onApplyPrefs(prefs);
+      markActive(setting.setting_name || setting.name, prefs);
       notify(`Loaded "${setting.setting_name || setting.name}".`, 'info');
     },
-    [setSelectedSettingId, onApplyPrefs, notify, defaultLayout]
+    [setSelectedSettingId, onApplyPrefs, markActive, notify, defaultLayout]
   );
 
   const handleSaveHere = useCallback(
@@ -227,13 +293,16 @@ const SectionLayoutModal = ({
         if (setting.default_setting && typeof onApplyPrefs === 'function') {
           onApplyPrefs(prefsFromSetting({ json_settings: payload }));
         }
+        // The page now matches this entry exactly, whichever layout it was
+        // showing before -- so it becomes the active one, unmodified.
+        markActive(setting.setting_name || setting.name, payload);
         notify(`Saved current layout to "${setting.setting_name || setting.name}".`, 'success');
       } catch (err) {
         const msg = err?.response?.data?.detail || err?.message || String(err);
         notify(`Failed to save layout: ${msg}`, 'danger');
       }
     },
-    [savePayloadTo, buildPayload, load, onApplyPrefs, notify]
+    [savePayloadTo, buildPayload, load, onApplyPrefs, markActive, notify]
   );
 
   const handleMakeDefault = useCallback(
@@ -243,26 +312,32 @@ const SectionLayoutModal = ({
         const prefs = prefsFromSetting(setting);
         if (prefs.layout) setWorkingLayout(prefs.layout);
         if (typeof onApplyPrefs === 'function') onApplyPrefs(prefs);
+        markActive(setting.setting_name || setting.name, prefs);
         notify(`"${setting.setting_name || setting.name}" is now your default layout.`, 'success');
       } catch (err) {
         const msg = err?.response?.data?.detail || err?.message || String(err);
         notify(`Failed to set default: ${msg}`, 'danger');
       }
     },
-    [makeDefault, onApplyPrefs, notify]
+    [makeDefault, onApplyPrefs, markActive, notify]
   );
 
   const handleDelete = useCallback(
     async (id) => {
+      const victim = (settings || []).find((s) => s.person_setting_id === id);
+      const victimName = victim ? (victim.setting_name || victim.name) : null;
       try {
         await remove(id);
+        // The page keeps the arrangement, but it no longer has a name. The
+        // snapshot stays so further edits still read as modified.
+        if (victimName && victimName === activeName) setActiveName(null);
         notify('Layout deleted.', 'success');
       } catch (err) {
         const msg = err?.response?.data?.detail || err?.message || String(err);
         notify(`Failed to delete settings: ${msg}`, 'danger');
       }
     },
-    [remove, notify]
+    [settings, activeName, remove, notify]
   );
 
   const startRename = (setting) =>
@@ -288,13 +363,15 @@ const SectionLayoutModal = ({
         await rename(id, val);
         await load();
         cancelRename(id);
+        // The trigger button names the active layout, so it follows a rename.
+        if ((setting.setting_name || setting.name) === activeName) setActiveName(val);
         notify(`Renamed to "${val}".`, 'success');
       } catch (err) {
         const msg = err?.response?.data?.detail || err?.message || String(err);
         notify(`Failed to rename: ${msg}`, 'danger');
       }
     },
-    [nameEdits, rename, load, notify]
+    [nameEdits, activeName, rename, load, notify]
   );
 
   /* ---------- live apply ---------- */
@@ -326,18 +403,52 @@ const SectionLayoutModal = ({
 
   const handleResetCanvas = useCallback(() => {
     setWorkingLayout(defaultLayout);
-    if (typeof onApplyPrefs === 'function') {
-      onApplyPrefs({
-        layout: defaultLayout,
-        hidden: Array.isArray(current?.hidden) ? current.hidden : [],
-        showTimestamps: current?.showTimestamps !== false,
-        showCurator: current?.showCurator !== false,
-      });
-    }
+    const prefs = {
+      layout: defaultLayout,
+      hidden: Array.isArray(current?.hidden) ? current.hidden : [],
+      showTimestamps: current?.showTimestamps !== false,
+      showCurator: current?.showCurator !== false,
+    };
+    if (typeof onApplyPrefs === 'function') onApplyPrefs(prefs);
+    // Back on the built-in arrangement: the button drops the name.
+    markActive(null, prefs);
     notify('Layout reset to the default stacked arrangement.', 'info');
-  }, [onApplyPrefs, current, notify, defaultLayout]);
+  }, [onApplyPrefs, current, markActive, notify, defaultLayout]);
 
   const hasSettings = (settings || []).length > 0;
+
+  /* ---------- trigger-button label ---------- */
+
+  // "Layout" for the built-in default, "Layout: <name>" for a saved layout, a
+  // trailing * once the page's live preferences diverge from what was loaded
+  // or saved. The live signature reads the page's own state (`current`) so a
+  // drag on the canvas, a visibility checkbox or a metadata switch all count;
+  // before the initial load resolves there is no snapshot and nothing is
+  // flagged.
+  const liveSignature = layoutSignature(
+    current?.layout || workingLayout,
+    current?.hidden,
+    current?.showTimestamps,
+    current?.showCurator
+  );
+  const baselineSignature = namedSnapshot === null ? null : layoutSignature(
+    namedSnapshot.layout,
+    (namedSnapshot.hiddenFollowsMod && defaultHidden != null)
+      ? Array.from(defaultHidden)
+      : namedSnapshot.hidden,
+    namedSnapshot.showTimestamps,
+    namedSnapshot.showCurator
+  );
+  const isModified = baselineSignature !== null && liveSignature !== baselineSignature;
+  const layoutButtonLabel = activeName
+    ? `Layout: ${activeName}${isModified ? '*' : ''}`
+    : (isModified ? 'Layout*' : 'Layout');
+  const layoutButtonTitle =
+    (activeName
+      ? `Active ${pageLabel.toLowerCase()} layout: ${activeName}`
+      : `Active ${pageLabel.toLowerCase()} layout: built-in default`)
+    + (isModified ? ' (modified since loading)' : '')
+    + ' — click to customize';
 
   const labelById = useMemo(() => {
     const m = {};
@@ -359,11 +470,11 @@ const SectionLayoutModal = ({
       <Button
         variant="outline-primary"
         size="sm"
-        title={`${pageLabel} layout`}
+        title={layoutButtonTitle}
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '6px' }} />
-        Layout
+        {layoutButtonLabel}
       </Button>
 
       <Modal
@@ -515,6 +626,7 @@ const SectionLayoutModal = ({
                   const id = setting.person_setting_id;
                   const isDefault = !!setting.default_setting;
                   const isEditing = Object.prototype.hasOwnProperty.call(nameEdits, id);
+                  const isCurrent = (setting.setting_name || setting.name) === activeName;
                   return (
                     <div
                       key={id}
@@ -524,6 +636,26 @@ const SectionLayoutModal = ({
                         <span className="me-2" title={isDefault ? 'Default layout' : ''}>
                           {isDefault ? '★' : ''}
                         </span>
+                        {isCurrent && (
+                          // Inline-styled pill, matching the search-card
+                          // layout list: the app runs Bootstrap 4, where the
+                          // BS5 badge classes are inert.
+                          <span
+                            style={{
+                              backgroundColor: '#d1ecf1',
+                              color: '#0c5460',
+                              borderRadius: '10px',
+                              padding: '2px 10px',
+                              marginRight: '12px',
+                              fontSize: '0.8em',
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                            }}
+                            title={`The layout the ${pageLabel.toLowerCase()} is currently using`}
+                          >
+                            current{isModified ? ' (modified)' : ''}
+                          </span>
+                        )}
                         {isEditing ? (
                           <div className="d-flex flex-grow-1 align-items-center">
                             <Form.Control

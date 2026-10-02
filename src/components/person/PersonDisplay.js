@@ -611,6 +611,7 @@ const PersonDisplay = ({ person: personProp }) => {
               showTimestamps,
               showCurator,
             }}
+            defaultHidden={defaultHiddenSections(effectiveMod)}
             onToggleSection={toggleSection}
             onToggleTimestamps={setShowTimestamps}
             onToggleCurator={setShowCurator}
