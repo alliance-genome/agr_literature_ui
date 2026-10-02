@@ -85,7 +85,7 @@ const BreadCrumbs = () => {
 	// 2. retraction_status.keyword (Bibliographic Data's retraction status)
 	// 3. Any Alliance Metadata facets
 	// 4. The boolean Images facets, whose values (Yes/No) are meaningless without the facet name
-	// 5. The Large-scale study facet, boolean like the Images ones (SCRUM-6614)
+	// 5. The Large-scale data facet, boolean like the Images ones (SCRUM-6614)
        return facet === 'language.keyword' || facet === 'retraction_status.keyword' || facet.startsWith('mods_') ||
            facet === 'can_display_image' || facet === 'has_image' || facet === 'large_scale_tag';
     };
