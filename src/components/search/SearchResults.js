@@ -309,7 +309,7 @@ const SearchResultItem = ({ reference }) => {
         return (
           <Badge key={i} variant="info" style={{ marginRight: '6px' }}
                  title="This paper's associations of this type exceed the display threshold; the full list is in the database and on the Biblio page.">
-            {`${count}${pluralizeEntityName(summary.name)} (large-scale study)`}
+            {`${count}${pluralizeEntityName(summary.name)} (large-scale data)`}
           </Badge>
         );
       })}
