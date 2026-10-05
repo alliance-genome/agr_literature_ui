@@ -142,3 +142,39 @@ describe('getConvertedFileEntries', () => {
     expect(getConvertedFileEntries(figureRow, {})).toEqual([]);
   });
 });
+
+describe('Office supplements (SCRUM-6589)', () => {
+  test('groups _xlsx / _docx markdown under the source display_name by extension', () => {
+    const xlsxMd = makeFile('table_s1_xlsx', 'converted_merged_supplement');
+    const docxMd = makeFile('table_s1_docx', 'converted_merged_supplement');
+    const map = getConvertedFilesMap([
+      makeFile('table_s1', 'supplement', 'xlsx'),
+      makeFile('table_s1', 'supplement', 'docx'),
+      xlsxMd,
+      docxMd,
+    ]);
+    expect(map).toEqual({
+      table_s1: { office: { xlsx: xlsxMd, docx: docxMd } },
+    });
+  });
+
+  test('each of a same-named PDF, xlsx and docx row shows only its own conversion', () => {
+    const pdfRow = makeFile('table_s1', 'supplement', 'pdf');
+    const xlsxRow = makeFile('table_s1', 'supplement', 'xlsx');
+    const docxRow = makeFile('table_s1', 'supplement', 'docx');
+    const pdfMd = makeFile('table_s1_merged', 'converted_merged_supplement');
+    const xlsxMd = makeFile('table_s1_xlsx', 'converted_merged_supplement');
+    const docxMd = makeFile('table_s1_docx', 'converted_merged_supplement');
+    const map = getConvertedFilesMap([pdfRow, xlsxRow, docxRow, pdfMd, xlsxMd, docxMd]);
+    expect(getConvertedFileEntries(pdfRow, map)).toEqual([{ file: pdfMd, label: 'merged' }]);
+    expect(getConvertedFileEntries(xlsxRow, map)).toEqual([{ file: xlsxMd, label: 'merged' }]);
+    expect(getConvertedFileEntries(docxRow, map)).toEqual([{ file: docxMd, label: 'merged' }]);
+  });
+
+  test('an Office row without a conversion shows nothing, even if a same-named PDF converted', () => {
+    const pdfMd = makeFile('table_s1_merged', 'converted_merged_supplement');
+    const xlsxRow = makeFile('table_s1', 'supplement', 'XLSX');
+    const map = getConvertedFilesMap([makeFile('table_s1', 'supplement', 'pdf'), xlsxRow, pdfMd]);
+    expect(getConvertedFileEntries(xlsxRow, map)).toEqual([]);
+  });
+});

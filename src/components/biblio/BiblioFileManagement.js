@@ -901,12 +901,40 @@ const CONVERTED_FILE_LABELS = {
 // these yields the source display_name used as the grouping key.
 const METHOD_SUFFIXES = ['_grobid', '_docling', '_marker', '_merged', '_nxml', '_tei'];
 
+// Office supplements (xlsx / docx) convert in-process to Markdown named
+// "{display_name}_{extension}" (Table_S1.xlsx -> Table_S1_xlsx), so the suffix
+// also names the source's extension (SCRUM-6589). A supplement PDF, an xlsx and
+// a docx can share a display_name; each row shows only its own conversion.
+const OFFICE_EXTENSIONS = ['xlsx', 'xlsm', 'docx', 'docm'];
+const OFFICE_SUFFIXES = OFFICE_EXTENSIONS.map((ext) => `_${ext}`);
+
+const getOfficeSuffix = (displayName) =>
+  OFFICE_SUFFIXES.find((suffix) => displayName.endsWith(suffix)) || null;
+
+const isOfficeSource = (referenceFile) =>
+  referenceFile.file_class === 'supplement' &&
+  OFFICE_EXTENSIONS.includes((referenceFile.file_extension || '').toLowerCase());
+
 // Create a mapping of base display_name to converted markdown files.
 // Converted files have names like "PMC123_grobid" but we need to map to "PMC123"
+// Office-derived markdown is kept apart under map[base].office[extension], so it
+// never collides with the PDFX output of a same-named supplement PDF.
 export const getConvertedFilesMap = (referenceFiles) => {
   const map = {};
   referenceFiles.forEach(file => {
     if (ALL_CONVERTED_FILE_CLASSES.includes(file.file_class)) {
+      const officeSuffix = getOfficeSuffix(file.display_name);
+      if (officeSuffix) {
+        const baseDisplayName = file.display_name.slice(0, -officeSuffix.length);
+        if (!map[baseDisplayName]) {
+          map[baseDisplayName] = {};
+        }
+        if (!map[baseDisplayName].office) {
+          map[baseDisplayName].office = {};
+        }
+        map[baseDisplayName].office[officeSuffix.slice(1)] = file;
+        return;
+      }
       // Strip method suffix to get base display_name
       let baseDisplayName = file.display_name;
       for (const suffix of METHOD_SUFFIXES) {
@@ -949,6 +977,10 @@ const getMethodSuffix = (displayName) =>
 // main/supplement rows (and vice versa for the other suffixes).
 export const getConvertedFileEntries = (referenceFile, convertedFilesMap) => {
   const convertedFiles = convertedFilesMap[referenceFile.display_name] || {};
+  if (isOfficeSource(referenceFile)) {
+    const officeMd = (convertedFiles.office || {})[referenceFile.file_extension.toLowerCase()];
+    return officeMd ? [{ file: officeMd, label: CONVERTED_FILE_LABELS[officeMd.file_class] }] : [];
+  }
   const wantNxmlDerived = referenceFile.file_class === 'nXML';
   return getConvertedFileClasses(referenceFile.file_class)
     .filter((fileClass) => convertedFiles[fileClass])
