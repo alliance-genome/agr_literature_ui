@@ -141,6 +141,18 @@ export const changeSortAuthorPersonToggler = (index) => {
   };
 };
 
+// FastAPI returns `detail` as a string for HTTPExceptions but as a list of
+// {type, loc, msg, input} objects for request validation errors (422); the
+// sort alert renders messages as text, so always reduce it to a string.
+const formatSortErrorDetail = (detail, subPath, status) => {
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail) && detail.length > 0 && typeof detail[0]?.msg === 'string') {
+    const loc = Array.isArray(detail[0].loc) ? detail[0].loc.slice(1).join('.') : '';
+    return 'error: ' + subPath + ' : ' + detail[0].msg + (loc ? ': ' + loc : '');
+  }
+  return 'error: ' + subPath + ' : API status code ' + status;
+};
+
 export const updateButtonSort = (updateArrayData) => dispatch => {
   // accessToken in updateArrayData kept for backwards compatibility - auth handled by API client interceptor
   const [, subPath, payload, method, index, field, subField] = updateArrayData;
@@ -162,13 +174,7 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
       } else {
         const response = res.data;
         if (!isSuccess(res.status)) {
-          if (typeof(response.detail) !== 'object') {
-            response_message = response.detail;
-          } else if (typeof(response.detail[0].msg) !== 'object') {
-            response_message = 'error: ' + subPath + ' : ' + response.detail[0].msg + ': ' + response.detail[0].loc[1];
-          } else {
-            response_message = 'error: ' + subPath + ' : API status code ' + res.status;
-          }
+          response_message = formatSortErrorDetail(response.detail, subPath, res.status);
         }
         if (method === 'POST' && isSuccess(res.status)) {
           newId = response?.[subField] ?? null;
@@ -189,7 +195,9 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
       }, 500);
     } catch (error) {
       console.error('updateButtonSort error:', error);
-      const response_message = error.response?.data?.detail || 'error: ' + subPath + ' : ' + error.message;
+      const response_message = error.response?.data?.detail
+        ? formatSortErrorDetail(error.response.data.detail, subPath, error.response.status)
+        : 'error: ' + subPath + ' : ' + error.message;
       setTimeout(() => {
         dispatch({
           type: 'UPDATE_BUTTON_SORT',
