@@ -133,6 +133,14 @@ export const changeSortWorkflowToggler = (e) => {
   };
 };
 
+// SCRUM-6487: WB "Author-Person curation" checkbox, per paper
+export const changeSortAuthorPersonToggler = (index) => {
+  return {
+    type: 'CHANGE_SORT_AUTHOR_PERSON_TOGGLER',
+    payload: index
+  };
+};
+
 export const updateButtonSort = (updateArrayData) => dispatch => {
   // accessToken in updateArrayData kept for backwards compatibility - auth handled by API client interceptor
   const [, subPath, payload, method, index, field, subField] = updateArrayData;

@@ -354,6 +354,9 @@ const Sort = () => {
     for (const [index, reference] of referencesToSortLive.entries()) {
       if (reference['mod_corpus_association_corpus'] !== null) {
         let updateJson = { 'corpus': reference['mod_corpus_association_corpus'], 'mod_corpus_sort_source': 'manual_creation' }
+        if (reference['mod_corpus_association_corpus'] === true && activeMod === 'WB') {
+          updateJson['author_person_curation_needed'] = reference['author_person_curation'] !== false;
+        }
         let subPath = `reference/mod_corpus_association/${reference['mod_corpus_association_id']}`;
         const field = null;
         const subField = null;

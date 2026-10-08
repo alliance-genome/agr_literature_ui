@@ -6,6 +6,7 @@ import { setReferenceCurie, setGetReferenceCurieFlag } from '../actions/biblioAc
 import { 
   changeSortCorpusToggler, 
   changeSortWorkflowToggler, 
+  changeSortAuthorPersonToggler,
   updateButtonSort, 
   removeReferenceFromSortLive, 
   setSortUpdating 
@@ -55,6 +56,9 @@ const ReferencesToSort = ({
       'mod_corpus_sort_source': 'manual_creation',
       'index_wft_id': index_wft_id
     };
+    if (activeMod === 'WB') {
+      updateJson['author_person_curation_needed'] = reference['author_person_curation'] !== false;
+    }
     let subPath = `reference/mod_corpus_association/${reference['mod_corpus_association_id']}`;
     let method = 'PATCH';
     let array = [subPath, updateJson, method, index, null, null];
@@ -318,6 +322,15 @@ const ReferencesToSort = ({
                   id={`meeting_toggle-${index}`}
                   onChange={(e) => dispatch(changeSortWorkflowToggler(e))}
                 /><br />
+                <Form.Check
+                  inline
+                  disabled={reference['mod_corpus_association_corpus'] !== true}
+                  checked={reference['author_person_curation'] !== false}
+                  type='checkbox'
+                  label='Author-Person curation'
+                  id={`author_person_curation_toggle-${index}`}
+                  onChange={() => dispatch(changeSortAuthorPersonToggler(index))}
+                /><br />
               </>
             )}
             <Form.Control as="select" id={`primary_select-${index}`} style={{ display: 'none' }}>
@@ -376,7 +389,7 @@ const ReferencesToSort = ({
             )}
             {/* Button Group with Fixed Width and No Wrapping */}
             <div className="d-flex flex-column gap-3">
-              {activeMod !== 'FB' && (
+              {activeMod !== 'FB' && activeMod !== 'WB' && (
 		<>
                   <Button 
                     variant="outline-primary" 
@@ -510,6 +523,7 @@ const arePropsEqual = (prevProps, nextProps) => {
   if (prevProps.reference.mod_corpus_association_id !== nextProps.reference.mod_corpus_association_id) return false;
   if (prevProps.reference.mod_corpus_association_corpus !== nextProps.reference.mod_corpus_association_corpus) return false;
   if (prevProps.reference.workflow !== nextProps.reference.workflow) return false;
+  if (prevProps.reference.author_person_curation !== nextProps.reference.author_person_curation) return false;
 
   // Check array props at this specific index only
   const idx = prevProps.index;
