@@ -6,7 +6,7 @@ import {
   removeReferenceFromSortLive,
   changeSortCorpusToggler,
   changeSortWorkflowToggler,
-  updateButtonSort,
+  updateButtonSortInOrder,
   closeSortUpdateAlert,
   setSortUpdating
 } from '../actions/sortActions';
@@ -417,9 +417,7 @@ const Sort = () => {
     console.log('dispatchCount ' + dispatchCount)
     dispatch(setSortUpdating(dispatchCount))
 
-    for (const arrayData of forApiArray) {
-      dispatch(updateButtonSort(arrayData))
-    }
+    dispatch(updateButtonSortInOrder(forApiArray))
   }
 
   return (

@@ -212,7 +212,30 @@ export const updateButtonSort = (updateArrayData) => dispatch => {
       }, 500);
     }
   };
-  createUpdateButtonSort();
+  // never rejects: failures are reported through UPDATE_BUTTON_SORT
+  return createUpdateButtonSort();
+};
+
+// Send each paper's sort updates with its first request (the mod_corpus_association
+// PATCH) finished before the rest (reference type, species tags) start; different
+// papers still go out in parallel. Sent together, a species tag POST moves the paper
+// into the corpus and adds "file needed" while the PATCH is doing the same, and the
+// PATCH then fails on the duplicate workflow tag (a 500, shown as "Network Error"),
+// rolling back what only it grants, e.g. WB's author-person curation needed.
+// updateArrays: the [accessToken, subPath, payload, method, index, field, subField]
+// arrays updateButtonSort takes, in send order.
+export const updateButtonSortInOrder = (updateArrays) => dispatch => {
+  const arraysByPaper = new Map();
+  for (const updateArray of updateArrays) {
+    const index = updateArray[4];
+    if (!arraysByPaper.has(index)) arraysByPaper.set(index, []);
+    arraysByPaper.get(index).push(updateArray);
+  }
+  for (const [first, ...rest] of arraysByPaper.values()) {
+    dispatch(updateButtonSort(first)).then(() => {
+      rest.forEach(updateArray => dispatch(updateButtonSort(updateArray)));
+    });
+  }
 };
 
 export const closeSortUpdateAlert = () => {

@@ -7,7 +7,8 @@ import {
   changeSortCorpusToggler, 
   changeSortWorkflowToggler, 
   changeSortAuthorPersonToggler,
-  updateButtonSort, 
+  updateButtonSort,
+  updateButtonSortInOrder,
   removeReferenceFromSortLive, 
   setSortUpdating 
 } from '../actions/sortActions';
@@ -102,7 +103,10 @@ const ReferencesToSort = ({
             'topic': "ATP:0000123",   // species
             'entity_type': "ATP:0000123", // species
             'entity_id_validation': "alliance",
-            'tag_source_id': topicEntitySourceId
+            'tag_source_id': topicEntitySourceId,
+            // the API requires data_novelty for non-SGD sources; same values as Sort.js
+            'data_novelty': "ATP:0000335",
+            'negated': false
           };
           subPath = 'topic_entity_tag/';
           method = 'POST';
@@ -115,10 +119,8 @@ const ReferencesToSort = ({
     // Dispatch the updates
     const dispatchCount = forApiArray.length;
     dispatch(setSortUpdating(dispatchCount));
-    forApiArray.forEach(arrayData => {
-      arrayData.unshift(accessToken);
-      dispatch(updateButtonSort(arrayData));
-    });
+    forApiArray.forEach(arrayData => arrayData.unshift(accessToken));
+    dispatch(updateButtonSortInOrder(forApiArray));
 
     // Remove the paper from the page
     dispatch(removeReferenceFromSortLive(index));
