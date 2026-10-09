@@ -147,15 +147,20 @@ const Sort = () => {
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   let activeMod = accessLevel;
 
-  // Fetch topic entity source id
+  // Fetch topic entity source id, guarded as in BiblioWorkflow: when accessLevel changes
+  // (e.g. a tester switching MOD after login), the earlier lookup can resolve last --
+  // for 'No' it is a 404 GET plus a failing POST -- and overwrite the right id with
+  // undefined, so every species tag is then posted without tag_source_id. `cancelled`
+  // drops such stale responses, and there is no curator source for MOD 'No'.
   useEffect(() => {
-    const fetchSourceId = async () => {
-      if (accessToken !== null) {
-        const sourceId = await getCuratorSourceId(accessLevel, accessToken);
-        setTopicEntitySourceId(sourceId);
-      }
-    }
-    fetchSourceId().catch(console.error);
+    if (!accessLevel || accessLevel === 'No' || !accessToken) return;
+    let cancelled = false;
+    setTopicEntitySourceId(undefined);
+    (async () => {
+      const sourceId = await getCuratorSourceId(accessLevel);
+      if (!cancelled) setTopicEntitySourceId(sourceId);
+    })().catch(console.error);
+    return () => { cancelled = true; };
   }, [accessLevel, accessToken]);
 
   let buttonUpdateDisabled = sortUpdating > 0;
