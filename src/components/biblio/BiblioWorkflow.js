@@ -303,7 +303,7 @@ const BiblioWorkflow = () => {
     return () => { cancelled = true; };
   }, [accessLevel, accessToken, dispatch]);
 
-  // fetch overview for manual indexing + community curation
+  // fetch overview for manual indexing + community curation (+ WB author workflows)
   const fetchIndexingWorkflowOverview = useCallback(
     async () => {
       const url = `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
@@ -336,12 +336,17 @@ const BiblioWorkflow = () => {
         const sectionOrder = [
           'community curation',
           'first pass curation',
-          'manual indexing'
+          'manual indexing',
+          // WB only: author-person curation (SCRUM-6487) and author review (SCRUM-6448)
+          'author-person curation',
+          'author review'
         ];
         const sectionDisplayNames = {
           'community curation': 'Community Curation',
           'first pass curation': 'First Pass Curation',
           'manual indexing': 'Manual Indexing',
+          'author-person curation': 'Author-Person Curation',
+          'author review': 'Author Review',
         };
 
         const rowsFromWFT = sectionOrder

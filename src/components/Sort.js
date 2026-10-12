@@ -6,7 +6,7 @@ import {
   removeReferenceFromSortLive,
   changeSortCorpusToggler,
   changeSortWorkflowToggler,
-  updateButtonSort,
+  updateButtonSortInOrder,
   closeSortUpdateAlert,
   setSortUpdating
 } from '../actions/sortActions';
@@ -147,15 +147,20 @@ const Sort = () => {
   let accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   let activeMod = accessLevel;
 
-  // Fetch topic entity source id
+  // Fetch topic entity source id, guarded as in BiblioWorkflow: when accessLevel changes
+  // (e.g. a tester switching MOD after login), the earlier lookup can resolve last --
+  // for 'No' it is a 404 GET plus a failing POST -- and overwrite the right id with
+  // undefined, so every species tag is then posted without tag_source_id. `cancelled`
+  // drops such stale responses, and there is no curator source for MOD 'No'.
   useEffect(() => {
-    const fetchSourceId = async () => {
-      if (accessToken !== null) {
-        const sourceId = await getCuratorSourceId(accessLevel, accessToken);
-        setTopicEntitySourceId(sourceId);
-      }
-    }
-    fetchSourceId().catch(console.error);
+    if (!accessLevel || accessLevel === 'No' || !accessToken) return;
+    let cancelled = false;
+    setTopicEntitySourceId(undefined);
+    (async () => {
+      const sourceId = await getCuratorSourceId(accessLevel);
+      if (!cancelled) setTopicEntitySourceId(sourceId);
+    })().catch(console.error);
+    return () => { cancelled = true; };
   }, [accessLevel, accessToken]);
 
   let buttonUpdateDisabled = sortUpdating > 0;
@@ -354,6 +359,9 @@ const Sort = () => {
     for (const [index, reference] of referencesToSortLive.entries()) {
       if (reference['mod_corpus_association_corpus'] !== null) {
         let updateJson = { 'corpus': reference['mod_corpus_association_corpus'], 'mod_corpus_sort_source': 'manual_creation' }
+        if (reference['mod_corpus_association_corpus'] === true && activeMod === 'WB') {
+          updateJson['author_person_curation_needed'] = reference['author_person_curation'] !== false;
+        }
         let subPath = `reference/mod_corpus_association/${reference['mod_corpus_association_id']}`;
         const field = null;
         const subField = null;
@@ -409,9 +417,7 @@ const Sort = () => {
     console.log('dispatchCount ' + dispatchCount)
     dispatch(setSortUpdating(dispatchCount))
 
-    for (const arrayData of forApiArray) {
-      dispatch(updateButtonSort(arrayData))
-    }
+    dispatch(updateButtonSortInOrder(forApiArray))
   }
 
   return (
