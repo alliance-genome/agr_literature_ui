@@ -128,6 +128,7 @@ export const WFT_CATEGORY_DEFS = [
   { key: 'entity_extraction', label: 'Entity extraction' },
   { key: 'manual_indexing', label: 'Manual indexing' },
   { key: 'curation_classification', label: 'Curation classification' },
+  { key: 'abstract_classification', label: 'Abstract classification' },
   { key: 'community_curation', label: 'Community curation' },
   { key: 'first_pass_curation', label: 'First pass curation' },
   { key: 'email_extraction', label: 'Email extraction' },
