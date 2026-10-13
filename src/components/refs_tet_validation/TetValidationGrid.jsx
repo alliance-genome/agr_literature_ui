@@ -18,6 +18,8 @@ import {
   sourceLabel,
   normalizeCurie,
   VALIDATION_STATE_LABELS,
+  isAssessedByMod,
+  isCuratorValidationTet,
 } from './helpers/groupTets';
 import IdsCell from './cellRenderers/IdsCell';
 import TitleCell from './cellRenderers/TitleCell';
@@ -40,6 +42,7 @@ import { api } from '../../api';
 import {
   fetchTaxonData,
   getCuratorSourceId,
+  mergeTaxonNames,
   setTopicEntitySourceId,
 } from '../../actions/biblioActions';
 import { setGridPreferences } from '../../actions/searchActions';
@@ -249,6 +252,7 @@ export default function TetValidationGrid({
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   const accessToken = useSelector((s) => s.isLogged.accessToken);
+  const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
   const [curationTagOptions, setCurationTagOptions] = useState([]);
 
@@ -406,6 +410,54 @@ export default function TetValidationGrid({
   useEffect(() => {
     dispatch(fetchTaxonData());
   }, [dispatch]);
+
+  // Resolve names for species on curator assessments that the taxon data above
+  // doesn't cover (it only holds each MOD's own taxa + human), so a curator who
+  // picked e.g. a genus gets a lettered badge instead of '?'. Waits for the
+  // taxon data so FETCH_TAXON_DATA_SUCCESS can't overwrite the merged names.
+  // Each curie is tried once per mount, found or not, so a species the API
+  // can't name isn't re-requested on every row update. Results are merged even
+  // if rows change mid-flight: a curie marked tried must not lose its name, and
+  // the names live in the shared redux store, not this effect.
+  const triedSpeciesRef = useRef(new Set());
+  useEffect(() => {
+    if (!curieToNameTaxon) return;
+    const seen = new Set();
+    for (const r of rows) {
+      for (const t of r.tets || []) {
+        if (t.species && isCuratorValidationTet(t)) seen.add(t.species);
+      }
+      for (const cell of Object.values(r.validation || {})) {
+        for (const g of cell?.by_curator || []) {
+          for (const sp of g?.species || []) if (sp) seen.add(sp);
+        }
+      }
+    }
+    const missing = [...seen].filter(
+      (c) => !curieToNameTaxon[c] && !triedSpeciesRef.current.has(c)
+    );
+    if (missing.length === 0) return;
+    missing.forEach((c) => triedSpeciesRef.current.add(c));
+    Promise.all(
+      missing.map(async (curie) => {
+        try {
+          const r = await api.get(
+            `/ontology/map_curie_to_name/species/${curie}`
+          );
+          // The endpoint echoes the curie back when it has no name for it.
+          const name = typeof r.data === 'string' ? r.data : '';
+          return name && name.toUpperCase() !== curie.toUpperCase()
+            ? [curie, name]
+            : null;
+        } catch {
+          return null;
+        }
+      })
+    ).then((entries) => {
+      const found = entries.filter(Boolean);
+      if (found.length > 0) dispatch(mergeTaxonNames(Object.fromEntries(found)));
+    });
+  }, [rows, curieToNameTaxon, dispatch]);
 
   const [topicNameMap, setTopicNameMap] = useState({});
 
@@ -1633,7 +1685,7 @@ export default function TetValidationGrid({
         const validationChild = makeInnerColumn({
           headerName: 'Data assessment by biocurator',
           help:
-            'Data assessment by biocurator. When at least one curator has submitted a topic-level tag, the cell shows the assessment: Y (data present for this topic), N (no data), or "conflict" when curators disagree. Otherwise, ✓ and ✗ buttons let the curator submit one. Y / N here mean the same thing as under "Data assessment by other sources" and as the has_data facet in advanced search.',
+            'Data assessment by biocurator. When at least one curator has submitted a topic-level tag, the cell shows a Y pill (data present for this topic) and/or an N pill (no data), each listing the MODs that gave that answer — your MOD in bold. Assessments are per MOD: a dashed, muted pill is another MOD\'s assessment, not yours, and "conflict" marks curators of the same MOD disagreeing. Until a curator from your MOD has submitted one, ✓ and ✗ buttons let you submit it. Y / N here mean the same thing as under "Data assessment by other sources" and as the has_data facet in advanced search.',
           colId: `${t.curie}__val`,
           kind: INNER_COLUMN_TYPES.VALIDATION,
           width: 90,
@@ -1970,8 +2022,9 @@ export default function TetValidationGrid({
               const tets = row?.[topicField] || [];
               return {
                 curie,
-                alreadyValidated:
-                  professionalBiocuratorTopicTets(tets).length > 0,
+                // Per MOD (SCRUM-6256): only this curator's MOD's own
+                // assessment makes a reference skip the bulk submit.
+                alreadyValidated: isAssessedByMod(tets, accessLevel),
               };
             });
           })()}

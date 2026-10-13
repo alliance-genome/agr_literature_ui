@@ -57,6 +57,55 @@ export function isCuratorValidationTet(tet) {
   );
 }
 
+/** MOD abbreviations (uppercased) that already have a professional-biocurator
+ *  topic-level assessment in a cell. Every curator source is per MOD (the ABC
+ *  source's secondary_data_provider is the curator's MOD), so this is what lets
+ *  a curator still assess a topic another MOD has already assessed (SCRUM-6256).
+ *
+ *  Reads both the raw tets and the server `validation.by_curator` source labels
+ *  (`method / MOD`): after a validation the grid swaps in only the recomputed
+ *  server aggregate, leaving the raw tets stale, so the aggregate is what shows
+ *  the curator's own new assessment. */
+export function curatorAssessedMods(value) {
+  const mods = new Set();
+  for (const t of asTets(value)) {
+    if (!isCuratorValidationTet(t)) continue;
+    const mod = modOfTet(t);
+    if (mod) mods.add(mod);
+  }
+  const sv = cellServerValidation(value);
+  for (const group of sv?.by_curator || []) {
+    for (const s of group?.sources || []) {
+      const mod = modFromSourceLabel(s?.label);
+      if (mod) mods.add(mod);
+    }
+  }
+  return mods;
+}
+
+/** The MOD (uppercased) a tet's source belongs to, or null. */
+export function modOfTet(tet) {
+  const mod =
+    tet?.tag_source?.secondary_data_provider_abbreviation ||
+    tet?.tag_source?.data_provider;
+  return mod ? String(mod).toUpperCase() : null;
+}
+
+/** The MOD (uppercased) in a server source label (`method / MOD`), or null. */
+export function modFromSourceLabel(label) {
+  const s = String(label || '');
+  const sep = s.lastIndexOf(' / ');
+  return sep >= 0 ? s.slice(sep + 3).toUpperCase() : null;
+}
+
+/** True when `mod` already has a professional-biocurator topic-level assessment
+ *  in the cell. With no MOD to compare against, falls back to "any curator
+ *  assessed it", the behaviour before assessments were per MOD. */
+export function isAssessedByMod(value, mod) {
+  if (!mod) return validationState(value) !== 'unvalidated';
+  return curatorAssessedMods(value).has(String(mod).toUpperCase());
+}
+
 export function cellSortRank(tets) {
   const arr = asTets(tets);
   if (arr.length === 0) return 0;
