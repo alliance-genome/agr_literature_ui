@@ -1185,6 +1185,15 @@ export default function(state = initialState, action) {
         taxonDataError: action.payload.error
       };
 
+    case 'MERGE_TAXON_NAMES':
+      return {
+        ...state,
+        curieToNameTaxon: {
+          ...(state.curieToNameTaxon || {}),
+          ...action.payload.curieToName
+        }
+      };
+
     case 'CLEAR_TAXON_DATA':
       return {
         ...state,

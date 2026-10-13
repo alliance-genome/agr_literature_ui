@@ -197,7 +197,7 @@ export default function BulkValidationModal({
   const disabledReason = noSource
     ? 'Curator source not yet loaded — the grid is still resolving your MOD-specific TET source.'
     : noEligible
-    ? 'All selected references already have a professional-biocurator assessment for this topic.'
+    ? 'All selected references already have a professional-biocurator assessment from your MOD for this topic.'
     : null;
 
   return (
@@ -241,7 +241,7 @@ export default function BulkValidationModal({
                 <dd>{references.length}</dd>
                 <dt>To be assessed</dt>
                 <dd>{eligible.length}</dd>
-                <dt>Already assessed (will be skipped)</dt>
+                <dt>Already assessed by your MOD (will be skipped)</dt>
                 <dd style={skipped.length === 0 ? noneStyle : undefined}>
                   {skipped.length === 0 ? 'none' : skipped.length}
                 </dd>

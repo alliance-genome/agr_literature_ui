@@ -4,6 +4,8 @@ import {
   cellSortRank,
   cellPredicate,
   validationState,
+  curatorAssessedMods,
+  isAssessedByMod,
 } from '../groupTets';
 
 describe('sourceLabel', () => {
@@ -212,5 +214,60 @@ describe('validationState', () => {
         },
       ])
     ).toBe('unvalidated');
+  });
+});
+
+describe('per-MOD curator assessment (SCRUM-6256)', () => {
+  const curatorTet = (mod, extra = {}) => ({
+    topic: 'ATP:0001',
+    entity: null,
+    negated: false,
+    tag_source: {
+      source_method: 'abc_literature_system',
+      validation_type: 'professional_biocurator',
+      secondary_data_provider_abbreviation: mod,
+    },
+    ...extra,
+  });
+
+  test('collects the MODs of curator topic-level tets', () => {
+    const tets = [
+      curatorTet('WB'),
+      curatorTet('ZFIN', { negated: true }),
+      // entity-level and non-curator tags are not assessments
+      curatorTet('SGD', { entity: 'WB:Gene1' }),
+      { topic: 'ATP:0001', tag_source: { source_method: 'textpresso',
+        secondary_data_provider_abbreviation: 'FB' } },
+    ];
+    expect([...curatorAssessedMods(tets)].sort()).toEqual(['WB', 'ZFIN']);
+  });
+
+  test('reads MODs from the server by_curator source labels', () => {
+    // After a validation only the aggregate is refreshed; raw tets are stale.
+    const value = {
+      tets: [],
+      validation: {
+        state: 'positive',
+        by_curator: [{
+          name: 'curator_a',
+          negated: false,
+          sources: [{ method: 'abc_literature_system',
+            label: 'abc_literature_system / MGI' }],
+        }],
+      },
+    };
+    expect([...curatorAssessedMods(value)]).toEqual(['MGI']);
+    expect(isAssessedByMod(value, 'mgi')).toBe(true);
+    expect(isAssessedByMod(value, 'WB')).toBe(false);
+  });
+
+  test('another MOD\'s assessment does not count as the curator\'s MOD', () => {
+    expect(isAssessedByMod([curatorTet('ZFIN')], 'WB')).toBe(false);
+    expect(isAssessedByMod([curatorTet('WB')], 'WB')).toBe(true);
+  });
+
+  test('without a MOD, any curator assessment counts', () => {
+    expect(isAssessedByMod([curatorTet('ZFIN')], null)).toBe(true);
+    expect(isAssessedByMod([], null)).toBe(false);
   });
 });

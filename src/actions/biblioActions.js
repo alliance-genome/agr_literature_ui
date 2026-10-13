@@ -1322,6 +1322,14 @@ export const fetchTaxonData = () => {
   };
 };
 
+// Add taxon curie -> name entries looked up on demand (e.g. a genus a curator
+// picked in the species picker), which the MOD-taxa list from fetchTaxonData
+// does not cover.
+export const mergeTaxonNames = (curieToName) => ({
+  type: 'MERGE_TAXON_NAMES',
+  payload: { curieToName }
+});
+
 export const clearTaxonData = () => {
   // Also clear pending request when clearing data
   pendingTaxonRequest = null;

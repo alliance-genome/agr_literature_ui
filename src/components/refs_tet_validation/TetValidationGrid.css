@@ -427,6 +427,49 @@
   color: #855600;
   border-color: #f3d27e;
 }
+/* SCRUM-6256: one pill per polarity, side by side, each listing its MODs. */
+.tetv-validation-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+.tetv-validation-letter {
+  display: block;
+}
+.tetv-validation-mods {
+  display: block;
+  font-size: var(--tetv-small-font-size);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.tetv-validation-mods strong {
+  font-weight: 800;
+}
+/* A pill that does not include the curator's own MOD: another MOD's
+   assessment. Muted and dashed so it can't be mistaken for their own. */
+.tetv-validation-status.tetv-validated-other {
+  background: #fff;
+  border-style: dashed;
+  border-width: 2px;
+  box-shadow: none;
+  opacity: 0.75;
+}
+.tetv-validation-by-mod {
+  font-weight: 600;
+}
+.tetv-validation-by-other {
+  color: #8a93a3;
+}
+.tetv-validation-conflict-note {
+  font-size: var(--tetv-small-font-size);
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff0c9;
+  color: #855600;
+  border: 1px solid #f3d27e;
+}
 .tetv-source-group {
   display: flex;
   flex-direction: column;
