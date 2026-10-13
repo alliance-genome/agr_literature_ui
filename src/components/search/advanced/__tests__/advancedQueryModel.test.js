@@ -645,8 +645,8 @@ describe('workflow conditions (wft leaves, SCRUM-6398)', () => {
   test('WFT_CATEGORY_DEFS mirrors the workflow facet categories', () => {
     expect(WFT_CATEGORY_DEFS.map((d) => d.key)).toEqual([
       'file_workflow', 'reference_classification', 'entity_extraction',
-      'manual_indexing', 'curation_classification', 'community_curation',
-      'first_pass_curation', 'email_extraction',
+      'manual_indexing', 'curation_classification', 'abstract_classification',
+      'community_curation', 'first_pass_curation', 'email_extraction',
     ]);
   });
 });
