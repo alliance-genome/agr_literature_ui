@@ -293,6 +293,9 @@ export default function(state = initialState, action) {
         if (state.biblioUpdatingEntityAdd === 1) {
           entityModalTextUpdateButtonEntityAdd = '';
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
+      } else if (action.payload.conflictHandled) {
+        // 409 "tag already exists": shown in the caller's warning table, not the modal
+        console.log('Add skipped, tag already exists');
       } else {
         entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
         console.log('Add failure ' + action.payload.responseMessage);
