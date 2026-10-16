@@ -293,7 +293,10 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
       }));
 } };
 
-export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
+// options.handlesConflict: the caller renders structured 409 "tag already
+// exists" responses itself (checkForExistingTags' warning table), so those must
+// not also be appended to the Entity Error modal.
+export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel, options = {}) => {
   return dispatch => {
     return new Promise((resolve, reject) => {
       // accessToken in updateArrayData kept for backwards compatibility - auth handled by API client interceptor
@@ -323,9 +326,11 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
         .catch(err => {
           const errorMessage = 'error: ' + subPath + ' ' + err;
           console.error(errorMessage);
+          const conflictHandled = Boolean(options.handlesConflict) &&
+            err?.response?.status === 409 && Boolean(err?.response?.data?.detail?.reason);
           dispatch({
             type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-            payload: { responseMessage: errorMessage, accessLevel: accessLevel }
+            payload: { responseMessage: errorMessage, accessLevel: accessLevel, conflictHandled: conflictHandled }
           });
           // Preserve axios response on the rejection so callers can read structured
           // error bodies (e.g. 409 conflict detail). See checkForExistingTags.

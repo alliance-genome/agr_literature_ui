@@ -493,8 +493,16 @@ const TopicEntityCreate = () => {
       if (field === 'topicSelect') {
         currentRow.topicSelect = value || "";
 
-        // auto-populate entity type for ALL rows (cloned or not)
-        if (entityTypeList.includes(value)) {
+        // SCRUM-6645. A cloned row that already carries entities keeps its
+        // entity type and entities when the topic changes (including the
+        // transient clear while the curator retypes the topic), so they do
+        // not have to be re-added. Every other row follows the topic.
+        const keepClonedEntities = currentRow.isCloned && Boolean(currentRow.entityText);
+
+        // auto-populate entity type (cloned rows without entities included)
+        if (keepClonedEntities) {
+          // leave entityTypeSelect as cloned
+        } else if (entityTypeList.includes(value)) {
           currentRow.entityTypeSelect = value;
         } else if (geneDescendants && geneDescendants.includes(value)) {
           currentRow.entityTypeSelect = "ATP:0000005"; // gene
@@ -517,9 +525,11 @@ const TopicEntityCreate = () => {
           currentRow.newToFieldCheckbox = false;
           currentRow.noDataCheckbox = false;
           currentRow.entityAdditionDoneCheckbox = false;
-          currentRow.entityText = "";
-          currentRow.entityResultList = [];
-          currentRow.selectedSpecies = [];
+          if (!keepClonedEntities) {
+            currentRow.entityText = "";
+            currentRow.entityResultList = [];
+            currentRow.selectedSpecies = [];
+          }
         }
       }
 
@@ -910,7 +920,6 @@ const TopicEntityCreate = () => {
           internal notes
         </Col>
         <Col className="div-grey-border" sm="1">
-          button
         </Col>
       </Row>
       {rows.map((row, index) => {
