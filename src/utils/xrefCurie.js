@@ -29,3 +29,14 @@ export function validateCurie(prefix, id, regexFor) {
   if (!re) return true;
   return re.test(joinCurie(prefix, id));
 }
+
+// Link for a cross reference as returned by the API: the first page's url when it
+// has one, else the descriptor's default url. A page can come back with a null url
+// when the descriptor has no template for that page name (every PDB xref carries
+// a 'reference' page the PDB descriptor does not define), and using that null url
+// rendered the xref as unlinked text in search results (SCRUM-6634).
+export function xrefUrl(xref) {
+  if (!xref) return '';
+  const pageUrl = Array.isArray(xref.pages) && xref.pages.length > 0 ? xref.pages[0]?.url : null;
+  return pageUrl || xref.url || '';
+}

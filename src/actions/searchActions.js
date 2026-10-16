@@ -1,6 +1,7 @@
 import axios from "axios";
 import { api } from "../api";
 import { compileAdvancedQuery } from "../components/search/advanced/advancedQueryModel";
+import { xrefUrl } from "../utils/xrefCurie";
 //import {useDispatch, useSelector} from 'react-redux';
 
 export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
@@ -488,11 +489,7 @@ export const filterFacets = () => {
 export const searchXref = (xref, setUrl) => {
   api.get('/cross_reference/'+xref)
   .then(res => {
-    if(res.data.pages){
-      setUrl(res.data.pages[0].url)
-    }else{
-      setUrl(res.data.url);
-    }
+    setUrl(xrefUrl(res.data));
   })
   .catch();
 }

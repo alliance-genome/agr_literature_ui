@@ -1,4 +1,4 @@
-import { splitCurie, joinCurie, normalizePrefix, validateCurie } from './xrefCurie';
+import { splitCurie, joinCurie, normalizePrefix, validateCurie, xrefUrl } from './xrefCurie';
 
 const known = ['ZFIN', 'Xenbase', 'WB', 'SGD', 'ORCID'];
 const regexFor = (p) =>
@@ -28,4 +28,22 @@ test('validateCurie: matches regex, allows prefixes with no regex', () => {
   expect(validateCurie('Xenbase', 'XB-PERS-x', regexFor)).toBe(false);
   expect(validateCurie('WB', 'WBPerson9', regexFor)).toBe(true);
   expect(validateCurie('ZFIN', 'anything', regexFor)).toBe(true); // no regex -> allowed
+});
+
+test('xrefUrl prefers the first page url', () => {
+  expect(xrefUrl({ url: 'https://d/1', pages: [{ name: 'reference', url: 'https://p/1' }] }))
+    .toBe('https://p/1');
+});
+
+test('xrefUrl falls back to url when the page has no url (SCRUM-6634)', () => {
+  const pdb = { curie: 'PDB:7F5T', url: 'https://www.rcsb.org/structure/7F5T',
+                pages: [{ name: 'reference', url: null }] };
+  expect(xrefUrl(pdb)).toBe('https://www.rcsb.org/structure/7F5T');
+  expect(xrefUrl({ url: 'https://d/1', pages: [] })).toBe('https://d/1');
+  expect(xrefUrl({ url: 'https://d/1', pages: null })).toBe('https://d/1');
+});
+
+test('xrefUrl gives an empty string when there is no link', () => {
+  expect(xrefUrl(undefined)).toBe('');
+  expect(xrefUrl({ pages: [{ name: 'reference', url: null }] })).toBe('');
 });
