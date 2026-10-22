@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -67,6 +67,19 @@ const BreadCrumbs = () => {
         return `Advanced ${what} query (active)`;
     })();
 
+    // Remember bucket names as they are seen. An excluded value drops out of the
+    // current aggregation, so without this an excluded resource would show as its
+    // bare resource_id rather than the journal title.
+    const seenBucketNamesRef = useRef({});
+    Object.entries(searchFacets || {}).forEach(([facet, agg]) => {
+        (agg?.buckets || []).forEach(b => {
+            if (b?.name) {
+                seenBucketNamesRef.current[facet] = seenBucketNamesRef.current[facet] || {};
+                seenBucketNamesRef.current[facet][b.key] = b.name;
+            }
+        });
+    });
+
     const getDisplayName = (facet, value) => {
         const valueRename = RENAME_FACET_VALUES[facet]?.[value];
         if (valueRename) return valueRename;
@@ -76,6 +89,8 @@ const BreadCrumbs = () => {
         // unavailable when the value is excluded (its bucket drops out of the
         // current aggregation). Translate the ECO/ATP curie to its short label.
         if (facet === 'source_evidence_assertions' && value) return evidenceAssertionName(value);
+        const seenName = seenBucketNamesRef.current[facet]?.[value];
+        if (seenName) return seenName;
         return value;
     };
 
@@ -86,8 +101,10 @@ const BreadCrumbs = () => {
 	// 3. Any Alliance Metadata facets
 	// 4. The boolean Images facets, whose values (Yes/No) are meaningless without the facet name
 	// 5. The Large-scale data facet, boolean like the Images ones (SCRUM-6614)
+	// 6. The Journal / Resource facet, so a journal title reads as a journal filter (SCRUM-1463)
        return facet === 'language.keyword' || facet === 'retraction_status.keyword' || facet.startsWith('mods_') ||
-           facet === 'can_display_image' || facet === 'has_image' || facet === 'large_scale_tag';
+           facet === 'can_display_image' || facet === 'has_image' || facet === 'large_scale_tag' ||
+           facet === 'resource_id.keyword';
     };
     
     const getFacetLabel = (facet, value) => {
