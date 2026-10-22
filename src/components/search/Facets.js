@@ -63,6 +63,7 @@ export const RENAME_FACETS = {
     "authors.name.keyword": "Authors",
     "mod_reference_types.keyword": "MOD reference type",
     "retraction_status.keyword": "Retraction Status",
+    "resource_id.keyword": "Journal / Resource",
     "can_display_image": "Image permission",
     "has_image": "Has images",
     "topics": "Topic",
@@ -134,7 +135,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "abstract_classification", "community_curation", "first_pass_curation", "email_extraction"],
     "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
-    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
+    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "resource id", "language"],
     "Images": ["can display image", "has image"],
     "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty", "large_scale_tag"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
@@ -391,7 +392,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status", "source_methods", "source_evidence_assertions"];
+    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status", "resource id", "source_methods", "source_evidence_assertions"];
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
