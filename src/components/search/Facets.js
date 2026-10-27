@@ -27,6 +27,7 @@ import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse, ButtonGroup, OverlayTrigger, Tooltip} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
 import {INITIAL_FACETS_LIMIT} from '../../reducers/searchReducer';
+import {compileAdvancedQuery} from './advanced/advancedQueryModel';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -723,8 +724,27 @@ const AuthorFilter = () => {
 }
 
 
+// Facets with too many values for "+Show All" until the search is narrowed
+// (SCRUM-1463): with nothing selected, all journals is thousands of rows.
+const SHOW_ALL_WHEN_NARROWED_FACETS = ['resource_id.keyword'];
+
+// The search is narrowed by a query, an author filter, a selected or excluded
+// facet value, a date range or an active advanced query.
+export const isSearchNarrowed = (search) => {
+    const hasValues = (facetValues) =>
+        Object.values(facetValues || {}).some(values => Array.isArray(values) ? values.length > 0 : !!values);
+    const hasDate = (date) => Array.isArray(date) ? date.some(Boolean) : !!date;
+    return !!(search.searchQuery || search.authorFilter) ||
+        hasValues(search.searchFacetsValues) || hasValues(search.searchExcludedFacetsValues) ||
+        [search.datePubmedAdded, search.datePubmedModified, search.datePublished, search.dateCreated].some(hasDate) ||
+        (search.searchMode === 'advanced' && !!compileAdvancedQuery(search.advancedTopicQuery));
+};
+
 const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+    // a boolean, so the buttons re-render only when it flips
+    const searchNarrowed = useSelector(state => isSearchNarrowed(state.search));
+    const showAllAllowed = !SHOW_ALL_WHEN_NARROWED_FACETS.includes(facetLabel) || searchNarrowed;
     const dispatch = useDispatch();
 
     return (
@@ -745,7 +765,7 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     dispatch(filterFacets());
                 }}>-Show Less</button></span> : null
             }
-            {facetValue.buckets && facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
+            {showAllAllowed && facetValue.buckets && facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
                 <button className="button-to-link" onClick={() =>{
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
                     newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;

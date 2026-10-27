@@ -547,6 +547,9 @@ body {
 .searchRow-other p{
   font-size: 0.8em;
 }
+.searchRow-journal{
+  margin-right: 2em;
+}
 .searchRow-xref ul{
   list-style-type: none;
   padding: 0;

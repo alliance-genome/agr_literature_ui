@@ -14,12 +14,14 @@
 export const SEARCH_DISPLAY_COMPONENT = 'search_display';
 
 // The card's customizable sections, in default order. The title is not a
-// section: it is the card's identity/link and always renders first.
+// section: it is the card's identity/link and always renders first. The
+// journal shares the publication date's line, with the rest of the
+// bibliographic info (SCRUM-1463); it was its own 'journal' section, which a
+// saved profile could leave below the matching text.
 export const CARD_SECTIONS = [
   { id: 'xrefs', label: 'Cross-references' },
   { id: 'authors', label: 'Authors' },
-  { id: 'pubDate', label: 'Publication date' },
-  { id: 'journal', label: 'Journal' },
+  { id: 'pubDate', label: 'Journal and publication date' },
   { id: 'abstract', label: 'Abstract' },
   { id: 'matchingText', label: 'Matching text' },
 ];
@@ -38,11 +40,12 @@ export const DEFAULT_DISPLAY_PREFS = {
 // The prefix an xref curie is selected by: "PMID:123" -> "PMID".
 export const xrefPrefix = (curie) => String(curie || '').split(':')[0];
 
-// Journal info for the card's Journal section (curator request: e.g. eLife is
+// Journal info for the card's journal (curator request: e.g. eLife is
 // excluded from the corpus by review model, so seeing the journal on the card
-// saves a trip to the biblio display). The search index has no journal field —
-// only the full citation, "Authors, (Year) Title. Journal Vol(Issue):Pages" —
-// so take the text after the title, which the card already knows. Both the
+// saves a trip to the biblio display). The card shows the hit's resource_title;
+// this is the fallback when a hit has none. The full citation reads
+// "Authors, (Year) Title. Journal Vol(Issue):Pages", so take the text after the
+// title, which the card already knows. Both the
 // citation and the title can carry markup (<i>species</i> names), and often
 // with different tag placement, so strip markup from BOTH before matching —
 // the result renders as plain text either way. When the title still cannot be
@@ -64,17 +67,20 @@ export const journalInfoFromCitation = (citation, title) => {
 };
 
 // Merge a stored profile over the defaults, tolerating older/partial payloads:
-// unknown section ids are dropped, sections missing from a saved order are
-// appended in default order (so adding a section later never blanks it for
-// existing profiles).
+// unknown section ids are dropped, and a section missing from a saved order is
+// placed after the section that precedes it in the default order (so adding a
+// section later never blanks it for existing profiles, nor drops it at the
+// bottom of the card, below the matching text).
 export const normalizeDisplayPrefs = (raw) => {
   const p = raw && typeof raw === 'object' ? raw : {};
   const known = CARD_SECTIONS.map((s) => s.id);
   const order = (Array.isArray(p.sectionOrder) ? p.sectionOrder : [])
-    .filter((id) => known.includes(id));
-  for (const id of known) {
-    if (!order.includes(id)) order.push(id);
-  }
+    .filter((id, i, ids) => known.includes(id) && ids.indexOf(id) === i);
+  known.forEach((id, i) => {
+    if (order.includes(id)) return;
+    const prev = known.slice(0, i).reverse().find((k) => order.includes(k));
+    order.splice(prev ? order.indexOf(prev) + 1 : 0, 0, id);
+  });
   return {
     sectionOrder: order,
     hiddenSections: (Array.isArray(p.hiddenSections) ? p.hiddenSections : [])
