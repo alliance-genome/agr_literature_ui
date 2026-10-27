@@ -15,7 +15,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilePdf, faPenSquare, faImage, faPeopleArrows} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
-import { normalizeDisplayPrefs, xrefPrefix, journalInfoFromCitation } from './settings/searchDisplayPrefs';
+import { normalizeDisplayPrefs, xrefPrefix, journalInfoFromCitation, stripMarkup } from './settings/searchDisplayPrefs';
 import { xrefUrl } from '../../utils/xrefCurie';
 
 const MatchingTextBox = (highlight) => {
@@ -234,8 +234,10 @@ const SearchResultItem = ({ reference }) => {
       // The journal the paper was published in, to the left of the publication
       // date (SCRUM-1463): lets corpus calls that hinge on the journal (e.g.
       // eLife's review model) happen from the card without toggling to the
-      // biblio display. Falls back to the journal text in the citation.
-      const journal = reference.resource_title || journalInfoFromCitation(reference.citation, reference.title);
+      // biblio display. Falls back to the journal text in the citation. Both
+      // render as plain text, so markup (<i>species</i>) is stripped.
+      const journal = stripMarkup(reference.resource_title).trim() ||
+        journalInfoFromCitation(reference.citation, reference.title);
       return (
         <div key="pubDate" className="searchRow-other">
           {journal && <span className="searchRow-journal">Journal: {journal}</span>}

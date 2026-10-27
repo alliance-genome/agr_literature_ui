@@ -50,7 +50,7 @@ export const xrefPrefix = (curie) => String(curie || '').split(':')[0];
 // with different tag placement, so strip markup from BOTH before matching —
 // the result renders as plain text either way. When the title still cannot be
 // found, fall back to the (stripped) full citation rather than guessing.
-const stripMarkup = (s) => String(s || '').replace(/<[^>]+>/g, '');
+export const stripMarkup = (s) => String(s || '').replace(/<[^>]+>/g, '');
 
 export const journalInfoFromCitation = (citation, title) => {
   const cit = stripMarkup(citation).trim();

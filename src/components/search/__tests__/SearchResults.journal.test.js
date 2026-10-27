@@ -65,6 +65,11 @@ test('a journal match shows as a resource row in the matching text', () => {
   expect(screen.getByText('resource')).toHaveClass('highlight-label');
 });
 
+test('markup in the resource title is stripped', () => {
+  renderResults([{ ...reference, resource_title: '<i>Drosophila</i> Information Service' }]);
+  expect(screen.getByText('Journal: Drosophila Information Service')).toBeInTheDocument();
+});
+
 test('without a resource title the journal falls back to the citation', () => {
   renderResults([{ ...reference, resource_title: null }]);
   expect(screen.getByText('Journal: Toxicology and applied pharmacology 506:117660')).toBeInTheDocument();
