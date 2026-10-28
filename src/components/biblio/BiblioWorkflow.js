@@ -583,11 +583,13 @@ const BiblioWorkflow = () => {
       mod,
       isUserMod: mod === accessLevel,
       inside_corpus: workflows[mod]?.inside_corpus,
+      abstract_classification: workflows[mod]?.abstract_classification,
       file_upload: workflows[mod]?.file_upload,
       text_conversion: workflows[mod]?.text_conversion,
       email_extraction: workflows[mod]?.email_extraction,
       topic_classification: workflows[mod]?.topic_classification,
       entity_extraction: workflows[mod]?.entity_extraction,
+      community_curation: workflows[mod]?.community_curation,
       curation_classification: workflows[mod]?.curation_classification
     }));
   }, [preCurationData, accessLevel]);
@@ -609,6 +611,14 @@ const BiblioWorkflow = () => {
       field: 'inside_corpus',
       flex: 1,
       cellRenderer: InsideCorpusRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Abstract classification',
+      field: 'abstract_classification',
+      flex: 1,
+      cellRenderer: PreCurationStatusIcon,
       cellStyle: { textAlign: 'center' },
       headerClass: 'wft-bold-header wft-header-bg',
     },
@@ -647,6 +657,14 @@ const BiblioWorkflow = () => {
     {
       headerName: 'Entity extraction',
       field: 'entity_extraction',
+      flex: 1,
+      cellRenderer: PreCurationStatusIcon,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'wft-bold-header wft-header-bg',
+    },
+    {
+      headerName: 'Community curation',
+      field: 'community_curation',
       flex: 1,
       cellRenderer: PreCurationStatusIcon,
       cellStyle: { textAlign: 'center' },
