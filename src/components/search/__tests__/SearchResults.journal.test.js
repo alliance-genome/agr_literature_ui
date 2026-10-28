@@ -80,3 +80,8 @@ test('without any journal only the date shows', () => {
   expect(screen.queryByText(/Journal:/)).not.toBeInTheDocument();
   expect(screen.getByText('Publication Date: 2026-01-15')).toBeInTheDocument();
 });
+
+test('no matching text box when nothing matched', () => {
+  renderResults([{ ...reference, highlight: {} }]);
+  expect(screen.queryByText(/Matching Text:/)).not.toBeInTheDocument();
+});
