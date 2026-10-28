@@ -57,8 +57,47 @@ export function isCuratorValidationTet(tet) {
   );
 }
 
+/** The data context the assess buttons submit (the API's
+ *  CURATOR_VALIDATION_DATA_CONTEXT). It has no descendants in ATP. */
+const EXPERIMENTALLY_STUDIED_DATA_CONTEXT = 'ATP:0000325';
+
+/** True for a positive *mixed* topic + entity tag from a professional
+ *  biocurator, e.g. gene expression + gene fgf8a (SCRUM-6784). Such a tag
+ *  already says the paper has data for its topic, so it counts as its MOD's
+ *  Y in the "Data assessment by biocurator" column. These are the conditions
+ *  under which the API's TET validation rules would mark the topic-level tag
+ *  the assess buttons create (no entity, root data novelty, experimentally
+ *  studied data) as validated right by this tag:
+ *    - positive only: no data for one gene says nothing about the topic;
+ *    - data context experimentally studied, or unset (makes no claim);
+ *      mentioned, marker or background data do not count;
+ *    - entity, data novelty and species need no check, the button's tag
+ *      having no entity and the novelty root.
+ *  Pure entity tags (topic == entity_type, e.g. gene / gene) are left out. */
+export function isCuratorMixedPositiveTet(tet) {
+  return (
+    !!tet &&
+    !!tet.entity &&
+    !!tet.entity_type &&
+    normalizeCurie(tet.entity_type) !== normalizeCurie(tet.topic) &&
+    tet.negated === false &&
+    (tet.data_context == null ||
+      normalizeCurie(tet.data_context) === EXPERIMENTALLY_STUDIED_DATA_CONTEXT) &&
+    tet.tag_source?.validation_type === CURATOR_VALIDATION_TYPE
+  );
+}
+
+/** The cell's tets that count as a curator Y through a mixed tag. Read from
+ *  the raw tets even when the server aggregated the cell: the aggregate holds
+ *  topic-level tags only, and an assessment never changes mixed tags, so the
+ *  raw tets can't be stale for them. */
+export function curatorMixedPositiveTets(value) {
+  return asTets(value).filter(isCuratorMixedPositiveTet);
+}
+
 /** MOD abbreviations (uppercased) that already have a professional-biocurator
- *  topic-level assessment in a cell. Every curator source is per MOD (the ABC
+ *  assessment in a cell: a topic-level tag, or a positive mixed tag
+ *  (SCRUM-6784). Every curator source is per MOD (the ABC
  *  source's secondary_data_provider is the curator's MOD), so this is what lets
  *  a curator still assess a topic another MOD has already assessed (SCRUM-6256).
  *
@@ -69,7 +108,7 @@ export function isCuratorValidationTet(tet) {
 export function curatorAssessedMods(value) {
   const mods = new Set();
   for (const t of asTets(value)) {
-    if (!isCuratorValidationTet(t)) continue;
+    if (!isCuratorValidationTet(t) && !isCuratorMixedPositiveTet(t)) continue;
     const mod = modOfTet(t);
     if (mod) mods.add(mod);
   }
@@ -98,8 +137,8 @@ export function modFromSourceLabel(label) {
   return sep >= 0 ? s.slice(sep + 3).toUpperCase() : null;
 }
 
-/** True when `mod` already has a professional-biocurator topic-level assessment
- *  in the cell. With no MOD to compare against, falls back to "any curator
+/** True when `mod` already has a professional-biocurator assessment in the
+ *  cell (see curatorAssessedMods). With no MOD to compare against, falls back to "any curator
  *  assessed it", the behaviour before assessments were per MOD. */
 export function isAssessedByMod(value, mod) {
   if (!mod) return validationState(value) !== 'unvalidated';
@@ -123,21 +162,33 @@ function cellServerValidation(value) {
   return value.validation;
 }
 
-/** Validation state of a (reference, topic) cell, considering only
- *  professional-biocurator topic-level TETs.
+/** Validation state of a (reference, topic) cell, considering
+ *  professional-biocurator topic-level TETs and positive mixed TETs.
  *  Returns one of: 'unvalidated' | 'positive' | 'negative' | 'conflict'.
- *  Prefers the server aggregate (value.validation.state) when present so the
- *  grid sorts/filters without re-deriving from raw tags; falls back to deriving
- *  from raw tets when the value carries no aggregate. */
+ *  Prefers the server aggregate (value.validation.state) for the topic-level
+ *  part when present so the grid sorts/filters without re-deriving from raw
+ *  tags; falls back to deriving from raw tets when the value carries no
+ *  aggregate. The aggregate holds topic-level tags only, so mixed tags are
+ *  always read from the raw tets. */
 export function validationState(tets) {
+  // Positive mixed curator tags count as a Y on either path (SCRUM-6784).
+  const hasMixedPos = curatorMixedPositiveTets(tets).length > 0;
+  let hasPos;
+  let hasNeg;
   const sv = cellServerValidation(tets);
-  if (sv !== undefined) return sv && sv.state ? sv.state : 'unvalidated';
-  const validations = asTets(tets).filter(isCuratorValidationTet);
-  if (validations.length === 0) return 'unvalidated';
-  const hasPos = validations.some((t) => !t.negated);
-  const hasNeg = validations.some((t) => t.negated);
+  if (sv !== undefined) {
+    const state = sv && sv.state ? sv.state : 'unvalidated';
+    if (!hasMixedPos) return state;
+    hasPos = true;
+    hasNeg = state === 'negative' || state === 'conflict';
+  } else {
+    const validations = asTets(tets).filter(isCuratorValidationTet);
+    hasPos = hasMixedPos || validations.some((t) => !t.negated);
+    hasNeg = validations.some((t) => t.negated);
+  }
   if (hasPos && hasNeg) return 'conflict';
-  return hasPos ? 'positive' : 'negative';
+  if (hasPos) return 'positive';
+  return hasNeg ? 'negative' : 'unvalidated';
 }
 
 export const VALIDATION_FILTER_KEYS = [

@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import CellValidationStrip from './CellValidationStrip';
 import {
   VALIDATION_STATE_LABELS,
+  curatorMixedPositiveTets,
   isAssessedByMod,
   isCuratorValidationTet,
   modFromSourceLabel,
@@ -105,6 +106,39 @@ function serverValidationSummary(cell) {
   };
 }
 
+/** Fold the cell's positive mixed curator tags (e.g. gene expression + gene)
+ *  into the summary as Y (SCRUM-6784), merged by curator with any topic-level
+ *  Y group. Neither the server aggregate nor deriveValidationSummary holds
+ *  them, so they always come from the raw tets. Each group records the
+ *  entities it was counted from, so the cell can tell such a Y apart from an
+ *  explicit topic-level assessment. */
+function withMixedPositives(summary, tets) {
+  const mixed = curatorMixedPositiveTets(tets);
+  if (mixed.length === 0) return summary;
+  const base = summary || { positives: 0, negatives: 0, byCurator: [] };
+  const byCurator = base.byCurator.map((g) => ({ ...g, entityTags: [] }));
+  for (const t of mixed) {
+    const name = t.created_by || '(unknown curator)';
+    let g = byCurator.find((x) => x.name === name && !x.negated);
+    if (!g) {
+      g = { name, negated: false, sources: [], species: [], mods: [], entityTags: [] };
+      byCurator.push(g);
+    }
+    const method = t.tag_source?.source_method;
+    if (method && !g.sources.some((s) => s.method === method)) {
+      const sec = t.tag_source?.secondary_data_provider_abbreviation;
+      g.sources = [...g.sources, { method, label: sec ? `${method} / ${sec}` : method }];
+    }
+    if (t.species && !g.species.includes(t.species)) {
+      g.species = [...g.species, t.species];
+    }
+    const mod = modOfTet(t);
+    if (mod && !g.mods.includes(mod)) g.mods = [...g.mods, mod];
+    g.entityTags.push(t.entity_name || t.entity);
+  }
+  return { ...base, entityPositives: mixed.length, byCurator };
+}
+
 /** Sorted MODs that submitted assessments of one polarity. */
 function modsFor(byCurator, negated) {
   const mods = new Set();
@@ -152,10 +186,12 @@ export default function ValidationCell(params) {
   const serverCell = Array.isArray(params.value)
     ? undefined
     : params.value?.validation;
-  const summary =
+  const summary = withMixedPositives(
     serverCell !== undefined
       ? serverValidationSummary(serverCell)
-      : deriveValidationSummary(tets);
+      : deriveValidationSummary(tets),
+    tets
+  );
 
   const strip = (
     <CellValidationStrip
@@ -170,7 +206,7 @@ export default function ValidationCell(params) {
   );
 
   if (summary) {
-    const { positives, negatives, byCurator } = summary;
+    const { positives, negatives, byCurator, entityPositives = 0 } = summary;
 
     const firstWord = (s) => String(s || '').split(/[_\s/]/)[0];
     const SourceIcons = ({ sources }) => (
@@ -210,10 +246,10 @@ export default function ValidationCell(params) {
     // pill that doesn't include the curator's own MOD is drawn muted and
     // dashed so another MOD's assessment can't be mistaken for theirs.
     const pills = [
-      { negated: false, count: positives },
-      { negated: true, count: negatives },
+      { negated: false, count: positives, entityCount: entityPositives },
+      { negated: true, count: negatives, entityCount: 0 },
     ]
-      .filter((p) => p.count > 0)
+      .filter((p) => p.count + p.entityCount > 0)
       .map((p) => ({ ...p, mods: modsFor(byCurator, p.negated) }));
     // Disagreement only counts within one MOD: Y from FB and N from WB are two
     // MODs' answers, not a conflict.
@@ -231,7 +267,12 @@ export default function ValidationCell(params) {
           ? ` — includes your MOD (${ownMod})`
           : ` — another MOD's assessment, not your MOD (${ownMod})`;
       }
-      return `${what}: ${p.count} professional biocurator topic tag(s)${by}${mine}`;
+      const counted = [
+        p.count > 0 && `${p.count} professional biocurator topic tag(s)`,
+        p.entityCount > 0 &&
+          `${p.entityCount} professional biocurator tag(s) on this topic with an entity`,
+      ].filter(Boolean).join(' and ');
+      return `${what}: ${counted}${by}${mine}`;
     };
 
     const attribution =
@@ -273,6 +314,17 @@ export default function ValidationCell(params) {
                     {' '}
                     <span className="tetv-validation-by-mod">
                       ({g.mods.join(', ')})
+                    </span>
+                  </>
+                )}
+                {g.entityTags?.length > 0 && (
+                  <>
+                    {' '}
+                    <span
+                      className="tetv-validation-by-entities"
+                      title={`Y counted from ${g.entityTags.length} tag(s) on this topic with an entity: ${g.entityTags.join(', ')}`}
+                    >
+                      {g.entityTags.length} entity tag{g.entityTags.length === 1 ? '' : 's'}
                     </span>
                   </>
                 )}

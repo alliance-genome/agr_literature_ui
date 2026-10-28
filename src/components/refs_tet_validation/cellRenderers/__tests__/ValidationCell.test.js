@@ -239,6 +239,79 @@ describe('ValidationCell MOD pills (SCRUM-6256)', () => {
   });
 });
 
+// SCRUM-6784: a curator's positive mixed topic + entity tags (e.g. gene
+// expression + gene) count as their MOD's Y, so the strip goes away for them.
+describe('ValidationCell mixed curator tags (SCRUM-6784)', () => {
+  const mixed = (entityName, extra = {}) => ({
+    topic: 'ATP:0000010',
+    entity_type: 'ATP:0000005',
+    entity: `ZFIN:${entityName}`,
+    entity_name: entityName,
+    negated: false,
+    data_context: 'ATP:0000325',
+    created_by: 'zfin_curator',
+    tag_source: {
+      source_method: 'abc_literature_system',
+      validation_type: 'professional_biocurator',
+      secondary_data_provider_abbreviation: 'ZFIN',
+    },
+    ...extra,
+  });
+  const cellWithTets = (tets, validation = null) => ({
+    value: { tets, validation },
+    colDef: { cellRendererParams: { topicCurie: 'ATP:0000010' } },
+    data: { curie: 'AGRKB:101' },
+  });
+
+  test('shows a Y for the MOD and hides its strip', () => {
+    mockCognitoMod = 'ZFIN';
+    render(<ValidationCell {...cellWithTets([mixed('fgf8a'), mixed('shha')])} />);
+    expect(screen.getByTitle(Y_PILL)).toHaveTextContent('Y(ZFIN)');
+    expect(screen.getByTitle(Y_PILL).title).toMatch(/2 professional biocurator tag\(s\) on this topic with an entity/);
+    expect(screen.getByText('2 entity tags')).toHaveAttribute(
+      'title', expect.stringContaining('fgf8a, shha'));
+    expect(screen.queryByTestId('strip')).not.toBeInTheDocument();
+  });
+
+  test('merges into another MOD\'s topic-level Y pill', () => {
+    mockCognitoMod = 'WB';
+    render(
+      <ValidationCell
+        {...cellWithTets([mixed('fgf8a')], {
+          state: 'positive',
+          positives: 1,
+          negatives: 0,
+          by_curator: [group('wb_curator', false, 'WB')],
+        })}
+      />
+    );
+    expect(screen.getByTitle(Y_PILL)).toHaveTextContent('Y(WB, ZFIN)');
+    expect(screen.getByText('zfin_curator')).toBeInTheDocument();
+    expect(screen.queryByTestId('strip')).not.toBeInTheDocument();
+  });
+
+  test('another MOD\'s mixed tags leave the strip for the curator\'s MOD', () => {
+    mockCognitoMod = 'WB';
+    render(<ValidationCell {...cellWithTets([mixed('fgf8a')])} />);
+    expect(screen.getByTitle(Y_PILL)).toHaveClass('tetv-validated-other');
+    expect(screen.getByTestId('strip')).toBeInTheDocument();
+  });
+
+  test('negative or pure entity tags show nothing', () => {
+    mockCognitoMod = 'ZFIN';
+    render(
+      <ValidationCell
+        {...cellWithTets([
+          mixed('fgf8a', { negated: true }),
+          mixed('fgf8a', { topic: 'ATP:0000005' }),
+        ])}
+      />
+    );
+    expect(screen.queryByTitle(Y_PILL)).not.toBeInTheDocument();
+    expect(screen.getByTestId('strip')).toBeInTheDocument();
+  });
+});
+
 // The labels are display-only: the underlying keys are the server's
 // `validation.state` values and are persisted in saved AgGrid filter models,
 // so renaming them would silently invalidate both.

@@ -458,6 +458,12 @@
 .tetv-validation-by-mod {
   font-weight: 600;
 }
+/* SCRUM-6784: a Y counted from the curator's mixed topic + entity tags rather
+   than an explicit topic-level assessment. */
+.tetv-validation-by-entities {
+  font-size: var(--tetv-small-font-size);
+  font-style: italic;
+}
 .tetv-validation-by-other {
   color: #8a93a3;
 }
