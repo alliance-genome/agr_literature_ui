@@ -26,9 +26,10 @@ describe('searchDisplayPrefs (SCRUM-6512)', () => {
       sectionOrder: ['abstract', 'bogus', 'authors'],
       hiddenSections: ['pubDate', 'bogus'],
     });
-    // saved order first, then the sections the saved profile predates,
-    // appended in default order — a later-added section never vanishes.
-    expect(p.sectionOrder.slice(0, 2)).toEqual(['abstract', 'authors']);
+    // the saved order is kept, and the sections the saved profile predates
+    // are added back — a later-added section never vanishes.
+    expect(p.sectionOrder.filter((id) => ['abstract', 'authors'].includes(id)))
+      .toEqual(['abstract', 'authors']);
     expect(p.sectionOrder).toHaveLength(CARD_SECTIONS.length);
     expect(new Set(p.sectionOrder)).toEqual(new Set(CARD_SECTIONS.map((s) => s.id)));
     expect(p.hiddenSections).toEqual(['pubDate']);
@@ -50,13 +51,31 @@ describe('searchDisplayPrefs (SCRUM-6512)', () => {
     ).toBe(true);
   });
 
-  test('a profile saved before the journal section gets it appended, visible', () => {
+  test('a missing section goes after its default predecessor, not at the bottom', () => {
+    // SCRUM-1463: appending put a new section below the matching text
     const p = normalizeDisplayPrefs({
-      sectionOrder: ['abstract', 'authors', 'pubDate', 'xrefs', 'matchingText'],
+      sectionOrder: ['xrefs', 'authors', 'abstract', 'matchingText'],
       hiddenSections: [],
     });
-    expect(p.sectionOrder[p.sectionOrder.length - 1]).toBe('journal');
-    expect(p.hiddenSections).not.toContain('journal');
+    expect(p.sectionOrder).toEqual(['xrefs', 'authors', 'pubDate', 'abstract', 'matchingText']);
+    expect(normalizeDisplayPrefs({ sectionOrder: ['matchingText', 'abstract'] }).sectionOrder)
+      .toEqual(['xrefs', 'authors', 'pubDate', 'matchingText', 'abstract']);
+  });
+
+  test('the retired journal section is dropped; the journal is on the pubDate line', () => {
+    // profiles saved with the separate journal section (SCRUM-6512)
+    const p = normalizeDisplayPrefs({
+      sectionOrder: ['xrefs', 'authors', 'pubDate', 'abstract', 'matchingText', 'journal'],
+      hiddenSections: ['journal'],
+    });
+    expect(p.sectionOrder).toEqual(['xrefs', 'authors', 'pubDate', 'abstract', 'matchingText']);
+    expect(p.hiddenSections).toEqual([]);
+    expect(CARD_SECTIONS.find((s) => s.id === 'pubDate').label).toBe('Journal and publication date');
+  });
+
+  test('a duplicated saved id is kept once', () => {
+    expect(normalizeDisplayPrefs({ sectionOrder: ['abstract', 'abstract'] }).sectionOrder)
+      .toEqual(['xrefs', 'authors', 'pubDate', 'abstract', 'matchingText']);
   });
 
   test('journalInfoFromCitation takes the text after the title', () => {

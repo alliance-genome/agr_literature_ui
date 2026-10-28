@@ -15,7 +15,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFilePdf, faPenSquare, faImage, faPeopleArrows} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
-import { normalizeDisplayPrefs, xrefPrefix, journalInfoFromCitation } from './settings/searchDisplayPrefs';
+import { normalizeDisplayPrefs, xrefPrefix, journalInfoFromCitation, stripMarkup } from './settings/searchDisplayPrefs';
 import { xrefUrl } from '../../utils/xrefCurie';
 
 const MatchingTextBox = (highlight) => {
@@ -229,19 +229,20 @@ const SearchResultItem = ({ reference }) => {
           </span>
       ))}</div>
     ),
-    pubDate: () => (
-      showSection('pubDate') &&
-      <div key="pubDate" className="searchRow-other">Publication Date: {reference.date_published}</div>
-    ),
-    journal: () => {
-      // Journal info from the citation (curator request): lets corpus calls
-      // that hinge on the journal (e.g. eLife's review model) happen from the
-      // card without toggling to the biblio display.
-      const journal = journalInfoFromCitation(reference.citation, reference.title);
+    pubDate: () => {
+      if (!showSection('pubDate')) return null;
+      // The journal the paper was published in, to the left of the publication
+      // date (SCRUM-1463): lets corpus calls that hinge on the journal (e.g.
+      // eLife's review model) happen from the card without toggling to the
+      // biblio display. Falls back to the journal text in the citation. Both
+      // render as plain text, so markup (<i>species</i>) is stripped.
+      const journal = stripMarkup(reference.resource_title).trim() ||
+        journalInfoFromCitation(reference.citation, reference.title);
       return (
-        showSection('journal') && journal
-          ? <div key="journal" className="searchRow-other">Journal: {journal}</div>
-          : null
+        <div key="pubDate" className="searchRow-other">
+          {journal && <span className="searchRow-journal">Journal: {journal}</span>}
+          Publication Date: {reference.date_published}
+        </div>
       );
     },
     abstract: () => (
