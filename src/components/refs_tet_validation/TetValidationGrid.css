@@ -970,30 +970,9 @@
   font-weight: 600;
 }
 
-/* Fullscreen toggle pill in the top-right of the grid wrapper. Sits above
-   the sticky header (z-index 4) and the resize overlay (z-index 50). */
-.tetv-fullscreen-toggle {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  z-index: 60;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #d7e1e8;
-  border-radius: 999px;
-  color: var(--tetv-accent-dark);
-  cursor: pointer;
-  font-size: var(--tetv-secondary-font-size);
-  font-weight: 700;
-  line-height: 1.1;
-  padding: 6px 12px;
-  box-shadow: 0 2px 6px rgba(31, 41, 55, 0.08);
-}
-.tetv-fullscreen-toggle:hover {
-  background: #e8f3f6;
-  border-color: #a9ccd6;
+/* Expand/Shrink toggle: last item of the toolbar, pushed to its right edge. */
+.tetv-toolbar-view {
+  margin-left: auto;
 }
 
 /* Fullscreen mode: the wrapper covers the viewport and gains its own
@@ -1010,10 +989,6 @@
   z-index: 2000;
   background: #fff;
 }
-.tetv-grid-wrapper.tetv-fullscreen .tetv-fullscreen-toggle {
-  position: fixed;
-}
-
 /* Optional curation-status section in the validation confirmation modal. */
 .tetv-curation-toggle {
   background: #fbfcfd;
