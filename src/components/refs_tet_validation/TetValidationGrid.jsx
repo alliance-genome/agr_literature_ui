@@ -19,7 +19,9 @@ import {
   normalizeCurie,
   VALIDATION_STATE_LABELS,
   isAssessedByMod,
+  isCuratorMixedPositiveTet,
   isCuratorValidationTet,
+  curatorMixedPositiveTets,
 } from './helpers/groupTets';
 import IdsCell from './cellRenderers/IdsCell';
 import TitleCell from './cellRenderers/TitleCell';
@@ -425,7 +427,12 @@ export default function TetValidationGrid({
     const seen = new Set();
     for (const r of rows) {
       for (const t of r.tets || []) {
-        if (t.species && isCuratorValidationTet(t)) seen.add(t.species);
+        if (
+          t.species &&
+          (isCuratorValidationTet(t) || isCuratorMixedPositiveTet(t))
+        ) {
+          seen.add(t.species);
+        }
       }
       for (const cell of Object.values(r.validation || {})) {
         for (const g of cell?.by_curator || []) {
@@ -1685,7 +1692,7 @@ export default function TetValidationGrid({
         const validationChild = makeInnerColumn({
           headerName: 'Data assessment by biocurator',
           help:
-            'Data assessment by biocurator. When at least one curator has submitted a topic-level tag, the cell shows a Y pill (data present for this topic) and/or an N pill (no data), each listing the MODs that gave that answer — your MOD in bold. Assessments are per MOD: a dashed, muted pill is another MOD\'s assessment, not yours, and "conflict" marks curators of the same MOD disagreeing. Until a curator from your MOD has submitted one, ✓ and ✗ buttons let you submit it. Y / N here mean the same thing as under "Data assessment by other sources" and as the has_data facet in advanced search.',
+            'Data assessment by biocurator. When at least one curator has submitted a topic-level tag, the cell shows a Y pill (data present for this topic) and/or an N pill (no data), each listing the MODs that gave that answer — your MOD in bold. A curator\'s positive tag on the topic with an entity (e.g. gene expression for a gene, experimentally studied data) also counts as a Y for their MOD, marked "entity tags". Assessments are per MOD: a dashed, muted pill is another MOD\'s assessment, not yours, and "conflict" marks curators of the same MOD disagreeing. Until a curator from your MOD has submitted one, ✓ and ✗ buttons let you submit it. Y / N here mean the same thing as under "Data assessment by other sources" and as the has_data facet in advanced search.',
           colId: `${t.curie}__val`,
           kind: INNER_COLUMN_TYPES.VALIDATION,
           width: 90,
@@ -1986,7 +1993,8 @@ export default function TetValidationGrid({
               if (hiddenTopicCuries.has(t.curie)) continue;
               const tets = p.data[`__topic_${t.curie}`];
               if (
-                professionalBiocuratorTopicTets(tets).length > 0
+                professionalBiocuratorTopicTets(tets).length > 0 ||
+                curatorMixedPositiveTets(tets).length > 0
               ) {
                 return 'tetv-row-validated';
               }

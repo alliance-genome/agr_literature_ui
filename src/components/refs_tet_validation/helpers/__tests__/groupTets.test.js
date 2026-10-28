@@ -6,6 +6,7 @@ import {
   validationState,
   curatorAssessedMods,
   isAssessedByMod,
+  isCuratorMixedPositiveTet,
 } from '../groupTets';
 
 describe('sourceLabel', () => {
@@ -269,5 +270,83 @@ describe('per-MOD curator assessment (SCRUM-6256)', () => {
   test('without a MOD, any curator assessment counts', () => {
     expect(isAssessedByMod([curatorTet('ZFIN')], null)).toBe(true);
     expect(isAssessedByMod([], null)).toBe(false);
+  });
+});
+
+describe('positive mixed curator tags count as a Y (SCRUM-6784)', () => {
+  // gene expression + gene, from a ZFIN curator
+  const mixedTet = (extra = {}) => ({
+    topic: 'ATP:0000010',
+    entity_type: 'ATP:0000005',
+    entity: 'ZFIN:ZDB-GENE-990415-72',
+    negated: false,
+    data_context: 'ATP:0000325',
+    tag_source: {
+      source_method: 'abc_literature_system',
+      validation_type: 'professional_biocurator',
+      secondary_data_provider_abbreviation: 'ZFIN',
+    },
+    ...extra,
+  });
+  const otherModTopicY = {
+    state: 'positive',
+    positives: 1,
+    negatives: 0,
+    by_curator: [{
+      name: 'curator_wb',
+      negated: false,
+      sources: [{ method: 'abc_literature_system',
+        label: 'abc_literature_system / WB' }],
+    }],
+  };
+
+  test('a positive mixed experimentally-studied curator tag qualifies', () => {
+    expect(isCuratorMixedPositiveTet(mixedTet())).toBe(true);
+    // unset data context makes no claim and does not block
+    expect(isCuratorMixedPositiveTet(mixedTet({ data_context: null }))).toBe(true);
+  });
+
+  test('negative, pure-entity, other-context and non-curator tags do not', () => {
+    expect(isCuratorMixedPositiveTet(mixedTet({ negated: true }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(mixedTet({ negated: null }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(
+      mixedTet({ topic: 'ATP:0000005' }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(
+      mixedTet({ data_context: 'ATP:0000324' }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(mixedTet({
+      tag_source: { source_method: 'textpresso',
+        secondary_data_provider_abbreviation: 'ZFIN' },
+    }))).toBe(false);
+  });
+
+  test('raw path: a mixed tag alone makes the cell positive', () => {
+    expect(validationState([mixedTet()])).toBe('positive');
+    expect(validationState([mixedTet({ negated: true })])).toBe('unvalidated');
+  });
+
+  test('server path: mixed tags are added to the topic-level aggregate', () => {
+    // the aggregate holds no topic-level assessment for this topic
+    expect(validationState({ tets: [mixedTet()], validation: null }))
+      .toBe('positive');
+    const topicN = { ...otherModTopicY, state: 'negative', positives: 0,
+      negatives: 1 };
+    expect(validationState({ tets: [mixedTet()], validation: topicN }))
+      .toBe('conflict');
+    expect(validationState({ tets: [], validation: null }))
+      .toBe('unvalidated');
+  });
+
+  test('counts for the tag\'s own MOD only', () => {
+    const value = { tets: [mixedTet()], validation: otherModTopicY };
+    expect([...curatorAssessedMods(value)].sort()).toEqual(['WB', 'ZFIN']);
+    expect(isAssessedByMod(value, 'ZFIN')).toBe(true);
+    expect(isAssessedByMod({ tets: [mixedTet()], validation: null }, 'WB'))
+      .toBe(false);
+  });
+
+  test('a pure entity tag does not count for its MOD', () => {
+    const pure = mixedTet({ topic: 'ATP:0000005' });
+    expect(isAssessedByMod({ tets: [pure], validation: null }, 'ZFIN'))
+      .toBe(false);
   });
 });
