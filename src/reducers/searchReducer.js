@@ -299,9 +299,11 @@ export default function(state = initialState, action) {
       }
 
     case SEARCH_SET_SEARCH_FACETS_LIMITS:
+      // Over the defaults: a saved search predating a facet (e.g. Journal /
+      // Resource, SCRUM-1463) has no limit for it, which hid its Show More.
       return {
         ...state,
-        searchFacetsLimits: action.payload.facetsLimits
+        searchFacetsLimits: {...initialState.searchFacetsLimits, ...action.payload.facetsLimits}
       }
 
     case SEARCH_SET_SORT_BY_PUBLISHED_DATE:

@@ -258,7 +258,8 @@ const SearchResultItem = ({ reference }) => {
       </div>
     ),
     matchingText: () => (
-      showSection('matchingText') && reference.highlight
+      // the API sends an empty highlight when nothing matched (no query)
+      showSection('matchingText') && Object.keys(reference.highlight || {}).length > 0
         ? <MatchingTextBox key="matchingText" matches={reference.highlight}/>
         : null
     ),
