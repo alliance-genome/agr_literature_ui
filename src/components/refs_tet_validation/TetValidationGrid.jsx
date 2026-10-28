@@ -1835,18 +1835,6 @@ export default function TetValidationGrid({
       }`}
       style={{ width: '100%' }}
     >
-      <button
-        type="button"
-        className="tetv-fullscreen-toggle"
-        onClick={() => setIsFullscreen((v) => !v)}
-        title={
-          isFullscreen
-            ? 'Exit fullscreen (Esc)'
-            : 'Expand grid to fullscreen'
-        }
-      >
-        {isFullscreen ? '⤡ Exit fullscreen' : '⤢ Fullscreen'}
-      </button>
       {unresolved.length > 0 && (
         <div className="tetv-banner-unresolved">
           Could not resolve {unresolved.length} ID(s):{' '}
@@ -1872,6 +1860,8 @@ export default function TetValidationGrid({
             requestAnimationFrame(() => setIsResizing(false));
           });
         }}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={() => setIsFullscreen((v) => !v)}
       />
       <BulkActionBar
         selectedCount={selectedRefCuries.size}
