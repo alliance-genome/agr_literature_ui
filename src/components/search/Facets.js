@@ -728,6 +728,19 @@ const AuthorFilter = () => {
 // (SCRUM-1463): with nothing selected, all journals is thousands of rows.
 const SHOW_ALL_WHEN_NARROWED_FACETS = ['resource_id.keyword'];
 
+// The facet size "+Show All" asks for. One MOD corpus can hold thousands of
+// journals (about 2,500 for SGD, 9,500 for FB), so 1000 would cut the journal
+// list short; ask for more than all the resources there are.
+const DEFAULT_SHOW_ALL_LIMIT = 1000;
+const SHOW_ALL_LIMITS = {'resource_id.keyword': 20000};
+export const getShowAllLimit = (facetLabel) => SHOW_ALL_LIMITS[facetLabel] || DEFAULT_SHOW_ALL_LIMIT;
+
+// "+Show All" only while the facet may have more values and is not already
+// showing as many as Show All would ask for.
+export const canShowAll = (facetLabel, bucketCount, limit, searchNarrowed) =>
+    (!SHOW_ALL_WHEN_NARROWED_FACETS.includes(facetLabel) || searchNarrowed) &&
+    bucketCount >= limit && limit < getShowAllLimit(facetLabel);
+
 // The search is narrowed by a query, an author filter, a selected or excluded
 // facet value, a date range or an active advanced query.
 export const isSearchNarrowed = (search) => {
@@ -744,7 +757,8 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
     // a boolean, so the buttons re-render only when it flips
     const searchNarrowed = useSelector(state => isSearchNarrowed(state.search));
-    const showAllAllowed = !SHOW_ALL_WHEN_NARROWED_FACETS.includes(facetLabel) || searchNarrowed;
+    const facetLimit = searchFacetsLimits[facetLabel];
+    const showAllAllowed = canShowAll(facetLabel, facetValue.buckets?.length || 0, facetLimit, searchNarrowed);
     const dispatch = useDispatch();
 
     return (
@@ -765,10 +779,10 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     dispatch(filterFacets());
                 }}>-Show Less</button></span> : null
             }
-            {showAllAllowed && facetValue.buckets && facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
+            {showAllAllowed ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
                 <button className="button-to-link" onClick={() =>{
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
-                    newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
+                    newSearchFacetsLimits[facetLabel] = getShowAllLimit(facetLabel);
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
                     dispatch(filterFacets());
                 }}>+Show All</button></span> : null }
