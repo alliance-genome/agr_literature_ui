@@ -122,16 +122,18 @@ export const FIELD_DEF_BY_KEY = TET_FIELD_DEFS.reduce((acc, def) => {
 // (build_tet_advanced_query): a {type:'wft', match:{workflow_tag_id:[...]}}
 // leaf compiles to a nested workflow_tags query, MOD-scoped like the flat
 // workflow facet path.
+// Alphabetical by label, as in the facet panel (SCRUM-6490).
 export const WFT_CATEGORY_DEFS = [
-  { key: 'file_workflow', label: 'File workflow' },
-  { key: 'reference_classification', label: 'Reference classification' },
-  { key: 'entity_extraction', label: 'Entity extraction' },
-  { key: 'manual_indexing', label: 'Manual indexing' },
-  { key: 'curation_classification', label: 'Curation classification' },
   { key: 'abstract_classification', label: 'Abstract classification' },
+  { key: 'author_workflow', label: 'Author' },
   { key: 'community_curation', label: 'Community curation' },
-  { key: 'first_pass_curation', label: 'First pass curation' },
+  { key: 'curation_classification', label: 'Curation classification' },
   { key: 'email_extraction', label: 'Email extraction' },
+  { key: 'entity_extraction', label: 'Entity extraction' },
+  { key: 'file_workflow', label: 'File workflow' },
+  { key: 'first_pass_curation', label: 'First pass curation' },
+  { key: 'manual_indexing', label: 'Manual indexing' },
+  { key: 'reference_classification', label: 'Reference classification' },
 ];
 
 export const isRangeField = (key) => !!(FIELD_DEF_BY_KEY[key] && FIELD_DEF_BY_KEY[key].range);
