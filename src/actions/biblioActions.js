@@ -743,10 +743,13 @@ export const fetchDataContextData = async () => {
   // ATP:0000325 experimentally studied data and ATP:0000326 marker data were
   // deprecated and left the tree, so the live query no longer offers them.
   //
-  // Curators pick a LEAF only: the two groupings are organisational, not
-  // curation choices. Rather than hardcode which curies are groupings, we take
-  // all descendants and subtract the root's direct children -- those are exactly
-  // the intermediate nodes. So renaming or adding a grouping needs no UI change.
+  // Every term below the root is offered except the root's own direct children
+  // that have children of their own (today only ATP:0000324 mentioned data),
+  // which are organisational groupings rather than curation choices. Deeper
+  // terms with children are offered on purpose: ATP:0000405 and ATP:0000406 are
+  // the FB, ZFIN and WB defaults, so they have to be selectable. A direct child
+  // with no children of its own (ATP:0000404) is a choice, not a grouping.
+  // Nothing is hardcoded, so renaming or adding a term needs no UI change.
   //
   // Note the /<direct_children_only>/<include_self>/<include_names> path form is
   // required: the short /search_descendants/<curie> form returns bare curie
@@ -762,28 +765,34 @@ export const fetchDataContextData = async () => {
     { curie: "ATP:0000327", name: "genetic marker" },
     { curie: "ATP:0000328", name: "expression marker" },
     { curie: "ATP:0000410", name: "experimental control" },
+    { curie: "ATP:0000404", name: "nomenclature error" },
   ];
 
-  const allUrl = `/ontology/search_descendants/ATP:0000323/false/false/true`;
-  const groupingsUrl = `/ontology/search_descendants/ATP:0000323/true/false/true`;
+  const descendantsUrl = (curie, directOnly) =>
+    `/ontology/search_descendants/${curie}/${directOnly}/false/true`;
 
   try {
-    const [allRes, groupingsRes] = await Promise.all([
-      api.get(allUrl),
-      api.get(groupingsUrl),
+    const [allRes, directRes] = await Promise.all([
+      api.get(descendantsUrl("ATP:0000323", false)),
+      api.get(descendantsUrl("ATP:0000323", true)),
     ]);
 
     const all = Array.isArray(allRes.data) ? allRes.data : [];
-    const groupings = Array.isArray(groupingsRes.data) ? groupingsRes.data : [];
+    const direct = Array.isArray(directRes.data) ? directRes.data : [];
     if (all.length === 0) {
       return fallbackDataContextData;
     }
 
-    const groupingCuries = new Set(groupings.map((t) => t.curie));
-    const leaves = all.filter((t) => t && t.curie && !groupingCuries.has(t.curie));
+    // Which of the root's direct children have children of their own.
+    const directChildCounts = await Promise.all(
+      direct.map((t) => api.get(descendantsUrl(t.curie, true))
+        .then((res) => (Array.isArray(res.data) ? res.data.length : 0))));
+    const groupingCuries = new Set(
+      direct.filter((_t, i) => directChildCounts[i] > 0).map((t) => t.curie));
+    const options = all.filter((t) => t && t.curie && !groupingCuries.has(t.curie));
     // If the shape ever changes such that everything is filtered out, prefer the
     // known-good list over an empty dropdown.
-    return leaves.length > 0 ? leaves : fallbackDataContextData;
+    return options.length > 0 ? options : fallbackDataContextData;
   } catch (error) {
     console.error("Error occurred in fetchDataContextData:", error);
     return fallbackDataContextData;
