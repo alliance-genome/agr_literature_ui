@@ -654,3 +654,26 @@ describe('workflow conditions (wft leaves, SCRUM-6398)', () => {
     expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
   });
 });
+
+describe('data_context field', () => {
+  test('is offered with values from the data_context facet', () => {
+    expect(FIELD_DEF_BY_KEY.data_context).toMatchObject({ label: 'Data context', facetKey: 'data_context' });
+  });
+
+  test('compiles to the data_context sub-facet on the same tag as the topic', () => {
+    expect(compileAdvancedQuery(leaf({ topic: 'ATP:0000018', data_context: 'ATP:0000325' })).match).toEqual({
+      topic: ['ATP:0000018'],
+      data_context: ['ATP:0000325'],
+    });
+  });
+
+  test('maps to the grid data_context filters', () => {
+    const tree = { operator: 'AND', children: [
+      leaf({ topic: 'ATP:1', data_context: 'ATP:0000325' }),
+      leaf({ data_context: 'ATP:0000324' }, true),
+    ] };
+    const flat = flattenAdvancedForGrid(compileAdvancedQuery(tree));
+    expect(flat.data_context).toEqual(['ATP:0000325']);
+    expect(flat.negated_data_context).toEqual(['ATP:0000324']);
+  });
+});

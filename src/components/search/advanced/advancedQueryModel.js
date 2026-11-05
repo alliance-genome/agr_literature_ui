@@ -97,6 +97,7 @@ export const TET_FIELD_DEFS = [
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },
   { key: 'confidence_level', label: 'Confidence level', facetKey: 'confidence_levels' },
   { key: 'data_novelty', label: 'Data novelty', facetKey: 'data_novelty' },
+  { key: 'data_context', label: 'Data context', facetKey: 'data_context' },
   {
     key: 'validation_by_professional_biocurator',
     label: 'Validation (biocurator)',
@@ -390,6 +391,7 @@ const GRID_POSITIVE_KEYS = {
   source_method: 'source_methods',
   source_evidence_assertion: 'source_evidence_assertions',
   data_novelty: 'data_novelty',
+  data_context: 'data_context',
   entity_type: 'entity_types',
   entity: 'entities',
 };
@@ -397,6 +399,7 @@ const GRID_NEGATED_KEYS = {
   confidence_level: 'negated_confidence_levels',
   source_method: 'negated_source_methods',
   source_evidence_assertion: 'negated_source_evidence_assertions',
+  data_context: 'negated_data_context',
 };
 
 // Best-effort FLAT grid filter from a COMPILED advanced tree (SCRUM-6228). The
