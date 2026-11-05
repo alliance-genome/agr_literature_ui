@@ -22,9 +22,11 @@ import { xrefUrl } from '../../utils/xrefCurie';
 // values, while the matches of a text field are passages from one text.
 const LIST_HIGHLIGHT_FIELDS = ['keywords', 'mesh', 'authors', 'authors.orcid'];
 
+// Repeated fragments are shown once: a MeSH heading is indexed once per
+// qualifier, so "DNA Damage" can come back several times.
 export const joinHighlightFragments = (field, fragments) => {
   if (!Array.isArray(fragments)) return fragments;
-  return fragments.join(LIST_HIGHLIGHT_FIELDS.includes(field) ? ', ' : ' &hellip; ');
+  return [...new Set(fragments)].join(LIST_HIGHLIGHT_FIELDS.includes(field) ? ', ' : ' &hellip; ');
 };
 
 const MatchingTextBox = (highlight) => {

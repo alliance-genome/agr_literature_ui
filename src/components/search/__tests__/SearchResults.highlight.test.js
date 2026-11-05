@@ -15,6 +15,12 @@ describe('joinHighlightFragments', () => {
     expect(joinHighlightFragments('keywords', ['a', 'b'])).toBe('a, b');
   });
 
+  test('shows a repeated fragment once', () => {
+    const heading = '<em>Deoxyadenine</em> <em>Nucleotides</em>';
+    expect(joinHighlightFragments('mesh', [heading, heading, '<em>Deoxyadenosines</em>']))
+      .toBe(`${heading}, <em>Deoxyadenosines</em>`);
+  });
+
   test('leaves a single fragment or a plain string unchanged', () => {
     expect(joinHighlightFragments('title', ['only one'])).toBe('only one');
     expect(joinHighlightFragments('title', 'a string')).toBe('a string');
