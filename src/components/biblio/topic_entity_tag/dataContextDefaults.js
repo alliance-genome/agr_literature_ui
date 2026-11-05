@@ -17,17 +17,39 @@
 // the right fallback here whenever the MOD cannot be determined -- sending
 // WB's term for an unknown MOD would be a guess, while ATP:0000325 is what
 // would have been stored anyway.
+//
+// SCRUM-6815. ATP:0000325 was deprecated in the 2026-10-30 ATP release. Each MOD
+// moves off it together with a backfill of its own tags:
+//   FB   -- ATP:0000405 experimental data on everything (Gillian).
+//   ZFIN -- ATP:0000406 experimentally studied entity on curator-added
+//           entities, ATP:0000405 on topic tags (Ceri).
+// The other MODs keep their SCRUM-5697 values until they answer. Keep in step
+// with default_data_context_for_mod on the server.
 export const DATA_CONTEXT_ROOT = "ATP:0000323";
 export const DATA_CONTEXT_EXPERIMENTALLY_STUDIED = "ATP:0000325";
+export const DATA_CONTEXT_EXPERIMENTAL_DATA = "ATP:0000405";
+export const DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY = "ATP:0000406";
 
-export const defaultDataContext = (modAbbreviation, hasEntity) =>
-  modAbbreviation === "WB" && !hasEntity
-    ? DATA_CONTEXT_ROOT
-    : DATA_CONTEXT_EXPERIMENTALLY_STUDIED;
+export const defaultDataContext = (modAbbreviation, hasEntity) => {
+  if (modAbbreviation === "FB") return DATA_CONTEXT_EXPERIMENTAL_DATA;
+  if (modAbbreviation === "ZFIN") {
+    return hasEntity ? DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY : DATA_CONTEXT_EXPERIMENTAL_DATA;
+  }
+  if (modAbbreviation === "WB" && !hasEntity) return DATA_CONTEXT_ROOT;
+  return DATA_CONTEXT_EXPERIMENTALLY_STUDIED;
+};
+
+// The data_context of a curator's topic-level assessment (the grid's assess
+// buttons and the bulk validation modal); CURATOR_VALIDATION_DATA_CONTEXT on the
+// server. ATP:0000405 for every MOD: a tag only validates tags whose data_context
+// is in its own hierarchy, ATP:0000325 has no ancestors any more, and ATP:0000405
+// sits under ATP:0000323, so it validates WB's root-term topic tags as well as
+// FB's and ZFIN's ATP:0000405 classifier tags.
+export const CURATOR_VALIDATION_DATA_CONTEXT = DATA_CONTEXT_EXPERIMENTAL_DATA;
 
 // SCRUM-6553. FB asked not to see the data context pulldown at all -- their
-// tags uniformly take experimentally studied (backfill rule 4 above), so a
-// choice is only a chance to diverge from it. Hiding the pulldown also means
+// tags uniformly take one value (ATP:0000405 since SCRUM-6815), so a choice is
+// only a chance to diverge from it. Hiding the pulldown also means
 // the saved value must ignore anything already in row state (an edited tag
 // preloads its stored data_context) and always fall back to defaultDataContext.
 export const hidesDataContextPulldown = (modAbbreviation) =>

@@ -57,9 +57,22 @@ export function isCuratorValidationTet(tet) {
   );
 }
 
-/** The data context the assess buttons submit (the API's
- *  CURATOR_VALIDATION_DATA_CONTEXT). It has no descendants in ATP. */
-const EXPERIMENTALLY_STUDIED_DATA_CONTEXT = 'ATP:0000325';
+/** The data contexts that are the assess buttons' term or more specific:
+ *  ATP:0000405 experimental data (the API's CURATOR_VALIDATION_DATA_CONTEXT
+ *  since SCRUM-6815) and everything under it in the 2026-10-30 ATP release.
+ *  A positive tag validates a more generic one, so a mixed tag at any of these
+ *  validates the topic-level tag the buttons create. The deprecated ATP:0000325
+ *  is not among them: it has no place in the tree any more. */
+const EXPERIMENTAL_DATA_CONTEXTS = new Set([
+  'ATP:0000405', // experimental data
+  'ATP:0000406', // experimentally studied entity
+  'ATP:0000407', // primary studied entity
+  'ATP:0000408', // additional studied entity
+  'ATP:0000409', // supporting experimental entity
+  'ATP:0000327', // genetic marker
+  'ATP:0000328', // expression marker
+  'ATP:0000410', // experimental control
+]);
 
 /** True for a positive *mixed* topic + entity tag from a professional
  *  biocurator, e.g. gene expression + gene fgf8a (SCRUM-6784). Such a tag
@@ -69,8 +82,9 @@ const EXPERIMENTALLY_STUDIED_DATA_CONTEXT = 'ATP:0000325';
  *  the assess buttons create (no entity, root data novelty, experimentally
  *  studied data) as validated right by this tag:
  *    - positive only: no data for one gene says nothing about the topic;
- *    - data context experimentally studied, or unset (makes no claim);
- *      mentioned, marker or background data do not count;
+ *    - data context experimental data or more specific, or unset (makes no
+ *      claim); the root, mentioned or background data and the deprecated
+ *      ATP:0000325 do not count;
  *    - entity, data novelty and species need no check, the button's tag
  *      having no entity and the novelty root.
  *  Pure entity tags (topic == entity_type, e.g. gene / gene) are left out. */
@@ -82,7 +96,7 @@ export function isCuratorMixedPositiveTet(tet) {
     normalizeCurie(tet.entity_type) !== normalizeCurie(tet.topic) &&
     tet.negated === false &&
     (tet.data_context == null ||
-      normalizeCurie(tet.data_context) === EXPERIMENTALLY_STUDIED_DATA_CONTEXT) &&
+      EXPERIMENTAL_DATA_CONTEXTS.has(normalizeCurie(tet.data_context))) &&
     tet.tag_source?.validation_type === CURATOR_VALIDATION_TYPE
   );
 }

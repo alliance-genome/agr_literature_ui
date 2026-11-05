@@ -44,10 +44,14 @@ import Alert from "react-bootstrap/Alert";
 // Labels for data_context terms that are NOT selectable but can still appear on a
 // tag: the root and the two groupings. Pipelines write these (WB entity extraction
 // sends the root), so the editor has to be able to display them.
+// SCRUM-6815: ATP:0000325 was deprecated (2026-10-30) and has left the ontology
+// tree, so it is no longer offered, but tags and the WB/SGD defaults still carry
+// it until each MOD is backfilled.
 const dataContextNameMap = {
   "ATP:0000323": "data context",
   "ATP:0000324": "mentioned data",
   "ATP:0000326": "marker data",
+  "ATP:0000325": "experimentally studied data (deprecated)",
 };
 
 const TopicEntityCreate = () => {
@@ -1047,7 +1051,7 @@ const TopicEntityCreate = () => {
                   />
                   <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
                   {/* SCRUM-6553. FB never sees the pulldown; rowDataContext keeps
-                      sending their default (experimentally studied) regardless. */}
+                      sending their default (ATP:0000405 experimental data) regardless. */}
                   {!hidesDataContextPulldown(accessLevel) && (
                   <Form.Control
                     as="select"

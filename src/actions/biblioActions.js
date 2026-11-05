@@ -731,11 +731,17 @@ export const fetchDisplayTagData = async () => {
 };
 
 export const fetchDataContextData = async () => {
-  // SCRUM-5697. data_context is a hierarchy under ATP:0000323 "data context":
+  // SCRUM-5697. data_context is a hierarchy under ATP:0000323 "data context".
+  // Since the 2026-10-30 ATP release (SCRUM-6815) it is:
   //   ATP:0000324 mentioned data -> ATP:0000360 background information
-  //                                 ATP:0000325 experimentally studied data
-  //   ATP:0000326 marker data    -> ATP:0000328 expression marker
-  //                                 ATP:0000327 genetic marker
+  //                                 ATP:0000405 experimental data
+  //                                   -> ATP:0000406 experimentally studied entity
+  //                                        -> ATP:0000407, ATP:0000408
+  //                                   -> ATP:0000409 supporting experimental entity
+  //                                        -> ATP:0000327, ATP:0000328, ATP:0000410
+  //   ATP:0000404 nomenclature error
+  // ATP:0000325 experimentally studied data and ATP:0000326 marker data were
+  // deprecated and left the tree, so the live query no longer offers them.
   //
   // Curators pick a LEAF only: the two groupings are organisational, not
   // curation choices. Rather than hardcode which curies are groupings, we take
@@ -745,11 +751,17 @@ export const fetchDataContextData = async () => {
   // Note the /<direct_children_only>/<include_self>/<include_names> path form is
   // required: the short /search_descendants/<curie> form returns bare curie
   // strings, not {curie, name} objects.
+  // What the live query returns for the tree above.
   const fallbackDataContextData = [
     { curie: "ATP:0000360", name: "background information" },
-    { curie: "ATP:0000325", name: "experimentally studied data" },
-    { curie: "ATP:0000328", name: "expression marker" },
+    { curie: "ATP:0000405", name: "experimental data" },
+    { curie: "ATP:0000406", name: "experimentally studied entity" },
+    { curie: "ATP:0000407", name: "primary studied entity" },
+    { curie: "ATP:0000408", name: "additional studied entity" },
+    { curie: "ATP:0000409", name: "supporting experimental entity" },
     { curie: "ATP:0000327", name: "genetic marker" },
+    { curie: "ATP:0000328", name: "expression marker" },
+    { curie: "ATP:0000410", name: "experimental control" },
   ];
 
   const allUrl = `/ontology/search_descendants/ATP:0000323/false/false/true`;
