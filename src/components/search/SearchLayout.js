@@ -162,6 +162,7 @@ const SearchLayout = () => {
         if (nonEmpty(fv.source_methods)) f.source_methods = fv.source_methods;
         if (nonEmpty(fv.source_evidence_assertions)) f.source_evidence_assertions = fv.source_evidence_assertions;
         if (nonEmpty(fv.data_novelty)) f.data_novelty = fv.data_novelty;
+        if (nonEmpty(fv.data_context)) f.data_context = fv.data_context;
         // fv.large_scale_tag is deliberately NOT forwarded: the grid reads
         // tags from the database, and large_scale_tag only exists on the
         // synthetic summary tags the search indexer mints (SCRUM-6614) -
@@ -172,6 +173,7 @@ const SearchLayout = () => {
         if (nonEmpty(neg.confidence_levels)) f.negated_confidence_levels = neg.confidence_levels;
         if (nonEmpty(neg.source_methods)) f.negated_source_methods = neg.source_methods;
         if (nonEmpty(neg.source_evidence_assertions)) f.negated_source_evidence_assertions = neg.source_evidence_assertions;
+        if (nonEmpty(neg.data_context)) f.negated_data_context = neg.data_context;
         // MOD scope: the corpus facet selection (in-corpus / needs-review /
         // in-corpus-or-needs-review), computed as corpusMods at the top of this
         // memo. The grid shows only the selected MOD's tags, so a shared reference

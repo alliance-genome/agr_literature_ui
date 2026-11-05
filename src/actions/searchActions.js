@@ -48,12 +48,12 @@ export const SEARCH_APPLY_GRID_PREFERENCES = 'SEARCH_APPLY_GRID_PREFERENCES';
 export const SEARCH_SET_DISPLAY_PREFS = 'SEARCH_SET_DISPLAY_PREFS';
 export const SEARCH_SET_DISPLAY_PROFILE_NAME = 'SEARCH_SET_DISPLAY_PROFILE_NAME';
 
-const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions", "data_novelty", "large_scale_tag"];
+const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions", "data_novelty", "data_context", "large_scale_tag"];
 
 // Map a TET facet label to its nested ES field. Most labels are plural and
-// strip the trailing 's' (topics -> topic); data_novelty and large_scale_tag
-// are already the field name.
-const NON_PLURAL_TET_FACETS = ["data_novelty", "large_scale_tag"];
+// strip the trailing 's' (topics -> topic); data_novelty, data_context and
+// large_scale_tag are already the field name.
+const NON_PLURAL_TET_FACETS = ["data_novelty", "data_context", "large_scale_tag"];
 const tetFacetField = (label) =>
   `topic_entity_tags.${NON_PLURAL_TET_FACETS.includes(label) ? label : label.slice(0, -1)}.keyword`;
 
@@ -235,7 +235,7 @@ const getSearchParams = (state) => {
   const negated_facets= state.search.searchExcludedFacetsValues;
   // TET (nested) negated facets are routed through tet_facets_negative_values below, not the
   // flat negated_facets_values (which is only for non-nested facets).
-  const tetNegatedKeys = ["confidence_levels", "source_methods", "source_evidence_assertions"];
+  const tetNegatedKeys = ["confidence_levels", "data_context", "source_methods", "source_evidence_assertions"];
   const negated_facets_values = {};
   Object.keys(negated_facets).forEach(key => {
     if (!tetNegatedKeys.includes(key)) {
@@ -262,7 +262,8 @@ const getSearchParams = (state) => {
   // excluded level with the selected topic/entity terms so a reference is dropped only when it
   // has a tag that is both the selected topic AND the excluded level (a NEG tag on a different
   // topic does not remove it); with no positive TET facet it falls back to any tag at that
-  // level. All apply in both single- and multi-tag modes.
+  // level. Data context exclusion is topic-scoped the same way. All apply in both single-
+  // and multi-tag modes.
   // All negated TET keys are carried in ONE merged object: the backend reads only
   // tet_facets_negative_values[0] and turns each source/SEA key into its own independent
   // must_not nested clause, so splitting them into separate array entries would silently drop
@@ -276,6 +277,9 @@ const getSearchParams = (state) => {
   }
   if (negated_facets.confidence_levels && negated_facets.confidence_levels.length > 0) {
       negatedTetEntry["topic_entity_tags.confidence_level.keyword"] = negated_facets.confidence_levels;
+  }
+  if (negated_facets.data_context && negated_facets.data_context.length > 0) {
+      negatedTetEntry["topic_entity_tags.data_context.keyword"] = negated_facets.data_context;
   }
   if (Object.keys(negatedTetEntry).length > 0) {
       tetNestedNegatedFacetsValues.push(negatedTetEntry);
