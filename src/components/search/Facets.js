@@ -113,13 +113,10 @@ export const RENAME_FACETS = {
 
 // Per-facet relabeling of individual bucket values. Keyed by the resolved
 // facet key, then by the raw bucket value (bucket.key / bucket.name).
-// "no genetic data" in the manual indexing curation tag facet comes from the
-// predicted curation tag column, so display it as "predicted no genetic data"
-// to make clear it is a computed prediction, not a curator-added tag.
+// (FB's "no genetic data" predictions are topic entity tags since SCRUM-6670 and
+// are found through the TET facets, so the manual indexing curation tag facet no
+// longer needs its "predicted no genetic data" relabel.)
 export const RENAME_FACET_VALUES = {
-    "manual_indexing_curation_tag": {
-        "no genetic data": "predicted no genetic data"
-    },
     "can_display_image": {
         "true": "Yes",
         "false": "No"

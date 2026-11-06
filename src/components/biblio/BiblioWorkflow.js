@@ -17,11 +17,13 @@ import TopicFilter from '../AgGrid/TopicFilter';
 import EntityCountsByMod from './shared/EntityCountsByMod';
 
 import { setAllTopics, setTopicEntitySourceId, getCuratorSourceId } from '../../actions/biblioActions';
+import {
+  predictionTagsUrl, pickPrediction, predictionFields, showsTbd, isValidated,
+  curatorDecision, validationPayload,
+} from './noGeneticDataPrediction';
 
 
 const MANUAL_INDEXING_TBD = "ATP:0000359"; // manual indexing status TBD
-const MANUAL_INDEXING_WONT_INDEX = "ATP:0000343"; // won't manually index
-const NO_GENETIC_DATA = "ATP:0000207"; // no genetic data
 
 // Pre-curation status icon renderer (moved outside component to avoid recreation on every render)
 const PreCurationStatusIcon = ({ value }) => {
@@ -309,29 +311,25 @@ const BiblioWorkflow = () => {
       const url = `/workflow_tag/indexing-community/${referenceCurie}/${accessLevel}`;
       const wantIP = accessLevel === 'ZFIN';
 
-      // Only fetch manual indexing tags for FB
-      const shouldFetchMIT = accessLevel === 'FB';
-      const manualIndexingUrl = shouldFetchMIT
-        ? `/manual_indexing_tag/get_manual_indexing_tag/${encodeURIComponent(referenceCurie)}/${accessLevel}`
-        : null;
+      // FB only: the "no genetic data" prediction, a classifier topic entity tag
+      // (SCRUM-6670; it used to be a manual_indexing_tag row)
+      const wantPrediction = accessLevel === 'FB';
 
       try {
-        // fetch WFT + manual indexing tag (only for FB) + IP (only for ZFIN)
-        const [wftRes, mitRes, ipRow] = await Promise.all([
+        // fetch WFT + "no genetic data" prediction (only for FB) + IP (only for ZFIN)
+        const [wftRes, predictionRes, ipRow] = await Promise.all([
           api.get(url),
-          shouldFetchMIT
-            ? api.get(manualIndexingUrl).catch((e) => {
-                console.warn('[ManualIndexingTag] GET failed:', e);
+          wantPrediction
+            ? api.get(predictionTagsUrl(referenceCurie, accessLevel)).catch((e) => {
+                console.warn('[NoGeneticDataPrediction] GET failed:', e);
                 return { data: null };
               })
             : Promise.resolve({ data: null }),
           wantIP ? fetchIndexingPriorityRow() : Promise.resolve(null),
         ]);
-      
+
         const respData = wftRes.data || {};
-        const mitPayload = mitRes?.data || null;
-        const currentMit = mitPayload?.current_curation_tag || null;
-        const allManualTags = mitPayload?.all_curation_tags || {};
+        const predictionTag = wantPrediction ? pickPrediction(predictionRes?.data) : null;
 
         const sectionOrder = [
           'community curation',
@@ -388,50 +386,28 @@ const BiblioWorkflow = () => {
               reference_workflow_tag_id,
             };
 
-            // adding manual indexing prediction/validation fields into the Manual Indexing row                   
+            // adding the "no genetic data" prediction/validation fields into the Manual Indexing row
             if (sectionKey === 'manual indexing') {
-              let predictedTag = '';
-              let predictedTagId = '';
-              let confidenceScore = '';
-              let validationStatus = null;
-              let manualTagId = null;
-            
-              // Only process manual indexing tag data for FB
-              if (accessLevel === 'FB' && currentMit) {
-                predictedTag = currentMit.curation_tag_name || '';
-                predictedTagId = currentMit.curation_tag || '';
-                confidenceScore = fmtScore(currentMit.confidence_score);
-                validationStatus = currentMit.validation_by_biocurator;
-                manualTagId = currentMit.manual_indexing_tag_id;
-              
-                // When not validated, use classifier info for curator and date_updated
-                if (!validationStatus) {
-                  // Use classifier name from manual_indexing_tag
-                  curator = currentMit.updated_by_name || currentMit.updated_by_email || currentMit.updated_by || '';
-                  // Use classifier date from manual_indexing_tag
-                  date_updated = currentMit.date_updated || '';
-                }
+              const prediction = predictionFields(predictionTag);
+              // When not validated, show the classifier's run as the last update
+              if (predictionTag && !isValidated(prediction.validation_by_biocurator)) {
+                curator = predictionTag.updated_by_name || predictionTag.updated_by || '';
+                date_updated = predictionTag.date_updated || predictionTag.date_created || '';
               }
-            
               return {
                 ...baseRow,
-                predicted_curation_tag: predictedTag,
-                predicted_curation_tag_id: predictedTagId,
-                predicted_confidence_score: confidenceScore,
-                validation_by_biocurator: validationStatus,
-                manual_indexing_tag_id: manualTagId,
-                // Ensure curator and date_updated are updated when not validated
+                ...prediction,
+                prediction_tbd: showsTbd(prediction),
+                predicted_confidence_score: fmtScore(prediction.predicted_confidence_score),
                 curator,
                 date_updated,
               };
             }
             return {
               ...baseRow,
-              predicted_curation_tag: '',
-              predicted_curation_tag_id: '',
+              ...predictionFields(null),
               predicted_confidence_score: '',
-              validation_by_biocurator: null,
-              manual_indexing_tag_id: null,
+              prediction_tbd: false,
             };
           });
 
@@ -1189,29 +1165,26 @@ const BiblioWorkflow = () => {
     },
   ];
 
-  // ---- NEW: Validation renderer (TET-style icons + status text) ----
+  // ---- Validation renderer (TET-style icons + status text) ----
+  // SCRUM-6670: validating the "no genetic data" prediction adds the curator's own
+  // topic-level "genetic data" tag (POST /topic_entity_tag/validate), which TET
+  // validation compares with the classifier's tag, then sets the manual indexing
+  // status from the curator's answer, as before.
   const ManualIndexingValidationRenderer = (params) => {
-    if (accessLevel !== 'FB') return null;	
+    if (accessLevel !== 'FB') return null;
     const row = params?.data || {};
-    const current = row.validation_by_biocurator; // 'right' | 'wrong' | null
-  
-    const statusText = 
-      current === 'right' 
-        ? 'validated_right' 
-        : current === 'wrong' 
-          ? 'validated_wrong' 
-          : 'not validated';
-
-    const hasMit = !!row.manual_indexing_tag_id;
-    const isWrong = current === 'wrong';
+    const statusText = row.validation_by_biocurator || '';
+    const hasPrediction = !!row.prediction_tet_id;
+    const current = statusText === 'validated_right' ? 'right'
+      : statusText === 'validated_wrong' ? 'wrong' : null;
 
     const makeIconStyle = (which) => {
-      const isSelected = which === 'right' ? current === 'right' : current === 'wrong';
+      const isSelected = which === current;
       const color = which === 'right' ? '#28a745' : '#dc3545';
       return {
-        cursor: hasMit ? 'pointer' : 'not-allowed',
+        cursor: hasPrediction ? 'pointer' : 'not-allowed',
         color,
-        opacity: !hasMit ? 0.35 : (isSelected ? 1 : 0.35),
+        opacity: !hasPrediction ? 0.35 : (isSelected ? 1 : 0.35),
       };
     };
 
@@ -1220,34 +1193,20 @@ const BiblioWorkflow = () => {
       setShowApiErrorModal(true);
     };
 
-    const patchManualIndexingTag = async (validation) => {
-      if (!row.manual_indexing_tag_id) return;
-      const url = `/manual_indexing_tag/${row.manual_indexing_tag_id}`;
-      await api.patch(url, { validation_by_biocurator: validation });
-    };
-
     const handleClick = async (validation) => {
       try {
-        if (!hasMit) return;
-
-        // First patch the validation status on manual_indexing_tag
-        await patchManualIndexingTag(validation);
-
-        // Use transition API to change workflow status
-        // The backend action will set curation_tag appropriately
-        const targetWorkflowTagId = validation === 'right'
-          ? MANUAL_INDEXING_WONT_INDEX
-          : MANUAL_INDEXING_TBD;
-
+        if (!hasPrediction) return;
+        const agrees = validation === 'right';
+        await api.post('/topic_entity_tag/validate',
+          validationPayload(referenceCurie, accessLevel, row, agrees));
         await transitionWorkflowTag({
           curie_or_reference_id: referenceCurie,
           mod_abbreviation: accessLevel,
-          new_workflow_tag_atp_id: targetWorkflowTagId
+          new_workflow_tag_atp_id: curatorDecision(row.prediction_negated, agrees).workflowTagId,
         });
-
         await fetchIndexingWorkflowOverview();
       } catch (e) {
-        console.error('Manual indexing validation update failed:', e);
+        console.error('No genetic data validation update failed:', e);
         doShowError(`API error: ${e?.message ?? e?.toString?.() ?? 'unknown error'}`);
         await fetchIndexingWorkflowOverview();
       }
@@ -1312,11 +1271,9 @@ const BiblioWorkflow = () => {
         if (!row) return params.value;
 
         const isManualIndexing = row.section === 'Manual Indexing';
-        const hasConfidenceScore = row.predicted_confidence_score !== null && row.predicted_confidence_score !== '';
-	const notValidated = !row.validation_by_biocurator;
         const isFB = accessLevel === 'FB';
-	  
-        if (isManualIndexing && isFB && hasConfidenceScore && notValidated && !row.workflow_tag_id) {
+
+        if (isManualIndexing && isFB && row.prediction_tbd && !row.workflow_tag_id) {
           return MANUAL_INDEXING_TBD;
         }
         return row.workflow_tag_id || '';
@@ -1384,7 +1341,7 @@ const BiblioWorkflow = () => {
       headerClass: 'wft-bold-header wft-header-bg',
       cellStyle: (params) => {
         if (params.data?.section !== 'Manual Indexing') return { textAlign: 'left' };
-        const isWrong = params.data?.validation_by_biocurator === 'wrong';
+        const isWrong = params.data?.validation_by_biocurator === 'validated_wrong';
         return { 
           textAlign: 'left', 
           color: isWrong ? '#999' : undefined,
@@ -1401,7 +1358,20 @@ const BiblioWorkflow = () => {
       headerClass: 'wft-bold-header wft-header-bg',
       cellStyle: (params) => {
         if (params.data?.section !== 'Manual Indexing') return { textAlign: 'left' };
-        const isWrong = params.data?.validation_by_biocurator === 'wrong';
+        const isWrong = params.data?.validation_by_biocurator === 'validated_wrong';
+        return { textAlign: 'left', color: isWrong ? '#999' : undefined, opacity: isWrong ? 0.6 : 1 };
+      },
+      sortable: true,
+      filter: true,
+    },
+    {
+      headerName: 'Confidence Level',
+      field: 'predicted_confidence_level',
+      flex: 1,
+      headerClass: 'wft-bold-header wft-header-bg',
+      cellStyle: (params) => {
+        if (params.data?.section !== 'Manual Indexing') return { textAlign: 'left' };
+        const isWrong = params.data?.validation_by_biocurator === 'validated_wrong';
         return { textAlign: 'left', color: isWrong ? '#999' : undefined, opacity: isWrong ? 0.6 : 1 };
       },
       sortable: true,
