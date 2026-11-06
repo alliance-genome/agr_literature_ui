@@ -97,6 +97,7 @@ export const TET_FIELD_DEFS = [
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },
   { key: 'confidence_level', label: 'Confidence level', facetKey: 'confidence_levels' },
   { key: 'data_novelty', label: 'Data novelty', facetKey: 'data_novelty' },
+  { key: 'data_context', label: 'Data context', facetKey: 'data_context' },
   {
     key: 'validation_by_professional_biocurator',
     label: 'Validation (biocurator)',
@@ -122,16 +123,18 @@ export const FIELD_DEF_BY_KEY = TET_FIELD_DEFS.reduce((acc, def) => {
 // (build_tet_advanced_query): a {type:'wft', match:{workflow_tag_id:[...]}}
 // leaf compiles to a nested workflow_tags query, MOD-scoped like the flat
 // workflow facet path.
+// Alphabetical by label, as in the facet panel (SCRUM-6490).
 export const WFT_CATEGORY_DEFS = [
-  { key: 'file_workflow', label: 'File workflow' },
-  { key: 'reference_classification', label: 'Reference classification' },
-  { key: 'entity_extraction', label: 'Entity extraction' },
-  { key: 'manual_indexing', label: 'Manual indexing' },
-  { key: 'curation_classification', label: 'Curation classification' },
   { key: 'abstract_classification', label: 'Abstract classification' },
+  { key: 'author_workflow', label: 'Author' },
   { key: 'community_curation', label: 'Community curation' },
-  { key: 'first_pass_curation', label: 'First pass curation' },
+  { key: 'curation_classification', label: 'Curation classification' },
   { key: 'email_extraction', label: 'Email extraction' },
+  { key: 'entity_extraction', label: 'Entity extraction' },
+  { key: 'file_workflow', label: 'File workflow' },
+  { key: 'first_pass_curation', label: 'First pass curation' },
+  { key: 'manual_indexing', label: 'Manual indexing' },
+  { key: 'reference_classification', label: 'Reference classification' },
 ];
 
 export const isRangeField = (key) => !!(FIELD_DEF_BY_KEY[key] && FIELD_DEF_BY_KEY[key].range);
@@ -388,6 +391,7 @@ const GRID_POSITIVE_KEYS = {
   source_method: 'source_methods',
   source_evidence_assertion: 'source_evidence_assertions',
   data_novelty: 'data_novelty',
+  data_context: 'data_context',
   entity_type: 'entity_types',
   entity: 'entities',
 };
@@ -395,6 +399,7 @@ const GRID_NEGATED_KEYS = {
   confidence_level: 'negated_confidence_levels',
   source_method: 'negated_source_methods',
   source_evidence_assertion: 'negated_source_evidence_assertions',
+  data_context: 'negated_data_context',
 };
 
 // Best-effort FLAT grid filter from a COMPILED advanced tree (SCRUM-6228). The

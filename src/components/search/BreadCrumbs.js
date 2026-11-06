@@ -102,9 +102,10 @@ const BreadCrumbs = () => {
 	// 4. The boolean Images facets, whose values (Yes/No) are meaningless without the facet name
 	// 5. The Large-scale data facet, boolean like the Images ones (SCRUM-6614)
 	// 6. The Journal / Resource facet, so a journal title reads as a journal filter (SCRUM-1463)
+	// 7. The Data Context facet, whose values (e.g. "experimentally studied") need the facet name
        return facet === 'language.keyword' || facet === 'retraction_status.keyword' || facet.startsWith('mods_') ||
            facet === 'can_display_image' || facet === 'has_image' || facet === 'large_scale_tag' ||
-           facet === 'resource_id.keyword';
+           facet === 'resource_id.keyword' || facet === 'data_context';
     };
     
     const getFacetLabel = (facet, value) => {

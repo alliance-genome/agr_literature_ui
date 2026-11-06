@@ -644,9 +644,36 @@ describe('workflow conditions (wft leaves, SCRUM-6398)', () => {
 
   test('WFT_CATEGORY_DEFS mirrors the workflow facet categories', () => {
     expect(WFT_CATEGORY_DEFS.map((d) => d.key)).toEqual([
-      'file_workflow', 'reference_classification', 'entity_extraction',
-      'manual_indexing', 'curation_classification', 'abstract_classification',
-      'community_curation', 'first_pass_curation', 'email_extraction',
+      'abstract_classification', 'author_workflow', 'community_curation',
+      'curation_classification', 'email_extraction', 'entity_extraction',
+      'file_workflow', 'first_pass_curation', 'manual_indexing',
+      'reference_classification',
     ]);
+    // alphabetical by label, as in the facet panel
+    const labels = WFT_CATEGORY_DEFS.map((d) => d.label);
+    expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
+  });
+});
+
+describe('data_context field', () => {
+  test('is offered with values from the data_context facet', () => {
+    expect(FIELD_DEF_BY_KEY.data_context).toMatchObject({ label: 'Data context', facetKey: 'data_context' });
+  });
+
+  test('compiles to the data_context sub-facet on the same tag as the topic', () => {
+    expect(compileAdvancedQuery(leaf({ topic: 'ATP:0000018', data_context: 'ATP:0000325' })).match).toEqual({
+      topic: ['ATP:0000018'],
+      data_context: ['ATP:0000325'],
+    });
+  });
+
+  test('maps to the grid data_context filters', () => {
+    const tree = { operator: 'AND', children: [
+      leaf({ topic: 'ATP:1', data_context: 'ATP:0000325' }),
+      leaf({ data_context: 'ATP:0000324' }, true),
+    ] };
+    const flat = flattenAdvancedForGrid(compileAdvancedQuery(tree));
+    expect(flat.data_context).toEqual(['ATP:0000325']);
+    expect(flat.negated_data_context).toEqual(['ATP:0000324']);
   });
 });

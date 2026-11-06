@@ -72,6 +72,7 @@ export const RENAME_FACETS = {
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
     "data_novelty": "Data Novelty",
+    "data_context": "Data Context",
     "large_scale_tag": "Large-scale data",
     "file_workflow": "File workflow",
     "reference_classification": "Reference classification",
@@ -82,6 +83,7 @@ export const RENAME_FACETS = {
     "community_curation": "Community curation",
     "first_pass_curation": "First pass curation",
     "email_extraction": "Email extraction",
+    "author_workflow": "Author",
     "predicted_indexing_priority": "Predicted indexing priority",
     "indexing_priority": "Indexing priority",
     "manual_indexing_curation_tag": "Manual indexing curation tag",
@@ -134,11 +136,12 @@ export const RENAME_FACET_VALUES = {
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
-    "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "abstract_classification", "community_curation", "first_pass_curation", "email_extraction"],
+    // alphabetical by label (SCRUM-6490)
+    "Workflow Tags": ["abstract_classification", "author_workflow", "community_curation", "curation_classification", "email_extraction", "entity_extraction", "file_workflow", "first_pass_curation", "manual_indexing", "reference_classification"],
     "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "resource id", "language"],
     "Images": ["can display image", "has image"],
-    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty", "large_scale_tag"],
+    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty", "data_context", "large_scale_tag"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
 }
 
@@ -393,7 +396,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status", "resource id", "source_methods", "source_evidence_assertions"];
+    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "data_context", "retraction status", "resource id", "source_methods", "source_evidence_assertions"];
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
@@ -576,9 +579,9 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
                 let key = facetToInclude.replaceAll(' ', '_');
-                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'large_scale_tag',
+                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'data_context', 'large_scale_tag',
                         'file_workflow', 'manual_indexing', 'reference_classification',
-		                'entity_extraction', 'curation_classification', 'abstract_classification', 'community_curation', 'first_pass_curation', 'email_extraction',
+		                'entity_extraction', 'curation_classification', 'abstract_classification', 'community_curation', 'first_pass_curation', 'email_extraction', 'author_workflow',
                         'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag',
                         'can_display_image', 'has_image'].includes(key)) {
                     key = key + '.keyword';
@@ -652,7 +655,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                             </Col>                                                                                                                    
                                             <Col xs={3} sm={3}>                                                                                                       
                                                 <Badge variant="secondary">                                                                                           
-                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'large_scale_tag'].includes(key) &&
+                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'data_context', 'large_scale_tag'].includes(key) &&
                                                         bucket.docs_count !== undefined ?
                                                         bucket.docs_count.doc_count.toLocaleString() :
                                                         bucket.doc_count.toLocaleString()}                                                                            

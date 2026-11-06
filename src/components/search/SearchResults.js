@@ -18,12 +18,23 @@ import { useHistory } from "react-router-dom";
 import { normalizeDisplayPrefs, xrefPrefix, journalInfoFromCitation, stripMarkup } from './settings/searchDisplayPrefs';
 import { xrefUrl } from '../../utils/xrefCurie';
 
+// Highlighted fields that hold a list of values; their matches are separate
+// values, while the matches of a text field are passages from one text.
+const LIST_HIGHLIGHT_FIELDS = ['keywords', 'mesh', 'authors', 'authors.orcid'];
+
+// Repeated fragments are shown once: a MeSH heading is indexed once per
+// qualifier, so "DNA Damage" can come back several times.
+export const joinHighlightFragments = (field, fragments) => {
+  if (!Array.isArray(fragments)) return fragments;
+  return [...new Set(fragments)].join(LIST_HIGHLIGHT_FIELDS.includes(field) ? ', ' : ' &hellip; ');
+};
+
 const MatchingTextBox = (highlight) => {
   return (
     <div className="searchRow-other"> Matching Text:
       <table><tbody>
         {Object.keys(highlight.matches).map((match,index) => (
-          <tr><td class="highlight-label">{match}</td><td class="highlight-value" dangerouslySetInnerHTML={{__html: highlight.matches[match]}} /></tr>
+          <tr><td class="highlight-label">{match}</td><td class="highlight-value" dangerouslySetInnerHTML={{__html: joinHighlightFragments(match, highlight.matches[match])}} /></tr>
         ))}
       </tbody></table>
     </div>
