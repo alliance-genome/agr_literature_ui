@@ -34,6 +34,7 @@ function getRollupConfig(processName) {
 
 const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [tagData, setTagData] = useState(null);
+  const [triggers, setTriggers] = useState(null); // what starts each workflow (entry points, handoffs)
   const [collapsedProcesses, setCollapsedProcesses] = useState(new Set());
   const [expandedSubprocesses, setExpandedSubprocesses] = useState(new Set());
   const [hoveredElement, setHoveredElement] = useState(null);
@@ -64,9 +65,17 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
       setLoading(true);
       setError(null);
       try {
-        const result = await api.get(`/workflow_tag/workflow_diagram/${mod}`);
+        // Without the triggers the diagram still draws, just with no start nodes or handoffs.
+        const [result, triggerResult] = await Promise.all([
+          api.get(`/workflow_tag/workflow_diagram/${mod}`),
+          api.get(`/workflow_tag/workflow_diagram_triggers/${mod}`).catch((err) => {
+            console.warn('Workflow diagram triggers unavailable:', err.message);
+            return null;
+          }),
+        ]);
         if (!cancelled) {
           setTagData(result.data);
+          setTriggers(triggerResult ? triggerResult.data : null);
           const processIds = new Set();
           const datatypesByProcess = {}; // Map process name -> Set of datatypes
           const nameToId = {}; // Map process name (lowercase) -> process ID
@@ -306,7 +315,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     const layout = computeLayout(
       filteredTagData, collapsedProcesses, expandedSubprocesses,
       dimensions.width, dimensions.height,
-      { selectedNodeId, currentStateId, showAllTransitions }
+      { selectedNodeId, currentStateId, showAllTransitions, triggers }
     );
     layoutRef.current = layout;
     renderDiagram(svgRef.current, layout, callbacks);
@@ -335,12 +344,29 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
     }
 
     setSummaryPositions(positions);
-  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, selectedNodeId, currentStateId, showAllTransitions]);
+  }, [filteredTagData, collapsedProcesses, expandedSubprocesses, dimensions, callbacks, selectedNodeId, currentStateId, showAllTransitions, triggers]);
 
   // ─── Tooltip builders ────────────────────────────────────────────────
   const renderNodeTooltip = () => {
     if (!hoveredElement || hoveredElement.type !== 'node') return null;
     const data = hoveredElement.data;
+
+    if (data.type === 'start') {
+      return (
+        <>
+          <div className="wf-tooltip-header">{data.name}</div>
+          <div className="wf-tooltip-body">
+            <div className="wf-popover-section-title">Starts</div>
+            {data.starts.map((start, i) => (
+              <div key={i} className="wf-popover-transition">
+                <span className="wf-popover-arrow">&rarr;</span> {start.name}
+                <span className="wf-popover-detail"> ({start.process}{start.condition ? `; ${start.condition}` : ''})</span>
+              </div>
+            ))}
+          </div>
+        </>
+      );
+    }
 
     const incoming = [];
     if (tagData && data.type === 'normal') {
@@ -617,7 +643,8 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
             <div className="workflow-legend-row">
               <span className="workflow-legend-label">Transitions:</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge"></span> Internal</span>
-              <span className="workflow-legend-item"><span className="workflow-legend-edge cross"></span> Cross-workflow</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-edge start"></span> Starts a workflow</span>
+              <span className="workflow-legend-item"><span className="workflow-legend-edge cross"></span> Hands off to another workflow</span>
               <span className="workflow-legend-item"><span className="workflow-legend-edge bidirectional"></span> Bidirectional</span>
             </div>
           </div>
