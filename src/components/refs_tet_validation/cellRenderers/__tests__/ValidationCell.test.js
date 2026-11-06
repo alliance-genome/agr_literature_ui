@@ -248,7 +248,8 @@ describe('ValidationCell mixed curator tags (SCRUM-6784)', () => {
     entity: `ZFIN:${entityName}`,
     entity_name: entityName,
     negated: false,
-    data_context: 'ATP:0000325',
+    // ZFIN's curator-added entities, since SCRUM-6815
+    data_context: 'ATP:0000406',
     created_by: 'zfin_curator',
     tag_source: {
       source_method: 'abc_literature_system',

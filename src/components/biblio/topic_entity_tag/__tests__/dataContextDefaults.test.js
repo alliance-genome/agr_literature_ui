@@ -1,37 +1,51 @@
 import {
   DATA_CONTEXT_ROOT,
-  DATA_CONTEXT_EXPERIMENTALLY_STUDIED,
+  DATA_CONTEXT_EXPERIMENTAL_DATA,
+  DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY,
+  CURATOR_VALIDATION_DATA_CONTEXT,
   defaultDataContext,
   hidesDataContextPulldown,
 } from '../dataContextDefaults';
 
-describe('defaultDataContext', () => {
-  test('a WB topic-only tag defaults to the data context root', () => {
-    // Ceri Van Slyke on SCRUM-5697 (2026-09-01): for WB, topic tags take
-    // ATP:0000323. The backfill gave WB's existing topic-only tags that value,
-    // so a curator-created one has to match or it never looks like a duplicate.
+describe('defaultDataContext (SCRUM-6815 cutover off ATP:0000325)', () => {
+  test('WB: topic tags take the root, entities are experimentally studied entities', () => {
+    // Ceri on SCRUM-5697: WB topic tags take ATP:0000323 and entities are
+    // experimentally studied; ATP:0000406 replaces the deprecated ATP:0000325.
     expect(defaultDataContext('WB', false)).toBe(DATA_CONTEXT_ROOT);
+    expect(defaultDataContext('WB', true)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY);
   });
 
-  test('a WB tag with an entity defaults to experimentally studied', () => {
-    expect(defaultDataContext('WB', true)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
+  test('FB defaults to experimental data whatever the shape', () => {
+    // Gillian: ATP:0000405 on everything, and their tags were backfilled to it,
+    // so a curator-created FB tag has to match or it never looks like a duplicate.
+    expect(defaultDataContext('FB', false)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
+    expect(defaultDataContext('FB', true)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
   });
 
-  test.each(['FB', 'MGI', 'SGD', 'ZFIN', 'RGD', 'XB'])(
-    '%s defaults to experimentally studied whatever the shape', (mod) => {
-      // Backfill rule 4 (FB) and rule 5 (everyone else) are uniform: any tag
-      // gets ATP:0000325. Only WB splits by shape.
-      expect(defaultDataContext(mod, false)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
-      expect(defaultDataContext(mod, true)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
+  test('ZFIN splits by shape: entities are experimentally studied entities', () => {
+    expect(defaultDataContext('ZFIN', true)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY);
+    expect(defaultDataContext('ZFIN', false)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
+  });
+
+  test.each(['MGI', 'SGD', 'RGD', 'XB'])(
+    '%s defaults to experimental data whatever the shape', (mod) => {
+      expect(defaultDataContext(mod, false)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
+      expect(defaultDataContext(mod, true)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
     });
 
-  test('an unknown or missing mod falls back to experimentally studied', () => {
-    // The server default is ATP:0000325, so an unresolved accessLevel should
-    // send what the server would have filled in rather than WB's term.
-    expect(defaultDataContext(undefined, false)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
-    expect(defaultDataContext(null, false)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
-    expect(defaultDataContext('', false)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED);
+  test('an unknown or missing mod falls back to experimental data', () => {
+    // The same fallback as the server, so an unresolved accessLevel sends what
+    // the server would have filled in.
+    expect(defaultDataContext(undefined, false)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
+    expect(defaultDataContext(null, true)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
+    expect(defaultDataContext('', false)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
   });
+
+  test.each(['WB', 'FB', 'ZFIN', 'MGI', 'SGD', 'RGD', 'XB', undefined])(
+    '%s never defaults to the deprecated ATP:0000325', (mod) => {
+      expect(defaultDataContext(mod, false)).not.toBe('ATP:0000325');
+      expect(defaultDataContext(mod, true)).not.toBe('ATP:0000325');
+    });
 });
 
 describe('hidesDataContextPulldown (SCRUM-6553)', () => {
@@ -49,5 +63,13 @@ describe('hidesDataContextPulldown (SCRUM-6553)', () => {
     expect(hidesDataContextPulldown(undefined)).toBe(false);
     expect(hidesDataContextPulldown(null)).toBe(false);
     expect(hidesDataContextPulldown('')).toBe(false);
+  });
+});
+
+describe('CURATOR_VALIDATION_DATA_CONTEXT (SCRUM-6815)', () => {
+  test('is experimental data, not the deprecated ATP:0000325', () => {
+    // Must match CURATOR_VALIDATION_DATA_CONTEXT on the server, or a bulk
+    // assessment and a single-cell one store different tags.
+    expect(CURATOR_VALIDATION_DATA_CONTEXT).toBe('ATP:0000405');
   });
 });

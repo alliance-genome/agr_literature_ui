@@ -36,18 +36,22 @@ import Alert from "react-bootstrap/Alert";
 
 // SCRUM-5697. data_context is a hierarchy under ATP:0000323, so the options come
 // from the ontology (fetchDataContextData) rather than a literal list here.
-// Only leaves are offered -- "mentioned data" and "marker data" are groupings,
-// not curation choices. The default comes from defaultDataContext, which is
-// per-MOD: WB topic tags take the ATP:0000323 root and everything else takes
-// experimentally studied data.
+// The root-level grouping "mentioned data" is not offered; everything under it
+// is. The default comes from defaultDataContext, which is per-MOD
+// (DATA_CONTEXT_DEFAULTS, SCRUM-6815): e.g. WB topic tags take the ATP:0000323
+// root and FB tags ATP:0000405 experimental data.
 
 // Labels for data_context terms that are NOT selectable but can still appear on a
-// tag: the root and the two groupings. Pipelines write these (WB entity extraction
-// sends the root), so the editor has to be able to display them.
+// tag: the root and the groupings. Pipelines write these (WB topic classifiers
+// send the root), so the editor has to be able to display them.
+// SCRUM-6815: ATP:0000325 and ATP:0000326 were deprecated (2026-10-30) and have
+// left the ontology tree, so they are no longer offered. The cutover backfilled
+// the stored tags, but a tag created in between could still carry ATP:0000325.
 const dataContextNameMap = {
   "ATP:0000323": "data context",
   "ATP:0000324": "mentioned data",
   "ATP:0000326": "marker data",
+  "ATP:0000325": "experimentally studied data (deprecated)",
 };
 
 const TopicEntityCreate = () => {
@@ -1047,7 +1051,7 @@ const TopicEntityCreate = () => {
                   />
                   <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
                   {/* SCRUM-6553. FB never sees the pulldown; rowDataContext keeps
-                      sending their default (experimentally studied) regardless. */}
+                      sending their default (ATP:0000405 experimental data) regardless. */}
                   {!hidesDataContextPulldown(accessLevel) && (
                   <Form.Control
                     as="select"

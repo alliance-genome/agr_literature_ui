@@ -1,33 +1,47 @@
-// SCRUM-5697. The data_context a newly created tag should default to.
+// SCRUM-5697 / SCRUM-6815. The data_context a newly created tag should default to.
 //
-// The rule is per-MOD, not global, which is the whole reason this lives in one
-// place. Ceri Van Slyke on SCRUM-5697 (2026-09-01) split WormBase by what the
-// tag is: "For WB entities are always experimentally studied ATP:0000325 ...
-// Topic tags should get the 'ATP:0000323 data context' value." Every other MOD
-// is uniform -- FlyBase asked for ATP:0000325 on all of theirs (backfill rule
-// 4), and the remaining MODs take the same blanket default (rule 5).
+// The rule is per-MOD curation policy, which is the whole reason this lives in
+// one place. ATP:0000325 "experimentally studied data" was deprecated in the
+// 2026-10-30 ATP release and every MOD moved off it in one cutover:
+//   WB   -- topic tags keep the ATP:0000323 root (Ceri on SCRUM-5697); entities
+//           are experimentally studied entities, ATP:0000406.
+//   FB   -- ATP:0000405 experimental data on everything (Gillian).
+//   ZFIN -- ATP:0000405 on topic tags, ATP:0000406 on entities (Ceri).
+//   everyone else -- ATP:0000405.
 //
 // Matching the backfill is load-bearing rather than cosmetic:
 // check_for_duplicate_tags on the server filters on every field of the payload,
-// so a curator re-adding a topic that already exists only gets the expected 409
-// when the data_context agrees with the stored row. Default WB topic tags to
-// ATP:0000325 and every one of them looks like a brand-new assertion instead.
-//
-// The server applies ATP:0000325 when a client sends nothing, so that is also
-// the right fallback here whenever the MOD cannot be determined -- sending
-// WB's term for an unknown MOD would be a guess, while ATP:0000325 is what
-// would have been stored anyway.
+// so a curator re-adding a tag that already exists only gets the expected 409
+// when the data_context agrees with the stored row. Keep in step with
+// DATA_CONTEXT_DEFAULTS on the server (topic_entity_tag_crud).
 export const DATA_CONTEXT_ROOT = "ATP:0000323";
-export const DATA_CONTEXT_EXPERIMENTALLY_STUDIED = "ATP:0000325";
+export const DATA_CONTEXT_EXPERIMENTAL_DATA = "ATP:0000405";
+export const DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY = "ATP:0000406";
 
-export const defaultDataContext = (modAbbreviation, hasEntity) =>
-  modAbbreviation === "WB" && !hasEntity
-    ? DATA_CONTEXT_ROOT
-    : DATA_CONTEXT_EXPERIMENTALLY_STUDIED;
+// [topic-only tag, tag with an entity]
+export const DATA_CONTEXT_DEFAULTS = {
+  WB: [DATA_CONTEXT_ROOT, DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY],
+  FB: [DATA_CONTEXT_EXPERIMENTAL_DATA, DATA_CONTEXT_EXPERIMENTAL_DATA],
+  ZFIN: [DATA_CONTEXT_EXPERIMENTAL_DATA, DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY],
+};
+const DATA_CONTEXT_DEFAULT_OTHER_MODS = [DATA_CONTEXT_EXPERIMENTAL_DATA, DATA_CONTEXT_EXPERIMENTAL_DATA];
+
+export const defaultDataContext = (modAbbreviation, hasEntity) => {
+  const [topicOnly, withEntity] =
+    DATA_CONTEXT_DEFAULTS[modAbbreviation] || DATA_CONTEXT_DEFAULT_OTHER_MODS;
+  return hasEntity ? withEntity : topicOnly;
+};
+
+// The data_context of a curator's topic-level assessment (the grid's assess
+// buttons and the bulk validation modal); CURATOR_VALIDATION_DATA_CONTEXT on the
+// server. ATP:0000405 for every MOD: it is the same term as FB's and ZFIN's topic
+// tags, it sits under WB's ATP:0000323 root, and ATP:0000406 entities sit under
+// it, so one value validates them all.
+export const CURATOR_VALIDATION_DATA_CONTEXT = DATA_CONTEXT_EXPERIMENTAL_DATA;
 
 // SCRUM-6553. FB asked not to see the data context pulldown at all -- their
-// tags uniformly take experimentally studied (backfill rule 4 above), so a
-// choice is only a chance to diverge from it. Hiding the pulldown also means
+// tags uniformly take one value (ATP:0000405 since SCRUM-6815), so a choice is
+// only a chance to diverge from it. Hiding the pulldown also means
 // the saved value must ignore anything already in row state (an edited tag
 // preloads its stored data_context) and always fall back to defaultDataContext.
 export const hidesDataContextPulldown = (modAbbreviation) =>
