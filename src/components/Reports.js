@@ -36,6 +36,33 @@ const file_upload_name_mapping = {
     'file upload in progress': 'in progress'
 }
 
+// The per-mod File Status table shows file upload and text conversion side by
+// side. Each row is a shared status label, mapped to the workflow tag name that
+// means that status in each process ('file unavailable' is the upload failure).
+const file_status_row_labels = ['complete', 'needed', 'failed', 'in progress'];
+const file_status_processes = [
+    {
+        atpId: 'ATP:0000140',
+        label: 'File Upload',
+        tagNameByRowLabel: {
+            'complete': 'files uploaded',
+            'needed': 'file needed',
+            'failed': 'file unavailable',
+            'in progress': 'file upload in progress'
+        }
+    },
+    {
+        atpId: 'ATP:0000161',
+        label: 'File Conversion',
+        tagNameByRowLabel: {
+            'complete': 'file converted to text',
+            'needed': 'text conversion needed',
+            'failed': 'file to text conversion failed',
+            'in progress': 'text conversion in progress'
+        }
+    }
+];
+
 // Placeholder for a QC report that has not loaded, or whose fetch failed. The
 // payload key is simply absent, which the render guards read as "no rows".
 const emptyQcReport = { 'date-produced': null };
@@ -57,7 +84,10 @@ const QCReportLoadError = ({ selectedDate }) => (
     </div>
 );
 
-const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType }) => {
+// columnType 'date_range' needs `processes` (see file_status_processes) and uses
+// `tagNames` as the row labels; workflowProcessAtpId then only keys the redux
+// date settings, and every process is fetched with those same settings.
+const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType, processes }) => {
   const [data, setData] = useState([]);
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -65,6 +95,8 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
   const [countResync, setCountResync] = useState(0);
   const [dateRangeHeaders, setDateRangeHeaders] = useState([]);
   const [dateRangeData, setDateRangeData] = useState({});
+  // Labels of the processes whose columns the curator has unchecked (date_range only).
+  const [hiddenProcessLabels, setHiddenProcessLabels] = useState([]);
 
   const mods = useSelector(state => state.app.mods);
   const dateRangeDict = useSelector(state => state.reports.dateRangeDict);
@@ -83,15 +115,21 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
 
   useEffect(() => {
     const fetchData = async () => {
-      let url = `/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
-      if (mod_abbreviation !== '') { url += `&mod_abbreviation=${mod_abbreviation}`; }
-      if ( (date_range_start !== '') && (date_range_end !== '') ) {
-          url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
+      const buildUrl = (atpId) => {
+        let url = `/workflow_tag/counters/?workflow_process_atp_id=${atpId}`;
+        if (mod_abbreviation !== '') { url += `&mod_abbreviation=${mod_abbreviation}`; }
+        if ( (date_range_start !== '') && (date_range_end !== '') ) {
+            url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
+        if (dateFrequencyValue !== '') { url += `&date_frequency=${dateFrequencyValue}`; }
+        return url;
+      };
       if ( (date_option !== 'default') && ( (date_range_start === '') ||  (date_range_end === '') ) ) { return; }
-      if (dateFrequencyValue !== '') { url += `&date_frequency=${dateFrequencyValue}`; }
+      const atpIds = processes ? processes.map(p => p.atpId) : [workflowProcessAtpId];
       setIsLoadingData(true);
       try {
-        const result = await api.get(url);
+        // Tag names differ between processes, so the responses merge into one list.
+        const responses = await Promise.all(atpIds.map(atpId => api.get(buildUrl(atpId))));
+        const result = { data: responses.flatMap(response => response.data) };
         setData(result.data);
 
         const totalsObj = {};
@@ -200,15 +238,26 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     ];
   }
   else if (columnType === 'date_range') {
+    // One total column per process, then (only when a report frequency is
+    // chosen) a column per process for each period. With no frequency the
+    // backend returns a single blank period that just repeats the totals.
+    const countColumn = (headerName, field) => ({
+      headerName,
+      field,
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header'
+    });
+    const periodHeaders = (dateFrequencyValue === '') ? [] : dateRangeHeaders;
+    // Keep each process's original index so field names match the row data.
+    const shownProcesses = processes
+      .map((process, index) => ({ process, index }))
+      .filter(({ process }) => !hiddenProcessLabels.includes(process.label));
     columns = [
-      ...columns,
-      ...dateRangeHeaders.map(dateRangeHeader => ({
-        headerName: dateRangeHeader,
-        field: dateRangeHeader,
-        flex: 1,
-        cellStyle: { textAlign: 'left' },
-        headerClass: 'wft-bold-header'
-      })),
+      defaultColumns[0],
+      ...shownProcesses.map(({ process, index }) => countColumn(process.label, `process${index}_total`)),
+      ...periodHeaders.flatMap(dateRangeHeader => shownProcesses.map(({ process, index }) =>
+        countColumn(`${dateRangeHeader} ${process.label}`, `process${index}_${dateRangeHeader}`))),
     ];
   }
 
@@ -235,20 +284,21 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     });
   }
   else if (columnType === 'date_range') {
-    rowData = tagNames.map(tagName => {
-      let total = 0;
-      const row = {
-        tag_name: nameMapping[tagName],
-      };
-      dateRangeHeaders.forEach(dateRange => {
-        const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === modSection && d.time_period === dateRange);
-        if (item && typeof item.tag_count === 'number') {
-          total += item.tag_count;
-          row[dateRange] = item.tag_count.toLocaleString(); }
-        else {
-          row[dateRange] = "0"; }
+    rowData = tagNames.map(rowLabel => {
+      const row = { tag_name: rowLabel };
+      processes.forEach((process, index) => {
+        const tagName = process.tagNameByRowLabel[rowLabel];
+        let total = 0;
+        dateRangeHeaders.forEach(dateRange => {
+          const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === modSection && d.time_period === dateRange);
+          if (item && typeof item.tag_count === 'number') {
+            total += item.tag_count;
+            row[`process${index}_${dateRange}`] = item.tag_count.toLocaleString(); }
+          else {
+            row[`process${index}_${dateRange}`] = "0"; }
+        });
+        row[`process${index}_total`] = total.toLocaleString();
       });
-      row['total'] = total;
       return row;
     });
   }
@@ -263,7 +313,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
           <Container fluid style={{ width: '90%' }}>
             <Row>
               <Col>
-                <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} columnType={columnType} dateFrequencyValue={dateFrequencyValue} />
+                <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} columnType={columnType} dateFrequencyValue={dateFrequencyValue} processes={processes} hiddenProcessLabels={hiddenProcessLabels} setHiddenProcessLabels={setHiddenProcessLabels} />
               </Col>
               <Col style={{ textAlign: "right" }}>
                 <Button
@@ -315,7 +365,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
   );
 }; // const const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType })
 
-const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection, columnType, dateFrequencyValue }) => {
+const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection, columnType, dateFrequencyValue, processes, hiddenProcessLabels, setHiddenProcessLabels }) => {
     const dispatch = useDispatch();
 
     function formatDateRange(dateRange){
@@ -375,7 +425,7 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
     }
 
     const dateOptions = { 'Date Workflow Updated': 'default', 'Date added to ABC': 'reference_created', 'Date Published': 'reference_published', 'Date Inside Corpus': 'inside_corpus' };
-    const dateFrequencies = { 'year': 'year', 'month': 'month', 'week': 'week' };
+    const dateFrequencies = { '': '', 'year': 'year', 'month': 'month', 'week': 'week' };
 
 
     return(
@@ -394,10 +444,28 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
         </div>
           {(() => {
             if (columnType === 'date_range') { return(
+              <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: "2em", paddingBottom: "0.5em" }}>
                 Report Frequency  <Form.Control as='select' id='dateFrequency' name='dateFrequency' style={{ width: "13em", marginRight: "3em" }} value={dateFrequencyValue} onChange={(e) => handleDateFrequencyChange(e.target.value)} >
                   {Object.entries(dateFrequencies).map(([label, value], index) => ( <option value={value} key={index}>{label}</option> ))}
-                </Form.Control></div>); }
+                </Form.Control></div>
+              {processes && (
+                <div style={{ display: 'flex', flexDirection: 'column', paddingBottom: "0.5em", minWidth: "10em", whiteSpace: "nowrap" }}>
+                  {processes.map(process => (
+                    <Form.Check
+                      key={process.label}
+                      type="checkbox"
+                      id={`show_${modSection}_${process.atpId}`}
+                      label={process.label}
+                      checked={!hiddenProcessLabels.includes(process.label)}
+                      onChange={(e) => setHiddenProcessLabels(prev => e.target.checked
+                        ? prev.filter(label => label !== process.label)
+                        : [...prev, process.label])}
+                    />
+                  ))}
+                </div>
+              )}
+              </div>); }
             return null
           })()}
       </div>
@@ -411,9 +479,9 @@ const WorkflowStatModTablesContainer = ({modSection}) => {
       <h3 style={{ marginBottom: '30px' }}>Workflow Statistics <HelpDocLink url={HELP_DOC_URLS.workflowStatistics} title="Open the Workflow Statistics help documentation" /></h3>
                   <WorkflowStatTableCounters
                     workflowProcessAtpId="ATP:0000140"
-                    title="File Upload Current Status"
-                    tagNames={Object.keys(file_upload_name_mapping)}
-                    nameMapping={file_upload_name_mapping}
+                    title="File Status"
+                    tagNames={file_status_row_labels}
+                    processes={file_status_processes}
                     modSection={modSection}
                     columnType="date_range"
                   />
