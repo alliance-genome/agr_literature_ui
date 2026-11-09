@@ -35,6 +35,7 @@ function getRollupConfig(processName) {
 const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   const [tagData, setTagData] = useState(null);
   const [triggers, setTriggers] = useState(null); // what starts each workflow (entry points, handoffs)
+  const [triggersUnavailable, setTriggersUnavailable] = useState(false);
   const [collapsedProcesses, setCollapsedProcesses] = useState(new Set());
   const [expandedSubprocesses, setExpandedSubprocesses] = useState(new Set());
   const [hoveredElement, setHoveredElement] = useState(null);
@@ -65,7 +66,8 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
       setLoading(true);
       setError(null);
       try {
-        // Without the triggers the diagram still draws, just with no start nodes or handoffs.
+        // Without the triggers the diagram still draws, but with no start nodes or
+        // arrows between workflows, so the user is told (triggersUnavailable).
         const [result, triggerResult] = await Promise.all([
           api.get(`/workflow_tag/workflow_diagram/${mod}`),
           api.get(`/workflow_tag/workflow_diagram_triggers/${mod}`).catch((err) => {
@@ -76,6 +78,7 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
         if (!cancelled) {
           setTagData(result.data);
           setTriggers(triggerResult ? triggerResult.data : null);
+          setTriggersUnavailable(!triggerResult);
           const processIds = new Set();
           const datatypesByProcess = {}; // Map process name -> Set of datatypes
           const nameToId = {}; // Map process name (lowercase) -> process ID
@@ -586,6 +589,11 @@ const WorkflowDiagram = ({ mod, currentStateId = null }) => {
   return (
     <div className="workflow-diagram-container" ref={containerRef}>
       <svg ref={svgRef} />
+      {triggersUnavailable && (
+        <div className="workflow-diagram-notice" role="status">
+          Could not load what starts each workflow, so start points and arrows between workflows are not shown.
+        </div>
+      )}
       {/* Controls panel */}
       <div className="workflow-diagram-controls">
         <HelpDocLink url={HELP_DOC_URLS.workflowDiagram} title="Open the Workflow Diagram help documentation" style={{ verticalAlign: 'baseline' }} />

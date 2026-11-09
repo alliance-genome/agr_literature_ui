@@ -124,6 +124,39 @@ describe('computeLayout with triggers', () => {
     expect(expanded.edges.some(e => e.source === 'summary:ATP:0000140' && e.target === 'ATP:0000162')).toBe(true);
   });
 
+  describe('a handoff replaces only the raw transition in its own direction', () => {
+    // text conversion -> curation classification is a handoff; add raw transitions
+    // between the same two boxes: a reset back the other way, and optionally a
+    // second forward one so the raw edge is bidirectional
+    const withRaw = (extraForward) => TAG_DATA.map((n) => {
+      if (n.tag === 'ATP:0000313') {
+        return { ...n, transitions: [...n.transitions,
+          { to: 'ATP:0000162', to_name: 'text conversion needed', transition_type: 'reset' }] };
+      }
+      if (extraForward && n.tag === 'ATP:0000162') {
+        return { ...n, transitions: [...n.transitions,
+          { to: 'ATP:0000313', to_name: 'curation classification needed', transition_type: 'manual' }] };
+      }
+      return n;
+    });
+    const edgesBetween = (layout, a, b) => layout.edges.filter(e => e.source === a && e.target === b);
+    const TC = 'summary:ATP:0000161';
+    const CC = 'summary:ATP:0000311';
+
+    test.each([[false], [true]])('the reverse transition survives (extra forward raw edge: %s)', (extraForward) => {
+      const layout = computeLayout(withRaw(extraForward), ALL, new Set(), 1200, 800,
+        { triggers: TRIGGERS, showAllTransitions: true });
+      const handoffs = edgesBetween(layout, TC, CC);
+      expect(handoffs).toHaveLength(1);
+      expect(handoffs[0].isTrigger).toBe(true);
+      const reverse = edgesBetween(layout, CC, TC);
+      expect(reverse).toHaveLength(1);
+      expect(reverse[0].data.transition_type).toBe('reset');
+      expect(reverse[0].bidirectional).toBe(false);
+      expect(reverse[0].reverseData).toBeNull();
+    });
+  });
+
   test('renders start nodes, lane and edge labels', () => {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     document.body.appendChild(svg);

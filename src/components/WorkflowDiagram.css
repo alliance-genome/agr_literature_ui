@@ -538,6 +538,20 @@ text.wf-lane-label {
   color: var(--medium-red);
 }
 
+.workflow-diagram-notice {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  max-width: 45%;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #664d03;
+  background: #fff3cd;
+  border: 1px solid #ffe69c;
+  border-radius: 4px;
+}
+
 /* --- Tooltip (positioned div) --- */
 .wf-tooltip {
   position: absolute;

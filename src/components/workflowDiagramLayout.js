@@ -924,14 +924,38 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
       existing.data.condition = existing.label || existing.data.condition;
       return;
     }
-    // a raw transition already drawn between the same boxes becomes this arrow
+    // A raw transition already drawn between the same boxes in this direction
+    // becomes this arrow. A transition the other way (e.g. a reset from the
+    // target back to the source) is not the handoff, so it stays as its own edge.
+    const forward = `${sourceNode.id}\u2192${targetNode.id}`;
+    const reverse = `${targetNode.id}\u2192${sourceNode.id}`;
+    const dropRawEdge = (rawEdgeKey) => {
+      const raw = edgeMap.get(rawEdgeKey);
+      edgeMap.delete(rawEdgeKey);
+      layoutEdges.splice(layoutEdges.indexOf(raw), 1);
+    };
     const [lo, hi] = sourceNode.id < targetNode.id ? [sourceNode.id, targetNode.id] : [targetNode.id, sourceNode.id];
     const rawKey = `${lo}\u2194${hi}`;
     if (edgeMap.has(rawKey)) {
       const raw = edgeMap.get(rawKey);
-      edgeMap.delete(rawKey);
-      layoutEdges.splice(layoutEdges.indexOf(raw), 1);
+      if (raw._directionKeys.has(reverse)) {
+        if (raw.source === sourceNode.id) {
+          // the reverse transition was merged in as reverseData; make it the edge
+          Object.assign(raw, {
+            source: targetNode.id, target: sourceNode.id,
+            sourceNode: targetNode, targetNode: sourceNode,
+            data: raw.reverseData,
+          });
+        }
+        raw.bidirectional = false;
+        raw.reverseData = null;
+        raw._directionKeys = new Set([reverse]);
+      } else {
+        dropRawEdge(rawKey);
+      }
     }
+    // primary-flow raw edges are keyed by direction rather than by the pair
+    if (edgeMap.has(forward)) dropRawEdge(forward);
     const edge = {
       source: sourceNode.id,
       target: targetNode.id,
