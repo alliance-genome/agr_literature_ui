@@ -6,18 +6,22 @@
 // were. Picking the author here resolves that: link_person absorbs the stub into the
 // chosen author, so one PATCH both makes the link and clears the row.
 //
-// Unlike everything else on this screen, choosing here writes immediately rather than
-// staging. There is nothing to batch it with: the stub disappears the moment it is
-// resolved, and the author it resolves to leaves the list of candidates.
+// Both choices here are staged like everything else on the screen, and written by
+// Commit. Picking an author stages that author to link to this person -- the very
+// draft a picked suggestion makes -- so the author row shows it too, and clearing it
+// in either place clears it in both. "remove" stages deleting the row.
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
-import Spinner from 'react-bootstrap/Spinner';
+
+const authorLabel = (author) => `${author.author_order}. ${author.name
+  || [author.first_name, author.last_name].filter(Boolean).join(' ')
+  || '(unnamed)'}`;
 
 const BiblioPersonStubs = ({
-  stubs, availableAuthors, linkingStub, removingStub, onLinkStub, onRemoveStub, disabled,
+  stubs, availableAuthors, assignments, removals, onAssign, onToggleRemoval, disabled,
   metaLabel, metaSlotClass, showMeta,
 }) => {
   if (stubs.length === 0) return null;
@@ -32,12 +36,15 @@ const BiblioPersonStubs = ({
         <Col sm="12">
           <strong>People on this Reference who are not an Author</strong>{' '}
           <span className="biblio-person-muted">
-            — pick the author each one is, and the two are joined straight away.
+            — pick the author each one is; they are joined when you Commit.
           </span>
         </Col>
       </Row>
 
-      {stubs.map((stub) => (
+      {stubs.map((stub) => {
+        const assignedTo = assignments[stub.author_id] || null;
+        const removing = removals.has(stub.author_id);
+        return (
         <div key={stub.author_id} className="biblio-person-author biblio-person-stub-row">
           <Row>
             <Col sm="4">
@@ -56,22 +63,25 @@ const BiblioPersonStubs = ({
                 <span className="biblio-person-muted">person {stub.person_id}…</span>
               )}
               {stub.name ? <span> ({stub.name})</span> : null}
+              {removing ? (
+                <span style={{ color: '#a00' }}> — will be removed on Commit</span>
+              ) : null}
             </Col>
             <Col sm="4">
               {/* Also disabled until the curie resolves. The link is a PATCH carrying
                   person_curie -- person_id is never accepted -- so until it lands there
-                  is nothing to send, and an enabled select would take a choice, snap
-                  back to the placeholder and do nothing at all. */}
+                  is nothing to send. Disabled too while staged for removal: joining a
+                  person to an author and deleting them from the paper contradict. */}
               <Form.Control
                 as="select"
                 size="sm"
-                value=""
-                disabled={disabled || linkingStub === stub.author_id
-                  || availableAuthors.length === 0 || !stub.curie}
+                value={assignedTo === null ? '' : String(assignedTo)}
+                disabled={disabled || removing || !stub.curie
+                  || (availableAuthors.length === 0 && assignedTo === null)}
                 aria-label={`author for person ${stub.curie || stub.person_id}`}
-                onChange={(e) => {
-                  if (e.target.value) onLinkStub(stub, Number(e.target.value));
-                }}
+                // The editor's purple for a staged, unsaved choice.
+                className={assignedTo !== null ? 'updated' : ''}
+                onChange={(e) => onAssign(stub, e.target.value ? Number(e.target.value) : null)}
               >
                 <option value="">
                   {!stub.curie
@@ -84,31 +94,24 @@ const BiblioPersonStubs = ({
                 </option>
                 {availableAuthors.map((author) => (
                   <option key={author.author_id} value={author.author_id}>
-                    {author.author_order}. {author.name
-                      || [author.first_name, author.last_name].filter(Boolean).join(' ')
-                      || '(unnamed)'}
+                    {authorLabel(author)}
                   </option>
                 ))}
               </Form.Control>
             </Col>
             <Col sm="2">
-              {linkingStub === stub.author_id
-                ? <span className="biblio-person-muted"><Spinner animation="border" size="sm" /> linking…</span>
-                : (
-                  /* Deletes the row rather than clearing its person: a person-only row
-                     has no author_order, so clearing person_id would leave
-                     ck_author_person_or_order unsatisfiable and the API refuses it.
-                     For these, removal IS deletion -- which is also what the curator
-                     means when the person does not belong on the paper. */
-                  <Button
-                    size="sm"
-                    variant="outline-danger"
-                    disabled={disabled || removingStub === stub.author_id}
-                    onClick={() => onRemoveStub(stub)}
-                  >
-                    {removingStub === stub.author_id ? 'removing…' : 'remove'}
-                  </Button>
-                )}
+              {/* Staged: on Commit the row is deleted rather than unlinked, because a
+                  person-only row has no author_order and clearing its person_id would
+                  leave ck_author_person_or_order unsatisfiable. Disabled while the
+                  person is staged onto an author, for the same contradiction as above. */}
+              <Button
+                size="sm"
+                variant={removing ? 'outline-secondary' : 'outline-danger'}
+                disabled={disabled || assignedTo !== null}
+                onClick={() => onToggleRemoval(stub)}
+              >
+                {removing ? 'undo' : 'remove'}
+              </Button>
             </Col>
             {/* Last on the row, in the same fixed slot the author rows use, so the two
                 sections line up with each other as well as within themselves. A Col is
@@ -129,7 +132,8 @@ const BiblioPersonStubs = ({
             <Alert variant="danger">{stub.error}</Alert>
           ) : null}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

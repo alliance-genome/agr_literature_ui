@@ -8,6 +8,11 @@ import {
   buildCommitPlan,
   appendStagedInstitution,
   parseAffiliation,
+  allAuthorsConnected,
+  relinksSamePerson,
+  duplicatePersonErrors,
+  AUTHOR_PERSON_STATUSES,
+  AUTHOR_PERSON_DONE,
 } from './authorPersonDraft';
 
 describe('normalizeNameForMatch', () => {
@@ -637,5 +642,187 @@ describe('parseAffiliation', () => {
     expect(parseAffiliation('')).toEqual(empty);
     expect(parseAffiliation(null)).toEqual(empty);
     expect(parseAffiliation(undefined)).toEqual(empty);
+  });
+});
+
+describe('author-person workflow statuses', () => {
+  test('are the four author-person curation states, Done being complete', () => {
+    expect(AUTHOR_PERSON_STATUSES.map((s) => s.atp)).toEqual(
+      ['ATP:0000109', 'ATP:0000377', 'ATP:0000376', 'ATP:0000378'],
+    );
+    expect(AUTHOR_PERSON_DONE).toBe('ATP:0000378');
+  });
+});
+
+describe('allAuthorsConnected', () => {
+  const draft = (over) => ({
+    ...draftFromAuthor({ author_id: 41, name: 'Ann Doe', last_name: 'Doe' }),
+    ...over,
+  });
+
+  test('true when every author is already linked', () => {
+    expect(allAuthorsConnected([draft({ isLinked: true }), draft({ isLinked: true })])).toBe(true);
+  });
+
+  test('counts staged links and creates as connected, since Commit will make them', () => {
+    expect(allAuthorsConnected([
+      draft({ isLinked: true }),
+      draft({ mode: 'link', selectedPerson: { curie: 'AGRKB:1' } }),
+      draft({ mode: 'create' }),
+    ])).toBe(true);
+  });
+
+  test('false while any author is left with no person', () => {
+    expect(allAuthorsConnected([draft({ isLinked: true }), draft()])).toBe(false);
+  });
+
+  test('a staged unlink with nothing replacing it leaves that author unconnected', () => {
+    expect(allAuthorsConnected([draft({ isLinked: true, pendingUnlink: true })])).toBe(false);
+  });
+
+  test('a staged unlink replaced by a new link is still connected', () => {
+    expect(allAuthorsConnected([draft({
+      isLinked: true, pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:2' },
+    })])).toBe(true);
+  });
+
+  test('link mode without a chosen person does not count', () => {
+    expect(allAuthorsConnected([draft({ mode: 'link', selectedPerson: null })])).toBe(false);
+  });
+
+  test('a paper with no authors counts as connected, so it can be marked Done', () => {
+    // Sort grants "needed" with no regard to authors, so a zero-author paper must be
+    // closable the same way an all-linked one is.
+    expect(allAuthorsConnected([])).toBe(true);
+  });
+});
+
+describe('buildCommitPlan — staged removals', () => {
+  const NOW = '2026-11-10T12:00:00.000Z';
+  const draft = (authorId, over) => ({
+    ...draftFromAuthor({ author_id: authorId, name: 'Ann Doe', last_name: 'Doe', person_id: 7 }),
+    ...over,
+  });
+
+  test('a staged unlink with no replacement is a single unlink step', () => {
+    const plan = buildCommitPlan([draft(41, { pendingUnlink: true })], [], NOW);
+    expect(plan).toEqual([{
+      kind: 'unlink',
+      authorId: 41,
+      personCurie: null,
+      steps: [{ kind: 'unlinkAuthor', author_id: 41 }],
+    }]);
+  });
+
+  test('a linked author with no staged unlink plans nothing', () => {
+    expect(buildCommitPlan([draft(41)], [], NOW)).toEqual([]);
+  });
+
+  test('a staged unlink replaced by a link is just the link -- the PATCH replaces it', () => {
+    const plan = buildCommitPlan([draft(41, {
+      pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:9' },
+    })], [], NOW);
+    expect(plan).toHaveLength(1);
+    expect(plan[0].kind).toBe('link');
+    expect(plan[0].steps.map((s) => s.kind)).toEqual(['linkAuthor']);
+  });
+
+  test('each staged stub removal deletes that person-only row', () => {
+    const plan = buildCommitPlan([], [], NOW, [501, 502]);
+    expect(plan).toEqual([
+      { kind: 'removeStub', authorId: 501, personCurie: null, steps: [{ kind: 'deleteAuthorRow', author_id: 501 }] },
+      { kind: 'removeStub', authorId: 502, personCurie: null, steps: [{ kind: 'deleteAuthorRow', author_id: 502 }] },
+    ]);
+  });
+
+  test('frees people before anything links them: unlinks, stub removals, replacements, then the rest', () => {
+    // uq_author_ref_person allows a person once per paper, so moving a person from one
+    // author to another only works if the old link is gone before the new one is made.
+    const plan = buildCommitPlan([
+      draft(1, { isLinked: false, existingPersonId: null, mode: 'link', selectedPerson: { curie: 'AGRKB:7' } }),
+      draft(2, { pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:8' } }),
+      draft(3, { pendingUnlink: true }),
+    ], [], NOW, [900]);
+    expect(plan.map((p) => [p.kind, p.authorId])).toEqual([
+      ['unlink', 3], ['removeStub', 900], ['link', 2], ['link', 1],
+    ]);
+  });
+
+  test('link and create plans say which they are', () => {
+    const plan = buildCommitPlan([
+      draft(1, { isLinked: false, mode: 'create' }),
+      draft(2, { isLinked: false, mode: 'link', selectedPerson: { curie: 'AGRKB:3' } }),
+    ], [], NOW);
+    expect(plan.map((p) => p.kind).sort()).toEqual(['create', 'link']);
+  });
+});
+
+describe('relinking the same person, and one person on two authors', () => {
+  const NOW = '2026-11-10T12:00:00.000Z';
+  const linked = (authorId, curie, over) => ({
+    ...draftFromAuthor({ author_id: authorId, name: 'Ann Doe', last_name: 'Doe', person_id: 7 }),
+    existingPersonCurie: curie,
+    ...over,
+  });
+  const open = (authorId, over) => ({
+    ...draftFromAuthor({ author_id: authorId, name: 'Bo Roe', last_name: 'Roe' }),
+    ...over,
+  });
+  const authors = [
+    { author_id: 1, author_order: 1, name: 'Ann Doe' },
+    { author_id: 2, author_order: 2, name: 'Bo Roe' },
+    { author_id: 3, author_order: 3, name: 'Cy Poe' },
+  ];
+
+  test('unlink then relink of the same person is recognised and plans nothing', () => {
+    const d = linked(1, 'AGRKB:1', {
+      pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:1', name: 'Ann' },
+    });
+    expect(relinksSamePerson(d)).toBe(true);
+    expect(buildCommitPlan([d], [], NOW)).toEqual([]);
+  });
+
+  test('unlink then link of a different person is still a replacement', () => {
+    const d = linked(1, 'AGRKB:1', {
+      pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:2', name: 'B' },
+    });
+    expect(relinksSamePerson(d)).toBe(false);
+    expect(buildCommitPlan([d], [], NOW)).toHaveLength(1);
+  });
+
+  test('two authors staged to the same person are both flagged', () => {
+    const drafts = {
+      1: open(1, { mode: 'link', selectedPerson: { curie: 'AGRKB:9', name: '' } }),
+      2: open(2, { mode: 'link', selectedPerson: { curie: 'AGRKB:9', name: '' } }),
+      3: open(3),
+    };
+    const errors = duplicatePersonErrors(authors, drafts);
+    expect(Object.keys(errors).sort()).toEqual(['1', '2']);
+    expect(errors[1][0]).toMatch(/AGRKB:9 is also on author 2\. Bo Roe/);
+  });
+
+  test('staging a person another author keeps a link to is flagged', () => {
+    const drafts = {
+      1: linked(1, 'AGRKB:9'),
+      2: open(2, { mode: 'link', selectedPerson: { curie: 'AGRKB:9', name: '' } }),
+    };
+    expect(Object.keys(duplicatePersonErrors(authors, drafts)).sort()).toEqual(['1', '2']);
+  });
+
+  test('moving a person off an author whose link is staged for removal is allowed', () => {
+    const drafts = {
+      1: linked(1, 'AGRKB:9', { pendingUnlink: true }),
+      2: open(2, { mode: 'link', selectedPerson: { curie: 'AGRKB:9', name: '' } }),
+    };
+    expect(duplicatePersonErrors(authors, drafts)).toEqual({});
+  });
+
+  test('distinct people and creates are never flagged', () => {
+    const drafts = {
+      1: linked(1, 'AGRKB:1'),
+      2: open(2, { mode: 'link', selectedPerson: { curie: 'AGRKB:2', name: '' } }),
+      3: open(3, { mode: 'create' }),
+    };
+    expect(duplicatePersonErrors(authors, drafts)).toEqual({});
   });
 });
