@@ -21,13 +21,13 @@ const ROLLUP_WORKFLOWS = {
   'ATP:0000172': {
     label: 'Entity extraction',
     badge: 'roll-up',
-    summaryText: 'overall status',
+    summaryText: null,
     helperText: '',
   },
   'ATP:0000165': {
     label: 'Reference classification',
     badge: 'roll-up',
-    summaryText: 'overall status',
+    summaryText: null,
     helperText: '',
   },
 };
@@ -154,12 +154,6 @@ function findProcessLayoutNodeId(processId, processName, layoutNodes) {
   return visibleState?.id || null;
 }
 
-
-function isDefinedCrossWorkflowTrigger(sourceId, targetId) {
-  return CROSS_WORKFLOW_TRIGGERS.some(trigger =>
-    trigger.fromState === sourceId && trigger.toState === targetId
-  );
-}
 
 // Semantic ordering priority (lower = earlier in layout)
 const STATE_PRIORITY = {
@@ -310,104 +304,106 @@ function assignLayers(nodeIds, edges) {
 
 // ─── Group ordering ──────────────────────────────────────────────────────────
 
-// Cross-workflow trigger definitions (state-to-state triggers between processes)
-// These define which state in one process triggers which state in another
-const CROSS_WORKFLOW_TRIGGERS = [
-  {
-    fromProcess: 'ATP:0000140',  // file upload
-    fromState: 'ATP:0000134',    // files uploaded
-    toProcess: 'ATP:0000161',    // text conversion
-    toState: 'ATP:0000162',      // text conversion needed
-    keepWhenNodeSelected: true,
-  },
-  {
-    fromProcess: 'ATP:0000161',  // text conversion
-    fromState: 'ATP:0000163',    // file converted to text
-    toProcess: 'ATP:0000354',    // email extraction
-    toState: 'ATP:0000358',      // email extraction needed
-    keepWhenNodeSelected: true,
-  },
-  {
-    fromProcess: 'ATP:0000161',  // text conversion
-    fromState: 'ATP:0000163',    // file converted to text
-    toProcess: 'ATP:0000165',    // reference classification
-    toState: 'ATP:0000166',      // reference classification needed
-    keepWhenNodeSelected: true,
-  },
-  {
-    fromProcess: 'ATP:0000161',  // text conversion
-    fromState: 'ATP:0000163',    // file converted to text
-    toProcess: 'ATP:0000172',    // entity extraction
-    toState: 'ATP:0000173',      // entity extraction needed
-    keepWhenNodeSelected: true,
-  },
+// What starts each workflow comes from the API (/workflow_tag/workflow_diagram_triggers):
+// entry points are events outside every workflow (a paper entering the corpus, the
+// sort page, the PubMed update); handoffs are states of one workflow that start
+// another. A workflow's row is the length of the longest chain of these that leads
+// to it, so the diagram reads from what starts a paper's workflows down to what
+// they start in turn.
+
+// Tie-breaker for workflows in the same row: the long-standing left-to-right order.
+const PREFERRED_PROCESS_ORDER = [
+  'ATP:0000140',  // file upload
+  'ATP:0000273',  // manual indexing
+  'ATP:0000161',  // text conversion
+  'ATP:0000172',  // entity extraction
+  'ATP:0000165',  // reference classification
+  'ATP:0000354',  // email extraction
 ];
 
-// Custom row layout for specific MODs (processId -> row number)
-// Processes in same row will be arranged horizontally
-const CUSTOM_GROUP_LAYOUT = {
-  'ATP:0000140': { row: 0, order: 0 },  // file upload - row 0, first
-  'ATP:0000273': { row: 0, order: 1 },  // manual indexing - row 0, second
-  'ATP:0000161': { row: 1, order: 0 },  // text conversion - row 1, centered
-  'ATP:0000172': { row: 2, order: 0 },  // entity extraction - row 2, first
-  'ATP:0000165': { row: 2, order: 1 },  // reference classification - row 2, second
-  'ATP:0000354': { row: 2, order: 2 },  // email extraction - row 2, third
-};
+const ENTRY_SOURCE_ORDER = ['corpus_entry', 'sort_page', 'pubmed_update'];
+
+// Wider rows wrap, so a MOD with many workflows started at once stays readable.
+const MAX_GROUPS_PER_ROW = 5;
+
+function compareProcesses(processGroups) {
+  const rank = (gid) => {
+    const i = PREFERRED_PROCESS_ORDER.indexOf(gid);
+    return i === -1 ? PREFERRED_PROCESS_ORDER.length : i;
+  };
+  return (a, b) => (rank(a) - rank(b)) ||
+    (processGroups.get(a)?.processName || a).localeCompare(processGroups.get(b)?.processName || b);
+}
+
+function chunkRow(ids) {
+  const rows = [];
+  for (let i = 0; i < ids.length; i += MAX_GROUPS_PER_ROW) rows.push(ids.slice(i, i + MAX_GROUPS_PER_ROW));
+  return rows;
+}
+
+/**
+ * Rows of process ids, top to bottom. A process started by an entry point is in
+ * row 1, one started by a handoff from a row-n process is in row n + 1 (the
+ * longest chain wins). Processes nothing starts are returned separately as
+ * `unstarted`, for a lane of their own. Without trigger data every process is
+ * unstarted, in the preferred order.
+ */
+export function computeProcessRows(processGroups, triggers) {
+  const ids = [...processGroups.keys()];
+  const known = new Set(ids);
+  const started = new Set();
+  const predecessors = new Map(ids.map(id => [id, new Set()]));
+  for (const entry of triggers?.entry_points || []) {
+    if (known.has(entry.to_process)) started.add(entry.to_process);
+  }
+  for (const handoff of triggers?.handoffs || []) {
+    const from = handoff.from_process;
+    const to = handoff.to_process;
+    if (known.has(from) && known.has(to) && from !== to) predecessors.get(to).add(from);
+  }
+
+  const depth = new Map();
+  const visiting = new Set();
+  const depthOf = (id) => {
+    if (depth.has(id)) return depth.get(id);
+    if (visiting.has(id)) return null;  // a cycle: ignore that edge
+    visiting.add(id);
+    let best = started.has(id) ? 1 : null;
+    for (const pred of predecessors.get(id)) {
+      const d = depthOf(pred);
+      if (d !== null && (best === null || d + 1 > best)) best = d + 1;
+    }
+    visiting.delete(id);
+    depth.set(id, best);
+    return best;
+  };
+  ids.forEach(depthOf);
+
+  const byDepth = new Map();
+  const unstarted = [];
+  for (const id of ids) {
+    const d = depth.get(id);
+    if (d === null) unstarted.push(id);
+    else {
+      if (!byDepth.has(d)) byDepth.set(d, []);
+      byDepth.get(d).push(id);
+    }
+  }
+  const compare = compareProcesses(processGroups);
+  const rows = [...byDepth.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .flatMap(([, rowIds]) => chunkRow(rowIds.sort(compare)));
+  return { rows, unstartedRows: chunkRow(unstarted.sort(compare)) };
+}
 
 // Gap between boxes in the same row (smaller = closer together)
 const ROW_BOX_GAP = 28;
 
-function orderGroups(processGroups, edges, nodeToProcess) {
-  const groupIds = [...processGroups.keys()];
-  if (groupIds.length <= 1) return groupIds;
-
-  // Check if we have custom layout for these groups
-  const hasCustomLayout = groupIds.some(gid => CUSTOM_GROUP_LAYOUT[gid]);
-
-  if (hasCustomLayout) {
-    // Sort by custom row, then order within row
-    groupIds.sort((a, b) => {
-      const layoutA = CUSTOM_GROUP_LAYOUT[a] || { row: 99, order: 99 };
-      const layoutB = CUSTOM_GROUP_LAYOUT[b] || { row: 99, order: 99 };
-      if (layoutA.row !== layoutB.row) return layoutA.row - layoutB.row;
-      return layoutA.order - layoutB.order;
-    });
-    return groupIds;
-  }
-
-  // Default: use flow score
-  const flowScore = new Map();
-  for (const gid of groupIds) flowScore.set(gid, 0);
-
-  for (const e of edges) {
-    const sg = nodeToProcess.get(e.source);
-    const tg = nodeToProcess.get(e.target);
-    if (sg && tg && sg !== tg) {
-      flowScore.set(sg, (flowScore.get(sg) || 0) - 1);
-      flowScore.set(tg, (flowScore.get(tg) || 0) + 1);
-    }
-  }
-
-  groupIds.sort((a, b) => (flowScore.get(a) || 0) - (flowScore.get(b) || 0));
-  return groupIds;
-}
-
-// Get row groups for horizontal layout
-function getRowGroups(orderedGroupIds) {
-  const rows = new Map(); // row number -> [groupIds]
-  for (const gid of orderedGroupIds) {
-    const layout = CUSTOM_GROUP_LAYOUT[gid];
-    const rowNum = layout ? layout.row : 99;
-    if (!rows.has(rowNum)) rows.set(rowNum, []);
-    rows.get(rowNum).push(gid);
-  }
-  // Sort rows by row number and return as array of arrays
-  const sortedRows = [...rows.entries()].sort((a, b) => a[0] - b[0]);
-  return sortedRows.map(([, ids]) => ids);
-}
-
 // ─── Layout constants ────────────────────────────────────────────────────────
 
+const START_WIDTH = 190;
+const START_HEIGHT = 44;
+const LANE_LABEL_HEIGHT = 34;
 const NODE_WIDTH = 200;      // Increased from 180 to avoid truncation
 const NODE_HEIGHT = 40;
 const SUMMARY_WIDTH = 180;   // Reduced to fit more boxes horizontally
@@ -435,27 +431,56 @@ const NODE_Y_GAP = 20;       // Increased from 16
  * @param {string} options.selectedNodeId - Node ID to highlight and show transitions for
  * @param {string} options.currentStateId - Current state to highlight (e.g., for a reference)
  * @param {boolean} options.showAllTransitions - Show every transition instead of only the main workflow
+ * @param {Object} options.triggers - What starts each workflow: { entry_points, handoffs }
+ *   from /workflow_tag/workflow_diagram_triggers; null draws no start nodes or handoffs
  */
 export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses, width, height, options = {}) {
-  const { selectedNodeId = null, currentStateId = null, showAllTransitions = false } = options;
+  const { selectedNodeId = null, currentStateId = null, showAllTransitions = false, triggers = null } = options;
 
   if (!tagData || tagData.length === 0) {
-    return { nodes: [], edges: [], groups: [], viewBox: '0 0 800 600', crossWorkflowTriggers: [] };
+    return { nodes: [], edges: [], groups: [], lanes: [], viewBox: '0 0 800 600' };
   }
 
   const { nodeMap, edges: allEdges, processGroups, nodeToProcess } = buildGraph(tagData);
-  const orderedGroupIds = orderGroups(processGroups, allEdges, nodeToProcess);
-  const rowGroups = getRowGroups(orderedGroupIds);
+  const { rows: startedRows, unstartedRows } = computeProcessRows(processGroups, triggers);
+  const rowGroups = [...startedRows, ...unstartedRows];
 
   const layoutNodes = [];
   const layoutGroups = [];
+  const layoutLanes = [];
   const nodeToLayoutId = new Map();
   const processIdToSummaryId = new Map(); // Track summary IDs for cross-workflow edges
 
   let currentY = TOP_PADDING;
 
+  // ─── Start nodes: the events that begin this MOD's workflows ───
+  const entryPoints = (triggers?.entry_points || []).filter(e => processGroups.has(e.to_process));
+  const startSources = ENTRY_SOURCE_ORDER.filter(src => entryPoints.some(e => e.source === src));
+  if (startSources.length > 0) {
+    const rowWidth = startSources.length * START_WIDTH + (startSources.length - 1) * ROW_BOX_GAP;
+    let startX = width / 2 - rowWidth / 2;
+    for (const source of startSources) {
+      const starts = entryPoints.filter(e => e.source === source);
+      layoutNodes.push({
+        id: `start:${source}`,
+        name: starts[0].source_label,
+        x: startX, y: currentY,
+        width: START_WIDTH, height: START_HEIGHT,
+        type: 'start',
+        starts: starts.map(e => ({ name: e.to_state_name, process: e.to_process_name, condition: e.condition })),
+      });
+      startX += START_WIDTH + ROW_BOX_GAP;
+    }
+    currentY += START_HEIGHT + GROUP_GAP + 10;
+  }
+
   // Process groups row by row
-  for (const rowGroupIds of rowGroups) {
+  for (const [rowIndex, rowGroupIds] of rowGroups.entries()) {
+    if (triggers && rowIndex === startedRows.length && unstartedRows.length > 0) {
+      // Workflows nothing starts automatically: a curator (or a tool) begins them.
+      layoutLanes.push({ x: width / 2, y: currentY + 4, text: 'No automatic start (begun by curators or other tools)' });
+      currentY += LANE_LABEL_HEIGHT;
+    }
     const numInRow = rowGroupIds.length;
     const boxGap = numInRow > 1 ? ROW_BOX_GAP : 0;
 
@@ -731,17 +756,19 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
   }
 
   // ─── Build layout edges (merge bidirectional into one) ───
+  const handoffStatePairs = new Set(
+    (triggers?.handoffs || []).map(h => `${h.from_state}\u2192${h.to_state}`));
   const edgeMap = new Map(); // "A→B" (sorted key) -> edge object
   for (const e of allEdges) {
     const src = nodeToLayoutId.get(e.source);
     const tgt = nodeToLayoutId.get(e.target);
     if (!src || !tgt || src === tgt) continue;
 
-    // Cross-workflow handoffs are rendered from CROSS_WORKFLOW_TRIGGERS below.
+    // Handoffs between workflows are drawn from the trigger data below.
     // Skipping the raw transition here prevents duplicate arrows, especially
     // when the source process is collapsed and the target process is expanded
     // (for example: file upload -> text conversion Needed).
-    if (isDefinedCrossWorkflowTrigger(e.source, e.target)) continue;
+    if (handoffStatePairs.has(`${e.source}\u2192${e.target}`)) continue;
 
     const srcNode = layoutNodes.find(n => n.id === src);
     const tgtNode = layoutNodes.find(n => n.id === tgt);
@@ -757,7 +784,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     const isSelectedEdge = !!selectedNodeId && (src === selectedNodeId || tgt === selectedNodeId);
 
     // Default/simple view: keep only the main internal workflow path here.
-    // Cross-workflow trigger arrows are added later from CROSS_WORKFLOW_TRIGGERS.
+    // Arrows that start a workflow are added later from the trigger data.
     // Focused view: keep only transitions connected to the selected state, plus the main path.
     // Full view: keep everything.
     if (!showAllTransitions) {
@@ -873,75 +900,106 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     }
   }
 
-  // ─── Add cross-workflow trigger edges ───
-  // Always add these handoff arrows, whether the source/target workflows are
-  // collapsed or expanded. When a workflow is expanded we connect the real
-  // state nodes (for example Uploaded → Needed); when collapsed we fall back to
-  // the summary node for that workflow.
-  for (const trigger of CROSS_WORKFLOW_TRIGGERS) {
-    const fromSummaryId = processIdToSummaryId.get(trigger.fromProcess);
-    const toSummaryId = processIdToSummaryId.get(trigger.toProcess);
-
-    // Determine the actual source and target nodes
-    const sourceProcessName = processGroups.get(trigger.fromProcess)?.processName;
-    const targetProcessName = processGroups.get(trigger.toProcess)?.processName;
-    let sourceId = fromSummaryId || nodeToLayoutId.get(trigger.fromState) ||
-      findProcessLayoutNodeId(trigger.fromProcess, sourceProcessName, layoutNodes);
-    let targetId = toSummaryId || nodeToLayoutId.get(trigger.toState) ||
-      findProcessLayoutNodeId(trigger.toProcess, targetProcessName, layoutNodes);
-
-    if (!sourceId || !targetId || sourceId === targetId) continue;
-    if (selectedNodeId && sourceId !== selectedNodeId && targetId !== selectedNodeId && !trigger.keepWhenNodeSelected) continue;
-
-    // Get names for the trigger states
-    const fromStateName = nodeMap.get(trigger.fromState)?.name || trigger.fromState;
-    const toStateName = nodeMap.get(trigger.toState)?.name || trigger.toState;
-
-    const normalCanonKey = `${sourceId}\u2194${targetId}`;
-    const triggerKey = `trigger:${trigger.fromState}\u2192${trigger.toState}:${sourceId}\u2192${targetId}`;
-    if (edgeMap.has(triggerKey)) continue; // Don't duplicate
-    if (edgeMap.has(normalCanonKey)) {
-      const existingEdge = edgeMap.get(normalCanonKey);
-      existingEdge.edgeType = 'external';
-      existingEdge.isTrigger = true;
-      existingEdge.isPrimaryFlow = !!trigger.keepWhenNodeSelected;
-      existingEdge.data = {
-        ...existingEdge.data,
-        sourceName: fromStateName,
-        to_name: toStateName,
-        transition_type: 'trigger',
-      };
-      continue;
+  // ─── Arrows that start a workflow: entry points and handoffs ───
+  // Always drawn, whether the workflows are collapsed or expanded. An expanded
+  // workflow connects the real state (for example Uploaded → Needed); a
+  // collapsed one falls back to its summary box. Several handoffs between the
+  // same two boxes (e.g. one per classifier sub-task) become one arrow.
+  const findLayoutNode = (state, subprocess, process, processName) => {
+    const id = nodeToLayoutId.get(state) ||
+      (subprocess && layoutNodes.some(n => n.id === `subsummary:${subprocess}`) ? `subsummary:${subprocess}` : null) ||
+      processIdToSummaryId.get(process) ||
+      findProcessLayoutNodeId(process, processName, layoutNodes);
+    return id ? layoutNodes.find(n => n.id === id) : null;
+  };
+  const addStartEdge = (sourceNode, targetNode, data, kind) => {
+    if (!sourceNode || !targetNode || sourceNode.id === targetNode.id) return;
+    const key = `${kind}:${sourceNode.id}\u2192${targetNode.id}`;
+    if (edgeMap.has(key)) {
+      const existing = edgeMap.get(key);
+      for (const condition of data.conditions) {
+        if (!existing.conditions.includes(condition)) existing.conditions.push(condition);
+      }
+      existing.label = edgeLabel(existing.conditions);
+      existing.data.condition = existing.label || existing.data.condition;
+      return;
     }
-
-    const srcNode = layoutNodes.find(n => n.id === sourceId);
-    const tgtNode = layoutNodes.find(n => n.id === targetId);
-    if (!srcNode || !tgtNode) continue;
-
-    const triggerEdge = {
-      source: sourceId,
-      target: targetId,
-      sourceNode: srcNode,
-      targetNode: tgtNode,
-      edgeType: 'external',
+    // A raw transition already drawn between the same boxes in this direction
+    // becomes this arrow. A transition the other way (e.g. a reset from the
+    // target back to the source) is not the handoff, so it stays as its own edge.
+    const forward = `${sourceNode.id}\u2192${targetNode.id}`;
+    const reverse = `${targetNode.id}\u2192${sourceNode.id}`;
+    const dropRawEdge = (rawEdgeKey) => {
+      const raw = edgeMap.get(rawEdgeKey);
+      edgeMap.delete(rawEdgeKey);
+      layoutEdges.splice(layoutEdges.indexOf(raw), 1);
+    };
+    const [lo, hi] = sourceNode.id < targetNode.id ? [sourceNode.id, targetNode.id] : [targetNode.id, sourceNode.id];
+    const rawKey = `${lo}\u2194${hi}`;
+    if (edgeMap.has(rawKey)) {
+      const raw = edgeMap.get(rawKey);
+      if (raw._directionKeys.has(reverse)) {
+        if (raw.source === sourceNode.id) {
+          // the reverse transition was merged in as reverseData; make it the edge
+          Object.assign(raw, {
+            source: targetNode.id, target: sourceNode.id,
+            sourceNode: targetNode, targetNode: sourceNode,
+            data: raw.reverseData,
+          });
+        }
+        raw.bidirectional = false;
+        raw.reverseData = null;
+        raw._directionKeys = new Set([reverse]);
+      } else {
+        dropRawEdge(rawKey);
+      }
+    }
+    // primary-flow raw edges are keyed by direction rather than by the pair
+    if (edgeMap.has(forward)) dropRawEdge(forward);
+    const edge = {
+      source: sourceNode.id,
+      target: targetNode.id,
+      sourceNode,
+      targetNode,
+      edgeType: kind === 'entry' ? 'start' : 'external',
       isTrigger: true,
-      isPrimaryFlow: !!trigger.keepWhenNodeSelected,
+      isPrimaryFlow: true,
       isSideTransition: false,
       showAllTransitions,
+      conditions: [...data.conditions],
+      label: edgeLabel(data.conditions),
       data: {
-        sourceName: fromStateName,
-        to_name: toStateName,
-        transition_type: 'trigger',
-        condition: `${fromStateName} triggers ${toStateName}`,
+        sourceName: data.sourceName,
+        to_name: data.toName,
+        transition_type: kind === 'entry' ? 'starts workflow' : 'handoff',
+        condition: edgeLabel(data.conditions) || data.note,
         requirements: [],
-        actions: [`Sets ${toStateName}`],
+        actions: [`Sets ${data.toName}`],
       },
       bidirectional: false,
       reverseData: null,
-      _directionKeys: new Set([`${sourceId}\u2192${targetId}`]),
+      _directionKeys: new Set([`${sourceNode.id}\u2192${targetNode.id}`]),
     };
-    edgeMap.set(triggerKey, triggerEdge);
-    layoutEdges.push(triggerEdge);
+    edgeMap.set(key, edge);
+    layoutEdges.push(edge);
+  };
+
+  for (const entry of entryPoints) {
+    addStartEdge(
+      layoutNodes.find(n => n.id === `start:${entry.source}`),
+      findLayoutNode(entry.to_state, entry.to_subprocess, entry.to_process, entry.to_process_name),
+      { sourceName: entry.source_label, toName: entry.to_state_name, conditions: [entry.condition],
+        note: `${entry.source_label} starts ${entry.to_process_name}` },
+      'entry');
+  }
+  for (const handoff of triggers?.handoffs || []) {
+    if (handoff.from_process === handoff.to_process) continue;
+    addStartEdge(
+      findLayoutNode(handoff.from_state, handoff.from_subprocess, handoff.from_process, handoff.from_process_name),
+      findLayoutNode(handoff.to_state, handoff.to_subprocess, handoff.to_process, handoff.to_process_name),
+      { sourceName: handoff.from_state_name, toName: handoff.to_state_name, conditions: [handoff.condition],
+        note: `${handoff.from_state_name} starts ${handoff.to_process_name}` },
+      'handoff');
   }
   layoutEdges.sort((a, b) => {
     if (a.isPrimaryFlow === b.isPrimaryFlow) return 0;
@@ -999,6 +1057,9 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     minX = Math.min(minX, g.x - 20); minY = Math.min(minY, g.y - 20);
     maxX = Math.max(maxX, g.x + g.width + 20); maxY = Math.max(maxY, g.y + g.height + 20);
   }
+  for (const lane of layoutLanes) {
+    minY = Math.min(minY, lane.y - 20); maxY = Math.max(maxY, lane.y + 20);
+  }
   if (!isFinite(minX)) { minX = 0; minY = 0; maxX = 800; maxY = 600; }
 
   const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
@@ -1007,7 +1068,7 @@ export function computeLayout(tagData, collapsedProcesses, expandedSubprocesses,
     e.targetNode = layoutNodes.find(n => n.id === e.target);
   }
 
-  return { nodes: layoutNodes, edges: layoutEdges, groups: layoutGroups, viewBox, crossWorkflowTriggers: CROSS_WORKFLOW_TRIGGERS };
+  return { nodes: layoutNodes, edges: layoutEdges, groups: layoutGroups, lanes: layoutLanes, viewBox };
 }
 
 /**
@@ -1184,6 +1245,23 @@ function assignEdgePorts(edges) {
   }
 }
 
+/** A start/handoff arrow's label: its conditions, or nothing if any is unconditional. */
+function edgeLabel(conditions) {
+  if (!conditions || conditions.length === 0 || conditions.includes(null) || conditions.includes(undefined)) {
+    return '';
+  }
+  return conditions.join(' or ');
+}
+
+/** Where an arrow's label sits: halfway along its usual top-to-bottom curve. */
+function edgeLabelPosition(d) {
+  const sn = d.sourceNode;
+  const tn = d.targetNode;
+  const sx = sn.x + sn.width / 2 + sn.width * 0.6 * (d._sPort || 0);
+  const tx = tn.x + tn.width / 2 + tn.width * 0.6 * (d._tPort || 0);
+  return { x: (sx + tx) / 2, y: (sn.y + sn.height + tn.y) / 2 };
+}
+
 function edgePath(d) {
   const sn = d.sourceNode;
   const tn = d.targetNode;
@@ -1278,8 +1356,24 @@ export function renderDiagram(svgElement, layout, callbacks) {
       .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#d4a03c');
   }
 
+  if (defs.select(`#${markerPrefix}-start`).empty()) {
+    defs.append('marker').attr('id', `${markerPrefix}-start`)
+      .attr('viewBox', '0 0 10 10').attr('refX', 9.5).attr('refY', 5)
+      .attr('markerWidth', 6).attr('markerHeight', 6).attr('orient', 'auto')
+      .attr('markerUnits', 'strokeWidth')
+      .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#3d8b3d');
+  }
+
   let rootG = svg.select('g.wf-root');
   if (rootG.empty()) rootG = svg.append('g').attr('class', 'wf-root');
+
+  // ─── Lane labels ───
+  const laneSel = rootG.selectAll('text.wf-lane-label').data(layout.lanes || [], d => d.text);
+  laneSel.enter().append('text').attr('class', 'wf-lane-label').attr('text-anchor', 'middle')
+    .merge(laneSel)
+    .attr('x', d => d.x).attr('y', d => d.y)
+    .text(d => d.text);
+  laneSel.exit().remove();
 
   // ─── Groups (process + subprocess boxes) ───
   const processGroups = layout.groups.filter(g => !g.isSubprocess);
@@ -1389,6 +1483,7 @@ export function renderDiagram(svgElement, layout, callbacks) {
 
   const edgeEnter = edgeSel.enter().append('g');
   edgeEnter.append('path').attr('opacity', 0);
+  edgeEnter.append('text').attr('class', 'wf-edge-label').attr('text-anchor', 'middle');
 
   const edgeMerge = edgeEnter.merge(edgeSel);
   edgeMerge.attr('class', d =>
@@ -1412,6 +1507,13 @@ export function renderDiagram(svgElement, layout, callbacks) {
     })
     .attr('marker-end', d => `url(#${markerPrefix}-${d.edgeType})`);
 
+  // The condition a handoff or start arrow fires on, e.g. "research articles"
+  const placeEdgeLabels = (selection) => selection
+    .attr('x', d => edgeLabelPosition(d).x)
+    .attr('y', d => edgeLabelPosition(d).y)
+    .text(d => d.label || '');
+  edgeMerge.select('text.wf-edge-label').call(placeEdgeLabels);
+
   edgeSel.exit().transition(t).attr('opacity', 0).remove();
 
   // ─── Drag behavior ───
@@ -1428,6 +1530,7 @@ export function renderDiagram(svgElement, layout, callbacks) {
         d3.select(this).attr('transform', `translate(${d.x}, ${d.y})`);
         assignEdgePorts(layout.edges);
         edgeMerge.select('path').attr('d', edgePath);
+        edgeMerge.select('text.wf-edge-label').call(placeEdgeLabels);
       })
       .on('end', function (event, d) {
         d3.select(this).classed('wf-dragging', false);
@@ -1565,6 +1668,32 @@ export function renderDiagram(svgElement, layout, callbacks) {
     .on('mouseleave', () => callbacks.onNodeLeave());
   ssMerge.call(makeDrag());
   ssSel.exit().transition(t).attr('opacity', 0).remove();
+
+  // ─── Start nodes (events that begin workflows) ───
+  const startNodes = layout.nodes.filter(n => n.type === 'start');
+  const startSel = rootG.selectAll('g.wf-start-node')
+    .data(startNodes, d => d.id);
+
+  const startEnter = startSel.enter().append('g')
+    .attr('class', 'wf-start-node').attr('opacity', 0)
+    .attr('transform', d => `translate(${d.x}, ${d.y})`);
+  startEnter.append('rect');
+  startEnter.append('text').attr('class', 'wf-start-label');
+
+  const startMerge = startEnter.merge(startSel);
+  startMerge.transition(t).attr('opacity', 1)
+    .attr('transform', d => `translate(${d.x}, ${d.y})`);
+  startMerge.select('rect')
+    .attr('width', d => d.width).attr('height', d => d.height)
+    .attr('rx', d => d.height / 2).attr('ry', d => d.height / 2);
+  startMerge.select('text.wf-start-label')
+    .attr('x', d => d.width / 2).attr('y', d => d.height / 2 + 5)
+    .attr('text-anchor', 'middle').text(d => d.name);
+  startMerge
+    .on('mouseenter', (event, d) => callbacks.onNodeHover(d, event))
+    .on('mouseleave', () => callbacks.onNodeLeave());
+  startMerge.call(makeDrag());
+  startSel.exit().transition(t).attr('opacity', 0).remove();
 }
 
 // ─── setupZoom ───────────────────────────────────────────────────────────────
@@ -1582,7 +1711,8 @@ export function setupZoom(svgElement, onTransformChange) {
         let el = event.target;
         while (el && el !== svgElement) {
           const cls = (el.getAttribute && el.getAttribute('class')) || '';
-          if (cls.includes('wf-node') || cls.includes('wf-summary-node') || cls.includes('wf-subsummary-node')) {
+          if (cls.includes('wf-node') || cls.includes('wf-summary-node') || cls.includes('wf-subsummary-node') ||
+              cls.includes('wf-start-node')) {
             return false;
           }
           el = el.parentNode;
