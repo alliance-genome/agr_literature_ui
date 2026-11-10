@@ -486,9 +486,10 @@ const BiblioPerson = () => {
     if (holder) stubAssignments[stub.author_id] = holder.author_id;
   }
 
-  // Done is chosen for the curator the moment every author will be linked, and taken
-  // back (to the stored status) if that stops being true -- but only if it was chosen
-  // automatically. A status the curator picked by hand is never overridden.
+  // Done is chosen for the curator when a change staged on this page links the last
+  // unlinked author, and taken back (to the stored status) if that stops being true --
+  // but only if it was chosen automatically. Never on a paper that opened fully linked,
+  // and never with nothing to commit: removing a link and undoing it is not a change.
   const connected = allAuthorsConnected(authorDrafts);
   const wasConnected = useRef(false);
   const openedConnected = useRef(false);
@@ -510,14 +511,16 @@ const BiblioPerson = () => {
     }
     const was = wasConnected.current;
     wasConnected.current = connected;
-    if (connected && !was && !openedConnected.current && workflowStatus !== AUTHOR_PERSON_DONE) {
+    if (connected && !was && !openedConnected.current && plannedCount > 0
+        && workflowStatus !== AUTHOR_PERSON_DONE) {
       setWorkflowStatus(AUTHOR_PERSON_DONE);
       setAutoDone(true);
     } else if (!connected && was && autoDone) {
       setWorkflowStatus(storedStatus);
       setAutoDone(false);
     }
-    // Driven by the transition only; workflowStatus and autoDone are read, not watched.
+    // Driven by the transition only; workflowStatus, autoDone and plannedCount are read,
+    // not watched.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, editable]);
 
