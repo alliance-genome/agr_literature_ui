@@ -473,8 +473,8 @@ export const duplicatePersonErrors = (authors, drafts) => {
  *
  * Every change on the screen is staged, removals included, so the order matters:
  * uq_author_ref_person allows a person once per paper, and moving a person from one
- * author to another only works if the old link is gone first. So: staged unlinks,
- * then stub removals, then links that replace an existing link, then the rest. Each
+ * author to another only works if the old link is gone first. So: every staged
+ * unlink (replaced or not), then stub removals, then links and creates. Each
  * plan carries `kind` (unlink | removeStub | link | create) so the caller knows what a
  * result means for the screen.
  *
@@ -492,24 +492,22 @@ export const buildCommitPlan = (
   drafts, stagedInstitutions, now = new Date().toISOString(), stubIdsToRemove = [],
 ) => {
   const unlinks = [];
-  const replacements = [];
   const plans = [];
   for (const draft of (Array.isArray(drafts) ? drafts : [])) {
     if (!draft || relinksSamePerson(draft)) continue;
-    if (draft.mode !== 'link' && draft.mode !== 'create') {
-      // A staged unlink with nothing chosen to replace it. With a replacement there is
-      // no separate unlink: the link PATCH overwrites the person.
-      if (draft.pendingUnlink && draft.isLinked) {
-        unlinks.push({
-          kind: 'unlink',
-          authorId: draft.authorId,
-          personCurie: null,
-          steps: [{ kind: 'unlinkAuthor', author_id: draft.authorId }],
-        });
-      }
-      continue;
+    // Every staged unlink is sent on its own and first, even when a replacement
+    // follows. A replacement PATCH alone would leave the old person on the author until
+    // it ran, so a swap (1: P->Q, 2: Q->P) or a chain (1: P->Q, 2: Q->R) would have each
+    // link refused by uq_author_ref_person while another author still held its person.
+    if (draft.pendingUnlink && draft.isLinked) {
+      unlinks.push({
+        kind: 'unlink',
+        authorId: draft.authorId,
+        personCurie: null,
+        steps: [{ kind: 'unlinkAuthor', author_id: draft.authorId }],
+      });
     }
-    const bucket = draft.pendingUnlink && draft.isLinked ? replacements : plans;
+    if (draft.mode !== 'link' && draft.mode !== 'create') continue;
 
     if (draft.mode === 'link') {
       const curie = (draft.selectedPerson && draft.selectedPerson.curie) || null;
@@ -517,7 +515,7 @@ export const buildCommitPlan = (
       // nothing to do. Pointing the draft at someone else clears the match and the
       // link is planned again -- replacing a link is still allowed.
       if (curie && curie === draft.committedPersonCurie) continue;
-      bucket.push({
+      plans.push({
         kind: 'link',
         authorId: draft.authorId,
         personCurie: curie,
@@ -543,7 +541,7 @@ export const buildCommitPlan = (
       steps.push({ kind: 'linkLab', laboratory_curie: current.lab });
     }
     steps.push({ kind: 'linkAuthor', author_id: draft.authorId });
-    bucket.push({ kind: 'create', authorId: draft.authorId, personCurie: alreadyCreated, steps });
+    plans.push({ kind: 'create', authorId: draft.authorId, personCurie: alreadyCreated, steps });
   }
   // A person-only row is removed by deleting it: with no author_order, clearing its
   // person would leave ck_author_person_or_order unsatisfiable.
@@ -553,5 +551,5 @@ export const buildCommitPlan = (
     personCurie: null,
     steps: [{ kind: 'deleteAuthorRow', author_id: stubId }],
   }));
-  return [...unlinks, ...stubRemovals, ...replacements, ...plans];
+  return [...unlinks, ...stubRemovals, ...plans];
 };

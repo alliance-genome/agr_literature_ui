@@ -718,13 +718,34 @@ describe('buildCommitPlan — staged removals', () => {
     expect(buildCommitPlan([draft(41)], [], NOW)).toEqual([]);
   });
 
-  test('a staged unlink replaced by a link is just the link -- the PATCH replaces it', () => {
+  test('a staged unlink replaced by a link unlinks first, then links', () => {
     const plan = buildCommitPlan([draft(41, {
       pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:9' },
     })], [], NOW);
-    expect(plan).toHaveLength(1);
-    expect(plan[0].kind).toBe('link');
-    expect(plan[0].steps.map((s) => s.kind)).toEqual(['linkAuthor']);
+    expect(plan.map((p) => [p.kind, p.authorId])).toEqual([['unlink', 41], ['link', 41]]);
+  });
+
+  test('a swap frees both people before either is linked', () => {
+    // 1 holds P and 2 holds Q; the curator swaps them. Replacement PATCHes alone would
+    // each be refused by uq_author_ref_person while the other author still held its
+    // person.
+    const plan = buildCommitPlan([
+      draft(1, { pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:Q' } }),
+      draft(2, { pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:P' } }),
+    ], [], NOW);
+    expect(plan.map((p) => [p.kind, p.authorId, p.personCurie])).toEqual([
+      ['unlink', 1, null], ['unlink', 2, null], ['link', 1, 'AGRKB:Q'], ['link', 2, 'AGRKB:P'],
+    ]);
+  });
+
+  test('a chain frees every person before any is linked', () => {
+    const plan = buildCommitPlan([
+      draft(1, { pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:Q' } }),
+      draft(2, { pendingUnlink: true, mode: 'create' }),
+    ], [], NOW);
+    expect(plan.map((p) => [p.kind, p.authorId])).toEqual([
+      ['unlink', 1], ['unlink', 2], ['link', 1], ['create', 2],
+    ]);
   });
 
   test('each staged stub removal deletes that person-only row', () => {
@@ -735,7 +756,7 @@ describe('buildCommitPlan — staged removals', () => {
     ]);
   });
 
-  test('frees people before anything links them: unlinks, stub removals, replacements, then the rest', () => {
+  test('frees people before anything links them: unlinks, stub removals, then links', () => {
     // uq_author_ref_person allows a person once per paper, so moving a person from one
     // author to another only works if the old link is gone before the new one is made.
     const plan = buildCommitPlan([
@@ -744,7 +765,7 @@ describe('buildCommitPlan — staged removals', () => {
       draft(3, { pendingUnlink: true }),
     ], [], NOW, [900]);
     expect(plan.map((p) => [p.kind, p.authorId])).toEqual([
-      ['unlink', 3], ['removeStub', 900], ['link', 2], ['link', 1],
+      ['unlink', 2], ['unlink', 3], ['removeStub', 900], ['link', 1], ['link', 2],
     ]);
   });
 
@@ -787,7 +808,7 @@ describe('relinking the same person, and one person on two authors', () => {
       pendingUnlink: true, mode: 'link', selectedPerson: { curie: 'AGRKB:2', name: 'B' },
     });
     expect(relinksSamePerson(d)).toBe(false);
-    expect(buildCommitPlan([d], [], NOW)).toHaveLength(1);
+    expect(buildCommitPlan([d], [], NOW).map((p) => p.kind)).toEqual(['unlink', 'link']);
   });
 
   test('two authors staged to the same person are both flagged', () => {

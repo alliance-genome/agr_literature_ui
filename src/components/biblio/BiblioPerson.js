@@ -300,7 +300,15 @@ const BiblioPerson = () => {
       [authorId]: {
         ...prev[authorId],
         pendingUnlink: pending,
-        ...(pending ? {} : { mode: 'none', selectedPerson: null }),
+        mode: 'none',
+        selectedPerson: null,
+        // The commit pins describe the link being removed. Kept, a link committed
+        // earlier this session would make a replacement of the same kind look already
+        // done -- or a re-create reuse the old person -- and the commit skip it.
+        // Undo needs none of them: a linked author with nothing staged plans nothing.
+        committedPersonCurie: null,
+        createdPersonCurie: null,
+        labLinkedCurie: null,
       },
     }));
     if (!pending) setMatchesOpen((prev) => ({ ...prev, [authorId]: false }));
@@ -483,9 +491,18 @@ const BiblioPerson = () => {
   // automatically. A status the curator picked by hand is never overridden.
   const connected = allAuthorsConnected(authorDrafts);
   const wasConnected = useRef(false);
+  const primed = useRef(false);
   useEffect(() => {
     if (!editable) {
-      wasConnected.current = false;
+      primed.current = false;
+      return;
+    }
+    // The state the page opens with is the baseline, not a change: a paper already
+    // fully linked keeps its stored status (Needed, Blocked...) until the curator
+    // picks Done. Only a change made here that completes the set selects Done.
+    if (!primed.current) {
+      primed.current = true;
+      wasConnected.current = connected;
       return;
     }
     const was = wasConnected.current;
@@ -550,8 +567,9 @@ const BiblioPerson = () => {
       //     untouched author be skipped entirely next time.
       if (result.kind === 'unlink') {
         if (!result.ok) return;
-        // Drop every trace of the old link, including the commit pins: the author is
-        // unreconciled again, so a fresh link or create must be plannable.
+        // Drop the old link. The staged replacement, if any, is left alone: its link
+        // or create runs later in this same commit and pins itself then. The old
+        // link's commit pins were already cleared when the unlink was staged.
         setDrafts((prev) => ({
           ...prev,
           [result.authorId]: {
@@ -561,11 +579,6 @@ const BiblioPerson = () => {
             existingPersonId: null,
             existingPersonCurie: null,
             existingPersonName: '',
-            mode: 'none',
-            selectedPerson: null,
-            committedPersonCurie: null,
-            createdPersonCurie: null,
-            labLinkedCurie: null,
           },
         }));
         return;
