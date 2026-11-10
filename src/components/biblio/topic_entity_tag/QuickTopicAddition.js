@@ -595,10 +595,10 @@ const QuickTopicAddition = () => {
       data_novelty,
       // SCRUM-5697. Quick add always creates a topic-only tag (entity and
       // entity_type are null above), so the shape argument is false. Sending it
-      // rather than letting the server default apply is what keeps a WB
-      // quick-add on ATP:0000323, matching the term the backfill gave WB's
-      // existing topic-only tags -- otherwise re-adding an existing topic never
-      // matches it and inserts a duplicate instead of returning 409.
+      // rather than letting the server default apply keeps a quick-add on the
+      // MOD's default, matching the term the backfill gave its existing
+      // topic-only tags -- otherwise re-adding an existing topic never matches
+      // it and inserts a duplicate instead of returning 409.
       data_context: defaultDataContext(accessLevel, false),
       confidence_score: null,
       confidence_level: null,

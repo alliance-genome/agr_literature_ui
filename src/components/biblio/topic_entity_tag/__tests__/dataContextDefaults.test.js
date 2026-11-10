@@ -1,5 +1,4 @@
 import {
-  DATA_CONTEXT_ROOT,
   DATA_CONTEXT_EXPERIMENTAL_DATA,
   DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY,
   CURATOR_VALIDATION_DATA_CONTEXT,
@@ -8,10 +7,10 @@ import {
 } from '../dataContextDefaults';
 
 describe('defaultDataContext (SCRUM-6815 cutover off ATP:0000325)', () => {
-  test('WB: topic tags take the root, entities are experimentally studied entities', () => {
-    // Ceri on SCRUM-5697: WB topic tags take ATP:0000323 and entities are
-    // experimentally studied; ATP:0000406 replaces the deprecated ATP:0000325.
-    expect(defaultDataContext('WB', false)).toBe(DATA_CONTEXT_ROOT);
+  test('WB matches ZFIN: experimental data on topics, experimentally studied entities', () => {
+    // Kimberly on SCRUM-6815 (2026-11-10): WB topic tags move off the ATP:0000323
+    // root to ATP:0000405; ATP:0000406 replaces the deprecated ATP:0000325.
+    expect(defaultDataContext('WB', false)).toBe(DATA_CONTEXT_EXPERIMENTAL_DATA);
     expect(defaultDataContext('WB', true)).toBe(DATA_CONTEXT_EXPERIMENTALLY_STUDIED_ENTITY);
   });
 
