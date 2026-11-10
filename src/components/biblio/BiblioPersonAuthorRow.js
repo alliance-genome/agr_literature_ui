@@ -400,6 +400,13 @@ const BiblioPersonAuthorRow = ({
       {result && !result.ok ? (
         <Alert variant="danger">
           <div>{result.message}</div>
+          {result.removedPersonCurie ? (
+            // Unlinks run first, so the old link is gone even though the new one failed.
+            <div>
+              The previous link to {result.removedPersonCurie} was removed by this commit, so
+              this author has no person now.
+            </div>
+          ) : null}
           {result.createdPersonCurie ? (
             <div>
               {/* The person exists even though the rest failed. Saying so is what stops a

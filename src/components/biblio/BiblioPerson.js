@@ -491,23 +491,26 @@ const BiblioPerson = () => {
   // automatically. A status the curator picked by hand is never overridden.
   const connected = allAuthorsConnected(authorDrafts);
   const wasConnected = useRef(false);
+  const openedConnected = useRef(false);
   const primed = useRef(false);
   useEffect(() => {
     if (!editable) {
       primed.current = false;
       return;
     }
-    // The state the page opens with is the baseline, not a change: a paper already
-    // fully linked keeps its stored status (Needed, Blocked...) until the curator
-    // picks Done. Only a change made here that completes the set selects Done.
+    // Done is only ever selected for a paper that opened with an author not linked.
+    // A paper that opened fully linked keeps its stored status (Needed, Blocked...)
+    // until the curator picks Done -- whatever is removed, undone or replaced here,
+    // since a replacement passes through "not all linked" on its way.
     if (!primed.current) {
       primed.current = true;
       wasConnected.current = connected;
+      openedConnected.current = connected;
       return;
     }
     const was = wasConnected.current;
     wasConnected.current = connected;
-    if (connected && !was && workflowStatus !== AUTHOR_PERSON_DONE) {
+    if (connected && !was && !openedConnected.current && workflowStatus !== AUTHOR_PERSON_DONE) {
       setWorkflowStatus(AUTHOR_PERSON_DONE);
       setAutoDone(true);
     } else if (!connected && was && autoDone) {
@@ -533,8 +536,23 @@ const BiblioPerson = () => {
     // re-earned each time a later author is added.
     setCommitSummary(null);
 
-    const collected = await executeCommitPlan(plans, (result) => {
+    // The person each staged unlink takes away, so a replacement that then fails can
+    // say the author lost that link too -- unlinks run first, so it is already gone.
+    const removedCurie = {};
+    for (const draft of authorDrafts) {
+      if (draft && draft.isLinked && draft.pendingUnlink) {
+        removedCurie[draft.authorId] = draft.existingPersonCurie || `person ${draft.existingPersonId}`;
+      }
+    }
+    const unlinkedThisRun = new Set();
+
+    const collected = await executeCommitPlan(plans, (incoming) => {
       if (!mounted.current) return;
+      if (incoming.kind === 'unlink' && incoming.ok) unlinkedThisRun.add(incoming.authorId);
+      const result = (!incoming.ok && (incoming.kind === 'link' || incoming.kind === 'create')
+        && unlinkedThisRun.has(incoming.authorId))
+        ? { ...incoming, removedPersonCurie: removedCurie[incoming.authorId] }
+        : incoming;
       if (result.kind === 'removeStub') {
         if (result.ok) {
           setStubs((prev) => prev.filter((row) => row.author_id !== result.authorId));
@@ -611,8 +629,18 @@ const BiblioPerson = () => {
     });
 
     if (!mounted.current) return;
-    const applied = collected.filter((r) => r.ok).length;
-    const failed = collected.length - applied;
+    // An unlink that failed is forgiven when the same author's link or create then
+    // succeeded: that PATCH replaces the person anyway, so the author ends up as meant
+    // and Done need not be skipped over it.
+    const counted = collected.filter((r) => !(r.kind === 'unlink' && !r.ok && collected.some(
+      (o) => o.authorId === r.authorId && o.ok && (o.kind === 'link' || o.kind === 'create'),
+    )));
+    const applied = counted.filter((r) => r.ok).length;
+    const failed = counted.length - applied;
+    // Replacements whose old link went but whose new one did not: those authors have no
+    // person now, which "left as-is" would wrongly suggest.
+    const lostLinks = counted.filter((r) => !r.ok && (r.kind === 'link' || r.kind === 'create')
+      && unlinkedThisRun.has(r.authorId)).length;
 
     // The status goes last, after the links it describes. Done is never written over a
     // failed change: some author would be left without the person the curator meant,
@@ -644,7 +672,7 @@ const BiblioPerson = () => {
       }
     }
 
-    setCommitSummary({ total: collected.length, applied, failed, status });
+    setCommitSummary({ total: counted.length, applied, failed, lostLinks, status });
     setCommitting(false);
     // Refetch so the editor and the "already linked" badges here reflect the new
     // author.person_id values rather than the state the screen opened with.

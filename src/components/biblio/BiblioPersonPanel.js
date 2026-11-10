@@ -427,6 +427,13 @@ const BiblioPersonPanel = ({
           ) : null}
           {/* Said out loud rather than left to the tooltip: the button offered to set a
               status, so it owes the curator a plain statement of whether it did. */}
+          {commitSummary.lostLinks > 0 ? (
+            <div>
+              {commitSummary.lostLinks === 1 ? 'One author' : `${commitSummary.lostLinks} authors`} lost
+              their previous link but did not get the new one, so{' '}
+              {commitSummary.lostLinks === 1 ? 'it has' : 'they have'} no person now.
+            </div>
+          ) : null}
           {commitSummary.status && commitSummary.status.state === 'saved' ? (
             <div>Workflow status set to {statusLabel(commitSummary.status.atp)}.</div>
           ) : null}
