@@ -5,6 +5,7 @@ import { faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons'
 import { Modal, Button, Form, ProgressBar, Spinner } from 'react-bootstrap';
 import { api } from '../../../api';
 import SpeciesPicker from './SpeciesPicker';
+import { CURATOR_VALIDATION_DATA_CONTEXT } from '../../biblio/topic_entity_tag/dataContextDefaults';
 import {
   defaultSpeciesCurieForMod,
   speciesName,
@@ -115,7 +116,7 @@ export default function BulkValidationModal({
       species: species?.curie || null,
       data_novelty: 'ATP:0000335',
       // Matches CURATOR_VALIDATION_DATA_CONTEXT on the server's /validate path.
-      data_context: 'ATP:0000325',
+      data_context: CURATOR_VALIDATION_DATA_CONTEXT,
       confidence_score: null,
       confidence_level: null,
       note: note.trim() || null,

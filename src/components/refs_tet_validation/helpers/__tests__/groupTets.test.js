@@ -280,7 +280,8 @@ describe('positive mixed curator tags count as a Y (SCRUM-6784)', () => {
     entity_type: 'ATP:0000005',
     entity: 'ZFIN:ZDB-GENE-990415-72',
     negated: false,
-    data_context: 'ATP:0000325',
+    // ZFIN's curator-added entities, since SCRUM-6815
+    data_context: 'ATP:0000406',
     tag_source: {
       source_method: 'abc_literature_system',
       validation_type: 'professional_biocurator',
@@ -300,8 +301,11 @@ describe('positive mixed curator tags count as a Y (SCRUM-6784)', () => {
     }],
   };
 
-  test('a positive mixed experimentally-studied curator tag qualifies', () => {
+  test('a positive mixed experimental-data curator tag qualifies', () => {
     expect(isCuratorMixedPositiveTet(mixedTet())).toBe(true);
+    // SCRUM-6815: experimental data itself (FB) and anything under it
+    expect(isCuratorMixedPositiveTet(mixedTet({ data_context: 'ATP:0000405' }))).toBe(true);
+    expect(isCuratorMixedPositiveTet(mixedTet({ data_context: 'ATP:0000409' }))).toBe(true);
     // unset data context makes no claim and does not block
     expect(isCuratorMixedPositiveTet(mixedTet({ data_context: null }))).toBe(true);
   });
@@ -313,6 +317,12 @@ describe('positive mixed curator tags count as a Y (SCRUM-6784)', () => {
       mixedTet({ topic: 'ATP:0000005' }))).toBe(false);
     expect(isCuratorMixedPositiveTet(
       mixedTet({ data_context: 'ATP:0000324' }))).toBe(false);
+    // SCRUM-6815: the assess tag is ATP:0000405 now, which neither the root nor
+    // the deprecated, parentless ATP:0000325 can validate
+    expect(isCuratorMixedPositiveTet(
+      mixedTet({ data_context: 'ATP:0000323' }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(
+      mixedTet({ data_context: 'ATP:0000325' }))).toBe(false);
     expect(isCuratorMixedPositiveTet(mixedTet({
       tag_source: { source_method: 'textpresso',
         secondary_data_provider_abbreviation: 'ZFIN' },
