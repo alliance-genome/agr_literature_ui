@@ -632,7 +632,6 @@ const BiblioPerson = () => {
           });
           if (!mounted.current) return;
           setStoredStatus(workflowStatus);
-          setManualStatus(null);
           status = { state: 'saved', atp: workflowStatus };
         } catch (error) {
           console.error('author-person status transition error:', error);
