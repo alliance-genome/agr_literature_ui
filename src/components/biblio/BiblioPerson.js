@@ -646,10 +646,13 @@ const BiblioPerson = () => {
       }
     }
 
-    // A hand-picked status lasts until a commit changes something. Kept past one that
-    // changed nothing, so a retry uses the same pick; otherwise a pick equal to the
-    // stored status (never "saved") would switch suggestions off for the whole visit.
-    if (applied > 0 || (status && status.state === 'saved')) setManualStatus(null);
+    // A hand-picked status is forgotten once it is saved, or when it needed no write
+    // (it equals the stored status) and something else went through -- otherwise such
+    // a pick would switch suggestions off for the whole visit. It is kept whenever its
+    // own write failed or was skipped, so a retry writes the same pick.
+    if ((status && status.state === 'saved') || (status === null && applied > 0)) {
+      setManualStatus(null);
+    }
 
     setCommitSummary({ total: counted.length, applied, failed, lostLinks, status });
     setCommitting(false);
