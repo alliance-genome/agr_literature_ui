@@ -21,6 +21,15 @@ const STEP_LABEL = {
   createPerson: 'create person',
   linkLab: 'link laboratory',
   linkAuthor: 'link author to person',
+  unlinkAuthor: 'unlink author from person',
+  deleteAuthorRow: 'remove person from reference',
+};
+
+// Removal steps reuse the single-call helpers below, which already turn a refusal into
+// { ok, message }; rethrown so runPlan reports them like any other failed step.
+const runRemovalStep = async (call) => {
+  const outcome = await call();
+  if (!outcome.ok) throw new Error(outcome.message);
 };
 
 /**
@@ -57,10 +66,15 @@ const runPlan = async (plan) => {
         // person_curie, never person_id: author_crud pops the curie and resolves it
         // itself, and never accepts person_id from a payload.
         await api.patch('/author/' + step.author_id, { person_curie: personCurie });
+      } else if (step.kind === 'unlinkAuthor') {
+        await runRemovalStep(() => unlinkAuthorPerson(step.author_id));
+      } else if (step.kind === 'deleteAuthorRow') {
+        await runRemovalStep(() => deleteAuthorRow(step.author_id));
       }
     } catch (error) {
       console.error('author person commit error:', error);
       return {
+        kind: plan.kind,
         authorId: plan.authorId,
         ok: false,
         personCurie,
@@ -73,6 +87,7 @@ const runPlan = async (plan) => {
   }
 
   return {
+    kind: plan.kind,
     authorId: plan.authorId,
     ok: true,
     personCurie,
@@ -117,24 +132,6 @@ export const unlinkAuthorPerson = async (authorId) => {
     return { ok: true, message: '' };
   } catch (error) {
     console.error('author person unlink error:', error);
-    return { ok: false, message: apiErrorMessage('author/' + authorId, error) };
-  }
-};
-
-/**
- * Link one author to one person.
- *
- * The same PATCH the commit plan's linkAuthor step makes, exposed on its own for the
- * person-only list, where a curator resolves one stub at a time rather than staging a
- * batch. link_person absorbs the person-only row into the chosen author, so this one
- * call both makes the link and clears the stub.
- */
-export const linkAuthorToPerson = async (authorId, personCurie) => {
-  try {
-    await api.patch('/author/' + authorId, { person_curie: personCurie });
-    return { ok: true, message: '' };
-  } catch (error) {
-    console.error('author person link error:', error);
     return { ok: false, message: apiErrorMessage('author/' + authorId, error) };
   }
 };

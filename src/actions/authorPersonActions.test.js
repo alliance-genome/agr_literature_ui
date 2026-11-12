@@ -1,6 +1,6 @@
 import { api } from '../api';
 import {
-  executeCommitPlan, unlinkAuthorPerson, linkAuthorToPerson, deleteAuthorRow,
+  executeCommitPlan, unlinkAuthorPerson, deleteAuthorRow,
 } from './authorPersonActions';
 
 jest.mock('../api', () => ({ api: { post: jest.fn(), patch: jest.fn(), delete: jest.fn() } }));
@@ -215,31 +215,6 @@ describe('unlinkAuthorPerson', () => {
   });
 });
 
-describe('linkAuthorToPerson', () => {
-  test('patches the author with the person curie', async () => {
-    api.patch.mockResolvedValue({ data: {} });
-
-    const result = await linkAuthorToPerson(4412, 'AGRKB:12');
-
-    expect(api.patch).toHaveBeenCalledWith('/author/4412', { person_curie: 'AGRKB:12' });
-    expect(result.ok).toBe(true);
-  });
-
-  test('surfaces the conflict when that person is already another author here', async () => {
-    // uq_author_ref_person allows one author per person per reference, so this is a
-    // normal outcome the curator has to see, not an unexpected error.
-    api.patch.mockRejectedValue({
-      response: { data: { detail: 'Person is already author #2 on this reference; unlink there first' } },
-      message: 'Request failed',
-    });
-
-    const result = await linkAuthorToPerson(4412, 'AGRKB:12');
-
-    expect(result.ok).toBe(false);
-    expect(result.message).toContain('already author #2');
-  });
-});
-
 describe('deleteAuthorRow', () => {
   test('deletes the author row', async () => {
     // How a person-only row is removed. Clearing its person_id instead would leave
@@ -263,5 +238,46 @@ describe('deleteAuthorRow', () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain('not allowed');
+  });
+});
+
+describe('executeCommitPlan — staged removals', () => {
+  test('an unlink step patches an explicit null person_curie', async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    const [result] = await executeCommitPlan([{
+      kind: 'unlink', authorId: 41, personCurie: null, steps: [{ kind: 'unlinkAuthor', author_id: 41 }],
+    }]);
+    expect(api.patch).toHaveBeenCalledWith('/author/41', { person_curie: null });
+    expect(result).toMatchObject({ ok: true, kind: 'unlink', authorId: 41 });
+  });
+
+  test('a stub removal deletes the person-only row', async () => {
+    api.delete.mockResolvedValue({ data: {} });
+    const [result] = await executeCommitPlan([{
+      kind: 'removeStub', authorId: 501, personCurie: null, steps: [{ kind: 'deleteAuthorRow', author_id: 501 }],
+    }]);
+    expect(api.delete).toHaveBeenCalledWith('/author/501');
+    expect(result).toMatchObject({ ok: true, kind: 'removeStub' });
+  });
+
+  test('a refused unlink is reported as that step failing, with the API message', async () => {
+    api.patch.mockRejectedValue({
+      response: { data: { detail: 'unlink not allowed here' } }, message: 'Request failed',
+    });
+    const [result] = await executeCommitPlan([{
+      kind: 'unlink', authorId: 41, personCurie: null, steps: [{ kind: 'unlinkAuthor', author_id: 41 }],
+    }]);
+    expect(result.ok).toBe(false);
+    expect(result.failedStep).toBe('unlinkAuthor');
+    expect(result.message).toContain('unlink not allowed here');
+  });
+
+  test('a refused stub removal is reported as that step failing', async () => {
+    api.delete.mockRejectedValue({ response: { data: { detail: 'nope' } }, message: 'x' });
+    const [result] = await executeCommitPlan([{
+      kind: 'removeStub', authorId: 501, personCurie: null, steps: [{ kind: 'deleteAuthorRow', author_id: 501 }],
+    }]);
+    expect(result).toMatchObject({ ok: false, failedStep: 'deleteAuthorRow' });
+    expect(result.message).toContain('nope');
   });
 });

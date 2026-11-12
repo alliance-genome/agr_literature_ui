@@ -103,13 +103,17 @@ const ComparePanel = ({ person, fields }) => {
 
 const BiblioPersonAuthorRow = ({
   author, draft, staged, matches, matchState, selectedPersonDetail,
-  errors, result, disabled, matchesOpen, showAllMatches, unlinking,
-  onToggleMatches, onToggleShowAll, onChange, onRemoveLink, metaLabel, metaSlotClass, showMeta,
+  errors, result, disabled, matchesOpen, showAllMatches,
+  onToggleMatches, onToggleShowAll, onChange, onToggleUnlink, metaLabel, metaSlotClass, showMeta,
 }) => {
   // isLinked, not the curie: an author loaded from the reference carries person_id but
   // no curie until it is resolved, and treating that gap as "unlinked" is what made a
   // reloaded page offer to create a person who already exists.
-  const linked = !!draft.isLinked;
+  //
+  // A link staged to be removed counts as unlinked for everything below, so the
+  // suggestions and create open up and a replacement can go in the same commit.
+  const unlinkPending = !!(draft.isLinked && draft.pendingUnlink);
+  const linked = !!draft.isLinked && !unlinkPending;
   const creating = draft.mode === 'create';
   const linking = draft.mode === 'link';
   const shown = showAllMatches ? matches : matches.slice(0, MATCHES_SHOWN);
@@ -178,9 +182,11 @@ const BiblioPersonAuthorRow = ({
         {/* The outcome trails the author info rather than taking a fixed slot: a curie
             plus a name is far wider than a count, and padding every row to fit one
             would undo the compaction the fixed slots buy. */}
-        {linked ? (
-          <span style={{ color: '#2a6', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-            linked to{' '}
+        {draft.isLinked ? (
+          <span style={{
+            color: unlinkPending ? '#a00' : '#2a6', fontSize: '0.85rem', whiteSpace: 'nowrap',
+          }}>
+            {unlinkPending ? <span style={{ textDecoration: 'line-through' }}>linked to</span> : 'linked to'}{' '}
             {draft.existingPersonCurie
               ? <PersonLink curie={draft.existingPersonCurie} />
               // Still resolving from person_id, or -- since nothing retries it -- it
@@ -195,23 +201,21 @@ const BiblioPersonAuthorRow = ({
                 )
                 : <span className="biblio-person-muted">person {draft.existingPersonId}…</span>}
             {draft.existingPersonName ? ` (${draft.existingPersonName})` : ''}
+            {unlinkPending ? ' — will be unlinked on Commit' : ''}
             {' '}
-            {/* A button, not a checkbox. Every checkbox on this screen stages something
-                for the commit and changes nothing until then; this one writes to the
-                database the moment it is pressed. Wearing the same control as the staged
-                ones would misrepresent that. It writes immediately rather than joining the
-                batch because suggestions and create stay hidden while the link stands, so
-                there is nothing for it to be batched with. */}
+            {/* Staged like everything else on the screen: nothing is written until
+                Commit, and "undo" puts the link back as it was. */}
             <Button
               size="sm"
-              variant="outline-danger"
-              disabled={disabled || unlinking}
-              onClick={onRemoveLink}
+              variant={unlinkPending ? 'outline-secondary' : 'outline-danger'}
+              disabled={disabled}
+              onClick={onToggleUnlink}
             >
-              {unlinking ? 'removing…' : 'remove'}
+              {unlinkPending ? 'undo' : 'remove'}
             </Button>
           </span>
-        ) : linking && !matchesOpen ? (
+        ) : null}
+        {!linked && linking && !matchesOpen ? (
           // Confirmed: the list and the comparison are gone and only the outcome stays,
           // which is all the curator needs while working further down the page.
           <span style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
@@ -396,6 +400,13 @@ const BiblioPersonAuthorRow = ({
       {result && !result.ok ? (
         <Alert variant="danger">
           <div>{result.message}</div>
+          {result.removedPersonCurie ? (
+            // Unlinks run first, so the old link is gone even though the new one failed.
+            <div>
+              The previous link to {result.removedPersonCurie} was removed by this commit, so
+              this author has no person now.
+            </div>
+          ) : null}
           {result.createdPersonCurie ? (
             <div>
               {/* The person exists even though the rest failed. Saying so is what stops a

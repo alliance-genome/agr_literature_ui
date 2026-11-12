@@ -391,9 +391,123 @@ export const buildPersonPayload = (draft, stagedInstitutions, now = new Date().t
   return payload;
 };
 
+// The author-person curation workflow (SCRUM-6487). The process is the parent term;
+// a reference is in it when it holds one of the four states, and only then may this
+// screen change any author or reference-person link (SCRUM-6827).
+export const AUTHOR_PERSON_PROCESS_ATP = 'ATP:0000375';
+export const AUTHOR_PERSON_DONE = 'ATP:0000378';
+export const AUTHOR_PERSON_IN_PROGRESS = 'ATP:0000377';
+export const AUTHOR_PERSON_BLOCKED = 'ATP:0000376';
+export const AUTHOR_PERSON_STATUSES = [
+  { atp: 'ATP:0000109', label: 'Needed' },
+  { atp: AUTHOR_PERSON_IN_PROGRESS, label: 'In progress' },
+  { atp: AUTHOR_PERSON_BLOCKED, label: 'Blocked' },
+  // "complete" in ATP; curators call it Done.
+  { atp: AUTHOR_PERSON_DONE, label: 'Done' },
+];
+
+/** A draft whose author is linked now and is not staged to be unlinked. */
+export const keepsExistingLink = (draft) => !!(draft && draft.isLinked && !draft.pendingUnlink);
+
+/**
+ * Whether every author will have a person once Commit has run: linked and staying so,
+ * or staged to be linked or created. This is what selects Done automatically.
+ *
+ * True for a paper with no authors at all. Sort grants "needed" without looking at
+ * authors, so a zero-author paper has to be closable the same way.
+ */
+export const allAuthorsConnected = (drafts) => (Array.isArray(drafts) ? drafts : []).every((draft) => (
+  keepsExistingLink(draft)
+  || (draft && draft.mode === 'link' && !!(draft.selectedPerson && draft.selectedPerson.curie))
+  || (draft && draft.mode === 'create')
+));
+
+/**
+ * The status the dropdown offers for what is staged, before any pick by the curator.
+ * Worked out from the commit plan each time rather than tracked as changes happen,
+ * so undoing everything always lands back on the stored status. The rules, agreed
+ * with curators:
+ *
+ *   - Nothing staged: the stored status. Without a curator action it never changes.
+ *   - A link or create staged (a "not an author" person assigned to an author is a
+ *     link) and every author will have a person: Done, from any status, Blocked
+ *     included. A replacement on a paper that was already fully linked counts.
+ *   - Otherwise Blocked stays Blocked -- whoever set it had a reason.
+ *   - A link or create staged, but not every author will have a person: In progress.
+ *   - Only removals staged: In progress if the stored status is Done, else unchanged.
+ *   - Removing a "not an author" person never affects the status: it only takes away
+ *     something that should not have been there.
+ *
+ * A status the curator picks by hand overrides all of this (see BiblioPerson).
+ */
+export const suggestWorkflowStatus = (plan, drafts, storedStatus) => {
+  const kinds = new Set((Array.isArray(plan) ? plan : []).map((p) => p.kind));
+  const connects = kinds.has('link') || kinds.has('create');
+  const removes = kinds.has('unlink');
+  if (!connects && !removes) return storedStatus;
+  if (connects && allAuthorsConnected(drafts)) return AUTHOR_PERSON_DONE;
+  if (storedStatus === AUTHOR_PERSON_BLOCKED) return storedStatus;
+  if (connects) return AUTHOR_PERSON_IN_PROGRESS;
+  return storedStatus === AUTHOR_PERSON_DONE ? AUTHOR_PERSON_IN_PROGRESS : storedStatus;
+};
+
+/**
+ * Whether a draft is staged to drop its link and then link the very same person again.
+ * That is no change at all, so it is treated as one: the screen restores the link,
+ * and the plan skips it rather than send an unlink and a relink.
+ */
+export const relinksSamePerson = (draft) => !!(draft && draft.isLinked && draft.pendingUnlink
+  && draft.mode === 'link' && draft.existingPersonCurie && draft.selectedPerson
+  && draft.selectedPerson.curie === draft.existingPersonCurie);
+
+/**
+ * authorId -> errors for every author that would end up on the same person as another
+ * author of this paper. uq_author_ref_person allows a person once per reference, so
+ * the API would refuse all but the first of them -- a half-applied commit, and Done
+ * skipped -- after the curator had already been shown Done. Caught here instead, as
+ * draft errors, which disable Commit until one of them is changed.
+ *
+ * A person counts for an author if the author keeps a link to them or is staged to
+ * link to them. A staged unlink frees its person for another author: unlinks run
+ * before links (see buildCommitPlan), so moving a person between authors still works.
+ */
+export const duplicatePersonErrors = (authors, drafts) => {
+  const holders = new Map();
+  for (const author of (Array.isArray(authors) ? authors : [])) {
+    const draft = drafts && drafts[author.author_id];
+    if (!draft) continue;
+    let curie = null;
+    if (keepsExistingLink(draft)) curie = draft.existingPersonCurie || null;
+    else if (draft.mode === 'link' && draft.selectedPerson) curie = draft.selectedPerson.curie || null;
+    if (!curie) continue;
+    if (!holders.has(curie)) holders.set(curie, []);
+    holders.get(curie).push(author);
+  }
+  const label = (author) => `${author.author_order}. ${author.name
+    || [author.first_name, author.last_name].filter(Boolean).join(' ') || '(unnamed)'}`;
+  const errors = {};
+  for (const [curie, held] of holders) {
+    if (held.length < 2) continue;
+    for (const author of held) {
+      const others = held.filter((a) => a !== author).map(label).join(', ');
+      errors[author.author_id] = [
+        `${curie} is also on author ${others} — a person can be linked to only one author of a paper.`,
+      ];
+    }
+  }
+  return errors;
+};
+
 /**
  * The ordered calls a commit has to make, one entry per author that is actually
- * doing something. Untouched drafts produce nothing.
+ * doing something, plus one per staged stub removal. Untouched drafts produce nothing.
+ *
+ * Every change on the screen is staged, removals included, so the order matters:
+ * uq_author_ref_person allows a person once per paper, and moving a person from one
+ * author to another only works if the old link is gone first. So: every staged
+ * unlink (replaced or not), then stub removals, then links and creates. Each
+ * plan carries `kind` (unlink | removeStub | link | create) so the caller knows what a
+ * result means for the screen.
  *
  * A create is up to three calls -- POST /person/, POST /laboratory_person/, PATCH
  * /author/{id} -- because a lab link is an association and cannot ride along in
@@ -405,11 +519,26 @@ export const buildPersonPayload = (draft, stagedInstitutions, now = new Date().t
  * link or author patch would both burn a second AGRKB id and leave a duplicate
  * person behind. `personCurie` is null only when this run is the one that mints it.
  */
-export const buildCommitPlan = (drafts, stagedInstitutions, now = new Date().toISOString()) => {
-  if (!Array.isArray(drafts)) return [];
+export const buildCommitPlan = (
+  drafts, stagedInstitutions, now = new Date().toISOString(), stubIdsToRemove = [],
+) => {
+  const unlinks = [];
   const plans = [];
-  for (const draft of drafts) {
-    if (!draft || (draft.mode !== 'link' && draft.mode !== 'create')) continue;
+  for (const draft of (Array.isArray(drafts) ? drafts : [])) {
+    if (!draft || relinksSamePerson(draft)) continue;
+    // Every staged unlink is sent on its own and first, even when a replacement
+    // follows. A replacement PATCH alone would leave the old person on the author until
+    // it ran, so a swap (1: P->Q, 2: Q->P) or a chain (1: P->Q, 2: Q->R) would have each
+    // link refused by uq_author_ref_person while another author still held its person.
+    if (draft.pendingUnlink && draft.isLinked) {
+      unlinks.push({
+        kind: 'unlink',
+        authorId: draft.authorId,
+        personCurie: null,
+        steps: [{ kind: 'unlinkAuthor', author_id: draft.authorId }],
+      });
+    }
+    if (draft.mode !== 'link' && draft.mode !== 'create') continue;
 
     if (draft.mode === 'link') {
       const curie = (draft.selectedPerson && draft.selectedPerson.curie) || null;
@@ -418,6 +547,7 @@ export const buildCommitPlan = (drafts, stagedInstitutions, now = new Date().toI
       // link is planned again -- replacing a link is still allowed.
       if (curie && curie === draft.committedPersonCurie) continue;
       plans.push({
+        kind: 'link',
         authorId: draft.authorId,
         personCurie: curie,
         steps: [{ kind: 'linkAuthor', author_id: draft.authorId }],
@@ -442,7 +572,15 @@ export const buildCommitPlan = (drafts, stagedInstitutions, now = new Date().toI
       steps.push({ kind: 'linkLab', laboratory_curie: current.lab });
     }
     steps.push({ kind: 'linkAuthor', author_id: draft.authorId });
-    plans.push({ authorId: draft.authorId, personCurie: alreadyCreated, steps });
+    plans.push({ kind: 'create', authorId: draft.authorId, personCurie: alreadyCreated, steps });
   }
-  return plans;
+  // A person-only row is removed by deleting it: with no author_order, clearing its
+  // person would leave ck_author_person_or_order unsatisfiable.
+  const stubRemovals = (Array.isArray(stubIdsToRemove) ? stubIdsToRemove : []).map((stubId) => ({
+    kind: 'removeStub',
+    authorId: stubId,
+    personCurie: null,
+    steps: [{ kind: 'deleteAuthorRow', author_id: stubId }],
+  }));
+  return [...unlinks, ...stubRemovals, ...plans];
 };

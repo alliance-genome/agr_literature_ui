@@ -11,9 +11,12 @@ import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Popover from 'react-bootstrap/Popover';
 import { useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons';
 
 import BiblioPersonInstitutionStaging from './BiblioPersonInstitutionStaging';
 import BiblioPersonAuthorRow from './BiblioPersonAuthorRow';
@@ -30,43 +33,76 @@ import {
 import '../sectionGrid.css';
 import './biblioPerson.css';
 
-// Placeholder states for the author-to-person workflow tag. ABC has no such tag yet
-// (person_editor.cgi marks a paper author_person-complete at the end of a batch; there
-// is no equivalent here), so these are hard-coded rather than read from a vocabulary.
-// When the tag exists these become vocabulary terms and the select is enabled -- the
-// values are lowercase to match how ABC's existing workflow vocabulary stores them
-// ("needed", "complete").
-const WORKFLOW_STATUS_PLACEHOLDER = [
-  { value: 'needed', label: 'Needed' },
-  { value: 'in_progress', label: 'In progress' },
-  { value: 'blocked', label: 'Blocked' },
-  { value: 'done', label: 'Done' },
-];
+import { AUTHOR_PERSON_STATUSES, AUTHOR_PERSON_DONE } from '../../utils/authorPersonDraft';
 
-// The status a freshly opened screen starts from. Once the tag exists this becomes the
-// reference's stored value, and "changed" means differing from that instead.
-export const WORKFLOW_STATUS_DEFAULT = 'needed';
+// The rules suggestWorkflowStatus applies, in curator terms.
+const STATUS_HELP = (
+  <Popover id="biblio-person-status-help" style={{ maxWidth: '30rem' }}>
+    <Popover.Title as="h3">How the workflow status is set</Popover.Title>
+    <Popover.Content>
+      <p style={{ marginBottom: '0.4rem' }}>
+        Connections and the status are changed only on this page, and only when you press
+        Commit. The dropdown shows the status Commit will set, chosen from your changes:
+      </p>
+      <ul style={{ paddingLeft: '1.1rem', marginBottom: '0.4rem' }}>
+        <li>No changes: the status stays as it is.</li>
+        <li>You connect authors (link, create, or assign a person who is not an author) and every
+          author will have a person: <strong>Done</strong>, from any status, including Blocked.</li>
+        <li>You connect authors but some will still have no person: <strong>In progress</strong>,
+          unless the paper is <strong>Blocked</strong>, which stays Blocked.</li>
+        <li>You only remove connections: <strong>In progress</strong> if the paper was Done,
+          otherwise the status stays as it is.</li>
+        <li>Removing a person who is not an author never changes the status.</li>
+      </ul>
+      <p style={{ marginBottom: '0.4rem' }}>
+        You can pick any status yourself before Commit; your choice is kept whatever else you change.
+        To set a status without changing any connections, just pick it and Commit.
+      </p>
+      <p style={{ marginBottom: 0 }}>
+        Done is not set if any change fails, and a status chosen for you is not set if every
+        change fails; you are told why. Nothing can be changed here
+        unless the paper already has an author-person workflow status for your MOD.
+      </p>
+    </Popover.Content>
+  </Popover>
+);
 
-const WORKFLOW_NOT_WIRED = 'Choosing a status stages it; nothing is saved until you '
-  + 'press the button — and the status half of that is not wired yet, because the '
-  + 'author_person workflow tag does not exist in ABC.';
+const STATUS_TITLE = 'Choosing a status stages it; it is written when you press the button, '
+  + 'after the author changes. See the ? for how the status is chosen for you.';
 
-const statusLabel = (value) => {
-  const found = WORKFLOW_STATUS_PLACEHOLDER.find((option) => option.value === value);
-  return found ? found.label : value;
+const statusLabel = (atp) => {
+  const found = AUTHOR_PERSON_STATUSES.find((option) => option.atp === atp);
+  return found ? found.label : atp;
+};
+
+// Why nothing on the screen can be changed, or null when it can.
+const lockedReason = (statusLoad, editable, mod) => {
+  if (statusLoad === 'loading') return 'Checking this reference\'s author-person curation status…';
+  if (statusLoad === 'error') {
+    return 'Could not read this reference\'s author-person curation status, so links cannot be '
+      + 'changed. Reload the page to try again.';
+  }
+  if (editable) return null;
+  return `This reference is not in author-person curation${mod && mod !== 'No' ? ` for ${mod}` : ''}, `
+    + 'so its author and person links can be viewed but not changed. Author-person curation '
+    + 'is requested when the reference is sorted into the corpus.';
 };
 
 const BiblioPersonPanel = ({
   referenceCurie, title, crossReferences, mainFiles, loadingFileNames, onDownloadFile,
   authors, stubs, staged, drafts, matches, matchState, personDetails,
   errorsByAuthor, results, showAll, matchesOpen, committing, commitSummary, blockedReason,
-  plannedCount, unlinking, workflowStatus, onWorkflowStatusChange,
+  plannedCount, mod, statusLoad, editable, storedStatus, workflowStatus, statusChanged,
+  autoStatus, onWorkflowStatusChange,
   onStagedChange, onAddInstitution, onDraftChange, onToggleShowAll, onToggleMatches,
-  onCommit, onBack, onRemoveLink, availableAuthors, linkingStub, onLinkStub,
-  removingStub, onRemoveStub,
+  onCommit, onBack, onToggleUnlink, availableAuthors, stubAssignments, stubRemovals,
+  onAssignStub, onToggleStubRemoval,
 }) => {
   const invalidCount = Object.values(errorsByAuthor).filter((e) => e.length > 0).length;
-  const statusChanged = workflowStatus !== WORKFLOW_STATUS_DEFAULT;
+  const locked = lockedReason(statusLoad, editable, mod);
+  // Every control that stages a change, not just the button: a curator must not be
+  // able to build up a page of edits that can never be committed.
+  const inputsDisabled = committing || !editable;
 
   const cognitoMod = useSelector((state) => state.isLogged.cognitoMod);
   const testerMod = useSelector((state) => state.isLogged.testerMod);
@@ -208,11 +244,11 @@ const BiblioPersonPanel = ({
     <BiblioPersonStubs
       stubs={stubs}
       availableAuthors={availableAuthors}
-      linkingStub={linkingStub}
-      removingStub={removingStub}
-      onLinkStub={onLinkStub}
-      onRemoveStub={onRemoveStub}
-      disabled={committing}
+      assignments={stubAssignments}
+      removals={stubRemovals}
+      onAssign={onAssignStub}
+      onToggleRemoval={onToggleStubRemoval}
+      disabled={inputsDisabled}
       metaLabel={metaLabel}
       metaSlotClass={metaSlotClass}
       showMeta={showMeta}
@@ -244,12 +280,11 @@ const BiblioPersonPanel = ({
           }
           errors={errorsByAuthor[author.author_id] || []}
           result={results[author.author_id] || null}
-          disabled={committing}
+          disabled={inputsDisabled}
           matchesOpen={!!matchesOpen[author.author_id]}
           showAllMatches={!!showAll[author.author_id]}
           onToggleMatches={() => onToggleMatches(author.author_id)}
-          unlinking={!!unlinking[author.author_id]}
-          onRemoveLink={() => onRemoveLink(author.author_id)}
+          onToggleUnlink={() => onToggleUnlink(author.author_id)}
           onToggleShowAll={() => onToggleShowAll(author.author_id)}
           onChange={(patch) => onDraftChange(author.author_id, patch)}
           metaLabel={metaLabel}
@@ -263,7 +298,7 @@ const BiblioPersonPanel = ({
   sectionRows.institutions = (
     <BiblioPersonInstitutionStaging
       staged={staged}
-      disabled={committing}
+      disabled={inputsDisabled}
       onChange={onStagedChange}
       onAdd={onAddInstitution}
     />
@@ -303,18 +338,39 @@ const BiblioPersonPanel = ({
       <Row className="biblio-person-header">
         <Col sm="12" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <strong style={{ flex: 1, whiteSpace: 'nowrap' }}>Author → Person · {referenceCurie}</strong>
-          {/* Enabled, and not misleading for being so: this dropdown never writes on its
-              own in the finished design either -- it stages the intended status, the way
-              every other dropdown and checkbox on this screen stages something. The
-              button is what writes, and it is the status half of the button that is not
-              wired yet. */}
-          <span title={WORKFLOW_NOT_WIRED} style={{ whiteSpace: 'nowrap' }}>
-            <span className="biblio-person-muted">Workflow status (not wired up) </span>
+          {/* Stages the status like every other control here stages something; the
+              button writes it, after the author changes. Disabled outright when the
+              reference has no author-person status: the transition API cannot start a
+              workflow from nothing, and that is also what locks the rest of the page. */}
+          <span title={locked || STATUS_TITLE} style={{ whiteSpace: 'nowrap' }}>
+            <span className="biblio-person-muted">Workflow status </span>
+            {/* Click-to-open like the search-bar and query-builder ?s, with the same
+                outline icon, so every ? in the app behaves alike. A native <button> so
+                it is keyboard operable. */}
+            <OverlayTrigger trigger="click" placement="bottom-start" rootClose overlay={STATUS_HELP}>
+              <button
+                type="button"
+                aria-label="How the workflow status is set"
+                aria-haspopup="dialog"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', border: 'none', padding: 0,
+                  background: 'none', color: 'inherit', lineHeight: 1, cursor: 'pointer',
+                  verticalAlign: 'middle', marginRight: '0.3rem',
+                }}
+              >
+                {/* Sized to the 0.8rem label beside it, not the 20px the header ?s use:
+                    at 20px it towered over the small text. Grey like the label. */}
+                <FontAwesomeIcon
+                  icon={faQuestionCircle}
+                  style={{ width: '0.95rem', height: '0.95rem', color: '#666' }}
+                />
+              </button>
+            </OverlayTrigger>
             <Form.Control
               as="select"
               size="sm"
-              value={workflowStatus}
-              disabled={committing}
+              value={workflowStatus || ''}
+              disabled={inputsDisabled}
               onChange={(e) => onWorkflowStatusChange(e.target.value)}
               aria-label="author to person workflow status"
               // The editor's own convention for a staged-but-unsaved value: purple
@@ -323,9 +379,19 @@ const BiblioPersonPanel = ({
               className={statusChanged ? 'updated' : ''}
               style={{ width: 'auto', display: 'inline-block' }}
             >
-              {WORKFLOW_STATUS_PLACEHOLDER.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+              {workflowStatus ? null : <option value="">(none)</option>}
+              {AUTHOR_PERSON_STATUSES.map((option) => (
+                <option key={option.atp} value={option.atp}>
+                  {option.label}
+                  {option.atp === workflowStatus && autoStatus
+                    ? (option.atp === AUTHOR_PERSON_DONE ? ' (all authors linked)' : ' (from your changes)')
+                    : ''}
+                </option>
               ))}
+              {/* A stored state outside the four would otherwise render as the first
+                  option and be silently "changed" by the next commit. */}
+              {workflowStatus && !AUTHOR_PERSON_STATUSES.some((o) => o.atp === workflowStatus)
+                ? <option value={workflowStatus}>{workflowStatus}</option> : null}
             </Form.Control>
           </span>
 
@@ -336,11 +402,11 @@ const BiblioPersonPanel = ({
               events, so a title on it renders no tooltip in Firefox or Safari -- which
               is precisely the state this message exists for. ReorderAuthorsButton in
               BiblioEditor already wraps for this reason. */}
-          <span title={blockedReason
+          <span title={locked || blockedReason
             || (invalidCount > 0 ? `Fix the problems marked below first${hiddenHint}` : '')}>
           <Button
             variant="primary"
-            disabled={committing || (plannedCount === 0 && !statusChanged)
+            disabled={inputsDisabled || (plannedCount === 0 && !statusChanged)
               || invalidCount > 0 || !!blockedReason}
             onClick={onCommit}
           >
@@ -389,6 +455,12 @@ const BiblioPersonPanel = ({
           dragged a section to. */}
       {blockedReason ? <Alert variant="warning">{blockedReason}</Alert> : null}
 
+      {/* Said on the page, not only in tooltips: every control below is greyed out, and
+          a curator who opened this to fix a link needs to know why at a glance. */}
+      {locked ? (
+        <Alert variant={statusLoad === 'error' ? 'danger' : 'secondary'}>{locked}</Alert>
+      ) : null}
+
       {/* The only blocked state with nothing else on screen to explain it. When Authors
           is visible its per-author errors are right there in red; hidden, the button
           just greys out while still reading "Commit 3". */}
@@ -401,7 +473,8 @@ const BiblioPersonPanel = ({
       ) : null}
 
       {commitSummary ? (
-        <Alert variant={commitSummary.failed > 0 || commitSummary.statusUnsaved ? 'warning' : 'success'}>
+        <Alert variant={commitSummary.failed > 0
+          || (commitSummary.status && commitSummary.status.state !== 'saved') ? 'warning' : 'success'}>
           {commitSummary.total > 0 ? (
             <>
               {commitSummary.applied} of {commitSummary.total} applied
@@ -412,11 +485,31 @@ const BiblioPersonPanel = ({
             </>
           ) : null}
           {/* Said out loud rather than left to the tooltip: the button offered to set a
-              status, so it owes the curator a plain statement that it did not. */}
-          {commitSummary.statusUnsaved ? (
+              status, so it owes the curator a plain statement of whether it did. */}
+          {commitSummary.lostLinks > 0 ? (
             <div>
-              Status was <strong>not</strong> saved — the author_person workflow tag does
-              not exist in ABC yet.
+              {commitSummary.lostLinks === 1 ? 'One author' : `${commitSummary.lostLinks} authors`} lost
+              their previous link but did not get the new one, so{' '}
+              {commitSummary.lostLinks === 1 ? 'it has' : 'they have'} no person now.
+            </div>
+          ) : null}
+          {commitSummary.status && commitSummary.status.state === 'saved' ? (
+            <div>Workflow status set to {statusLabel(commitSummary.status.atp)}.</div>
+          ) : null}
+          {commitSummary.status && commitSummary.status.state === 'skipped' ? (
+            <div>
+              Workflow status was <strong>not</strong> set to {statusLabel(commitSummary.status.atp)}:
+              {commitSummary.status.reason === 'partial'
+                ? ' not every change above went through, so not every author has the person you chose.'
+                : ' the changes above did not go through, so the status was left as it is.'}
+              {' '}It is still {storedStatus ? statusLabel(storedStatus) : 'unchanged'}; fix
+              what failed and commit again.
+            </div>
+          ) : null}
+          {commitSummary.status && commitSummary.status.state === 'failed' ? (
+            <div>
+              Workflow status was <strong>not</strong> set
+              to {statusLabel(commitSummary.status.atp)}: {commitSummary.status.message}
             </div>
           ) : null}
         </Alert>
