@@ -620,7 +620,9 @@ const BiblioPerson = () => {
       // Done aside.
       if ((failed > 0 && workflowStatus === AUTHOR_PERSON_DONE)
           || (manualStatus === null && counted.length > 0 && applied === 0)) {
-        status = { state: 'skipped', atp: workflowStatus };
+        // 'none' when nothing went through at all, 'partial' when only some did (which
+        // only skips Done): the summary words the two differently.
+        status = { state: 'skipped', atp: workflowStatus, reason: applied === 0 ? 'none' : 'partial' };
       } else {
         try {
           await transitionWorkflowTag({
@@ -643,6 +645,11 @@ const BiblioPerson = () => {
         }
       }
     }
+
+    // A hand-picked status lasts until a commit changes something. Kept past one that
+    // changed nothing, so a retry uses the same pick; otherwise a pick equal to the
+    // stored status (never "saved") would switch suggestions off for the whole visit.
+    if (applied > 0 || (status && status.state === 'saved')) setManualStatus(null);
 
     setCommitSummary({ total: counted.length, applied, failed, lostLinks, status });
     setCommitting(false);

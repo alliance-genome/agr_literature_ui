@@ -59,7 +59,8 @@ const STATUS_HELP = (
         To set a status without changing any connections, just pick it and Commit.
       </p>
       <p style={{ marginBottom: 0 }}>
-        Done is not set if any change fails, and you are told why. Nothing can be changed here
+        Done is not set if any change fails, and a status chosen for you is not set if every
+        change fails; you are told why. Nothing can be changed here
         unless the paper already has an author-person workflow status for your MOD.
       </p>
     </Popover.Content>
@@ -67,7 +68,7 @@ const STATUS_HELP = (
 );
 
 const STATUS_TITLE = 'Choosing a status stages it; it is written when you press the button, '
-  + 'after the author changes. Done is chosen for you once every author will be linked.';
+  + 'after the author changes. See the ? for how the status is chosen for you.';
 
 const statusLabel = (atp) => {
   const found = AUTHOR_PERSON_STATUSES.find((option) => option.atp === atp);
@@ -359,7 +360,10 @@ const BiblioPersonPanel = ({
               >
                 {/* Sized to the 0.8rem label beside it, not the 20px the header ?s use:
                     at 20px it towered over the small text. Grey like the label. */}
-                <FontAwesomeIcon icon={faQuestionCircle} style={{ width: '0.95rem', height: '0.95rem', color: '#666' }} />
+                <FontAwesomeIcon
+                  icon={faQuestionCircle}
+                  style={{ width: '0.95rem', height: '0.95rem', color: '#666' }}
+                />
               </button>
             </OverlayTrigger>
             <Form.Control
@@ -495,8 +499,10 @@ const BiblioPersonPanel = ({
           {commitSummary.status && commitSummary.status.state === 'skipped' ? (
             <div>
               Workflow status was <strong>not</strong> set to {statusLabel(commitSummary.status.atp)}:
-              not every change above went through, so not every author has the person you
-              chose. It is still {storedStatus ? statusLabel(storedStatus) : 'unchanged'}; fix
+              {commitSummary.status.reason === 'partial'
+                ? ' not every change above went through, so not every author has the person you chose.'
+                : ' the changes above did not go through, so the status was left as it is.'}
+              {' '}It is still {storedStatus ? statusLabel(storedStatus) : 'unchanged'}; fix
               what failed and commit again.
             </div>
           ) : null}
