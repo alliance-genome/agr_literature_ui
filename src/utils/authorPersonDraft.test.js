@@ -10,6 +10,9 @@ import {
   parseAffiliation,
   allAuthorsConnected,
   relinksSamePerson,
+  suggestWorkflowStatus,
+  AUTHOR_PERSON_IN_PROGRESS,
+  AUTHOR_PERSON_BLOCKED,
   duplicatePersonErrors,
   AUTHOR_PERSON_STATUSES,
   AUTHOR_PERSON_DONE,
@@ -845,5 +848,74 @@ describe('relinking the same person, and one person on two authors', () => {
       3: open(3, { mode: 'create' }),
     };
     expect(duplicatePersonErrors(authors, drafts)).toEqual({});
+  });
+});
+
+describe('suggestWorkflowStatus', () => {
+  const NOW = '2026-11-12T12:00:00.000Z';
+  const NEEDED = 'ATP:0000109';
+  const linked = (authorId, curie, over) => ({
+    ...draftFromAuthor({ author_id: authorId, name: 'Ann Doe', last_name: 'Doe', person_id: 7 }),
+    existingPersonCurie: curie,
+    ...over,
+  });
+  const open = (authorId, over) => ({
+    ...draftFromAuthor({ author_id: authorId, name: 'Bo Roe', last_name: 'Roe' }),
+    ...over,
+  });
+  const pick = (curie) => ({ mode: 'link', selectedPerson: { curie, name: '' } });
+  const suggest = (drafts, stored, stubs = []) => suggestWorkflowStatus(
+    buildCommitPlan(drafts, [], NOW, stubs), drafts, stored,
+  );
+
+  test('nothing staged keeps the stored status, even on a fully linked paper', () => {
+    expect(suggest([linked(1, 'AGRKB:1'), linked(2, 'AGRKB:2')], NEEDED)).toBe(NEEDED);
+    expect(suggest([], NEEDED)).toBe(NEEDED);
+  });
+
+  test('connecting the last author selects Done', () => {
+    expect(suggest([linked(1, 'AGRKB:1'), open(2, pick('AGRKB:2'))], NEEDED)).toBe(AUTHOR_PERSON_DONE);
+    expect(suggest([linked(1, 'AGRKB:1'), open(2, { mode: 'create' })], NEEDED)).toBe(AUTHOR_PERSON_DONE);
+  });
+
+  test('connecting all authors overrides Blocked', () => {
+    expect(suggest([open(1, pick('AGRKB:1'))], AUTHOR_PERSON_BLOCKED)).toBe(AUTHOR_PERSON_DONE);
+  });
+
+  test('a replacement on a fully linked paper is a curator action, so Done', () => {
+    const drafts = [linked(1, 'AGRKB:1', { pendingUnlink: true, ...pick('AGRKB:9') }), linked(2, 'AGRKB:2')];
+    expect(suggest(drafts, NEEDED)).toBe(AUTHOR_PERSON_DONE);
+  });
+
+  test('connecting some but not all authors selects In progress', () => {
+    expect(suggest([open(1, pick('AGRKB:1')), open(2)], NEEDED)).toBe(AUTHOR_PERSON_IN_PROGRESS);
+    expect(suggest([open(1, pick('AGRKB:1')), open(2)], AUTHOR_PERSON_DONE)).toBe(AUTHOR_PERSON_IN_PROGRESS);
+  });
+
+  test('a partial connection leaves Blocked alone', () => {
+    expect(suggest([open(1, pick('AGRKB:1')), open(2)], AUTHOR_PERSON_BLOCKED)).toBe(AUTHOR_PERSON_BLOCKED);
+  });
+
+  test('a removal from Done selects In progress', () => {
+    const drafts = [linked(1, 'AGRKB:1', { pendingUnlink: true }), linked(2, 'AGRKB:2')];
+    expect(suggest(drafts, AUTHOR_PERSON_DONE)).toBe(AUTHOR_PERSON_IN_PROGRESS);
+  });
+
+  test('a removal from any other status leaves it alone', () => {
+    const drafts = [linked(1, 'AGRKB:1', { pendingUnlink: true }), linked(2, 'AGRKB:2')];
+    expect(suggest(drafts, NEEDED)).toBe(NEEDED);
+    expect(suggest(drafts, AUTHOR_PERSON_BLOCKED)).toBe(AUTHOR_PERSON_BLOCKED);
+    expect(suggest(drafts, AUTHOR_PERSON_IN_PROGRESS)).toBe(AUTHOR_PERSON_IN_PROGRESS);
+  });
+
+  test('removing a person who is not an author never changes the status', () => {
+    const drafts = [linked(1, 'AGRKB:1')];
+    expect(suggest(drafts, AUTHOR_PERSON_DONE, [501])).toBe(AUTHOR_PERSON_DONE);
+    expect(suggest([open(1)], AUTHOR_PERSON_DONE, [501])).toBe(AUTHOR_PERSON_DONE);
+  });
+
+  test('removing then relinking the same person is no change', () => {
+    const drafts = [linked(1, 'AGRKB:1', { pendingUnlink: true, ...pick('AGRKB:1') })];
+    expect(suggest(drafts, AUTHOR_PERSON_BLOCKED)).toBe(AUTHOR_PERSON_BLOCKED);
   });
 });

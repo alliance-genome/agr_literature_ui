@@ -396,10 +396,12 @@ export const buildPersonPayload = (draft, stagedInstitutions, now = new Date().t
 // screen change any author or reference-person link (SCRUM-6827).
 export const AUTHOR_PERSON_PROCESS_ATP = 'ATP:0000375';
 export const AUTHOR_PERSON_DONE = 'ATP:0000378';
+export const AUTHOR_PERSON_IN_PROGRESS = 'ATP:0000377';
+export const AUTHOR_PERSON_BLOCKED = 'ATP:0000376';
 export const AUTHOR_PERSON_STATUSES = [
   { atp: 'ATP:0000109', label: 'Needed' },
-  { atp: 'ATP:0000377', label: 'In progress' },
-  { atp: 'ATP:0000376', label: 'Blocked' },
+  { atp: AUTHOR_PERSON_IN_PROGRESS, label: 'In progress' },
+  { atp: AUTHOR_PERSON_BLOCKED, label: 'Blocked' },
   // "complete" in ATP; curators call it Done.
   { atp: AUTHOR_PERSON_DONE, label: 'Done' },
 ];
@@ -419,6 +421,35 @@ export const allAuthorsConnected = (drafts) => (Array.isArray(drafts) ? drafts :
   || (draft && draft.mode === 'link' && !!(draft.selectedPerson && draft.selectedPerson.curie))
   || (draft && draft.mode === 'create')
 ));
+
+/**
+ * The status the dropdown offers for what is staged, before any pick by the curator.
+ * Worked out from the commit plan each time rather than tracked as changes happen,
+ * so undoing everything always lands back on the stored status. The rules, agreed
+ * with curators:
+ *
+ *   - Nothing staged: the stored status. Without a curator action it never changes.
+ *   - A link or create staged (a "not an author" person assigned to an author is a
+ *     link) and every author will have a person: Done, from any status, Blocked
+ *     included. A replacement on a paper that was already fully linked counts.
+ *   - Otherwise Blocked stays Blocked -- whoever set it had a reason.
+ *   - A link or create staged, but not every author will have a person: In progress.
+ *   - Only removals staged: In progress if the stored status is Done, else unchanged.
+ *   - Removing a "not an author" person never affects the status: it only takes away
+ *     something that should not have been there.
+ *
+ * A status the curator picks by hand overrides all of this (see BiblioPerson).
+ */
+export const suggestWorkflowStatus = (plan, drafts, storedStatus) => {
+  const kinds = new Set((Array.isArray(plan) ? plan : []).map((p) => p.kind));
+  const connects = kinds.has('link') || kinds.has('create');
+  const removes = kinds.has('unlink');
+  if (!connects && !removes) return storedStatus;
+  if (connects && allAuthorsConnected(drafts)) return AUTHOR_PERSON_DONE;
+  if (storedStatus === AUTHOR_PERSON_BLOCKED) return storedStatus;
+  if (connects) return AUTHOR_PERSON_IN_PROGRESS;
+  return storedStatus === AUTHOR_PERSON_DONE ? AUTHOR_PERSON_IN_PROGRESS : storedStatus;
+};
 
 /**
  * Whether a draft is staged to drop its link and then link the very same person again.

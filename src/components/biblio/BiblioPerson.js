@@ -21,7 +21,7 @@ import { orderedAuthors } from '../../utils/authorOrdering';
 import { mainFilesForCurator } from '../../utils/mainReferenceFiles';
 import {
   stagedInstitutionsFromAuthors, appendStagedInstitution, draftFromAuthor,
-  matchQueryForAuthor, validateDraft, buildCommitPlan, allAuthorsConnected,
+  matchQueryForAuthor, validateDraft, buildCommitPlan, suggestWorkflowStatus,
   relinksSamePerson, duplicatePersonErrors,
   keepsExistingLink, AUTHOR_PERSON_PROCESS_ATP, AUTHOR_PERSON_DONE,
 } from '../../utils/authorPersonDraft';
@@ -76,11 +76,9 @@ const BiblioPerson = () => {
   // (SCRUM-6827) -- the page is still open to everyone, read-only.
   const [statusLoad, setStatusLoad] = useState('loading');
   const [storedStatus, setStoredStatus] = useState(null);
-  // Staged like everything else on this screen -- choosing it writes nothing until
-  // Commit. autoDone records that Done was chosen for the curator because every
-  // author will be linked, so it can be withdrawn again if that stops being true.
-  const [workflowStatus, setWorkflowStatus] = useState(null);
-  const [autoDone, setAutoDone] = useState(false);
+  // A status the curator picked by hand, or null to follow the one the staged changes
+  // suggest (suggestWorkflowStatus). Staged like everything else: written on Commit.
+  const [manualStatus, setManualStatus] = useState(null);
   // Person-only rows staged for deletion, by their author_id.
   const [stubRemovals, setStubRemovals] = useState(() => new Set());
 
@@ -150,8 +148,7 @@ const BiblioPerson = () => {
     if (!referenceCurie) return undefined;
     setStatusLoad('loading');
     setStoredStatus(null);
-    setWorkflowStatus(null);
-    setAutoDone(false);
+    setManualStatus(null);
     if (!accessLevel || accessLevel === 'No') {
       // No MOD, so no MOD workflow to be in: read-only, not an error.
       setStatusLoad('ready');
@@ -164,7 +161,6 @@ const BiblioPerson = () => {
         if (cancelled || !mounted.current) return;
         const atp = typeof res.data === 'string' && res.data ? res.data : null;
         setStoredStatus(atp);
-        setWorkflowStatus(atp);
         setStatusLoad('ready');
       })
       .catch((error) => {
@@ -465,7 +461,15 @@ const BiblioPerson = () => {
   // From the plan itself rather than counting drafts in link/create mode, so the
   // button promises exactly what the commit will do. Counting modes said "Commit 4"
   // when three of those four were already committed and would be skipped.
-  const plannedCount = buildCommitPlan(authorDrafts, staged, undefined, [...stubRemovals]).length;
+  const commitPlan = buildCommitPlan(authorDrafts, staged, undefined, [...stubRemovals]);
+  const plannedCount = commitPlan.length;
+  // What the dropdown shows: the curator's own pick if they made one, otherwise what
+  // the staged changes call for. autoStatus marks the second case when it differs
+  // from what is stored, so the dropdown can say why it moved.
+  const suggestedStatus = editable
+    ? suggestWorkflowStatus(commitPlan, authorDrafts, storedStatus) : storedStatus;
+  const workflowStatus = manualStatus !== null ? manualStatus : suggestedStatus;
+  const autoStatus = manualStatus === null && workflowStatus !== storedStatus;
   const statusChanged = editable && workflowStatus !== null && workflowStatus !== storedStatus;
 
   // Only authors who will have no person can take one of these stubs.
@@ -486,47 +490,8 @@ const BiblioPerson = () => {
     if (holder) stubAssignments[stub.author_id] = holder.author_id;
   }
 
-  // Done is chosen for the curator when a change staged on this page links the last
-  // unlinked author, and taken back (to the stored status) if that stops being true --
-  // but only if it was chosen automatically. Never on a paper that opened fully linked,
-  // and never with nothing to commit: removing a link and undoing it is not a change.
-  const connected = allAuthorsConnected(authorDrafts);
-  const wasConnected = useRef(false);
-  const openedConnected = useRef(false);
-  const primed = useRef(false);
-  useEffect(() => {
-    if (!editable) {
-      primed.current = false;
-      return;
-    }
-    // Done is only ever selected for a paper that opened with an author not linked.
-    // A paper that opened fully linked keeps its stored status (Needed, Blocked...)
-    // until the curator picks Done -- whatever is removed, undone or replaced here,
-    // since a replacement passes through "not all linked" on its way.
-    if (!primed.current) {
-      primed.current = true;
-      wasConnected.current = connected;
-      openedConnected.current = connected;
-      return;
-    }
-    const was = wasConnected.current;
-    wasConnected.current = connected;
-    if (connected && !was && !openedConnected.current && plannedCount > 0
-        && workflowStatus !== AUTHOR_PERSON_DONE) {
-      setWorkflowStatus(AUTHOR_PERSON_DONE);
-      setAutoDone(true);
-    } else if (!connected && was && autoDone) {
-      setWorkflowStatus(storedStatus);
-      setAutoDone(false);
-    }
-    // Driven by the transition only; workflowStatus, autoDone and plannedCount are read,
-    // not watched.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, editable]);
-
   const onWorkflowStatusChange = useCallback((atp) => {
-    setWorkflowStatus(atp);
-    setAutoDone(false);
+    setManualStatus(atp);
   }, []);
 
   const onCommit = async () => {
@@ -650,7 +615,11 @@ const BiblioPerson = () => {
     // so the reference is not done, and the curator is told so instead.
     let status = null;
     if (statusChanged) {
-      if (failed > 0 && workflowStatus === AUTHOR_PERSON_DONE) {
+      // An automatic status is also skipped when every change failed: nothing moved,
+      // so there is no progress to record. A status picked by hand is always written,
+      // Done aside.
+      if ((failed > 0 && workflowStatus === AUTHOR_PERSON_DONE)
+          || (manualStatus === null && counted.length > 0 && applied === 0)) {
         status = { state: 'skipped', atp: workflowStatus };
       } else {
         try {
@@ -661,7 +630,7 @@ const BiblioPerson = () => {
           });
           if (!mounted.current) return;
           setStoredStatus(workflowStatus);
-          setAutoDone(false);
+          setManualStatus(null);
           status = { state: 'saved', atp: workflowStatus };
         } catch (error) {
           console.error('author-person status transition error:', error);
@@ -728,7 +697,7 @@ const BiblioPerson = () => {
         storedStatus={storedStatus}
         workflowStatus={workflowStatus}
         statusChanged={statusChanged}
-        autoDone={autoDone}
+        autoStatus={autoStatus}
         onWorkflowStatusChange={onWorkflowStatusChange}
         blockedReason=""
         onStagedChange={onStagedChange}

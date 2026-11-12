@@ -11,9 +11,12 @@ import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Popover from 'react-bootstrap/Popover';
 import { useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons';
 
 import BiblioPersonInstitutionStaging from './BiblioPersonInstitutionStaging';
 import BiblioPersonAuthorRow from './BiblioPersonAuthorRow';
@@ -30,7 +33,38 @@ import {
 import '../sectionGrid.css';
 import './biblioPerson.css';
 
-import { AUTHOR_PERSON_STATUSES } from '../../utils/authorPersonDraft';
+import { AUTHOR_PERSON_STATUSES, AUTHOR_PERSON_DONE } from '../../utils/authorPersonDraft';
+
+// The rules suggestWorkflowStatus applies, in curator terms.
+const STATUS_HELP = (
+  <Popover id="biblio-person-status-help" style={{ maxWidth: '30rem' }}>
+    <Popover.Title as="h3">How the workflow status is set</Popover.Title>
+    <Popover.Content>
+      <p style={{ marginBottom: '0.4rem' }}>
+        Connections and the status are changed only on this page, and only when you press
+        Commit. The dropdown shows the status Commit will set, chosen from your changes:
+      </p>
+      <ul style={{ paddingLeft: '1.1rem', marginBottom: '0.4rem' }}>
+        <li>No changes: the status stays as it is.</li>
+        <li>You connect authors (link, create, or assign a person who is not an author) and every
+          author will have a person: <strong>Done</strong>, from any status, including Blocked.</li>
+        <li>You connect authors but some will still have no person: <strong>In progress</strong>,
+          unless the paper is <strong>Blocked</strong>, which stays Blocked.</li>
+        <li>You only remove connections: <strong>In progress</strong> if the paper was Done,
+          otherwise the status stays as it is.</li>
+        <li>Removing a person who is not an author never changes the status.</li>
+      </ul>
+      <p style={{ marginBottom: '0.4rem' }}>
+        You can pick any status yourself before Commit; your choice is kept whatever else you change.
+        To set a status without changing any connections, just pick it and Commit.
+      </p>
+      <p style={{ marginBottom: 0 }}>
+        Done is not set if any change fails, and you are told why. Nothing can be changed here
+        unless the paper already has an author-person workflow status for your MOD.
+      </p>
+    </Popover.Content>
+  </Popover>
+);
 
 const STATUS_TITLE = 'Choosing a status stages it; it is written when you press the button, '
   + 'after the author changes. Done is chosen for you once every author will be linked.';
@@ -58,7 +92,7 @@ const BiblioPersonPanel = ({
   authors, stubs, staged, drafts, matches, matchState, personDetails,
   errorsByAuthor, results, showAll, matchesOpen, committing, commitSummary, blockedReason,
   plannedCount, mod, statusLoad, editable, storedStatus, workflowStatus, statusChanged,
-  autoDone, onWorkflowStatusChange,
+  autoStatus, onWorkflowStatusChange,
   onStagedChange, onAddInstitution, onDraftChange, onToggleShowAll, onToggleMatches,
   onCommit, onBack, onToggleUnlink, availableAuthors, stubAssignments, stubRemovals,
   onAssignStub, onToggleStubRemoval,
@@ -309,6 +343,25 @@ const BiblioPersonPanel = ({
               workflow from nothing, and that is also what locks the rest of the page. */}
           <span title={locked || STATUS_TITLE} style={{ whiteSpace: 'nowrap' }}>
             <span className="biblio-person-muted">Workflow status </span>
+            {/* Click-to-open like the search-bar and query-builder ?s, with the same
+                outline icon, so every ? in the app behaves alike. A native <button> so
+                it is keyboard operable. */}
+            <OverlayTrigger trigger="click" placement="bottom-start" rootClose overlay={STATUS_HELP}>
+              <button
+                type="button"
+                aria-label="How the workflow status is set"
+                aria-haspopup="dialog"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', border: 'none', padding: 0,
+                  background: 'none', color: 'inherit', lineHeight: 1, cursor: 'pointer',
+                  verticalAlign: 'middle', marginRight: '0.3rem',
+                }}
+              >
+                {/* Sized to the 0.8rem label beside it, not the 20px the header ?s use:
+                    at 20px it towered over the small text. Grey like the label. */}
+                <FontAwesomeIcon icon={faQuestionCircle} style={{ width: '0.95rem', height: '0.95rem', color: '#666' }} />
+              </button>
+            </OverlayTrigger>
             <Form.Control
               as="select"
               size="sm"
@@ -326,7 +379,9 @@ const BiblioPersonPanel = ({
               {AUTHOR_PERSON_STATUSES.map((option) => (
                 <option key={option.atp} value={option.atp}>
                   {option.label}
-                  {option.atp === workflowStatus && autoDone ? ' (all authors linked)' : ''}
+                  {option.atp === workflowStatus && autoStatus
+                    ? (option.atp === AUTHOR_PERSON_DONE ? ' (all authors linked)' : ' (from your changes)')
+                    : ''}
                 </option>
               ))}
               {/* A stored state outside the four would otherwise render as the first
