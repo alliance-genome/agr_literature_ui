@@ -2,6 +2,8 @@ import {
   getConvertedFilesMap,
   getConvertedFileClasses,
   getConvertedFileEntries,
+  reffileCompareFn,
+  SUPPLEMENT_UPLOAD_FILE_CLASSES,
 } from './BiblioFileManagement';
 
 let nextId = 1;
@@ -176,5 +178,23 @@ describe('Office supplements (SCRUM-6589)', () => {
     const xlsxRow = makeFile('table_s1', 'supplement', 'XLSX');
     const map = getConvertedFilesMap([makeFile('table_s1', 'supplement', 'pdf'), xlsxRow, pdfMd]);
     expect(getConvertedFileEntries(xlsxRow, map)).toEqual([]);
+  });
+});
+
+describe('user_submitted files (SCRUM-6817)', () => {
+  test('the supplement upload pulldown offers supplement and user_submitted', () => {
+    expect(SUPPLEMENT_UPLOAD_FILE_CLASSES).toEqual(['supplement', 'user_submitted']);
+  });
+
+  test('user_submitted files sort after supplements and before other classes', () => {
+    const files = [
+      makeFile('fig1', 'figure', 'png'),
+      makeFile('data_b', 'user_submitted', 'xlsx'),
+      makeFile('supp1', 'supplement', 'pdf'),
+      makeFile('data_a', 'user_submitted', 'csv'),
+      makeFile('paper', 'main', 'pdf'),
+    ];
+    expect([...files].sort(reffileCompareFn).map((f) => f.display_name))
+      .toEqual(['paper', 'supp1', 'data_a', 'data_b', 'fig1']);
   });
 });

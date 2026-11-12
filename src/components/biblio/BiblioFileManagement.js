@@ -91,7 +91,7 @@ const BiblioFileManagement = () => {
         {canUploadFiles ? (
           <>
             <FileUpload main_or_supp="main" />
-            <FileUpload main_or_supp="supplement" />
+            <FileUpload main_or_supp="supplement" fileClassOptions={SUPPLEMENT_UPLOAD_FILE_CLASSES} />
           </>
         ) : !cognitoObserver ? (
           <AddToCorpus accessLevel={accessLevel} referenceCurie={referenceJsonLive.curie} />
@@ -659,8 +659,13 @@ const OpenAccess = () => {
   );
 }
 
-const FileUpload = ({main_or_supp}) => {
+// File classes the curator picks from in the supplement upload row (SCRUM-6817).
+// The pulldown starts blank, so nothing uploads until a class is chosen.
+export const SUPPLEMENT_UPLOAD_FILE_CLASSES = ['supplement', 'user_submitted'];
+
+const FileUpload = ({main_or_supp, fileClassOptions}) => {
   const dispatch = useDispatch();
+  const [fileClass, setFileClass] = useState(fileClassOptions ? '' : main_or_supp);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
@@ -718,7 +723,7 @@ const FileUpload = ({main_or_supp}) => {
       fileExtension = file.name.split(".").pop();
     }
 
-    let url = `/reference/referencefile/file_upload/?reference_curie=${referenceCurie}&display_name=${fileName}&file_class=${main_or_supp}&file_publication_status=final&file_extension=${fileExtension}&is_annotation=false`;
+    let url = `/reference/referencefile/file_upload/?reference_curie=${referenceCurie}&display_name=${fileName}&file_class=${fileClass}&file_publication_status=final&file_extension=${fileExtension}&is_annotation=false`;
     if (accessLevel !== null) {
       url += `&mod_abbreviation=${accessLevel}`;
     }
@@ -764,9 +769,9 @@ const FileUpload = ({main_or_supp}) => {
     acceptedFiles.forEach((file) => {
       uploadFile(file);
     });
-  }, [accessLevel, dispatch, accessToken, main_or_supp, referenceCurie]);
+  }, [accessLevel, dispatch, accessToken, fileClass, referenceCurie]);
 
-  const {getRootProps, getInputProps} = useDropzone({onDrop})
+  const {getRootProps, getInputProps} = useDropzone({onDrop, disabled: !fileClass})
 
   return (
       <>
@@ -775,14 +780,29 @@ const FileUpload = ({main_or_supp}) => {
                       genericModalBody={fileUploadingModalText.replaceAll(". ", ".<br/>")}
                       onHideAction={setFileUploadingShowModal(false)} />
         <Row key={main_or_supp} >
-          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>{main_or_supp} file</Col>
+          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>
+            {fileClassOptions ? (
+              <Form.Control
+                as="select"
+                size="sm"
+                aria-label="file type"
+                value={fileClass}
+                onChange={(event) => setFileClass(event.target.value)}
+              >
+                <option value=""></option>
+                {fileClassOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              </Form.Control>
+            ) : `${main_or_supp} file`}
+          </Col>
           <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center'}}>
             { (() => {
               if (accessLevel !== 'No') {
                 return (
                   <div className="dropzone" {...getRootProps()} >
                     <input {...getInputProps()} />
-                    <p>Drag and drop {main_or_supp} file here, or click to select files</p>
+                    <p>{fileClass
+                      ? `Drag and drop ${fileClass} file here, or click to select files`
+                      : 'Select a file type to upload files'}</p>
                   </div>
                 ) }
               else { return ( <div>You must be in a Cognito curator group to upload files in production</div>) } } )() }
@@ -843,10 +863,10 @@ export const BiblioCitationDisplay = ({ extraLabelContent }) => {
 // }
 
 export const reffileCompareFn = (a, b) => {
-  // Sort order: main first, then supplement, then others (figure, etc.) at the end
-  const fileClassOrder = { 'main': 0, 'supplement': 1 };
-  const orderA = fileClassOrder[a.file_class] ?? 2;
-  const orderB = fileClassOrder[b.file_class] ?? 2;
+  // Sort order: main first, then supplement, then user_submitted, then others (figure, etc.) at the end
+  const fileClassOrder = { 'main': 0, 'supplement': 1, 'user_submitted': 2 };
+  const orderA = fileClassOrder[a.file_class] ?? 3;
+  const orderB = fileClassOrder[b.file_class] ?? 3;
 
   if (orderA !== orderB) {
     return orderA - orderB;
