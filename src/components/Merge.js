@@ -851,6 +851,10 @@ const MergeSubmitDataTransferUpdateButton = () => {
         forApiArray.push( array ); } }
 
     const sortedWorkflow = deriveWorkflowData(referenceMeta1, referenceMeta2, atpOntology);
+    // workflow tags are deleted and moved to the kept reference in one API call, in one transaction:
+    // a PATCH can no longer move a tag, and separate parallel calls could race (SCRUM-6845)
+    const workflowDeleteIds = [];
+    const workflowMoveIds = [];
     // fileupload gets transferred based on priority
     Object.keys(sortedWorkflow['fileuploadMods']).sort().forEach((mod) => {
       let priority1 = 0; let priority2 = 0; let winner_id = null; let loser_id = null;
@@ -861,32 +865,23 @@ const MergeSubmitDataTransferUpdateButton = () => {
         loser_id = sortedWorkflow['fileupload2'][mod]['id'];
         priority2 = atpOntology['ATP:0000140'][sortedWorkflow['fileupload2'][mod]['atp']]['priority']; }
       if (priority2 > priority1) { [winner_id, loser_id] = [loser_id, winner_id]; }
-      let subPath = 'workflow_tag/' + loser_id;
-      let array = [ subPath, null, 'DELETE', 0, null, null]
-      if (loser_id !== null) {
-        console.log('array'); console.log(array);
-        forApiArray.push( array ); }
-      if (priority2 > priority1) {
-        subPath = 'workflow_tag/' + winner_id;
-        array = [ subPath, { 'reference_curie': referenceMeta1['referenceJson']['curie'] }, 'PATCH', 0, null, null]
-        console.log('array'); console.log(array);
-        forApiArray.push( array ); }
+      if (loser_id !== null) { workflowDeleteIds.push(loser_id); }
+      if (priority2 > priority1) { workflowMoveIds.push(winner_id); }
     });
     // curatability gets transferred based on toggle
     Object.keys(sortedWorkflow['curatabilityMods']).sort().forEach((mod) => {
       if (mod in sortedWorkflow['curatability1']) {
         if (sortedWorkflow['curatability1'][mod]['toggle'] !== false) {
-          let subPath = 'workflow_tag/' + sortedWorkflow['curatability1'][mod]['id'];
-          let array = [ subPath, null, 'DELETE', 0, null, null]
-          console.log('array'); console.log(array);
-          forApiArray.push( array ); } }
+          workflowDeleteIds.push(sortedWorkflow['curatability1'][mod]['id']); } }
       if (mod in sortedWorkflow['curatability2']) {
         if (sortedWorkflow['curatability2'][mod]['toggle'] !== false) {
-          let subPath = 'workflow_tag/' + sortedWorkflow['curatability2'][mod]['id'];
-          let array = [ subPath, { 'reference_curie': referenceMeta1['referenceJson']['curie'] }, 'PATCH', 0, null, null]
-          console.log('array'); console.log(array);
-          forApiArray.push( array ); } }
+          workflowMoveIds.push(sortedWorkflow['curatability2'][mod]['id']); } }
     });
+    if (workflowDeleteIds.length > 0 || workflowMoveIds.length > 0) {
+      const subPath = 'workflow_tag/merge/' + referenceMeta1['referenceJson']['curie'];
+      const array = [ subPath, { 'delete_ids': workflowDeleteIds, 'move_ids': workflowMoveIds }, 'POST', 0, null, null]
+      console.log('array'); console.log(array);
+      forApiArray.push( array ); }
     // unaccounted for cannot get transferred
 
     // A person may be linked to only one author per reference, so transferring an author whose

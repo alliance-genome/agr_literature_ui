@@ -16,18 +16,6 @@ export async function patchWorkflowTag(id, data) {
 }
 
 /**
- * Delete an existing workflow tag.
- * @param {string|number} id  the reference_workflow_tag_id
- */
-export async function deleteWorkflowTag(id) {
-  const res = await api.delete(`/workflow_tag/${id}`);
-  if (!isSuccess(res.status)) {
-    throw new Error(`DELETE /workflow_tag/${id} failed with status ${res.status}`);
-  }
-  return res.data;
-}
-
-/**
  * Transition a workflow tag to a new status using the transition API.
  * This validates that the transition is allowed and executes any associated actions.
  * @param {{ curie_or_reference_id: string, mod_abbreviation: string, new_workflow_tag_atp_id: string, transition_type?: string }} data

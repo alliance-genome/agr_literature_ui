@@ -9,7 +9,7 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { Spinner, Form, Modal, Button, Container, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faExclamation, faCheckCircle, faTimesCircle, faHourglass, faCircle, faClock } from '@fortawesome/free-solid-svg-icons';
-import { patchWorkflowTag, deleteWorkflowTag, transitionWorkflowTag } from './WorkflowTagService';
+import { patchWorkflowTag, transitionWorkflowTag } from './WorkflowTagService';
 
 import BiblioPreferenceControls from '../settings/BiblioPreferenceControls';
 import ColumnHideShowDropdown from '../AgGrid/ColumnHideShowDropdown';
@@ -384,6 +384,7 @@ const BiblioWorkflow = () => {
               curation_tag: curation_tag,
               options,
               reference_workflow_tag_id,
+              workflow_process_atp_id: sectionInfo.workflow_process_atp_id,
             };
 
             // adding the "no genetic data" prediction/validation fields into the Manual Indexing row
@@ -1522,9 +1523,20 @@ const BiblioWorkflow = () => {
 
       // --- Manual Indexing / Community Curation workflow tags
       if (isClearingWorkflowTag) {
-        // DELETE: clearing workflow_tag
+        // clearing a workflow_tag is a transition to the section's process term, which removes the
+        // tag through the transition table (SCRUM-6845)
         if (rowData.reference_workflow_tag_id) {
-          await deleteWorkflowTag(rowData.reference_workflow_tag_id);
+          if (!rowData.workflow_process_atp_id) {
+            setApiErrorMessage('Cannot clear this workflow tag: the workflow process is unknown.');
+            setShowApiErrorModal(true);
+            fetchIndexingWorkflowOverview();
+            return;
+          }
+          await transitionWorkflowTag({
+            curie_or_reference_id: referenceCurie,
+            mod_abbreviation: accessLevel,
+            new_workflow_tag_atp_id: rowData.workflow_process_atp_id
+          });
         }
       } else if (colId === 'workflow_tag_id') {
         // workflow_tag_id changes use transition API (validates transition and executes actions)
