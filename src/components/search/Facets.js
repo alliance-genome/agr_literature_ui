@@ -86,7 +86,6 @@ export const RENAME_FACETS = {
     "author_workflow": "Author",
     "predicted_indexing_priority": "Predicted indexing priority",
     "indexing_priority": "Indexing priority",
-    "manual_indexing_curation_tag": "Manual indexing curation tag",
     "datePubmedAdded": {
         label: "Date Range: Added to PubMed",
         value: (state) => state.search.datePubmedAdded,
@@ -135,7 +134,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     // alphabetical by label (SCRUM-6490)
     "Workflow Tags": ["abstract_classification", "author_workflow", "community_curation", "curation_classification", "email_extraction", "entity_extraction", "file_workflow", "first_pass_curation", "manual_indexing", "reference_classification"],
-    "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
+    "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "resource id", "language"],
     "Images": ["can display image", "has image"],
     "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty", "data_context", "large_scale_tag"],
@@ -579,7 +578,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                 if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'data_context', 'large_scale_tag',
                         'file_workflow', 'manual_indexing', 'reference_classification',
 		                'entity_extraction', 'curation_classification', 'abstract_classification', 'community_curation', 'first_pass_curation', 'email_extraction', 'author_workflow',
-                        'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag',
+                        'predicted_indexing_priority', 'indexing_priority',
                         'can_display_image', 'has_image'].includes(key)) {
                     key = key + '.keyword';
                 }
