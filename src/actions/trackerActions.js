@@ -27,6 +27,12 @@ export const addWorkflowTag = (tag_id, mod_abbreviation, curie, accessToken) => 
     api.post('/workflow_tag/transition_to_workflow_status', params)
       .then(res => {
         dispatch(searchMissingFiles(mod_abbreviation));
+      })
+      .catch(error => {
+        // a move the transition table refuses (e.g. from an unexpected file upload status)
+        const detail = error.response?.data?.detail || error.message;
+        console.error('Workflow transition failed:', detail);
+        window.alert(`Could not change the file status of ${curie}: ${detail}`);
       });
   };
 };

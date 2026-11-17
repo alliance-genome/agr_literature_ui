@@ -1525,7 +1525,13 @@ const BiblioWorkflow = () => {
       if (isClearingWorkflowTag) {
         // clearing a workflow_tag is a transition to the section's process term, which removes the
         // tag through the transition table (SCRUM-6845)
-        if (rowData.reference_workflow_tag_id && rowData.workflow_process_atp_id) {
+        if (rowData.reference_workflow_tag_id) {
+          if (!rowData.workflow_process_atp_id) {
+            setApiErrorMessage('Cannot clear this workflow tag: the workflow process is unknown.');
+            setShowApiErrorModal(true);
+            fetchIndexingWorkflowOverview();
+            return;
+          }
           await transitionWorkflowTag({
             curie_or_reference_id: referenceCurie,
             mod_abbreviation: accessLevel,
