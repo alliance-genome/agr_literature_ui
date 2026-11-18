@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-}
     restart: always
     ports:
       - "${LIT_UI_PORT}:80"
