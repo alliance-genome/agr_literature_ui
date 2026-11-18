@@ -129,6 +129,7 @@ const Login = () => {
     };
 
     const [buildDate, setBuildDate] = useState(null);
+    const [buildCommit, setBuildCommit] = useState(null);
     useEffect(() => {
         fetch('/version.json')
             .then(res => res.ok ? res.json() : null)
@@ -141,6 +142,10 @@ const Login = () => {
                     const hh = String(date.getHours()).padStart(2, '0');
                     const min = String(date.getMinutes()).padStart(2, '0');
                     setBuildDate(`${yyyy}-${mm}-${dd} ${hh}:${min}`);
+                }
+                // which commit the UI was built from (SCRUM-6878)
+                if (data?.commit) {
+                    setBuildCommit(data.commit);
                 }
             })
             .catch(() => {});
@@ -199,6 +204,11 @@ const Login = () => {
                     <NavDropdown.Item style={{ whiteSpace: 'nowrap' }}>
                         {buildDate}
                     </NavDropdown.Item>
+                    {buildCommit && (
+                        <NavDropdown.Item style={{ whiteSpace: 'nowrap' }}>
+                            Commit: {buildCommit}
+                        </NavDropdown.Item>
+                    )}
                     <NavDropdown.Divider />
                 </>)}
                 <NavDropdown.Item
