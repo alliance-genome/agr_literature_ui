@@ -46,6 +46,7 @@ export const SECTION_DEFS = [
   { id: 'laboratories', label: 'Laboratories' },
   { id: 'cross_references', label: 'Cross references' },
   { id: 'research_interest', label: 'Research interest (public)' },
+  { id: 'public_notes', label: 'Public notes' },
   { id: 'comments', label: 'Comments (internal)' },
   { id: 'lineage', label: 'Lineage', mods: ['WB'] },
 ];
@@ -69,7 +70,7 @@ export const defaultHiddenSections = (effectiveMod) =>
 // layout, and as the starting canvas state in the preference modal.
 //
 // Heights are intentionally one row each so the modal canvas stays compact (with
-// eleven sections, taller boxes make the canvas scroll a lot). The pages
+// twelve sections, taller boxes make the canvas scroll a lot). The pages
 // themselves ignore `h` — sections are laid out by column position with auto-sized rows —
 // so the canvas height carries no real meaning beyond the schematic.
 export const DEFAULT_LAYOUT = SECTION_DEFS.map((s, i) => ({

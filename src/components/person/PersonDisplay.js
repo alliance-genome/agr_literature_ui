@@ -256,7 +256,9 @@ const PersonDisplay = ({ person: personProp }) => {
   const institutions = person.institutions ?? [];
   const activeInstitutions = institutions.filter((i) => !i.date_made_old_institution);
   const oldInstitutions = institutions.filter((i) => !!i.date_made_old_institution);
-  const notes = person.notes ?? [];
+  // internal false is a public note; a note without the flag counts as internal
+  const notes = (person.notes ?? []).filter((n) => n.internal !== false);
+  const publicNotes = (person.notes ?? []).filter((n) => n.internal === false);
   const labPersons = person.lab_persons ?? [];
 
   const recordTs = metaLabel(person.updated_by, person.date_updated);
@@ -486,16 +488,17 @@ const PersonDisplay = ({ person: personProp }) => {
     </Section>
   );
 
-  sectionRows.comments = (
-    <Section title="Comments (internal)">
-      {notes.length === 0 ? (
-        <FieldRow label="comment" />
+  const noteSection = (title, list, label) => (
+    <Section title={title}>
+      {list.length === 0 ? (
+        <FieldRow label={label} />
       ) : (
-        notes.map((n, i) => (
+        list.map((n, i) => (
           <FieldRow
             key={n.person_note_id ?? i}
-            label="comment"
-            ts={metaLabel(n.updated_by, n.date_updated)}
+            label={label}
+            ts={[n.obsolete ? 'obsolete' : null, metaLabel(n.updated_by, n.date_updated)]
+              .filter(Boolean).join(' · ') || null}
           >
             <span style={{ whiteSpace: 'pre-wrap' }}>{n.note}</span>
           </FieldRow>
@@ -503,6 +506,9 @@ const PersonDisplay = ({ person: personProp }) => {
       )}
     </Section>
   );
+
+  sectionRows.public_notes = noteSection('Public notes', publicNotes, 'public note');
+  sectionRows.comments = noteSection('Comments (internal)', notes, 'comment');
 
   // Read-only mirror of the editor's Lineage section: canonical connections with
   // the submissions that produced them, then any submission not yet promoted to a
