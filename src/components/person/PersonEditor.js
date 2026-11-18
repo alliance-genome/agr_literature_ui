@@ -625,13 +625,17 @@ const PersonEditor = ({ person }) => {
   });
   const [xrefs, updateXref, removeXref] = useAutoGrowList(initialXrefs, emptyXref, xrefIsEmpty);
 
-  // Notes / comments
+  // Notes: internal ones are the "Comments (internal)" section, public ones
+  // (internal false) the "Public notes" section. A note never moves between them
+  // here -- a private comment must not become public with one click; to change
+  // one, add it to the other section and remove the old one. A note without the
+  // flag counts as internal.
   const emptyNote = () => {
     const r = { note: '', _ts: null, _by: null, _id: null, _status: null, _error: null };
     return { ...r, _saved: noteFields(r), _savedKey: noteSnap(r) };
   };
   const noteIsEmpty = (n) => !n.note;
-  const initialNotes = (p.notes ?? []).map((n) => {
+  const toNoteRow = (n) => {
     const r = {
       note: n.note ?? '',
       _ts: n.date_updated ?? null,
@@ -641,8 +645,12 @@ const PersonEditor = ({ person }) => {
       _error: null,
     };
     return { ...r, _saved: noteFields(r), _savedKey: noteSnap(r) };
-  });
+  };
+  const initialNotes = (p.notes ?? []).filter((n) => n.internal !== false).map(toNoteRow);
+  const initialPublicNotes = (p.notes ?? []).filter((n) => n.internal === false).map(toNoteRow);
   const [notes, updateNote, removeNote] = useAutoGrowList(initialNotes, emptyNote, noteIsEmpty);
+  const [publicNotes, updatePublicNote, removePublicNote] =
+    useAutoGrowList(initialPublicNotes, emptyNote, noteIsEmpty);
 
   // Laboratory connections — editable, auto-growing like the other lists. The
   // alum / is_pi / former_pi DateTime fields are shown as checkboxes; the stored
@@ -1051,20 +1059,25 @@ const PersonEditor = ({ person }) => {
     saveEmail(i);
   };
 
-  // Notes
-  const saveNote = (i) => persistChild({
-    list: notes, update: updateNote, i,
+  // Notes. `internal` is sent only on create; an edit changes the text only.
+  const noteSaver = (list, update, internal) => (i) => persistChild({
+    list, update, i,
     idKey: 'person_note_id', endpoint: '/person_note', createPath: '/person_note/',
     completeFn: (r) => !!(r.note && r.note.trim()),
     bodyFn: (r, isCreate, changed) => {
-      if (isCreate) return { note: r.note, person_curie: p.curie };
+      if (isCreate) return { note: r.note, person_curie: p.curie, internal };
       const body = {};
       if (changed.includes('note')) body.note = r.note;
       return body;
     },
     snap: noteSnap, savedOf: noteFields,
   });
+  const saveNote = noteSaver(notes, updateNote, true);
+  const savePublicNote = noteSaver(publicNotes, updatePublicNote, false);
   const deleteNote = (i) => deleteChild({ list: notes, update: updateNote, remove: removeNote, i, endpoint: '/person_note' });
+  const deletePublicNote = (i) => deleteChild({
+    list: publicNotes, update: updatePublicNote, remove: removePublicNote, i, endpoint: '/person_note',
+  });
 
   // Cross references — recombine prefix + id into the API's single curie.
   const saveXref = (i, override) => persistChild({
@@ -1152,6 +1165,8 @@ const PersonEditor = ({ person }) => {
     i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : x.curie_prefix || 'xref';
   const labelForNote = (n, i) =>
     i === notes.length - 1 && noteIsEmpty(n) ? 'comment (add)' : 'comment';
+  const labelForPublicNote = (n, i) =>
+    i === publicNotes.length - 1 && noteIsEmpty(n) ? 'public note (add)' : 'public note';
   const labelForLab = (l, i) =>
     i === labs.length - 1 && labIsEmpty(l) ? 'laboratory (add)' : 'laboratory';
 
@@ -1688,34 +1703,40 @@ const PersonEditor = ({ person }) => {
     </Card>
   );
 
-  sectionRows.comments = (
+  const noteCard = (title, list, update, save, remove, labelFor, placeholder) => (
     <Card className="mb-3">
-      <Card.Header>Comments (internal)</Card.Header>
+      <Card.Header>{title}</Card.Header>
       <Card.Body>
-        {notes.map((n, i) => (
+        {list.map((n, i) => (
             <FieldLine
               key={i}
-              label={labelForNote(n, i)}
+              label={labelFor(n, i)}
               ts={metaLabel(n._by, n._ts)}
               status={childStatus(n, noteSnap)}
               error={n._error}
-              onDismissError={() => updateNote(i, { _error: null })}
-              trail={<RemoveBtn onClick={() => deleteNote(i)} />}
+              onDismissError={() => update(i, { _error: null })}
+              trail={<RemoveBtn onClick={() => remove(i)} />}
             >
               <HlControl
                 as="textarea"
                 rows={2}
-                placeholder="comment"
+                placeholder={placeholder}
                 value={n.note}
                 savedValue={n._saved?.note}
-                onChange={(ev) => updateNote(i, { note: ev.target.value })}
-                onBlur={() => saveNote(i)}
+                onChange={(ev) => update(i, { note: ev.target.value })}
+                onBlur={() => save(i)}
               />
             </FieldLine>
         ))}
       </Card.Body>
     </Card>
   );
+
+  sectionRows.public_notes = noteCard('Public notes', publicNotes, updatePublicNote, savePublicNote,
+    deletePublicNote, labelForPublicNote, 'public note');
+
+  sectionRows.comments = noteCard('Comments (internal)', notes, updateNote, saveNote,
+    deleteNote, labelForNote, 'comment');
 
   const lockedPill = {
     display: 'inline-flex',
