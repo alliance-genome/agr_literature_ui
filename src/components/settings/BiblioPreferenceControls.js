@@ -293,7 +293,10 @@ const BiblioPreferenceControls = ({
             })
             .then((created) => {
               if (created?.person_setting_id) prefsApi.setSelectedSettingId(created.person_setting_id);
-            });
+            })
+            // seed re-throws, e.g. "No person found for email" for a curator without a person
+            // record; uncaught, that was an unhandled rejection (the dev server's error overlay)
+            .catch((error) => console.error('Failed to seed default table preferences:', error));
         }, 200);
       };
 
